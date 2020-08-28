@@ -1,0 +1,75 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: b70276facfbb4201626dd739eeab7938062cebf2af62f7b50c907adcf3ed64d4
+
+name:           madlib
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
+homepage:       https://github.com/githubuser/madlib#readme
+bug-reports:    https://github.com/githubuser/madlib/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2020 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/madlib
+
+library
+  exposed-modules:
+      Lexer
+      Main
+      Wrapper
+  other-modules:
+      Paths_madlib
+  hs-source-dirs:
+      src
+  build-depends:
+      array
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+  default-language: Haskell2010
+
+executable madlib-exe
+  main-is: Main.hs
+  other-modules:
+      Lexer
+      Wrapper
+      Paths_madlib
+  hs-source-dirs:
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      array
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , madlib
+  default-language: Haskell2010
+
+test-suite madlib-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_madlib
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      array
+    , base >=4.7 && <5
+    , binary
+    , bytestring
+    , madlib
+  default-language: Haskell2010
