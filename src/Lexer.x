@@ -22,12 +22,12 @@ module Lexer
   , runAlex
   , alexInitUserState
   , getUserState
+  , scanTokens
   )
 where
 
 import System.Exit
 import Debug.Trace
-import qualified Data.ByteString.Lazy.Char8 as B
 }
 
 %wrapper "monadUserState"
@@ -37,13 +37,20 @@ $alpha = [a-zA-Z]               -- alphabetic characters
 
 tokens :-
   "--".*                                ;
-  (" "|\t)                     ;
+  $white+                               ;
   const                                 { pushToken (\s -> TokenConst) }
   [=]                                   { pushToken (\s -> TokenEq) }
   $alpha [$alpha $digit \_ \']*         { pushToken (\s -> TokenVar s) }
   $digit+                               { pushToken (\s -> TokenInt (read s)) }
+  \"($printable # \")+\"                  { pushToken (\s -> TokenStr s) }
   [\n]                                  { pushToken (\s -> TokenReturn) }
+
 {
+type AlexUserState = [Token]
+
+alexInitUserState :: AlexUserState
+alexInitUserState = []
+
 -- s :: AlexUserState -> AlexUserState
 -- alex_ust :: AlexState -> AlexUserState
 -- -> Returns the current state from AlexState.
@@ -58,7 +65,10 @@ modifyUserState f = Alex $ \s -> let current = alex_ust s
 -- type AlexInput = (AlexPosn, Char, [Byte], String)
 pushToken :: (String -> Token) -> AlexAction ()
 pushToken tokenizer =
-  \(posn,prevChar,pending,s) len -> modifyUserState (push $ take len s) >> alexMonadScan
+  \(posn, prevChar, pending, s) len -> do
+    state <- modifyUserState (push $ take len s)
+    traceM $ "state: " ++ show state ++ show posn ++ " " ++ show s ++ " " ++ show pending
+    alexMonadScan
     where
        push :: String -> AlexUserState -> AlexUserState
        push s ts = ts ++ [(tokenizer s)]
@@ -70,9 +80,10 @@ pushToken tokenizer =
 data Token
  = TokenConst
  | TokenInt    Int
+ | TokenStr    String
  | TokenVar    String
- | TokenReturn
  | TokenEq
+ | TokenReturn
  | TokenEOF
  deriving (Eq, Show)
 
@@ -81,17 +92,13 @@ alexEOF = return ()
 
 -- 
 
-type AlexUserState = [Token]
-alexInitUserState = []
-
--- type AlexUserState = [Token]
-
--- alexInitUserState :: AlexUserState
--- alexInitUserState = []
 
 -- Returns the current state.
 -- I.e., a list of tokens.
 getUserState :: Alex AlexUserState 
 getUserState = Alex $ \s -> Right (s,alex_ust s)
+
+scanTokens :: String -> Either String AlexUserState
+scanTokens s = runAlex s $ alexMonadScan >> getUserState
 
 }

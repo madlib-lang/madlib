@@ -1,6 +1,7 @@
 module Main where
 
-import Wrapper
+import Debug.Trace
+import Grammar
 import Lexer
 
 main :: IO ()
@@ -8,6 +9,7 @@ main = interact compile
 
 -- TBD
 compile :: String -> String
-compile x = case parse x of
+compile x =
+  case scanTokens x of
     Left a -> "\nBAD: " ++ a ++ "\n"
-    Right b ->  "\nGOOD: " ++ (show b) ++ "\n"
+    Right b -> "\nGOOD: " ++ show (parseExpressions b) ++ "\n"
