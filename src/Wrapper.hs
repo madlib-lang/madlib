@@ -5,8 +5,8 @@ module Wrapper
   )
   where
 
-import Lexer
-import Data.ByteString.Lazy
+import           Data.ByteString.Lazy
+import           Lexer
 
 data ErrClass
     = Syntactical (Maybe String)

@@ -8,12 +8,12 @@ import Lexer
 %error { parseError }
 
 %token
-    const { TokenConst }
-    int   { TokenInt $$ }
-    str   { TokenStr $$ }
-    var   { TokenVar $$ }
-    '='   { TokenEq }
-    '\n'  { TokenReturn }
+    const { Token _ TokenConst }
+    int   { Token _ (TokenInt $$) }
+    str   { Token _ (TokenStr $$) }
+    var   { Token _ (TokenVar $$) }
+    '='   { Token _ TokenEq }
+    '\n'  { Token _ TokenReturn }
 %%
 
 exps :: {[Exp]}
@@ -21,7 +21,7 @@ exps :: {[Exp]}
      | exp      { [$1] }
 
 exp :: {Exp}
-    : const var '=' literal { AssignmentExpression $2 $4 }
+    : const var '=' literal { AssignmentExpression (tokenToPos $1) $2 $4 }
 
 literal :: { Literal }
     : int { Int $1 }
@@ -32,7 +32,7 @@ literal :: { Literal }
 parseError :: [Token] -> a
 parseError t = error $ "Parse error: " ++ show t
 
-data Exp = AssignmentExpression String Literal
+data Exp = AssignmentExpression TokenPos String Literal
     deriving(Eq, Show)
 
 data Literal = Int Int

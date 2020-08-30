@@ -16,6 +16,8 @@ module Lexer
   , AlexPosn(..)
   , AlexState(..)
   , Token(..)
+  , TokenPos(..)
+  , TokenClass(..)
   , AlexUserState
   , alexError
   , alexMonadScan
@@ -23,6 +25,7 @@ module Lexer
   , alexInitUserState
   , getUserState
   , scanTokens
+  , tokenToPos
   )
 where
 
@@ -42,7 +45,7 @@ tokens :-
   [=]                                   { pushToken (\s -> TokenEq) }
   $alpha [$alpha $digit \_ \']*         { pushToken (\s -> TokenVar s) }
   $digit+                               { pushToken (\s -> TokenInt (read s)) }
-  \"($printable # \")+\"                  { pushToken (\s -> TokenStr s) }
+  \"($printable # \")+\"                { pushToken (\s -> TokenStr s) }
   [\n]                                  { pushToken (\s -> TokenReturn) }
 
 {
@@ -63,21 +66,31 @@ modifyUserState f = Alex $ \s -> let current = alex_ust s
 -- Each action per token should be a value of result `AlexAction`.
 -- type AlexAction a = AlexInput -> Int -> Alex a
 -- type AlexInput = (AlexPosn, Char, [Byte], String)
-pushToken :: (String -> Token) -> AlexAction ()
+pushToken :: (String -> TokenClass) -> AlexAction ()
 pushToken tokenizer =
-  \(posn, prevChar, pending, s) len -> do
-    state <- modifyUserState (push $ take len s)
-    traceM $ "state: " ++ show state ++ show posn ++ " " ++ show s ++ " " ++ show pending
+  \(posn, prevChar, pending, input) len -> do
+    state <- modifyUserState (push posn (take len input))
+    traceM $ "state: " ++ show state ++ show posn ++ " " ++ show input ++ " " ++ show len
     alexMonadScan
     where
-       push :: String -> AlexUserState -> AlexUserState
-       push s ts = ts ++ [(tokenizer s)]
+       push :: AlexPosn -> String -> AlexUserState -> AlexUserState
+       push pos input ts = ts ++ [(Token (makePos pos) (tokenizer input))]
 
 -- The token type:
 -- data Token = Token AlexPosn TokenClass
 --  deriving (Show)
 
-data Token
+makePos :: AlexPosn -> TokenPos
+makePos (AlexPn a l c) = TokenPos a l c
+
+tokenToPos :: Token -> TokenPos
+tokenToPos (Token x _) = x
+
+data Token = Token TokenPos TokenClass deriving (Eq, Show)
+
+data TokenPos = TokenPos Int Int Int deriving (Eq, Show)
+
+data TokenClass
  = TokenConst
  | TokenInt    Int
  | TokenStr    String

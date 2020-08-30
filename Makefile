@@ -1,5 +1,5 @@
 lint:
 	hlint src
 
-prettify
+prettify:
 	stylish-haskell -r -v -i src/*.hs
