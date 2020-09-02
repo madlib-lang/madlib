@@ -3,39 +3,48 @@ module Grammar where
 import Lexer
 }
 
-%name parseExpressions exps
+%name parseMadlib
 %tokentype { Token }
 %error { parseError }
+%monad {Alex}
+%lexer {lexerWrap} {Token _ TokenEOF}
 
 %token
-    const { Token _ TokenConst }
-    int   { Token _ (TokenInt $$) }
-    str   { Token _ (TokenStr $$) }
-    var   { Token _ (TokenVar $$) }
-    '='   { Token _ TokenEq }
-    '\n'  { Token _ TokenReturn }
+  const { Token _ TokenConst }
+  int   { Token _ (TokenInt $$) }
+  str   { Token _ (TokenStr $$) }
+  var   { Token _ (TokenVar $$) }
+  '='   { Token _ TokenEq }
+  '\n'  { Token _ TokenReturn }
 %%
 
 exps :: {[Exp]}
-     : exp exps { $1 : $2 }
-     | exp      { [$1] }
+  : exp exps { $1 : $2 }
+  | exp      { [$1] }
 
 exp :: {Exp}
-    : const var '=' literal { AssignmentExpression (tokenToPos $1) $2 $4 }
+  : const var '=' literal { AssignmentExpression (tokenToPos $1) $2 $4 }
 
 literal :: { Literal }
-    : int { Int $1 }
-    | str { String $1 }
+  : int { Int $1 }
+  | str { String $1 }
 
 {
-
-parseError :: [Token] -> a
-parseError t = error $ "Parse error: " ++ show t
-
 data Exp = AssignmentExpression TokenPos String Literal
-    deriving(Eq, Show)
+  deriving(Eq, Show)
 
 data Literal = Int Int
              | String String
-    deriving(Eq, Show)
+  deriving(Eq, Show)
+
+lexerWrap :: (Token -> Alex a) -> Alex a
+lexerWrap cont = do
+    token <- alexMonadScan
+    cont token
+
+parseError :: Token -> Alex a
+parseError t = alexError ("Parse error: " ++ show t)
+
+parse :: String -> Either String [Exp]
+parse s = runAlex s parseMadlib
 }

@@ -10,6 +10,6 @@ main = interact compile
 -- TBD
 compile :: String -> String
 compile x =
-  case scanTokens x of
+  case parse x of
     Left a  -> "\nBAD: " ++ a ++ "\n"
-    Right b -> "\nGOOD: " ++ show (parseExpressions b) ++ "\n"
+    Right b -> "\nGOOD: " ++ show b ++ "\n"

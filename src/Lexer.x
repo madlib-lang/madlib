@@ -13,18 +13,14 @@
 
 module Lexer
   ( Alex(..)
-  , AlexPosn(..)
   , AlexState(..)
+  , alexEOF
   , Token(..)
   , TokenPos(..)
   , TokenClass(..)
-  , AlexUserState
   , alexError
   , alexMonadScan
   , runAlex
-  , alexInitUserState
-  , getUserState
-  , scanTokens
   , tokenToPos
   )
 where
@@ -33,52 +29,35 @@ import System.Exit
 import Debug.Trace
 }
 
-%wrapper "monadUserState"
+%wrapper "monad"
 
 $digit = 0-9                    -- digits
 $alpha = [a-zA-Z]               -- alphabetic characters
 
 tokens :-
+  \"($printable # \")+\"                { mapToken TTStr }
   "--".*                                ;
   $white+                               ;
-  const                                 { pushToken (\s -> TokenConst) }
-  [=]                                   { pushToken (\s -> TokenEq) }
-  $alpha [$alpha $digit \_ \']*         { pushToken (\s -> TokenVar s) }
-  $digit+                               { pushToken (\s -> TokenInt (read s)) }
-  \"($printable # \")+\"                { pushToken (\s -> TokenStr s) }
-  [\n]                                  { pushToken (\s -> TokenReturn) }
+  const                                 { mapToken TTConst }
+  [=]                                   { mapToken TTEq }
+  $alpha [$alpha $digit \_ \']*         { mapToken TTVar }
+  $digit+                               { mapToken TTInt }--(\s -> TokenInt (read s)) }
+  [\n]                                  { mapToken TTReturn }
 
 {
-type AlexUserState = [Token]
+data TokenType = TTStr | TTConst | TTEq | TTVar | TTInt | TTReturn
 
-alexInitUserState :: AlexUserState
-alexInitUserState = []
-
--- s :: AlexUserState -> AlexUserState
--- alex_ust :: AlexState -> AlexUserState
--- -> Returns the current state from AlexState.
-modifyUserState :: (AlexUserState -> AlexUserState) -> Alex ()
-modifyUserState f = Alex $ \s -> let current = alex_ust s
-                                     new     = f current
-                                 in
-                                   Right (s { alex_ust = new },())
-
--- Each action per token should be a value of result `AlexAction`.
--- type AlexAction a = AlexInput -> Int -> Alex a
--- type AlexInput = (AlexPosn, Char, [Byte], String)
-pushToken :: (String -> TokenClass) -> AlexAction ()
-pushToken tokenizer =
-  \(posn, prevChar, pending, input) len -> do
-    state <- modifyUserState (push posn (take len input))
-    traceM $ "state: " ++ show state ++ show posn ++ " " ++ show input ++ " " ++ show len
-    alexMonadScan
-    where
-       push :: AlexPosn -> String -> AlexUserState -> AlexUserState
-       push pos input ts = ts ++ [(Token (makePos pos) (tokenizer input))]
-
--- The token type:
--- data Token = Token AlexPosn TokenClass
---  deriving (Show)
+-- replace cl with a function again and get rid of TokenType
+--type AlexAction result = AlexInput -> Int -> Alex result
+mapToken :: TokenType -> AlexInput -> Int -> Alex Token
+mapToken cl (posn, prevChar, pending, input) len = case cl of
+  TTStr    -> return (Token (makePos posn) (TokenStr (take len input)))
+  TTConst  -> return (Token (makePos posn) TokenConst)
+  TTEq     -> return (Token (makePos posn) TokenEq)
+  TTReturn -> return (Token (makePos posn) TokenReturn)
+  TTInt    -> return (Token (makePos posn) (TokenInt $ read (take len input)))
+  TTVar    -> return (Token (makePos posn) (TokenVar (take len input)))
+  _        -> return (Token (makePos posn) TokenConst)
 
 makePos :: AlexPosn -> TokenPos
 makePos (AlexPn a l c) = TokenPos a l c
@@ -100,18 +79,6 @@ data TokenClass
  | TokenEOF
  deriving (Eq, Show)
 
-alexEOF :: Alex ()
-alexEOF = return ()
-
--- 
-
-
--- Returns the current state.
--- I.e., a list of tokens.
-getUserState :: Alex AlexUserState 
-getUserState = Alex $ \s -> Right (s,alex_ust s)
-
-scanTokens :: String -> Either String AlexUserState
-scanTokens s = runAlex s $ alexMonadScan >> getUserState
-
+alexEOF :: Alex Token
+alexEOF = return (Token (TokenPos 1 1 1) TokenEOF)
 }
