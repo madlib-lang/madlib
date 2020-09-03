@@ -32,29 +32,37 @@ exps :: { [Exp] }
   | exp      { [$1] }
 
 exp :: { Exp }
-  : const var '=' literal { AssignmentExpression (tokenToPos $1) $2 $4 }
+  : const var '=' term                         { AssignmentExpression (tokenToPos $1) $2 $4 }
   | if '(' literal operator literal ')' '{''}' { ConditionExpression (tokenToPos $1) (Cond $3 $4 $5) }
 
+term :: { Term }
+  : literal operator term    { BinaryTerm $1 $2 $3 }
+  | literal                  { UnaryTerm $1 }
+
 literal :: { Literal }
-  : int   { Int $1 }
-  | str   { String $1 }
-  | false { Bool $1 }
-  | true  { Bool $1 }
+  : int   { IntLiteral $1 }
+  | str   { StringLiteral $1 }
+  | false { BoolLiteral $1 }
+  | true  { BoolLiteral $1 }
 
 operator :: { Operator }
   : '===' { TripleEq }
 
 {
 
-data Exp = AssignmentExpression TokenPos String Literal
+data Exp = AssignmentExpression TokenPos String Term
          | ConditionExpression TokenPos Cond
   deriving(Eq, Show)
 
 data Cond = Cond Literal Operator Literal deriving(Eq, Show)
 
-data Literal = Int Int
-             | String String
-             | Bool Bool
+data Term = BinaryTerm Literal Operator Term 
+          | UnaryTerm Literal
+  deriving(Eq, Show)
+
+data Literal = IntLiteral Int
+             | StringLiteral String
+             | BoolLiteral Bool
   deriving(Eq, Show)
 
 data Operator = TripleEq deriving(Eq, Show)
