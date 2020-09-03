@@ -1,6 +1,7 @@
 {
 module Grammar where
 import Lexer
+import Text.Printf
 }
 
 %name parseMadlib
@@ -43,7 +44,7 @@ lexerWrap cont = do
     cont token
 
 parseError :: Token -> Alex a
-parseError t = alexError ("Parse error: " ++ show t)
+parseError (Token (TokenPos a l c) cls) = alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
 parse :: String -> Either String [Exp]
 parse s = runAlex s parseMadlib

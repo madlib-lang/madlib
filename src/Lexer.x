@@ -1,5 +1,4 @@
 {
-
 {-# LANGUAGE OverloadedStrings                 #-}
 {-# LANGUAGE NoMonomorphismRestriction          #-}
 {-# LANGUAGE CPP                                #-}
@@ -35,29 +34,22 @@ $digit = 0-9                    -- digits
 $alpha = [a-zA-Z]               -- alphabetic characters
 
 tokens :-
-  \"($printable # \")+\"                { mapToken TTStr }
+  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   "--".*                                ;
   $white+                               ;
-  const                                 { mapToken TTConst }
-  [=]                                   { mapToken TTEq }
-  $alpha [$alpha $digit \_ \']*         { mapToken TTVar }
-  $digit+                               { mapToken TTInt }--(\s -> TokenInt (read s)) }
-  [\n]                                  { mapToken TTReturn }
+  const                                 { mapToken (\_ -> TokenConst) }
+  [=]                                   { mapToken (\_ -> TokenEq) }
+  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenVar s) }
+  $digit+                               { mapToken (\s -> TokenInt (read s)) }
+  [\n]                                  { mapToken (\_ -> TokenReturn) }
 
 {
-data TokenType = TTStr | TTConst | TTEq | TTVar | TTInt | TTReturn
+sanitizeStr :: String -> String
+sanitizeStr = tail . init
 
--- replace cl with a function again and get rid of TokenType
 --type AlexAction result = AlexInput -> Int -> Alex result
-mapToken :: TokenType -> AlexInput -> Int -> Alex Token
-mapToken cl (posn, prevChar, pending, input) len = case cl of
-  TTStr    -> return (Token (makePos posn) (TokenStr (take len input)))
-  TTConst  -> return (Token (makePos posn) TokenConst)
-  TTEq     -> return (Token (makePos posn) TokenEq)
-  TTReturn -> return (Token (makePos posn) TokenReturn)
-  TTInt    -> return (Token (makePos posn) (TokenInt $ read (take len input)))
-  TTVar    -> return (Token (makePos posn) (TokenVar (take len input)))
-  _        -> return (Token (makePos posn) TokenConst)
+mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
+mapToken tokenizer (posn, prevChar, pending, input) len = return (Token (makePos posn) (tokenizer (take len input)))
 
 makePos :: AlexPosn -> TokenPos
 makePos (AlexPn a l c) = TokenPos a l c

@@ -11,5 +11,5 @@ main = interact compile
 compile :: String -> String
 compile x =
   case parse x of
-    Left a  -> "\nBAD: " ++ a ++ "\n"
-    Right b -> "\nGOOD: " ++ show b ++ "\n"
+    Left a  -> "\nBAD:\n" ++ a ++ "\n"
+    Right b -> "\nGOOD:\n" ++ show b ++ "\n"
