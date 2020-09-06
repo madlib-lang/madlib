@@ -12,10 +12,12 @@ import Text.Printf
 
 %token
   const { Token _ TokenConst }
-  int   { Token _ (TokenInt $$) }
-  str   { Token _ (TokenStr $$) }
-  var   { Token _ (TokenVar $$) }
+  int   { Token _ (TokenInt _) }
+  str   { Token _ (TokenStr _) }
+  name  { Token _ (TokenName _) }
   '='   { Token _ TokenEq }
+  '::'  { Token _ TokenDoubleColon }
+  '->'  { Token _ TokenArrow }
   '\n'  { Token _ TokenReturn }
   if    { Token _ TokenIf }
   '{'   { Token _ TokenLeftCurly }
@@ -23,27 +25,33 @@ import Text.Printf
   '('   { Token _ TokenLeftParen }
   ')'   { Token _ TokenRightParen }
   '===' { Token _ TokenTripleEq }
-  false { Token _ (TokenBool $$) }
-  true  { Token _ (TokenBool $$) }
+  false { Token _ (TokenBool _) }
+  true  { Token _ (TokenBool _) }
 %%
 
 exps :: { [Exp] }
-  : exp exps { $1 : $2 }
-  | exp      { [$1] }
+  : exp exps            { $1 : $2 }
+  | exp                 { [$1] }
 
 exp :: { Exp }
-  : const var '=' term                         { AssignmentExpression (tokenToPos $1) $2 $4 }
-  | if '(' literal operator literal ')' '{''}' { ConditionExpression (tokenToPos $1) (Cond $3 $4 $5) }
+  : const name '=' term     { AssignmentExpression (tokenToPos $1) (strV $2) $4 }
+  | if '(' term ')' '{''}'  { ConditionExpression (tokenToPos $1) (Cond $3) }
+  | name '::' types         { Typing (tokenToPos $1) (strV $1) $3 }
 
+types :: { [Type] }
+  : name '->' types { Type (strV $1) : $3 }
+  | name            { [Type (strV $1)] }
+
+-- Make this an array
 term :: { Term }
   : literal operator term    { BinaryTerm $1 $2 $3 }
   | literal                  { UnaryTerm $1 }
 
 literal :: { Literal }
-  : int   { IntLiteral $1 }
-  | str   { StringLiteral $1 }
-  | false { BoolLiteral $1 }
-  | true  { BoolLiteral $1 }
+  : int   { IntLiteral $ intV $1 }
+  | str   { StringLiteral $ strV $1 }
+  | false { BoolLiteral $ boolV $1 }
+  | true  { BoolLiteral $ boolV $1 }
 
 operator :: { Operator }
   : '===' { TripleEq }
@@ -52,9 +60,12 @@ operator :: { Operator }
 
 data Exp = AssignmentExpression TokenPos String Term
          | ConditionExpression TokenPos Cond
+         | Typing TokenPos String [Type]
   deriving(Eq, Show)
 
-data Cond = Cond Literal Operator Literal deriving(Eq, Show)
+data Cond = Cond Term deriving(Eq, Show)
+
+data Type = Type String deriving(Eq, Show)
 
 data Term = BinaryTerm Literal Operator Term 
           | UnaryTerm Literal

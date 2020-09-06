@@ -21,6 +21,9 @@ module Lexer
   , alexMonadScan
   , runAlex
   , tokenToPos
+  , strV
+  , intV
+  , boolV
   )
 where
 
@@ -50,7 +53,9 @@ tokens :-
   "}"                                   { mapToken (\_ -> TokenRightCurly) }
   "("                                   { mapToken (\_ -> TokenLeftParen) }
   ")"                                   { mapToken (\_ -> TokenRightParen) }
-  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenVar s) }
+  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
+  "::"                                  { mapToken (\_ -> TokenDoubleColon) }
+  "->"                                  { mapToken (\_ -> TokenArrow) }
 
 {
 sanitizeStr :: String -> String
@@ -74,7 +79,7 @@ data TokenClass
  = TokenConst
  | TokenInt    Int
  | TokenStr    String
- | TokenVar    String
+ | TokenName   String
  | TokenBool   Bool
  | TokenIf
  | TokenEq
@@ -84,8 +89,21 @@ data TokenClass
  | TokenLeftParen
  | TokenRightParen
  | TokenReturn
+ | TokenDoubleColon
+ | TokenArrow
  | TokenEOF
  deriving (Eq, Show)
+
+
+strV :: Token -> String
+strV (Token _ (TokenStr x))  = x
+strV (Token _ (TokenName x)) = x
+
+intV :: Token -> Int
+intV (Token _ (TokenInt x)) = x
+
+boolV :: Token -> Bool
+boolV (Token _ (TokenBool x)) = x
 
 alexEOF :: Alex Token
 alexEOF = return (Token (TokenPos 1 1 1) TokenEOF)
