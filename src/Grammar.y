@@ -16,10 +16,13 @@ import Text.Printf
   str   { Token _ (TokenStr _) }
   name  { Token _ (TokenName _) }
   '='   { Token _ TokenEq }
+  '+'   { Token _ TokenPlus }
   '::'  { Token _ TokenDoubleColon }
   '->'  { Token _ TokenArrow }
+  '=>'  { Token _ TokenFatArrow }
   '\n'  { Token _ TokenReturn }
   if    { Token _ TokenIf }
+  ','   { Token _ TokenComa }
   '{'   { Token _ TokenLeftCurly }
   '}'   { Token _ TokenRightCurly }
   '('   { Token _ TokenLeftParen }
@@ -34,18 +37,30 @@ exps :: { [Exp] }
   | exp                 { [$1] }
 
 exp :: { Exp }
-  : const name '=' term     { AssignmentExpression (tokenToPos $1) (strV $2) $4 }
-  | if '(' term ')' '{''}'  { ConditionExpression (tokenToPos $1) (Cond $3) }
-  | name '::' types         { Typing (tokenToPos $1) (strV $1) $3 }
+  : const name '=' term                       { AssignmentExpression (tokenToPos $1) (strV $2) $4 }
+  | if '(' term ')' '{' '}'                   { ConditionExpression (tokenToPos $1) (Cond $3) }
+  | name '::' types                           { Typing (tokenToPos $1) (strV $1) $3 }
+  | name '=' '(' params ')' '=>' body         { FunctionDeclaration (tokenToPos $1) (strV $1) $4 $7 }
 
 types :: { [Type] }
   : name '->' types { Type (strV $1) : $3 }
   | name            { [Type (strV $1)] }
 
+params :: { [Param] }
+  : name ',' params { Param (strV $1) : $3 }
+  | name            { [Param (strV $1)] }
+
+body :: { Body }
+  : term { Body $1 }
+
 -- Make this an array
 term :: { Term }
-  : literal operator term    { BinaryTerm $1 $2 $3 }
-  | literal                  { UnaryTerm $1 }
+  : value operator term    { BinaryTerm $1 $2 $3 }
+  | value                  { UnaryTerm $1 }
+
+value :: { Value }
+  : literal { LiteralValue $1 }
+  | name    { Variable (strV $1) }
 
 literal :: { Literal }
   : int   { IntLiteral $ intV $1 }
@@ -55,28 +70,38 @@ literal :: { Literal }
 
 operator :: { Operator }
   : '===' { TripleEq }
+  | '+'   { Plus }
 
 {
 
 data Exp = AssignmentExpression TokenPos String Term
          | ConditionExpression TokenPos Cond
          | Typing TokenPos String [Type]
+         | FunctionDeclaration TokenPos String [Param] Body
   deriving(Eq, Show)
 
 data Cond = Cond Term deriving(Eq, Show)
 
 data Type = Type String deriving(Eq, Show)
 
-data Term = BinaryTerm Literal Operator Term 
-          | UnaryTerm Literal
+data Param = Param String deriving(Eq, Show)
+
+data Body = Body Term deriving(Eq, Show)
+
+data Term = BinaryTerm Value Operator Term 
+          | UnaryTerm Value
   deriving(Eq, Show)
+
+data Value = LiteralValue Literal | Variable String deriving(Eq, Show)
 
 data Literal = IntLiteral Int
              | StringLiteral String
              | BoolLiteral Bool
   deriving(Eq, Show)
 
-data Operator = TripleEq deriving(Eq, Show)
+data Operator = TripleEq 
+              | Plus
+  deriving(Eq, Show)
 
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap cont = do

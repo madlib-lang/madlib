@@ -42,13 +42,14 @@ tokens :-
   $white+                               ;
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
+  "+"                                   { mapToken (\_ -> TokenPlus) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt (read s)) }
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   "true"                                { mapToken (\_ -> (TokenBool True)) }
   "false"                               { mapToken (\_ -> (TokenBool False)) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
-  -- Mix the two curlies and parens in one token with CLeft or CRight value ?
+  ","                                   { mapToken (\_ -> TokenComa) }
   "{"                                   { mapToken (\_ -> TokenLeftCurly) }
   "}"                                   { mapToken (\_ -> TokenRightCurly) }
   "("                                   { mapToken (\_ -> TokenLeftParen) }
@@ -56,6 +57,7 @@ tokens :-
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
   "::"                                  { mapToken (\_ -> TokenDoubleColon) }
   "->"                                  { mapToken (\_ -> TokenArrow) }
+  "=>"                                  { mapToken (\_ -> TokenFatArrow) }
 
 {
 sanitizeStr :: String -> String
@@ -83,7 +85,9 @@ data TokenClass
  | TokenBool   Bool
  | TokenIf
  | TokenEq
+ | TokenPlus
  | TokenTripleEq
+ | TokenComa
  | TokenLeftCurly
  | TokenRightCurly
  | TokenLeftParen
@@ -91,6 +95,7 @@ data TokenClass
  | TokenReturn
  | TokenDoubleColon
  | TokenArrow
+ | TokenFatArrow
  | TokenEOF
  deriving (Eq, Show)
 
