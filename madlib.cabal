@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8b4528ee9f352b27191c8c53460032c9d9d59dfb45146ec4b3f2b2bec1b0d474
+-- hash: 64a38969bc6422408dac30730a4214e151c059eea900ecc7e34b67a113743f08
 
 name:           madlib
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , mtl
   default-language: Haskell2010
 
@@ -56,6 +57,7 @@ executable madlib-exe
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , madlib
     , mtl
   default-language: Haskell2010
@@ -73,6 +75,7 @@ test-suite madlib-test
     , base >=4.7 && <5
     , binary
     , bytestring
+    , containers
     , madlib
     , mtl
   default-language: Haskell2010
