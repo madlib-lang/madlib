@@ -45,7 +45,6 @@ tokens :-
   "+"                                   { mapToken (\_ -> TokenPlus) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt (read s)) }
-  [\n]                                  { mapToken (\_ -> TokenReturn) }
   "true"                                { mapToken (\_ -> (TokenBool True)) }
   "false"                               { mapToken (\_ -> (TokenBool False)) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
@@ -79,10 +78,10 @@ data Pos = Pos Int Int Int deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
- | TokenInt    Int
- | TokenStr    String
- | TokenName   String
- | TokenBool   Bool
+ | TokenInt  Int
+ | TokenStr  String
+ | TokenName String
+ | TokenBool Bool
  | TokenIf
  | TokenEq
  | TokenPlus
@@ -92,7 +91,6 @@ data TokenClass
  | TokenRightCurly
  | TokenLeftParen
  | TokenRightParen
- | TokenReturn
  | TokenDoubleColon
  | TokenArrow
  | TokenFatArrow
