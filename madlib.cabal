@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 64a38969bc6422408dac30730a4214e151c059eea900ecc7e34b67a113743f08
+-- hash: c097bc512f6f0071fb25fe1d6c292f1d40f8803ca691434337b2be1be59824ac
 
 name:           madlib
 version:        0.1.0.0
@@ -35,12 +35,10 @@ library
   hs-source-dirs:
       src
   build-depends:
-      array
+      array ==0.5.4.0
     , base >=4.7 && <5
-    , binary
-    , bytestring
-    , containers
-    , mtl
+    , containers ==0.6.2.1
+    , pretty-show
   default-language: Haskell2010
 
 executable madlib-exe
@@ -53,13 +51,10 @@ executable madlib-exe
       src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      array
+      array ==0.5.4.0
     , base >=4.7 && <5
-    , binary
-    , bytestring
-    , containers
-    , madlib
-    , mtl
+    , containers ==0.6.2.1
+    , pretty-show
   default-language: Haskell2010
 
 test-suite madlib-test
@@ -71,11 +66,8 @@ test-suite madlib-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      array
+      array ==0.5.4.0
     , base >=4.7 && <5
-    , binary
-    , bytestring
-    , containers
-    , madlib
-    , mtl
+    , containers ==0.6.2.1
+    , pretty-show
   default-language: Haskell2010
