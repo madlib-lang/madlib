@@ -21,11 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- bytestring
-- array
-- binary
-- mtl
-- containers
+- pretty-show
+- array == 0.5.4.0
+- containers == 0.6.2.1
 
 library:
   source-dirs: src
@@ -38,10 +36,6 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - madlib
-    - bytestring
-    - array
 
 tests:
   madlib-test:
@@ -52,4 +46,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - madlib
+      - hspec == 2.7.2
+      - madlib
+

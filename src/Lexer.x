@@ -15,7 +15,7 @@ module Lexer
   , AlexState(..)
   , alexEOF
   , Token(..)
-  , TokenPos(..)
+  , Pos(..)
   , TokenClass(..)
   , alexError
   , alexMonadScan
@@ -45,7 +45,6 @@ tokens :-
   "+"                                   { mapToken (\_ -> TokenPlus) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt (read s)) }
-  [\n]                                  { mapToken (\_ -> TokenReturn) }
   "true"                                { mapToken (\_ -> (TokenBool True)) }
   "false"                               { mapToken (\_ -> (TokenBool False)) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
@@ -67,22 +66,22 @@ sanitizeStr = tail . init
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = return (Token (makePos posn) (tokenizer (take len input)))
 
-makePos :: AlexPosn -> TokenPos
-makePos (AlexPn a l c) = TokenPos a l c
+makePos :: AlexPosn -> Pos
+makePos (AlexPn a l c) = Pos a l c
 
-tokenToPos :: Token -> TokenPos
+tokenToPos :: Token -> Pos
 tokenToPos (Token x _) = x
 
-data Token = Token TokenPos TokenClass deriving (Eq, Show)
+data Token = Token Pos TokenClass deriving (Eq, Show)
 
-data TokenPos = TokenPos Int Int Int deriving (Eq, Show)
+data Pos = Pos Int Int Int deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
- | TokenInt    Int
- | TokenStr    String
- | TokenName   String
- | TokenBool   Bool
+ | TokenInt  Int
+ | TokenStr  String
+ | TokenName String
+ | TokenBool Bool
  | TokenIf
  | TokenEq
  | TokenPlus
@@ -92,7 +91,6 @@ data TokenClass
  | TokenRightCurly
  | TokenLeftParen
  | TokenRightParen
- | TokenReturn
  | TokenDoubleColon
  | TokenArrow
  | TokenFatArrow
@@ -111,5 +109,5 @@ boolV :: Token -> Bool
 boolV (Token _ (TokenBool x)) = x
 
 alexEOF :: Alex Token
-alexEOF = return (Token (TokenPos 1 1 1) TokenEOF)
+alexEOF = return (Token (Pos 1 1 1) TokenEOF)
 }

@@ -7,8 +7,8 @@ import Text.Printf
 %name parseMadlib
 %tokentype { Token }
 %error { parseError }
-%monad {Alex}
-%lexer {lexerWrap} {Token _ TokenEOF}
+%monad { Alex }
+%lexer { lexerWrap } { Token _ TokenEOF }
 
 %token
   const { Token _ TokenConst }
@@ -20,7 +20,6 @@ import Text.Printf
   '::'  { Token _ TokenDoubleColon }
   '->'  { Token _ TokenArrow }
   '=>'  { Token _ TokenFatArrow }
-  '\n'  { Token _ TokenReturn }
   if    { Token _ TokenIf }
   ','   { Token _ TokenComa }
   '{'   { Token _ TokenLeftCurly }
@@ -32,41 +31,54 @@ import Text.Printf
   true  { Token _ (TokenBool _) }
 %%
 
+program :: { Program }
+  : functionDefs { Program { functions = $1 } }
+
+functionDefs :: { [FunctionDef] }
+  : functionDef functionDefs { $1:$2 }
+  | functionDef              { [$1] }
+
+functionDef :: { FunctionDef }
+-- Until we have inference, should we disallow that one ?
+  : name '=' '(' params ')' '=>' body         { FunctionDef { ftype = Nothing
+                                                            , ftypeDef = Nothing -- map (const "*") $4 ??
+                                                            , fpos = tokenToPos $1
+                                                            , fname = strV $1
+                                                            , fparams = $4
+                                                            , fbody = $7 }}
+  | typing name '=' '(' params ')' '=>' body  { FunctionDef { ftype = Nothing
+                                                            , ftypeDef = Just $1
+                                                            , fpos = tpos $1
+                                                            , fname = strV $2
+                                                            , fparams = $5
+                                                            , fbody = $8 }}
+
+-- TODO: Make it a TypeDecl ?
+typing :: { Typing }
+  : name '::' types { Typing { tpos = tokenToPos $1, tfor = strV $1, ttypes = $3 } }
+
+types :: { [Type] }
+  : name '->' types { (strV $1) : $3 }
+  | name            { [(strV $1)] }
+
 exps :: { [Exp] }
   : exp exps            { $1 : $2 }
   | exp                 { [$1] }
 
 exp :: { Exp }
-  : const name '=' term                       { AssignmentExpression (tokenToPos $1) (strV $2) $4 }
-  | if '(' term ')' '{' '}'                   { ConditionExpression (tokenToPos $1) (Cond $3) }
-  | name '::' types                           { Typing (tokenToPos $1) (strV $1) $3 }
-  | name '=' '(' params ')' '=>' body         { FunctionDeclaration (tokenToPos $1) (strV $1) $4 $7 }
-
-types :: { [Type] }
-  : name '->' types { Type (strV $1) : $3 }
-  | name            { [Type (strV $1)] }
+  : int                     { IntLit    { etype = Just "Num", epos = tokenToPos $1} }
+  | str                     { StringLit { etype = Just "String", epos = tokenToPos $1} }
+  | false                   { BoolLit   { etype = Just "Bool", epos = tokenToPos $1} }
+  | true                    { BoolLit   { etype = Just "Bool", epos = tokenToPos $1} }
+  | exp operator exp        { Operation { etype = Nothing, epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
+  | name                    { VarAccess { etype = Nothing, epos = tokenToPos $1, ename = strV $1 }}
 
 params :: { [Param] }
-  : name ',' params { Param (strV $1) : $3 }
-  | name            { [Param (strV $1)] }
+  : name ',' params { (strV $1) : $3 }
+  | name            { [(strV $1)] }
 
 body :: { Body }
-  : term { Body $1 }
-
--- Make this an array
-term :: { Term }
-  : value operator term    { BinaryTerm $1 $2 $3 }
-  | value                  { UnaryTerm $1 }
-
-value :: { Value }
-  : literal { LiteralValue $1 }
-  | name    { Variable (strV $1) }
-
-literal :: { Literal }
-  : int   { IntLiteral $ intV $1 }
-  | str   { StringLiteral $ strV $1 }
-  | false { BoolLiteral $ boolV $1 }
-  | true  { BoolLiteral $ boolV $1 }
+  : exp { Body $1 }
 
 operator :: { Operator }
   : '===' { TripleEq }
@@ -74,30 +86,31 @@ operator :: { Operator }
 
 {
 
-data Exp = AssignmentExpression TokenPos String Term
-         | ConditionExpression TokenPos Cond
-         | Typing TokenPos String [Type]
-         | FunctionDeclaration TokenPos String [Param] Body
+data Program = Program { functions :: [FunctionDef] } deriving(Eq, Show)
+
+-- TODO: Remove ftype from FunctionDef ?
+data FunctionDef = FunctionDef { ftype :: Maybe Type
+                               , ftypeDef :: Maybe Typing
+                               , fpos :: Pos
+                               , fname :: String
+                               , fparams :: [Param]
+                               , fbody :: Body }
   deriving(Eq, Show)
 
-data Cond = Cond Term deriving(Eq, Show)
+data Typing = Typing { tpos :: Pos, tfor :: Name, ttypes :: [Type] } deriving(Eq, Show)
 
-data Type = Type String deriving(Eq, Show)
-
-data Param = Param String deriving(Eq, Show)
-
-data Body = Body Term deriving(Eq, Show)
-
-data Term = BinaryTerm Value Operator Term 
-          | UnaryTerm Value
+data Exp = IntLit    { etype :: Maybe Type, epos :: Pos }
+         | StringLit { etype :: Maybe Type, epos :: Pos }
+         | BoolLit   { etype :: Maybe Type, epos :: Pos }
+         | Operation { etype :: Maybe Type, epos :: Pos, eleft :: Exp, eoperator :: Operator, eright :: Exp }
+         | VarAccess { etype :: Maybe Type, epos :: Pos, ename :: Name }
   deriving(Eq, Show)
 
-data Value = LiteralValue Literal | Variable String deriving(Eq, Show)
+type Type  = String
+type Param = String
+type Name  = String
 
-data Literal = IntLiteral Int
-             | StringLiteral String
-             | BoolLiteral Bool
-  deriving(Eq, Show)
+data Body = Body Exp deriving(Eq, Show)
 
 data Operator = TripleEq 
               | Plus
@@ -109,8 +122,8 @@ lexerWrap cont = do
     cont token
 
 parseError :: Token -> Alex a
-parseError (Token (TokenPos a l c) cls) = alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
+parseError (Token (Pos a l c) cls) = alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
-parse :: String -> Either String [Exp]
+parse :: String -> Either String Program
 parse s = runAlex s parseMadlib
 }
