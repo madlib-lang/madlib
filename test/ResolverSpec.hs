@@ -12,11 +12,16 @@ tester code =  resolve initialEnv =<< buildAST code
 spec :: Spec
 spec = do
   describe "compiler" $ do
-    it "can" $ do
+    it "should resolve functions that add parameters" $ do
       let code = unlines ["fn :: Num -> Num -> Num"
                          ,"fn = (a, b) => a + b"]
           actual = case tester code of
             (Right _) -> True
             _         -> False
-
       actual `shouldBe` True
+
+    it "should give an error if parameter count does not match the one of the signature" $ do
+      let code = unlines ["fn :: Num -> Num -> Num -> Num"
+                         ,"fn = (a, b) => a + b"]
+          actual = tester code
+      actual `shouldBe` Left "Error: () - Parameter count and signature don't match !"

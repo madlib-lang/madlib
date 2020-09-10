@@ -20,21 +20,24 @@ instance Resolvable Program where
   -- result : Either String Program
   resolve env p@Program {functions} = Program <$> mapM (resolve env) functions
 
--- TODO: Also check that the amount of params matches the amount given in the typing
 instance Resolvable FunctionDef where
   resolve env@Env{ftable, vtable} f@FunctionDef{fbody = (Body exp), ftypeDef, fparams} =
     let
-      nextEnv       = env { ftable = M.insert (fname f) f ftable
-                          , vtable = updatedVTable }
+      nextEnv      = env { ftable = M.insert (fname f) f ftable, vtable = updatedVTable }
       resolvedExpM = resolve nextEnv exp
     in
       updateBody =<< resolvedExpM
     where
+      sameCount = case ftypeDef of
+        (Just x) -> length (ttypes x) -1 == length fparams
+        _        -> True
       updateBody :: Exp -> Either String FunctionDef
-      updateBody exp    = return f { fbody = Body exp }
+      updateBody exp    = if sameCount
+                          then return f { fbody = Body exp }
+                          else Left "Error: () - Parameter count and signature don't match !"
       typedParams       = case ftypeDef of
-                            (Just x) -> zip fparams . init $ ttypes x
-                            _        -> [] -- TODO: add params with * as type ?
+        (Just x) -> zip fparams . init $ ttypes x
+        _        -> [] -- TODO: add params with * as type ?
       updatedVTable = F.foldl (\a (n, t) -> M.insert n t a) vtable typedParams
 
 instance Resolvable Exp where
