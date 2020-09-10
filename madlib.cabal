@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 714918a5c7c31957bc1bff1172848772403ea268ddca64145a554716cf8800d8
+-- hash: 80a3e1db8b39efc43c1ef5ee1ab834b64563b2826c610e8bd20c6077c8c36472
 
 name:           madlib
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Grammar
       Lexer
       Main
+      Resolver
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -46,6 +47,7 @@ executable madlib-exe
   other-modules:
       Grammar
       Lexer
+      Resolver
       Paths_madlib
   hs-source-dirs:
       src
@@ -61,6 +63,7 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      ResolverSpec
       Paths_madlib
   hs-source-dirs:
       test
@@ -69,5 +72,7 @@ test-suite madlib-test
       array ==0.5.4.0
     , base >=4.7 && <5
     , containers ==0.6.2.1
+    , hspec ==2.7.2
+    , madlib
     , pretty-show
   default-language: Haskell2010
