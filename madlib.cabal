@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80a3e1db8b39efc43c1ef5ee1ab834b64563b2826c610e8bd20c6077c8c36472
+-- hash: 110b08204f1a03482a1b9eaf4a534190715b999762cdc8a962b9dd52ddab6a97
 
 name:           madlib
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
       array ==0.5.4.0
     , base >=4.7 && <5
     , containers ==0.6.2.1
+    , hpc-lcov
     , pretty-show
   default-language: Haskell2010
 
@@ -56,6 +57,7 @@ executable madlib-exe
       array ==0.5.4.0
     , base >=4.7 && <5
     , containers ==0.6.2.1
+    , hpc-lcov
     , pretty-show
   default-language: Haskell2010
 
@@ -72,6 +74,7 @@ test-suite madlib-test
       array ==0.5.4.0
     , base >=4.7 && <5
     , containers ==0.6.2.1
+    , hpc-lcov
     , hspec ==2.7.2
     , madlib
     , pretty-show
