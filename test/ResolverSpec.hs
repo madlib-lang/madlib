@@ -9,6 +9,7 @@ tester :: String -> Either String Program
 tester code =  resolve initialEnv =<< buildAST code
   where initialEnv = Env M.empty M.empty
 
+
 spec :: Spec
 spec = do
   describe "compiler" $ do
