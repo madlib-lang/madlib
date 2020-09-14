@@ -1,5 +1,10 @@
+import "imported"
+
 fn :: Num -> Num -> Num
 fn = (a, b) => a + b
 
 fn2 :: Num -> Num -> Num -> Num
 fn2 = (a, b, c) => a + b + c
+
+fn3 :: Num -> Num -> Num -> Num
+fn3 = (a, b, c) => doit(a, b) + c

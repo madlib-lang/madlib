@@ -4,35 +4,44 @@ import Lexer
 import Text.Printf
 }
 
-%name parseMadlib
+%name parseMadlib ast
 %tokentype { Token }
 %error { parseError }
 %monad { Alex }
 %lexer { lexerWrap } { Token _ TokenEOF }
 
 %token
-  const { Token _ TokenConst }
-  int   { Token _ (TokenInt _) }
-  str   { Token _ (TokenStr _) }
-  name  { Token _ (TokenName _) }
-  '='   { Token _ TokenEq }
-  '+'   { Token _ TokenPlus }
-  '::'  { Token _ TokenDoubleColon }
-  '->'  { Token _ TokenArrow }
-  '=>'  { Token _ TokenFatArrow }
-  if    { Token _ TokenIf }
-  ','   { Token _ TokenComa }
-  '{'   { Token _ TokenLeftCurly }
-  '}'   { Token _ TokenRightCurly }
-  '('   { Token _ TokenLeftParen }
-  ')'   { Token _ TokenRightParen }
-  '===' { Token _ TokenTripleEq }
-  false { Token _ (TokenBool _) }
-  true  { Token _ (TokenBool _) }
+  const    { Token _ TokenConst }
+  int      { Token _ (TokenInt _) }
+  str      { Token _ (TokenStr _) }
+  name     { Token _ (TokenName _) }
+  '='      { Token _ TokenEq }
+  '+'      { Token _ TokenPlus }
+  '::'     { Token _ TokenDoubleColon }
+  '->'     { Token _ TokenArrow }
+  '=>'     { Token _ TokenFatArrow }
+  if       { Token _ TokenIf }
+  ','      { Token _ TokenComa }
+  '{'      { Token _ TokenLeftCurly }
+  '}'      { Token _ TokenRightCurly }
+  '('      { Token _ TokenLeftParen }
+  ')'      { Token _ TokenRightParen }
+  '==='    { Token _ TokenTripleEq }
+  false    { Token _ (TokenBool _) }
+  true     { Token _ (TokenBool _) }
+  'import' { Token _ TokenImport }
 %%
 
-program :: { Program }
-  : functionDefs { Program { functions = $1 } }
+ast :: { AST }
+  : importDefs functionDefs  { AST { imports = $1, functions = $2 } }
+  | functionDefs             { AST { imports = [], functions = $1 } }
+
+importDefs :: { [ImportDecl] }
+  : importDef importDefs { $1:$2 }
+  | importDef            { [$1] }
+  
+importDef :: { ImportDecl }
+  : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
 functionDefs :: { [FunctionDef] }
   : functionDef functionDefs { $1:$2 }
@@ -62,16 +71,21 @@ types :: { [Type] }
   | name            { [(strV $1)] }
 
 exps :: { [Exp] }
-  : exp exps            { $1 : $2 }
+  : exp exps            { $1:$2 }
   | exp                 { [$1] }
 
 exp :: { Exp }
-  : int                     { IntLit    { etype = Just "Num", epos = tokenToPos $1} }
-  | str                     { StringLit { etype = Just "String", epos = tokenToPos $1} }
-  | false                   { BoolLit   { etype = Just "Bool", epos = tokenToPos $1} }
-  | true                    { BoolLit   { etype = Just "Bool", epos = tokenToPos $1} }
-  | exp operator exp        { Operation { etype = Nothing, epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
-  | name                    { VarAccess { etype = Nothing, epos = tokenToPos $1, ename = strV $1 }}
+  : int               { IntLit       { etype = Just "Num", epos = tokenToPos $1} }
+  | str               { StringLit    { etype = Just "String", epos = tokenToPos $1} }
+  | false             { BoolLit      { etype = Just "Bool", epos = tokenToPos $1} }
+  | true              { BoolLit      { etype = Just "Bool", epos = tokenToPos $1} }
+  | exp operator exp  { Operation    { etype = Nothing, epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
+  | name              { VarAccess    { etype = Nothing, epos = tokenToPos $1, ename = strV $1 }}
+  | name '(' args ')' { FunctionCall { etype = Nothing, epos = tokenToPos $1, ename = strV $1, eargs = $3 }}
+
+args :: { [Exp] }
+  : exp          { [$1] }
+  | exp ',' args { $1:$3 }
 
 params :: { [Param] }
   : name ',' params { (strV $1) : $3 }
@@ -86,7 +100,11 @@ operator :: { Operator }
 
 {
 
-data Program = Program { functions :: [FunctionDef] } deriving(Eq, Show)
+data AST = AST { imports :: [ImportDecl], functions :: [FunctionDef] } deriving(Eq, Show)
+
+data ImportDecl = ImportDecl { ipos :: Pos
+                           , ipath :: Path }
+  deriving(Eq, Show)
 
 -- TODO: Remove ftype from FunctionDef ?
 data FunctionDef = FunctionDef { ftype :: Maybe Type
@@ -99,16 +117,23 @@ data FunctionDef = FunctionDef { ftype :: Maybe Type
 
 data Typing = Typing { tpos :: Pos, tfor :: Name, ttypes :: [Type] } deriving(Eq, Show)
 
-data Exp = IntLit    { etype :: Maybe Type, epos :: Pos }
-         | StringLit { etype :: Maybe Type, epos :: Pos }
-         | BoolLit   { etype :: Maybe Type, epos :: Pos }
-         | Operation { etype :: Maybe Type, epos :: Pos, eleft :: Exp, eoperator :: Operator, eright :: Exp }
-         | VarAccess { etype :: Maybe Type, epos :: Pos, ename :: Name }
+data Exp = IntLit       { etype :: Maybe Type, epos :: Pos }
+         | StringLit    { etype :: Maybe Type, epos :: Pos }
+         | BoolLit      { etype :: Maybe Type, epos :: Pos }
+         | Operation    { etype :: Maybe Type, epos :: Pos, eleft :: Exp, eoperator :: Operator, eright :: Exp }
+         | VarAccess    { etype :: Maybe Type, epos :: Pos, ename :: Name }
+         | FunctionCall { etype :: Maybe Type, epos :: Pos, ename :: Name, eargs :: [Exp] }
   deriving(Eq, Show)
 
+type Path  = String
 type Type  = String
 type Param = String
 type Name  = String
+
+-- data Type = NumLit
+--           | StrLit
+--           | BoolLit
+--           | FuncType [Type]
 
 data Body = Body Exp deriving(Eq, Show)
 
@@ -124,6 +149,6 @@ lexerWrap cont = do
 parseError :: Token -> Alex a
 parseError (Token (Pos a l c) cls) = alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
-parse :: String -> Either String Program
+parse :: String -> Either String AST
 parse s = runAlex s parseMadlib
 }

@@ -40,6 +40,7 @@ tokens :-
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   "--".*                                ;
   $white+                               ;
+  import                                { mapToken (\_ -> TokenImport) }
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
   "+"                                   { mapToken (\_ -> TokenPlus) }
@@ -95,6 +96,7 @@ data TokenClass
  | TokenArrow
  | TokenFatArrow
  | TokenEOF
+ | TokenImport
  deriving (Eq, Show)
 
 
