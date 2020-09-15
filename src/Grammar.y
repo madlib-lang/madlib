@@ -33,8 +33,8 @@ import Text.Printf
 %%
 
 ast :: { AST }
-  : importDefs functionDefs  { AST { imports = $1, functions = $2 } }
-  | functionDefs             { AST { imports = [], functions = $1 } }
+  : importDefs functionDefs  { AST { aimports = $1, afunctions = $2, apath = Nothing } }
+  | functionDefs             { AST { aimports = [], afunctions = $1, apath = Nothing } }
 
 importDefs :: { [ImportDecl] }
   : importDef importDefs { $1:$2 }
@@ -49,18 +49,24 @@ functionDefs :: { [FunctionDef] }
 
 functionDef :: { FunctionDef }
 -- Until we have inference, should we disallow that one ?
-  : name '=' '(' params ')' '=>' body         { FunctionDef { ftype = Nothing
-                                                            , ftypeDef = Nothing -- map (const "*") $4 ??
-                                                            , fpos = tokenToPos $1
-                                                            , fname = strV $1
-                                                            , fparams = $4
-                                                            , fbody = $7 }}
-  | typing name '=' '(' params ')' '=>' body  { FunctionDef { ftype = Nothing
-                                                            , ftypeDef = Just $1
-                                                            , fpos = tpos $1
-                                                            , fname = strV $2
-                                                            , fparams = $5
-                                                            , fbody = $8 }}
+  : name '=' '(' params ')' '=>' body         { FunctionDef
+                                                  { ftype = Nothing
+                                                  , ftypeDef = Nothing -- map (const "*") $4 ??
+                                                  , fpos = tokenToPos $1
+                                                  , fname = strV $1
+                                                  , fparams = $4
+                                                  , fbody = $7 
+                                                  }
+                                              }
+  | typing name '=' '(' params ')' '=>' body  { FunctionDef 
+                                                  { ftype = Nothing
+                                                  , ftypeDef = Just $1
+                                                  , fpos = tpos $1
+                                                  , fname = strV $2
+                                                  , fparams = $5
+                                                  , fbody = $8 
+                                                  }
+                                              }
 
 -- TODO: Make it a TypeDecl ?
 typing :: { Typing }
@@ -100,22 +106,39 @@ operator :: { Operator }
 
 {
 
-data AST = AST { imports :: [ImportDecl], functions :: [FunctionDef] } deriving(Eq, Show)
+data AST =
+  AST
+    { aimports   :: [ImportDecl]
+    , afunctions :: [FunctionDef]
+    , apath      :: Maybe Path
+    }
+    deriving(Eq, Show)
 
-data ImportDecl = ImportDecl { ipos :: Pos
-                           , ipath :: Path }
-  deriving(Eq, Show)
+data ImportDecl =
+  ImportDecl
+    { ipos  :: Pos
+    , ipath :: Path
+    }
+    deriving(Eq, Show)
 
--- TODO: Remove ftype from FunctionDef ?
-data FunctionDef = FunctionDef { ftype :: Maybe Type
-                               , ftypeDef :: Maybe Typing
-                               , fpos :: Pos
-                               , fname :: String
-                               , fparams :: [Param]
-                               , fbody :: Body }
-  deriving(Eq, Show)
+data FunctionDef =
+  FunctionDef
+    { ftype    :: Maybe Type
+    , ftypeDef :: Maybe Typing
+    , fpos     :: Pos
+    , fname    :: String
+    , fparams  :: [Param]
+    , fbody    :: Body
+    }
+    deriving(Eq, Show)
 
-data Typing = Typing { tpos :: Pos, tfor :: Name, ttypes :: [Type] } deriving(Eq, Show)
+data Typing =
+  Typing
+    { tpos   :: Pos
+    , tfor   :: Name
+    , ttypes :: [Type]
+    }
+    deriving(Eq, Show)
 
 data Exp = IntLit       { etype :: Maybe Type, epos :: Pos }
          | StringLit    { etype :: Maybe Type, epos :: Pos }
@@ -123,31 +146,25 @@ data Exp = IntLit       { etype :: Maybe Type, epos :: Pos }
          | Operation    { etype :: Maybe Type, epos :: Pos, eleft :: Exp, eoperator :: Operator, eright :: Exp }
          | VarAccess    { etype :: Maybe Type, epos :: Pos, ename :: Name }
          | FunctionCall { etype :: Maybe Type, epos :: Pos, ename :: Name, eargs :: [Exp] }
-  deriving(Eq, Show)
+         deriving(Eq, Show)
 
 type Path  = String
 type Type  = String
 type Param = String
 type Name  = String
 
--- data Type = NumLit
---           | StrLit
---           | BoolLit
---           | FuncType [Type]
-
 data Body = Body Exp deriving(Eq, Show)
 
 data Operator = TripleEq 
               | Plus
-  deriving(Eq, Show)
+              deriving(Eq, Show)
 
 lexerWrap :: (Token -> Alex a) -> Alex a
-lexerWrap cont = do
-    token <- alexMonadScan
-    cont token
+lexerWrap f = alexMonadScan >>= f
 
 parseError :: Token -> Alex a
-parseError (Token (Pos a l c) cls) = alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
+parseError (Token (Pos a l c) cls) =
+  alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
 parse :: String -> Either String AST
 parse s = runAlex s parseMadlib

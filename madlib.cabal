@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 007cdd2b96e550e529c7f6403d2374a039ac037ca764e77a6f2ba9abcfb9c1fd
+-- hash: 34b23278f0dc70d8b34dbadc84d4eabc4b3bddafbe5042088fdf643d4a5d3e22
 
 name:           madlib
 version:        0.1.0.0
@@ -38,6 +38,7 @@ library
   build-depends:
       array ==0.5.4.0
     , base >=4.7 && <5
+    , brittany
     , containers ==0.6.2.1
     , hpc-lcov
     , mtl
@@ -57,6 +58,7 @@ executable madlib-exe
   build-depends:
       array ==0.5.4.0
     , base >=4.7 && <5
+    , brittany
     , containers ==0.6.2.1
     , hpc-lcov
     , mtl
@@ -75,6 +77,7 @@ test-suite madlib-test
   build-depends:
       array ==0.5.4.0
     , base >=4.7 && <5
+    , brittany
     , containers ==0.6.2.1
     , hpc-lcov
     , hspec ==2.7.2

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns   #-}
 module Main where
 
 import qualified Data.Map           as M
@@ -12,35 +13,32 @@ import           Text.Show.Pretty   (ppShow)
 main :: IO ()
 main = do
   args         <- getArgs
-  entrypoint   <- return $ head args
+  let entrypoint = head args
   content      <- readFile entrypoint
-  ast          <- return $ buildAST content
+  let ast = buildAST entrypoint content
   astTable     <- case ast of
-    Right a -> buildASTTable a (M.fromList [(entrypoint, a)])
-  -- putStrLn $ ppShow astTable
+    Right a  -> buildASTTable a (M.fromList [(entrypoint, a)])
+    Left err -> return $ Left err
 
   resolvedTable <- case (ast, astTable) of
     (Right a, Right table) -> return $ resolveASTTable (Env M.empty M.empty) a table
+    (Left a, Left b)       -> return $ trace (show (a, b)) M.empty
 
   putStrLn $ "RESOLVED:\n"++ppShow resolvedTable
-
-  -- resolved <- case ast of
-  --   (Right a) -> return $ resolve (Env M.empty M.empty) a
-  --   x         -> return x
-  -- putStrLn (generateOutput resolved)
   return ()
 
 buildASTTable :: AST
               -> M.Map FilePath AST
               -> IO (Either String (M.Map FilePath AST))
-buildASTTable ast table = do
+buildASTTable AST { aimports } table = do
   contents <- mapM readFile importPaths
   let
-    built = mapM buildAST contents
+    withPaths = zip importPaths contents
+    built = mapM (uncurry buildAST) withPaths
     mapped = case built of
       Right x -> Right $ M.union table (M.fromList $ zip importPaths x)
       Left l  -> Left l
   return mapped
   where
     -- TODO: See toRoot function in Resolver.hs
-    importPaths = ("fixtures/"++) <$> (++".mad") <$> ipath <$> imports ast
+    importPaths = ("fixtures/"++) . (++".mad") . ipath <$> aimports
