@@ -1,44 +1,36 @@
 {-# LANGUAGE NamedFieldPuns   #-}
 module Main where
 
-import qualified Data.Map           as M
-import           Debug.Trace        (trace)
-import           GHC.IO             ()
+import           Prelude                 hiding ( readFile )
+import qualified Prelude                       as P
+import qualified Data.Map                      as M
+import           Debug.Trace                    ( trace )
+import           GHC.IO                         ( )
 import           Grammar
 import           Resolver
-import           System.Environment (getArgs)
-import           Text.Show.Pretty   (ppShow)
-
+import           System.Environment             ( getArgs )
+import           Text.Show.Pretty               ( ppShow )
+import           AST                            ( buildASTTable )
+import           Control.Monad                  ( liftM2 )
 
 main :: IO ()
 main = do
-  args         <- getArgs
-  let entrypoint = head args
-  content      <- readFile entrypoint
-  let ast = buildAST entrypoint content
-  astTable     <- case ast of
-    Right a  -> buildASTTable a (M.fromList [(entrypoint, a)])
-    Left err -> return $ Left err
+  entrypoint <- head <$> getArgs
+  astTable   <- buildASTTable entrypoint
+  let entryAST = astTable >>= getEntrypoint entrypoint
+      resolvedTable =
+        liftM2 (resolveASTTable (Env M.empty M.empty)) entryAST astTable
 
-  resolvedTable <- case (ast, astTable) of
-    (Right a, Right table) -> return $ resolveASTTable (Env M.empty M.empty) a table
-    (Left a, Left b)       -> return $ trace (show (a, b)) M.empty
-
-  putStrLn $ "RESOLVED:\n"++ppShow resolvedTable
+  putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   return ()
+ where
+  getEntrypoint :: FilePath -> ASTTable -> Either String AST
+  getEntrypoint table path = case M.lookup table path of
+    Just x  -> return x
+    Nothing -> Left "Entrypoint not found !"
 
-buildASTTable :: AST
-              -> M.Map FilePath AST
-              -> IO (Either String (M.Map FilePath AST))
-buildASTTable AST { aimports } table = do
-  contents <- mapM readFile importPaths
-  let
-    withPaths = zip importPaths contents
-    built = mapM (uncurry buildAST) withPaths
-    mapped = case built of
-      Right x -> Right $ M.union table (M.fromList $ zip importPaths x)
-      Left l  -> Left l
-  return mapped
-  where
-    -- TODO: See toRoot function in Resolver.hs
-    importPaths = ("fixtures/"++) . (++".mad") . ipath <$> aimports
+maybeToRight :: e -> Maybe a -> Either e a
+maybeToRight fallback (Just a) = Right a
+maybeToRight fallback Nothing  = Left fallback
+
+type SourceTable = M.Map FilePath String

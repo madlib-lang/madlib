@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 34b23278f0dc70d8b34dbadc84d4eabc4b3bddafbe5042088fdf643d4a5d3e22
+-- hash: febc810b8c529382b70fb702f0384c60cf121ab206a4d89322c0eb8eb8e5d0fe
 
 name:           madlib
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      AST
       Grammar
       Lexer
       Main
@@ -43,11 +44,13 @@ library
     , hpc-lcov
     , mtl
     , pretty-show
+    , transformers
   default-language: Haskell2010
 
 executable madlib-exe
   main-is: Main.hs
   other-modules:
+      AST
       Grammar
       Lexer
       Resolver
@@ -63,12 +66,14 @@ executable madlib-exe
     , hpc-lcov
     , mtl
     , pretty-show
+    , transformers
   default-language: Haskell2010
 
 test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      ASTSpec
       ResolverSpec
       Paths_madlib
   hs-source-dirs:
@@ -84,4 +89,5 @@ test-suite madlib-test
     , madlib
     , mtl
     , pretty-show
+    , transformers
   default-language: Haskell2010

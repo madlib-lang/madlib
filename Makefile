@@ -5,7 +5,8 @@ lint:
 	hlint src
 
 prettify:
-	stylish-haskell -r -v -i src/*.hs &&  stylish-haskell -r -v -i test/*.hs
+	stack exec -- brittany --indent=2 --write-mode=inplace src/*.hs; \
+	stack exec -- brittany --indent=2 --write-mode=inplace test/*.hs
 
 test:
 	stack test
@@ -17,5 +18,5 @@ test-coverage:
 	stack test --coverage && stack hpc report .
 
 coverage-lcov:
-	mkdir ./coverage;\
+	mkdir ./coverage; \
 	stack exec -- hpc-lcov --file $(TIX_FILE) -o $(LCOV_FILE) --main-package madlib
