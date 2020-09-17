@@ -2,6 +2,7 @@
 module Grammar where
 import Lexer
 import Text.Printf
+import Control.Monad.Except
 }
 
 %name parseMadlib ast

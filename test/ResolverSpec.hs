@@ -5,16 +5,17 @@ import qualified Data.Either                   as E
 import           Grammar
 import           Lexer
 import           Resolver
+import           AST
 import           Test.Hspec
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except
 import           Control.Monad.Trans.Except
 
-tester :: String -> Either TCError AST
+tester :: String -> Either RError AST
 tester code = runExcept $ case buildAST "path" code of
   (Right ast) -> resolve initialEnv ast
   _           -> throwError $ TypeError "" ""
-  where initialEnv = Env M.empty M.empty
+  where initialEnv = Env M.empty M.empty Nothing
 
 (Right astA) = buildAST "fixtures/sourceA.mad" $ unlines
   [ "import \"sourceB\""
@@ -23,6 +24,15 @@ tester code = runExcept $ case buildAST "path" code of
   ]
 
 (Right astB) = buildAST "fixtures/sourceB.mad"
+  $ unlines ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => a + b"]
+
+(Right astC) = buildAST "src/sourceC.mad" $ unlines
+  [ "import \"sourceD\""
+  , "fn :: Num -> Num -> Num"
+  , "fn = (a, b) => fn2(a, b) + a"
+  ]
+
+(Right astD) = buildAST "src/sourceD.mad"
   $ unlines ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => a + b"]
 
 
@@ -55,7 +65,14 @@ spec = do
             [("fixtures/sourceA.mad", astA), ("fixtures/sourceB.mad", astB)]
           env    = Env { vtable = M.empty, ftable = M.empty }
           result = resolveASTTable env astA astTable
-      result `shouldBe` expected
+      result `shouldBe` expected1
+
+    it "should resolve an AST table and figure out the root path" $ do
+      let astTable =
+            M.fromList [("src/sourceC.mad", astC), ("src/sourceD.mad", astD)]
+          env    = Env { vtable = M.empty, ftable = M.empty }
+          result = resolveASTTable env astC astTable
+      result `shouldBe` expected2
 
 
     it
@@ -67,8 +84,7 @@ spec = do
             actual = tester code
           actual `shouldBe` Left (SignatureError 3 2)
 
-
-expected = M.fromList
+expected1 = Right $ M.fromList
   [ ( "fixtures/sourceA.mad"
     , AST
       { aimports   = [ImportDecl { ipos = Pos 0 1 1, ipath = "sourceB" }]
@@ -139,6 +155,81 @@ expected = M.fromList
             }
         ]
       , apath      = Just "fixtures/sourceB.mad"
+      }
+    )
+  ]
+
+expected2 = Right $ M.fromList
+  [ ( "src/sourceC.mad"
+    , AST
+      { aimports   = [ImportDecl { ipos = Pos 0 1 1, ipath = "sourceD" }]
+      , afunctions =
+        [ FunctionDef
+            { ftype    = Just "Num"
+            , ftypeDef = Just Typing { tpos   = Pos 17 2 1
+                                     , tfor   = "fn"
+                                     , ttypes = ["Num", "Num", "Num"]
+                                     }
+            , fpos     = Pos 17 2 1
+            , fname    = "fn"
+            , fparams  = ["a", "b"]
+            , fbody    = Body Operation
+              { etype     = Just "Num"
+              , epos      = Pos 56 3 16
+              , eleft     = FunctionCall
+                { etype = Just "Num"
+                , epos  = Pos 56 3 16
+                , ename = "fn2"
+                , eargs = [ VarAccess { etype = Just "Num"
+                                      , epos  = Pos 60 3 20
+                                      , ename = "a"
+                                      }
+                          , VarAccess { etype = Just "Num"
+                                      , epos  = Pos 63 3 23
+                                      , ename = "b"
+                                      }
+                          ]
+                }
+              , eoperator = Plus
+              , eright    = VarAccess { etype = Just "Num"
+                                      , epos  = Pos 68 3 28
+                                      , ename = "a"
+                                      }
+              }
+            }
+        ]
+      , apath      = Just "src/sourceC.mad"
+      }
+    )
+  , ( "src/sourceD.mad"
+    , AST
+      { aimports   = []
+      , afunctions =
+        [ FunctionDef
+            { ftype    = Just "Num"
+            , ftypeDef = Just Typing { tpos   = Pos 0 1 1
+                                     , tfor   = "fn2"
+                                     , ttypes = ["Num", "Num", "Num"]
+                                     }
+            , fpos     = Pos 0 1 1
+            , fname    = "fn2"
+            , fparams  = ["a", "b"]
+            , fbody    = Body Operation
+              { etype     = Just "Num"
+              , epos      = Pos 41 2 17
+              , eleft     = VarAccess { etype = Just "Num"
+                                      , epos  = Pos 41 2 17
+                                      , ename = "a"
+                                      }
+              , eoperator = Plus
+              , eright    = VarAccess { etype = Just "Num"
+                                      , epos  = Pos 45 2 21
+                                      , ename = "b"
+                                      }
+              }
+            }
+        ]
+      , apath      = Just "src/sourceD.mad"
       }
     )
   ]

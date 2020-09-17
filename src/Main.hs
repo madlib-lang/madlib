@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE FlexibleContexts   #-}
 module Main where
 
 import           Prelude                 hiding ( readFile )
@@ -10,8 +10,12 @@ import           Grammar
 import           Resolver
 import           System.Environment             ( getArgs )
 import           Text.Show.Pretty               ( ppShow )
-import           AST                            ( buildASTTable )
+import           AST                            ( ASTBuildError(..)
+                                                , buildASTTable
+                                                , getEntrypoint
+                                                )
 import           Control.Monad                  ( liftM2 )
+import           Control.Monad.Catch
 
 main :: IO ()
 main = do
@@ -19,18 +23,10 @@ main = do
   astTable   <- buildASTTable entrypoint
   let entryAST = astTable >>= getEntrypoint entrypoint
       resolvedTable =
-        liftM2 (resolveASTTable (Env M.empty M.empty)) entryAST astTable
+        liftM2 (resolveASTTable (Env M.empty M.empty Nothing)) entryAST astTable
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   return ()
- where
-  getEntrypoint :: FilePath -> ASTTable -> Either String AST
-  getEntrypoint table path = case M.lookup table path of
-    Just x  -> return x
-    Nothing -> Left "Entrypoint not found !"
 
-maybeToRight :: e -> Maybe a -> Either e a
-maybeToRight fallback (Just a) = Right a
-maybeToRight fallback Nothing  = Left fallback
-
+-- TODO: Implement function to build it
 type SourceTable = M.Map FilePath String

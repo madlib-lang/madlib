@@ -2,9 +2,8 @@
 {-# LANGUAGE NamedFieldPuns   #-}
 module Resolver
   ( Env(..)
-  , TCError(..)
+  , RError(..)
   , ASTTable
-  , buildAST
   , resolve
   , resolveASTTable
   )
@@ -13,39 +12,69 @@ where
 import           Control.Monad.Except
 import qualified Data.List                     as L
 import qualified Data.Map                      as M
+import           Data.Maybe                     ( fromMaybe )
 import           Grammar
 import           Text.Show.Pretty               ( ppShow )
+import           Control.Monad                  ( liftM2 )
+import           Data.Foldable                  ( foldlM )
+import           System.FilePath.Posix          ( splitFileName )
+
+
 
 type ASTTable = M.Map FilePath AST
 
--- TODO: Move from Either String a to Either MError a
+data RError = TypeError Type Type
+             | SignatureError Int Int
+             | PathNotFound
+             deriving(Eq, Show)
 
--- TODO: Most likely make it return an Either MError (Map FilePath AST)
+data Env =
+  Env
+    { vtable   :: M.Map Name Type
+    , ftable   :: M.Map Name FunctionDef
+    , rootPath :: Maybe FilePath
+    }
+    deriving(Eq, Show)
+
+computeRootPath :: FilePath -> FilePath
+computeRootPath = fst . splitFileName
+
 -- TODO: Write tests that cover that part of the code
-resolveASTTable :: Env -> AST -> ASTTable -> ASTTable
-resolveASTTable env ast@AST { aimports } table =
-  let paths       = toRoot . ipath <$> aimports
-      result      = foldl resolveImports table paths
-      nextEnv     = updateEnvFromTable env result
 
-      resolvedAst = case runExcept $ resolve nextEnv ast of
-        Right x -> x
-        _       -> undefined
-  in  case apath resolvedAst of
-        Just p  -> M.insert p resolvedAst result
-        Nothing -> table -- TODO: Again, use good errors here
+-- TODO: Write case for Nothing for apath
+resolveASTTable env ast@AST { apath = Just apath } =
+  let rootPath = computeRootPath apath
+  in  resolveASTTable' env { rootPath = Just rootPath } ast
+
+resolveASTTable' :: Env -> AST -> ASTTable -> Either RError ASTTable
+resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
+  = let paths        = toRoot rootPath . ipath <$> aimports
+        updatedTable = foldlM resolveImport table paths
+    in  resolveAndUpdateAST env ast updatedTable
  where
-  resolveImports :: ASTTable -> FilePath -> ASTTable
-  resolveImports table path =
-    let ast' = case M.lookup path table of
-          Just x  -> x
-          Nothing -> undefined -- TODO: handle
-        updatedTable = resolveASTTable env ast' table
-        nextEnv      = updateEnvFromTable env updatedTable
-        resolvedAst  = runExcept $ resolve nextEnv ast'
-    in  case resolvedAst of
-          Right r -> M.insert path r table
-          _       -> undefined
+  resolveImport :: ASTTable -> FilePath -> Either RError ASTTable
+  resolveImport table path =
+    let ast'         = fromMaybe undefined (M.lookup path table)
+        updatedTable = resolveASTTable' env ast' table
+    in  resolveAndUpdateAST env ast' updatedTable
+
+resolveAndUpdateAST
+  :: Env -> AST -> Either RError ASTTable -> Either RError ASTTable
+resolveAndUpdateAST env ast table =
+  let nextEnv     = updateEnvFromTable env <$> table
+      resolvedAst = resolveAst nextEnv ast
+  in  updateASTTable resolvedAst table
+
+updateASTTable
+  :: Either RError AST -> Either RError ASTTable -> Either RError ASTTable
+updateASTTable (     Left  x  ) table = Left x
+updateASTTable east@(Right ast) table = case apath ast of
+  Just p  -> liftM3 M.insert (Right p) east table
+  Nothing -> Left PathNotFound
+
+resolveAst :: Resolvable a => Either RError Env -> a -> Either RError a
+resolveAst (Right e) ast = runExcept $ resolve e ast
+resolveAst (Left  r) _   = Left r
 
 updateEnvFromTable :: Env -> ASTTable -> Env
 updateEnvFromTable env@Env { ftable } =
@@ -61,23 +90,11 @@ updateEnvFromTable env@Env { ftable } =
 
 -- Mostly needs to be defined, but we need a strategy to figure where
 -- things are imported from, so that we can ha
-toRoot :: FilePath -> FilePath
-toRoot = ("fixtures/" ++) <$> (++ ".mad")
-
-
-data TCError = TypeError Type Type
-             | SignatureError Int Int
-             deriving(Eq, Show)
-
-data Env =
-  Env
-    { vtable :: M.Map Name Type
-    , ftable :: M.Map Name FunctionDef
-    }
-    deriving(Eq, Show)
+toRoot :: FilePath -> FilePath -> FilePath
+toRoot root = (root ++) <$> (++ ".mad")
 
 class Resolvable a where
-  resolve :: Env -> a -> Except TCError a
+  resolve :: Env -> a -> Except RError a
 
 instance Resolvable AST where
   resolve env ast@AST { afunctions } =
@@ -85,7 +102,7 @@ instance Resolvable AST where
     in  (\fd -> ast { afunctions = fd })
           <$> resolveFunctionDefs currEnv afunctions
 
-resolveFunctionDefs :: Env -> [FunctionDef] -> Except TCError [FunctionDef]
+resolveFunctionDefs :: Env -> [FunctionDef] -> Except RError [FunctionDef]
 resolveFunctionDefs _   []   = return []
 resolveFunctionDefs env [fd] = toList <$> resolve env fd
 resolveFunctionDefs env (h : t) =
@@ -113,7 +130,7 @@ instance Resolvable FunctionDef where
     (expected, actual) = case ftypeDef of
       Just x  -> (length (ttypes x) - 1, length fparams)
       Nothing -> (0, 0)
-    updateBody :: Exp -> Except TCError FunctionDef
+    updateBody :: Exp -> Except RError FunctionDef
     updateBody exp = if expected == actual
       then return f { fbody = Body exp, ftype = etype exp }
       else throwError $ SignatureError expected actual
@@ -163,13 +180,10 @@ instance Resolvable Exp where
         isValid = (all (uncurry (==)) <$> argTuples)
     in  isValid >> fArgsResolved >>= (\x -> return x { etype = fDef >>= ftype })
    where
-    resolveArgs :: [Exp] -> Except TCError [Exp]
+    resolveArgs :: [Exp] -> Except RError [Exp]
     resolveArgs e = mapM (resolve env) e
 
-    argsToTypes :: [Exp] -> Except TCError [Type]
+    argsToTypes :: [Exp] -> Except RError [Type]
     argsToTypes e = case mapM etype e of
       Just x  -> return x
       Nothing -> throwError $ TypeError "" ""
-
-buildAST :: Path -> String -> Either String AST
-buildAST path code = parse code >>= (\a -> return a { apath = Just path })
