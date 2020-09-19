@@ -59,6 +59,7 @@ spec = do
             _         -> False
       actual `shouldBe` True
 
+  describe "resolveASTTable" $ do
     it "should resolve an AST table" $ do
       let astTable = M.fromList
             [("fixtures/sourceA.mad", astA), ("fixtures/sourceB.mad", astB)]
@@ -66,13 +67,23 @@ spec = do
           result = resolveASTTable env astA astTable
       result `shouldBe` expected1
 
+    it "should fail if the AST does not have a path value" $ do
+      let corrupted = astA { apath = Nothing }
+          astTable =
+            M.fromList
+              [ ("fixtures/sourceA.mad", corrupted)
+              , ("fixtures/sourceB.mad", astB)
+              ]
+          env    = Env { vtable = M.empty, ftable = M.empty }
+          result = resolveASTTable env corrupted astTable
+      result `shouldBe` Left [CorruptedAST corrupted]
+
     it "should resolve an AST table and figure out the root path" $ do
       let astTable =
             M.fromList [("src/sourceC.mad", astC), ("src/sourceD.mad", astD)]
           env    = Env { vtable = M.empty, ftable = M.empty }
           result = resolveASTTable env astC astTable
       result `shouldBe` expected2
-
 
     it
         "should give an error if parameter count does not match the one of the signature"

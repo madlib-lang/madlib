@@ -9,16 +9,19 @@ module Resolver
   )
 where
 
-import           Control.Monad.Except
+import           Control.Monad.Except           ( liftM2
+                                                , MonadError(throwError)
+                                                )
 import qualified Data.List                     as L
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Grammar
-import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( liftM2 )
 import           Data.Foldable                  ( foldlM )
-import           System.FilePath.Posix          ( splitFileName )
-import           Control.Monad.Validate
+import           Control.Monad.Validate         ( runValidate
+                                                , MonadValidate(dispute)
+                                                , Validate
+                                                )
 import           Path                           ( computeRootPath )
 
 
@@ -26,9 +29,10 @@ import           Path                           ( computeRootPath )
 type ASTTable = M.Map FilePath AST
 
 data RError = TypeError Type Type
-             | ParameterCountError Int Int
-             | PathNotFound
-             deriving(Eq, Show)
+            | ParameterCountError Int Int
+            | PathNotFound
+            | CorruptedAST AST
+            deriving(Eq, Show)
 
 data Env =
   Env
@@ -39,11 +43,10 @@ data Env =
     deriving(Eq, Show)
 
 
--- TODO: Write case for Nothing for apath with test
 resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
-resolveASTTable env ast@AST { apath = Just apath } =
-  let rootPath = computeRootPath apath
-  in  resolveASTTable' env { rootPath = Just rootPath } ast
+resolveASTTable env ast@AST { apath = Nothing } _ = Left [CorruptedAST ast]
+resolveASTTable env ast@AST { apath = Just apath } table =
+  resolveASTTable' env { rootPath = Just $ computeRootPath apath } ast table
 
 
 resolveASTTable' :: Env -> AST -> ASTTable -> Either [RError] ASTTable
@@ -54,6 +57,7 @@ resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
  where
   resolveImport :: ASTTable -> FilePath -> Either [RError] ASTTable
   resolveImport table path =
+    -- TODO: Remove undefined and use findAST ?
     let ast'         = fromMaybe undefined (M.lookup path table)
         updatedTable = resolveASTTable' env ast' table
     in  updatedTable >>= resolveAndUpdateAST env ast'
@@ -62,8 +66,8 @@ resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
 resolveAndUpdateAST :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveAndUpdateAST env ast table =
   let nextEnv     = updateEnvFromTable env table
-      resolvedAst = resolveAst ast nextEnv
-  in  resolvedAst >>= updateASTTable table
+      resolvedAST = resolveAST ast nextEnv
+  in  resolvedAST >>= updateASTTable table
 
 
 updateASTTable :: ASTTable -> AST -> Either [RError] ASTTable
@@ -72,8 +76,8 @@ updateASTTable table ast = case apath ast of
   Nothing   -> Left [PathNotFound]
 
 
-resolveAst :: AST -> Env -> Either [RError] AST
-resolveAst ast env = runValidate $ resolve env ast
+resolveAST :: AST -> Env -> Either [RError] AST
+resolveAST ast env = runValidate $ resolve env ast
 
 
 updateEnvFromTable :: Env -> ASTTable -> Env

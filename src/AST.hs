@@ -31,9 +31,9 @@ import           Path                           ( computeRootPath )
 type ASTTable = M.Map FilePath AST
 
 data ASTError = ImportNotFound FilePath (Maybe AST)
-                   | LexicalError FilePath String
-                   | ASTNotFound FilePath
-                   deriving(Eq, Show)
+              | LexicalError FilePath String
+              | ASTNotFound FilePath
+              deriving(Eq, Show)
 
 -- TODO: Write an integration test with real files ?
 buildASTTable :: FilePath -> IO (Either ASTError ASTTable)
