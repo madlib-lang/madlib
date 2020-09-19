@@ -25,7 +25,7 @@ import           Control.Exception              ( IOException
                                                 , try
                                                 )
 import           Data.Either.Combinators        ( mapLeft )
-import           System.FilePath.Posix          ( splitFileName )
+import           Path                           ( computeRootPath )
 
 
 type ASTTable = M.Map FilePath AST
@@ -41,9 +41,6 @@ buildASTTable path =
   let rootPath = computeRootPath path
   in  buildASTTable' readFile Nothing rootPath path
 
--- TODO: Remove dupplicate with Resolver
-computeRootPath :: FilePath -> FilePath
-computeRootPath = fst . splitFileName
 
 buildASTTable'
   :: (FilePath -> IO String)

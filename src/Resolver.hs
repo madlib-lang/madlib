@@ -19,6 +19,7 @@ import           Control.Monad                  ( liftM2 )
 import           Data.Foldable                  ( foldlM )
 import           System.FilePath.Posix          ( splitFileName )
 import           Control.Monad.Validate
+import           Path                           ( computeRootPath )
 
 
 
@@ -37,10 +38,6 @@ data Env =
     }
     deriving(Eq, Show)
 
-computeRootPath :: FilePath -> FilePath
-computeRootPath = fst . splitFileName
-
--- TODO: Write tests that cover that part of the code
 
 -- TODO: Write case for Nothing for apath
 resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
