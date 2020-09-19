@@ -5,7 +5,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 module AST
   ( ASTTable(..)
-  , ASTBuildError(..)
+  , ASTError(..)
   , buildAST
   , buildASTTable
   , buildASTTable'
@@ -27,15 +27,16 @@ import           Control.Exception              ( IOException
 import           Data.Either.Combinators        ( mapLeft )
 import           System.FilePath.Posix          ( splitFileName )
 
+
 type ASTTable = M.Map FilePath AST
 
-data ASTBuildError = ImportNotFound FilePath (Maybe AST)
+data ASTError = ImportNotFound FilePath (Maybe AST)
                    | LexicalError FilePath String
                    | EntrypointNotFound FilePath
                    deriving(Eq, Show)
 
 
-buildASTTable :: FilePath -> IO (Either ASTBuildError ASTTable)
+buildASTTable :: FilePath -> IO (Either ASTError ASTTable)
 buildASTTable path =
   let rootPath = computeRootPath path
   in  buildASTTable' readFile Nothing rootPath path
@@ -49,25 +50,28 @@ buildASTTable'
   -> Maybe AST
   -> FilePath
   -> FilePath
-  -> IO (Either ASTBuildError ASTTable)
+  -> IO (Either ASTError ASTTable)
 buildASTTable' rf parent rootPath entrypoint = do
   s <- try $ rf entrypoint :: IO (Either IOException String)
   let source = either (const $ Left $ ImportNotFound entrypoint parent) Right s
-      ast = source >>= mapLeft (LexicalError entrypoint) . buildAST entrypoint
-      importPaths = importPathsFromAST rootPath ast
+      ast            = source >>= buildAST entrypoint
+      importPaths    = importPathsFromAST rootPath ast
       generatedTable = uncurry M.singleton . (entrypoint, ) <$> ast
-      nextParent = either (const Nothing) Just ast
+      nextParent     = either (const Nothing) Just ast
   childTables <- mapM (buildASTTable' rf nextParent rootPath) importPaths
-  return $ foldl (liftM2 $ flip M.union) generatedTable childTables
+  return $ foldr (liftM2 M.union) generatedTable childTables
 
 importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
 importPathsFromAST rootPath ast =
   fromRight [] (((rootPath ++) . (++ ".mad") . ipath <$>) . aimports <$> ast)
 
-getEntrypoint :: FilePath -> ASTTable -> Either ASTBuildError AST
+getEntrypoint :: FilePath -> ASTTable -> Either ASTError AST
 getEntrypoint path table = case M.lookup path table of
   Just x  -> return x
   Nothing -> Left $ EntrypointNotFound path
 
-buildAST :: Path -> String -> Either String AST
-buildAST path code = parse code >>= (\a -> return a { apath = Just path })
+buildAST :: Path -> String -> Either ASTError AST
+buildAST path code = mapLeft (LexicalError path) $ parse code >>= setPath
+ where
+  setPath :: AST -> Either e AST
+  setPath a = return a { apath = Just path }

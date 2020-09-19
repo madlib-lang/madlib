@@ -18,13 +18,14 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( liftM2 )
 import           Data.Foldable                  ( foldlM )
 import           System.FilePath.Posix          ( splitFileName )
+import           Control.Monad.Validate
 
 
 
 type ASTTable = M.Map FilePath AST
 
 data RError = TypeError Type Type
-             | SignatureError Int Int
+             | SignatureError Int Int -- TODO: Rename ParameterCountError
              | PathNotFound
              deriving(Eq, Show)
 
@@ -42,39 +43,36 @@ computeRootPath = fst . splitFileName
 -- TODO: Write tests that cover that part of the code
 
 -- TODO: Write case for Nothing for apath
+resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveASTTable env ast@AST { apath = Just apath } =
   let rootPath = computeRootPath apath
   in  resolveASTTable' env { rootPath = Just rootPath } ast
 
-resolveASTTable' :: Env -> AST -> ASTTable -> Either RError ASTTable
+resolveASTTable' :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
   = let paths        = toRoot rootPath . ipath <$> aimports
         updatedTable = foldlM resolveImport table paths
-    in  resolveAndUpdateAST env ast updatedTable
+    in  updatedTable >>= resolveAndUpdateAST env ast
  where
-  resolveImport :: ASTTable -> FilePath -> Either RError ASTTable
+  resolveImport :: ASTTable -> FilePath -> Either [RError] ASTTable
   resolveImport table path =
     let ast'         = fromMaybe undefined (M.lookup path table)
         updatedTable = resolveASTTable' env ast' table
-    in  resolveAndUpdateAST env ast' updatedTable
+    in  updatedTable >>= resolveAndUpdateAST env ast'
 
-resolveAndUpdateAST
-  :: Env -> AST -> Either RError ASTTable -> Either RError ASTTable
+resolveAndUpdateAST :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveAndUpdateAST env ast table =
-  let nextEnv     = updateEnvFromTable env <$> table
-      resolvedAst = resolveAst nextEnv ast
-  in  updateASTTable resolvedAst table
+  let nextEnv     = updateEnvFromTable env table
+      resolvedAst = resolveAst ast nextEnv
+  in  resolvedAst >>= updateASTTable table
 
-updateASTTable
-  :: Either RError AST -> Either RError ASTTable -> Either RError ASTTable
-updateASTTable (     Left  x  ) table = Left x
-updateASTTable east@(Right ast) table = case apath ast of
-  Just p  -> liftM3 M.insert (Right p) east table
-  Nothing -> Left PathNotFound
+updateASTTable :: ASTTable -> AST -> Either [RError] ASTTable
+updateASTTable table ast = case apath ast of
+  Just path -> return $ M.insert path ast table
+  Nothing   -> Left [PathNotFound]
 
-resolveAst :: Resolvable a => Either RError Env -> a -> Either RError a
-resolveAst (Right e) ast = runExcept $ resolve e ast
-resolveAst (Left  r) _   = Left r
+resolveAst :: AST -> Env -> Either [RError] AST
+resolveAst ast env = runValidate $ resolve env ast
 
 updateEnvFromTable :: Env -> ASTTable -> Env
 updateEnvFromTable env@Env { ftable } =
@@ -88,13 +86,13 @@ updateEnvFromTable env@Env { ftable } =
   updateTable f = env { ftable = M.union f ftable }
   fnsToTuples x = (fname x, x)
 
--- Mostly needs to be defined, but we need a strategy to figure where
--- things are imported from, so that we can ha
+-- TODO: rename that function
 toRoot :: FilePath -> FilePath -> FilePath
 toRoot root = (root ++) <$> (++ ".mad")
 
+
 class Resolvable a where
-  resolve :: Env -> a -> Except RError a
+  resolve :: Env -> a -> Validate [RError] a
 
 instance Resolvable AST where
   resolve env ast@AST { afunctions } =
@@ -102,13 +100,15 @@ instance Resolvable AST where
     in  (\fd -> ast { afunctions = fd })
           <$> resolveFunctionDefs currEnv afunctions
 
-resolveFunctionDefs :: Env -> [FunctionDef] -> Except RError [FunctionDef]
+resolveFunctionDefs :: Env -> [FunctionDef] -> Validate [RError] [FunctionDef]
 resolveFunctionDefs _   []   = return []
 resolveFunctionDefs env [fd] = toList <$> resolve env fd
 resolveFunctionDefs env (h : t) =
   let resolved = resolve env h
       newEnv   = pushFunctionDef env <$> resolved
-      next     = newEnv >>= flip resolveFunctionDefs t
+      next     = case runValidate newEnv of
+        Left  err  -> resolveFunctionDefs env t
+        Right env' -> resolveFunctionDefs env' t
   in  liftM2 (<>) (toList <$> resolved) next
 
 toList :: a -> [a]
@@ -130,10 +130,10 @@ instance Resolvable FunctionDef where
     (expected, actual) = case ftypeDef of
       Just x  -> (length (ttypes x) - 1, length fparams)
       Nothing -> (0, 0)
-    updateBody :: Exp -> Except RError FunctionDef
+    updateBody :: Exp -> Validate [RError] FunctionDef
     updateBody exp = if expected == actual
-      then return f { fbody = Body exp, ftype = etype exp }
-      else throwError $ SignatureError expected actual
+      then pure f { fbody = Body exp, ftype = etype exp }
+      else dispute [SignatureError expected actual] >> pure f
     typedParams = case ftypeDef of
       Just x  -> zip fparams . init $ ttypes x
       Nothing -> [] -- TODO: add params with * as type ?
@@ -180,10 +180,10 @@ instance Resolvable Exp where
         isValid = (all (uncurry (==)) <$> argTuples)
     in  isValid >> fArgsResolved >>= (\x -> return x { etype = fDef >>= ftype })
    where
-    resolveArgs :: [Exp] -> Except RError [Exp]
+    resolveArgs :: [Exp] -> Validate [RError] [Exp]
     resolveArgs e = mapM (resolve env) e
 
-    argsToTypes :: [Exp] -> Except RError [Type]
+    argsToTypes :: [Exp] -> Validate [RError] [Type]
     argsToTypes e = case mapM etype e of
       Just x  -> return x
-      Nothing -> throwError $ TypeError "" ""
+      Nothing -> dispute [TypeError "" ""] >> pure ["e"]

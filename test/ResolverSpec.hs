@@ -10,11 +10,12 @@ import           Test.Hspec
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except
 import           Control.Monad.Trans.Except
+import           Control.Monad.Validate
 
-tester :: String -> Either RError AST
-tester code = runExcept $ case buildAST "path" code of
+tester :: String -> Either [RError] AST
+tester code = runValidate $ case buildAST "path" code of
   (Right ast) -> resolve initialEnv ast
-  _           -> throwError $ TypeError "" ""
+  _           -> refute [TypeError "" ""]
   where initialEnv = Env M.empty M.empty Nothing
 
 (Right astA) = buildAST "fixtures/sourceA.mad" $ unlines
@@ -38,14 +39,13 @@ tester code = runExcept $ case buildAST "path" code of
 
 spec :: Spec
 spec = do
-  describe "Resolver" $ do
+  describe "resolve" $ do
     it "should resolve functions that add parameters" $ do
       let code   = unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => a + b"]
           actual = case tester code of
             (Right _) -> True
             _         -> False
       actual `shouldBe` True
-
 
     it "should resolve function calls" $ do
       let code = unlines
@@ -58,7 +58,6 @@ spec = do
             (Right _) -> True
             _         -> False
       actual `shouldBe` True
-
 
     it "should resolve an AST table" $ do
       let astTable = M.fromList
@@ -82,7 +81,22 @@ spec = do
             code =
               unlines ["fn :: Num -> Num -> Num -> Num", "fn = (a, b) => a + b"]
             actual = tester code
-          actual `shouldBe` Left (SignatureError 3 2)
+          actual `shouldBe` Left [SignatureError 3 2]
+
+    it "should aggregate errors if more than one error occurs" $ do
+      let code = unlines
+            [ "fn :: Num -> Num -> Num -> Num"
+            , "fn = (a, b) => a + b"
+            , "fn2 :: Num -> Num -> Num -> Num -> Num"
+            , "fn2 = (a, b) => a + b"
+            , "fn3 :: Num -> Num -> Num"
+            , "fn3 = (a, b) => a + b"
+            , "fn4 :: Num -> Num -> Num"
+            , "fn4 = (a, b) => a + b"
+            ]
+          actual = tester code
+      actual `shouldBe` Left [SignatureError 3 2, SignatureError 4 2]
+
 
 expected1 = Right $ M.fromList
   [ ( "fixtures/sourceA.mad"
