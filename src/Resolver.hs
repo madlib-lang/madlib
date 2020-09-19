@@ -26,7 +26,7 @@ import           Path                           ( computeRootPath )
 type ASTTable = M.Map FilePath AST
 
 data RError = TypeError Type Type
-             | SignatureError Int Int -- TODO: Rename ParameterCountError
+             | ParameterCountError Int Int
              | PathNotFound
              deriving(Eq, Show)
 
@@ -39,15 +39,16 @@ data Env =
     deriving(Eq, Show)
 
 
--- TODO: Write case for Nothing for apath
+-- TODO: Write case for Nothing for apath with test
 resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveASTTable env ast@AST { apath = Just apath } =
   let rootPath = computeRootPath apath
   in  resolveASTTable' env { rootPath = Just rootPath } ast
 
+
 resolveASTTable' :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
-  = let paths        = toRoot rootPath . ipath <$> aimports
+  = let paths        = pathFromModName rootPath . ipath <$> aimports
         updatedTable = foldlM resolveImport table paths
     in  updatedTable >>= resolveAndUpdateAST env ast
  where
@@ -57,19 +58,23 @@ resolveASTTable' env@Env { rootPath = Just rootPath } ast@AST { aimports } table
         updatedTable = resolveASTTable' env ast' table
     in  updatedTable >>= resolveAndUpdateAST env ast'
 
+
 resolveAndUpdateAST :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveAndUpdateAST env ast table =
   let nextEnv     = updateEnvFromTable env table
       resolvedAst = resolveAst ast nextEnv
   in  resolvedAst >>= updateASTTable table
 
+
 updateASTTable :: ASTTable -> AST -> Either [RError] ASTTable
 updateASTTable table ast = case apath ast of
   Just path -> return $ M.insert path ast table
   Nothing   -> Left [PathNotFound]
 
+
 resolveAst :: AST -> Env -> Either [RError] AST
 resolveAst ast env = runValidate $ resolve env ast
+
 
 updateEnvFromTable :: Env -> ASTTable -> Env
 updateEnvFromTable env@Env { ftable } =
@@ -83,9 +88,9 @@ updateEnvFromTable env@Env { ftable } =
   updateTable f = env { ftable = M.union f ftable }
   fnsToTuples x = (fname x, x)
 
--- TODO: rename that function
-toRoot :: FilePath -> FilePath -> FilePath
-toRoot root = (root ++) <$> (++ ".mad")
+
+pathFromModName :: FilePath -> String -> FilePath
+pathFromModName root = (root ++) <$> (++ ".mad")
 
 
 class Resolvable a where
@@ -130,7 +135,7 @@ instance Resolvable FunctionDef where
     updateBody :: Exp -> Validate [RError] FunctionDef
     updateBody exp = if expected == actual
       then pure f { fbody = Body exp, ftype = etype exp }
-      else dispute [SignatureError expected actual] >> pure f
+      else dispute [ParameterCountError expected actual] >> pure f
     typedParams = case ftypeDef of
       Just x  -> zip fparams . init $ ttypes x
       Nothing -> [] -- TODO: add params with * as type ?

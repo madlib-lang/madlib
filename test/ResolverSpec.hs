@@ -81,7 +81,7 @@ spec = do
             code =
               unlines ["fn :: Num -> Num -> Num -> Num", "fn = (a, b) => a + b"]
             actual = tester code
-          actual `shouldBe` Left [SignatureError 3 2]
+          actual `shouldBe` Left [ParameterCountError 3 2]
 
     it "should aggregate errors if more than one error occurs" $ do
       let code = unlines
@@ -95,7 +95,7 @@ spec = do
             , "fn4 = (a, b) => a + b"
             ]
           actual = tester code
-      actual `shouldBe` Left [SignatureError 3 2, SignatureError 4 2]
+      actual `shouldBe` Left [ParameterCountError 3 2, ParameterCountError 4 2]
 
 
 expected1 = Right $ M.fromList

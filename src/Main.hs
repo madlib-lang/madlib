@@ -12,14 +12,14 @@ import           System.Environment             ( getArgs )
 import           Text.Show.Pretty               ( ppShow )
 import           AST                            ( ASTError(..)
                                                 , buildASTTable
-                                                , getEntrypoint
+                                                , findAST
                                                 )
 
 main :: IO ()
 main = do
   entrypoint <- head <$> getArgs
   astTable   <- buildASTTable entrypoint
-  let entryAST      = astTable >>= getEntrypoint entrypoint
+  let entryAST      = astTable >>= findAST entrypoint
       resolvedTable = case (entryAST, astTable) of
         (Left _, Left _) -> Left [PathNotFound]
         (Right ast, Right table) ->

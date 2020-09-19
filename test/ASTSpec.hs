@@ -21,8 +21,40 @@ makeReadFile files path = do
                                , ioe_filename    = Just path
                                }
 
+-- TODO: Make tests more dry !
 spec :: Spec
 spec = do
+  describe "findAST" $ do
+    it "should return a Right AST if the ast exists" $ do
+      let source =
+            unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => fn2(a, b) + a"]
+
+          (Right ast) = buildAST "fixtures/source.mad" source
+
+          expected    = Right ast
+          files       = M.fromList [("fixtures/source.mad", source)]
+
+          rf          = makeReadFile files
+
+      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
+      let actual = r >>= findAST "fixtures/source.mad"
+      actual `shouldBe` expected
+
+    it "should return a Left ASTNotFound if it does not exist" $ do
+      let source =
+            unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => fn2(a, b) + a"]
+
+          (Right ast) = buildAST "fixtures/source.mad" source
+
+          expected    = Left (ASTNotFound "fixtures/source-not-there.mad")
+          files       = M.fromList [("fixtures/source.mad", source)]
+
+          rf          = makeReadFile files
+
+      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
+      let actual = r >>= findAST "fixtures/source-not-there.mad"
+      actual `shouldBe` expected
+
   describe "buildASTTable" $ do
     it "should build an AST Table" $ do
       let

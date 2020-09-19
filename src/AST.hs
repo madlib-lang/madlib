@@ -9,7 +9,7 @@ module AST
   , buildAST
   , buildASTTable
   , buildASTTable'
-  , getEntrypoint
+  , findAST
   )
 where
 
@@ -32,10 +32,10 @@ type ASTTable = M.Map FilePath AST
 
 data ASTError = ImportNotFound FilePath (Maybe AST)
                    | LexicalError FilePath String
-                   | EntrypointNotFound FilePath
+                   | ASTNotFound FilePath
                    deriving(Eq, Show)
 
-
+-- TODO: Write an integration test with real files ?
 buildASTTable :: FilePath -> IO (Either ASTError ASTTable)
 buildASTTable path =
   let rootPath = computeRootPath path
@@ -62,10 +62,10 @@ importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
 importPathsFromAST rootPath ast =
   fromRight [] (((rootPath ++) . (++ ".mad") . ipath <$>) . aimports <$> ast)
 
-getEntrypoint :: FilePath -> ASTTable -> Either ASTError AST
-getEntrypoint path table = case M.lookup path table of
+findAST :: FilePath -> ASTTable -> Either ASTError AST
+findAST path table = case M.lookup path table of
   Just x  -> return x
-  Nothing -> Left $ EntrypointNotFound path
+  Nothing -> Left $ ASTNotFound path
 
 buildAST :: Path -> String -> Either ASTError AST
 buildAST path code = mapLeft (LexicalError path) $ parse code >>= setPath
