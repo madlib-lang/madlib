@@ -9,20 +9,18 @@ module Resolver
   )
 where
 
-import           Control.Monad.Except           ( liftM2
-                                                , MonadError(throwError)
-                                                )
+
 import qualified Data.List                     as L
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Grammar
-import           Control.Monad                  ( liftM2 )
 import           Data.Foldable                  ( foldlM )
 import           Control.Monad.Validate         ( runValidate
                                                 , MonadValidate(dispute)
                                                 , Validate
                                                 )
 import           Path                           ( computeRootPath )
+import           Control.Monad                  ( liftM2, liftM3 )
 
 
 
@@ -32,6 +30,8 @@ data RError = TypeError Type Type
             | ParameterCountError Int Int
             | PathNotFound
             | CorruptedAST AST
+            | FunctionNotFound Name
+            | FunctionCallError Exp
             deriving(Eq, Show)
 
 data Env =
@@ -172,24 +172,51 @@ instance Resolvable Exp where
   -------------------------------------
   --           FunctionCall          --
   -------------------------------------
+  -- TODO: Refactor this, and handle error cases with tests for them
+  -- First refactoring done, try to use Validate everywhere instead of Either !
   resolve env@Env { ftable } f@FunctionCall { ename, eargs = ea } =
-    let fDef  = M.lookup ename ftable
-        fInfo = case fDef of
-          Just FunctionDef { ftypeDef, ftype } -> Right (ftypeDef, ftype)
-          _ -> throwError "No GOOD !"
-        fArgsResolved = resolveArgs ea >>= (\a -> return f { eargs = a })
-        argTypes      = (eargs <$> fArgsResolved) >>= argsToTypes
-        argTuples     = case fInfo of
-          Right (Just typing, t) ->
-            argTypes >>= (return . zip (init $ ttypes typing))
-          _ -> return []
-        isValid = (all (uncurry (==)) <$> argTuples)
-    in  isValid >> fArgsResolved >>= (\x -> return x { etype = fDef >>= ftype })
-   where
-    resolveArgs :: [Exp] -> Validate [RError] [Exp]
-    resolveArgs e = mapM (resolve env) e
+    let
+      -- Retrieve function and derive types
+        functionDef   = findFunctionDef env ename
+        functionTypes = getFunctionTypes <$> functionDef
+        paramsTypes   = init <$> functionTypes
+        returnType    = last <$> functionTypes
 
-    argsToTypes :: [Exp] -> Validate [RError] [Type]
-    argsToTypes e = case mapM etype e of
-      Just x  -> return x
-      Nothing -> dispute [TypeError "" ""] >> pure ["e"]
+        -- Resolve call args and derive types
+        argsResolved  = resolveArgs ea
+        argsTypes     = (etype <$>) <$> argsResolved
+
+        -- Merge call types with function definition types And validate
+        typeTuples    = liftM2 zip argsTypes paramsTypes
+        result        = validate typeTuples
+          >> liftM3 updateFunctionCall argsResolved returnType (pure f)
+    in  case result of
+          Left  err -> dispute err >> pure f
+          Right x   -> pure x
+   where
+    getFunctionTypes :: FunctionDef -> [Maybe Type]
+    getFunctionTypes fDef = case ftypeDef fDef of
+      (Just Typing { ttypes }) -> Just <$> ttypes
+      Nothing                  -> []
+
+    resolveArgs :: [Exp] -> Either [RError] [Exp]
+    resolveArgs exps = runValidate $ mapM (resolve env) exps
+
+    validate
+      :: Either [RError] [(Maybe String, Maybe String)] -> Either [RError] Bool
+    validate (Left  err  ) = Left $ FunctionCallError f : err
+    validate (Right types) = if all (uncurry (==)) types
+      then Right True
+      else Left [FunctionCallError f]
+
+    updateFunctionCall :: [Exp] -> Maybe Type -> Exp -> Exp
+    updateFunctionCall args t fc = fc { eargs = args, etype = t }
+
+findFunctionDef :: Env -> String -> Either [RError] FunctionDef
+findFunctionDef Env { ftable } name = case M.lookup name ftable of
+  Just x  -> Right x
+  Nothing -> Left [FunctionNotFound name]
+
+typeOfFunctionDef :: Either [RError] FunctionDef -> Maybe Type
+typeOfFunctionDef (Right FunctionDef { ftype }) = ftype
+typeOfFunctionDef (Left  _                    ) = Nothing

@@ -121,7 +121,7 @@ data ImportDecl =
 data FunctionDef =
   FunctionDef
     { ftype    :: Maybe Type
-    , ftypeDef :: Maybe Typing
+    , ftypeDef :: Maybe Typing -- Renaming field ftyping ?
     , fpos     :: Pos
     , fname    :: String
     , fparams  :: [Param]
@@ -147,7 +147,7 @@ data Exp = IntLit       { etype :: Maybe Type, epos :: Pos }
 
 type Path  = String
 type Type  = String
-type Param = String
+type Param = String -- Should this be (Name, Maybe Type) ?
 type Name  = String
 
 data Body = Body Exp deriving(Eq, Show)

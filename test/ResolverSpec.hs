@@ -59,6 +59,17 @@ spec = do
             _         -> False
       actual `shouldBe` True
 
+    it
+        "should return a FunctionNotFound error if a called function isn't in the environment"
+      $ do
+          let
+            code = unlines
+              ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => fn(a, b) + a"]
+            actual   = case tester code of
+              Left errs -> errs !!1
+            expected = FunctionNotFound "fn"
+          actual `shouldBe` expected
+
   describe "resolveASTTable" $ do
     it "should resolve an AST table" $ do
       let astTable = M.fromList
