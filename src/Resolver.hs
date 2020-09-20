@@ -31,12 +31,12 @@ import           Control.Monad                  ( liftM2
 
 type ASTTable = M.Map FilePath AST
 
-data RError = TypeError Type Type
-            | ParameterCountError Int Int
+data RError = TypeError Type Type -- TypeError expected actual
+            | ParameterCountError Int Int -- ParameterCount expected actual
             | PathNotFound
-            | CorruptedAST AST
+            | CorruptedAST AST -- TODO: When we have backtraces this should go as it will become obsolete
             | FunctionNotFound Name
-            | FunctionCallError Exp
+            | FunctionCallError Exp -- TODO: When we have backtraces this should go as it will become obsolete
             deriving(Eq, Show)
 
 data Env =
@@ -151,47 +151,50 @@ instance Resolvable FunctionDef where
     updatedVTable = foldl (\a (n, t) -> M.insert n t a) vtable typedParams
 
 instance Resolvable Exp where
-  -------------------------------------
-  --            Operation            --
-  -------------------------------------
+  -----------------------------------------------------------------------------
+  --                                Operation                                --
+  -----------------------------------------------------------------------------
   resolve env e@Operation { eleft, eoperator, eright } = do
     l <- resolve env eleft
     r <- resolve env eright
 
     -- TODO: Give real context to TypeError !
-    let t = case (etype l, etype r) of
+    let resolved = case (etype l, etype r) of
           (Just ltype, Just rtype) -> resolveOperation eoperator ltype rtype
-          _ -> Nothing
+          _                        -> refute [TypeError "" ""]
 
-        newE = if t == Nothing then refute [TypeError "" ""] else pure e
-    tolerateWith e newE >> pure e { eleft = l, eright = r, etype = t }
-    where
-      resolveOperation :: Operator -> Type -> Type -> Maybe Type
-      resolveOperation TripleEq "Bool" "Bool" = Just "Bool"
-      resolveOperation op ltype rtype = if ltype == "Num"
-                then Just "Num" -- TODO: This should test for operator as well
-                else Nothing
-      resolveOperation _ _ _ = Nothing
+    tolerateWith e $ resolved >>= updateOperation l r
+   where
+    updateOperation :: Exp -> Exp -> Type -> Validate [RError] Exp
+    updateOperation el er t =
+      pure e { eleft = el, eright = er, etype = Just t }
 
-  -------------------------------------
-  --            VarAccess            --
-  -------------------------------------
+    resolveOperation :: Operator -> Type -> Type -> Validate [RError] Type
+    resolveOperation TripleEq "Bool" "Bool" = pure "Bool"
+    resolveOperation TripleEq "Bool" "Num" = refute [TypeError "Bool" "Num"]
+    resolveOperation TripleEq "Num" "Bool" = refute [TypeError "Bool" "Num"]
+    resolveOperation Plus "Num" "Num" = pure "Num"
+    resolveOperation _ _ actual = refute [TypeError "Unknown" actual]
+
+  -----------------------------------------------------------------------------
+  --                                VarAccess                                --
+  -----------------------------------------------------------------------------
   resolve env@Env { vtable } e@VarAccess { ename } =
     let t = M.lookup ename vtable in return $ e { etype = t }
 
-  -------------------------------------
-  --             IntLit              --
-  -------------------------------------
+  -----------------------------------------------------------------------------
+  --                                 IntLit                                  --
+  -----------------------------------------------------------------------------
   resolve env e@IntLit{}    = return e
 
-  -------------------------------------
-  --             StringLit              --
-  -------------------------------------
+  -----------------------------------------------------------------------------
+  --                                StringLit                                --
+  -----------------------------------------------------------------------------
   resolve env e@StringLit{} = return e
 
-  -------------------------------------
-  --           FunctionCall          --
-  -------------------------------------
+  -----------------------------------------------------------------------------
+  --                               FunctionCall                              --
+  -----------------------------------------------------------------------------
   -- TODO: Handle error cases with tests for them
   resolve env@Env { ftable } f@FunctionCall { ename, eargs = ea } =
     let
