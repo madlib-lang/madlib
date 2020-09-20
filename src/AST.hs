@@ -31,7 +31,7 @@ import           Path                           ( computeRootPath )
 type ASTTable = M.Map FilePath AST
 
 data ASTError = ImportNotFound FilePath (Maybe AST)
-              | LexicalError FilePath String
+              | GrammarError FilePath String
               | ASTNotFound FilePath
               deriving(Eq, Show)
 
@@ -68,7 +68,7 @@ findAST path table = case M.lookup path table of
   Nothing -> Left $ ASTNotFound path
 
 buildAST :: Path -> String -> Either ASTError AST
-buildAST path code = mapLeft (LexicalError path) $ parse code >>= setPath
+buildAST path code = mapLeft (GrammarError path) $ parse code >>= setPath
  where
   setPath :: AST -> Either e AST
   setPath a = return a { apath = Just path }

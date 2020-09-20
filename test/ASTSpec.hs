@@ -121,3 +121,21 @@ spec = do
 
       r <- buildASTTable' rf Nothing "src/" "src/sourceA.mad"
       r `shouldBe` expected
+  describe "buildAST" $ do
+    it "should return a GrammarError if the source is not valid" $ do
+      let
+        source = unlines ["fn :: Num -> Num -> Num", "fn : a, b => a + b"]
+        actual = buildAST "source.mad" source
+        expected =
+          Left $ GrammarError "source.mad" "lexical error at line 2, column 5"
+      actual `shouldBe` expected
+
+    it "should return a valid AST with boolean expressions" $ do
+      let source =
+            unlines ["fn :: Bool -> Bool -> Bool", "fn = (a, b) => a === b"]
+          ast    = buildAST "source.mad" source
+          actual = case ast of
+            Right _ -> True
+            Left  _ -> False
+
+      actual `shouldBe` True
