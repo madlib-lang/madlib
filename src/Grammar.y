@@ -12,7 +12,6 @@ import Control.Monad.Except
 %lexer { lexerWrap } { Token _ TokenEOF }
 
 %token
-  const    { Token _ TokenConst }
   int      { Token _ (TokenInt _) }
   str      { Token _ (TokenStr _) }
   name     { Token _ (TokenName _) }
@@ -21,10 +20,7 @@ import Control.Monad.Except
   '::'     { Token _ TokenDoubleColon }
   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
-  if       { Token _ TokenIf }
   ','      { Token _ TokenComa }
-  '{'      { Token _ TokenLeftCurly }
-  '}'      { Token _ TokenRightCurly }
   '('      { Token _ TokenLeftParen }
   ')'      { Token _ TokenRightParen }
   '==='    { Token _ TokenTripleEq }
