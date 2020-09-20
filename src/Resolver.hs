@@ -136,7 +136,7 @@ instance Resolvable FunctionDef where
           env { ftable = M.insert (fname f) f ftable, vtable = updatedVTable }
         resolvedExpM = resolve nextEnv exp
       in
-        resolvedExpM >>= updateBody
+        tolerateWith f $ resolvedExpM >>= updateBody
    where
     (expected, actual) = case ftypeDef of
       Just x  -> (length (ttypes x) - 1, length fparams)
@@ -144,7 +144,7 @@ instance Resolvable FunctionDef where
     updateBody :: Exp -> Validate [RError] FunctionDef
     updateBody exp = if expected == actual
       then pure f { fbody = Body exp, ftype = etype exp }
-      else dispute [ParameterCountError expected actual] >> pure f
+      else refute [ParameterCountError expected actual]
     typedParams = case ftypeDef of
       Just x  -> zip fparams . init $ ttypes x
       Nothing -> [] -- TODO: add params with * as type ?
@@ -158,10 +158,20 @@ instance Resolvable Exp where
     l <- resolve env eleft
     r <- resolve env eright
 
+    -- TODO: Give real context to TypeError !
     let t = case (etype l, etype r) of
-          (Just ltype, Just rtype) -> Just "Num" -- TODO: This should test for operator as well
-          (_         , _         ) -> Nothing
-    return e { eleft = l, eright = r, etype = t }
+          (Just ltype, Just rtype) -> resolveOperation eoperator ltype rtype
+          _ -> Nothing
+
+        newE = if t == Nothing then refute [TypeError "" ""] else pure e
+    tolerateWith e newE >> pure e { eleft = l, eright = r, etype = t }
+    where
+      resolveOperation :: Operator -> Type -> Type -> Maybe Type
+      resolveOperation TripleEq "Bool" "Bool" = Just "Bool"
+      resolveOperation op ltype rtype = if ltype == "Num"
+                then Just "Num" -- TODO: This should test for operator as well
+                else Nothing
+      resolveOperation _ _ _ = Nothing
 
   -------------------------------------
   --            VarAccess            --
@@ -172,7 +182,12 @@ instance Resolvable Exp where
   -------------------------------------
   --             IntLit              --
   -------------------------------------
-  resolve env e@IntLit{} = return e
+  resolve env e@IntLit{}    = return e
+
+  -------------------------------------
+  --             StringLit              --
+  -------------------------------------
+  resolve env e@StringLit{} = return e
 
   -------------------------------------
   --           FunctionCall          --

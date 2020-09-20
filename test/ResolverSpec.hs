@@ -66,8 +66,31 @@ spec = do
             code = unlines
               ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => fn(a, b) + a"]
             actual   = tester code
-            expected = Left [FunctionNotFound "fn"]
+            expected = Left [FunctionNotFound "fn", TypeError "" ""]
           actual `shouldBe` expected
+
+    it "should stack errors correctly" $ do
+      let
+        code = unlines
+          [ "fn2 :: Num -> Num -> Num -> Num"
+          , "fn2 = (a, b) => fn(a + \"Wrong\", b) + a"
+          ]
+        actual = tester code
+        expected =
+          Left [FunctionNotFound "fn", TypeError "" "", ParameterCountError 3 2]
+      actual `shouldBe` expected
+
+    it "should resolve Bool == Bool" $ do
+      let
+        code = unlines
+          [ "eq :: Bool -> Bool -> Bool"
+          , "eq = (a, b) => a === b"
+          ]
+        actual = case tester code of
+            (Right _) -> True
+            _         -> False
+      putStrLn $ ppShow $ tester code
+      actual `shouldBe` True
 
   describe "resolveASTTable" $ do
     it "should resolve an AST table" $ do
