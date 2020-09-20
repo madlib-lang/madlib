@@ -65,9 +65,8 @@ spec = do
           let
             code = unlines
               ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => fn(a, b) + a"]
-            actual   = case tester code of
-              Left errs -> errs !!1
-            expected = FunctionNotFound "fn"
+            actual   = tester code
+            expected = Left [FunctionNotFound "fn"]
           actual `shouldBe` expected
 
   describe "resolveASTTable" $ do

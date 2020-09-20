@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 module Resolver
@@ -15,12 +16,16 @@ import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Grammar
 import           Data.Foldable                  ( foldlM )
-import           Control.Monad.Validate         ( runValidate
+import           Control.Monad.Validate         ( tolerate
+                                                , refute
+                                                , runValidate
                                                 , MonadValidate(dispute)
                                                 , Validate
                                                 )
 import           Path                           ( computeRootPath )
-import           Control.Monad                  ( liftM2, liftM3 )
+import           Control.Monad                  ( liftM2
+                                                , liftM3
+                                                )
 
 
 
@@ -172,15 +177,14 @@ instance Resolvable Exp where
   -------------------------------------
   --           FunctionCall          --
   -------------------------------------
-  -- TODO: Refactor this, and handle error cases with tests for them
-  -- First refactoring done, try to use Validate everywhere instead of Either !
+  -- TODO: Handle error cases with tests for them
   resolve env@Env { ftable } f@FunctionCall { ename, eargs = ea } =
     let
       -- Retrieve function and derive types
-        functionDef   = findFunctionDef env ename
+        functionDef   = findFunctionDef ename
         functionTypes = getFunctionTypes <$> functionDef
-        paramsTypes   = init <$> functionTypes
-        returnType    = last <$> functionTypes
+        paramsTypes   = getParamTypes <$> functionTypes
+        returnType    = getReturnType <$> functionTypes
 
         -- Resolve call args and derive types
         argsResolved  = resolveArgs ea
@@ -188,35 +192,42 @@ instance Resolvable Exp where
 
         -- Merge call types with function definition types And validate
         typeTuples    = liftM2 zip argsTypes paramsTypes
-        result        = validate typeTuples
-          >> liftM3 updateFunctionCall argsResolved returnType (pure f)
-    in  case result of
-          Left  err -> dispute err >> pure f
-          Right x   -> pure x
+        result        = typeTuples >>= validate >> liftM3 updateFunctionCall
+                                                          argsResolved
+                                                          returnType
+                                                          (pure f)
+    in  tolerateWith f result
    where
-    getFunctionTypes :: FunctionDef -> [Maybe Type]
-    getFunctionTypes fDef = case ftypeDef fDef of
-      (Just Typing { ttypes }) -> Just <$> ttypes
-      Nothing                  -> []
+    getFunctionTypes :: Maybe FunctionDef -> Maybe [Type]
+    getFunctionTypes fDef = case fDef >>= ftypeDef of
+      (Just Typing { ttypes }) -> Just ttypes
+      Nothing                  -> Nothing
 
-    resolveArgs :: [Exp] -> Either [RError] [Exp]
-    resolveArgs exps = runValidate $ mapM (resolve env) exps
+    getParamTypes :: Maybe [String] -> [Maybe String]
+    getParamTypes (Just params) = Just <$> init params
+    getParamTypes Nothing       = []
 
-    validate
-      :: Either [RError] [(Maybe String, Maybe String)] -> Either [RError] Bool
-    validate (Left  err  ) = Left $ FunctionCallError f : err
-    validate (Right types) = if all (uncurry (==)) types
-      then Right True
-      else Left [FunctionCallError f]
+    getReturnType :: Maybe [String] -> Maybe String
+    getReturnType (Just params) = Just $ last params
+    getReturnType Nothing       = Nothing
+
+    resolveArgs :: [Exp] -> Validate [RError] [Exp]
+    resolveArgs exps = mapM (resolve env) exps
+
+    validate :: [(Maybe String, Maybe String)] -> Validate [RError] Bool
+    validate types = if all (uncurry (==)) types
+      then pure True
+      else refute [FunctionCallError f]
 
     updateFunctionCall :: [Exp] -> Maybe Type -> Exp -> Exp
     updateFunctionCall args t fc = fc { eargs = args, etype = t }
 
-findFunctionDef :: Env -> String -> Either [RError] FunctionDef
-findFunctionDef Env { ftable } name = case M.lookup name ftable of
-  Just x  -> Right x
-  Nothing -> Left [FunctionNotFound name]
+    findFunctionDef :: String -> Validate [RError] (Maybe FunctionDef)
+    findFunctionDef name = case M.lookup name ftable of
+      Just x  -> pure $ Just x
+      Nothing -> refute [FunctionNotFound name]
 
-typeOfFunctionDef :: Either [RError] FunctionDef -> Maybe Type
-typeOfFunctionDef (Right FunctionDef { ftype }) = ftype
-typeOfFunctionDef (Left  _                    ) = Nothing
+tolerateWith :: Semigroup e => a -> Validate e a -> Validate e a
+tolerateWith with v = tolerate v >>= \case
+  Just a  -> pure a
+  Nothing -> pure with
