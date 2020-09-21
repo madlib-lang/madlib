@@ -11,15 +11,17 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except
 import           Control.Monad.Trans.Except
 import           Control.Monad.Validate
-import           Control.Monad.Reader           ( runReader )
+import           Control.Monad.Reader           ( runReader
+                                                , MonadReader(..)
+                                                )
 
 tester :: String -> Either [RError] AST
 tester code =
   let resolveM = case buildAST "path" code of
         (Right ast) -> resolve ast
-        _           -> refute [TypeError "" ""]
+        _           -> rRefute $ TypeError "" ""
   in  runReader (runValidateT resolveM) initialEnv
-  where initialEnv = Env M.empty M.empty Nothing
+  where initialEnv = Env M.empty M.empty Nothing (Backtrace [])
 
 (Right astA) = buildAST "fixtures/sourceA.mad" $ unlines
   [ "import \"sourceB\""
@@ -68,8 +70,11 @@ spec = do
           let
             code = unlines
               ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => fn(a, b) + a"]
-            actual   = tester code
-            expected = Left [FunctionNotFound "fn", TypeError "" ""]
+            Left actual = tester code
+            expected =
+              [ RError (FunctionNotFound "fn") (Backtrace [])
+              , RError (TypeError "" "")       (Backtrace [])
+              ]
           actual `shouldBe` expected
 
     it "should stack errors correctly" $ do
@@ -77,12 +82,12 @@ spec = do
             [ "fn2 :: Num -> Num -> Num -> Num"
             , "fn2 = (a, b) => fn(a + \"Wrong\", b) + a"
             ]
-          actual   = tester code
-          expected = Left
-            [ FunctionNotFound "fn"
-            , TypeError "Unknown" "String"
-            , TypeError ""        ""
-            , ParameterCountError 3 2
+          Left actual = tester code
+          expected =
+            [ RError (FunctionNotFound "fn")        (Backtrace [])
+            , RError (TypeError "Unknown" "String") (Backtrace [])
+            , RError (TypeError "" "")              (Backtrace [])
+            , RError (ParameterCountError 3 2)      (Backtrace [])
             ]
       actual `shouldBe` expected
 
@@ -97,15 +102,15 @@ spec = do
     it "should give a type error for Bool === Num" $ do
       let code =
             unlines ["eq :: Bool -> Num -> Bool", "eq = (a, b) => a === b"]
-          actual   = tester code
-          expected = Left [TypeError "Bool" "Num"]
+          Left actual = tester code
+          expected    = [RError (TypeError "Bool" "Num") (Backtrace [])]
       actual `shouldBe` expected
 
     it "should give a type error for Num === Bool" $ do
       let code =
             unlines ["eq :: Num -> Bool -> Bool", "eq = (a, b) => a === b"]
-          actual   = tester code
-          expected = Left [TypeError "Bool" "Num"]
+          Left actual = tester code
+          expected    = [RError (TypeError "Bool" "Num") (Backtrace [])]
       actual `shouldBe` expected
 
   describe "resolveASTTable" $ do
@@ -113,8 +118,8 @@ spec = do
       let astTable = M.fromList
             [("fixtures/sourceA.mad", astA), ("fixtures/sourceB.mad", astB)]
           env    = Env { vtable = M.empty, ftable = M.empty }
-          result = resolveASTTable env astA astTable
-      result `shouldBe` expected1
+          actual = resolveASTTable env astA astTable
+      actual `shouldBe` expected1
 
     it "should fail if the AST does not have a path value" $ do
       let corrupted = astA { apath = Nothing }
@@ -123,16 +128,16 @@ spec = do
               [ ("fixtures/sourceA.mad", corrupted)
               , ("fixtures/sourceB.mad", astB)
               ]
-          env    = Env { vtable = M.empty, ftable = M.empty }
-          result = resolveASTTable env corrupted astTable
-      result `shouldBe` Left [CorruptedAST corrupted]
+          env         = Env { vtable = M.empty, ftable = M.empty }
+          Left actual = resolveASTTable env corrupted astTable
+      actual `shouldBe` [RError CorruptedAST (Backtrace [BTAST corrupted])]
 
     it "should resolve an AST table and figure out the root path" $ do
       let astTable =
             M.fromList [("src/sourceC.mad", astC), ("src/sourceD.mad", astD)]
           env    = Env { vtable = M.empty, ftable = M.empty }
-          result = resolveASTTable env astC astTable
-      result `shouldBe` expected2
+          actual = resolveASTTable env astC astTable
+      actual `shouldBe` expected2
 
     it
         "should give an error if parameter count does not match the one of the signature"
@@ -140,8 +145,8 @@ spec = do
           let
             code =
               unlines ["fn :: Num -> Num -> Num -> Num", "fn = (a, b) => a + b"]
-            actual = tester code
-          actual `shouldBe` Left [ParameterCountError 3 2]
+            Left actual = tester code
+          actual `shouldBe` [RError (ParameterCountError 3 2) (Backtrace [])]
 
     it "should aggregate errors if more than one error occurs" $ do
       let code = unlines
@@ -154,8 +159,11 @@ spec = do
             , "fn4 :: Num -> Num -> Num"
             , "fn4 = (a, b) => a + b"
             ]
-          actual = tester code
-      actual `shouldBe` Left [ParameterCountError 3 2, ParameterCountError 4 2]
+          Left actual = tester code
+      actual
+        `shouldBe` [ RError (ParameterCountError 3 2) (Backtrace [])
+                   , RError (ParameterCountError 4 2) (Backtrace [])
+                   ]
 
 
 expected1 = Right $ M.fromList

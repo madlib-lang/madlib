@@ -21,9 +21,9 @@ main = do
   astTable   <- buildASTTable entrypoint
   let entryAST      = astTable >>= findAST entrypoint
       resolvedTable = case (entryAST, astTable) of
-        (Left _, Left _) -> Left [PathNotFound]
+        (Left _, Left _) -> Left [RError PathNotFound (Backtrace [])]
         (Right ast, Right table) ->
-          resolveASTTable (Env M.empty M.empty Nothing) ast table
+          resolveASTTable (Env M.empty M.empty Nothing (Backtrace [])) ast table
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   return ()

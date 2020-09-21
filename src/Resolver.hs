@@ -5,10 +5,14 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 module Resolver
   ( Env(..)
+  , Error(..)
   , RError(..)
   , ASTTable
+  , Backtrace(..)
+  , BacktraceNode(..)
   , resolve
   , resolveASTTable
+  , rRefute
   )
 where
 
@@ -30,7 +34,8 @@ import           Path                           ( computeRootPath )
 import           Control.Monad                  ( liftM2
                                                 , liftM3
                                                 )
-import           Control.Monad.Reader           ( MonadReader
+import           Control.Monad.Reader           ( asks
+                                                , MonadReader
                                                 , ask
                                                 , local
                                                 , runReader
@@ -43,25 +48,10 @@ import           Control.Monad                  ( join )
 
 type ASTTable = M.Map FilePath AST
 
-data RError = TypeError Type Type -- TypeError expected actual
-            | ParameterCountError Int Int -- ParameterCount expected actual
-            | PathNotFound
-            | CorruptedAST AST -- TODO: When we have backtraces this should go as it will become obsolete
-            | FunctionNotFound Name
-            | FunctionCallError Exp -- TODO: When we have backtraces this should go as it will become obsolete
-            deriving(Eq, Show)
-
-data Env =
-  Env
-    { vtable   :: M.Map Name Type
-    , ftable   :: M.Map Name FunctionDef
-    , rootPath :: Maybe FilePath
-    }
-    deriving(Eq, Show)
-
 
 resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
-resolveASTTable env ast@AST { apath = Nothing } _ = Left [CorruptedAST ast]
+resolveASTTable env ast@AST { apath = Nothing } _ =
+  Left [RError CorruptedAST $ Backtrace [(makeBacktraceNode ast)]]
 resolveASTTable env ast@AST { apath = Just apath } table =
   resolveASTTable' env { rootPath = Just $ computeRootPath apath } ast table
 
@@ -90,7 +80,7 @@ resolveAndUpdateAST env ast table =
 updateASTTable :: ASTTable -> AST -> Either [RError] ASTTable
 updateASTTable table ast = case apath ast of
   Just path -> return $ M.insert path ast table
-  Nothing   -> Left [PathNotFound]
+  Nothing   -> Left [RError PathNotFound $ Backtrace [(makeBacktraceNode ast)]]
 
 
 resolveAST :: AST -> Env -> Either [RError] AST
@@ -113,7 +103,52 @@ updateEnvFromTable env@Env { ftable } =
 pathFromModName :: FilePath -> String -> FilePath
 pathFromModName root = (root ++) <$> (++ ".mad")
 
+data Backtrace = Backtrace [BacktraceNode] deriving(Eq, Show)
+data BacktraceNode = BTAST AST
+                   | BTFunctionDef FunctionDef
+                   | BTExp Exp
+                   deriving(Eq, Show)
 
+class Backtraceable a where
+  makeBacktraceNode :: a -> BacktraceNode
+  pushBacktrace :: a -> Backtrace -> Backtrace
+  pushBacktrace node (Backtrace nodes) = Backtrace $ makeBacktraceNode node : nodes
+
+instance Backtraceable AST where
+  makeBacktraceNode = BTAST
+instance Backtraceable FunctionDef where
+  makeBacktraceNode = BTFunctionDef
+instance Backtraceable Exp where
+  makeBacktraceNode = BTExp
+
+data RError = RError Error Backtrace deriving(Eq, Show)
+
+data Error = TypeError Type Type -- TypeError expected actual
+           | ParameterCountError Int Int -- ParameterCount expected actual
+           | PathNotFound
+           | CorruptedAST -- TODO: When we have backtraces this should go as it will become obsolete
+           | FunctionNotFound Name
+           | FunctionCallError Exp -- TODO: When we have backtraces this should go as it will become obsolete
+           deriving(Eq, Show)
+
+rDispute :: Error -> ResolveM ()
+rDispute err = do
+  bt <- asks backtrace
+  dispute [RError err bt]
+
+rRefute :: Error -> ResolveM a
+rRefute err = do
+  bt <- asks backtrace
+  refute [RError err bt]
+
+data Env =
+  Env
+    { vtable    :: M.Map Name Type
+    , ftable    :: M.Map Name FunctionDef
+    , rootPath  :: Maybe FilePath
+    , backtrace :: Backtrace
+    }
+    deriving(Eq, Show)
 
 type ResolveM a
   = forall m . (MonadReader Env m, MonadValidate [RError] m) => m a
@@ -172,7 +207,7 @@ instance Resolvable FunctionDef where
     updateBody :: Exp -> ResolveM FunctionDef
     updateBody exp = if expected == actual
       then pure f { fbody = Body exp, ftype = etype exp }
-      else refute [ParameterCountError expected actual]
+      else rRefute $ ParameterCountError expected actual
 
 
 
@@ -189,11 +224,11 @@ instance Resolvable Exp where
     r        <- resolve eright
 
     -- TODO: Give real context to TypeError !
-    resolved <- pure $ case (etype l, etype r) of
+    resolved <- case (etype l, etype r) of
       (Just ltype, Just rtype) -> resolveOperation eoperator ltype rtype
-      _                        -> dispute [TypeError "" ""] >> pure ""
+      _                        -> rDispute (TypeError "" "") >> pure ""
 
-    resolved >>= updateOperation l r
+    updateOperation l r resolved
    where
     updateOperation :: Exp -> Exp -> Type -> ResolveM Exp
     updateOperation el er t =
@@ -202,12 +237,12 @@ instance Resolvable Exp where
     resolveOperation :: Operator -> Type -> Type -> ResolveM Type
     resolveOperation TripleEq "Bool" "Bool" = pure "Bool"
     resolveOperation TripleEq "Bool" "Num" =
-      dispute [TypeError "Bool" "Num"] >> pure ""
+      rDispute (TypeError "Bool" "Num") >> pure ""
     resolveOperation TripleEq "Num" "Bool" =
-      dispute [TypeError "Bool" "Num"] >> pure ""
+      rDispute (TypeError "Bool" "Num") >> pure ""
     resolveOperation Plus "Num" "Num" = pure "Num"
     resolveOperation _ _ actual =
-      dispute [TypeError "Unknown" actual] >> pure ""
+      rDispute (TypeError "Unknown" actual) >> pure ""
 
   -----------------------------------------------------------------------------
   --                                VarAccess                                --
@@ -268,7 +303,7 @@ instance Resolvable Exp where
     validate :: [(Maybe String, Maybe String)] -> ResolveM Bool
     validate types = if all (uncurry (==)) types
       then pure True
-      else dispute [FunctionCallError f] >> pure False
+      else rDispute (FunctionCallError f) >> pure False
 
     updateFunctionCall :: [Exp] -> Maybe Type -> Exp -> ResolveM Exp
     updateFunctionCall args t fc = pure fc { eargs = args, etype = t }
@@ -278,7 +313,7 @@ instance Resolvable Exp where
       env@Env { ftable } <- ask
       case M.lookup name ftable of
         Just x  -> pure $ Just x
-        Nothing -> dispute [FunctionNotFound name] >> pure Nothing
+        Nothing -> rDispute (FunctionNotFound name) >> pure Nothing
 
 tolerateWith :: a -> ResolveM a -> ResolveM a
 tolerateWith with v = tolerate v >>= \case
