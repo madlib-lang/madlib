@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE RankNTypes   #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 module Resolver
   ( Env(..)
   , RError(..)
@@ -15,17 +17,27 @@ import qualified Data.List                     as L
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Grammar
-import           Data.Foldable                  ( foldlM )
-import           Control.Monad.Validate         ( tolerate
+import           Data.Foldable                  ( foldl'
+                                                , foldlM
+                                                )
+import           Control.Monad.Validate         ( ValidateT
+                                                , runValidateT
+                                                , tolerate
                                                 , refute
-                                                , runValidate
                                                 , MonadValidate(dispute)
-                                                , Validate
                                                 )
 import           Path                           ( computeRootPath )
 import           Control.Monad                  ( liftM2
                                                 , liftM3
                                                 )
+import           Control.Monad.Reader           ( MonadReader
+                                                , ask
+                                                , local
+                                                , runReader
+                                                , Reader
+                                                )
+import           Debug.Trace                    ( trace )
+import           Control.Monad                  ( join )
 
 
 
@@ -82,7 +94,7 @@ updateASTTable table ast = case apath ast of
 
 
 resolveAST :: AST -> Env -> Either [RError] AST
-resolveAST ast env = runValidate $ resolve env ast
+resolveAST ast env = runReader (runValidateT (resolve ast)) env
 
 
 updateEnvFromTable :: Env -> ASTTable -> Env
@@ -102,150 +114,173 @@ pathFromModName :: FilePath -> String -> FilePath
 pathFromModName root = (root ++) <$> (++ ".mad")
 
 
+
+type ResolveM a
+  = forall m . (MonadReader Env m, MonadValidate [RError] m) => m a
+
 class Resolvable a where
-  resolve :: Env -> a -> Validate [RError] a
+  resolve :: a -> ResolveM a
 
+
+-------------------------------------------------------------------------------
+--                                   AST                                    --
+-------------------------------------------------------------------------------
 instance Resolvable AST where
-  resolve env ast@AST { afunctions } =
-    let currEnv = foldl pushFunctionDef env afunctions
-    in  (\fd -> ast { afunctions = fd })
-          <$> resolveFunctionDefs currEnv afunctions
+  resolve ast@AST { afunctions } = do
+    env      <- pushFunctionsToEnv afunctions <$> ask
+    resolved <- local (const env) (resolveFunctionDefs afunctions)
+    pure ast { afunctions = resolved }
 
-resolveFunctionDefs :: Env -> [FunctionDef] -> Validate [RError] [FunctionDef]
-resolveFunctionDefs _   []   = return []
-resolveFunctionDefs env [fd] = toList <$> resolve env fd
-resolveFunctionDefs env (h : t) =
-  let resolved = resolve env h
-      newEnv   = pushFunctionDef env <$> resolved
-      next     = case runValidate newEnv of
-        Left  err  -> resolveFunctionDefs env t
-        Right env' -> resolveFunctionDefs env' t
-  in  liftM2 (<>) (toList <$> resolved) next
+resolveFunctionDefs :: [FunctionDef] -> ResolveM [FunctionDef]
+resolveFunctionDefs []      = return []
+resolveFunctionDefs [fd   ] = toList <$> resolve fd
+resolveFunctionDefs (h : t) = do
+  resolved <- resolve h
+  next     <- local (pushFunctionToEnv resolved) (resolveFunctionDefs t)
+  pure $ next <> [resolved]
 
 toList :: a -> [a]
 toList a = [a]
 
-pushFunctionDef :: Env -> FunctionDef -> Env
-pushFunctionDef env@Env { ftable } fd@FunctionDef { fname } =
+pushFunctionsToEnv :: [FunctionDef] -> Env -> Env
+pushFunctionsToEnv fd env = foldr pushFunctionToEnv env fd
+
+pushFunctionToEnv :: FunctionDef -> Env -> Env
+pushFunctionToEnv fd@FunctionDef { fname } env@Env { ftable } =
   env { ftable = M.insert fname fd ftable }
 
+
+-------------------------------------------------------------------------------
+--                                FunctionDef                                --
+-------------------------------------------------------------------------------
 instance Resolvable FunctionDef where
-  resolve env@Env { ftable, vtable } f@FunctionDef { fbody = Body exp, ftypeDef, fparams }
-    = let
-        nextEnv =
-          env { ftable = M.insert (fname f) f ftable, vtable = updatedVTable }
-        resolvedExpM = resolve nextEnv exp
-      in
-        tolerateWith f $ resolvedExpM >>= updateBody
+  resolve f@FunctionDef { fbody = Body exp, ftypeDef, fparams, fname } = do
+    env@Env { ftable, vtable } <- ask
+    -- TODO: Rewrite that fold !
+    let nextVTable = foldl' (\a (n, t) -> M.insert n t a) vtable typedParams
+        nextEnv = env { ftable = M.insert fname f ftable, vtable = nextVTable }
+
+    resolvedExpM <- local (const nextEnv) (resolve exp)
+    tolerateWith f $ updateBody resolvedExpM
    where
+    typedParams = case ftypeDef of
+      Just typing -> zip fparams $ (init . ttypes) typing
+      Nothing     -> [] -- TODO: add params with * as type ?
     (expected, actual) = case ftypeDef of
       Just x  -> (length (ttypes x) - 1, length fparams)
       Nothing -> (0, 0)
-    updateBody :: Exp -> Validate [RError] FunctionDef
+    updateBody :: Exp -> ResolveM FunctionDef
     updateBody exp = if expected == actual
       then pure f { fbody = Body exp, ftype = etype exp }
       else refute [ParameterCountError expected actual]
-    typedParams = case ftypeDef of
-      Just x  -> zip fparams . init $ ttypes x
-      Nothing -> [] -- TODO: add params with * as type ?
-    updatedVTable = foldl (\a (n, t) -> M.insert n t a) vtable typedParams
 
+
+
+-------------------------------------------------------------------------------
+--                                    Exp                                    --
+-------------------------------------------------------------------------------
 instance Resolvable Exp where
+
   -----------------------------------------------------------------------------
   --                                Operation                                --
   -----------------------------------------------------------------------------
-  resolve env e@Operation { eleft, eoperator, eright } = do
-    l <- resolve env eleft
-    r <- resolve env eright
+  resolve e@Operation { eleft, eoperator, eright } = do
+    l        <- resolve eleft
+    r        <- resolve eright
 
     -- TODO: Give real context to TypeError !
-    let resolved = case (etype l, etype r) of
-          (Just ltype, Just rtype) -> resolveOperation eoperator ltype rtype
-          _                        -> refute [TypeError "" ""]
+    resolved <- pure $ case (etype l, etype r) of
+      (Just ltype, Just rtype) -> resolveOperation eoperator ltype rtype
+      _                        -> dispute [TypeError "" ""] >> pure ""
 
-    tolerateWith e $ resolved >>= updateOperation l r
+    resolved >>= updateOperation l r
    where
-    updateOperation :: Exp -> Exp -> Type -> Validate [RError] Exp
+    updateOperation :: Exp -> Exp -> Type -> ResolveM Exp
     updateOperation el er t =
       pure e { eleft = el, eright = er, etype = Just t }
 
-    resolveOperation :: Operator -> Type -> Type -> Validate [RError] Type
+    resolveOperation :: Operator -> Type -> Type -> ResolveM Type
     resolveOperation TripleEq "Bool" "Bool" = pure "Bool"
-    resolveOperation TripleEq "Bool" "Num" = refute [TypeError "Bool" "Num"]
-    resolveOperation TripleEq "Num" "Bool" = refute [TypeError "Bool" "Num"]
+    resolveOperation TripleEq "Bool" "Num" =
+      dispute [TypeError "Bool" "Num"] >> pure ""
+    resolveOperation TripleEq "Num" "Bool" =
+      dispute [TypeError "Bool" "Num"] >> pure ""
     resolveOperation Plus "Num" "Num" = pure "Num"
-    resolveOperation _ _ actual = refute [TypeError "Unknown" actual]
+    resolveOperation _ _ actual =
+      dispute [TypeError "Unknown" actual] >> pure ""
 
   -----------------------------------------------------------------------------
   --                                VarAccess                                --
   -----------------------------------------------------------------------------
-  resolve env@Env { vtable } e@VarAccess { ename } =
+  resolve e@VarAccess { ename } = do
+    env@Env { vtable } <- ask
     let t = M.lookup ename vtable in return $ e { etype = t }
 
   -----------------------------------------------------------------------------
   --                                 IntLit                                  --
   -----------------------------------------------------------------------------
-  resolve env e@IntLit{}    = return e
+  resolve e@IntLit{}                           = return e
 
   -----------------------------------------------------------------------------
   --                                StringLit                                --
   -----------------------------------------------------------------------------
-  resolve env e@StringLit{} = return e
+  resolve e@StringLit{}                        = return e
 
   -----------------------------------------------------------------------------
   --                               FunctionCall                              --
   -----------------------------------------------------------------------------
   -- TODO: Handle error cases with tests for them
-  resolve env@Env { ftable } f@FunctionCall { ename, eargs = ea } =
-    let
-      -- Retrieve function and derive types
-        functionDef   = findFunctionDef ename
-        functionTypes = getFunctionTypes <$> functionDef
-        paramsTypes   = getParamTypes <$> functionTypes
-        returnType    = getReturnType <$> functionTypes
+  resolve f@FunctionCall { ename, eargs = ea } = do
+    -- Retrieve FunctionDef and derive params/return types
+    functionDef   <- findFunctionDef ename
+    functionTypes <- getFunctionTypes functionDef
+    paramsTypes   <- getParamTypes functionTypes
+    returnType    <- getReturnType functionTypes
 
-        -- Resolve call args and derive types
-        argsResolved  = resolveArgs ea
-        argsTypes     = (etype <$>) <$> argsResolved
+    -- Resolve call args and derive types
+    argsResolved  <- resolveArgs ea
+    argsTypes     <- pure $ etype <$> argsResolved
 
-        -- Merge call types with function definition types And validate
-        typeTuples    = liftM2 zip argsTypes paramsTypes
-        result        = typeTuples >>= validate >> liftM3 updateFunctionCall
-                                                          argsResolved
-                                                          returnType
-                                                          (pure f)
-    in  tolerateWith f result
+    -- Merge call types with function definition types and validate
+    typeTuples    <- pure $ zip paramsTypes argsTypes
+
+    validate typeTuples >>= \case
+      True  -> updateFunctionCall argsResolved returnType f
+      False -> pure f
    where
-    getFunctionTypes :: Maybe FunctionDef -> Maybe [Type]
-    getFunctionTypes fDef = case fDef >>= ftypeDef of
-      (Just Typing { ttypes }) -> Just ttypes
-      Nothing                  -> Nothing
+    getFunctionTypes :: Maybe FunctionDef -> ResolveM [Maybe Type]
+    getFunctionTypes fDef = pure $ case fDef >>= ftypeDef of
+      (Just Typing { ttypes }) -> Just <$> ttypes
+      Nothing                  -> []
 
-    getParamTypes :: Maybe [String] -> [Maybe String]
-    getParamTypes (Just params) = Just <$> init params
-    getParamTypes Nothing       = []
+    getParamTypes :: [Maybe String] -> ResolveM [Maybe String]
+    getParamTypes [onlyOne] = pure []
+    getParamTypes []        = pure []
+    getParamTypes params    = pure $ init params
 
-    getReturnType :: Maybe [String] -> Maybe String
-    getReturnType (Just params) = Just $ last params
-    getReturnType Nothing       = Nothing
+    getReturnType :: [Maybe String] -> ResolveM (Maybe String)
+    getReturnType []     = pure Nothing
+    getReturnType params = pure $ last params
 
-    resolveArgs :: [Exp] -> Validate [RError] [Exp]
-    resolveArgs exps = mapM (resolve env) exps
+    resolveArgs :: [Exp] -> ResolveM [Exp]
+    resolveArgs exps = mapM resolve exps
 
-    validate :: [(Maybe String, Maybe String)] -> Validate [RError] Bool
+    validate :: [(Maybe String, Maybe String)] -> ResolveM Bool
     validate types = if all (uncurry (==)) types
       then pure True
-      else refute [FunctionCallError f]
+      else dispute [FunctionCallError f] >> pure False
 
-    updateFunctionCall :: [Exp] -> Maybe Type -> Exp -> Exp
-    updateFunctionCall args t fc = fc { eargs = args, etype = t }
+    updateFunctionCall :: [Exp] -> Maybe Type -> Exp -> ResolveM Exp
+    updateFunctionCall args t fc = pure fc { eargs = args, etype = t }
 
-    findFunctionDef :: String -> Validate [RError] (Maybe FunctionDef)
-    findFunctionDef name = case M.lookup name ftable of
-      Just x  -> pure $ Just x
-      Nothing -> refute [FunctionNotFound name]
+    findFunctionDef :: String -> ResolveM (Maybe FunctionDef)
+    findFunctionDef name = do
+      env@Env { ftable } <- ask
+      case M.lookup name ftable of
+        Just x  -> pure $ Just x
+        Nothing -> dispute [FunctionNotFound name] >> pure Nothing
 
-tolerateWith :: Semigroup e => a -> Validate e a -> Validate e a
+tolerateWith :: a -> ResolveM a -> ResolveM a
 tolerateWith with v = tolerate v >>= \case
   Just a  -> pure a
   Nothing -> pure with

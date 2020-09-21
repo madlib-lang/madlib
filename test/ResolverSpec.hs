@@ -11,11 +11,14 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except
 import           Control.Monad.Trans.Except
 import           Control.Monad.Validate
+import           Control.Monad.Reader           ( runReader )
 
 tester :: String -> Either [RError] AST
-tester code = runValidate $ case buildAST "path" code of
-  (Right ast) -> resolve initialEnv ast
-  _           -> refute [TypeError "" ""]
+tester code =
+  let resolveM = case buildAST "path" code of
+        (Right ast) -> resolve ast
+        _           -> refute [TypeError "" ""]
+  in  runReader (runValidateT resolveM) initialEnv
   where initialEnv = Env M.empty M.empty Nothing
 
 (Right astA) = buildAST "fixtures/sourceA.mad" $ unlines
@@ -76,9 +79,9 @@ spec = do
             ]
           actual   = tester code
           expected = Left
-            [ TypeError "Unknown" "String"
-            , FunctionNotFound "fn"
-            , TypeError "" ""
+            [ FunctionNotFound "fn"
+            , TypeError "Unknown" "String"
+            , TypeError ""        ""
             , ParameterCountError 3 2
             ]
       actual `shouldBe` expected
@@ -94,14 +97,14 @@ spec = do
     it "should give a type error for Bool === Num" $ do
       let code =
             unlines ["eq :: Bool -> Num -> Bool", "eq = (a, b) => a === b"]
-          actual = tester code
+          actual   = tester code
           expected = Left [TypeError "Bool" "Num"]
       actual `shouldBe` expected
 
     it "should give a type error for Num === Bool" $ do
       let code =
             unlines ["eq :: Num -> Bool -> Bool", "eq = (a, b) => a === b"]
-          actual = tester code
+          actual   = tester code
           expected = Left [TypeError "Bool" "Num"]
       actual `shouldBe` expected
 
