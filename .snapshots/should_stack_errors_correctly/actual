@@ -1,0 +1,515 @@
+[ RError
+    (FunctionNotFound "fn")
+    (Backtrace
+       [ BTExp
+           FunctionCall
+             { etype = Nothing
+             , epos = Pos 48 2 17
+             , ename = "fn"
+             , eargs =
+                 [ Operation
+                     { etype = Nothing
+                     , epos = Pos 51 2 20
+                     , eleft =
+                         VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                     , eoperator = Plus
+                     , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                     }
+                 , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                 ]
+             }
+       , BTExp
+           Operation
+             { etype = Nothing
+             , epos = Pos 48 2 17
+             , eleft =
+                 FunctionCall
+                   { etype = Nothing
+                   , epos = Pos 48 2 17
+                   , ename = "fn"
+                   , eargs =
+                       [ Operation
+                           { etype = Nothing
+                           , epos = Pos 51 2 20
+                           , eleft =
+                               VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                           , eoperator = Plus
+                           , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                           }
+                       , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                       ]
+                   }
+             , eoperator = Plus
+             , eright =
+                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+             }
+       , BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 0 1 1
+                     , tfor = "fn2"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 0 1 1
+             , fname = "fn2"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 48 2 17
+                     , eleft =
+                         FunctionCall
+                           { etype = Nothing
+                           , epos = Pos 48 2 17
+                           , ename = "fn"
+                           , eargs =
+                               [ Operation
+                                   { etype = Nothing
+                                   , epos = Pos 51 2 20
+                                   , eleft =
+                                       VarAccess
+                                         { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                                   , eoperator = Plus
+                                   , eright =
+                                       StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                                   }
+                               , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                               ]
+                           }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 48 2 17
+                             , eleft =
+                                 FunctionCall
+                                   { etype = Nothing
+                                   , epos = Pos 48 2 17
+                                   , ename = "fn"
+                                   , eargs =
+                                       [ Operation
+                                           { etype = Nothing
+                                           , epos = Pos 51 2 20
+                                           , eleft =
+                                               VarAccess
+                                                 { etype = Nothing
+                                                 , epos = Pos 51 2 20
+                                                 , ename = "a"
+                                                 }
+                                           , eoperator = Plus
+                                           , eright =
+                                               StringLit
+                                                 { etype = Just "String" , epos = Pos 55 2 24 }
+                                           }
+                                       , VarAccess
+                                           { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                                       ]
+                                   }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+, RError
+    (TypeError "Unknown" "String")
+    (Backtrace
+       [ BTExp
+           Operation
+             { etype = Nothing
+             , epos = Pos 51 2 20
+             , eleft =
+                 VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+             , eoperator = Plus
+             , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+             }
+       , BTExp
+           FunctionCall
+             { etype = Nothing
+             , epos = Pos 48 2 17
+             , ename = "fn"
+             , eargs =
+                 [ Operation
+                     { etype = Nothing
+                     , epos = Pos 51 2 20
+                     , eleft =
+                         VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                     , eoperator = Plus
+                     , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                     }
+                 , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                 ]
+             }
+       , BTExp
+           Operation
+             { etype = Nothing
+             , epos = Pos 48 2 17
+             , eleft =
+                 FunctionCall
+                   { etype = Nothing
+                   , epos = Pos 48 2 17
+                   , ename = "fn"
+                   , eargs =
+                       [ Operation
+                           { etype = Nothing
+                           , epos = Pos 51 2 20
+                           , eleft =
+                               VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                           , eoperator = Plus
+                           , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                           }
+                       , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                       ]
+                   }
+             , eoperator = Plus
+             , eright =
+                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+             }
+       , BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 0 1 1
+                     , tfor = "fn2"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 0 1 1
+             , fname = "fn2"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 48 2 17
+                     , eleft =
+                         FunctionCall
+                           { etype = Nothing
+                           , epos = Pos 48 2 17
+                           , ename = "fn"
+                           , eargs =
+                               [ Operation
+                                   { etype = Nothing
+                                   , epos = Pos 51 2 20
+                                   , eleft =
+                                       VarAccess
+                                         { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                                   , eoperator = Plus
+                                   , eright =
+                                       StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                                   }
+                               , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                               ]
+                           }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 48 2 17
+                             , eleft =
+                                 FunctionCall
+                                   { etype = Nothing
+                                   , epos = Pos 48 2 17
+                                   , ename = "fn"
+                                   , eargs =
+                                       [ Operation
+                                           { etype = Nothing
+                                           , epos = Pos 51 2 20
+                                           , eleft =
+                                               VarAccess
+                                                 { etype = Nothing
+                                                 , epos = Pos 51 2 20
+                                                 , ename = "a"
+                                                 }
+                                           , eoperator = Plus
+                                           , eright =
+                                               StringLit
+                                                 { etype = Just "String" , epos = Pos 55 2 24 }
+                                           }
+                                       , VarAccess
+                                           { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                                       ]
+                                   }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+, RError
+    (TypeError "" "")
+    (Backtrace
+       [ BTExp
+           Operation
+             { etype = Nothing
+             , epos = Pos 48 2 17
+             , eleft =
+                 FunctionCall
+                   { etype = Nothing
+                   , epos = Pos 48 2 17
+                   , ename = "fn"
+                   , eargs =
+                       [ Operation
+                           { etype = Nothing
+                           , epos = Pos 51 2 20
+                           , eleft =
+                               VarAccess { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                           , eoperator = Plus
+                           , eright = StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                           }
+                       , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                       ]
+                   }
+             , eoperator = Plus
+             , eright =
+                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+             }
+       , BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 0 1 1
+                     , tfor = "fn2"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 0 1 1
+             , fname = "fn2"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 48 2 17
+                     , eleft =
+                         FunctionCall
+                           { etype = Nothing
+                           , epos = Pos 48 2 17
+                           , ename = "fn"
+                           , eargs =
+                               [ Operation
+                                   { etype = Nothing
+                                   , epos = Pos 51 2 20
+                                   , eleft =
+                                       VarAccess
+                                         { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                                   , eoperator = Plus
+                                   , eright =
+                                       StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                                   }
+                               , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                               ]
+                           }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 48 2 17
+                             , eleft =
+                                 FunctionCall
+                                   { etype = Nothing
+                                   , epos = Pos 48 2 17
+                                   , ename = "fn"
+                                   , eargs =
+                                       [ Operation
+                                           { etype = Nothing
+                                           , epos = Pos 51 2 20
+                                           , eleft =
+                                               VarAccess
+                                                 { etype = Nothing
+                                                 , epos = Pos 51 2 20
+                                                 , ename = "a"
+                                                 }
+                                           , eoperator = Plus
+                                           , eright =
+                                               StringLit
+                                                 { etype = Just "String" , epos = Pos 55 2 24 }
+                                           }
+                                       , VarAccess
+                                           { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                                       ]
+                                   }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+, RError
+    (ParameterCountError 3 2)
+    (Backtrace
+       [ BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 0 1 1
+                     , tfor = "fn2"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 0 1 1
+             , fname = "fn2"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 48 2 17
+                     , eleft =
+                         FunctionCall
+                           { etype = Nothing
+                           , epos = Pos 48 2 17
+                           , ename = "fn"
+                           , eargs =
+                               [ Operation
+                                   { etype = Nothing
+                                   , epos = Pos 51 2 20
+                                   , eleft =
+                                       VarAccess
+                                         { etype = Nothing , epos = Pos 51 2 20 , ename = "a" }
+                                   , eoperator = Plus
+                                   , eright =
+                                       StringLit { etype = Just "String" , epos = Pos 55 2 24 }
+                                   }
+                               , VarAccess { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                               ]
+                           }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 48 2 17
+                             , eleft =
+                                 FunctionCall
+                                   { etype = Nothing
+                                   , epos = Pos 48 2 17
+                                   , ename = "fn"
+                                   , eargs =
+                                       [ Operation
+                                           { etype = Nothing
+                                           , epos = Pos 51 2 20
+                                           , eleft =
+                                               VarAccess
+                                                 { etype = Nothing
+                                                 , epos = Pos 51 2 20
+                                                 , ename = "a"
+                                                 }
+                                           , eoperator = Plus
+                                           , eright =
+                                               StringLit
+                                                 { etype = Just "String" , epos = Pos 55 2 24 }
+                                           }
+                                       , VarAccess
+                                           { etype = Nothing , epos = Pos 64 2 33 , ename = "b" }
+                                       ]
+                                   }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 69 2 38 , ename = "a" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+]

@@ -10,7 +10,7 @@ module Resolver
   , ASTTable
   , Backtrace(..)
   , BacktraceNode(..)
-  , resolve
+  , doResolve
   , resolveASTTable
   , rRefute
   )
@@ -48,7 +48,7 @@ import           Control.Monad                  ( join )
 
 type ASTTable = M.Map FilePath AST
 
-
+-- TODO: Should we remove Env from it and just generate it if needed ?
 resolveASTTable :: Env -> AST -> ASTTable -> Either [RError] ASTTable
 resolveASTTable env ast@AST { apath = Nothing } _ =
   Left [RError CorruptedAST $ Backtrace [(makeBacktraceNode ast)]]
@@ -153,12 +153,16 @@ data Env =
 type ResolveM a
   = forall m . (MonadReader Env m, MonadValidate [RError] m) => m a
 
-class Resolvable a where
+class Backtraceable a => Resolvable a where
   resolve :: a -> ResolveM a
+
+  doResolve :: a -> ResolveM a
+  doResolve x = local pushBT $ resolve x
+    where pushBT env@Env { backtrace } = env { backtrace = pushBacktrace x backtrace }
 
 
 -------------------------------------------------------------------------------
---                                   AST                                    --
+--                                   AST                                     --
 -------------------------------------------------------------------------------
 instance Resolvable AST where
   resolve ast@AST { afunctions } = do
@@ -168,9 +172,9 @@ instance Resolvable AST where
 
 resolveFunctionDefs :: [FunctionDef] -> ResolveM [FunctionDef]
 resolveFunctionDefs []      = return []
-resolveFunctionDefs [fd   ] = toList <$> resolve fd
+resolveFunctionDefs [fd   ] = toList <$> doResolve fd
 resolveFunctionDefs (h : t) = do
-  resolved <- resolve h
+  resolved <- doResolve h
   next     <- local (pushFunctionToEnv resolved) (resolveFunctionDefs t)
   pure $ next <> [resolved]
 
@@ -195,7 +199,7 @@ instance Resolvable FunctionDef where
     let nextVTable = foldl' (\a (n, t) -> M.insert n t a) vtable typedParams
         nextEnv = env { ftable = M.insert fname f ftable, vtable = nextVTable }
 
-    resolvedExpM <- local (const nextEnv) (resolve exp)
+    resolvedExpM <- local (const nextEnv) (doResolve exp)
     tolerateWith f $ updateBody resolvedExpM
    where
     typedParams = case ftypeDef of
@@ -220,8 +224,8 @@ instance Resolvable Exp where
   --                                Operation                                --
   -----------------------------------------------------------------------------
   resolve e@Operation { eleft, eoperator, eright } = do
-    l        <- resolve eleft
-    r        <- resolve eright
+    l        <- doResolve eleft
+    r        <- doResolve eright
 
     -- TODO: Give real context to TypeError !
     resolved <- case (etype l, etype r) of
@@ -298,7 +302,7 @@ instance Resolvable Exp where
     getReturnType params = pure $ last params
 
     resolveArgs :: [Exp] -> ResolveM [Exp]
-    resolveArgs exps = mapM resolve exps
+    resolveArgs exps = mapM doResolve exps
 
     validate :: [(Maybe String, Maybe String)] -> ResolveM Bool
     validate types = if all (uncurry (==)) types

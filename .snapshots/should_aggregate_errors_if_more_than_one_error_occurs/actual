@@ -1,0 +1,265 @@
+[ RError
+    (ParameterCountError 3 2)
+    (Backtrace
+       [ BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 0 1 1
+                     , tfor = "fn"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 0 1 1
+             , fname = "fn"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 46 2 16
+                     , eleft =
+                         VarAccess { etype = Nothing , epos = Pos 46 2 16 , ename = "a" }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 50 2 20 , ename = "b" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 46 2 16
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 46 2 16 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 50 2 20 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 52 3 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 52 3 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 107 4 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 107 4 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 111 4 21 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 113 5 1
+                             , tfor = "fn3"
+                             , ttypes = [ "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 113 5 1
+                     , fname = "fn3"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 154 6 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 154 6 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 158 6 21 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 160 7 1
+                             , tfor = "fn4"
+                             , ttypes = [ "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 160 7 1
+                     , fname = "fn4"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 201 8 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 201 8 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 205 8 21 , ename = "b" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+, RError
+    (ParameterCountError 4 2)
+    (Backtrace
+       [ BTFunctionDef
+           FunctionDef
+             { ftype = Nothing
+             , ftypeDef =
+                 Just
+                   Typing
+                     { tpos = Pos 52 3 1
+                     , tfor = "fn2"
+                     , ttypes = [ "Num" , "Num" , "Num" , "Num" , "Num" ]
+                     }
+             , fpos = Pos 52 3 1
+             , fname = "fn2"
+             , fparams = [ "a" , "b" ]
+             , fbody =
+                 Body
+                   Operation
+                     { etype = Nothing
+                     , epos = Pos 107 4 17
+                     , eleft =
+                         VarAccess { etype = Nothing , epos = Pos 107 4 17 , ename = "a" }
+                     , eoperator = Plus
+                     , eright =
+                         VarAccess { etype = Nothing , epos = Pos 111 4 21 , ename = "b" }
+                     }
+             }
+       , BTAST
+           AST
+             { aimports = []
+             , afunctions =
+                 [ FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 0 1 1
+                             , tfor = "fn"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 0 1 1
+                     , fname = "fn"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 46 2 16
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 46 2 16 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 50 2 20 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 52 3 1
+                             , tfor = "fn2"
+                             , ttypes = [ "Num" , "Num" , "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 52 3 1
+                     , fname = "fn2"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 107 4 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 107 4 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 111 4 21 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 113 5 1
+                             , tfor = "fn3"
+                             , ttypes = [ "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 113 5 1
+                     , fname = "fn3"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 154 6 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 154 6 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 158 6 21 , ename = "b" }
+                             }
+                     }
+                 , FunctionDef
+                     { ftype = Nothing
+                     , ftypeDef =
+                         Just
+                           Typing
+                             { tpos = Pos 160 7 1
+                             , tfor = "fn4"
+                             , ttypes = [ "Num" , "Num" , "Num" ]
+                             }
+                     , fpos = Pos 160 7 1
+                     , fname = "fn4"
+                     , fparams = [ "a" , "b" ]
+                     , fbody =
+                         Body
+                           Operation
+                             { etype = Nothing
+                             , epos = Pos 201 8 17
+                             , eleft =
+                                 VarAccess { etype = Nothing , epos = Pos 201 8 17 , ename = "a" }
+                             , eoperator = Plus
+                             , eright =
+                                 VarAccess { etype = Nothing , epos = Pos 205 8 21 , ename = "b" }
+                             }
+                     }
+                 ]
+             , apath = Just "path"
+             }
+       ])
+]

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 26acb9e774528adc0e48f562c374748133e7204ea923d9cc172e2e4ea0ea871c
+-- hash: 6e44304171bf32912a28d0b89109b3eb5608e376b6dafdeb0604b9751f3e662e
 
 name:           madlib
 version:        0.1.0.0
@@ -46,9 +46,12 @@ library
     , exceptions
     , filepath
     , hpc-lcov
+    , hspec
+    , hspec-golden
     , monad-validate ==1.2.0.0
     , mtl
     , pretty-show
+    , text
     , transformers
   default-language: Haskell2010
 
@@ -73,9 +76,12 @@ executable madlib-exe
     , exceptions
     , filepath
     , hpc-lcov
+    , hspec
+    , hspec-golden
     , monad-validate ==1.2.0.0
     , mtl
     , pretty-show
+    , text
     , transformers
   default-language: Haskell2010
 
@@ -100,9 +106,11 @@ test-suite madlib-test
     , filepath
     , hpc-lcov
     , hspec ==2.7.2
+    , hspec-golden
     , madlib
     , monad-validate ==1.2.0.0
     , mtl
     , pretty-show
+    , text
     , transformers
   default-language: Haskell2010
