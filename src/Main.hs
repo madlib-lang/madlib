@@ -19,14 +19,15 @@ main :: IO ()
 main = do
   entrypoint <- head <$> getArgs
   astTable   <- buildASTTable entrypoint
-  let entryAST      = astTable >>= findAST entrypoint
-      resolvedTable = case (entryAST, astTable) of
-        (Left _, Left _) -> Left [RError PathNotFound (Backtrace [])]
-        (Right ast, Right table) ->
-          resolveASTTable (Env M.empty M.empty Nothing (Backtrace [])) ast table
+  putStrLn $ ppShow astTable
+  -- let entryAST      = astTable >>= findAST entrypoint
+  --     resolvedTable = case (entryAST, astTable) of
+  --       (Left _, Left _) -> Left [RError PathNotFound (Backtrace [])]
+  --       (Right ast, Right table) ->
+  --         resolveASTTable (Env M.empty M.empty Nothing (Backtrace [])) ast table
 
-  putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
-  return ()
+  -- putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
+  -- return ()
 
 -- TODO: Implement function to build it
 type SourceTable = M.Map FilePath String

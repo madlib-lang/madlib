@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6e44304171bf32912a28d0b89109b3eb5608e376b6dafdeb0604b9751f3e662e
+-- hash: 98388c4160b391778fd3fa2b295a5dd2c86b464ac20aab81d556cc1dbca45ad0
 
 name:           madlib
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
   exposed-modules:
       AST
       Grammar
+      Grammar_
       Lexer
       Main
       Path
@@ -60,6 +61,7 @@ executable madlib-exe
   other-modules:
       AST
       Grammar
+      Grammar_
       Lexer
       Path
       Resolver

@@ -30,67 +30,48 @@ import Control.Monad.Except
 %%
 
 ast :: { AST }
-  : importDefs functionDefs  { AST { aimports = $1, afunctions = $2, apath = Nothing } }
-  | functionDefs             { AST { aimports = [], afunctions = $1, apath = Nothing } }
+  : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
+  | exps             { AST { aimports = [], aexps = $1, apath = Nothing } }
 
-importDefs :: { [ImportDecl] }
-  : importDef importDefs { $1:$2 }
-  | importDef            { [$1] }
+importDecls :: { [ImportDecl] }
+  : importDecl importDecls { $1:$2 }
+  | importDecl             { [$1] }
   
-importDef :: { ImportDecl }
+importDecl :: { ImportDecl }
   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
-functionDefs :: { [FunctionDef] }
-  : functionDef functionDefs { $1:$2 }
-  | functionDef              { [$1] }
-
-functionDef :: { FunctionDef }
--- Until we have inference, should we disallow that one ?
-  : name '=' '(' params ')' '=>' body         { FunctionDef
-                                                  { ftype = Nothing
-                                                  , ftypeDef = Nothing -- map (const "*") $4 ??
-                                                  , fpos = tokenToPos $1
-                                                  , fname = strV $1
-                                                  , fparams = $4
-                                                  , fbody = $7 
-                                                  }
-                                              }
-  | typing name '=' '(' params ')' '=>' body  { FunctionDef 
-                                                  { ftype = Nothing
-                                                  , ftypeDef = Just $1
-                                                  , fpos = tpos $1
-                                                  , fname = strV $2
-                                                  , fparams = $5
-                                                  , fbody = $8 
-                                                  }
-                                              }
-
--- TODO: Make it a TypeDecl ?
-typing :: { Typing }
-  : name '::' types { Typing { tpos = tokenToPos $1, tfor = strV $1, ttypes = $3 } }
-
-types :: { [Type] }
-  : name '->' types { (strV $1) : $3 }
-  | name            { [(strV $1)] }
-
 exps :: { [Exp] }
-  : exp exps            { $1:$2 }
-  | exp                 { [$1] }
+  : exp exps { $1:$2 }
+  | exp      { [$1] }
 
 exp :: { Exp }
-  : int               { IntLit       { etype = Just "Num", epos = tokenToPos $1} }
-  | str               { StringLit    { etype = Just "String", epos = tokenToPos $1} }
-  | false             { BoolLit      { etype = Just "Bool", epos = tokenToPos $1} }
-  | true              { BoolLit      { etype = Just "Bool", epos = tokenToPos $1} }
-  | exp operator exp  { Operation    { etype = Nothing, epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
-  | name              { VarAccess    { etype = Nothing, epos = tokenToPos $1, ename = strV $1 }}
-  | name '(' args ')' { FunctionCall { etype = Nothing, epos = tokenToPos $1, ename = strV $1, eargs = $3 }}
+--   : name '=' '(' params ')' '=>' exp         { Abs
+--                                                   { epos = tokenToPos $1
+--                                                   , ename = strV $1
+--                                                   , eparam = $4
+--                                                   , ebody = $7 
+--                                                   }
+--                                               }
+-- Abs should also have some named version that would be available in the current scope ( most likely module scope but could potentially be defined at different levels )
+  : '(' params ')' '=>' exp   { buildAbs (tokenToPos $1) $2 $5 }
+  | int               { LInt  { epos = tokenToPos $1} }
+  | str               { LStr  { epos = tokenToPos $1} }
+  | false             { LBool { epos = tokenToPos $1} }
+  | true              { LBool { epos = tokenToPos $1} }
+-- Make it an App of an App with the first one being a Var { ename = operatorName }, these should be in the initialEnv of inference with types being set
+-- Example App { eabs = Var { ename = "+" }, earg = App { ... } }
+-- initialEnv = fromList [("+", Type (Num -> Num -> Num))]
+--   | exp operator exp  { App   { epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
+  | name              { Var   { epos = tokenToPos $1, ename = strV $1 }}
+  -- That one should recursively Apply values like Abs
+  | name '(' exp ')' { App   { epos = tokenToPos $1, eabs = Var { epos = tokenToPos $1, ename = strV $1 }, earg = $3 }}
+--   | name '(' args ')' { App   { epos = tokenToPos $1, eabs = Var { epos = tokenToPos $1, ename = strV $1 }, earg = $3 }}
 
 args :: { [Exp] }
   : exp          { [$1] }
   | exp ',' args { $1:$3 }
 
-params :: { [Param] }
+params :: { [Name] }
   : name ',' params { (strV $1) : $3 }
   | name            { [(strV $1)] }
 
@@ -102,52 +83,33 @@ operator :: { Operator }
   | '+'   { Plus }
 
 {
+buildAbs :: Pos -> [Name] -> Exp -> Exp
+buildAbs pos [arg] body = Abs { epos = pos, eparam = arg, ebody = body }
+buildAbs pos (x:xs) body  = Abs { epos = pos, eparam = x, ebody = buildAbs pos xs body }
 
 data AST =
   AST
     { aimports   :: [ImportDecl]
-    , afunctions :: [FunctionDef]
-    , apath      :: Maybe Path
+    , aexps      :: [Exp]
+    , apath      :: Maybe FilePath
     }
     deriving(Eq, Show)
 
 data ImportDecl =
   ImportDecl
     { ipos  :: Pos
-    , ipath :: Path
+    , ipath :: FilePath
     }
     deriving(Eq, Show)
 
-data FunctionDef =
-  FunctionDef
-    { ftype    :: Maybe Type
-    , ftypeDef :: Maybe Typing -- Renaming field ftyping ?
-    , fpos     :: Pos
-    , fname    :: String
-    , fparams  :: [Param]
-    , fbody    :: Body
-    }
-    deriving(Eq, Show)
-
-data Typing =
-  Typing
-    { tpos   :: Pos
-    , tfor   :: Name
-    , ttypes :: [Type]
-    }
-    deriving(Eq, Show)
-
-data Exp = IntLit       { etype :: Maybe Type, epos :: Pos }
-         | StringLit    { etype :: Maybe Type, epos :: Pos }
-         | BoolLit      { etype :: Maybe Type, epos :: Pos }
-         | Operation    { etype :: Maybe Type, epos :: Pos, eleft :: Exp, eoperator :: Operator, eright :: Exp }
-         | VarAccess    { etype :: Maybe Type, epos :: Pos, ename :: Name }
-         | FunctionCall { etype :: Maybe Type, epos :: Pos, ename :: Name, eargs :: [Exp] }
+data Exp = LInt  { epos :: Pos }
+         | LStr  { epos :: Pos }
+         | LBool { epos :: Pos }
+         | App   { epos :: Pos, eabs :: Exp, earg :: Exp } -- HM Application, first exp should be an Abstraction
+         | Abs   { epos :: Pos, eparam :: Name, ebody :: Exp }
+         | Var   { epos :: Pos, ename :: Name }
          deriving(Eq, Show)
 
-type Path  = String
-type Type  = String
-type Param = String -- Should this be (Name, Maybe Type) ?
 type Name  = String
 
 data Body = Body Exp deriving(Eq, Show)

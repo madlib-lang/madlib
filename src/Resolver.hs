@@ -20,7 +20,7 @@ where
 import qualified Data.List                     as L
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Grammar
+import           Grammar_
 import           Data.Foldable                  ( foldl'
                                                 , foldlM
                                                 )

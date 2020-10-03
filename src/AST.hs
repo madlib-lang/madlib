@@ -16,7 +16,6 @@ where
 import           Grammar                        ( parse
                                                 , AST(aimports, apath)
                                                 , ImportDecl(ipath)
-                                                , Path
                                                 )
 import qualified Data.Map                      as M
 import           Control.Monad                  ( liftM2 )
@@ -67,7 +66,7 @@ findAST path table = case M.lookup path table of
   Just x  -> return x
   Nothing -> Left $ ASTNotFound path
 
-buildAST :: Path -> String -> Either ASTError AST
+buildAST :: FilePath -> String -> Either ASTError AST
 buildAST path code = mapLeft (GrammarError path) $ parse code >>= setPath
  where
   setPath :: AST -> Either e AST
