@@ -64,7 +64,8 @@ exp :: { Exp }
 --   | exp operator exp  { App   { epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
   | name              { Var   { epos = tokenToPos $1, ename = strV $1 }}
   -- That one should recursively Apply values like Abs
-  | name '(' exp ')' { App   { epos = tokenToPos $1, eabs = Var { epos = tokenToPos $1, ename = strV $1 }, earg = $3 }}
+  | '(' exp ')' '(' exp ')' { App   { epos = epos $2, eabs = $2, earg = $5 }}
+  | exp '(' exp ')' { App   { epos = epos $1, eabs = $1, earg = $3 }}
 --   | name '(' args ')' { App   { epos = tokenToPos $1, eabs = Var { epos = tokenToPos $1, ename = strV $1 }, earg = $3 }}
 
 args :: { [Exp] }

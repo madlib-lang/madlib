@@ -14,19 +14,26 @@ import           AST                            ( ASTError(..)
                                                 , buildASTTable
                                                 , findAST
                                                 )
+import Infer
+import Control.Monad.State (runStateT, runState)
+import Control.Monad.Except (runExcept)
 
 main :: IO ()
 main = do
   entrypoint <- head <$> getArgs
   astTable   <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
-  -- let entryAST      = astTable >>= findAST entrypoint
-  --     resolvedTable = case (entryAST, astTable) of
-  --       (Left _, Left _) -> Left [RError PathNotFound (Backtrace [])]
-  --       (Right ast, Right table) ->
-  --         resolveASTTable (Env M.empty M.empty Nothing (Backtrace [])) ast table
 
-  -- putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
+  -- putStrLn $ case astTable of
+  --   Left e -> ppShow e
+  --   Right o -> ppShow $ infer M.empty o >>= findAST entrypoint
+  let entryAST      = astTable >>= findAST entrypoint
+      resolvedTable = case (entryAST, astTable) of
+        (Left _, Left _) -> Left UnboundVariable
+        (Right ast, Right table) ->
+          runExcept $ runStateT (infer M.empty $ head $ aexps ast) Unique { count = 0 }
+
+  putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   -- return ()
 
 -- TODO: Implement function to build it
