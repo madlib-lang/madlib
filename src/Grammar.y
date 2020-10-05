@@ -17,8 +17,8 @@ import Control.Monad.Except
   name     { Token _ (TokenName _) }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
---   '::'     { Token _ TokenDoubleColon }
---   '->'     { Token _ TokenArrow }
+  '::'     { Token _ TokenDoubleColon }
+  '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
   ','      { Token _ TokenComa }
   '('      { Token _ TokenLeftParen }
@@ -32,6 +32,7 @@ import Control.Monad.Except
 %left ';'
 %right ','
 %nonassoc '=' '=>'
+%left '->'
 %left '==='
 %left '+'
 
@@ -49,21 +50,21 @@ importDecl :: { ImportDecl }
   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
 exps :: { [Exp] }
-  : exp exps     { $1:$2 }
-  | exp ';' exps { $1:$3 }
-  | exp          { [$1] }
+  : exp ';' exps { $1:$3 }
   | exp ';'      { [$1] }
 
 exp :: { Exp }
 -- Abs should also have some named version that would be available in the current scope ( most likely module scope but could potentially be defined at different levels )
-  : literal                          { $1 }
-  | name                     %shift  { Var { epos = tokenToPos $1, ename = strV $1 }}
-  | exp operator exp         %shift  { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
-  | exp '(' args ')'         %shift  { buildApp (epos $1) $1 $3 }
-  | '(' exp ')' '(' args ')' %shift  { buildApp (epos $2) $2 $5 }
-  | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToPos $1) $2 $5 }
-  | name '=' exp             %shift  { Assignment { epos = tokenToPos $1, ename = strV $1, eexp = $3 }}
-  | '(' exp ')'              %shift  { $2 }
+  : literal                         { $1 }
+  | name                     %shift { Var { epos = tokenToPos $1, ename = strV $1 }}
+  | exp operator exp         %shift { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
+  | name '(' args ')'        %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, ename = strV $1 } $3 }
+  | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
+  | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
+  | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
+  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, ename = strV $1, eexp = $3 }}
+  | '(' exp ')'              %shift { $2 }
+  | exp '::' typings                { TypedExp { epos = epos $1, eexp = $1, etyping = $3 } }
 
 literal :: { Exp }
   : int                       { LInt  { epos = tokenToPos $1} }
@@ -78,6 +79,13 @@ args :: { [Exp] }
 params :: { [Name] }
   : name ',' params %shift { (strV $1) : $3 }
   | name                   { [(strV $1)] }
+
+typings :: { [Typing] }
+  : typing '->' typings { Typing : $3 }
+  | typing              { [Typing] }
+
+typing :: { Typing }
+  : name { Typing }
 
 operator :: { Exp }
   : '===' { Var { epos = tokenToPos $1, ename = "===" } }
@@ -114,11 +122,14 @@ data Exp = LInt       { epos :: Pos }
          | Abs        { epos :: Pos, eparam :: Name, ebody :: Exp }
          | Assignment { epos :: Pos, eexp :: Exp, ename :: Name }
          | Var        { epos :: Pos, ename :: Name }
+         | TypedExp   { epos :: Pos, eexp :: Exp, etyping :: [Typing] }
          deriving(Eq, Show)
 
 type Name  = String
 
 data Body = Body Exp deriving(Eq, Show)
+
+data Typing = Typing deriving(Eq, Show)
 
 data Operator = TripleEq 
               | Plus
