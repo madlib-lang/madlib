@@ -17,8 +17,8 @@ import Control.Monad.Except
   name     { Token _ (TokenName _) }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
-  '::'     { Token _ TokenDoubleColon }
-  '->'     { Token _ TokenArrow }
+--   '::'     { Token _ TokenDoubleColon }
+--   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
   ','      { Token _ TokenComa }
   '('      { Token _ TokenLeftParen }
@@ -27,6 +27,14 @@ import Control.Monad.Except
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
+  ';'      { Token _ TokenSemiColon }
+
+%left ';'
+%right ','
+%nonassoc '=' '=>'
+%left '==='
+%left '+'
+
 %%
 
 ast :: { AST }
@@ -41,52 +49,48 @@ importDecl :: { ImportDecl }
   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
 exps :: { [Exp] }
-  : exp exps { $1:$2 }
-  | exp      { [$1] }
+  : exp exps     { $1:$2 }
+  | exp ';' exps { $1:$3 }
+  | exp          { [$1] }
+  | exp ';'      { [$1] }
 
 exp :: { Exp }
---   : name '=' '(' params ')' '=>' exp         { Abs
---                                                   { epos = tokenToPos $1
---                                                   , ename = strV $1
---                                                   , eparam = $4
---                                                   , ebody = $7 
---                                                   }
---                                               }
 -- Abs should also have some named version that would be available in the current scope ( most likely module scope but could potentially be defined at different levels )
-  : '(' params ')' '=>' exp   { buildAbs (tokenToPos $1) $2 $5 }
-  | int               { LInt  { epos = tokenToPos $1} }
-  | str               { LStr  { epos = tokenToPos $1} }
-  | false             { LBool { epos = tokenToPos $1} }
-  | true              { LBool { epos = tokenToPos $1} }
--- Make it an App of an App with the first one being a Var { ename = operatorName }, these should be in the initialEnv of inference with types being set
--- Example App { eabs = Var { ename = "+" }, earg = App { ... } }
--- initialEnv = fromList [("+", Type (Num -> Num -> Num))]
---   | exp operator exp  { App   { epos = epos $1, eleft = $1, eoperator = $2, eright = $3 }}
-  | name              { Var   { epos = tokenToPos $1, ename = strV $1 }}
-  -- That one should recursively Apply values like Abs
-  | '(' exp ')' '(' exp ')' { App   { epos = epos $2, eabs = $2, earg = $5 }}
-  | exp '(' exp ')' { App   { epos = epos $1, eabs = $1, earg = $3 }}
---   | name '(' args ')' { App   { epos = tokenToPos $1, eabs = Var { epos = tokenToPos $1, ename = strV $1 }, earg = $3 }}
+  : literal                          { $1 }
+  | name                     %shift  { Var { epos = tokenToPos $1, ename = strV $1 }}
+  | exp operator exp         %shift  { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
+  | exp '(' args ')'         %shift  { buildApp (epos $1) $1 $3 }
+  | '(' exp ')' '(' args ')' %shift  { buildApp (epos $2) $2 $5 }
+  | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToPos $1) $2 $5 }
+  | name '=' exp             %shift  { Assignment { epos = tokenToPos $1, ename = strV $1, eexp = $3 }}
+  | '(' exp ')'              %shift  { $2 }
+
+literal :: { Exp }
+  : int                       { LInt  { epos = tokenToPos $1} }
+  | str                       { LStr  { epos = tokenToPos $1} }
+  | false                     { LBool { epos = tokenToPos $1} }
+  | true                      { LBool { epos = tokenToPos $1} }
 
 args :: { [Exp] }
-  : exp          { [$1] }
-  | exp ',' args { $1:$3 }
+  : exp ',' args %shift { $1:$3 }
+  | exp          %shift { [$1] }
 
 params :: { [Name] }
-  : name ',' params { (strV $1) : $3 }
-  | name            { [(strV $1)] }
+  : name ',' params %shift { (strV $1) : $3 }
+  | name                   { [(strV $1)] }
 
-body :: { Body }
-  : exp { Body $1 }
-
-operator :: { Operator }
-  : '===' { TripleEq }
-  | '+'   { Plus }
+operator :: { Exp }
+  : '===' { Var { epos = tokenToPos $1, ename = "===" } }
+  | '+'   { Var { epos = tokenToPos $1, ename = "+" } }
 
 {
 buildAbs :: Pos -> [Name] -> Exp -> Exp
-buildAbs pos [arg] body = Abs { epos = pos, eparam = arg, ebody = body }
+buildAbs pos [param] body = Abs { epos = pos, eparam = param, ebody = body }
 buildAbs pos (x:xs) body  = Abs { epos = pos, eparam = x, ebody = buildAbs pos xs body }
+
+buildApp :: Pos -> Exp -> [Exp] -> Exp
+buildApp pos f [arg]  = App { epos = pos, eabs = f, earg = arg }
+buildApp pos f xs = App { epos = pos, eabs = buildApp pos f (init xs) , earg = last xs }
 
 data AST =
   AST
@@ -103,12 +107,13 @@ data ImportDecl =
     }
     deriving(Eq, Show)
 
-data Exp = LInt  { epos :: Pos }
-         | LStr  { epos :: Pos }
-         | LBool { epos :: Pos }
-         | App   { epos :: Pos, eabs :: Exp, earg :: Exp } -- HM Application, first exp should be an Abstraction
-         | Abs   { epos :: Pos, eparam :: Name, ebody :: Exp }
-         | Var   { epos :: Pos, ename :: Name }
+data Exp = LInt       { epos :: Pos }
+         | LStr       { epos :: Pos }
+         | LBool      { epos :: Pos }
+         | App        { epos :: Pos, eabs :: Exp, earg :: Exp }
+         | Abs        { epos :: Pos, eparam :: Name, ebody :: Exp }
+         | Assignment { epos :: Pos, eexp :: Exp, ename :: Name }
+         | Var        { epos :: Pos, ename :: Name }
          deriving(Eq, Show)
 
 type Name  = String

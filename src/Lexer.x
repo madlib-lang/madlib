@@ -43,21 +43,22 @@ tokens :-
   import                                { mapToken (\_ -> TokenImport) }
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
-  "+"                                   { mapToken (\_ -> TokenPlus) }
+  \+                                    { mapToken (\_ -> TokenPlus) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt (read s)) }
   "true"                                { mapToken (\_ -> (TokenBool True)) }
   "false"                               { mapToken (\_ -> (TokenBool False)) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
-  ","                                   { mapToken (\_ -> TokenComa) }
-  "{"                                   { mapToken (\_ -> TokenLeftCurly) }
-  "}"                                   { mapToken (\_ -> TokenRightCurly) }
-  "("                                   { mapToken (\_ -> TokenLeftParen) }
-  ")"                                   { mapToken (\_ -> TokenRightParen) }
+  \,                                    { mapToken (\_ -> TokenComa) }
+  \{                                    { mapToken (\_ -> TokenLeftCurly) }
+  \}                                    { mapToken (\_ -> TokenRightCurly) }
+  \(                                    { mapToken (\_ -> TokenLeftParen) }
+  \)                                    { mapToken (\_ -> TokenRightParen) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
-  "::"                                  { mapToken (\_ -> TokenDoubleColon) }
-  "->"                                  { mapToken (\_ -> TokenArrow) }
-  "=>"                                  { mapToken (\_ -> TokenFatArrow) }
+  \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
+  \-\>                                  { mapToken (\_ -> TokenArrow) }
+  \=\>                                  { mapToken (\_ -> TokenFatArrow) }
+  \;                                    { mapToken (\_ -> TokenSemiColon) }
 
 {
 sanitizeStr :: String -> String
@@ -97,6 +98,8 @@ data TokenClass
  | TokenFatArrow
  | TokenEOF
  | TokenImport
+ | TokenReturn
+ | TokenSemiColon
  deriving (Eq, Show)
 
 

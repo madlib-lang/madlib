@@ -4,11 +4,13 @@
 {-# LANGUAGE RankNTypes #-}
 module Infer where
 
-import Grammar
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Control.Monad.Except
 import Control.Monad.State
+import Grammar
+import AST
+import Data.Foldable (foldrM, foldlM)
 
 newtype TVar = TV String
   deriving (Show, Eq, Ord)
@@ -29,7 +31,7 @@ type Env = M.Map String Scheme
 type Substitution = M.Map TVar Type
 
 data InferError = InfiniteType TVar Type
-                | UnboundVariable
+                | UnboundVariable String
                 | UnificationError Type Type
                 deriving (Show, Eq, Ord)
 
@@ -37,6 +39,15 @@ newtype Unique = Unique { count :: Int }
   deriving (Show, Eq, Ord)
 
 type Infer a = forall m. (MonadError InferError m, MonadState Unique m) => m a
+
+
+--Move all of this to runInfer :: ASTTable -> Either InferError (...)
+-- runInfer :: ASTTable -> Either InferError [Type]
+-- runInfer table = do
+--   let r = mapM (infer M.empty $ head $ aexps) table
+--   runExcept $ runStateT (infer M.empty $ head $ aexps ast) Unique { count = 0 }
+--   undefined
+
 
 class Substitutable a where
   apply :: Substitution -> a -> a
@@ -68,12 +79,14 @@ instance Substitutable Env where
 extend :: Env -> (String, Scheme) -> Env
 extend env (x, s) = M.insert x s env
 
+
 lookupEnv :: Env -> String -> Infer (Substitution, Type)
 lookupEnv env x = do
   case M.lookup x env of
-    Nothing -> throwError UnboundVariable --(show x)
+    Nothing -> throwError $ UnboundVariable x
     Just s  -> do t <- instantiate s
                   return (M.empty, t)
+
 
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
@@ -84,22 +97,27 @@ newTVar = do
   put s{count = count s + 1}
   return $ TVar $ TV (letters !! count s)
 
+
 instantiate ::  Scheme -> Infer Type
 instantiate (Forall as t) = do
   as' <- mapM (const newTVar) as
   let s = M.fromList $ zip as as'
   return $ apply s t
 
+
 compose :: Substitution -> Substitution -> Substitution
 s1 `compose` s2 = M.map (apply s1) $ M.union s2 s1
 
+
 occursCheck ::  Substitutable a => TVar -> a -> Bool
 occursCheck a t = S.member a $ ftv t
+
 
 bind ::  TVar -> Type -> Infer Substitution
 bind a t | t == TVar a     = return M.empty
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = return $ M.singleton a t
+
 
 unify :: Type -> Type -> Infer Substitution
 unify (l `TArr` r) (l' `TArr` r')  = do
@@ -112,22 +130,45 @@ unify t (TVar a) = bind a t
 unify (TCon a) (TCon b) | a == b = return M.empty
 unify t1 t2 = throwError $ UnificationError t1 t2
 
+
 infer :: Env -> Exp -> Infer (Substitution, Type)
 infer env Var{ ename } = lookupEnv env ename
 
 infer env Abs { eparam, ebody } = do
-    tv <- newTVar
-    let env' = env `extend` (eparam, Forall [] tv)
+    tv       <- newTVar
+    let env' = extend env (eparam, Forall [] tv)
     (s1, t1) <- infer env' ebody
     return (s1, apply s1 tv `TArr` t1)
 
 infer env App { eabs, earg } = do
-    tv <- newTVar
+    tv       <- newTVar
     (s1, t1) <- infer env eabs
     (s2, t2) <- infer (apply s1 env) earg
     s3       <- unify (apply s2 t1) (TArr t2 tv)
     return (s3 `compose` s2 `compose` s1, apply s3 tv)
 
+infer env Assignment { eexp } = infer env eexp
+
 infer env LInt {} = return (M.empty, TCon "Num")
+infer env LStr {} = return (M.empty, TCon "String")
 
 infer _ _ = undefined
+
+initialEnv :: Env
+initialEnv = M.fromList
+    [ ("===", Forall [] $ TCon "Bool" `TArr` TCon "Bool" `TArr` TCon "Bool")
+    , ("+", Forall [] $ TCon "Num" `TArr` TCon "Num" `TArr` TCon "Num")
+    ]
+
+inferExps :: Env -> [Exp] -> Infer [Type]
+inferExps env [exp] = (:[]) . snd <$> infer env exp
+inferExps env (e:xs) =
+  do
+    r <- infer env e
+    let env' = case e of
+            Assignment { ename } -> extend env (ename, Forall [] $ snd r)
+            _             -> env
+    (\n -> snd r : n) <$> inferExps env' xs
+
+runInfer :: AST -> Either InferError [Type]
+runInfer ast = fst <$> runExcept (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })

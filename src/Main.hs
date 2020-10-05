@@ -29,9 +29,11 @@ main = do
   --   Right o -> ppShow $ infer M.empty o >>= findAST entrypoint
   let entryAST      = astTable >>= findAST entrypoint
       resolvedTable = case (entryAST, astTable) of
-        (Left _, Left _) -> Left UnboundVariable
+        (Left _, Left _) -> Left $ UnboundVariable ""
         (Right ast, Right table) ->
-          runExcept $ runStateT (infer M.empty $ head $ aexps ast) Unique { count = 0 }
+          -- Move all of this to runInfer :: ASTTable -> Either InferError (...)
+          -- runExcept $ runStateT (infer M.empty $ head $ aexps ast) Unique { count = 0 }
+          runInfer ast
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   -- return ()
