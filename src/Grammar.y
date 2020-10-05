@@ -17,6 +17,9 @@ import Control.Monad.Except
   name     { Token _ (TokenName _) }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
+  '-'      { Token _ TokenDash }
+  '*'      { Token _ TokenStar }
+  '/'      { Token _ TokenSlash }
   '::'     { Token _ TokenDoubleColon }
   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
@@ -34,7 +37,8 @@ import Control.Monad.Except
 %nonassoc '=' '=>'
 %left '->'
 %left '==='
-%left '+'
+%left '*' '/'
+%left '+' '-'
 
 %%
 
@@ -50,11 +54,12 @@ importDecl :: { ImportDecl }
   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
 exps :: { [Exp] }
-  : exp ';' exps { $1:$3 }
+  : exp exps     { $1:$2 }
+  | exp ';' exps { $1:$3 }
+  | exp          { [$1] }
   | exp ';'      { [$1] }
 
 exp :: { Exp }
--- Abs should also have some named version that would be available in the current scope ( most likely module scope but could potentially be defined at different levels )
   : literal                         { $1 }
   | name                     %shift { Var { epos = tokenToPos $1, ename = strV $1 }}
   | exp operator exp         %shift { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
@@ -81,15 +86,15 @@ params :: { [Name] }
   | name                   { [(strV $1)] }
 
 typings :: { [Typing] }
-  : typing '->' typings { Typing : $3 }
-  | typing              { [Typing] }
-
-typing :: { Typing }
-  : name { Typing }
+  : name '->' typings { Typing (strV $1) : $3 }
+  | name              { [Typing (strV $1)] }
 
 operator :: { Exp }
   : '===' { Var { epos = tokenToPos $1, ename = "===" } }
   | '+'   { Var { epos = tokenToPos $1, ename = "+" } }
+  | '-'   { Var { epos = tokenToPos $1, ename = "-" } }
+  | '*'   { Var { epos = tokenToPos $1, ename = "*" } }
+  | '/'   { Var { epos = tokenToPos $1, ename = "/" } }
 
 {
 buildAbs :: Pos -> [Name] -> Exp -> Exp
@@ -127,9 +132,7 @@ data Exp = LInt       { epos :: Pos }
 
 type Name  = String
 
-data Body = Body Exp deriving(Eq, Show)
-
-data Typing = Typing deriving(Eq, Show)
+newtype Typing = Typing String deriving(Eq, Show)
 
 data Operator = TripleEq 
               | Plus

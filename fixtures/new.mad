@@ -1,8 +1,9 @@
 ((f, x) => f(x))((a) => 2, 3);
 
+tchou :: a -> a -> a
 tchou = (b, c) => b + c;
 
-tchou(2);
+tchou(2, 4) === 6;
 
 ((d, e) => tchou(d, e))(2);
 

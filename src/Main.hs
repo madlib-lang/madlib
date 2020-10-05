@@ -14,9 +14,11 @@ import           AST                            ( ASTError(..)
                                                 , buildASTTable
                                                 , findAST
                                                 )
-import Infer
-import Control.Monad.State (runStateT, runState)
-import Control.Monad.Except (runExcept)
+import           Infer
+import           Control.Monad.State            ( runStateT
+                                                , runState
+                                                )
+import           Control.Monad.Except           ( runExcept )
 
 main :: IO ()
 main = do
