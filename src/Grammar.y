@@ -31,11 +31,13 @@ import Control.Monad.Except
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
   ';'      { Token _ TokenSemiColon }
+  '|'      { Token _ TokenPipe }
+  'data'   { Token _ TokenData }
 
 %left ';'
 %right ','
-%nonassoc '=' '=>'
-%left '->'
+%nonassoc '=' '=>' '::'
+%left '->' '|'
 %left '==='
 %left '*' '/'
 %left '+' '-'
@@ -43,21 +45,43 @@ import Control.Monad.Except
 %%
 
 ast :: { AST }
-  : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
-  | exps             { AST { aimports = [], aexps = $1, apath = Nothing } }
+--   : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
+  : exps             %shift { AST { aimports = [], aexps = $1, apath = Nothing, aadts = [] } }
+  | adts             %shift { AST { aimports = [], aexps = [], aadts = $1, apath = Nothing } }
+  | ast exps         %shift { $1 { aimports = aimports $1, aexps = aexps $1 <> $2, aadts = aadts $1 } }
+  | ast adts         %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 <> $2 } }
 
-importDecls :: { [ImportDecl] }
-  : importDecl importDecls { $1:$2 }
-  | importDecl             { [$1] }
+-- importDecls :: { [ImportDecl] }
+--   : importDecl importDecls { $1:$2 }
+--   | importDecl             { [$1] }
   
-importDecl :: { ImportDecl }
-  : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
+-- importDecl :: { ImportDecl }
+--   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
+
+adts :: { [ADT] }
+  : adt adts    { $1:$2 }
+  | adt         { [$1] }
+
+adt :: { ADT }
+  : 'data' name '=' adtConstructors ';' %shift { ADT { adtname = strV $2, adtconstructors = $4 } }
+
+adtConstructors :: { [ADTConstructor] }
+  : adtConstructor '|' adtConstructors { $1:$3 }
+  | adtConstructor                     { [$1] }
+
+adtConstructor :: { ADTConstructor }
+  : name adtConstructorArgs { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
+  | name                    { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
+
+adtConstructorArgs :: { [Name] }
+  : name adtConstructorArgs { strV $1 : $2 }
+  | name                    { [strV $1] }
 
 exps :: { [Exp] }
-  : exp exps     { $1:$2 }
-  | exp ';' exps { $1:$3 }
-  | exp          { [$1] }
-  | exp ';'      { [$1] }
+  : exp exps     %shift { $1:$2 }
+  | exp ';' exps %shift { $1:$3 }
+  | exp          %shift { [$1] }
+  | exp ';'      %shift { [$1] }
 
 exp :: { Exp }
   : literal                         { $1 }
@@ -82,8 +106,8 @@ args :: { [Exp] }
   | exp          %shift { [$1] }
 
 params :: { [Name] }
-  : name ',' params %shift { (strV $1) : $3 }
-  | name                   { [(strV $1)] }
+  : name ',' params %shift { strV $1 : $3 }
+  | name                   { [strV $1] }
 
 typings :: { [Typing] }
   : name '->' typings { Typing (strV $1) : $3 }
@@ -109,6 +133,7 @@ data AST =
   AST
     { aimports   :: [ImportDecl]
     , aexps      :: [Exp]
+    , aadts       :: [ADT]
     , apath      :: Maybe FilePath
     }
     deriving(Eq, Show)
@@ -119,6 +144,12 @@ data ImportDecl =
     , ipath :: FilePath
     }
     deriving(Eq, Show)
+
+-- TODO: Add pos
+data ADT = ADT { adtname :: Name, adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
+
+-- TODO: Add pos
+data ADTConstructor = ADTConstructor { adtcname :: Name, adtcargs :: [Name] } deriving(Eq, Show)
 
 data Exp = LInt       { epos :: Pos }
          | LStr       { epos :: Pos }

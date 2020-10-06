@@ -41,6 +41,7 @@ tokens :-
   "--".*                                ;
   $white+                               ;
   import                                { mapToken (\_ -> TokenImport) }
+  data                                  { mapToken (\_ -> (TokenData)) }
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
   \+                                    { mapToken (\_ -> TokenPlus) }
@@ -57,11 +58,12 @@ tokens :-
   \}                                    { mapToken (\_ -> TokenRightCurly) }
   \(                                    { mapToken (\_ -> TokenLeftParen) }
   \)                                    { mapToken (\_ -> TokenRightParen) }
-  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
   \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
   \-\>                                  { mapToken (\_ -> TokenArrow) }
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
+  \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
+  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
 
 {
 sanitizeStr :: String -> String
@@ -69,7 +71,8 @@ sanitizeStr = tail . init
 
 --type AlexAction result = AlexInput -> Int -> Alex result
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (posn, prevChar, pending, input) len = return (Token (makePos posn) (tokenizer (take len input)))
+mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makePos posn) token
+  where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
 
 makePos :: AlexPosn -> Pos
 makePos (AlexPn a l c) = Pos a l c
@@ -104,7 +107,8 @@ data TokenClass
  | TokenFatArrow
  | TokenEOF
  | TokenImport
- | TokenReturn
+ | TokenPipe
+ | TokenData
  | TokenSemiColon
  deriving (Eq, Show)
 

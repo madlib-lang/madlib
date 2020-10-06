@@ -1,7 +1,15 @@
 ((f, x) => f(x))((a) => 2, 3);
 
+data Stuff
+  = Stuff
+  | NotStuff Jo;
+
 tchou :: a -> a -> a
 tchou = (b, c) => b + c;
+
+data Maybe
+  = Just a
+  | Nothing;
 
 tchou(2, 4) === 6;
 
