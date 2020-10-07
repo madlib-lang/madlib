@@ -9,10 +9,7 @@ import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Grammar
-import           AST
-import           Data.Foldable                  ( foldrM
-                                                , foldlM
-                                                )
+import           Debug.Trace
 
 
 newtype TVar = TV String
@@ -28,6 +25,7 @@ data TCon
   = CString
   | CNum
   | CBool
+  | CUserDef String
   deriving (Show, Eq, Ord)
 
 infixr `TArr`
@@ -37,7 +35,7 @@ data Scheme = Forall [TVar] Type
 
 -- TODO: Convert back to a simple type
 type Vars = M.Map String Scheme
-newtype Env = Env { vars :: Vars }
+newtype Env = Env { vars :: Vars } deriving(Eq, Show)
 
 type Substitution = M.Map TVar Type
 
@@ -195,6 +193,38 @@ initialEnv = Env
              ]
   }
 
+buildInitialEnv :: AST -> Env
+buildInitialEnv AST { aadts } =
+  Env { vars = M.union (vars initialEnv) (resolveADTs aadts) }
+
+resolveADTs :: [ADT] -> Vars
+resolveADTs = M.fromList . (>>= resolveADT)
+
+resolveADT :: ADT -> [(String, Scheme)]
+resolveADT ADT { adtname, adtconstructors } =
+  resolveADTConstructor adtname <$> adtconstructors
+
+-- TODO: Still a lot of work here !
+-- We need to be able to query resolved types to look up types using other subtypes in their constructors
+-- Example:
+-- data Result = Ok Some
+-- data Some = Some String
+-- For now just checking that the type exists should be enough
+-- but when we add support for typed data types ( Maybe a, List a, ... )
+-- we'll need to also check that variables are given.
+resolveADTConstructor :: Name -> ADTConstructor -> (String, Scheme)
+resolveADTConstructor n ADTConstructor { adtcname, adtcargs = [] } =
+  (adtcname, Forall [] $ TCon $ CUserDef n)
+resolveADTConstructor n ADTConstructor { adtcname, adtcargs } =
+  let allNames  = nameToType <$> adtcargs <> [n]
+      typeArray = foldr1 TArr allNames
+  in  (adtcname, Forall [] typeArray)
+ where
+  nameToType n | n == "String" = TCon CString
+               | n == "Bool"   = TCon CBool
+               | n == "Num"    = TCon CNum
+               | otherwise     = TCon $ CUserDef n
+
 inferExps :: Env -> [Exp] -> Infer [Type]
 inferExps env [exp   ] = (: []) . snd <$> infer env exp
 inferExps env (e : xs) = do
@@ -209,3 +239,4 @@ inferExps env (e : xs) = do
 runInfer :: AST -> Either InferError [Type]
 runInfer ast = fst <$> runExcept
   (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })
+  where initialEnv = trace (show $ buildInitialEnv ast) (buildInitialEnv ast)

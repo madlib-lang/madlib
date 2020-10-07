@@ -1,20 +1,27 @@
-((f, x) => f(x))((a) => 2, 3);
-
 data Stuff
-  = Stuff
-  | NotStuff Jo;
+  = Yo
+  | NotYo
+
+data Result = R String Bool
+
+res = (a) => R(a)
+
+tcho = (a) => Yo
+tchotcho = NotYo
 
 tchou :: a -> a -> a
-tchou = (b, c) => b + c;
+tchou = (b, c) => b + c
 
-data Maybe
-  = Just a
-  | Nothing;
+((f, x) => f(x))((a) => 2, 3)
 
-tchou(2, 4) === 6;
 
-((d, e) => tchou(d, e))(2);
+tchou(
+  2,
+  4
+) === 6
 
-(i, j) => ((i + j) + 1);
+((d, e) => tchou(d, e))(2)
 
-((i, j) => i + j)(2, 3);
+(i, j) => ((i + j) + 1)
+
+((i, j) => i + j)(2, 3)

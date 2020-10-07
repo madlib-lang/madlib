@@ -35,13 +35,14 @@ import Debug.Trace
 
 $digit = 0-9                    -- digits
 $alpha = [a-zA-Z]               -- alphabetic characters
+$empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 
 tokens :-
+  [\n]                                  { mapToken (\_ -> TokenReturn) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   "--".*                                ;
-  $white+                               ;
   import                                { mapToken (\_ -> TokenImport) }
-  data                                  { mapToken (\_ -> (TokenData)) }
+  data                                  { mapToken (\_ -> TokenData) }
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
   \+                                    { mapToken (\_ -> TokenPlus) }
@@ -64,6 +65,7 @@ tokens :-
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
+  $empty+                               ;
 
 {
 sanitizeStr :: String -> String
@@ -110,6 +112,7 @@ data TokenClass
  | TokenPipe
  | TokenData
  | TokenSemiColon
+ | TokenReturn
  deriving (Eq, Show)
 
 

@@ -15,6 +15,7 @@ import Control.Monad.Except
   int      { Token _ (TokenInt _) }
   str      { Token _ (TokenStr _) }
   name     { Token _ (TokenName _) }
+  'ret'    { Token _ TokenReturn }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
   '-'      { Token _ TokenDash }
@@ -34,7 +35,7 @@ import Control.Monad.Except
   '|'      { Token _ TokenPipe }
   'data'   { Token _ TokenData }
 
-%left ';'
+%left ';' 'ret'
 %right ','
 %nonassoc '=' '=>' '::'
 %left '->' '|'
@@ -45,11 +46,19 @@ import Control.Monad.Except
 %%
 
 ast :: { AST }
+  : rRet             %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
+  | rRet ast         %shift { $2 }
+  | ast rRet         %shift { $1 }
+  | adt ast          %shift { $2 { aimports = aimports $2, aexps = aexps $2, aadts =  [$1] <> aadts $2 } }
+  | adt              %shift { AST { aimports = [], aexps = [], aadts = [$1], apath = Nothing } }
+  | exp ast          %shift { $2 { aimports = aimports $2, aexps = [$1] <> aexps $2, aadts = aadts $2 } }
+  | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
 --   : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
-  : exps             %shift { AST { aimports = [], aexps = $1, apath = Nothing, aadts = [] } }
-  | adts             %shift { AST { aimports = [], aexps = [], aadts = $1, apath = Nothing } }
-  | ast exps         %shift { $1 { aimports = aimports $1, aexps = aexps $1 <> $2, aadts = aadts $1 } }
-  | ast adts         %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 <> $2 } }
+  -- : exps              %shift { AST { aimports = [], aexps = $1, apath = Nothing, aadts = [] } }
+  -- : adts              %shift { AST { aimports = [], aexps = [], aadts = $1, apath = Nothing } }
+  -- | ast exps          %shift { $1 { aimports = aimports $1, aexps = aexps $1 <> $2, aadts = aadts $1 } }
+  -- | ast adts          %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 <> $2 } }
+  -- | ast rret          %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 } }
 
 -- importDecls :: { [ImportDecl] }
 --   : importDecl importDecls { $1:$2 }
@@ -58,16 +67,44 @@ ast :: { AST }
 -- importDecl :: { ImportDecl }
 --   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
-adts :: { [ADT] }
-  : adt adts    { $1:$2 }
-  | adt         { [$1] }
+-- adts :: { [ADT] }
+--   : adt adts    { $1:$2 }
+--   | adt         { [$1] }
+
+rRet :: { [TokenClass] }
+  : 'ret'       { [] }
+  -- | 'ret' rret { [] }
+
+maybeRet :: { [TokenClass] }
+  : 'ret'       { [] }
+  | {- empty -} { [] }
+
+rEq :: { [TokenClass] }
+  : '='       { [] }
+  | 'ret' '=' { [] }
+
+rPipe :: { [TokenClass] }
+  : '|'       { [] }
+  | 'ret' '|' { [] }
+
+rParenL :: { [TokenClass] }
+  : '('       { [] }
+  | '(' 'ret' { [] }
+
+rComa :: { [TokenClass] }
+  : ','       { [] }
+  | ',' 'ret' { [] }
+  | 'ret' ',' { [] }
+
+
+
 
 adt :: { ADT }
-  : 'data' name '=' adtConstructors ';' %shift { ADT { adtname = strV $2, adtconstructors = $4 } }
+  : 'data' name rEq adtConstructors %shift { ADT { adtname = strV $2, adtconstructors = $4 } }
 
 adtConstructors :: { [ADTConstructor] }
-  : adtConstructor '|' adtConstructors { $1:$3 }
-  | adtConstructor                     { [$1] }
+  : adtConstructor rPipe adtConstructors      { $1:$3 }
+  | adtConstructor rRet                       { [$1] }
 
 adtConstructor :: { ADTConstructor }
   : name adtConstructorArgs { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
@@ -77,17 +114,19 @@ adtConstructorArgs :: { [Name] }
   : name adtConstructorArgs { strV $1 : $2 }
   | name                    { [strV $1] }
 
-exps :: { [Exp] }
-  : exp exps     %shift { $1:$2 }
-  | exp ';' exps %shift { $1:$3 }
-  | exp          %shift { [$1] }
-  | exp ';'      %shift { [$1] }
+-- exps :: { [Exp] }
+--   : exp exps     %shift { $1:$2 }
+--   | exp ';' exps %shift { $1:$3 }
+--   -- | exp 'ret' exps %shift { $1:$3 }
+--   | exp          %shift { [$1] }
+--   | exp ';'      %shift { [$1] }
+--   -- | exp 'ret'      %shift { [$1] }
 
 exp :: { Exp }
   : literal                         { $1 }
   | name                     %shift { Var { epos = tokenToPos $1, ename = strV $1 }}
   | exp operator exp         %shift { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
-  | name '(' args ')'        %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, ename = strV $1 } $3 }
+  | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, ename = strV $1 } $3 }
   | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
@@ -102,8 +141,8 @@ literal :: { Exp }
   | true                      { LBool { epos = tokenToPos $1} }
 
 args :: { [Exp] }
-  : exp ',' args %shift { $1:$3 }
-  | exp          %shift { [$1] }
+  : exp rComa args %shift { $1:$3 }
+  | exp maybeRet   %shift { [$1] }
 
 params :: { [Name] }
   : name ',' params %shift { strV $1 : $3 }
