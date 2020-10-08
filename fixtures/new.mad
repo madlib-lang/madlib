@@ -1,13 +1,15 @@
 data Result = R String Bool
 
-res = (a) => R(a)
 
 data Stuff a
-  = Yo a
+  = Yo Result
   | NotYo
 
-tcho = (z) => Yo("z")
+tcho = (z) => Yo(R("2", z))
 tchotcho = NotYo
+
+res = (a) => R(a)
+
 
 tchou :: a -> a -> a
 tchou = (b, c) => b + c

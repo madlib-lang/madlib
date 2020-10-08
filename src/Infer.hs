@@ -11,6 +11,7 @@ import           Control.Monad.State
 import           Grammar
 import           Debug.Trace
 import           Data.Foldable                  ( Foldable(foldl') )
+import           Data.Char                      ( isLower )
 
 
 newtype TVar = TV String
@@ -22,6 +23,7 @@ data Type
   | TArr Type Type    -- Arrow type
   -- TODO: Maybe move back to TComp TCon [TVar] and construct the Type from TVar
   -- in needed places
+  -- TODO: Rename TADT ?
   | TComp TCon [Type] -- Composite type
   deriving (Show, Eq, Ord)
 
@@ -39,7 +41,14 @@ data Scheme = Forall [TVar] Type
 
 -- TODO: Convert back to a simple type
 type Vars = M.Map String Scheme
-newtype Env = Env { vars :: Vars } deriving(Eq, Show)
+type ADTs = M.Map String Type
+
+data Env
+  = Env
+    { envvars :: Vars
+    , envadts :: ADTs
+    }
+    deriving(Eq, Show)
 
 type Substitution = M.Map TVar Type
 
@@ -80,17 +89,17 @@ instance Substitutable a => Substitutable [a] where
   ftv   = foldr (S.union . ftv) S.empty
 
 instance Substitutable Env where
-  apply s env = env { vars = M.map (apply s) $ vars env }
-  ftv env = ftv $ M.elems $ vars env
+  apply s env = env { envvars = M.map (apply s) $ envvars env }
+  ftv env = ftv $ M.elems $ envvars env
 
 
 extendVars :: Env -> (String, Scheme) -> Env
-extendVars env (x, s) = env { vars = M.insert x s $ vars env }
+extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
 lookupVar env x = do
-  case M.lookup x $ vars env of
+  case M.lookup x $ envvars env of
     Nothing -> throwError $ UnboundVariable x
     Just s  -> do
       t <- instantiate s
@@ -145,6 +154,7 @@ unify (TComp main vars) (TComp main' vars') = do
     s1 <- unify (apply s tp) (apply s tp')
     unifyVars s1 xs
   unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
+  unifyVars s _           = return s
 
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
@@ -171,7 +181,7 @@ infer env App { eabs, earg } = do
 infer env Assignment { eexp, ename } = case eexp of
   Abs{} -> do
     (s1, t1) <- infer env eexp
-    s2       <- case M.lookup ename $ vars env of
+    s2       <- case M.lookup ename $ envvars env of
       Just t2 -> instantiate t2 >>= unify t1
       Nothing -> return s1
     return (s2 `compose` s1, t1)
@@ -197,35 +207,45 @@ typingToType (Typing t) | t == "Num"    = TCon CNum
 
 initialEnv :: Env
 initialEnv = Env
-  { vars = M.fromList
-             [ ( "==="
-               , Forall [TV "a"]
-               $      TVar (TV "a")
-               `TArr` TVar (TV "a")
-               `TArr` TCon CBool
-               )
-             , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-             , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-             , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-             , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-             , ( "singleton"
-               , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
-                 (CUserDef "List")
-                 [TVar $ TV "a"]
-               )
-             ]
+  { envvars = M.fromList
+                [ ( "==="
+                  , Forall [TV "a"]
+                  $      TVar (TV "a")
+                  `TArr` TVar (TV "a")
+                  `TArr` TCon CBool
+                  )
+                , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                , ( "singleton"
+                  , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
+                    (CUserDef "List")
+                    [TVar $ TV "a"]
+                  )
+                ]
+  , envadts = M.empty
   }
 
 buildInitialEnv :: AST -> Env
 buildInitialEnv AST { aadts } =
-  Env { vars = M.union (vars initialEnv) (resolveADTs aadts) }
+  let tadts = buildADTTypes aadts
+      vars  = M.union (envvars initialEnv) (resolveADTs tadts aadts)
+  in  Env { envvars = vars, envadts = tadts }
 
-resolveADTs :: [ADT] -> Vars
-resolveADTs = M.fromList . (>>= resolveADT)
+buildADTTypes :: [ADT] -> ADTs
+buildADTTypes adts = M.fromList $ buildADTType <$> adts
 
-resolveADT :: ADT -> [(String, Scheme)]
-resolveADT ADT { adtname, adtconstructors, adtparams } =
-  resolveADTConstructor adtname adtparams <$> adtconstructors
+buildADTType :: ADT -> (String, Type)
+buildADTType ADT { adtname, adtparams } =
+  (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
+
+resolveADTs :: ADTs -> [ADT] -> Vars
+resolveADTs tadts = M.fromList . (>>= resolveADT tadts)
+
+resolveADT :: ADTs -> ADT -> [(String, Scheme)]
+resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
+  resolveADTConstructor tadts adtname adtparams <$> adtconstructors
 
 -- TODO: Still a lot of work here !
 -- We need to be able to query resolved types to look up types using other subtypes in their constructors
@@ -235,23 +255,31 @@ resolveADT ADT { adtname, adtconstructors, adtparams } =
 -- For now just checking that the type exists should be enough
 -- but when we add support for typed data types ( Maybe a, List a, ... )
 -- we'll need to also check that variables are given.
-resolveADTConstructor :: Name -> [Name] -> ADTConstructor -> (String, Scheme)
-resolveADTConstructor n params ADTConstructor { adtcname, adtcargs = [] } =
-  (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
-resolveADTConstructor n params ADTConstructor { adtcname, adtcargs } =
-  let allTypes  = (nameToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
+resolveADTConstructor
+  :: ADTs -> Name -> [Name] -> ADTConstructor -> (String, Scheme)
+resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs = [] }
+  = (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } =
+  let allTypes =
+          (nameToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
   in  (adtcname, Forall (TV <$> params) typeArray)
  where
-  nameToType n | n == "String"   = TCon CString
-               | n == "Bool"     = TCon CBool
-               | n == "Num"      = TCon CNum
-               | n `elem` params = TVar $ TV n
-               | otherwise       = TCon $ CUserDef n
+  nameToType n
+    | n == "String" = TCon CString
+    | n == "Bool" = TCon CBool
+    | n == "Num" = TCon CNum
+    | isLower (head n) && (n `elem` params) = TVar $ TV n
+    | isLower (head n) = TVar $ TV n
+    | -- TODO: Err, that variable is not bound !
+      otherwise = case M.lookup n tadts of
+      Just a  -> a
+      Nothing -> TCon $ CUserDef n
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
-buildADTConstructorReturnType tname []      = TCon $ CUserDef tname
-buildADTConstructorReturnType tname tparams = TComp (CUserDef tname) $ TVar . TV <$> tparams
+-- buildADTConstructorReturnType tname [] = TCon $ CUserDef tname -- TODO: Should this also be a TComp ? Or TADT ?
+buildADTConstructorReturnType tname tparams =
+  TComp (CUserDef tname) $ TVar . TV <$> tparams
 
 inferExps :: Env -> [Exp] -> Infer [Type]
 inferExps env [exp   ] = (: []) . snd <$> infer env exp
