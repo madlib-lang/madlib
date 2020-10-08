@@ -10,15 +10,19 @@ import           Control.Monad.Except
 import           Control.Monad.State
 import           Grammar
 import           Debug.Trace
+import           Data.Foldable                  ( Foldable(foldl') )
 
 
 newtype TVar = TV String
   deriving (Show, Eq, Ord)
 
 data Type
-  = TVar TVar
-  | TCon TCon
-  | TArr Type Type
+  = TVar TVar         -- Variable type
+  | TCon TCon         -- Constant type
+  | TArr Type Type    -- Arrow type
+  -- TODO: Maybe move back to TComp TCon [TVar] and construct the Type from TVar
+  -- in needed places
+  | TComp TCon [Type] -- Composite type
   deriving (Show, Eq, Ord)
 
 data TCon
@@ -56,13 +60,15 @@ class Substitutable a where
   ftv   :: a -> S.Set TVar
 
 instance Substitutable Type where
-  apply _ (  TCon a      ) = TCon a
-  apply s t@(TVar a      ) = M.findWithDefault t a s
-  apply s (  t1 `TArr` t2) = apply s t1 `TArr` apply s t2
+  apply _ (  TCon a           ) = TCon a
+  apply s t@(TVar a           ) = M.findWithDefault t a s
+  apply s (  t1    `TArr` t2  ) = apply s t1 `TArr` apply s t2
+  apply s (  TComp main   vars) = TComp main (apply s <$> vars)
 
-  ftv TCon{}         = S.empty
-  ftv (TVar a      ) = S.singleton a
-  ftv (t1 `TArr` t2) = ftv t1 `S.union` ftv t2
+  ftv TCon{}              = S.empty
+  ftv (TVar a           ) = S.singleton a
+  ftv (t1    `TArr` t2  ) = ftv t1 `S.union` ftv t2
+  ftv (TComp _      vars) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
 
 instance Substitutable Scheme where
   apply s (Forall as t) = Forall as $ apply s' t
@@ -128,6 +134,18 @@ unify (l `TArr` r) (l' `TArr` r') = do
   s2 <- unify (apply s1 r) (apply s1 r')
   return (s2 `compose` s1)
 
+unify (TComp main vars) (TComp main' vars') = do
+  s1 <- unify (TCon main) (TCon main')
+  let z = zip vars vars'
+  s2 <- unifyVars s1 z
+  return (s2 `compose` s1)
+ where
+  unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
+  unifyVars s ((tp, tp') : xs) = do
+    s1 <- unify (apply s tp) (apply s tp')
+    unifyVars s1 xs
+  unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
+
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
 unify (TCon a) (TCon b) | a == b = return M.empty
@@ -159,13 +177,13 @@ infer env Assignment { eexp, ename } = case eexp of
     return (s2 `compose` s1, t1)
   _ -> infer env eexp
 
-infer env LInt{}               = return (M.empty, TCon CNum)
-infer env LStr{}               = return (M.empty, TCon CString)
-infer env LBool{}              = return (M.empty, TCon CBool)
+infer _ LInt{}               = return (M.empty, TCon CNum)
+infer _ LStr{}               = return (M.empty, TCon CString)
+infer _ LBool{}              = return (M.empty, TCon CBool)
 
-infer env TypedExp { etyping } = return (M.empty, typingsToType etyping)
+infer _ TypedExp { etyping } = return (M.empty, typingsToType etyping)
 
-infer _   _                    = undefined
+infer _ _                    = undefined
 
 typingsToType :: [Typing] -> Type
 typingsToType [t     ] = typingToType t
@@ -190,6 +208,11 @@ initialEnv = Env
              , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
              , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
              , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+             , ( "singleton"
+               , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
+                 (CUserDef "List")
+                 [TVar $ TV "a"]
+               )
              ]
   }
 

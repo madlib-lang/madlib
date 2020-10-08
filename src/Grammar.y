@@ -54,11 +54,6 @@ ast :: { AST }
   | exp ast          %shift { $2 { aimports = aimports $2, aexps = [$1] <> aexps $2, aadts = aadts $2 } }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
 --   : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
-  -- : exps              %shift { AST { aimports = [], aexps = $1, apath = Nothing, aadts = [] } }
-  -- : adts              %shift { AST { aimports = [], aexps = [], aadts = $1, apath = Nothing } }
-  -- | ast exps          %shift { $1 { aimports = aimports $1, aexps = aexps $1 <> $2, aadts = aadts $1 } }
-  -- | ast adts          %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 <> $2 } }
-  -- | ast rret          %shift { $1 { aimports = aimports $1, aexps = aexps $1, aadts = aadts $1 } }
 
 -- importDecls :: { [ImportDecl] }
 --   : importDecl importDecls { $1:$2 }
@@ -67,9 +62,6 @@ ast :: { AST }
 -- importDecl :: { ImportDecl }
 --   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
--- adts :: { [ADT] }
---   : adt adts    { $1:$2 }
---   | adt         { [$1] }
 
 rRet :: { [TokenClass] }
   : 'ret'       { [] }
@@ -113,14 +105,6 @@ adtConstructor :: { ADTConstructor }
 adtConstructorArgs :: { [Name] }
   : name adtConstructorArgs { strV $1 : $2 }
   | name                    { [strV $1] }
-
--- exps :: { [Exp] }
---   : exp exps     %shift { $1:$2 }
---   | exp ';' exps %shift { $1:$3 }
---   -- | exp 'ret' exps %shift { $1:$3 }
---   | exp          %shift { [$1] }
---   | exp ';'      %shift { [$1] }
---   -- | exp 'ret'      %shift { [$1] }
 
 exp :: { Exp }
   : literal                         { $1 }
