@@ -1,12 +1,12 @@
-data Stuff
-  = Yo
-  | NotYo
-
 data Result = R String Bool
 
 res = (a) => R(a)
 
-tcho = (a) => Yo
+data Stuff a
+  = Yo a
+  | NotYo
+
+tcho = (z) => Yo("z")
 tchotcho = NotYo
 
 tchou :: a -> a -> a

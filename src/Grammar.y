@@ -89,10 +89,13 @@ rComa :: { [TokenClass] }
   | 'ret' ',' { [] }
 
 
-
-
 adt :: { ADT }
-  : 'data' name rEq adtConstructors %shift { ADT { adtname = strV $2, adtconstructors = $4 } }
+  : 'data' name adtParameters rEq adtConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
+
+adtParameters :: { [Name] }
+  : name adtParameters { strV $1 : $2 }
+  | name               { [strV $1] }
+  | {- empty -}        { [] }
 
 adtConstructors :: { [ADTConstructor] }
   : adtConstructor rPipe adtConstructors      { $1:$3 }
@@ -169,7 +172,7 @@ data ImportDecl =
     deriving(Eq, Show)
 
 -- TODO: Add pos
-data ADT = ADT { adtname :: Name, adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
+data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
 
 -- TODO: Add pos
 data ADTConstructor = ADTConstructor { adtcname :: Name, adtcargs :: [Name] } deriving(Eq, Show)

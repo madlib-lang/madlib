@@ -224,8 +224,8 @@ resolveADTs :: [ADT] -> Vars
 resolveADTs = M.fromList . (>>= resolveADT)
 
 resolveADT :: ADT -> [(String, Scheme)]
-resolveADT ADT { adtname, adtconstructors } =
-  resolveADTConstructor adtname <$> adtconstructors
+resolveADT ADT { adtname, adtconstructors, adtparams } =
+  resolveADTConstructor adtname adtparams <$> adtconstructors
 
 -- TODO: Still a lot of work here !
 -- We need to be able to query resolved types to look up types using other subtypes in their constructors
@@ -235,18 +235,23 @@ resolveADT ADT { adtname, adtconstructors } =
 -- For now just checking that the type exists should be enough
 -- but when we add support for typed data types ( Maybe a, List a, ... )
 -- we'll need to also check that variables are given.
-resolveADTConstructor :: Name -> ADTConstructor -> (String, Scheme)
-resolveADTConstructor n ADTConstructor { adtcname, adtcargs = [] } =
-  (adtcname, Forall [] $ TCon $ CUserDef n)
-resolveADTConstructor n ADTConstructor { adtcname, adtcargs } =
-  let allNames  = nameToType <$> adtcargs <> [n]
-      typeArray = foldr1 TArr allNames
-  in  (adtcname, Forall [] typeArray)
+resolveADTConstructor :: Name -> [Name] -> ADTConstructor -> (String, Scheme)
+resolveADTConstructor n params ADTConstructor { adtcname, adtcargs = [] } =
+  (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+resolveADTConstructor n params ADTConstructor { adtcname, adtcargs } =
+  let allTypes  = (nameToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
+      typeArray = foldr1 TArr allTypes
+  in  (adtcname, Forall (TV <$> params) typeArray)
  where
-  nameToType n | n == "String" = TCon CString
-               | n == "Bool"   = TCon CBool
-               | n == "Num"    = TCon CNum
-               | otherwise     = TCon $ CUserDef n
+  nameToType n | n == "String"   = TCon CString
+               | n == "Bool"     = TCon CBool
+               | n == "Num"      = TCon CNum
+               | n `elem` params = TVar $ TV n
+               | otherwise       = TCon $ CUserDef n
+
+buildADTConstructorReturnType :: Name -> [Name] -> Type
+buildADTConstructorReturnType tname []      = TCon $ CUserDef tname
+buildADTConstructorReturnType tname tparams = TComp (CUserDef tname) $ TVar . TV <$> tparams
 
 inferExps :: Env -> [Exp] -> Infer [Type]
 inferExps env [exp   ] = (: []) . snd <$> infer env exp
