@@ -1,9 +1,15 @@
 data Result = R String Bool
 
+data Maybe a
+  = Just a
+  | Nothing
 
-data Stuff a
+data Stuff a b
   = Yo Result
+  | Might (Maybe (Maybe Result))
   | NotYo
+
+might = Might(Just(Just(R("str", true))))
 
 tcho = (z) => Yo(R("2", z))
 tchotcho = NotYo

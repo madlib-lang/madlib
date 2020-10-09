@@ -1,9 +1,15 @@
 
-
+data Response a
+  = Success a
+  | Error
 
 data Stuff
-    = Stuff
+    = Stuff (Response String)
     | NotStuff Jo
+
+data Stuff2
+    = Stuff2 (Response (Maybe String))
+    | NotStuff2 Jo
 
 
 

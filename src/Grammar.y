@@ -105,9 +105,13 @@ adtConstructor :: { ADTConstructor }
   : name adtConstructorArgs { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
   | name                    { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
 
-adtConstructorArgs :: { [Name] }
-  : name adtConstructorArgs { strV $1 : $2 }
-  | name                    { [strV $1] }
+adtConstructorArgs :: { [ADTConstructorArg] }
+  : name adtConstructorArgs                            { (ADTCASingle $ strV $1) : $2 }
+  | name '(' adtConstructorArgs ')' adtConstructorArgs { (ADTCASingle $ strV $1) : ADTCAComp $3 : $5 }
+  | '(' name ')' adtConstructorArgs                    { (ADTCASingle $ strV $1) : $4 }
+  | '(' adtConstructorArgs ')'                         { [ADTCAComp $2] }
+  | '(' name ')'                                       { [ADTCASingle $ strV $2] }
+  | name                                               { [ADTCASingle $ strV $1] }
 
 exp :: { Exp }
   : literal                         { $1 }
@@ -175,7 +179,12 @@ data ImportDecl =
 data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
 
 -- TODO: Add pos
-data ADTConstructor = ADTConstructor { adtcname :: Name, adtcargs :: [Name] } deriving(Eq, Show)
+data ADTConstructor = ADTConstructor { adtcname :: Name, adtcargs :: [ADTConstructorArg] } deriving(Eq, Show)
+
+data ADTConstructorArg
+  = ADTCASingle Name
+  | ADTCAComp [ADTConstructorArg]
+  deriving(Eq, Show)
 
 data Exp = LInt       { epos :: Pos }
          | LStr       { epos :: Pos }

@@ -257,31 +257,44 @@ resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
 -- we'll need to also check that variables are given.
 resolveADTConstructor
   :: ADTs -> Name -> [Name] -> ADTConstructor -> (String, Scheme)
-resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs = [] }
-  = (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
+  (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
 resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } =
   let allTypes =
-          (nameToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
+          (argToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
   in  (adtcname, Forall (TV <$> params) typeArray)
  where
-  nameToType n
+  -- TODO: Implement ADTACComp
+  argToType :: ADTConstructorArg -> Type
+  argToType (ADTCASingle n)
     | n == "String" = TCon CString
     | n == "Bool" = TCon CBool
     | n == "Num" = TCon CNum
     | isLower (head n) && (n `elem` params) = TVar $ TV n
-    | isLower (head n) = TVar $ TV n
-    | -- TODO: Err, that variable is not bound !
-      otherwise = case M.lookup n tadts of
+    |
+    -- TODO: Err, that variable is not bound !
+      isLower (head n) = TVar $ TV n
+    | otherwise = case M.lookup n tadts of
       Just a  -> a
+      -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
       Nothing -> TCon $ CUserDef n
+  argToType (ADTCAComp ((ADTCASingle tname) : targs)) =
+    case M.lookup tname tadts of
+    -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
+    -- we have a type application error.
+      Just (TComp n tparams) -> TComp n (argToType <$> targs)
+      Nothing                -> TCon $ CUserDef n
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
 -- buildADTConstructorReturnType tname [] = TCon $ CUserDef tname -- TODO: Should this also be a TComp ? Or TADT ?
 buildADTConstructorReturnType tname tparams =
   TComp (CUserDef tname) $ TVar . TV <$> tparams
 
+-- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
+-- make it work at any depth of the AST.
 inferExps :: Env -> [Exp] -> Infer [Type]
+inferExps _   []       = return []
 inferExps env [exp   ] = (: []) . snd <$> infer env exp
 inferExps env (e : xs) = do
   r <- infer env e
