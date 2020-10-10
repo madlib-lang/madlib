@@ -137,36 +137,39 @@ unify (TCon a) (TCon b) | a == b = return M.empty
 unify t1 t2                      = throwError $ UnificationError t1 t2
 
 
-infer :: Env -> Exp -> Infer (Substitution, Type)
-infer env Var { ename }         = lookupVar env ename
+infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
+infer env v@Var { ename }         = (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
 
-infer env Abs { eparam, ebody } = do
+infer env abs@Abs { eparam, ebody } = do
   tv <- newTVar
   let env' = extendVars env (eparam, Forall [] tv)
-  (s1, t1) <- infer env' ebody
-  return (s1, apply s1 tv `TArr` t1)
+  (s1, t1, e) <- infer env' ebody
+  let t = apply s1 tv `TArr` t1
+  return (s1, t, abs { ebody = e, etype = Just t })
 
-infer env App { eabs, earg } = do
+infer env app@App { eabs, earg } = do
   tv       <- newTVar
-  (s1, t1) <- infer env eabs
-  (s2, t2) <- infer (apply s1 env) earg
+  (s1, t1, e1) <- infer env eabs
+  (s2, t2, e2) <- infer (apply s1 env) earg
   s3       <- unify (apply s2 t1) (TArr t2 tv)
-  return (s3 `compose` s2 `compose` s1, apply s3 tv)
+  let t = apply s3 tv
+  return (s3 `compose` s2 `compose` s1, t, app { eabs = e1, earg = e2, etype = Just t })
 
-infer env Assignment { eexp, ename } = case eexp of
+infer env ass@Assignment { eexp, ename } = case eexp of
   Abs{} -> do
-    (s1, t1) <- infer env eexp
+    (s1, t1, e1) <- infer env eexp
     s2       <- case M.lookup ename $ envvars env of
       Just t2 -> instantiate t2 >>= unify t1
       Nothing -> return s1
-    return (s2 `compose` s1, t1)
+    return (s2 `compose` s1, t1, ass { eexp = e1, etype = Just t1 })
   _ -> infer env eexp
 
-infer _ LInt{}               = return (M.empty, TCon CNum)
-infer _ LStr{}               = return (M.empty, TCon CString)
-infer _ LBool{}              = return (M.empty, TCon CBool)
+infer _ l@LInt{}               = return (M.empty, TCon CNum, l { etype = Just $ TCon CNum})
+infer _ l@LStr{}               = return (M.empty, TCon CString, l { etype = Just $ TCon CString})
+infer _ l@LBool{}              = return (M.empty, TCon CBool, l { etype = Just $ TCon CBool})
 
-infer _ TypedExp { etyping } = return (M.empty, typingsToType etyping)
+infer _ te@TypedExp { etyping } = return (M.empty, t, te { etype = Just t })
+  where t = typingsToType etyping
 
 infer _ _                    = undefined
 
@@ -268,19 +271,25 @@ buildADTConstructorReturnType tname tparams =
 
 -- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
 -- make it work at any depth of the AST.
-inferExps :: Env -> [Exp] -> Infer [Type]
+inferExps :: Env -> [Exp] -> Infer [Exp]
 inferExps _   []       = return []
-inferExps env [exp   ] = (: []) . snd <$> infer env exp
+inferExps env [exp   ] = (: []) . trd <$> infer env exp
 inferExps env (e : xs) = do
   r <- infer env e
   let env' = case e of
-        Assignment { ename } -> extendVars env (ename, Forall [] $ snd r)
+        Assignment { ename } -> extendVars env (ename, Forall [] $ mid r)
         TypedExp { eexp = Var { ename } } ->
-          extendVars env (ename, Forall [] $ snd r)
+          extendVars env (ename, Forall [] $ mid r)
         _ -> env
-  (\n -> snd r : n) <$> inferExps env' xs
+  (\n -> trd r : n) <$> inferExps env' xs
 
-runInfer :: AST -> Either InferError [Type]
+trd :: (a, b, c) -> c
+trd (_, _, x) = x
+
+mid :: (a, b, c) -> b
+mid (_, b, _) = b
+
+runInfer :: AST -> Either InferError [Exp]
 runInfer ast = fst <$> runExcept
   (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })
   where initialEnv = trace (show $ buildInitialEnv ast) (buildInitialEnv ast)

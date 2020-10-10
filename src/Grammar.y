@@ -3,6 +3,7 @@ module Grammar where
 import Lexer
 import Text.Printf
 import Control.Monad.Except
+import Type
 }
 
 %name parseMadlib ast
@@ -115,21 +116,21 @@ adtConstructorArgs :: { [ADTConstructorArg] }
 
 exp :: { Exp }
   : literal                         { $1 }
-  | name                     %shift { Var { epos = tokenToPos $1, ename = strV $1 }}
-  | exp operator exp         %shift { App { epos = epos $1, eabs = App { epos = epos $1, eabs = $2, earg = $1 }, earg = $3 }}
-  | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, ename = strV $1 } $3 }
+  | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
+  | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1 }, earg = $3 }}
+  | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
   | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
-  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, ename = strV $1, eexp = $3 }}
+  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3 }}
   | '(' exp ')'              %shift { $2 }
-  | exp '::' typings                { TypedExp { epos = epos $1, eexp = $1, etyping = $3 } }
+  | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
 
 literal :: { Exp }
-  : int                       { LInt  { epos = tokenToPos $1} }
-  | str                       { LStr  { epos = tokenToPos $1} }
-  | false                     { LBool { epos = tokenToPos $1} }
-  | true                      { LBool { epos = tokenToPos $1} }
+  : int                       { LInt  { epos = tokenToPos $1, etype = Nothing } }
+  | str                       { LStr  { epos = tokenToPos $1, etype = Nothing } }
+  | false                     { LBool { epos = tokenToPos $1, etype = Nothing } }
+  | true                      { LBool { epos = tokenToPos $1, etype = Nothing } }
 
 args :: { [Exp] }
   : exp rComa args %shift { $1:$3 }
@@ -144,20 +145,20 @@ typings :: { [Typing] }
   | name              { [Typing (strV $1)] }
 
 operator :: { Exp }
-  : '===' { Var { epos = tokenToPos $1, ename = "===" } }
-  | '+'   { Var { epos = tokenToPos $1, ename = "+" } }
-  | '-'   { Var { epos = tokenToPos $1, ename = "-" } }
-  | '*'   { Var { epos = tokenToPos $1, ename = "*" } }
-  | '/'   { Var { epos = tokenToPos $1, ename = "/" } }
+  : '===' { Var { epos = tokenToPos $1, etype = Nothing, ename = "===" } }
+  | '+'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "+" } }
+  | '-'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "-" } }
+  | '*'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "*" } }
+  | '/'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "/" } }
 
 {
 buildAbs :: Pos -> [Name] -> Exp -> Exp
-buildAbs pos [param] body = Abs { epos = pos, eparam = param, ebody = body }
-buildAbs pos (x:xs) body  = Abs { epos = pos, eparam = x, ebody = buildAbs pos xs body }
+buildAbs pos [param] body = Abs { epos = pos, etype = Nothing, eparam = param, ebody = body }
+buildAbs pos (x:xs) body  = Abs { epos = pos, etype = Nothing, eparam = x, ebody = buildAbs pos xs body }
 
 buildApp :: Pos -> Exp -> [Exp] -> Exp
-buildApp pos f [arg]  = App { epos = pos, eabs = f, earg = arg }
-buildApp pos f xs = App { epos = pos, eabs = buildApp pos f (init xs) , earg = last xs }
+buildApp pos f [arg]  = App { epos = pos, etype = Nothing, eabs = f, earg = arg }
+buildApp pos f xs = App { epos = pos, etype = Nothing, eabs = buildApp pos f (init xs) , earg = last xs }
 
 data AST =
   AST
@@ -186,23 +187,20 @@ data ADTConstructorArg
   | ADTCAComp [ADTConstructorArg]
   deriving(Eq, Show)
 
-data Exp = LInt       { epos :: Pos }
-         | LStr       { epos :: Pos }
-         | LBool      { epos :: Pos }
-         | App        { epos :: Pos, eabs :: Exp, earg :: Exp }
-         | Abs        { epos :: Pos, eparam :: Name, ebody :: Exp }
-         | Assignment { epos :: Pos, eexp :: Exp, ename :: Name }
-         | Var        { epos :: Pos, ename :: Name }
-         | TypedExp   { epos :: Pos, eexp :: Exp, etyping :: [Typing] }
+data Exp = LInt       { epos :: Pos, etype :: Maybe Type }
+         | LStr       { epos :: Pos, etype :: Maybe Type }
+         | LBool      { epos :: Pos, etype :: Maybe Type }
+         | App        { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp }
+         | Abs        { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
+         | Assignment { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name }
+         | Var        { epos :: Pos, etype :: Maybe Type, ename :: Name }
+         | TypedExp   { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: [Typing] }
          deriving(Eq, Show)
 
 type Name  = String
 
 newtype Typing = Typing String deriving(Eq, Show)
 
-data Operator = TripleEq 
-              | Plus
-              deriving(Eq, Show)
 
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
