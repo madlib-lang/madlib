@@ -50,18 +50,18 @@ ast :: { AST }
   : rRet             %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
   | rRet ast         %shift { $2 }
   | ast rRet         %shift { $1 }
-  | adt ast          %shift { $2 { aimports = aimports $2, aexps = aexps $2, aadts =  [$1] <> aadts $2 } }
+  | adt ast          %shift { $2 { aadts =  [$1] <> aadts $2 } }
   | adt              %shift { AST { aimports = [], aexps = [], aadts = [$1], apath = Nothing } }
-  | exp ast          %shift { $2 { aimports = aimports $2, aexps = [$1] <> aexps $2, aadts = aadts $2 } }
+  | exp ast          %shift { $2 { aexps = [$1] <> aexps $2 } }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
---   : importDecls exps { AST { aimports = $1, aexps = $2, apath = Nothing } }
+  | importDecls ast { $2 { aimports = $1, apath = Nothing } }
 
--- importDecls :: { [ImportDecl] }
---   : importDecl importDecls { $1:$2 }
---   | importDecl             { [$1] }
+importDecls :: { [ImportDecl] }
+  : importDecl importDecls { $1:$2 }
+  | importDecl             { [$1] }
   
--- importDecl :: { ImportDecl }
---   : 'import' str { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
+importDecl :: { ImportDecl }
+  : 'import' str rRet { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
 
 
 rRet :: { [TokenClass] }

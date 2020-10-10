@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 26ce2072bc5e4cd8fa956d702d11a9f33389149429f6d9bcac5da91f67293d14
+-- hash: 1b1fa29277f73fd55aa9355db7a54f8ea3a376d47c8fada92aa74e3311cf17ed
 
 name:           madlib
 version:        0.1.0.0
@@ -29,7 +29,6 @@ library
   exposed-modules:
       AST
       Grammar
-      Grammar_
       Infer
       Lexer
       Main
@@ -63,7 +62,6 @@ executable madlib-exe
   other-modules:
       AST
       Grammar
-      Grammar_
       Infer
       Lexer
       Path
@@ -96,8 +94,8 @@ test-suite madlib-test
   main-is: Spec.hs
   other-modules:
       ASTSpec
+      InferSpec
       PathSpec
-      ResolverSpec
       Paths_madlib
   hs-source-dirs:
       test

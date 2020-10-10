@@ -205,6 +205,7 @@ initialEnv = Env
   , envadts = M.empty
   }
 
+-- TODO: Should return Except InferError Env
 buildInitialEnv :: AST -> Env
 buildInitialEnv AST { aadts } =
   let tadts = buildADTTypes aadts
@@ -289,7 +290,8 @@ trd (_, _, x) = x
 mid :: (a, b, c) -> b
 mid (_, b, _) = b
 
-runInfer :: AST -> Either InferError [Exp]
-runInfer ast = fst <$> runExcept
-  (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })
-  where initialEnv = trace (show $ buildInitialEnv ast) (buildInitialEnv ast)
+runInfer :: AST -> Either InferError AST
+runInfer ast = (\e -> ast { aexps = e }) <$> inferredExps
+  where initialEnv   = trace (show $ buildInitialEnv ast) (buildInitialEnv ast)
+        inferredExps = fst <$> runExcept
+          (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })
