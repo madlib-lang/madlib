@@ -51,8 +51,8 @@ tokens :-
   \/                                    { mapToken (\_ -> TokenSlash) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt (read s)) }
-  "true"                                { mapToken (\_ -> (TokenBool True)) }
-  "false"                               { mapToken (\_ -> (TokenBool False)) }
+  "True"                                { mapToken (\_ -> (TokenBool True)) }
+  "False"                               { mapToken (\_ -> (TokenBool False)) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
   \,                                    { mapToken (\_ -> TokenComa) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }

@@ -1,0 +1,83 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ TypedExp
+            { epos = Pos 0 1 1
+            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+            , eexp = Var { epos = Pos 0 1 1 , etype = Nothing , ename = "fn" }
+            , etyping = [ Typing "Num" , Typing "Num" , Typing "Bool" ]
+            }
+        , Assignment
+            { epos = Pos 25 2 1
+            , etype =
+                Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+            , eexp =
+                Abs
+                  { epos = Pos 30 2 6
+                  , etype =
+                      Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+                  , eparam = "a"
+                  , ebody =
+                      Abs
+                        { epos = Pos 30 2 6
+                        , etype = Just (TArr (TVar (TV "b")) (TCon CBool))
+                        , eparam = "b"
+                        , ebody =
+                            App
+                              { epos = Pos 40 2 16
+                              , etype = Just (TCon CBool)
+                              , eabs =
+                                  App
+                                    { epos = Pos 40 2 16
+                                    , etype = Just (TArr (TVar (TV "a")) (TCon CBool))
+                                    , eabs =
+                                        Var
+                                          { epos = Pos 42 2 18
+                                          , etype =
+                                              Just
+                                                (TArr
+                                                   (TVar (TV "e"))
+                                                   (TArr (TVar (TV "e")) (TCon CBool)))
+                                          , ename = "==="
+                                          }
+                                    , earg =
+                                        Var
+                                          { epos = Pos 40 2 16
+                                          , etype = Just (TVar (TV "a"))
+                                          , ename = "a"
+                                          }
+                                    }
+                              , earg =
+                                  Var
+                                    { epos = Pos 46 2 22
+                                    , etype = Just (TVar (TV "b"))
+                                    , ename = "b"
+                                    }
+                              }
+                        }
+                  }
+            , ename = "fn"
+            }
+        , App
+            { epos = Pos 48 3 1
+            , etype = Just (TCon CBool)
+            , eabs =
+                App
+                  { epos = Pos 48 3 1
+                  , etype = Just (TArr (TCon CNum) (TCon CBool))
+                  , eabs =
+                      Var
+                        { epos = Pos 48 3 1
+                        , etype =
+                            Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+                        , ename = "fn"
+                        }
+                  , earg = LInt { epos = Pos 51 3 4 , etype = Just (TCon CNum) }
+                  }
+            , earg = LInt { epos = Pos 54 3 7 , etype = Just (TCon CNum) }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

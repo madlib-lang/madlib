@@ -8,8 +8,7 @@ data Stuff a b
   = Yo Result
   | Might (Maybe (Maybe Result))
   | NotYo
-
-might = Might(Just(Just(R("str", true))))
+might = Might(Just(Just(R("str", True))))
 
 tcho = (z) => Yo(R("2", z))
 tchotcho = NotYo

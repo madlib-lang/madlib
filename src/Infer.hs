@@ -9,23 +9,23 @@ import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Grammar
-import           Debug.Trace
 import           Data.Foldable                  ( Foldable(foldl') )
-import           Data.Char                      ( isLower )
 import           Type
+import           Data.Char                      ( isLower )
 
--- TODO: Convert back to a simple type
+type Substitution = M.Map TVar Type
+
 type Vars = M.Map String Scheme
 type ADTs = M.Map String Type
+type Typings = M.Map String Scheme
 
 data Env
   = Env
     { envvars :: Vars
     , envadts :: ADTs
+    , envtypings :: Typings
     }
     deriving(Eq, Show)
-
-type Substitution = M.Map TVar Type
 
 data InferError
   = InfiniteType TVar Type
@@ -68,10 +68,6 @@ instance Substitutable Env where
   ftv env = ftv $ M.elems $ envvars env
 
 
-extendVars :: Env -> (String, Scheme) -> Env
-extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
-
-
 lookupVar :: Env -> String -> Infer (Substitution, Type)
 lookupVar env x = do
   case M.lookup x $ envvars env of
@@ -79,7 +75,6 @@ lookupVar env x = do
     Just s  -> do
       t <- instantiate s
       return (M.empty, t)
-
 
 letters :: [String]
 letters = [1 ..] >>= flip replicateM ['a' .. 'z']
@@ -138,7 +133,8 @@ unify t1 t2                      = throwError $ UnificationError t1 t2
 
 
 infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
-infer env v@Var { ename }         = (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
+infer env v@Var { ename } =
+  (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
 
 infer env abs@Abs { eparam, ebody } = do
   tv <- newTVar
@@ -148,30 +144,37 @@ infer env abs@Abs { eparam, ebody } = do
   return (s1, t, abs { ebody = e, etype = Just t })
 
 infer env app@App { eabs, earg } = do
-  tv       <- newTVar
+  tv           <- newTVar
   (s1, t1, e1) <- infer env eabs
   (s2, t2, e2) <- infer (apply s1 env) earg
-  s3       <- unify (apply s2 t1) (TArr t2 tv)
+  s3           <- unify (apply s2 t1) (TArr t2 tv)
   let t = apply s3 tv
-  return (s3 `compose` s2 `compose` s1, t, app { eabs = e1, earg = e2, etype = Just t })
+  return
+    ( s3 `compose` s2 `compose` s1
+    , t
+    , app { eabs = e1, earg = e2, etype = Just t }
+    )
 
 infer env ass@Assignment { eexp, ename } = case eexp of
   Abs{} -> do
     (s1, t1, e1) <- infer env eexp
-    s2       <- case M.lookup ename $ envvars env of
+    s2           <- case M.lookup ename $ envtypings env of
       Just t2 -> instantiate t2 >>= unify t1
       Nothing -> return s1
     return (s2 `compose` s1, t1, ass { eexp = e1, etype = Just t1 })
   _ -> infer env eexp
 
-infer _ l@LInt{}               = return (M.empty, TCon CNum, l { etype = Just $ TCon CNum})
-infer _ l@LStr{}               = return (M.empty, TCon CString, l { etype = Just $ TCon CString})
-infer _ l@LBool{}              = return (M.empty, TCon CBool, l { etype = Just $ TCon CBool})
+infer _ l@LInt{} = return (M.empty, TCon CNum, l { etype = Just $ TCon CNum })
+infer _ l@LStr{} =
+  return (M.empty, TCon CString, l { etype = Just $ TCon CString })
+infer _ l@LBool{} =
+  return (M.empty, TCon CBool, l { etype = Just $ TCon CBool })
 
+-- TODO: Needs to handle quantified variables ?
 infer _ te@TypedExp { etyping } = return (M.empty, t, te { etype = Just t })
   where t = typingsToType etyping
 
-infer _ _                    = undefined
+infer _ _ = undefined
 
 typingsToType :: [Typing] -> Type
 typingsToType [t     ] = typingToType t
@@ -183,34 +186,74 @@ typingToType (Typing t) | t == "Num"    = TCon CNum
                         | t == "String" = TCon CString
                         | otherwise     = TVar $ TV t
 
+-- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
+-- make it work at any depth of the AST.
+inferExps :: Env -> [Exp] -> Infer [Exp]
+inferExps _   []       = return []
+inferExps env [exp   ] = (: []) . trd <$> infer env exp
+inferExps env (e : xs) = do
+  r <- infer env e
+  let env' = case e of
+        -- TODO: We need to add a case where that name is already in the env.
+        -- Reassigning a name should not be allowed.
+        Assignment { ename } -> extendVars env (ename, Forall [] $ mid r)
+        -- TODO: This should push in a separate part of the ENV ( envtypings ),
+        -- so that we can validate the assignment expression it belongs to.
+        TypedExp { eexp = Var { ename } } ->
+          extendTypings env (ename, Forall [] $ mid r)
+        _ -> env
+  (\n -> trd r : n) <$> inferExps env' xs
+
+trd :: (a, b, c) -> c
+trd (_, _, x) = x
+
+mid :: (a, b, c) -> b
+mid (_, b, _) = b
+
+runInfer :: Env -> AST -> Either InferError AST
+runInfer env ast = (\e -> ast { aexps = e }) <$> inferredExps
+ where
+  inferredExps = fst
+    <$> runExcept (runStateT (inferExps env $ aexps ast) Unique { count = 0 })
+
+
+
+extendVars :: Env -> (String, Scheme) -> Env
+extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
+
+extendTypings :: Env -> (String, Scheme) -> Env
+extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
+
 initialEnv :: Env
 initialEnv = Env
-  { envvars = M.fromList
-                [ ( "==="
-                  , Forall [TV "a"]
-                  $      TVar (TV "a")
-                  `TArr` TVar (TV "a")
-                  `TArr` TCon CBool
-                  )
-                , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-                , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-                , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-                , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-                , ( "singleton"
-                  , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
-                    (CUserDef "List")
-                    [TVar $ TV "a"]
-                  )
-                ]
-  , envadts = M.empty
+  { envvars    = M.fromList
+                   [ ( "==="
+                     , Forall [TV "a"]
+                     $      TVar (TV "a")
+                     `TArr` TVar (TV "a")
+                     `TArr` TCon CBool
+                     )
+                   , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                   , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                   , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                   , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                   , ( "singleton"
+                     , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
+                       (CUserDef "List")
+                       [TVar $ TV "a"]
+                     )
+                   ]
+  , envadts    = M.empty
+  , envtypings = M.empty
   }
+
 
 -- TODO: Should return Except InferError Env
 buildInitialEnv :: AST -> Env
 buildInitialEnv AST { aadts } =
   let tadts = buildADTTypes aadts
       vars  = M.union (envvars initialEnv) (resolveADTs tadts aadts)
-  in  Env { envvars = vars, envadts = tadts }
+  in  Env { envvars = vars, envadts = tadts, envtypings = M.empty }
 
 buildADTTypes :: [ADT] -> ADTs
 buildADTTypes adts = M.fromList $ buildADTType <$> adts
@@ -226,14 +269,6 @@ resolveADT :: ADTs -> ADT -> [(String, Scheme)]
 resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
   resolveADTConstructor tadts adtname adtparams <$> adtconstructors
 
--- TODO: Still a lot of work here !
--- We need to be able to query resolved types to look up types using other subtypes in their constructors
--- Example:
--- data Result = Ok Some
--- data Some = Some String
--- For now just checking that the type exists should be enough
--- but when we add support for typed data types ( Maybe a, List a, ... )
--- we'll need to also check that variables are given.
 resolveADTConstructor
   :: ADTs -> Name -> [Name] -> ADTConstructor -> (String, Scheme)
 resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
@@ -244,7 +279,6 @@ resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } =
       typeArray = foldr1 TArr allTypes
   in  (adtcname, Forall (TV <$> params) typeArray)
  where
-  -- TODO: Implement ADTACComp
   argToType :: ADTConstructorArg -> Type
   argToType (ADTCASingle n)
     | n == "String" = TCon CString
@@ -269,29 +303,3 @@ buildADTConstructorReturnType :: Name -> [Name] -> Type
 -- buildADTConstructorReturnType tname [] = TCon $ CUserDef tname -- TODO: Should this also be a TComp ? Or TADT ?
 buildADTConstructorReturnType tname tparams =
   TComp (CUserDef tname) $ TVar . TV <$> tparams
-
--- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
--- make it work at any depth of the AST.
-inferExps :: Env -> [Exp] -> Infer [Exp]
-inferExps _   []       = return []
-inferExps env [exp   ] = (: []) . trd <$> infer env exp
-inferExps env (e : xs) = do
-  r <- infer env e
-  let env' = case e of
-        Assignment { ename } -> extendVars env (ename, Forall [] $ mid r)
-        TypedExp { eexp = Var { ename } } ->
-          extendVars env (ename, Forall [] $ mid r)
-        _ -> env
-  (\n -> trd r : n) <$> inferExps env' xs
-
-trd :: (a, b, c) -> c
-trd (_, _, x) = x
-
-mid :: (a, b, c) -> b
-mid (_, b, _) = b
-
-runInfer :: AST -> Either InferError AST
-runInfer ast = (\e -> ast { aexps = e }) <$> inferredExps
-  where initialEnv   = trace (show $ buildInitialEnv ast) (buildInitialEnv ast)
-        inferredExps = fst <$> runExcept
-          (runStateT (inferExps initialEnv $ aexps ast) Unique { count = 0 })

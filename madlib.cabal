@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1b1fa29277f73fd55aa9355db7a54f8ea3a376d47c8fada92aa74e3311cf17ed
+-- hash: fa32d791ae353f1d20808049b5f5d126a80b3e9de4a5e9ee4381a032e193e45b
 
 name:           madlib
 version:        0.1.0.0
@@ -33,7 +33,6 @@ library
       Lexer
       Main
       Path
-      Resolver
       Type
   other-modules:
       Paths_madlib
@@ -65,7 +64,6 @@ executable madlib-exe
       Infer
       Lexer
       Path
-      Resolver
       Type
       Paths_madlib
   hs-source-dirs:

@@ -1,0 +1,71 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Assignment
+            { epos = Pos 0 1 1
+            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+            , eexp =
+                Abs
+                  { epos = Pos 5 1 6
+                  , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                  , eparam = "b"
+                  , ebody =
+                      Abs
+                        { epos = Pos 5 1 6
+                        , etype = Just (TArr (TCon CNum) (TCon CNum))
+                        , eparam = "c"
+                        , ebody =
+                            App
+                              { epos = Pos 15 1 16
+                              , etype = Just (TCon CNum)
+                              , eabs =
+                                  App
+                                    { epos = Pos 15 1 16
+                                    , etype = Just (TArr (TCon CNum) (TCon CNum))
+                                    , eabs =
+                                        Var
+                                          { epos = Pos 17 1 18
+                                          , etype =
+                                              Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                          , ename = "+"
+                                          }
+                                    , earg =
+                                        Var
+                                          { epos = Pos 15 1 16
+                                          , etype = Just (TVar (TV "a"))
+                                          , ename = "b"
+                                          }
+                                    }
+                              , earg =
+                                  Var
+                                    { epos = Pos 19 1 20
+                                    , etype = Just (TVar (TV "b"))
+                                    , ename = "c"
+                                    }
+                              }
+                        }
+                  }
+            , ename = "fn"
+            }
+        , App
+            { epos = Pos 21 2 1
+            , etype = Just (TCon CNum)
+            , eabs =
+                App
+                  { epos = Pos 21 2 1
+                  , etype = Just (TArr (TCon CNum) (TCon CNum))
+                  , eabs =
+                      Var
+                        { epos = Pos 21 2 1
+                        , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                        , ename = "fn"
+                        }
+                  , earg = LInt { epos = Pos 24 2 4 , etype = Just (TCon CNum) }
+                  }
+            , earg = LInt { epos = Pos 27 2 7 , etype = Just (TCon CNum) }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

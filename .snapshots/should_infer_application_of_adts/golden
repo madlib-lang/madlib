@@ -1,0 +1,100 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ App
+            { epos = Pos 47 2 11
+            , etype = Just (TComp (CUserDef "Result") [])
+            , eabs =
+                Var
+                  { epos = Pos 47 2 11
+                  , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
+                  , ename = "Success"
+                  }
+            , earg = LStr { epos = Pos 55 2 19 , etype = Just (TCon CString) }
+            }
+        , Var
+            { epos = Pos 77 3 11
+            , etype = Just (TComp (CUserDef "Result") [])
+            , ename = "Error"
+            }
+        , App
+            { epos = Pos 84 4 2
+            , etype = Just (TCon CBool)
+            , eabs =
+                App
+                  { epos = Pos 84 4 2
+                  , etype = Just (TArr (TComp (CUserDef "Result") []) (TCon CBool))
+                  , eabs =
+                      Abs
+                        { epos = Pos 84 4 2
+                        , etype =
+                            Just (TArr (TVar (TV "e")) (TArr (TVar (TV "e")) (TCon CBool)))
+                        , eparam = "a"
+                        , ebody =
+                            Abs
+                              { epos = Pos 84 4 2
+                              , etype = Just (TArr (TVar (TV "e")) (TCon CBool))
+                              , eparam = "b"
+                              , ebody =
+                                  App
+                                    { epos = Pos 94 4 12
+                                    , etype = Just (TCon CBool)
+                                    , eabs =
+                                        App
+                                          { epos = Pos 94 4 12
+                                          , etype = Just (TArr (TVar (TV "d")) (TCon CBool))
+                                          , eabs =
+                                              Var
+                                                { epos = Pos 96 4 14
+                                                , etype =
+                                                    Just
+                                                      (TArr
+                                                         (TVar (TV "h"))
+                                                         (TArr (TVar (TV "h")) (TCon CBool)))
+                                                , ename = "==="
+                                                }
+                                          , earg =
+                                              Var
+                                                { epos = Pos 94 4 12
+                                                , etype = Just (TVar (TV "d"))
+                                                , ename = "a"
+                                                }
+                                          }
+                                    , earg =
+                                        Var
+                                          { epos = Pos 100 4 18
+                                          , etype = Just (TVar (TV "e"))
+                                          , ename = "b"
+                                          }
+                                    }
+                              }
+                        }
+                  , earg =
+                      Var
+                        { epos = Pos 103 4 21
+                        , etype = Just (TComp (CUserDef "Result") [])
+                        , ename = "result1"
+                        }
+                  }
+            , earg =
+                Var
+                  { epos = Pos 112 4 30
+                  , etype = Just (TComp (CUserDef "Result") [])
+                  , ename = "result2"
+                  }
+            }
+        ]
+    , aadts =
+        [ ADT
+            { adtname = "Result"
+            , adtparams = []
+            , adtconstructors =
+                [ ADTConstructor
+                    { adtcname = "Success" , adtcargs = [ ADTCASingle "String" ] }
+                , ADTConstructor { adtcname = "Error" , adtcargs = [] }
+                ]
+            }
+        ]
+    , apath = Just "path"
+    }
