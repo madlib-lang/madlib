@@ -1,9 +1,6 @@
 module InferSpec where
 
-import qualified Data.Map                      as M
-import qualified Data.Either                   as E
 import           Grammar
-import           Lexer
 import           Infer
 import           AST
 import           Test.Hspec                     ( describe
@@ -19,10 +16,6 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import           Text.Show.Pretty               ( ppShow )
-import           Control.Monad.Validate         ( runValidateT )
-import           Control.Monad.Reader           ( runReader
-                                                , MonadReader(..)
-                                                )
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -80,6 +73,16 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should infer application of adts" actual
+
+    it "should infer adts with type parameters" $ do
+      let code = unlines
+            [ "data Result a = Success a | Error"
+            , "result1 = Success(\"response\")"
+            , "result2 = Error"
+            , "((a, b) => a === b)(result1, result2)"
+            ]
+          actual = tester code
+      snapshotTest "should infer adt return for abstractions" actual
 
     -- TODO: Write and implement the same test with ADTs
     -- TODO: Write tests where implementation and definition don't match to force
