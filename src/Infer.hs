@@ -13,6 +13,9 @@ import           Data.Foldable                  ( Foldable(foldl') )
 import           Type
 import           Data.Char                      ( isLower )
 
+
+-- TODO: Add scoped names ( M.Map, Internal.buildList ( from this grammar : [args] ), ...)
+
 type Substitution = M.Map TVar Type
 
 type Vars = M.Map String Scheme
@@ -174,7 +177,6 @@ infer _ l@LBool{} =
 infer _ te@TypedExp { etyping } = return (M.empty, t, te { etype = Just t })
   where t = typingsToType etyping
 
-infer _ _ = undefined
 
 typingsToType :: [Typing] -> Type
 typingsToType [t     ] = typingToType t

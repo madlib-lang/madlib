@@ -45,6 +45,26 @@ spec = do
       let code   = unlines ["fn = (b, c) => b + c", "fn(2, 3)"]
           actual = tester code
       snapshotTest "should infer assignments" actual
+    
+    it "should infer minus operator" $ do
+      let code   = "(b, c) => b - c"
+          actual = tester code
+      snapshotTest "should infer minus operator" actual
+    
+    it "should infer multiplication operator" $ do
+      let code   = "(b, c) => b * c"
+          actual = tester code
+      snapshotTest "should infer multiplication operator" actual
+    
+    it "should infer division operator" $ do
+      let code   = "(b, c) => b / c"
+          actual = tester code
+      snapshotTest "should infer division operator" actual
+    
+    it "should infer an empty source" $ do
+      let code   = ""
+          actual = tester code
+      snapshotTest "should infer an empty source" actual
 
     it "should infer adts" $ do
       let code = unlines

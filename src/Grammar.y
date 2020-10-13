@@ -54,7 +54,8 @@ ast :: { AST }
   | adt              %shift { AST { aimports = [], aexps = [], aadts = [$1], apath = Nothing } }
   | exp ast          %shift { $2 { aexps = [$1] <> aexps $2 } }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
-  | importDecls ast { $2 { aimports = $1, apath = Nothing } }
+  | importDecls ast  { $2 { aimports = $1, apath = Nothing } }
+  | {- empty -}      %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
 
 importDecls :: { [ImportDecl] }
   : importDecl importDecls { $1:$2 }

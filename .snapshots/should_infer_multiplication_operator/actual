@@ -1,0 +1,44 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Abs
+            { epos = Pos 0 1 1
+            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+            , eparam = "b"
+            , ebody =
+                Abs
+                  { epos = Pos 0 1 1
+                  , etype = Just (TArr (TCon CNum) (TCon CNum))
+                  , eparam = "c"
+                  , ebody =
+                      App
+                        { epos = Pos 10 1 11
+                        , etype = Just (TCon CNum)
+                        , eabs =
+                            App
+                              { epos = Pos 10 1 11
+                              , etype = Just (TArr (TCon CNum) (TCon CNum))
+                              , eabs =
+                                  Var
+                                    { epos = Pos 12 1 13
+                                    , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                    , ename = "*"
+                                    }
+                              , earg =
+                                  Var
+                                    { epos = Pos 10 1 11
+                                    , etype = Just (TVar (TV "a"))
+                                    , ename = "b"
+                                    }
+                              }
+                        , earg =
+                            Var
+                              { epos = Pos 14 1 15 , etype = Just (TVar (TV "b")) , ename = "c" }
+                        }
+                  }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }
