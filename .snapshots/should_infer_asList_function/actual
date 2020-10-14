@@ -1,0 +1,31 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Abs
+            { epos = Pos 0 1 1
+            , etype =
+                Just
+                  (TArr (TVar (TV "a")) (TComp (CUserDef "List") [ TVar (TV "a") ]))
+            , eparam = "a"
+            , ebody =
+                App
+                  { epos = Pos 7 1 8
+                  , etype = Just (TComp (CUserDef "List") [ TVar (TV "a") ])
+                  , eabs =
+                      Var
+                        { epos = Pos 7 1 8
+                        , etype =
+                            Just
+                              (TArr (TVar (TV "c")) (TComp (CUserDef "List") [ TVar (TV "c") ]))
+                        , ename = "asList"
+                        }
+                  , earg =
+                      Var
+                        { epos = Pos 14 1 15 , etype = Just (TVar (TV "a")) , ename = "a" }
+                  }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

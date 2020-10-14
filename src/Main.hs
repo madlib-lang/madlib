@@ -11,6 +11,8 @@ import           AST                            ( ASTError(..)
                                                 , findAST
                                                 )
 import           Infer
+import           Control.Monad.Except           ( runExcept )
+import           Control.Monad.State            ( StateT(runStateT) )
 
 main :: IO ()
 main = do
@@ -22,13 +24,12 @@ main = do
   --   Left e -> ppShow e
   --   Right o -> ppShow $ infer M.empty o >>= findAST entrypoint
   let entryAST      = astTable >>= findAST entrypoint
-      initialEnv    = buildInitialEnv <$> entryAST
-      resolvedTable = case (entryAST, astTable, initialEnv) of
-        (Left _, Left _, Left _) -> Left $ UnboundVariable ""
-        (Right ast, Right _, Right env) ->
-          -- Move all of this to runInfer :: ASTTable -> Either InferError (...)
-          -- runExcept $ runStateT (infer M.empty $ head $ aexps ast) Unique { count = 0 }
-          runInfer env ast
+      resolvedTable = case (entryAST, astTable) of
+        (Left  _  , Left _ ) -> Left $ UnboundVariable ""
+        (Right ast, Right _) -> runEnv ast >>= (`runInfer` ast)
+         where
+          runEnv x = fst
+            <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
   -- return ()

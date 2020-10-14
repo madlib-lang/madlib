@@ -16,6 +16,8 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import           Text.Show.Pretty               ( ppShow )
+import           Control.Monad.Except           ( runExcept )
+import           Control.Monad.State            ( StateT(runStateT) )
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -30,8 +32,11 @@ snapshotTest name actualOutput = Golden
 
 tester :: String -> Either InferError AST
 tester code = case buildAST "path" code of
-  (Right ast) -> runInfer (buildInitialEnv ast) ast
+  (Right ast) -> runEnv ast >>= (`runInfer` ast)
   _           -> Left $ UnboundVariable ""
+ where
+  runEnv x =
+    fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
 spec :: Spec
 spec = do
@@ -45,26 +50,36 @@ spec = do
       let code   = unlines ["fn = (b, c) => b + c", "fn(2, 3)"]
           actual = tester code
       snapshotTest "should infer assignments" actual
-    
+
     it "should infer minus operator" $ do
       let code   = "(b, c) => b - c"
           actual = tester code
       snapshotTest "should infer minus operator" actual
-    
+
     it "should infer multiplication operator" $ do
       let code   = "(b, c) => b * c"
           actual = tester code
       snapshotTest "should infer multiplication operator" actual
-    
+
     it "should infer division operator" $ do
       let code   = "(b, c) => b / c"
           actual = tester code
       snapshotTest "should infer division operator" actual
-    
+
+    it "should infer asList function" $ do
+      let code   = "(a) => asList(a)"
+          actual = tester code
+      snapshotTest "should infer asList function" actual
+
     it "should infer an empty source" $ do
       let code   = ""
           actual = tester code
       snapshotTest "should infer an empty source" actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- ADT:
 
     it "should infer adts" $ do
       let code = unlines
@@ -103,6 +118,20 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should infer adt return for abstractions" actual
+
+    it "should return an error when an ADT defines a type already existing" $ do
+      let code = unlines
+            [ "data Result a = Success a | Error"
+            , "data Result a = Success a | Error"
+            ]
+          actual = tester code
+      snapshotTest
+        "should return an error when an ADT defines a type already existing"
+        actual
+
+    ---------------------------------------------------------------------------
+
+    -- Abstractions:
 
     -- TODO: Write and implement the same test with ADTs
     -- TODO: Write tests where implementation and definition don't match to force

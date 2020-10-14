@@ -34,6 +34,7 @@ data InferError
   = InfiniteType TVar Type
   | UnboundVariable String
   | UnificationError Type Type
+  | ADTAlreadyDefined Type
   deriving (Show, Eq, Ord)
 
 newtype Unique = Unique { count :: Int }
@@ -239,7 +240,7 @@ initialEnv = Env
                    , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
                    , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
                    , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-                   , ( "singleton"
+                   , ( "asList"
                      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
                        (CUserDef "List")
                        [TVar $ TV "a"]
@@ -250,19 +251,31 @@ initialEnv = Env
   }
 
 
--- TODO: Should return Except InferError Env
-buildInitialEnv :: AST -> Env
-buildInitialEnv AST { aadts } =
-  let tadts = buildADTTypes aadts
-      vars  = M.union (envvars initialEnv) (resolveADTs tadts aadts)
-  in  Env { envvars = vars, envadts = tadts, envtypings = M.empty }
+buildInitialEnv :: AST -> Infer Env
+buildInitialEnv AST { aadts } = do
+  tadts <- buildADTTypes aadts
+  let vars = M.union (envvars initialEnv) (resolveADTs tadts aadts)
+  return Env { envvars = vars, envadts = tadts, envtypings = M.empty }
 
-buildADTTypes :: [ADT] -> ADTs
-buildADTTypes adts = M.fromList $ buildADTType <$> adts
+buildADTTypes :: [ADT] -> Infer ADTs
+buildADTTypes = buildADTTypes' M.empty
 
-buildADTType :: ADT -> (String, Type)
-buildADTType ADT { adtname, adtparams } =
-  (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
+buildADTTypes' :: ADTs -> [ADT] -> Infer ADTs
+buildADTTypes' _    []    = return M.empty
+buildADTTypes' adts [adt] = do
+  (k, v) <- buildADTType adts adt
+  return $ M.singleton k v
+buildADTTypes' adts (adt : xs) = do
+  a    <- buildADTTypes' adts [adt]
+  next <- buildADTTypes' (M.union a adts) xs
+  return $ M.union a next
+
+buildADTType :: ADTs -> ADT -> Infer (String, Type)
+buildADTType adts ADT { adtname, adtparams } =
+  if ((elem adtname) . M.keys) adts
+    then throwError $ ADTAlreadyDefined t
+    else return (adtname, t)
+  where t = TComp (CUserDef adtname) (TVar . TV <$> adtparams)
 
 resolveADTs :: ADTs -> [ADT] -> Vars
 resolveADTs tadts = M.fromList . (>>= resolveADT tadts)
