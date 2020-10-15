@@ -254,8 +254,9 @@ initialEnv = Env
 buildInitialEnv :: AST -> Infer Env
 buildInitialEnv AST { aadts } = do
   tadts <- buildADTTypes aadts
-  let vars = M.union (envvars initialEnv) (resolveADTs tadts aadts)
-  return Env { envvars = vars, envadts = tadts, envtypings = M.empty }
+  vars  <- resolveADTs tadts aadts
+  let allVars = M.union (envvars initialEnv) vars
+  return Env { envvars = allVars, envadts = tadts, envtypings = M.empty }
 
 buildADTTypes :: [ADT] -> Infer ADTs
 buildADTTypes = buildADTTypes' M.empty
@@ -271,48 +272,47 @@ buildADTTypes' adts (adt : xs) = do
   return $ M.union a next
 
 buildADTType :: ADTs -> ADT -> Infer (String, Type)
-buildADTType adts ADT { adtname, adtparams } =
-  if ((elem adtname) . M.keys) adts
-    then throwError $ ADTAlreadyDefined t
-    else return (adtname, t)
-  where t = TComp (CUserDef adtname) (TVar . TV <$> adtparams)
+buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
+  Just t  -> throwError $ ADTAlreadyDefined t
+  Nothing ->
+    return (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
 
-resolveADTs :: ADTs -> [ADT] -> Vars
-resolveADTs tadts = M.fromList . (>>= resolveADT tadts)
+resolveADTs :: ADTs -> [ADT] -> Infer Vars
+resolveADTs tadts adts =
+  M.fromList . concat <$> mapM (resolveADT tadts) adts
 
-resolveADT :: ADTs -> ADT -> [(String, Scheme)]
+resolveADT :: ADTs -> ADT -> Infer [(String, Scheme)]
 resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
-  resolveADTConstructor tadts adtname adtparams <$> adtconstructors
+  mapM (resolveADTConstructor tadts adtname adtparams) adtconstructors
 
 resolveADTConstructor
-  :: ADTs -> Name -> [Name] -> ADTConstructor -> (String, Scheme)
+  :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer (String, Scheme)
 resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
-  (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
-resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } =
-  let allTypes =
-          (argToType <$> adtcargs) <> [buildADTConstructorReturnType n params]
+  return (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
+  types <- mapM argToType adtcargs
+  let allTypes =  types <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
-  in  (adtcname, Forall (TV <$> params) typeArray)
+  return (adtcname, Forall (TV <$> params) typeArray)
  where
-  argToType :: ADTConstructorArg -> Type
+  -- TODO: This should probably be merged with typingToType somehow
+  argToType :: ADTConstructorArg -> Infer Type
   argToType (ADTCASingle n)
-    | n == "String" = TCon CString
-    | n == "Bool" = TCon CBool
-    | n == "Num" = TCon CNum
-    | isLower (head n) && (n `elem` params) = TVar $ TV n
-    |
-    -- TODO: Err, that variable is not bound !
-      isLower (head n) = TVar $ TV n
+    | n == "String" = return $ TCon CString
+    | n == "Bool" = return $ TCon CBool
+    | n == "Num" = return $ TCon CNum
+    | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
+    | isLower (head n) = throwError $ UnboundVariable n
     | otherwise = case M.lookup n tadts of
-      Just a  -> a
+      Just a  -> return a
       -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
-      Nothing -> TCon $ CUserDef n
+      Nothing -> return $ TCon $ CUserDef n
   argToType (ADTCAComp ((ADTCASingle tname) : targs)) =
     case M.lookup tname tadts of
     -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
     -- we have a type application error.
-      Just (TComp n tparams) -> TComp n (argToType <$> targs)
-      Nothing                -> TCon $ CUserDef n
+      Just (TComp n tparams) -> TComp n <$> mapM argToType targs
+      Nothing                -> return $ TCon $ CUserDef n
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
 -- buildADTConstructorReturnType tname [] = TCon $ CUserDef tname -- TODO: Should this also be a TComp ? Or TADT ?
