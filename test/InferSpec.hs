@@ -128,13 +128,15 @@ spec = do
       snapshotTest
         "should return an error when an ADT defines a type already existing"
         actual
-    
-    it "should return an error when an ADT defines a constructor with an unbound variable" $ do
-      let code = unlines ["data Result a = Success b", ""]
-          actual = tester code
-      snapshotTest
+
+    it
         "should return an error when an ADT defines a constructor with an unbound variable"
-        actual
+      $ do
+          let code   = unlines ["data Result a = Success b", ""]
+              actual = tester code
+          snapshotTest
+            "should return an error when an ADT defines a constructor with an unbound variable"
+            actual
 
     ---------------------------------------------------------------------------
 

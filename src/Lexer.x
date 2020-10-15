@@ -22,8 +22,6 @@ module Lexer
   , runAlex
   , tokenToPos
   , strV
-  , intV
-  , boolV
   )
 where
 
@@ -50,9 +48,9 @@ tokens :-
   \*                                    { mapToken (\_ -> TokenStar) }
   \/                                    { mapToken (\_ -> TokenSlash) }
   if                                    { mapToken (\_ -> TokenIf) }
-  $digit+                               { mapToken (\s -> TokenInt (read s)) }
-  "True"                                { mapToken (\_ -> (TokenBool True)) }
-  "False"                               { mapToken (\_ -> (TokenBool False)) }
+  $digit+                               { mapToken (\s -> TokenInt s) }
+  "True"                                { mapToken (\_ -> (TokenBool "True")) }
+  "False"                               { mapToken (\_ -> (TokenBool "False")) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
   \,                                    { mapToken (\_ -> TokenComa) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
@@ -88,10 +86,10 @@ data Pos = Pos Int Int Int deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
- | TokenInt  Int
+ | TokenInt  String
  | TokenStr  String
  | TokenName String
- | TokenBool Bool
+ | TokenBool String
  | TokenIf
  | TokenEq
  | TokenPlus
@@ -118,13 +116,15 @@ data TokenClass
 
 strV :: Token -> String
 strV (Token _ (TokenStr x))  = x
+strV (Token _ (TokenInt x)) = x
+strV (Token _ (TokenBool x)) = x
 strV (Token _ (TokenName x)) = x
 
-intV :: Token -> Int
-intV (Token _ (TokenInt x)) = x
+-- intV :: Token -> Int
+-- intV (Token _ (TokenInt x)) = x
 
-boolV :: Token -> Bool
-boolV (Token _ (TokenBool x)) = x
+-- boolV :: Token -> Bool
+-- boolV (Token _ (TokenBool x)) = x
 
 alexEOF :: Alex Token
 alexEOF = return (Token (Pos 1 1 1) TokenEOF)

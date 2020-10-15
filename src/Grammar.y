@@ -54,7 +54,7 @@ ast :: { AST }
   | adt              %shift { AST { aimports = [], aexps = [], aadts = [$1], apath = Nothing } }
   | exp ast          %shift { $2 { aexps = [$1] <> aexps $2 } }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
-  | importDecls ast  { $2 { aimports = $1, apath = Nothing } }
+  | importDecls ast  %shift { $2 { aimports = $1, apath = Nothing } }
   | {- empty -}      %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
 
 importDecls :: { [ImportDecl] }
@@ -95,17 +95,17 @@ adt :: { ADT }
   : 'data' name adtParameters rEq adtConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
 
 adtParameters :: { [Name] }
-  : name adtParameters { strV $1 : $2 }
-  | name               { [strV $1] }
-  | {- empty -}        { [] }
+  : name adtParameters %shift { strV $1 : $2 }
+  | name               %shift { [strV $1] }
+  | {- empty -}               { [] }
 
 adtConstructors :: { [ADTConstructor] }
-  : adtConstructor rPipe adtConstructors      { $1:$3 }
-  | adtConstructor rRet                       { [$1] }
+  : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
+  | adtConstructor rRet                       %shift { [$1] }
 
 adtConstructor :: { ADTConstructor }
-  : name adtConstructorArgs { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
-  | name                    { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
+  : name adtConstructorArgs %shift { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
+  | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
 
 adtConstructorArgs :: { [ADTConstructorArg] }
   : name adtConstructorArgs                            { (ADTCASingle $ strV $1) : $2 }
@@ -117,21 +117,21 @@ adtConstructorArgs :: { [ADTConstructorArg] }
 
 exp :: { Exp }
   : literal                         { $1 }
+  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3 }}
   | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
   | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1 }, earg = $3 }}
   | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
   | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
-  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3 }}
   | '(' exp ')'              %shift { $2 }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
 
 literal :: { Exp }
-  : int                       { LInt  { epos = tokenToPos $1, etype = Nothing } }
-  | str                       { LStr  { epos = tokenToPos $1, etype = Nothing } }
-  | false                     { LBool { epos = tokenToPos $1, etype = Nothing } }
-  | true                      { LBool { epos = tokenToPos $1, etype = Nothing } }
+  : int                       { LInt  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
+  | str                       { LStr  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
+  | false                     { LBool { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
+  | true                      { LBool { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
 
 args :: { [Exp] }
   : exp rComa args %shift { $1:$3 }
@@ -188,9 +188,9 @@ data ADTConstructorArg
   | ADTCAComp [ADTConstructorArg]
   deriving(Eq, Show)
 
-data Exp = LInt       { epos :: Pos, etype :: Maybe Type }
-         | LStr       { epos :: Pos, etype :: Maybe Type }
-         | LBool      { epos :: Pos, etype :: Maybe Type }
+data Exp = LInt       { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LStr       { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LBool      { epos :: Pos, etype :: Maybe Type, eval :: String }
          | App        { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp }
          | Abs        { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
          | Assignment { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name }

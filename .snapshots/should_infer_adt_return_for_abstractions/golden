@@ -14,7 +14,12 @@ Right
                            (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
                   , ename = "Success"
                   }
-            , earg = LStr { epos = Pos 52 2 19 , etype = Just (TCon CString) }
+            , earg =
+                LStr
+                  { epos = Pos 52 2 19
+                  , etype = Just (TCon CString)
+                  , eval = "response"
+                  }
             }
         , Var
             { epos = Pos 74 3 11

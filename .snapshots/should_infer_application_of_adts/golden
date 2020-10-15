@@ -11,7 +11,12 @@ Right
                   , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
                   , ename = "Success"
                   }
-            , earg = LStr { epos = Pos 55 2 19 , etype = Just (TCon CString) }
+            , earg =
+                LStr
+                  { epos = Pos 55 2 19
+                  , etype = Just (TCon CString)
+                  , eval = "response"
+                  }
             }
         , Var
             { epos = Pos 77 3 11

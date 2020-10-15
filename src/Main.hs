@@ -13,6 +13,7 @@ import           AST                            ( ASTError(..)
 import           Infer
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
+import           Compile
 
 main :: IO ()
 main = do
@@ -23,15 +24,21 @@ main = do
   -- putStrLn $ case astTable of
   --   Left e -> ppShow e
   --   Right o -> ppShow $ infer M.empty o >>= findAST entrypoint
-  let entryAST      = astTable >>= findAST entrypoint
-      resolvedTable = case (entryAST, astTable) of
+  let entryAST    = astTable >>= findAST entrypoint
+      resolvedAST = case (entryAST, astTable) of
         (Left  _  , Left _ ) -> Left $ UnboundVariable ""
         (Right ast, Right _) -> runEnv ast >>= (`runInfer` ast)
          where
           runEnv x = fst
             <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
-  putStrLn $ "RESOLVED:\n" ++ ppShow resolvedTable
+  putStrLn $ "RESOLVED:\n" ++ ppShow resolvedAST
+
+  case resolvedAST of
+    Left  _   -> putStrLn "Err"
+    Right ast -> do
+      putStrLn "compiled JS:"
+      putStrLn $ compile ast
   -- return ()
 
 -- TODO: Implement function to build it

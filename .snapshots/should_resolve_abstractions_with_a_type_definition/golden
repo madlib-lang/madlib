@@ -73,9 +73,11 @@ Right
                             Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
                         , ename = "fn"
                         }
-                  , earg = LInt { epos = Pos 51 3 4 , etype = Just (TCon CNum) }
+                  , earg =
+                      LInt { epos = Pos 51 3 4 , etype = Just (TCon CNum) , eval = "3" }
                   }
-            , earg = LInt { epos = Pos 54 3 7 , etype = Just (TCon CNum) }
+            , earg =
+                LInt { epos = Pos 54 3 7 , etype = Just (TCon CNum) , eval = "4" }
             }
         ]
     , aadts = []

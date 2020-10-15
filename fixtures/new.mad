@@ -11,7 +11,8 @@ data Stuff a b
 might = Might(Just(Just(R("str", True))))
 
 tcho = (z) => Yo(R("2", z))
-tchotcho = NotYo
+
+moudja = NotYo
 
 res = (a) => R(a)
 
@@ -22,15 +23,20 @@ tchou = (b, c) => b + c
 ((f, x) => f(x))((a) => 2, 3)
 
 
-tchou(
-  2,
-  4
-) === 6
-
 ((d, e) => tchou(d, e))(2)
 
 (i, j) => ((i + j) + 1)
 
 ((i, j) => i + j)(2, 3)
 
-box = singleton("boxed")
+box = asList("boxed")
+
+tchou(
+  2,
+  4
+) === 6
+
+tchou(
+  2,
+  4
+)

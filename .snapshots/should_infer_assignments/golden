@@ -61,9 +61,11 @@ Right
                         , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                         , ename = "fn"
                         }
-                  , earg = LInt { epos = Pos 24 2 4 , etype = Just (TCon CNum) }
+                  , earg =
+                      LInt { epos = Pos 24 2 4 , etype = Just (TCon CNum) , eval = "2" }
                   }
-            , earg = LInt { epos = Pos 27 2 7 , etype = Just (TCon CNum) }
+            , earg =
+                LInt { epos = Pos 27 2 7 , etype = Just (TCon CNum) , eval = "3" }
             }
         ]
     , aadts = []

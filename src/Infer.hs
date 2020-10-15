@@ -166,7 +166,9 @@ infer env ass@Assignment { eexp, ename } = case eexp of
       Just t2 -> instantiate t2 >>= unify t1
       Nothing -> return s1
     return (s2 `compose` s1, t1, ass { eexp = e1, etype = Just t1 })
-  _ -> infer env eexp
+  _ -> do
+    (s1, t1, e1) <- infer env eexp
+    return (s1, t1, ass { eexp = e1, etype = Just t1 })
 
 infer _ l@LInt{} = return (M.empty, TCon CNum, l { etype = Just $ TCon CNum })
 infer _ l@LStr{} =
@@ -273,13 +275,12 @@ buildADTTypes' adts (adt : xs) = do
 
 buildADTType :: ADTs -> ADT -> Infer (String, Type)
 buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
-  Just t  -> throwError $ ADTAlreadyDefined t
+  Just t -> throwError $ ADTAlreadyDefined t
   Nothing ->
     return (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
 
 resolveADTs :: ADTs -> [ADT] -> Infer Vars
-resolveADTs tadts adts =
-  M.fromList . concat <$> mapM (resolveADT tadts) adts
+resolveADTs tadts adts = M.fromList . concat <$> mapM (resolveADT tadts) adts
 
 resolveADT :: ADTs -> ADT -> Infer [(String, Scheme)]
 resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
@@ -288,10 +289,11 @@ resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
 resolveADTConstructor
   :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer (String, Scheme)
 resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
-  return (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+  return
+    (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
 resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
   types <- mapM argToType adtcargs
-  let allTypes =  types <> [buildADTConstructorReturnType n params]
+  let allTypes  = types <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
   return (adtcname, Forall (TV <$> params) typeArray)
  where
@@ -315,6 +317,5 @@ resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
       Nothing                -> return $ TCon $ CUserDef n
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
--- buildADTConstructorReturnType tname [] = TCon $ CUserDef tname -- TODO: Should this also be a TComp ? Or TADT ?
 buildADTConstructorReturnType tname tparams =
   TComp (CUserDef tname) $ TVar . TV <$> tparams
