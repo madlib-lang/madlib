@@ -14,6 +14,7 @@ import           Infer
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 import           Compile
+import Debug.Trace (trace)
 
 main :: IO ()
 main = do
@@ -27,7 +28,7 @@ main = do
   let entryAST    = astTable >>= findAST entrypoint
       resolvedAST = case (entryAST, astTable) of
         (Left  _  , Left _ ) -> Left $ UnboundVariable ""
-        (Right ast, Right _) -> runEnv ast >>= (`runInfer` ast)
+        (Right ast, Right _) -> trace (ppShow $ runEnv ast) (runEnv ast) >>= (`runInfer` ast)
          where
           runEnv x = fst
             <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })

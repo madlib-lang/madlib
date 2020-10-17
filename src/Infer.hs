@@ -280,30 +280,38 @@ buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
     return (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
 
 resolveADTs :: ADTs -> [ADT] -> Infer Vars
-resolveADTs tadts adts = M.fromList . concat <$> mapM (resolveADT tadts) adts
+resolveADTs tadts adts = mergeVars <$> mapM (resolveADT tadts) adts
+  where
+    mergeVars []   = M.empty
+    mergeVars vars = foldr1 M.union vars
 
-resolveADT :: ADTs -> ADT -> Infer [(String, Scheme)]
+resolveADT :: ADTs -> ADT -> Infer Vars
 resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
-  mapM (resolveADTConstructor tadts adtname adtparams) adtconstructors
+  foldr1 M.union <$> mapM (resolveADTConstructor tadts adtname adtparams) adtconstructors
 
 -- TODO: Update the return type of it so that we can also generate all functions to access fields
 resolveADTConstructor
-  :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer (String, Scheme)
+  :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer Vars
 resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
-  return
-    (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
+  return $
+    M.fromList [(adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)]
 
 resolveADTConstructor tadts n params ADTRecordConstructor { adtcname, adtcfields } = do
   types <- mapM (argToType tadts n params) $ adtrcftype <$> adtcfields
-  let allTypes  = types <> [buildADTConstructorReturnType n params]
-      typeArray = foldr1 TArr allTypes
-  return (adtcname, Forall (TV <$> params) typeArray)
+  let recordType = buildADTConstructorReturnType n params
+      allTypes   = types <> [recordType]
+      typeArray  = foldr1 TArr allTypes
+  fieldAccessors <- mapM (fieldToAccessorType recordType) adtcfields
+  return $ M.fromList $ (adtcname, Forall (TV <$> params) typeArray) : fieldAccessors
+  where
+    makeFieldAccessorType fieldName recordType fieldType = (fieldName, Forall (TV <$> params) $ TArr recordType fieldType)
+    fieldToAccessorType recordType field = makeFieldAccessorType (adtrcfname field) recordType <$> argToType tadts n params (adtrcftype field)
 
 resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
   types <- mapM (argToType tadts n params) adtcargs
   let allTypes  = types <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
-  return (adtcname, Forall (TV <$> params) typeArray)
+  return $ M.fromList [(adtcname, Forall (TV <$> params) typeArray)]
 
 -- TODO: This should probably be merged with typingToType somehow
 argToType :: ADTs -> Name -> [Name] -> TypeRef -> Infer Type
