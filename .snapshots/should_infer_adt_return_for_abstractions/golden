@@ -2,29 +2,41 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ App
-            { epos = Pos 44 2 11
+        [ Assignment
+            { epos = Pos 34 2 1
             , etype = Just (TComp (CUserDef "Result") [ TCon CString ])
-            , eabs =
-                Var
+            , eexp =
+                App
                   { epos = Pos 44 2 11
-                  , etype =
-                      Just
-                        (TArr
-                           (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
-                  , ename = "Success"
+                  , etype = Just (TComp (CUserDef "Result") [ TCon CString ])
+                  , eabs =
+                      Var
+                        { epos = Pos 44 2 11
+                        , etype =
+                            Just
+                              (TArr
+                                 (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
+                        , ename = "Success"
+                        }
+                  , earg =
+                      LStr
+                        { epos = Pos 52 2 19
+                        , etype = Just (TCon CString)
+                        , eval = "response"
+                        }
                   }
-            , earg =
-                LStr
-                  { epos = Pos 52 2 19
-                  , etype = Just (TCon CString)
-                  , eval = "response"
-                  }
+            , ename = "result1"
             }
-        , Var
-            { epos = Pos 74 3 11
+        , Assignment
+            { epos = Pos 64 3 1
             , etype = Just (TComp (CUserDef "Result") [ TVar (TV "c") ])
-            , ename = "Error"
+            , eexp =
+                Var
+                  { epos = Pos 74 3 11
+                  , etype = Just (TComp (CUserDef "Result") [ TVar (TV "c") ])
+                  , ename = "Error"
+                  }
+            , ename = "result2"
             }
         , App
             { epos = Pos 81 4 2
@@ -101,7 +113,7 @@ Right
             , adtparams = [ "a" ]
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ ADTCASingle "a" ] }
+                    { adtcname = "Success" , adtcargs = [ TRSingle "a" ] }
                 , ADTConstructor { adtcname = "Error" , adtcargs = [] }
                 ]
             }

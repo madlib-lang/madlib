@@ -286,35 +286,43 @@ resolveADT :: ADTs -> ADT -> Infer [(String, Scheme)]
 resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
   mapM (resolveADTConstructor tadts adtname adtparams) adtconstructors
 
+-- TODO: Update the return type of it so that we can also generate all functions to access fields
 resolveADTConstructor
   :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer (String, Scheme)
 resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
   return
     (adtcname, Forall (TV <$> params) $ buildADTConstructorReturnType n params)
-resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
-  types <- mapM argToType adtcargs
+
+resolveADTConstructor tadts n params ADTRecordConstructor { adtcname, adtcfields } = do
+  types <- mapM (argToType tadts n params) $ adtrcftype <$> adtcfields
   let allTypes  = types <> [buildADTConstructorReturnType n params]
       typeArray = foldr1 TArr allTypes
   return (adtcname, Forall (TV <$> params) typeArray)
- where
-  -- TODO: This should probably be merged with typingToType somehow
-  argToType :: ADTConstructorArg -> Infer Type
-  argToType (ADTCASingle n)
-    | n == "String" = return $ TCon CString
-    | n == "Bool" = return $ TCon CBool
-    | n == "Num" = return $ TCon CNum
-    | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
-    | isLower (head n) = throwError $ UnboundVariable n
-    | otherwise = case M.lookup n tadts of
-      Just a  -> return a
-      -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
-      Nothing -> return $ TCon $ CUserDef n
-  argToType (ADTCAComp ((ADTCASingle tname) : targs)) =
-    case M.lookup tname tadts of
-    -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
-    -- we have a type application error.
-      Just (TComp n tparams) -> TComp n <$> mapM argToType targs
-      Nothing                -> return $ TCon $ CUserDef n
+
+resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
+  types <- mapM (argToType tadts n params) adtcargs
+  let allTypes  = types <> [buildADTConstructorReturnType n params]
+      typeArray = foldr1 TArr allTypes
+  return (adtcname, Forall (TV <$> params) typeArray)
+
+-- TODO: This should probably be merged with typingToType somehow
+argToType :: ADTs -> Name -> [Name] -> TypeRef -> Infer Type
+argToType tadts _ params (TRSingle n)
+  | n == "String" = return $ TCon CString
+  | n == "Bool" = return $ TCon CBool
+  | n == "Num" = return $ TCon CNum
+  | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
+  | isLower (head n) = throwError $ UnboundVariable n
+  | otherwise = case M.lookup n tadts of
+    Just a  -> return a
+    -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
+    Nothing -> return $ TCon $ CUserDef n
+argToType tadts name params (TRComp ((TRSingle tname) : targs)) =
+  case M.lookup tname tadts of
+  -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
+  -- we have a type application error.
+    Just (TComp n tparams) -> TComp n <$> mapM (argToType tadts name params) targs
+    Nothing                -> return $ TCon $ CUserDef name
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
 buildADTConstructorReturnType tname tparams =

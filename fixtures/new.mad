@@ -1,5 +1,7 @@
 data Result = R String Bool
 
+data Record = Record { field :: String, field2 :: Num }
+
 data Maybe a
   = Just a
   | Nothing

@@ -2,21 +2,27 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ App
-            { epos = Pos 47 4 10
+        [ Assignment
+            { epos = Pos 38 4 1
             , etype = Just (TComp (CUserDef "Result") [ TCon CBool ])
-            , eabs =
-                Var
+            , eexp =
+                App
                   { epos = Pos 47 4 10
-                  , etype =
-                      Just
-                        (TArr
-                           (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
-                  , ename = "Success"
+                  , etype = Just (TComp (CUserDef "Result") [ TCon CBool ])
+                  , eabs =
+                      Var
+                        { epos = Pos 47 4 10
+                        , etype =
+                            Just
+                              (TArr
+                                 (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
+                        , ename = "Success"
+                        }
+                  , earg =
+                      LBool
+                        { epos = Pos 55 4 18 , etype = Just (TCon CBool) , eval = "True" }
                   }
-            , earg =
-                LBool
-                  { epos = Pos 55 4 18 , etype = Just (TCon CBool) , eval = "True" }
+            , ename = "result"
             }
         ]
     , aadts =
@@ -25,7 +31,7 @@ Right
             , adtparams = [ "a" ]
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ ADTCASingle "a" ] }
+                    { adtcname = "Success" , adtcargs = [ TRSingle "a" ] }
                 , ADTConstructor { adtcname = "Error" , adtcargs = [] }
                 ]
             }

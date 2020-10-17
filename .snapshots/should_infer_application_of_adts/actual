@@ -2,26 +2,38 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ App
-            { epos = Pos 47 2 11
+        [ Assignment
+            { epos = Pos 37 2 1
             , etype = Just (TComp (CUserDef "Result") [])
-            , eabs =
-                Var
+            , eexp =
+                App
                   { epos = Pos 47 2 11
-                  , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
-                  , ename = "Success"
+                  , etype = Just (TComp (CUserDef "Result") [])
+                  , eabs =
+                      Var
+                        { epos = Pos 47 2 11
+                        , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
+                        , ename = "Success"
+                        }
+                  , earg =
+                      LStr
+                        { epos = Pos 55 2 19
+                        , etype = Just (TCon CString)
+                        , eval = "response"
+                        }
                   }
-            , earg =
-                LStr
-                  { epos = Pos 55 2 19
-                  , etype = Just (TCon CString)
-                  , eval = "response"
-                  }
+            , ename = "result1"
             }
-        , Var
-            { epos = Pos 77 3 11
+        , Assignment
+            { epos = Pos 67 3 1
             , etype = Just (TComp (CUserDef "Result") [])
-            , ename = "Error"
+            , eexp =
+                Var
+                  { epos = Pos 77 3 11
+                  , etype = Just (TComp (CUserDef "Result") [])
+                  , ename = "Error"
+                  }
+            , ename = "result2"
             }
         , App
             { epos = Pos 84 4 2
@@ -96,7 +108,7 @@ Right
             , adtparams = []
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ ADTCASingle "String" ] }
+                    { adtcname = "Success" , adtcargs = [ TRSingle "String" ] }
                 , ADTConstructor { adtcname = "Error" , adtcargs = [] }
                 ]
             }

@@ -2,21 +2,27 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ App
-            { epos = Pos 46 2 10
+        [ Assignment
+            { epos = Pos 37 2 1
             , etype = Just (TComp (CUserDef "Result") [])
-            , eabs =
-                Var
+            , eexp =
+                App
                   { epos = Pos 46 2 10
-                  , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
-                  , ename = "Success"
+                  , etype = Just (TComp (CUserDef "Result") [])
+                  , eabs =
+                      Var
+                        { epos = Pos 46 2 10
+                        , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
+                        , ename = "Success"
+                        }
+                  , earg =
+                      LStr
+                        { epos = Pos 54 2 18
+                        , etype = Just (TCon CString)
+                        , eval = "response"
+                        }
                   }
-            , earg =
-                LStr
-                  { epos = Pos 54 2 18
-                  , etype = Just (TCon CString)
-                  , eval = "response"
-                  }
+            , ename = "result"
             }
         ]
     , aadts =
@@ -25,7 +31,7 @@ Right
             , adtparams = []
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ ADTCASingle "String" ] }
+                    { adtcname = "Success" , adtcargs = [ TRSingle "String" ] }
                 , ADTConstructor { adtcname = "Error" , adtcargs = [] }
                 ]
             }

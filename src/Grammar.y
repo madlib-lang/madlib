@@ -28,6 +28,8 @@ import Type
   ','      { Token _ TokenComa }
   '('      { Token _ TokenLeftParen }
   ')'      { Token _ TokenRightParen }
+  '{'      { Token _ TokenLeftCurly }
+  '}'      { Token _ TokenRightCurly }
   '==='    { Token _ TokenTripleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
@@ -93,6 +95,7 @@ rComa :: { [TokenClass] }
 
 adt :: { ADT }
   : 'data' name adtParameters rEq adtConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
+  | 'data' name adtParameters rEq adtRecordConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
 
 adtParameters :: { [Name] }
   : name adtParameters %shift { strV $1 : $2 }
@@ -107,13 +110,33 @@ adtConstructor :: { ADTConstructor }
   : name adtConstructorArgs %shift { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
   | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
 
-adtConstructorArgs :: { [ADTConstructorArg] }
-  : name adtConstructorArgs                            { (ADTCASingle $ strV $1) : $2 }
-  | name '(' adtConstructorArgs ')' adtConstructorArgs { (ADTCASingle $ strV $1) : ADTCAComp $3 : $5 }
-  | '(' name ')' adtConstructorArgs                    { (ADTCASingle $ strV $1) : $4 }
-  | '(' adtConstructorArgs ')'                         { [ADTCAComp $2] }
-  | '(' name ')'                                       { [ADTCASingle $ strV $2] }
-  | name                                               { [ADTCASingle $ strV $1] }
+adtConstructorArgs :: { [TypeRef] }
+  : name adtConstructorArgs                            { (TRSingle $ strV $1) : $2 }
+  | name '(' adtConstructorArgs ')' adtConstructorArgs { (TRSingle $ strV $1) : TRComp $3 : $5 }
+  | '(' name ')' adtConstructorArgs                    { (TRSingle $ strV $1) : $4 }
+  | '(' adtConstructorArgs ')'                         { [TRComp $2] }
+  | '(' name ')'                                       { [TRSingle $ strV $2] }
+  | name                                               { [TRSingle $ strV $1] }
+
+adtRecordConstructors :: { [ADTConstructor] }
+  : adtRecordConstructor rPipe adtRecordConstructors %shift { $1:$3 }
+  | adtRecordConstructor rRet                        %shift { [$1] }
+
+adtRecordConstructor :: { ADTConstructor }
+  : name '{' adtRecordConstructorFields '}' %shift { ADTRecordConstructor { adtcname = strV $1, adtcfields = $3 } }
+
+adtRecordConstructorFields :: { [ADTRecordConstructorField] }
+  : adtRecordConstructorField ',' adtRecordConstructorFields { $1:$3 }
+  | adtRecordConstructorField                                { [$1] }
+
+adtRecordConstructorField :: { ADTRecordConstructorField }
+  : name '::' type { ADTRecordConstructorField { adtrcfname = strV $1, adtrcftype = $3 } }
+
+type :: { TypeRef }
+  : name              { TRSingle $ strV $1 }
+  | name type         { TRComp $ (TRSingle (strV $1)) : [$2] }
+  | name '(' type ')' { TRComp $ (TRSingle (strV $1)) : [$3] }
+  | type '->' type    { TRArr $1 $3 }
 
 exp :: { Exp }
   : literal                         { $1 }
@@ -141,6 +164,7 @@ params :: { [Name] }
   : name ',' params %shift { strV $1 : $3 }
   | name                   { [strV $1] }
 
+-- TODO: Handle composite types
 typings :: { [Typing] }
   : name '->' typings { Typing (strV $1) : $3 }
   | name              { [Typing (strV $1)] }
@@ -177,15 +201,27 @@ data ImportDecl =
     }
     deriving(Eq, Show)
 
--- TODO: Add pos
+-- TODO: Add Pos
 data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
 
--- TODO: Add pos
-data ADTConstructor = ADTConstructor { adtcname :: Name, adtcargs :: [ADTConstructorArg] } deriving(Eq, Show)
+-- TODO: Add Pos
+data ADTConstructor
+  = ADTConstructor       { adtcname :: Name, adtcargs :: [TypeRef] }
+  | ADTRecordConstructor { adtcname :: Name, adtcfields :: [ADTRecordConstructorField] }
+  deriving(Eq, Show)
 
-data ADTConstructorArg
-  = ADTCASingle Name
-  | ADTCAComp [ADTConstructorArg]
+data ADTRecordConstructorField =
+  ADTRecordConstructorField
+    { adtrcfname :: Name
+    , adtrcftype :: TypeRef
+    }
+    deriving(Eq, Show)
+
+-- TODO: Rename
+data TypeRef
+  = TRSingle Name
+  | TRComp [TypeRef]
+  | TRArr TypeRef TypeRef
   deriving(Eq, Show)
 
 data Exp = LInt       { epos :: Pos, etype :: Maybe Type, eval :: String }

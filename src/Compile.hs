@@ -55,6 +55,8 @@ instance Compilable ADTConstructor where
           argStr   = foldr1 (<>) $ (<> ", ") <$> argNames
       in  "([" <> init (init argStr) <> "])"
 
+  compile ADTRecordConstructor {} = "// Record - Not Implemented \n"
+
 
 instance Compilable AST where
   compile AST { aexps, aadts } =
