@@ -2,6 +2,7 @@
 module Compile where
 
 import           Grammar
+import qualified Data.Map                      as M
 
 class Compilable a where
   -- If the Bool is True it indicates that the expression terminates.
@@ -13,10 +14,13 @@ instance Compilable Exp where
   compile LBool { eval } | eval == "False" = "false"
                          | otherwise       = "true"
 
-  compile App { eabs, earg } = case eabs of
+  compile App { eabs, earg, efieldAccess = False } = case eabs of
     Var { ename = "+" }   -> "(" <> compile earg <> ") + "
     Var { ename = "===" } -> "(" <> compile earg <> ") === "
     _                     -> compile eabs <> "(" <> compile earg <> ")"
+
+  compile App { eabs, earg, efieldAccess = True } =
+    compile earg <> "." <> compile eabs
 
   compile Abs { ebody, eparam } =
     "(" <> eparam <> " => " <> compile ebody <> ")"
@@ -30,7 +34,14 @@ instance Compilable Exp where
     Var{} -> ""
     _     -> compile eexp
 
-  compile _ = ""
+  compile RecordCall { efields } =
+    let fields = init $ M.foldrWithKey compileField "" efields
+    in  "{" <> fields <> " }"
+   where
+    compileField name exp res =
+      " " <> name <> ": " <> compile exp <> "," <> res
+
+  compile _ = "// Not implemented\n"
 
 instance Compilable ADT where
   compile ADT { adtconstructors } = foldr1 (<>) $ compile <$> adtconstructors
@@ -55,7 +66,8 @@ instance Compilable ADTConstructor where
           argStr   = foldr1 (<>) $ (<> ", ") <$> argNames
       in  "([" <> init (init argStr) <> "])"
 
-  compile ADTRecordConstructor {} = "// Record - Not Implemented \n"
+--   compile ADTRecordConstructor { adtcname, adtcfields } = undefined
+  compile _ = "// Not implemented\n"
 
 
 instance Compilable AST where

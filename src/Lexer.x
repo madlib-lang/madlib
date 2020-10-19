@@ -52,12 +52,14 @@ tokens :-
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
   "False"                               { mapToken (\_ -> (TokenBool "False")) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
+  \.                                    { mapToken (\_ -> TokenDot) }
   \,                                    { mapToken (\_ -> TokenComa) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
   \}                                    { mapToken (\_ -> TokenRightCurly) }
   \(                                    { mapToken (\_ -> TokenLeftParen) }
   \)                                    { mapToken (\_ -> TokenRightParen) }
   \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
+  \:                                    { mapToken (\_ -> TokenColon) }
   \-\>                                  { mapToken (\_ -> TokenArrow) }
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
@@ -103,6 +105,8 @@ data TokenClass
  | TokenLeftParen
  | TokenRightParen
  | TokenDoubleColon
+ | TokenColon
+ | TokenDot
  | TokenArrow
  | TokenFatArrow
  | TokenEOF

@@ -3,87 +3,92 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 37 2 1
+            { epos = Pos 72 2 1
             , etype = Just (TComp (CUserDef "Result") [])
             , eexp =
-                App
-                  { epos = Pos 47 2 11
+                RecordCall
+                  { epos = Pos 82 2 11
                   , etype = Just (TComp (CUserDef "Result") [])
-                  , eabs =
-                      Var
-                        { epos = Pos 47 2 11
-                        , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
-                        , ename = "Success"
-                        }
-                  , earg =
-                      LStr
-                        { epos = Pos 55 2 19
-                        , etype = Just (TCon CString)
-                        , eval = "response"
-                        }
-                  , efieldAccess = False
+                  , ename = "Success"
+                  , efields =
+                      fromList
+                        [ ( "value"
+                          , LStr
+                              { epos = Pos 99 2 28 , etype = Just (TCon CString) , eval = "42" }
+                          )
+                        ]
                   }
             , ename = "result1"
             }
         , Assignment
-            { epos = Pos 67 3 1
+            { epos = Pos 106 3 1
             , etype = Just (TComp (CUserDef "Result") [])
             , eexp =
-                Var
-                  { epos = Pos 77 3 11
+                RecordCall
+                  { epos = Pos 116 3 11
                   , etype = Just (TComp (CUserDef "Result") [])
                   , ename = "Error"
+                  , efields =
+                      fromList
+                        [ ( "message"
+                          , LStr
+                              { epos = Pos 133 3 28
+                              , etype = Just (TCon CString)
+                              , eval = "Err"
+                              }
+                          )
+                        ]
                   }
             , ename = "result2"
             }
         , App
-            { epos = Pos 84 4 2
+            { epos = Pos 142 4 2
             , etype = Just (TCon CBool)
             , eabs =
                 App
-                  { epos = Pos 84 4 2
+                  { epos = Pos 142 4 2
                   , etype = Just (TArr (TComp (CUserDef "Result") []) (TCon CBool))
                   , eabs =
                       Abs
-                        { epos = Pos 84 4 2
+                        { epos = Pos 142 4 2
                         , etype =
-                            Just (TArr (TVar (TV "e")) (TArr (TVar (TV "e")) (TCon CBool)))
+                            Just (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
                         , eparam = "a"
                         , ebody =
                             Abs
-                              { epos = Pos 84 4 2
-                              , etype = Just (TArr (TVar (TV "e")) (TCon CBool))
+                              { epos = Pos 142 4 2
+                              , etype = Just (TArr (TVar (TV "d")) (TCon CBool))
                               , eparam = "b"
                               , ebody =
                                   App
-                                    { epos = Pos 94 4 12
+                                    { epos = Pos 152 4 12
                                     , etype = Just (TCon CBool)
                                     , eabs =
                                         App
-                                          { epos = Pos 94 4 12
-                                          , etype = Just (TArr (TVar (TV "d")) (TCon CBool))
+                                          { epos = Pos 152 4 12
+                                          , etype = Just (TArr (TVar (TV "c")) (TCon CBool))
                                           , eabs =
                                               Var
-                                                { epos = Pos 96 4 14
+                                                { epos = Pos 154 4 14
                                                 , etype =
                                                     Just
                                                       (TArr
-                                                         (TVar (TV "h"))
-                                                         (TArr (TVar (TV "h")) (TCon CBool)))
+                                                         (TVar (TV "g"))
+                                                         (TArr (TVar (TV "g")) (TCon CBool)))
                                                 , ename = "==="
                                                 }
                                           , earg =
                                               Var
-                                                { epos = Pos 94 4 12
-                                                , etype = Just (TVar (TV "d"))
+                                                { epos = Pos 152 4 12
+                                                , etype = Just (TVar (TV "c"))
                                                 , ename = "a"
                                                 }
                                           , efieldAccess = False
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 100 4 18
-                                          , etype = Just (TVar (TV "e"))
+                                          { epos = Pos 158 4 18
+                                          , etype = Just (TVar (TV "d"))
                                           , ename = "b"
                                           }
                                     , efieldAccess = False
@@ -92,7 +97,7 @@ Right
                         }
                   , earg =
                       Var
-                        { epos = Pos 103 4 21
+                        { epos = Pos 161 4 21
                         , etype = Just (TComp (CUserDef "Result") [])
                         , ename = "result1"
                         }
@@ -100,7 +105,7 @@ Right
                   }
             , earg =
                 Var
-                  { epos = Pos 112 4 30
+                  { epos = Pos 170 4 30
                   , etype = Just (TComp (CUserDef "Result") [])
                   , ename = "result2"
                   }
@@ -112,9 +117,20 @@ Right
             { adtname = "Result"
             , adtparams = []
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ TRSingle "String" ] }
-                , ADTConstructor { adtcname = "Error" , adtcargs = [] }
+                [ ADTRecordConstructor
+                    { adtcname = "Success"
+                    , adtcfields =
+                        [ ADTRecordConstructorField
+                            { adtrcfname = "value" , adtrcftype = TRSingle "String" }
+                        ]
+                    }
+                , ADTRecordConstructor
+                    { adtcname = "Error"
+                    , adtcfields =
+                        [ ADTRecordConstructorField
+                            { adtrcfname = "message" , adtrcftype = TRSingle "String" }
+                        ]
+                    }
                 ]
             }
         ]

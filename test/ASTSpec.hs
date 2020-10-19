@@ -124,10 +124,11 @@ spec = do
   describe "buildAST" $ do
     it "should return a GrammarError if the source is not valid" $ do
       let
-        source = unlines ["fn :: Num -> Num -> Num", "fn : a, b => a + b"]
-        actual = buildAST "source.mad" source
-        expected =
-          Left $ GrammarError "source.mad" "lexical error at line 2, column 5"
+        source   = unlines ["fn :: Num -> Num -> Num", "fn : a, b => a + b"]
+        actual   = buildAST "source.mad" source
+        expected = Left $ GrammarError
+          "source.mad"
+          "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon"
       actual `shouldBe` expected
 
     it "should return a valid AST with boolean expressions" $ do

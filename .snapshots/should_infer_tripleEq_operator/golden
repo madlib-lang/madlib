@@ -1,0 +1,30 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ App
+            { epos = Pos 0 1 1
+            , etype = Just (TCon CBool)
+            , eabs =
+                App
+                  { epos = Pos 0 1 1
+                  , etype = Just (TArr (TCon CNum) (TCon CBool))
+                  , eabs =
+                      Var
+                        { epos = Pos 2 1 3
+                        , etype =
+                            Just (TArr (TVar (TV "c")) (TArr (TVar (TV "c")) (TCon CBool)))
+                        , ename = "==="
+                        }
+                  , earg =
+                      LInt { epos = Pos 0 1 1 , etype = Just (TCon CNum) , eval = "1" }
+                  , efieldAccess = False
+                  }
+            , earg =
+                LInt { epos = Pos 6 1 7 , etype = Just (TCon CNum) , eval = "3" }
+            , efieldAccess = False
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

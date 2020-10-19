@@ -1,44 +1,58 @@
 data Result = R String Bool
 
-data Record = Record { field :: String, field2 :: Num }
+-- data Record = Record { field1 :: String, field2 :: Num }
 
-data Maybe a
-  = Just a
-  | Nothing
+-- record = Record { field1: "Something", field2: 3 }
+-- f1 = record.field1
+-- f2 = record.field2
 
-data Stuff a b
-  = Yo Result
-  | Might (Maybe (Maybe Result))
-  | NotYo
-might = Might(Just(Just(R("str", True))))
+data Stuff a = Stuff { field1 :: a }
+             | Stuff2 { field1 :: a, field2 :: String }
 
-tcho = (z) => Yo(R("2", z))
+s = Stuff { field1: "OK" }
+s2 = Stuff2 { field1: 3, field2: "OK" }
+s.field1
+s2.field1
 
-moudja = NotYo
+fn = (r1) => Stuff { field1: r1.field1 + 1 }
 
-res = (a) => R(a)
+-- data Maybe a
+--   = Just a
+--   | Nothing
+
+-- data Stuff a b
+--   = Yo Result
+--   | Might (Maybe (Maybe Result))
+--   | NotYo
+-- might = Might(Just(Just(R("str", True))))
+
+-- tcho = (z) => Yo(R("2", z))
+
+-- moudja = NotYo
+
+-- res = (a) => R(a)
 
 
-tchou :: a -> a -> a
-tchou = (b, c) => b + c
+-- tchou :: a -> a -> a
+-- tchou = (b, c) => b + c
 
-((f, x) => f(x))((a) => 2, 3)
+-- ((f, x) => f(x))((a) => 2, 3)
 
 
-((d, e) => tchou(d, e))(2)
+-- ((d, e) => tchou(d, e))(2)
 
-(i, j) => ((i + j) + 1)
+-- (i, j) => ((i + j) + 1)
 
-((i, j) => i + j)(2, 3)
+-- ((i, j) => i + j)(2, 3)
 
-box = asList("boxed")
+-- box = asList("boxed")
 
-tchou(
-  2,
-  4
-) === 6
+-- tchou(
+--   2,
+--   4
+-- ) === 6
 
-tchou(
-  2,
-  4
-)
+-- tchou(
+--   2,
+--   4
+-- )

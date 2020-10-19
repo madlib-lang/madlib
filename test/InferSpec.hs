@@ -66,6 +66,16 @@ spec = do
           actual = tester code
       snapshotTest "should infer division operator" actual
 
+    it "should infer tripleEq operator" $ do
+      let code   = "1 === 3"
+          actual = tester code
+      snapshotTest "should infer tripleEq operator" actual
+
+    it "should infer wrapped tripleEq operator" $ do
+      let code   = "((a, b) => a === b)(1, 3)"
+          actual = tester code
+      snapshotTest "should infer wrapped tripleEq operator" actual
+
     it "should infer asList function" $ do
       let code   = "(a) => asList(a)"
           actual = tester code
@@ -137,6 +147,36 @@ spec = do
           snapshotTest
             "should return an error when an ADT defines a constructor with an unbound variable"
             actual
+
+    it "should infer adts with record constructors" $ do
+      let
+        code = unlines
+          [ "data Result = Success { value :: String } | Error { message :: String }"
+          , "result1 = Success { value: \"42\" }"
+          , "result2 = Error { message: \"Err\" }"
+          , "((a, b) => a === b)(result1, result2)"
+          ]
+        actual = tester code
+      snapshotTest "should infer adts with record constructors" actual
+
+    it "should infer params for adts" $ do
+      let code = unlines
+            [ "data Result = Success { value :: String }"
+            , "r = Success { value: \"42\" }"
+            , "((a) => a)(r)"
+            ]
+          actual = tester code
+      snapshotTest "should infer params for adts" actual
+
+    it "should infer field accessors for records" $ do
+      let code = unlines
+            [ "data Result = Success { value :: String }"
+            , "r = Success { value: \"42\" }"
+            , "r.value"
+            , "fn = (r) => r.value"
+            ]
+          actual = tester code
+      snapshotTest "should infer field accessors for records" actual
 
     ---------------------------------------------------------------------------
 

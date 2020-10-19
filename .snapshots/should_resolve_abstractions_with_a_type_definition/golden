@@ -47,6 +47,7 @@ Right
                                           , etype = Just (TVar (TV "a"))
                                           , ename = "a"
                                           }
+                                    , efieldAccess = False
                                     }
                               , earg =
                                   Var
@@ -54,6 +55,7 @@ Right
                                     , etype = Just (TVar (TV "b"))
                                     , ename = "b"
                                     }
+                              , efieldAccess = False
                               }
                         }
                   }
@@ -75,9 +77,11 @@ Right
                         }
                   , earg =
                       LInt { epos = Pos 51 3 4 , etype = Just (TCon CNum) , eval = "3" }
+                  , efieldAccess = False
                   }
             , earg =
                 LInt { epos = Pos 54 3 7 , etype = Just (TCon CNum) , eval = "4" }
+            , efieldAccess = False
             }
         ]
     , aadts = []

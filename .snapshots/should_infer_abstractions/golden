@@ -27,14 +27,12 @@ Right
                                     }
                               , earg =
                                   Var
-                                    { epos = Pos 10 1 11
-                                    , etype = Just (TVar (TV "a"))
-                                    , ename = "b"
-                                    }
+                                    { epos = Pos 10 1 11 , etype = Just (TCon CNum) , ename = "b" }
+                              , efieldAccess = False
                               }
                         , earg =
-                            Var
-                              { epos = Pos 14 1 15 , etype = Just (TVar (TV "b")) , ename = "c" }
+                            Var { epos = Pos 14 1 15 , etype = Just (TCon CNum) , ename = "c" }
+                        , efieldAccess = False
                         }
                   }
             }

@@ -4,6 +4,7 @@ import Lexer
 import Text.Printf
 import Control.Monad.Except
 import Type
+import qualified Data.Map as M
 }
 
 %name parseMadlib ast
@@ -23,8 +24,10 @@ import Type
   '*'      { Token _ TokenStar }
   '/'      { Token _ TokenSlash }
   '::'     { Token _ TokenDoubleColon }
+  ':'      { Token _ TokenColon }
   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
+  '.'      { Token _ TokenDot }
   ','      { Token _ TokenComa }
   '('      { Token _ TokenLeftParen }
   ')'      { Token _ TokenRightParen }
@@ -40,7 +43,7 @@ import Type
 
 %left ';' 'ret'
 %right ','
-%nonassoc '=' '=>' '::'
+%nonassoc '=' '=>' '::' ':'
 %left '->' '|'
 %left '==='
 %left '*' '/'
@@ -142,13 +145,23 @@ exp :: { Exp }
   : literal                         { $1 }
   | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3 }}
   | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
-  | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1 }, earg = $3 }}
+  | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1, efieldAccess = False }, earg = $3, efieldAccess = False }}
   | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
   | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
   | '(' exp ')'              %shift { $2 }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
+  | recordCall                      { $1 }
+  | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = strV $3 }, earg = $1, efieldAccess = True } }
+  -- | exp '.' name                    { FieldAccess { epos = epos $1, etype = Nothing, eexp = $1, ename = strV $3 } }
+
+recordCall :: { Exp }
+  : name '{' fieldAssignments '}' { RecordCall { epos = tokenToPos $1, etype = Nothing, ename = strV $1, efields = $3 } }
+
+fieldAssignments :: { M.Map String Exp }
+  : name ':' exp                      { M.fromList [(strV $1, $3)] }
+  | name ':' exp ',' fieldAssignments { M.insert (strV $1) $3 $5 }
 
 literal :: { Exp }
   : int                       { LInt  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
@@ -182,8 +195,8 @@ buildAbs pos [param] body = Abs { epos = pos, etype = Nothing, eparam = param, e
 buildAbs pos (x:xs) body  = Abs { epos = pos, etype = Nothing, eparam = x, ebody = buildAbs pos xs body }
 
 buildApp :: Pos -> Exp -> [Exp] -> Exp
-buildApp pos f [arg]  = App { epos = pos, etype = Nothing, eabs = f, earg = arg }
-buildApp pos f xs = App { epos = pos, etype = Nothing, eabs = buildApp pos f (init xs) , earg = last xs }
+buildApp pos f [arg]  = App { epos = pos, etype = Nothing, eabs = f, earg = arg, efieldAccess = False }
+buildApp pos f xs = App { epos = pos, etype = Nothing, eabs = buildApp pos f (init xs) , earg = last xs, efieldAccess = False }
 
 data AST =
   AST
@@ -207,6 +220,7 @@ data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTCo
 -- TODO: Add Pos
 data ADTConstructor
   = ADTConstructor       { adtcname :: Name, adtcargs :: [TypeRef] }
+  -- TODO: Should the fields be a Map ?
   | ADTRecordConstructor { adtcname :: Name, adtcfields :: [ADTRecordConstructorField] }
   deriving(Eq, Show)
 
@@ -224,14 +238,15 @@ data TypeRef
   | TRArr TypeRef TypeRef
   deriving(Eq, Show)
 
-data Exp = LInt       { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LStr       { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LBool      { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | App        { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp }
-         | Abs        { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
-         | Assignment { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name }
-         | Var        { epos :: Pos, etype :: Maybe Type, ename :: Name }
-         | TypedExp   { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: [Typing] }
+data Exp = LInt        { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LStr        { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LBool       { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | App         { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp, efieldAccess :: Bool }
+         | Abs         { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
+         | Assignment  { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name }
+         | Var         { epos :: Pos, etype :: Maybe Type, ename :: Name }
+         | TypedExp    { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: [Typing] }
+         | RecordCall  { epos :: Pos, etype :: Maybe Type, ename :: Name, efields :: M.Map String Exp }
          deriving(Eq, Show)
 
 type Name  = String

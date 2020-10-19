@@ -21,6 +21,7 @@ Right
                         , etype = Just (TCon CString)
                         , eval = "response"
                         }
+                  , efieldAccess = False
                   }
             , ename = "result1"
             }
@@ -77,6 +78,7 @@ Right
                                                 , etype = Just (TVar (TV "d"))
                                                 , ename = "a"
                                                 }
+                                          , efieldAccess = False
                                           }
                                     , earg =
                                         Var
@@ -84,6 +86,7 @@ Right
                                           , etype = Just (TVar (TV "e"))
                                           , ename = "b"
                                           }
+                                    , efieldAccess = False
                                     }
                               }
                         }
@@ -93,6 +96,7 @@ Right
                         , etype = Just (TComp (CUserDef "Result") [])
                         , ename = "result1"
                         }
+                  , efieldAccess = False
                   }
             , earg =
                 Var
@@ -100,6 +104,7 @@ Right
                   , etype = Just (TComp (CUserDef "Result") [])
                   , ename = "result2"
                   }
+            , efieldAccess = False
             }
         ]
     , aadts =
