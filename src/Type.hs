@@ -14,6 +14,7 @@ data Type
   -- TODO: Rename TADT ?
   | TComp TCon [Type] -- Composite type
   | TRecord Type (M.Map String Type) -- Record type
+  | TAny
   deriving (Show, Eq, Ord)
 
 data TCon

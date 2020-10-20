@@ -17,6 +17,7 @@ import qualified Data.Map as M
   int      { Token _ (TokenInt _) }
   str      { Token _ (TokenStr _) }
   name     { Token _ (TokenName _) }
+  js       { Token _ (TokenJSBlock _) }
   'ret'    { Token _ TokenReturn }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
@@ -37,8 +38,12 @@ import qualified Data.Map as M
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
+  'export' { Token _ TokenExport }
+  'from'   { Token _ TokenFrom }
   ';'      { Token _ TokenSemiColon }
   '|'      { Token _ TokenPipe }
+  '#-'     { Token _ TokenJSBlockLeft }
+  '-#'     { Token _ TokenJSBlockRight }
   'data'   { Token _ TokenData }
 
 %left ';' 'ret'
@@ -61,14 +66,28 @@ ast :: { AST }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
   | importDecls ast  %shift { $2 { aimports = $1, apath = Nothing } }
   | {- empty -}      %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
+  | 'export' name '=' exp ast %shift { $5 {
+                                       aexps =
+                                       [Assignment
+                                        { epos = tokenToPos $1
+                                        , etype = Nothing
+                                        , ename = strV $2
+                                        , eexp = $4
+                                        , eexported = True
+                                        }] <> aexps $5
+                                      }
+                                     }
 
 importDecls :: { [ImportDecl] }
   : importDecl importDecls { $1:$2 }
   | importDecl             { [$1] }
   
 importDecl :: { ImportDecl }
-  : 'import' str rRet { ImportDecl { ipos = tokenToPos $1, ipath = strV $2 } }
+  : 'import' '{' importNames '}' 'from' str rRet { ImportDecl { ipos = tokenToPos $1, inames = $3, ipath = strV $6 } }
 
+importNames :: { [Name] }
+  : name ',' importNames %shift { strV $1 : $3 }
+  | name                 %shift { [strV $1] }
 
 rRet :: { [TokenClass] }
   : 'ret'       { [] }
@@ -143,7 +162,8 @@ type :: { TypeRef }
 
 exp :: { Exp }
   : literal                         { $1 }
-  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3 }}
+  | js                       %shift { JSExp { epos = tokenToPos $1, etype = Just TAny, econtent = strV $1 } }
+  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3, eexported = False }}
   | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
   | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1, efieldAccess = False }, earg = $3, efieldAccess = False }}
   | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
@@ -154,7 +174,6 @@ exp :: { Exp }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
   | recordCall                      { $1 }
   | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = strV $3 }, earg = $1, efieldAccess = True } }
-  -- | exp '.' name                    { FieldAccess { epos = epos $1, etype = Nothing, eexp = $1, ename = strV $3 } }
 
 recordCall :: { Exp }
   : name '{' fieldAssignments '}' { RecordCall { epos = tokenToPos $1, etype = Nothing, ename = strV $1, efields = $3 } }
@@ -209,8 +228,9 @@ data AST =
 
 data ImportDecl =
   ImportDecl
-    { ipos  :: Pos
-    , ipath :: FilePath
+    { ipos   :: Pos
+    , inames :: [Name]
+    , ipath  :: FilePath
     }
     deriving(Eq, Show)
 
@@ -241,9 +261,10 @@ data TypeRef
 data Exp = LInt        { epos :: Pos, etype :: Maybe Type, eval :: String }
          | LStr        { epos :: Pos, etype :: Maybe Type, eval :: String }
          | LBool       { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | JSExp       { epos :: Pos, etype :: Maybe Type, econtent :: String }
          | App         { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp, efieldAccess :: Bool }
          | Abs         { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
-         | Assignment  { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name }
+         | Assignment  { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name, eexported :: Bool }
          | Var         { epos :: Pos, etype :: Maybe Type, ename :: Name }
          | TypedExp    { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: [Typing] }
          | RecordCall  { epos :: Pos, etype :: Maybe Type, ename :: Name, efields :: M.Map String Exp }

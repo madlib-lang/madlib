@@ -37,7 +37,7 @@ spec = do
           rf          = makeReadFile files
 
       r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
-      let actual = r >>= findAST "fixtures/source.mad"
+      let actual = r >>= flip findAST "fixtures/source.mad"
       actual `shouldBe` expected
 
     it "should return a Left ASTNotFound if it does not exist" $ do
@@ -52,18 +52,18 @@ spec = do
           rf          = makeReadFile files
 
       r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
-      let actual = r >>= findAST "fixtures/source-not-there.mad"
+      let actual = r >>= flip findAST "fixtures/source-not-there.mad"
       actual `shouldBe` expected
 
   describe "buildASTTable" $ do
     it "should build an AST Table" $ do
       let
         sourceA = unlines
-          [ "import \"sourceB\""
+          [ "import { fn2 } from \"sourceB\""
           , "fn :: Num -> Num -> Num"
           , "fn = (a, b) => fn2(a, b) + a"
           ]
-        sourceB = unlines ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => a + b"]
+        sourceB = unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
 
         (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
         (Right astB) = buildAST "fixtures/sourceB.mad" sourceB
@@ -82,7 +82,7 @@ spec = do
 
     it "should fail if the source file is not found" $ do
       let sourceA = unlines
-            [ "import \"sourceB\""
+            [ "import { fn2 } from \"sourceB\""
             , "fn :: Num -> Num -> Num"
             , "fn = (a, b) => fn2(a, b) + a"
             ]
@@ -103,11 +103,11 @@ spec = do
     it "should figure out the root directory" $ do
       let
         sourceA = unlines
-          [ "import \"sourceB\""
+          [ "import { fn2 } from \"sourceB\""
           , "fn :: Num -> Num -> Num"
           , "fn = (a, b) => fn2(a, b) + a"
           ]
-        sourceB = unlines ["fn2 :: Num -> Num -> Num", "fn2 = (a, b) => a + b"]
+        sourceB = unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
 
         (Right astA) = buildAST "src/sourceA.mad" sourceA
         (Right astB) = buildAST "src/sourceB.mad" sourceB

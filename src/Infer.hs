@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -15,6 +16,7 @@ import           Data.Foldable                  ( foldrM
 import           Type
 import           Data.Char                      ( isLower )
 import           Debug.Trace                    ( trace )
+import qualified AST as AST
 
 
 type Substitution = M.Map TVar Type
@@ -23,6 +25,7 @@ type Substitution = M.Map TVar Type
 type Vars = M.Map String Scheme
 type ADTs = M.Map String Type
 type Typings = M.Map String Scheme
+type Imports = M.Map (Name) Type
 
 
 data Env
@@ -30,6 +33,7 @@ data Env
     { envvars :: Vars
     , envadts :: ADTs
     , envtypings :: Typings
+    , envimports :: Imports
     }
     deriving(Eq, Show)
 
@@ -42,6 +46,9 @@ data InferError
   | UnknownType String
   | FieldNotExisting String
   | FieldNotInitialized String
+  | ImportNotFound String String
+  | FatalError
+  | ASTHasNoPath
   deriving (Show, Eq, Ord)
 
 
@@ -62,8 +69,10 @@ instance Substitutable Type where
   apply s (  t1      `TArr` t2    ) = apply s t1 `TArr` apply s t2
   apply s (  TComp   main   vars  ) = TComp main (apply s <$> vars)
   apply s (TRecord main fields) = TRecord (apply s main) (apply s <$> fields)
+  apply s TAny                  = TAny
 
   ftv TCon{}                  = S.empty
+  ftv TAny                    = S.empty
   ftv (TVar a               ) = S.singleton a
   ftv (t1      `TArr` t2    ) = ftv t1 `S.union` ftv t2
   ftv (TComp   _      vars  ) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
@@ -86,7 +95,12 @@ instance Substitutable Env where
 lookupVar :: Env -> String -> Infer (Substitution, Type)
 lookupVar env x = do
   case M.lookup x $ envvars env of
-    Nothing -> throwError $ UnboundVariable x
+    -- Nothing -> throwError $ UnboundVariable x
+    Nothing -> case M.lookup x $ envimports env of
+      Nothing -> throwError $ UnboundVariable x
+      Just s  -> do
+        t <- instantiate $ Forall [] s
+        return (M.empty, t)
 
     Just s  -> do
       t <- instantiate s
@@ -235,6 +249,8 @@ infer env rc@RecordCall { ename, efields } = do
 
       (_, _) -> throwError $ FieldNotInitialized fieldKey
 
+infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
+
 
 typingsToType :: [Typing] -> Type
 typingsToType [t     ] = typingToType t
@@ -274,11 +290,64 @@ mid :: (a, b, c) -> b
 mid (_, b, _) = b
 
 
+-- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)
+-- Well, or just adapt it somehow
 runInfer :: Env -> AST -> Either InferError AST
 runInfer env ast = (\e -> ast { aexps = e }) <$> inferredExps
  where
   inferredExps = fst
     <$> runExcept (runStateT (inferExps env $ aexps ast) Unique { count = 0 })
+
+-- TODO: Missing recursion
+inferAST :: AST.ASTTable -> AST -> Infer AST.ASTTable
+inferAST table ast@AST{ aimports } = do
+  env <- buildInitialEnv ast
+
+  let importPaths = ipath <$> aimports
+      asts  = mapM (AST.findAST table) (("fixtures/" ++) <$> (++ ".mad") <$> importPaths)
+
+  inferredASTs <- case asts of
+    Right x -> inferASTs table x
+
+    Left  (AST.ImportNotFound fp _) -> throwError $ ImportNotFound fp ""
+    Left  (AST.ASTNotFound fp) -> throwError $ ImportNotFound fp ""
+
+  exportedExps <- (M.fromList . join) <$> mapM exportedExps (M.elems inferredASTs)
+
+  let exportedTypes = mapM etype exportedExps
+  envWithImports <- case exportedTypes of 
+    Just et -> return env { envimports = et }
+    Nothing -> throwError $ ImportNotFound "" ""
+  
+  inferredAST <- inferASTExps envWithImports ast
+
+  case apath inferredAST of
+    Just fp -> return $ M.union inferredASTs $ M.fromList [(fp,  inferredAST)]
+    Nothing -> throwError ASTHasNoPath
+
+
+exportedExps :: AST -> Infer [((Name), Exp)]
+exportedExps AST { aexps, apath } = case apath of
+  Just p  -> mapM (bundleExports p) $ filter (eexported) aexps
+
+  Nothing -> throwError $ ASTHasNoPath
+
+  where
+    bundleExports path exp@Assignment { ename } = return (ename, exp)
+
+
+inferASTs ::AST.ASTTable -> [AST] -> Infer AST.ASTTable
+inferASTs _ []           = return $ M.fromList []
+inferASTs table [l]    = inferAST table l
+inferASTs table (a:xs) = do
+  nexts <- inferASTs table xs
+  M.union nexts <$> inferAST table a
+
+
+inferASTExps :: Env -> AST -> Infer AST
+inferASTExps env ast@AST { aexps } = do
+  inferredExps <- inferExps env aexps
+  return ast { aexps = inferredExps }
 
 
 extendVars :: Env -> (String, Scheme) -> Env
@@ -287,6 +356,12 @@ extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 
 extendTypings :: Env -> (String, Scheme) -> Env
 extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
+
+
+findImportType :: Env -> Name -> Infer Type
+findImportType env name = case M.lookup (name) (envimports env) of
+  Just x  -> return x
+  Nothing -> throwError $ ImportNotFound "" name
 
 
 initialEnv :: Env
@@ -310,15 +385,17 @@ initialEnv = Env
                    ]
   , envadts    = M.empty
   , envtypings = M.empty
+  , envimports = M.empty
   }
 
 
+-- TODO: Should we build imported names here ?
 buildInitialEnv :: AST -> Infer Env
 buildInitialEnv AST { aadts } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars = allVars, envadts = tadts, envtypings = M.empty }
+  return Env { envvars = allVars, envadts = tadts, envtypings = M.empty, envimports = M.empty }
 
 
 buildADTTypes :: [ADT] -> Infer ADTs

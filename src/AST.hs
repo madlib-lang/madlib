@@ -57,14 +57,17 @@ buildASTTable' rf parent rootPath entrypoint = do
   childTables <- mapM (buildASTTable' rf nextParent rootPath) importPaths
   return $ foldr (liftM2 M.union) generatedTable childTables
 
+
 importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
 importPathsFromAST rootPath ast =
   fromRight [] (((rootPath ++) . (++ ".mad") . ipath <$>) . aimports <$> ast)
 
-findAST :: FilePath -> ASTTable -> Either ASTError AST
-findAST path table = case M.lookup path table of
+
+findAST :: ASTTable -> FilePath -> Either ASTError AST
+findAST table path = case M.lookup path table of
   Just x  -> return x
   Nothing -> Left $ ASTNotFound path
+
 
 buildAST :: FilePath -> String -> Either ASTError AST
 buildAST path code = mapLeft (GrammarError path) $ parse code >>= setPath

@@ -25,8 +25,9 @@ module Lexer
   )
 where
 
-import System.Exit
-import Debug.Trace
+import           System.Exit
+import           Debug.Trace
+import qualified Data.Text as T
 }
 
 %wrapper "monad"
@@ -40,6 +41,8 @@ tokens :-
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   "--".*                                ;
   import                                { mapToken (\_ -> TokenImport) }
+  export                                { mapToken (\_ -> TokenExport) }
+  from                                  { mapToken (\_ -> TokenFrom) }
   data                                  { mapToken (\_ -> TokenData) }
   const                                 { mapToken (\_ -> TokenConst) }
   [=]                                   { mapToken (\_ -> TokenEq) }
@@ -64,12 +67,20 @@ tokens :-
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
+  -- \#\-                                  { mapToken (\_ -> TokenJSBlockLeft) }
+  -- \-\#                                  { mapToken (\_ -> TokenJSBlockRight) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
+  \#\- [$alpha $digit \_ \' \  \. \( \)]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   $empty+                               ;
 
 {
 sanitizeStr :: String -> String
 sanitizeStr = tail . init
+
+sanitizeJSBlock :: String -> String
+sanitizeJSBlock = strip . tail . tail . init . init
+
+strip  = T.unpack . T.strip . T.pack
 
 --type AlexAction result = AlexInput -> Int -> Alex result
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
@@ -91,6 +102,7 @@ data TokenClass
  | TokenInt  String
  | TokenStr  String
  | TokenName String
+ | TokenJSBlock String
  | TokenBool String
  | TokenIf
  | TokenEq
@@ -111,10 +123,14 @@ data TokenClass
  | TokenFatArrow
  | TokenEOF
  | TokenImport
+ | TokenExport
+ | TokenFrom
  | TokenPipe
  | TokenData
  | TokenSemiColon
  | TokenReturn
+ | TokenJSBlockLeft
+ | TokenJSBlockRight
  deriving (Eq, Show)
 
 
@@ -123,6 +139,8 @@ strV (Token _ (TokenStr x))  = x
 strV (Token _ (TokenInt x)) = x
 strV (Token _ (TokenBool x)) = x
 strV (Token _ (TokenName x)) = x
+strV (Token _ (TokenJSBlock x)) = x
+
 
 -- intV :: Token -> Int
 -- intV (Token _ (TokenInt x)) = x
