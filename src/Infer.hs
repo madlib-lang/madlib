@@ -143,8 +143,8 @@ bind a t | t == TVar a     = return M.empty
 
 unify :: Type -> Type -> Infer Substitution
 unify (l `TArr` r) (l' `TArr` r') = do
-  s1 <- unify l l'
-  s2 <- unify (apply s1 r) (apply s1 r')
+  s1 <- trace ("L: " <> ppShow l <> ":" <> ppShow l') (unify l l')
+  s2 <- trace ("R: " <> ppShow (apply s1 r) <> ":" <> ppShow (apply s1 r')) (unify (apply s1 r) (apply s1 r'))
   return (s2 `compose` s1)
 
 unify (TComp main vars) (TComp main' vars') = do
@@ -190,7 +190,11 @@ infer env abs@Abs { eparam, ebody } = do
 infer env app@App { eabs, earg } = do
   tv           <- newTVar
   (s1, t1, e1) <- infer env eabs
-  (s2, t2, e2) <- infer (apply s1 env) earg
+  (s2, t2, e2) <- infer env earg
+  -- TODO: That commented line caused inline functions in pipe to be wrongly typed.
+  -- Not applying the substitution to the env seems to fix the problem. Nevertheless
+  -- we should confirm that this is correct with the paper from Milner.
+  -- (s2, t2, e2) <- infer (apply s1 env) earg
   s3           <- unify (apply s2 t1) (TArr t2 tv)
   let t = apply s3 tv
   return
@@ -248,7 +252,7 @@ infer env rc@RecordCall { ename, efields } = do
   (s, inferred) <- foldrM (inferField fieldTypes) (M.empty, M.empty) fieldKeys
   let fullType = apply s adtType
 
-  return $ (s, fullType, rc { efields = inferred, etype = Just fullType })
+  return (s, fullType, rc { efields = inferred, etype = Just fullType })
  where
   inferField
     :: M.Map String Type
@@ -365,7 +369,7 @@ inferAST table ast@AST { aimports } = do
     Just et -> return env { envimports = et }
     Nothing -> throwError $ ImportNotFound "" ""
 
-  inferredAST <- inferASTExps envWithImports ast
+  inferredAST <- inferASTExps (trace (ppShow envWithImports) envWithImports) ast
 
   case apath inferredAST of
     Just fp -> return $ M.union inferredASTs $ M.fromList [(fp, inferredAST)]
@@ -448,8 +452,8 @@ buildInitialEnv AST { aadts } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars    = allVars
-             , envadts    = tadts
+  return Env { envvars    = trace (ppShow allVars) allVars
+             , envadts    = trace (ppShow tadts) tadts
              , envtypings = M.empty
              , envimports = M.empty
              }

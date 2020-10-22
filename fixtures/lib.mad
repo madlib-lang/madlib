@@ -5,6 +5,8 @@ print = (a) => #- { console.log(a); return a; } -#
 data Future e a = Bad e
                 | Good a
 
+data Record = Record { field1 :: Num, field2 :: String }
+
 
 of :: a -> Future e a
 of = (a) => #- Promise.resolve(a) -#
@@ -55,8 +57,10 @@ of([3, 4])
 get("http://www.google.com")
   |> run(id, print)
 
-if (True) {
-  "OK"
-} else {
-  "NOT OK"
-}
+
+t = (x) => if (x) { False } else { True }
+
+of(True)
+  |> map((x) => if (x) { 2 } else { 4 })
+  |> map((x) => x * 2)
+  |> run((x) => x, print)
