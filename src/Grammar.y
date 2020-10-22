@@ -36,6 +36,8 @@ import qualified Data.Map as M
   '}'      { Token _ TokenRightCurly }
   '['      { Token _ TokenLeftSquaredBracket }
   ']'      { Token _ TokenRightSquaredBracket }
+  'if'     { Token _ TokenIf }
+  'else'   { Token _ TokenElse }
   '==='    { Token _ TokenTripleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
@@ -173,6 +175,13 @@ exp :: { Exp }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
   | recordCall                      { $1 }
   | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = strV $3 }, earg = $1, efieldAccess = True } }
+  | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}' {
+    App { epos = tokenToPos $1, etype = Nothing, eabs =
+      App { epos = tokenToPos $1, etype = Nothing, eabs = 
+        App { epos = tokenToPos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "ifElse" }, earg = $3, efieldAccess = False }
+    , earg = $7, efieldAccess = False }, earg = $15, efieldAccess = False
+    }
+  }
 
 
 operation :: { Exp }

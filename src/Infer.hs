@@ -427,6 +427,9 @@ initialEnv = Env
                      `TArr` ((TVar $ TV "a") `TArr` (TVar $ TV "b"))
                      `TArr` (TVar $ TV "b")
                      )
+                   , ( "ifElse"
+                     , Forall [TV "a"] $ TCon CBool `TArr` (TVar $ TV "a") `TArr` (TVar $ TV "a") `TArr` (TVar $ TV "a")
+                     )
                    , ( "asList"
                      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
                        (CUserDef "List")

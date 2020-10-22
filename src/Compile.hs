@@ -5,6 +5,7 @@ import           Grammar
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Debug.Trace                    ( trace )
+import Data.List (intercalate)
 
 class Compilable a where
   -- If the Bool is True it indicates that the expression terminates.
@@ -17,6 +18,8 @@ instance Compilable Exp where
                          | otherwise       = "true"
 
   compile App { eabs, earg, efieldAccess = False } = case eabs of
+    App { earg = ifArg, eabs = App { earg = condArg, eabs = Var {ename = "ifElse"}}} ->
+      "(" <> compile condArg <> " ? " <> compile ifArg <> " : " <> compile earg <> ")"
     Var { ename = "+" }   -> "(" <> compile earg <> ") + "
     Var { ename = "-" }   -> "(" <> compile earg <> ") - "
     Var { ename = "*" }   -> "(" <> compile earg <> ") * "
@@ -50,6 +53,8 @@ instance Compilable Exp where
       " " <> name <> ": " <> compile exp <> "," <> res
 
   compile JSExp { econtent } = econtent
+  
+  compile ListConstructor { eelems } = "[" <> intercalate ", " (compile <$> eelems) <> "]"
 
   compile _                  = "// Not implemented\n"
 

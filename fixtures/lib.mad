@@ -15,11 +15,48 @@ map = (f, x) => #- x.then(f) -#
 mapErr :: (e -> f) -> Future e a -> Future f a
 mapErr = (f, x) => #- x.catch(f) -#
 
-run :: (e -> f) -> (a -> b) -> Future e a -> a
+run :: (e -> f) -> (a -> b) -> Future e a -> Void
 run = (bad, good, x) => #- x.then(good).catch(bad) -#
 
+-- HTTP stuff:
+#- import http from 'http'; -#
+
+get :: String -> Future e String
+get = (url) => #- {
+return new Promise((good, bad) => {
+  let chunks = '';
+  const req = http.request(url, (res) => {
+    res.setEncoding('utf8');
+    res.on('data', (chunk) => {
+      chunks += chunk;
+    });
+
+    res.on('end', () => {
+      good(chunks);
+    });
+  });
+  req.on('error', bad)
+  req.end();
+});
+} -#
+
+-- List stuff:
+mapL :: (a -> b) -> List a -> List b
+mapL = (f, xs) => #- xs.map(f) -#
 
 -- Actual code:
-of(3)
-  |> map((x) => x * 2)
+id = (a) => a
+double = (n) => n * 2
+
+of([3, 4])
+  |> map(mapL(double))
   |> run(print, print)
+
+get("http://www.google.com")
+  |> run(id, print)
+
+if (True) {
+  "OK"
+} else {
+  "NOT OK"
+}

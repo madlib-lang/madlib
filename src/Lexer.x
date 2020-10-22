@@ -39,14 +39,15 @@ $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 tokens :-
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  [\n \ ]*"--".*                                ;
+  [\ \n]*"--".*                                ;
   import                                { mapToken (\_ -> TokenImport) }
   export                                { mapToken (\_ -> TokenExport) }
   from                                  { mapToken (\_ -> TokenFrom) }
   data                                  { mapToken (\_ -> TokenData) }
   const                                 { mapToken (\_ -> TokenConst) }
-  \=                                    { mapToken (\_ -> TokenEq) }
   if                                    { mapToken (\_ -> TokenIf) }
+  else                                  { mapToken (\_ -> TokenElse) }
+  \=                                    { mapToken (\_ -> TokenEq) }
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
   "False"                               { mapToken (\_ -> (TokenBool "False")) }
@@ -66,7 +67,7 @@ tokens :-
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
-  \#\- [$alpha $digit \_ \' \  \. \( \) \; \{ \}]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
+  \#\- [$alpha $digit \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\n \ ]*\+                         { mapToken (\_ -> TokenPlus) }
   \-                         { mapToken (\_ -> TokenDash) }
   \n[\ ]*\-                         { mapToken (\_ -> TokenDash) }
@@ -107,6 +108,7 @@ data TokenClass
  | TokenJSBlock String
  | TokenBool String
  | TokenIf
+ | TokenElse
  | TokenEq
  | TokenPlus
  | TokenDash
