@@ -39,17 +39,13 @@ $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 tokens :-
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  "--".*                                ;
+  [\n \ ]*"--".*                                ;
   import                                { mapToken (\_ -> TokenImport) }
   export                                { mapToken (\_ -> TokenExport) }
   from                                  { mapToken (\_ -> TokenFrom) }
   data                                  { mapToken (\_ -> TokenData) }
   const                                 { mapToken (\_ -> TokenConst) }
-  [=]                                   { mapToken (\_ -> TokenEq) }
-  \+                                    { mapToken (\_ -> TokenPlus) }
-  \-                                    { mapToken (\_ -> TokenDash) }
-  \*                                    { mapToken (\_ -> TokenStar) }
-  \/                                    { mapToken (\_ -> TokenSlash) }
+  \=                                    { mapToken (\_ -> TokenEq) }
   if                                    { mapToken (\_ -> TokenIf) }
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
@@ -59,6 +55,8 @@ tokens :-
   \,                                    { mapToken (\_ -> TokenComa) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
   \}                                    { mapToken (\_ -> TokenRightCurly) }
+  \[                                    { mapToken (\_ -> TokenLeftSquaredBracket) }
+  \]                                    { mapToken (\_ -> TokenRightSquaredBracket) }
   \(                                    { mapToken (\_ -> TokenLeftParen) }
   \)                                    { mapToken (\_ -> TokenRightParen) }
   \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
@@ -67,10 +65,14 @@ tokens :-
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
-  -- \#\-                                  { mapToken (\_ -> TokenJSBlockLeft) }
-  -- \-\#                                  { mapToken (\_ -> TokenJSBlockRight) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
-  \#\- [$alpha $digit \_ \' \  \. \( \)]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
+  \#\- [$alpha $digit \_ \' \  \. \( \) \; \{ \}]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
+  [\n \ ]*\+                         { mapToken (\_ -> TokenPlus) }
+  \-                         { mapToken (\_ -> TokenDash) }
+  \n[\ ]*\-                         { mapToken (\_ -> TokenDash) }
+  [\n \ ]*\*                         { mapToken (\_ -> TokenStar) }
+  [\n \ ]*\/                         { mapToken (\_ -> TokenSlash) }
+  [\n \ ]*\|\>                       { mapToken (\_ -> TokenPipeOperator) }
   $empty+                               ;
 
 {
@@ -114,6 +116,8 @@ data TokenClass
  | TokenComa
  | TokenLeftCurly
  | TokenRightCurly
+ | TokenLeftSquaredBracket
+ | TokenRightSquaredBracket
  | TokenLeftParen
  | TokenRightParen
  | TokenDoubleColon
@@ -126,11 +130,10 @@ data TokenClass
  | TokenExport
  | TokenFrom
  | TokenPipe
+ | TokenPipeOperator
  | TokenData
  | TokenSemiColon
  | TokenReturn
- | TokenJSBlockLeft
- | TokenJSBlockRight
  deriving (Eq, Show)
 
 

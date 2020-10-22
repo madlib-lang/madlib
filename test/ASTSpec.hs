@@ -63,7 +63,8 @@ spec = do
           , "fn :: Num -> Num -> Num"
           , "fn = (a, b) => fn2(a, b) + a"
           ]
-        sourceB = unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
+        sourceB =
+          unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
 
         (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
         (Right astB) = buildAST "fixtures/sourceB.mad" sourceB
@@ -107,7 +108,8 @@ spec = do
           , "fn :: Num -> Num -> Num"
           , "fn = (a, b) => fn2(a, b) + a"
           ]
-        sourceB = unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
+        sourceB =
+          unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => a + b"]
 
         (Right astA) = buildAST "src/sourceA.mad" sourceA
         (Right astB) = buildAST "src/sourceB.mad" sourceB

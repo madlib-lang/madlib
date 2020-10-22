@@ -16,7 +16,9 @@ import           Data.Foldable                  ( foldrM
 import           Type
 import           Data.Char                      ( isLower )
 import           Debug.Trace                    ( trace )
-import qualified AST as AST
+import qualified AST                           as AST
+import           Text.Show.Pretty               ( ppShow )
+import           Data.List                      ( union )
 
 
 type Substitution = M.Map TVar Type
@@ -69,7 +71,7 @@ instance Substitutable Type where
   apply s (  t1      `TArr` t2    ) = apply s t1 `TArr` apply s t2
   apply s (  TComp   main   vars  ) = TComp main (apply s <$> vars)
   apply s (TRecord main fields) = TRecord (apply s main) (apply s <$> fields)
-  apply s TAny                  = TAny
+  apply s TAny                      = TAny
 
   ftv TCon{}                  = S.empty
   ftv TAny                    = S.empty
@@ -102,7 +104,7 @@ lookupVar env x = do
         t <- instantiate $ Forall [] s
         return (M.empty, t)
 
-    Just s  -> do
+    Just s -> do
       t <- instantiate s
       return (M.empty, t)
 
@@ -161,7 +163,9 @@ unify (TRecord main fields) (TRecord main' fields') = do
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
 unify (TCon a) (TCon b) | a == b = return M.empty
-unify t1 t2                      = throwError $ UnificationError t1 t2
+unify TAny _                     = return M.empty
+unify _    TAny                  = return M.empty
+unify t1   t2                    = throwError $ UnificationError t1 t2
 
 
 unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
@@ -201,10 +205,20 @@ infer env app@App { eabs, earg } = do
 infer env ass@Assignment { eexp, ename } = case eexp of
   Abs{} -> do
     (s1, t1, e1) <- infer env eexp
-    s2           <- case M.lookup ename $ envtypings env of
-      Just t2 -> instantiate t2 >>= unify t1
-      Nothing -> return s1
-    return (s2 `compose` s1, t1, ass { eexp = e1, etype = Just t1 })
+
+    case M.lookup ename $ envtypings env of
+      Just (Forall fv t2) -> do
+        let bv = boundVariables t2
+        it2 <- instantiate (Forall (fv <> bv) t2)
+        s2  <- unify t1 it2
+        return
+          ( s2 `compose` s1
+          , it2
+          , ass { eexp = e1 { etype = Just it2 }, etype = Just it2 }
+          )
+
+      Nothing -> return (s1, t1, ass { eexp = e1, etype = Just t1 })
+
   _ -> do
     (s1, t1, e1) <- infer env eexp
     return (s1, t1, ass { eexp = e1, etype = Just t1 })
@@ -216,6 +230,10 @@ infer _ l@LBool{} =
   return (M.empty, TCon CBool, l { etype = Just $ TCon CBool })
 
 -- TODO: Needs to handle quantified variables ?
+-- TODO: Add TComp
+-- TODO: Add TArr
+-- So that we can write a type :
+-- :: (a -> b) -> List a -> List b
 infer _ te@TypedExp { etyping } = return (M.empty, t, te { etype = Just t })
   where t = typingsToType etyping
 
@@ -233,10 +251,10 @@ infer env rc@RecordCall { ename, efields } = do
   return $ (s, fullType, rc { efields = inferred, etype = Just fullType })
  where
   inferField
-    :: (M.Map String Type)
+    :: M.Map String Type
     -> String
-    -> (Substitution, (M.Map String Exp))
-    -> Infer (Substitution, (M.Map String Exp))
+    -> (Substitution, M.Map String Exp)
+    -> Infer (Substitution, M.Map String Exp)
   inferField fieldTypes fieldKey (s0, result) =
     case (M.lookup fieldKey fieldTypes, M.lookup fieldKey efields) of
       (Just t, Just exp) -> do
@@ -249,19 +267,45 @@ infer env rc@RecordCall { ename, efields } = do
 
       (_, _) -> throwError $ FieldNotInitialized fieldKey
 
+infer _ lc@ListConstructor { eelems = [] } =
+  let t = TComp (CUserDef "List") [TVar $ TV "a"]
+  in  return (M.empty, t, lc { etype = Just t })
+
+infer env lc@ListConstructor { eelems } = do
+  inferred <- mapM (infer env) eelems
+  let (s1, t1, e1) = head inferred
+  let t            = TComp (CUserDef "List") [t1]
+  s <- unifyElems t1 (mid <$> inferred)
+
+  return (s, t, lc { etype = Just t })
+ where
+  unifyElems :: Type -> [Type] -> Infer Substitution
+  unifyElems _ []        = return M.empty
+  unifyElems t [t'     ] = unify t t'
+  unifyElems t (t' : xs) = do
+    s1 <- unify t t'
+    s2 <- unifyElems t xs
+    return $ M.union s1 s2
+
+
 infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
 
 
-typingsToType :: [Typing] -> Type
-typingsToType [t     ] = typingToType t
-typingsToType (t : xs) = TArr (typingToType t) (typingsToType xs)
+boundVariables :: Type -> [TVar]
+boundVariables (TVar t    ) = [t]
+boundVariables (TComp _ xs) = concat $ boundVariables <$> xs
+boundVariables (TArr  t t') = boundVariables t `union` boundVariables t'
+boundVariables _            = []
 
 
-typingToType :: Typing -> Type
-typingToType (Typing t) | t == "Num"    = TCon CNum
-                        | t == "Bool"   = TCon CBool
-                        | t == "String" = TCon CString
-                        | otherwise     = TVar $ TV t
+typingsToType :: TypeRef -> Type
+typingsToType (TRSingle t) | t == "Num"    = TCon CNum
+                           | t == "Bool"   = TCon CBool
+                           | t == "String" = TCon CString
+                           | t == "Void"   = TCon CVoid
+                           | otherwise     = TVar $ TV t
+typingsToType (TRComp t ts) = TComp (CUserDef t) (typingsToType <$> ts)
+typingsToType (TRArr  t t') = TArr (typingsToType t) (typingsToType t')
 
 
 -- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
@@ -300,46 +344,46 @@ runInfer env ast = (\e -> ast { aexps = e }) <$> inferredExps
 
 -- TODO: Missing recursion
 inferAST :: AST.ASTTable -> AST -> Infer AST.ASTTable
-inferAST table ast@AST{ aimports } = do
+inferAST table ast@AST { aimports } = do
   env <- buildInitialEnv ast
 
   let importPaths = ipath <$> aimports
-      asts  = mapM (AST.findAST table) (("fixtures/" ++) <$> (++ ".mad") <$> importPaths)
+      asts        = mapM (AST.findAST table)
+                         (("fixtures/" ++) . (++ ".mad") <$> importPaths)
 
   inferredASTs <- case asts of
-    Right x -> inferASTs table x
+    Right x                         -> inferASTs table x
 
     Left  (AST.ImportNotFound fp _) -> throwError $ ImportNotFound fp ""
-    Left  (AST.ASTNotFound fp) -> throwError $ ImportNotFound fp ""
+    Left  (AST.ASTNotFound fp     ) -> throwError $ ImportNotFound fp ""
 
-  exportedExps <- (M.fromList . join) <$> mapM exportedExps (M.elems inferredASTs)
+  exportedExps <- M.fromList . join
+    <$> mapM exportedExps (M.elems inferredASTs)
 
   let exportedTypes = mapM etype exportedExps
-  envWithImports <- case exportedTypes of 
+  envWithImports <- case exportedTypes of
     Just et -> return env { envimports = et }
     Nothing -> throwError $ ImportNotFound "" ""
-  
+
   inferredAST <- inferASTExps envWithImports ast
 
   case apath inferredAST of
-    Just fp -> return $ M.union inferredASTs $ M.fromList [(fp,  inferredAST)]
+    Just fp -> return $ M.union inferredASTs $ M.fromList [(fp, inferredAST)]
     Nothing -> throwError ASTHasNoPath
 
 
-exportedExps :: AST -> Infer [((Name), Exp)]
+exportedExps :: AST -> Infer [(Name, Exp)]
 exportedExps AST { aexps, apath } = case apath of
-  Just p  -> mapM (bundleExports p) $ filter (eexported) aexps
+  Just p  -> mapM (bundleExports p) $ filter eexported aexps
 
   Nothing -> throwError $ ASTHasNoPath
-
-  where
-    bundleExports path exp@Assignment { ename } = return (ename, exp)
+  where bundleExports _ exp@Assignment { ename } = return (ename, exp)
 
 
-inferASTs ::AST.ASTTable -> [AST] -> Infer AST.ASTTable
-inferASTs _ []           = return $ M.fromList []
-inferASTs table [l]    = inferAST table l
-inferASTs table (a:xs) = do
+inferASTs :: AST.ASTTable -> [AST] -> Infer AST.ASTTable
+inferASTs _     []       = return M.empty
+inferASTs table [l     ] = inferAST table l
+inferASTs table (a : xs) = do
   nexts <- inferASTs table xs
   M.union nexts <$> inferAST table a
 
@@ -359,7 +403,7 @@ extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
 
 
 findImportType :: Env -> Name -> Infer Type
-findImportType env name = case M.lookup (name) (envimports env) of
+findImportType env name = case M.lookup name (envimports env) of
   Just x  -> return x
   Nothing -> throwError $ ImportNotFound "" name
 
@@ -377,6 +421,12 @@ initialEnv = Env
                    , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
                    , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
                    , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+                   , ( "|>"
+                     , Forall [TV "a", TV "b"]
+                     $      (TVar $ TV "a")
+                     `TArr` ((TVar $ TV "a") `TArr` (TVar $ TV "b"))
+                     `TArr` (TVar $ TV "b")
+                     )
                    , ( "asList"
                      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
                        (CUserDef "List")
@@ -395,7 +445,11 @@ buildInitialEnv AST { aadts } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars = allVars, envadts = tadts, envtypings = M.empty, envimports = M.empty }
+  return Env { envvars    = allVars
+             , envadts    = tadts
+             , envtypings = M.empty
+             , envimports = M.empty
+             }
 
 
 buildADTTypes :: [ADT] -> Infer ADTs
@@ -487,14 +541,13 @@ argToType tadts _ params (TRSingle n)
     Just a  -> return a
     -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
     Nothing -> return $ TCon $ CUserDef n
-argToType tadts name params (TRComp ((TRSingle tname) : targs)) =
-  case M.lookup tname tadts of
+argToType tadts name params (TRComp tname targs) = case M.lookup tname tadts of
   -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
   -- we have a type application error.
-    Just (TComp n tparams) ->
-      TComp n <$> mapM (argToType tadts name params) targs
+  Just (TComp n _) ->
+    TComp n <$> mapM (argToType tadts name params) targs
 
-    Nothing -> return $ TCon $ CUserDef name
+  Nothing -> return $ TCon $ CUserDef name
 
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type

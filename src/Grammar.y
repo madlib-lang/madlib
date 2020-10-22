@@ -34,33 +34,28 @@ import qualified Data.Map as M
   ')'      { Token _ TokenRightParen }
   '{'      { Token _ TokenLeftCurly }
   '}'      { Token _ TokenRightCurly }
+  '['      { Token _ TokenLeftSquaredBracket }
+  ']'      { Token _ TokenRightSquaredBracket }
   '==='    { Token _ TokenTripleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
   'export' { Token _ TokenExport }
   'from'   { Token _ TokenFrom }
-  ';'      { Token _ TokenSemiColon }
   '|'      { Token _ TokenPipe }
-  '#-'     { Token _ TokenJSBlockLeft }
-  '-#'     { Token _ TokenJSBlockRight }
+  '|>'     { Token _ TokenPipeOperator }
   'data'   { Token _ TokenData }
 
-%left ';' 'ret'
+%left '==='
+%left '+' '-'
+%left '*' '/'
 %right ','
 %nonassoc '=' '=>' '::' ':'
-%left '->' '|'
-%left '==='
-%left '*' '/'
-%left '+' '-'
-
+%left '->' '|' '|>'
 %%
 
 ast :: { AST }
-  : rRet             %shift { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
-  | rRet ast         %shift { $2 }
-  | ast rRet         %shift { $1 }
-  | adt ast          %shift { $2 { aadts =  [$1] <> aadts $2 } }
+  : adt ast          %shift { $2 { aadts =  [$1] <> aadts $2 } }
   | adt              %shift { AST { aimports = [], aexps = [], aadts = [$1], apath = Nothing } }
   | exp ast          %shift { $2 { aexps = [$1] <> aexps $2 } }
   | exp              %shift { AST { aimports = [], aexps = [$1], aadts = [], apath = Nothing } }
@@ -77,6 +72,9 @@ ast :: { AST }
                                         }] <> aexps $5
                                       }
                                      }
+  | rRet              { AST { aimports = [], aexps = [], aadts = [], apath = Nothing } }
+  | rRet ast          { $2 }
+  | ast rRet          { $1 }
 
 importDecls :: { [ImportDecl] }
   : importDecl importDecls { $1:$2 }
@@ -133,12 +131,12 @@ adtConstructor :: { ADTConstructor }
   | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
 
 adtConstructorArgs :: { [TypeRef] }
-  : name adtConstructorArgs                            { (TRSingle $ strV $1) : $2 }
-  | name '(' adtConstructorArgs ')' adtConstructorArgs { (TRSingle $ strV $1) : TRComp $3 : $5 }
-  | '(' name ')' adtConstructorArgs                    { (TRSingle $ strV $1) : $4 }
-  | '(' adtConstructorArgs ')'                         { [TRComp $2] }
-  | '(' name ')'                                       { [TRSingle $ strV $2] }
-  | name                                               { [TRSingle $ strV $1] }
+  : name adtConstructorArgs                                 { (TRSingle $ strV $1) : $2 }
+  | name '(' name adtConstructorArgs ')' adtConstructorArgs { (TRSingle $ strV $1) : TRComp (strV $3) $4 : $6 }
+  | '(' name ')' adtConstructorArgs                         { (TRSingle $ strV $1) : $4 }
+  | '(' name adtConstructorArgs ')'                         { [TRComp (strV $2) $3] }
+  | '(' name ')'                                            { [TRSingle $ strV $2] }
+  | name                                                    { [TRSingle $ strV $1] }
 
 adtRecordConstructors :: { [ADTConstructor] }
   : adtRecordConstructor rPipe adtRecordConstructors %shift { $1:$3 }
@@ -156,16 +154,17 @@ adtRecordConstructorField :: { ADTRecordConstructorField }
 
 type :: { TypeRef }
   : name              { TRSingle $ strV $1 }
-  | name type         { TRComp $ (TRSingle (strV $1)) : [$2] }
-  | name '(' type ')' { TRComp $ (TRSingle (strV $1)) : [$3] }
+  | name type         { TRComp (strV $1) [$2] }
+  | name '(' type ')' { TRComp (strV $1) [$3] }
   | type '->' type    { TRArr $1 $3 }
 
 exp :: { Exp }
   : literal                         { $1 }
+  | operation                       { $1 }
+  | listConstructor          %shift { $1 }
   | js                       %shift { JSExp { epos = tokenToPos $1, etype = Just TAny, econtent = strV $1 } }
   | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3, eexported = False }}
   | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
-  | exp operator exp         %shift { App { epos = epos $1, etype = Nothing, eabs = App { epos = epos $1, etype = Nothing, eabs = $2, earg = $1, efieldAccess = False }, earg = $3, efieldAccess = False }}
   | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
   | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
@@ -174,6 +173,58 @@ exp :: { Exp }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
   | recordCall                      { $1 }
   | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = strV $3 }, earg = $1, efieldAccess = True } }
+
+
+operation :: { Exp }
+  : exp '+' exp  { App { epos = epos $1
+                       , etype = Nothing
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "+" }, earg = $1, efieldAccess = False }
+                       , earg = $3
+                       , efieldAccess = False 
+                       }
+                 }
+  | exp '-' exp  { App { epos = epos $1
+                       , etype = Nothing
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "-" }, earg = $1, efieldAccess = False }
+                       , earg = $3
+                       , efieldAccess = False 
+                       }
+                 }
+  | exp '*' exp  { App { epos = epos $1
+                       , etype = Nothing
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "*" }, earg = $1, efieldAccess = False }
+                       , earg = $3
+                       , efieldAccess = False 
+                       }
+                 }
+  | exp '/' exp  { App { epos = epos $1
+                       , etype = Nothing
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "/" }, earg = $1, efieldAccess = False }
+                       , earg = $3
+                       , efieldAccess = False 
+                       }
+                 }
+  | exp '===' exp  { App { epos = epos $1
+                         , etype = Nothing
+                         , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "===" }, earg = $1, efieldAccess = False }
+                         , earg = $3
+                         , efieldAccess = False 
+                         }
+                   }
+  | exp '|>' exp  { App { epos = epos $1
+                        , etype = Nothing
+                        , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "|>" }, earg = $1, efieldAccess = False }
+                        , earg = $3
+                        , efieldAccess = False 
+                        }
+                  }
+
+listConstructor :: { Exp }
+  : '[' listItems ']' { ListConstructor { epos = tokenToPos $1, etype = Nothing, eelems = $2 } }
+
+listItems :: { [Exp] }
+  : exp               { [$1] }
+  | exp ',' listItems { $1 : $3 }
 
 recordCall :: { Exp }
   : name '{' fieldAssignments '}' { RecordCall { epos = tokenToPos $1, etype = Nothing, ename = strV $1, efields = $3 } }
@@ -196,17 +247,22 @@ params :: { [Name] }
   : name ',' params %shift { strV $1 : $3 }
   | name                   { [strV $1] }
 
--- TODO: Handle composite types
-typings :: { [Typing] }
-  : name '->' typings { Typing (strV $1) : $3 }
-  | name              { [Typing (strV $1)] }
+typings :: { TypeRef }
+  : typing '->' typings { TRArr $1 $3 }
+  | typing              { $1 }
 
-operator :: { Exp }
-  : '===' { Var { epos = tokenToPos $1, etype = Nothing, ename = "===" } }
-  | '+'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "+" } }
-  | '-'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "-" } }
-  | '*'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "*" } }
-  | '/'   { Var { epos = tokenToPos $1, etype = Nothing, ename = "/" } }
+typing :: { TypeRef }
+  : name                       { TRSingle $ strV $1 }
+  | '(' compositeTyping ')'    { $2 }
+  |  compositeTyping           { $1 }
+  | '(' typing '->' typing ')' { TRArr $2 $4 }
+
+compositeTyping :: { TypeRef }
+  : name compositeTypingArgs { TRComp (strV $1) $2 }
+
+compositeTypingArgs :: { [TypeRef] }
+  : name                     { [TRSingle $ strV $1] }
+  | name compositeTypingArgs { (TRSingle $ strV $1) : $2 }
 
 {
 buildAbs :: Pos -> [Name] -> Exp -> Exp
@@ -254,20 +310,21 @@ data ADTRecordConstructorField =
 -- TODO: Rename
 data TypeRef
   = TRSingle Name
-  | TRComp [TypeRef]
+  | TRComp Name [TypeRef]
   | TRArr TypeRef TypeRef
   deriving(Eq, Show)
 
-data Exp = LInt        { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LStr        { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LBool       { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | JSExp       { epos :: Pos, etype :: Maybe Type, econtent :: String }
-         | App         { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp, efieldAccess :: Bool }
-         | Abs         { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
-         | Assignment  { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name, eexported :: Bool }
-         | Var         { epos :: Pos, etype :: Maybe Type, ename :: Name }
-         | TypedExp    { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: [Typing] }
-         | RecordCall  { epos :: Pos, etype :: Maybe Type, ename :: Name, efields :: M.Map String Exp }
+data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LStr            { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | LBool           { epos :: Pos, etype :: Maybe Type, eval :: String }
+         | JSExp           { epos :: Pos, etype :: Maybe Type, econtent :: String }
+         | App             { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp, efieldAccess :: Bool }
+         | Abs             { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
+         | Assignment      { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name, eexported :: Bool }
+         | Var             { epos :: Pos, etype :: Maybe Type, ename :: Name }
+         | TypedExp        { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: TypeRef }
+         | RecordCall      { epos :: Pos, etype :: Maybe Type, ename :: Name, efields :: M.Map String Exp }
+         | ListConstructor { epos :: Pos, etype :: Maybe Type, eelems :: [Exp] }
          deriving(Eq, Show)
 
 type Name  = String

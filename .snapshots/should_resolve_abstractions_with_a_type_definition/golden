@@ -6,17 +6,16 @@ Right
             { epos = Pos 0 1 1
             , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
             , eexp = Var { epos = Pos 0 1 1 , etype = Nothing , ename = "fn" }
-            , etyping = [ Typing "Num" , Typing "Num" , Typing "Bool" ]
+            , etyping =
+                TRArr (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))
             }
         , Assignment
             { epos = Pos 25 2 1
-            , etype =
-                Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
             , eexp =
                 Abs
                   { epos = Pos 30 2 6
-                  , etype =
-                      Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+                  , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
                   , eparam = "a"
                   , ebody =
                       Abs
@@ -72,8 +71,7 @@ Right
                   , eabs =
                       Var
                         { epos = Pos 48 3 1
-                        , etype =
-                            Just (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+                        , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
                         , ename = "fn"
                         }
                   , earg =
