@@ -70,7 +70,7 @@ instance Substitutable Type where
   apply s t@(TVar a               ) = M.findWithDefault t a s
   apply s (  t1      `TArr` t2    ) = apply s t1 `TArr` apply s t2
   apply s (  TComp   main   vars  ) = TComp main (apply s <$> vars)
-  apply s (TRecord main fields) = TRecord (apply s main) (apply s <$> fields)
+  apply s (TRecord fields) = TRecord (apply s <$> fields)
   apply s TAny                      = TAny
 
   ftv TCon{}                  = S.empty
@@ -78,7 +78,7 @@ instance Substitutable Type where
   ftv (TVar a               ) = S.singleton a
   ftv (t1      `TArr` t2    ) = ftv t1 `S.union` ftv t2
   ftv (TComp   _      vars  ) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
-  ftv (TRecord _ fields) = foldl' (\s v -> S.union s $ ftv v) S.empty fields
+  ftv (TRecord fields)        = foldl' (\s v -> S.union s $ ftv v) S.empty fields
 
 instance Substitutable Scheme where
   apply s (Forall as t) = Forall as $ apply s' t
@@ -143,22 +143,24 @@ bind a t | t == TVar a     = return M.empty
 
 unify :: Type -> Type -> Infer Substitution
 unify (l `TArr` r) (l' `TArr` r') = do
-  s1 <- trace ("L: " <> ppShow l <> ":" <> ppShow l') (unify l l')
-  s2 <- trace ("R: " <> ppShow (apply s1 r) <> ":" <> ppShow (apply s1 r')) (unify (apply s1 r) (apply s1 r'))
+  s1 <- unify l l'
+  s2 <- unify (apply s1 r) (apply s1 r')
   return (s2 `compose` s1)
 
-unify (TComp main vars) (TComp main' vars') = do
-  s1 <- unify (TCon main) (TCon main')
-  let z = zip vars vars'
-  s2 <- unifyVars s1 z
-  return (s2 `compose` s1)
+unify (TComp main vars) (TComp main' vars')
+  | main == main' = do
+      let z = zip vars vars'
+      s2 <- unifyVars M.empty z
+      return s2
+  | otherwise = throwError $ UnificationError (TComp main vars) (TComp main' vars')
 
-unify (TRecord main fields) (TRecord main' fields') = do
-  s1 <- unify main main'
-  let types  = M.elems fields
-      types' = M.elems fields'
-      z      = zip types types'
-  unifyVars s1 z
+unify (TRecord fields) (TRecord fields') 
+  | M.difference fields fields' /= M.empty = throwError $ UnificationError (TRecord fields) (TRecord fields')
+  | otherwise = do
+      let types  = M.elems fields
+          types' = M.elems fields'
+          z      = zip types types'
+      unifyVars M.empty z
 
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
@@ -177,6 +179,9 @@ unifyVars s _           = return s
 
 
 infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
+infer _ v@Var { ename = '.':name } =
+  let t = TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
+  in  return (M.empty, t, v { etype = Just t})
 infer env v@Var { ename } =
   (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
 
@@ -238,47 +243,24 @@ infer _ l@LBool{} =
 -- TODO: Add TArr
 -- So that we can write a type :
 -- :: (a -> b) -> List a -> List b
-infer _ te@TypedExp { etyping } = return (M.empty, t, te { etype = Just t })
-  where t = typingsToType etyping
+infer _ te@TypedExp { etyping } = do
+  t <- typingsToType etyping
+  return (M.empty, t, te { etype = Just t })
 
-infer env rc@RecordCall { ename, efields } = do
-  (fieldTypes, adtType) <- case M.lookup ename (envvars env) of
-    Just (Forall _ (TArr (TRecord adttype fieldTypes) adt)) ->
-      return (fieldTypes, adt)
-
-    Nothing -> throwError $ UnknownType ename
-
-  let fieldKeys = M.keys fieldTypes
-  (s, inferred) <- foldrM (inferField fieldTypes) (M.empty, M.empty) fieldKeys
-  let fullType = apply s adtType
-
-  return (s, fullType, rc { efields = inferred, etype = Just fullType })
- where
-  inferField
-    :: M.Map String Type
-    -> String
-    -> (Substitution, M.Map String Exp)
-    -> Infer (Substitution, M.Map String Exp)
-  inferField fieldTypes fieldKey (s0, result) =
-    case (M.lookup fieldKey fieldTypes, M.lookup fieldKey efields) of
-      (Just t, Just exp) -> do
-        (s1, t1, e1) <- infer env exp
-        s2           <- unify t t1
-        return
-          $ ( s0 `compose` s1 `compose` s2
-            , M.insert fieldKey e1 { etype = Just $ apply s2 t1 } result
-            )
-
-      (_, _) -> throwError $ FieldNotInitialized fieldKey
+infer env rec@Record { erfields } = do
+  inferred <- mapM (infer env) erfields
+  let inferredFields = M.map trd inferred
+      recordType     = TRecord $ M.map mid inferred
+  return (M.empty, recordType, rec { etype = Just recordType, erfields = inferredFields })
 
 infer _ lc@ListConstructor { eelems = [] } =
-  let t = TComp (CUserDef "List") [TVar $ TV "a"]
+  let t = TComp "List" [TVar $ TV "a"]
   in  return (M.empty, t, lc { etype = Just t })
 
 infer env lc@ListConstructor { eelems } = do
   inferred <- mapM (infer env) eelems
   let (s1, t1, e1) = head inferred
-  let t            = TComp (CUserDef "List") [t1]
+  let t            = TComp "List" [t1]
   s <- unifyElems t1 (mid <$> inferred)
 
   return (s, t, lc { etype = Just t })
@@ -300,16 +282,6 @@ boundVariables (TVar t    ) = [t]
 boundVariables (TComp _ xs) = concat $ boundVariables <$> xs
 boundVariables (TArr  t t') = boundVariables t `union` boundVariables t'
 boundVariables _            = []
-
-
-typingsToType :: TypeRef -> Type
-typingsToType (TRSingle t) | t == "Num"    = TCon CNum
-                           | t == "Bool"   = TCon CBool
-                           | t == "String" = TCon CString
-                           | t == "Void"   = TCon CVoid
-                           | otherwise     = TVar $ TV t
-typingsToType (TRComp t ts) = TComp (CUserDef t) (typingsToType <$> ts)
-typingsToType (TRArr  t t') = TArr (typingsToType t) (typingsToType t')
 
 
 -- TODO: If we want to allow multiple Exp per abstraction, we'll have to move this and
@@ -380,7 +352,7 @@ exportedExps :: AST -> Infer [(Name, Exp)]
 exportedExps AST { aexps, apath } = case apath of
   Just p  -> mapM (bundleExports p) $ filter eexported aexps
 
-  Nothing -> throwError $ ASTHasNoPath
+  Nothing -> throwError ASTHasNoPath
   where bundleExports _ exp@Assignment { ename } = return (ename, exp)
 
 
@@ -436,7 +408,7 @@ initialEnv = Env
                      )
                    , ( "asList"
                      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp
-                       (CUserDef "List")
+                       "List"
                        [TVar $ TV "a"]
                      )
                    ]
@@ -478,7 +450,7 @@ buildADTType :: ADTs -> ADT -> Infer (String, Type)
 buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
   Just t -> throwError $ ADTAlreadyDefined t
   Nothing ->
-    return (adtname, TComp (CUserDef adtname) (TVar . TV <$> adtparams))
+    return (adtname, TComp adtname (TVar . TV <$> adtparams))
 
 
 resolveADTs :: ADTs -> [ADT] -> Infer Vars
@@ -496,52 +468,22 @@ resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
 
 -- TODO: Verify that Constructors aren't already in the global space or else throw a name clash error
 resolveADTConstructor :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer Vars
-resolveADTConstructor _ n params ADTConstructor { adtcname, adtcargs = [] } =
-  return $ M.fromList
-    [ ( adtcname
-      , Forall (TV <$> params) $ buildADTConstructorReturnType n params
-      )
-    ]
-
 resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
-  types <- mapM (argToType tadts n params) adtcargs
-  let allTypes  = types <> [buildADTConstructorReturnType n params]
-      typeArray = foldr1 TArr allTypes
-  return $ M.fromList [(adtcname, Forall (TV <$> params) typeArray)]
-
-resolveADTConstructor tadts adtname adtparams ADTRecordConstructor { adtcname, adtcfields }
-  = do
-    let recordType = buildADTConstructorReturnType adtname adtparams
-    constructorType <-
-      TRecord recordType <$> foldrM resolveField M.empty adtcfields
-    accessorTypes <- mapM
-      (buildFieldAccessors tadts adtname adtparams recordType)
-      adtcfields
-    return
-      $  M.fromList
-      $  [ ( adtcname
-           , Forall (TV <$> adtparams) $ TArr constructorType recordType
-           )
-         ]
-      <> accessorTypes
- where
-  resolveField field mapped = do
-    t <- argToType tadts adtname adtparams $ adtrcftype field
-    let name = adtrcfname field
-    return $ M.insert name t mapped
-
-  buildFieldAccessors tadts adtname adtparams recordType ADTRecordConstructorField { adtrcfname, adtrcftype }
-    = do
-      x <- argToType tadts adtname adtparams adtrcftype
-      return (adtrcfname, Forall (TV <$> adtparams) (TArr recordType x))
-
+  let t = buildADTConstructorReturnType n params
+  case adtcargs of
+    Just cargs -> do
+      t' <- mapM (argToType tadts n params) cargs
+      let ctype = foldr1 (TArr) (t' <> [t])
+      return $ M.fromList [(adtcname, Forall (TV <$> params) ((trace (show ctype) ctype)))]
+    Nothing    ->
+      return $ M.fromList [(adtcname, Forall (TV <$> params) t)]
 
 -- TODO: This should probably be merged with typingToType somehow
 argToType :: ADTs -> Name -> [Name] -> TypeRef -> Infer Type
 argToType tadts _ params (TRSingle n)
-  | n == "String" = return $ TCon CString
-  | n == "Bool" = return $ TCon CBool
   | n == "Num" = return $ TCon CNum
+  | n == "Bool" = return $ TCon CBool
+  | n == "String" = return $ TCon CString
   | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
   | isLower (head n) = throwError $ UnboundVariable n
   | otherwise = case M.lookup n tadts of
@@ -553,10 +495,36 @@ argToType tadts name params (TRComp tname targs) = case M.lookup tname tadts of
   -- we have a type application error.
   Just (TComp n _) ->
     TComp n <$> mapM (argToType tadts name params) targs
-
   Nothing -> return $ TCon $ CUserDef name
+argToType tadts name params (TRArr l r) = do
+  l' <- (argToType tadts name params l)
+  r' <- (argToType tadts name params r)
+  return $ TArr l' r'
+argToType tadts name params (TRRecord f) = do
+  f' <- mapM (argToType tadts name params) f
+  return $ TRecord f'
+
+
+
+typingsToType :: TypeRef -> Infer Type
+typingsToType (TRSingle t) | t == "Num"    = return $ TCon CNum
+                           | t == "Bool"   = return $ TCon CBool
+                           | t == "String" = return $ TCon CString
+                           | t == "Void"   = return $ TCon CVoid
+                           | otherwise     = return $ TVar $ TV t
+typingsToType (TRComp t ts) = do
+  params <- mapM typingsToType ts
+  return $ TComp t params
+typingsToType (TRArr l r) = do
+  l' <- typingsToType l
+  r' <- typingsToType r
+  return $ TArr l' r'
+typingsToType (TRRecord f) = do
+  f' <- mapM typingsToType f
+  return $ TRecord f'
+
 
 
 buildADTConstructorReturnType :: Name -> [Name] -> Type
 buildADTConstructorReturnType tname tparams =
-  TComp (CUserDef tname) $ TVar . TV <$> tparams
+  TComp tname $ TVar . TV <$> tparams

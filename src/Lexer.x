@@ -67,6 +67,7 @@ tokens :-
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
+  -- \.$alpha [$alpha $digit \_ \']*       { mapToken (\s -> TokenDottedName s) }
   \#\- [$alpha $digit \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\n \ ]*\+                         { mapToken (\_ -> TokenPlus) }
   \-                         { mapToken (\_ -> TokenDash) }
@@ -105,6 +106,7 @@ data TokenClass
  | TokenInt  String
  | TokenStr  String
  | TokenName String
+ | TokenDottedName String
  | TokenJSBlock String
  | TokenBool String
  | TokenIf

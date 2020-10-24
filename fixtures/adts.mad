@@ -1,18 +1,12 @@
+x = { x: 3, y: 4, z: 199 }
+x.x
+data R = R { x :: String, w :: { y :: Num } }
 
-data Response a
-  = Success a
-  | Error
+r = R({ x: "Hellow", w: { y: 3 }})
+r.x
 
-data Stuff
-    = Stuff (Response String)
-    | NotStuff Jo
+doIt :: { x :: Num } -> { x :: Num }
+doIt = (withX) => withX
 
-data Stuff2
-    = Stuff2 (Response (Maybe String))
-    | NotStuff2 Jo
-
-
-
-
-
-data Stuff = Stuff | NotStuff Jo
+fn = (x) => { x: x }
+fn(4)

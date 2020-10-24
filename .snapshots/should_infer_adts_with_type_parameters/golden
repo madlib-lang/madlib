@@ -4,18 +4,16 @@ Right
     , aexps =
         [ Assignment
             { epos = Pos 38 4 1
-            , etype = Just (TComp (CUserDef "Result") [ TCon CBool ])
+            , etype = Just (TComp "Result" [ TCon CBool ])
             , eexp =
                 App
                   { epos = Pos 47 4 10
-                  , etype = Just (TComp (CUserDef "Result") [ TCon CBool ])
+                  , etype = Just (TComp "Result" [ TCon CBool ])
                   , eabs =
                       Var
                         { epos = Pos 47 4 10
                         , etype =
-                            Just
-                              (TArr
-                                 (TVar (TV "b")) (TComp (CUserDef "Result") [ TVar (TV "b") ]))
+                            Just (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
                         , ename = "Success"
                         }
                   , earg =
@@ -33,8 +31,8 @@ Right
             , adtparams = [ "a" ]
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ TRSingle "a" ] }
-                , ADTConstructor { adtcname = "Error" , adtcargs = [] }
+                    { adtcname = "Success" , adtcargs = Just [ TRSingle "a" ] }
+                , ADTConstructor { adtcname = "Error" , adtcargs = Nothing }
                 ]
             }
         ]

@@ -1,25 +1,6 @@
+data Response = Success Num { body :: Num }
 
-data Future e a = Bad e
-                | Good a
+r = Success(3, { body: 3 })
+-- r = Success({ body: 3 })
 
-
-of :: a -> Future e a
-of = (a) => #- Promise.resolve(a) -#
-
-map :: (a -> b) -> Future e a -> Future e b
-map = (f, x) => #- x.then(f) -#
-
-bind :: (a -> Future e b) -> Future e a -> Future e b
-bind = (f, x) => #- x.then(f) -#
-
-bindX :: (Bool -> Future e Num) -> Future e Bool -> Future e Num
-bindX = bind
-
--- t :: Bool -> Future e Num
-t = (x) => of(4)
-
-of(True)
-  |> bind(((x) => of(4)))
---   |> bind(((x) => of(x)))
---   |> bind((x) => of(x))
-m = (x) => x + 1
+-- r.body

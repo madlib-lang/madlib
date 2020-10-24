@@ -30,7 +30,7 @@ instance Compilable Exp where
     _ -> compile eabs <> "(" <> compile earg <> ")"
 
   compile App { eabs, earg, efieldAccess = True } =
-    compile earg <> "." <> compile eabs
+    compile earg <> compile eabs
 
   compile Abs { ebody, eparam } =
     "(" <> eparam <> " => " <> compile ebody <> ")"
@@ -45,8 +45,8 @@ instance Compilable Exp where
     Var{} -> ""
     _     -> compile eexp
 
-  compile RecordCall { efields } =
-    let fields = init $ M.foldrWithKey compileField "" efields
+  compile Record { erfields } =
+    let fields = init $ M.foldrWithKey compileField "" erfields
     in  "{" <> fields <> " }"
    where
     compileField name exp res =
@@ -64,7 +64,7 @@ instance Compilable ADT where
 
 instance Compilable ADTConstructor where
   compile ADTConstructor { adtcname, adtcargs } = case adtcargs of
-    [] -> "const " <> adtcname <> " = []" <> ";\n"
+    Nothing -> "const " <> adtcname <> " = []" <> ";\n"
     args ->
       "const "
         <> adtcname

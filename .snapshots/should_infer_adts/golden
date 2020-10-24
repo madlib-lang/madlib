@@ -4,15 +4,15 @@ Right
     , aexps =
         [ Assignment
             { epos = Pos 37 2 1
-            , etype = Just (TComp (CUserDef "Result") [])
+            , etype = Just (TComp "Result" [])
             , eexp =
                 App
                   { epos = Pos 46 2 10
-                  , etype = Just (TComp (CUserDef "Result") [])
+                  , etype = Just (TComp "Result" [])
                   , eabs =
                       Var
                         { epos = Pos 46 2 10
-                        , etype = Just (TArr (TCon CString) (TComp (CUserDef "Result") []))
+                        , etype = Just (TArr (TCon CString) (TComp "Result" []))
                         , ename = "Success"
                         }
                   , earg =
@@ -33,8 +33,8 @@ Right
             , adtparams = []
             , adtconstructors =
                 [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = [ TRSingle "String" ] }
-                , ADTConstructor { adtcname = "Error" , adtcargs = [] }
+                    { adtcname = "Success" , adtcargs = Just [ TRSingle "String" ] }
+                , ADTConstructor { adtcname = "Error" , adtcargs = Nothing }
                 ]
             }
         ]

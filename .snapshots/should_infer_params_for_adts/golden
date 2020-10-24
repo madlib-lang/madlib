@@ -4,26 +4,42 @@ Right
     , aexps =
         [ Assignment
             { epos = Pos 42 2 1
-            , etype = Just (TComp (CUserDef "Result") [])
+            , etype =
+                Just
+                  (TArr
+                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                     (TComp "Result" []))
             , eexp =
-                RecordCall
+                Var
                   { epos = Pos 46 2 5
-                  , etype = Just (TComp (CUserDef "Result") [])
+                  , etype =
+                      Just
+                        (TArr
+                           (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                           (TComp "Result" []))
                   , ename = "Success"
-                  , efields =
-                      fromList
-                        [ ( "value"
-                          , LStr
-                              { epos = Pos 63 2 22 , etype = Just (TCon CString) , eval = "42" }
-                          )
-                        ]
                   }
             , ename = "r"
             , eexported = False
             }
+        , Record
+            { epos = Pos 54 2 13
+            , etype = Just (TRecord (fromList [ ( "value" , TCon CString ) ]))
+            , erfields =
+                fromList
+                  [ ( "value"
+                    , LStr
+                        { epos = Pos 63 2 22 , etype = Just (TCon CString) , eval = "42" }
+                    )
+                  ]
+            }
         , App
             { epos = Pos 71 3 2
-            , etype = Just (TComp (CUserDef "Result") [])
+            , etype =
+                Just
+                  (TArr
+                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                     (TComp "Result" []))
             , eabs =
                 Abs
                   { epos = Pos 71 3 2
@@ -36,7 +52,11 @@ Right
             , earg =
                 Var
                   { epos = Pos 81 3 12
-                  , etype = Just (TComp (CUserDef "Result") [])
+                  , etype =
+                      Just
+                        (TArr
+                           (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                           (TComp "Result" []))
                   , ename = "r"
                   }
             , efieldAccess = False
@@ -47,12 +67,10 @@ Right
             { adtname = "Result"
             , adtparams = []
             , adtconstructors =
-                [ ADTRecordConstructor
+                [ ADTConstructor
                     { adtcname = "Success"
-                    , adtcfields =
-                        [ ADTRecordConstructorField
-                            { adtrcfname = "value" , adtrcftype = TRSingle "String" }
-                        ]
+                    , adtcargs =
+                        Just [ TRRecord (fromList [ ( "value" , TRSingle "String" ) ]) ]
                     }
                 ]
             }

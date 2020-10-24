@@ -10,8 +10,8 @@ data Type
   = TVar TVar         -- Variable type
   | TCon TCon         -- Constant type
   | TArr Type Type    -- Arrow type
-  | TComp TCon [Type] -- Composite type
-  | TRecord Type (M.Map String Type) -- Record type
+  | TComp String [Type] -- Composite type
+  | TRecord (M.Map String Type) -- Record type
   | TAny
   deriving (Show, Eq, Ord)
 

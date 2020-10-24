@@ -5,19 +5,17 @@ Right
         [ Abs
             { epos = Pos 0 1 1
             , etype =
-                Just
-                  (TArr (TVar (TV "a")) (TComp (CUserDef "List") [ TVar (TV "a") ]))
+                Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
             , eparam = "a"
             , ebody =
                 App
                   { epos = Pos 7 1 8
-                  , etype = Just (TComp (CUserDef "List") [ TVar (TV "a") ])
+                  , etype = Just (TComp "List" [ TVar (TV "a") ])
                   , eabs =
                       Var
                         { epos = Pos 7 1 8
                         , etype =
-                            Just
-                              (TArr (TVar (TV "c")) (TComp (CUserDef "List") [ TVar (TV "c") ]))
+                            Just (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
                         , ename = "asList"
                         }
                   , earg =

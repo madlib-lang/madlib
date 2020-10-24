@@ -117,7 +117,6 @@ rComa :: { [TokenClass] }
 
 adt :: { ADT }
   : 'data' name adtParameters rEq adtConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
-  | 'data' name adtParameters rEq adtRecordConstructors %shift { ADT { adtname = strV $2, adtparams = $3, adtconstructors = $5 } }
 
 adtParameters :: { [Name] }
   : name adtParameters %shift { strV $1 : $2 }
@@ -129,30 +128,33 @@ adtConstructors :: { [ADTConstructor] }
   | adtConstructor rRet                       %shift { [$1] }
 
 adtConstructor :: { ADTConstructor }
-  : name adtConstructorArgs %shift { ADTConstructor { adtcname = strV $1, adtcargs = $2 } }
-  | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = [] } }
+  : name adtConstructorArgs %shift { ADTConstructor { adtcname = strV $1, adtcargs = Just $2 } }
+  | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = Nothing } }
+
+typings :: { TypeRef }
+  : typing '->' typings { TRArr $1 $3 }
+  | typing              { $1 }
 
 adtConstructorArgs :: { [TypeRef] }
-  : name adtConstructorArgs                                 { (TRSingle $ strV $1) : $2 }
-  | name '(' name adtConstructorArgs ')' adtConstructorArgs { (TRSingle $ strV $1) : TRComp (strV $3) $4 : $6 }
-  | '(' name ')' adtConstructorArgs                         { (TRSingle $ strV $1) : $4 }
-  | '(' name adtConstructorArgs ')'                         { [TRComp (strV $2) $3] }
-  | '(' name ')'                                            { [TRSingle $ strV $2] }
-  | name                                                    { [TRSingle $ strV $1] }
+  : typing                    { [$1] }
+  | adtConstructorArgs typing { $1 <> [$2] }
 
-adtRecordConstructors :: { [ADTConstructor] }
-  : adtRecordConstructor rPipe adtRecordConstructors %shift { $1:$3 }
-  | adtRecordConstructor rRet                        %shift { [$1] }
+typing :: { TypeRef }
+  : name                       { TRSingle $ strV $1 }
+  | '(' compositeTyping ')'    { $2 }
+  | '(' typing '->' typing ')' { TRArr $2 $4 }
+  | '{' recordTypingArgs '}'   { TRRecord $2 }
 
-adtRecordConstructor :: { ADTConstructor }
-  : name '{' adtRecordConstructorFields '}' %shift { ADTRecordConstructor { adtcname = strV $1, adtcfields = $3 } }
+compositeTyping :: { TypeRef }
+  : name compositeTypingArgs { TRComp (strV $1) $2 }
 
-adtRecordConstructorFields :: { [ADTRecordConstructorField] }
-  : adtRecordConstructorField ',' adtRecordConstructorFields { $1:$3 }
-  | adtRecordConstructorField                                { [$1] }
+compositeTypingArgs :: { [TypeRef] }
+  : name                     { [TRSingle $ strV $1] }
+  | name compositeTypingArgs { (TRSingle $ strV $1) : $2 }
 
-adtRecordConstructorField :: { ADTRecordConstructorField }
-  : name '::' type { ADTRecordConstructorField { adtrcfname = strV $1, adtrcftype = $3 } }
+recordTypingArgs :: { M.Map Name TypeRef }
+  : name '::' typing                      { M.fromList [(strV $1, $3)] }
+  | recordTypingArgs ',' name '::' typing { M.insert (strV $3) $5 $1 }
 
 type :: { TypeRef }
   : name              { TRSingle $ strV $1 }
@@ -162,6 +164,7 @@ type :: { TypeRef }
 
 exp :: { Exp }
   : literal                         { $1 }
+  | record                          { $1 }
   | operation                       { $1 }
   | listConstructor          %shift { $1 }
   | js                       %shift { JSExp { epos = tokenToPos $1, etype = Just TAny, econtent = strV $1 } }
@@ -173,8 +176,7 @@ exp :: { Exp }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
   | '(' exp ')'              %shift { $2 }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
-  | recordCall                      { $1 }
-  | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = strV $3 }, earg = $1, efieldAccess = True } }
+  | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}' {
     App { epos = tokenToPos $1, etype = Nothing, eabs =
       App { epos = tokenToPos $1, etype = Nothing, eabs = 
@@ -183,6 +185,12 @@ exp :: { Exp }
     }
   }
 
+record :: { Exp }
+  : '{' recordFields '}' { Record { epos = tokenToPos $1, etype = Nothing, erfields = $2 } }
+
+recordFields :: { M.Map Name Exp }
+  : name ':' exp                  { M.fromList [(strV $1, $3)] }
+  | recordFields ',' name ':' exp { M.insert (strV $3) $5 $1 }
 
 operation :: { Exp }
   : exp '+' exp  { App { epos = epos $1
@@ -235,13 +243,6 @@ listItems :: { [Exp] }
   : exp               { [$1] }
   | exp ',' listItems { $1 : $3 }
 
-recordCall :: { Exp }
-  : name '{' fieldAssignments '}' { RecordCall { epos = tokenToPos $1, etype = Nothing, ename = strV $1, efields = $3 } }
-
-fieldAssignments :: { M.Map String Exp }
-  : name ':' exp                      { M.fromList [(strV $1, $3)] }
-  | name ':' exp ',' fieldAssignments { M.insert (strV $1) $3 $5 }
-
 literal :: { Exp }
   : int                       { LInt  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
   | str                       { LStr  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
@@ -255,23 +256,6 @@ args :: { [Exp] }
 params :: { [Name] }
   : name ',' params %shift { strV $1 : $3 }
   | name                   { [strV $1] }
-
-typings :: { TypeRef }
-  : typing '->' typings { TRArr $1 $3 }
-  | typing              { $1 }
-
-typing :: { TypeRef }
-  : name                       { TRSingle $ strV $1 }
-  | '(' compositeTyping ')'    { $2 }
-  |  compositeTyping           { $1 }
-  | '(' typing '->' typing ')' { TRArr $2 $4 }
-
-compositeTyping :: { TypeRef }
-  : name compositeTypingArgs { TRComp (strV $1) $2 }
-
-compositeTypingArgs :: { [TypeRef] }
-  : name                     { [TRSingle $ strV $1] }
-  | name compositeTypingArgs { (TRSingle $ strV $1) : $2 }
 
 {
 buildAbs :: Pos -> [Name] -> Exp -> Exp
@@ -304,23 +288,15 @@ data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTCo
 
 -- TODO: Add Pos
 data ADTConstructor
-  = ADTConstructor       { adtcname :: Name, adtcargs :: [TypeRef] }
-  -- TODO: Should the fields be a Map ?
-  | ADTRecordConstructor { adtcname :: Name, adtcfields :: [ADTRecordConstructorField] }
+  = ADTConstructor       { adtcname :: Name, adtcargs :: Maybe [TypeRef] }
   deriving(Eq, Show)
-
-data ADTRecordConstructorField =
-  ADTRecordConstructorField
-    { adtrcfname :: Name
-    , adtrcftype :: TypeRef
-    }
-    deriving(Eq, Show)
 
 -- TODO: Rename
 data TypeRef
   = TRSingle Name
   | TRComp Name [TypeRef]
   | TRArr TypeRef TypeRef
+  | TRRecord (M.Map Name TypeRef)
   deriving(Eq, Show)
 
 data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
@@ -332,12 +308,11 @@ data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
          | Assignment      { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name, eexported :: Bool }
          | Var             { epos :: Pos, etype :: Maybe Type, ename :: Name }
          | TypedExp        { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: TypeRef }
-         | RecordCall      { epos :: Pos, etype :: Maybe Type, ename :: Name, efields :: M.Map String Exp }
          | ListConstructor { epos :: Pos, etype :: Maybe Type, eelems :: [Exp] }
+         | Record          { epos :: Pos, etype :: Maybe Type, erfields :: M.Map Name Exp }
          deriving(Eq, Show)
 
 type Name  = String
-
 newtype Typing = Typing String deriving(Eq, Show)
 
 
