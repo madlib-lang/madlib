@@ -5,6 +5,7 @@ import Text.Printf
 import Control.Monad.Except
 import Type
 import qualified Data.Map as M
+import Data.Char(isUpper)
 }
 
 %name parseMadlib ast
@@ -38,6 +39,8 @@ import qualified Data.Map as M
   ']'      { Token _ TokenRightSquaredBracket }
   'if'     { Token _ TokenIf }
   'else'   { Token _ TokenElse }
+  'switch' { Token _ TokenSwitch }
+  'case'   { Token _ TokenCase }
   '==='    { Token _ TokenTripleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
@@ -52,8 +55,10 @@ import qualified Data.Map as M
 %left '+' '-'
 %left '*' '/'
 %right ','
+%right name
 %nonassoc '=' '=>' '::' ':'
-%left '->' '|' '|>'
+-- %nonassoc '=' '=>' '::' ':' '(' ')'
+%left '->' '|' '|>' 'ret'
 %%
 
 ast :: { AST }
@@ -86,7 +91,7 @@ importDecl :: { ImportDecl }
   : 'import' '{' importNames '}' 'from' str rRet { ImportDecl { ipos = tokenToPos $1, inames = $3, ipath = strV $6 } }
 
 importNames :: { [Name] }
-  : name ',' importNames %shift { strV $1 : $3 }
+  : importNames ',' name %shift { $1 <> [strV $3] }
   | name                 %shift { [strV $1] }
 
 rRet :: { [TokenClass] }
@@ -165,6 +170,7 @@ type :: { TypeRef }
 exp :: { Exp }
   : literal                         { $1 }
   | record                          { $1 }
+  | switch                          { $1 }
   | operation                       { $1 }
   | listConstructor          %shift { $1 }
   | js                       %shift { JSExp { epos = tokenToPos $1, etype = Just TAny, econtent = strV $1 } }
@@ -185,12 +191,50 @@ exp :: { Exp }
     }
   }
 
+
+switch :: { Exp }
+  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Switch { epos = tokenToPos $1, etype = Nothing, eexp = $3, ecases = $7 } }
+
+cases :: { [Case] }
+  : 'case' pattern ':' exp             { [Case { casepos = tokenToPos $1, casetype = Nothing, casepattern = $2, caseexp = $4 }] }
+  | cases 'ret' 'case' pattern ':' exp { $1 <> [Case { casepos = tokenToPos $3, casetype = Nothing, casepattern = $4, caseexp = $6 }] }
+
+pattern :: { Pattern }
+  : nonCompositePattern { $1 }
+  | compositePattern    { $1 }
+
+nonCompositePattern :: { Pattern }
+  : name             { nameToPattern $ strV $1 }
+  | int              { PNum $ strV $1 }
+  | str              { PStr $ strV $1 }
+  | true             { PBool $ strV $1 }
+  | false            { PBool $ strV $1 }
+  | recordPattern    { $1 }
+  | '(' pattern ')'  { $2 }
+
+-- Constructor pattern pattern
+compositePattern :: { Pattern }
+  : name patterns %shift { PCtor (strV $1) $2 }
+
+patterns :: { [Pattern] }
+  : nonCompositePattern          { [$1] }
+  | patterns nonCompositePattern { $1 <> [$2] }
+
+recordPattern :: { Pattern }
+  : '{' recordFieldPatterns '}' { PRecord $2 }
+
+recordFieldPatterns :: { M.Map Name Pattern }
+  : name ':' pattern { M.fromList [(strV $1, $3)] }
+  | recordFieldPatterns ',' name ':' pattern { M.insert (strV $3) $5 $1 }
+
+
 record :: { Exp }
   : '{' recordFields '}' { Record { epos = tokenToPos $1, etype = Nothing, erfields = $2 } }
 
 recordFields :: { M.Map Name Exp }
   : name ':' exp                  { M.fromList [(strV $1, $3)] }
   | recordFields ',' name ':' exp { M.insert (strV $3) $5 $1 }
+
 
 operation :: { Exp }
   : exp '+' exp  { App { epos = epos $1
@@ -266,6 +310,14 @@ buildApp :: Pos -> Exp -> [Exp] -> Exp
 buildApp pos f [arg]  = App { epos = pos, etype = Nothing, eabs = f, earg = arg, efieldAccess = False }
 buildApp pos f xs = App { epos = pos, etype = Nothing, eabs = buildApp pos f (init xs) , earg = last xs, efieldAccess = False }
 
+nameToPattern :: String -> Pattern
+nameToPattern n | n == "_"           = PAny
+                | n == "String"      = PCon n
+                | n == "Bool"        = PCon n
+                | n == "Num"         = PCon n
+                | (isUpper . head) n = PCtor n []
+                | otherwise          = PVar n
+
 data AST =
   AST
     { aimports   :: [ImportDecl]
@@ -284,7 +336,13 @@ data ImportDecl =
     deriving(Eq, Show)
 
 -- TODO: Add Pos
-data ADT = ADT { adtname :: Name, adtparams :: [Name], adtconstructors :: [ADTConstructor] } deriving(Eq, Show)
+data ADT =
+  ADT
+    { adtname :: Name
+    , adtparams :: [Name]
+    , adtconstructors :: [ADTConstructor]
+    }
+    deriving(Eq, Show)
 
 -- TODO: Add Pos
 data ADTConstructor
@@ -299,6 +357,27 @@ data TypeRef
   | TRRecord (M.Map Name TypeRef)
   deriving(Eq, Show)
 
+data Case =
+  Case
+    { casepos :: Pos
+    , casetype :: Maybe Type
+    , casepattern :: Pattern
+    , caseexp :: Exp
+    }
+    deriving(Eq, Show)
+
+data Pattern
+  = PVar Name
+  | PAny
+  | PCtor Name [Pattern]
+  | PNum String
+  | PStr String
+  | PBool String
+  | PCon Name
+  | PUserDef Name
+  | PRecord (M.Map Name Pattern)
+  deriving(Eq, Show)
+
 data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
          | LStr            { epos :: Pos, etype :: Maybe Type, eval :: String }
          | LBool           { epos :: Pos, etype :: Maybe Type, eval :: String }
@@ -310,6 +389,7 @@ data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
          | TypedExp        { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: TypeRef }
          | ListConstructor { epos :: Pos, etype :: Maybe Type, eelems :: [Exp] }
          | Record          { epos :: Pos, etype :: Maybe Type, erfields :: M.Map Name Exp }
+         | Switch          { epos :: Pos, etype :: Maybe Type, ecases :: [Case], eexp :: Exp }
          deriving(Eq, Show)
 
 type Name  = String

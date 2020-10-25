@@ -21,7 +21,7 @@ data TCon
   | CNum
   | CBool
   | CVoid
-  | CUserDef String
+  | CUserDef String -- Is this one an Alias ? Or should it just go ?
   deriving (Show, Eq, Ord)
 
 infixr `TArr`

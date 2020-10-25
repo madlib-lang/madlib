@@ -47,6 +47,8 @@ tokens :-
   const                                 { mapToken (\_ -> TokenConst) }
   if                                    { mapToken (\_ -> TokenIf) }
   else                                  { mapToken (\_ -> TokenElse) }
+  switch                                { mapToken (\_ -> TokenSwitch) }
+  case                                  { mapToken (\_ -> TokenCase) }
   \=                                    { mapToken (\_ -> TokenEq) }
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
@@ -66,8 +68,7 @@ tokens :-
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
-  $alpha [$alpha $digit \_ \']*         { mapToken (\s -> TokenName s) }
-  -- \.$alpha [$alpha $digit \_ \']*       { mapToken (\s -> TokenDottedName s) }
+  [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
   \#\- [$alpha $digit \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\n \ ]*\+                         { mapToken (\_ -> TokenPlus) }
   \-                         { mapToken (\_ -> TokenDash) }
@@ -111,6 +112,8 @@ data TokenClass
  | TokenBool String
  | TokenIf
  | TokenElse
+ | TokenSwitch
+ | TokenCase
  | TokenEq
  | TokenPlus
  | TokenDash

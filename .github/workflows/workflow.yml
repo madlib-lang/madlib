@@ -2,7 +2,7 @@ on: [push]
 name: build
 jobs:
   test:
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-haskell@v1.1
@@ -11,7 +11,6 @@ jobs:
           cabal-version: "latest"
           enable-stack: true
           stack-version: "latest"
-      - run: brew install ripgrep
       - run: stack install alex happy
       - run: stack install
       - run: make test-coverage

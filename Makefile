@@ -18,8 +18,5 @@ test-coverage:
 	stack test --coverage && stack hpc report .
 
 coverage-lcov:
-	mkdir ./coverage; \
-	stack exec -- hpc-lcov --file $(TIX_FILE) -o $(LCOV_FILE) --main-package madlib; \
-	./remove-module-from-lcov Grammar coverage/lcov.info coverage/lcov.info.tmp; \
-	rm coverage/lcov.info; \
-	mv coverage/lcov.info.tmp coverage/lcov.info
+	mkdir ./coverage;\
+	stack exec -- hpc-lcov --file $(TIX_FILE) -o $(LCOV_FILE) --main-package madlib
