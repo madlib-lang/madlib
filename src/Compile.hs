@@ -73,7 +73,7 @@ instance Compilable Exp where
       <> ")"
    where
     compilePattern :: String -> Pattern -> String
-    compilePattern _     (PVar _) = ""
+    compilePattern _     (PVar _) = "true"
     compilePattern _     PAny     = "true"
     compilePattern scope (PNum n) = scope <> " === " <> n
     compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""

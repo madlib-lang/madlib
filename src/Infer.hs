@@ -301,21 +301,23 @@ infer env sw@Switch { ecases, eexp } = do
  where
   inferCase :: Env -> Type -> Case -> Infer (Substitution, Type, Case)
   inferCase e tinput c@Case { casepattern, caseexp } = do
-    tp           <- buildPatternType e casepattern
-    tu           <- flip apply tp <$> unify tp tinput
-    e'           <- generateCaseEnv tu e casepattern
+    tp <- buildPatternType e casepattern
+    tu <- flip apply (trace ("TP: " <> ppShow tp) tp) <$> unify tp tinput
+    e' <- generateCaseEnv (trace ("TU: " <> ppShow tu) tu) e casepattern
 
     (se, te, ee) <- infer (trace ("ENV': " <> ppShow e') e') caseexp
     let tarr = TArr (apply se (trace ("Type Pattern: " <> ppShow tu) tu)) te
     let tarr' = TArr (apply se tinput) te
     su <- unify tarr tarr'
 
-    -- let switchType = 
+    let sf = su `compose` se
 
     return
-      ( su `compose` se
+      ( sf
       , tarr
-      , c { casetype = Just $ apply su tarr, caseexp = ee }
+      , c { casetype = Just $ apply sf tarr
+          , caseexp  = ee { etype = Just $ apply sf te }
+          }
       )
 
   buildPatternType :: Env -> Pattern -> Infer Type
@@ -358,15 +360,43 @@ infer env sw@Switch { ecases, eexp } = do
 
 
   generateCaseEnv :: Type -> Env -> Pattern -> Infer Env
-  generateCaseEnv t e pattern = case (pattern, t) of
+  generateCaseEnv t e@Env { envvars } pattern = case (pattern, t) of
     (PVar v, t') -> do
       return $ extendVars e (v, Forall [] t')
+
     (PRecord fields, TRecord fields') ->
-      foldrM (flip (generateCaseEnv t)) e (M.elems fields)
-    (PCtor _ as, TComp _ as') ->
-      let all = zip as as'
-      in  foldrM (\(ps, ts) e' -> (generateCaseEnv ts e' ps)) e all
+      let allFields = zip (M.elems fields) (M.elems fields')
+      in  foldrM (\(p, t) e' -> generateCaseEnv t e' p) e allFields
+
+    (PCtor cname as, t) -> do
+      ctor <- findConstructor cname
+
+      case (ctor, as) of
+        ((TArr a _), [a']) -> do
+          generateCaseEnv a e a'
+
+        (TArr a (TArr b _), [a', b']) -> do
+          e1 <- generateCaseEnv a e a'
+          generateCaseEnv b e1 b'
+
+        (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
+          e1 <- generateCaseEnv a e a'
+          e2 <- generateCaseEnv b e1 b'
+          generateCaseEnv c e2 c'
+
+        _ -> return e
+
     _ -> return e
+
+   where
+    findConstructor :: String -> Infer Type
+    findConstructor cname = case M.lookup cname envvars of
+      Just (Forall _ t) -> return t
+
+      Nothing           -> throwError $ UnknownType cname
+
+
+
 
 infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
 

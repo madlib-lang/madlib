@@ -10,6 +10,7 @@ p = Just("just")
 s = Just(p)
 
 switch(s) {
+  case Just k        : k
   case Just (Just x) : x
   case Just (Nothing): "1"
 }
@@ -21,27 +22,21 @@ switch(x) {
   case _   : "Not YOUHOU"
 } |> print
 
--- switch(w) {
---   case Just (R _ (Just x)): x
---   case Nothing: "nothing"
--- } |> print
+w = { x: 4, name: "John" }
+switch(w) {
+  case { name: x }: x
+} |> print
 
--- k = { x: r }
+data User = User String String Num
+u = User("john", "smith", 32)
 
--- print(switch(k) {
---   case { x: R String (Just x) }: x
--- })
+switch(u) {
+  case User _ n m: m + 48
+} |> print
 
 
-
--- switch(r) {
---   case R String (Just b): b
--- }
-
--- switch(m) {
---   case Just String: "just"
---   -- TODO: handle that case:
---   case Just str   : str 
---   case Just "str"   : "tchou" 
---   case Nothing    : "nothing"
--- }
+data R = R { x :: Num }
+r = R({ x: 42 })
+switch(r) {
+  case R { x: x }: x
+} |> print
