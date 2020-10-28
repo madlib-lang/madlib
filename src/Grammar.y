@@ -30,7 +30,7 @@ import Data.Char(isUpper)
   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
   '.'      { Token _ TokenDot }
-  ','      { Token _ TokenComa }
+  ','      { Token _ TokenComma }
   '('      { Token _ TokenLeftParen }
   ')'      { Token _ TokenRightParen }
   '{'      { Token _ TokenLeftCurly }

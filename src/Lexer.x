@@ -39,7 +39,7 @@ $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 tokens :-
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  [\ \n]*"--".*                                ;
+  [\ \n]*"--".*                         ;
   import                                { mapToken (\_ -> TokenImport) }
   export                                { mapToken (\_ -> TokenExport) }
   from                                  { mapToken (\_ -> TokenFrom) }
@@ -55,7 +55,7 @@ tokens :-
   "False"                               { mapToken (\_ -> (TokenBool "False")) }
   "==="                                 { mapToken (\_ -> TokenTripleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
-  \,                                    { mapToken (\_ -> TokenComa) }
+  \,                                    { mapToken (\_ -> TokenComma) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
   \}                                    { mapToken (\_ -> TokenRightCurly) }
   \[                                    { mapToken (\_ -> TokenLeftSquaredBracket) }
@@ -70,12 +70,12 @@ tokens :-
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
   \#\- [$alpha $digit \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
-  [\n \ ]*\+                         { mapToken (\_ -> TokenPlus) }
-  \-                         { mapToken (\_ -> TokenDash) }
-  \n[\ ]*\-                         { mapToken (\_ -> TokenDash) }
-  [\n \ ]*\*                         { mapToken (\_ -> TokenStar) }
-  [\n \ ]*\/                         { mapToken (\_ -> TokenSlash) }
-  [\n \ ]*\|\>                       { mapToken (\_ -> TokenPipeOperator) }
+  [\n \ ]*\+                            { mapToken (\_ -> TokenPlus) }
+  \-                                    { mapToken (\_ -> TokenDash) }
+  \n[\ ]*\-                             { mapToken (\_ -> TokenDash) }
+  [\n \ ]*\*                            { mapToken (\_ -> TokenStar) }
+  [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
+  [\n \ ]*\|\>                          { mapToken (\_ -> TokenPipeOperator) }
   $empty+                               ;
 
 {
@@ -120,7 +120,7 @@ data TokenClass
  | TokenStar
  | TokenSlash
  | TokenTripleEq
- | TokenComa
+ | TokenComma
  | TokenLeftCurly
  | TokenRightCurly
  | TokenLeftSquaredBracket
