@@ -12,40 +12,40 @@ Right
                     , casepattern = PNum "1"
                     , caseexp =
                         LStr
-                          { epos = Pos 23 2 11
+                          { epos = Pos 24 2 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 32 3 3
+                    { casepos = Pos 33 3 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "3"
                     , caseexp =
                         LStr
-                          { epos = Pos 40 3 11
+                          { epos = Pos 42 3 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 49 4 3
+                    { casepos = Pos 51 4 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "33"
                     , caseexp =
                         LStr
-                          { epos = Pos 58 4 12
+                          { epos = Pos 60 4 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 67 5 3
+                    { casepos = Pos 69 5 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "42"
                     , caseexp =
                         LStr
-                          { epos = Pos 76 5 12
+                          { epos = Pos 78 5 12
                           , etype = Just (TCon CString)
                           , eval = "YEAH"
                           }

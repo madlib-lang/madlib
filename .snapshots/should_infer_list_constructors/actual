@@ -1,0 +1,31 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ ListConstructor
+            { epos = Pos 0 1 1
+            , etype = Just (TComp "List" [ TVar (TV "a") ])
+            , eelems = []
+            }
+        , ListConstructor
+            { epos = Pos 3 2 1
+            , etype = Just (TComp "List" [ TCon CNum ])
+            , eelems =
+                [ LInt { epos = Pos 4 2 2 , etype = Nothing , eval = "1" }
+                , LInt { epos = Pos 7 2 5 , etype = Nothing , eval = "2" }
+                , LInt { epos = Pos 10 2 8 , etype = Nothing , eval = "3" }
+                ]
+            }
+        , ListConstructor
+            { epos = Pos 13 3 1
+            , etype = Just (TComp "List" [ TCon CString ])
+            , eelems =
+                [ LStr { epos = Pos 14 3 2 , etype = Nothing , eval = "one" }
+                , LStr { epos = Pos 21 3 9 , etype = Nothing , eval = "two" }
+                , LStr { epos = Pos 28 3 16 , etype = Nothing , eval = "three" }
+                ]
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

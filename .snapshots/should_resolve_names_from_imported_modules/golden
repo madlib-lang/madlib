@@ -1,0 +1,78 @@
+Right
+  (fromList
+     [ ( "ModubleB.mad"
+       , AST
+           { aimports =
+               [ ImportDecl
+                   { ipos = Pos 0 1 1 , inames = [ "inc" ] , ipath = "ModuleA" }
+               ]
+           , aexps =
+               [ App
+                   { epos = Pos 30 2 1
+                   , etype = Just (TCon CNum)
+                   , eabs =
+                       Var
+                         { epos = Pos 30 2 1
+                         , etype = Just (TArr (TCon CNum) (TCon CNum))
+                         , ename = "inc"
+                         }
+                   , earg =
+                       LInt { epos = Pos 34 2 5 , etype = Just (TCon CNum) , eval = "3" }
+                   , efieldAccess = False
+                   }
+               ]
+           , aadts = []
+           , apath = Just "ModubleB.mad"
+           }
+       )
+     , ( "ModuleA.mad"
+       , AST
+           { aimports = []
+           , aexps =
+               [ Assignment
+                   { epos = Pos 0 1 1
+                   , etype = Just (TArr (TCon CNum) (TCon CNum))
+                   , eexp =
+                       Abs
+                         { epos = Pos 13 1 14
+                         , etype = Just (TArr (TCon CNum) (TCon CNum))
+                         , eparam = "a"
+                         , ebody =
+                             App
+                               { epos = Pos 20 1 21
+                               , etype = Just (TCon CNum)
+                               , eabs =
+                                   App
+                                     { epos = Pos 20 1 21
+                                     , etype = Just (TArr (TCon CNum) (TCon CNum))
+                                     , eabs =
+                                         Var
+                                           { epos = Pos 21 1 22
+                                           , etype =
+                                               Just
+                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                           , ename = "+"
+                                           }
+                                     , earg =
+                                         Var
+                                           { epos = Pos 20 1 21
+                                           , etype = Just (TCon CNum)
+                                           , ename = "a"
+                                           }
+                                     , efieldAccess = False
+                                     }
+                               , earg =
+                                   LInt
+                                     { epos = Pos 24 1 25 , etype = Just (TCon CNum) , eval = "1" }
+                               , efieldAccess = False
+                               }
+                         }
+                   , ename = "inc"
+                   , eexported = True
+                   }
+               ]
+           , aadts = []
+           , apath = Just "ModuleA.mad"
+           }
+       )
+     ])

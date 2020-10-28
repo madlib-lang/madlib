@@ -3,6 +3,7 @@ module InferSpec where
 import           Grammar
 import           Infer
 import           AST
+import qualified Data.Map as M
 import           Test.Hspec                     ( describe
                                                 , it
                                                 , shouldBe
@@ -30,6 +31,7 @@ snapshotTest name actualOutput = Golden
   , failFirstTime = False
   }
 
+-- TODO: Refactor in order to use the inferAST function instead that supports imports
 tester :: String -> Either InferError AST
 tester code = case buildAST "path" code of
   (Right ast) -> runEnv ast >>= (`runInfer` ast)
@@ -37,6 +39,9 @@ tester code = case buildAST "path" code of
  where
   runEnv x =
     fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
+
+tableTester :: ASTTable -> AST -> Either InferError ASTTable
+tableTester table ast = fst <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
 
 spec :: Spec
 spec = do
@@ -85,6 +90,11 @@ spec = do
       let code   = ""
           actual = tester code
       snapshotTest "should infer an empty source" actual
+
+    it "should fail for unbound variables" $ do
+      let code   = "x"
+          actual = tester code
+      snapshotTest "should fail for unbound variables" actual
 
     ---------------------------------------------------------------------------
 
@@ -185,6 +195,24 @@ spec = do
         actual = tester code
       snapshotTest "should infer an App with a record" actual
 
+    it "should fail to infer record if their fields do not match" $ do
+      let
+        code = "{ x: 3, y: 5 } === { name: \"John\" }"
+        actual = tester code
+      snapshotTest "should fail to infer record if their fields do not match" actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Lists:
+
+    it "should infer list constructors" $ do
+      let
+        code = unlines
+          ["[]", "[1, 2, 3]", "[\"one\", \"two\", \"three\"]"]
+        actual = tester code
+      snapshotTest "should infer list constructors" actual
+
     ---------------------------------------------------------------------------
 
 
@@ -230,7 +258,7 @@ spec = do
     it "should resolve switch with a boolean literal" $ do
       let code = unlines
             [ "switch(True) {"
-            , "  case True: \"OK\""
+            , "  case True : \"OK\""
             , "  case False: \"NOT OK\""
             , "}"
             ]
@@ -240,14 +268,43 @@ spec = do
     it "should resolve switch with a number input" $ do
       let code = unlines
             [ "switch(42) {"
-            , "  case 1: \"NOPE\""
-            , "  case 3: \"NOPE\""
+            , "  case 1 : \"NOPE\""
+            , "  case 3 : \"NOPE\""
             , "  case 33: \"NOPE\""
             , "  case 42: \"YEAH\""
             , "}"
             ]
           actual = tester code
       snapshotTest "should resolve switch with a number input" actual
+
+    it "should resolve switch with a string input" $ do
+      let code = unlines
+            [ "switch(\"42\") {"
+            , "  case \"1\" : 1"
+            , "  case \"3\" : 3"
+            , "  case \"33\": 33"
+            , "  case \"42\": 42"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest "should resolve switch with a string input" actual
+    
+    -- TODO: Currently fails but should be allowed
+    -- We need to have a special case for unification of TCon in inferCase
+    -- Most likely we need to bypass the line:
+    --   * su <- unify tarr tarr'
+    -- and replace it with a special unify for patterns, and/or replace all
+    -- TCon with TAny before unification ( That potentially sounds easier )
+    it "should resolve switch with constant type constructor cases" $ do
+      let code = unlines
+            [ "switch(\"42\") {"
+            , "  case String : 1"
+            , "  case Bool   : 3"
+            , "  case Num    : 33"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest "should resolve switch with constant type constructor cases" actual
 
     it "should resolve switch with an ADT that has unary constructors" $ do
       let code = unlines
@@ -262,3 +319,52 @@ spec = do
       snapshotTest
         "should resolve switch with an ADT that has unary constructors"
         actual
+
+    it "should resolve switch with an ADT and PCon patterns" $ do
+      let code = unlines
+            [ "data Maybe a = Just a | Nothing"
+            , "perhaps = Just(4)"
+            , "switch(perhaps) {"
+            , "  case Just String: 1"
+            , "  case Just Num   : 2"
+            , "  case Just Bool  : 3"
+            , "  case Nothing    : 0"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should resolve switch with an ADT and PCon patterns"
+        actual
+
+    it "should fail to resolve a pattern when the pattern constructor does not match the ADT" $ do
+      let code = unlines
+            [ "data Maybe a = Just a | Nothing"
+            , "data Failure = Nope"
+            , "perhaps = Nope"
+            , "switch(perhaps) {"
+            , "  case Just a: a"
+            , "  case Nothing: 0"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should fail to resolve a pattern when the pattern constructor does not match the ADT"
+        actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Imports:
+    it "should resolve names from imported modules" $ do
+      let codeA = "export inc = (a) => a + 1"
+          astA  = buildAST "ModuleA.mad" codeA
+          codeB = unlines
+            [ "import { inc } from \"ModuleA\""
+            , "inc(3)"
+            ]
+          astB = buildAST "ModubleB.mad" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              in  tableTester astTable b
+      snapshotTest "should resolve names from imported modules" actual

@@ -1,0 +1,47 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Switch
+            { epos = Pos 0 1 1
+            , etype = Just (TCon CNum)
+            , ecases =
+                [ Case
+                    { casepos = Pos 17 2 3
+                    , casetype = Just (TArr (TCon CString) (TCon CNum))
+                    , casepattern = PStr "1"
+                    , caseexp =
+                        LInt { epos = Pos 28 2 14 , etype = Just (TCon CNum) , eval = "1" }
+                    }
+                , Case
+                    { casepos = Pos 32 3 3
+                    , casetype = Just (TArr (TCon CString) (TCon CNum))
+                    , casepattern = PStr "3"
+                    , caseexp =
+                        LInt { epos = Pos 43 3 14 , etype = Just (TCon CNum) , eval = "3" }
+                    }
+                , Case
+                    { casepos = Pos 47 4 3
+                    , casetype = Just (TArr (TCon CString) (TCon CNum))
+                    , casepattern = PStr "33"
+                    , caseexp =
+                        LInt
+                          { epos = Pos 58 4 14 , etype = Just (TCon CNum) , eval = "33" }
+                    }
+                , Case
+                    { casepos = Pos 63 5 3
+                    , casetype = Just (TArr (TCon CString) (TCon CNum))
+                    , casepattern = PStr "42"
+                    , caseexp =
+                        LInt
+                          { epos = Pos 74 5 14 , etype = Just (TCon CNum) , eval = "42" }
+                    }
+                ]
+            , eexp =
+                LStr
+                  { epos = Pos 7 1 8 , etype = Just (TCon CString) , eval = "42" }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

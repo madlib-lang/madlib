@@ -286,6 +286,7 @@ listConstructor :: { Exp }
 listItems :: { [Exp] }
   : exp               { [$1] }
   | exp ',' listItems { $1 : $3 }
+  | {- empty -}       { [] }
 
 literal :: { Exp }
   : int                       { LInt  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }

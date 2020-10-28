@@ -12,15 +12,15 @@ Right
                     , casepattern = PBool "True"
                     , caseexp =
                         LStr
-                          { epos = Pos 28 2 14 , etype = Just (TCon CString) , eval = "OK" }
+                          { epos = Pos 29 2 15 , etype = Just (TCon CString) , eval = "OK" }
                     }
                 , Case
-                    { casepos = Pos 35 3 3
+                    { casepos = Pos 36 3 3
                     , casetype = Just (TArr (TCon CBool) (TCon CString))
                     , casepattern = PBool "False"
                     , caseexp =
                         LStr
-                          { epos = Pos 47 3 15
+                          { epos = Pos 48 3 15
                           , etype = Just (TCon CString)
                           , eval = "NOT OK"
                           }

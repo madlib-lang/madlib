@@ -288,7 +288,7 @@ infer env sw@Switch { ecases, eexp } = do
   let typeMatrix        = (\c -> (c, casesTypes)) <$> casesTypes
   s <-
     foldr1 compose
-      <$> mapM (\(t, ts) -> unifyElems (apply casesSubstitution t) ts)
+      <$> mapM (\(t, ts) -> unifyPatternElems (apply casesSubstitution t) ts)
                typeMatrix
 
   let updatedCases =
@@ -308,13 +308,12 @@ infer env sw@Switch { ecases, eexp } = do
   inferCase :: Env -> Type -> Case -> Infer (Substitution, Type, Case)
   inferCase e tinput c@Case { casepattern, caseexp } = do
     tp           <- buildPatternType e casepattern
-    tu           <- flip apply tp <$> unify tp tinput
-    e'           <- generateCaseEnv tu e casepattern
+    e'           <- generateCaseEnv tp e casepattern
 
     (se, te, ee) <- infer e' caseexp
-    let tarr  = TArr (apply se tu) te
+    let tarr  = TArr (apply se tp) te
     let tarr' = TArr (apply se tinput) te
-    su <- unify tarr tarr'
+    su <- unifyPatternElems tarr [tarr']
 
     let sf = su `compose` se
 
@@ -406,6 +405,17 @@ infer env sw@Switch { ecases, eexp } = do
 
 infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
 
+
+-- TODO: Needs to be extended with all cases of unifyElems ?
+unifyPatternElems :: Type -> [Type] -> Infer Substitution
+unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
+  where
+    anyCheck :: InferError -> Infer Substitution
+    anyCheck e = case e of
+      (UnificationError (TCon _) (TCon _)) -> return M.empty
+      _                                    -> throwError e
+
+
 unifyElems :: Type -> [Type] -> Infer Substitution
 unifyElems _ []        = return M.empty
 unifyElems t [t'     ] = unify t t'
@@ -463,17 +473,16 @@ runInfer env ast = (\e -> ast { aexps = e }) <$> inferredExps
   inferredExps = fst
     <$> runExcept (runStateT (inferExps env $ aexps ast) Unique { count = 0 })
 
--- TODO: Missing recursion
-inferAST :: AST.ASTTable -> AST -> Infer AST.ASTTable
-inferAST table ast@AST { aimports } = do
+inferAST :: FilePath -> AST.ASTTable -> AST -> Infer AST.ASTTable
+inferAST rootPath table ast@AST { aimports } = do
   env <- buildInitialEnv ast
 
   let importPaths = ipath <$> aimports
       asts        = mapM (AST.findAST table)
-                         (("fixtures/" ++) . (++ ".mad") <$> importPaths)
+                         ((rootPath ++) . (++ ".mad") <$> importPaths)
 
   inferredASTs <- case asts of
-    Right x                         -> inferASTs table x
+    Right x                         -> inferASTs rootPath table x
 
     Left  (AST.ImportNotFound fp _) -> throwError $ ImportNotFound fp ""
     Left  (AST.ASTNotFound fp     ) -> throwError $ ImportNotFound fp ""
@@ -500,12 +509,12 @@ exportedExps AST { aexps, apath } = case apath of
   where bundleExports _ exp@Assignment { ename } = return (ename, exp)
 
 
-inferASTs :: AST.ASTTable -> [AST] -> Infer AST.ASTTable
-inferASTs _     []       = return M.empty
-inferASTs table [l     ] = inferAST table l
-inferASTs table (a : xs) = do
-  nexts <- inferASTs table xs
-  M.union nexts <$> inferAST table a
+inferASTs :: FilePath -> AST.ASTTable -> [AST] -> Infer AST.ASTTable
+inferASTs _ _     []       = return M.empty
+inferASTs rootPath table [l     ] = inferAST rootPath table l
+inferASTs rootPath table (a : xs) = do
+  nexts <- inferASTs rootPath table xs
+  M.union nexts <$> inferAST rootPath table a
 
 
 inferASTExps :: Env -> AST -> Infer AST
@@ -520,12 +529,6 @@ extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 
 extendTypings :: Env -> (String, Scheme) -> Env
 extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
-
-
-findImportType :: Env -> Name -> Infer Type
-findImportType env name = case M.lookup name (envimports env) of
-  Just x  -> return x
-  Nothing -> throwError $ ImportNotFound "" name
 
 
 initialEnv :: Env

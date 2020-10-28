@@ -22,6 +22,7 @@ import           System.FilePath                ( takeDirectory
                                                 , replaceExtension
                                                 )
 import           System.Directory               ( createDirectoryIfMissing )
+import           Path
 
 main :: IO ()
 main = do
@@ -29,10 +30,12 @@ main = do
   astTable   <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
 
+  let rootPath = computeRootPath entrypoint
+
   let entryAST         = astTable >>= flip findAST entrypoint
       resolvedASTTable = case (entryAST, astTable) of
         (Right ast, Right table) ->
-          runExcept (runStateT (inferAST table ast) Unique { count = 0 })
+          runExcept (runStateT (inferAST rootPath table ast) Unique { count = 0 })
         (_, _) -> Left $ UnboundVariable ""
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
