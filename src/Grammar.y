@@ -136,13 +136,15 @@ adtConstructor :: { ADTConstructor }
   : name adtConstructorArgs %shift { ADTConstructor { adtcname = strV $1, adtcargs = Just $2 } }
   | name                    %shift { ADTConstructor { adtcname = strV $1, adtcargs = Nothing } }
 
-typings :: { TypeRef }
-  : typing '->' typings { TRArr $1 $3 }
-  | typing              { $1 }
-
 adtConstructorArgs :: { [TypeRef] }
   : typing                    { [$1] }
   | adtConstructorArgs typing { $1 <> [$2] }
+
+typings :: { TypeRef }
+  : typing '->' typings          { TRArr $1 $3 }
+  | compositeTyping '->' typings { TRArr $1 $3 }
+  | compositeTyping              { $1 }
+  | typing                       { $1 }
 
 typing :: { TypeRef }
   : name                       { TRSingle $ strV $1 }

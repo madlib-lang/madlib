@@ -351,6 +351,36 @@ spec = do
         "should fail to resolve a pattern when the pattern constructor does not match the ADT"
         actual
 
+    it "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types" $ do
+      let code = unlines
+            [ "data User = LoggedIn String Num"
+            , "u = LoggedIn(\"John\", 33)"
+            , "switch(u) {"
+            , "  case LoggedIn Num x: x"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
+        actual
+    
+    it "should resolve a constructor pattern with different constant types for variables" $ do
+      let code = unlines
+            [ "data User a = LoggedIn a Num"
+            , "u = LoggedIn(\"John\", 33)"
+            , "switch(u) {"
+            , "  case LoggedIn Num x   : x"
+            , "  case LoggedIn String x: x"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should resolve a constructor pattern with different constant types for variables"
+        actual
+
+    -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
+    -- implementation to get out of the that weird handling in generateCaseEnv
+
     ---------------------------------------------------------------------------
 
 
@@ -368,3 +398,9 @@ spec = do
               let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
               in  tableTester astTable b
       snapshotTest "should resolve names from imported modules" actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Pipe operator:
+    -- TODO: Write tests for it

@@ -211,7 +211,7 @@ infer env app@App { eabs, earg } = do
   s3           <- unify (apply s2 t1) (TArr t2 tv)
   let t = apply s3 tv
   return
-    ( s3 `compose` s2 `compose` s1 --`compose` sMergedRecords
+    ( s3 `compose` s2 `compose` s1
     , t
     , app { eabs  = e1
           , earg  = e2 { etype = Just $ apply s3 t2 }
@@ -407,6 +407,7 @@ infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
 
 
 -- TODO: Needs to be extended with all cases of unifyElems ?
+-- Should this only happen for free vars ?
 unifyPatternElems :: Type -> [Type] -> Infer Substitution
 unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
   where
@@ -472,6 +473,7 @@ runInfer env ast = (\e -> ast { aexps = e }) <$> inferredExps
  where
   inferredExps = fst
     <$> runExcept (runStateT (inferExps env $ aexps ast) Unique { count = 0 })
+
 
 inferAST :: FilePath -> AST.ASTTable -> AST -> Infer AST.ASTTable
 inferAST rootPath table ast@AST { aimports } = do
