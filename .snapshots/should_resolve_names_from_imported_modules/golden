@@ -1,31 +1,6 @@
 Right
   (fromList
-     [ ( "ModubleB.mad"
-       , AST
-           { aimports =
-               [ ImportDecl
-                   { ipos = Pos 0 1 1 , inames = [ "inc" ] , ipath = "ModuleA" }
-               ]
-           , aexps =
-               [ App
-                   { epos = Pos 30 2 1
-                   , etype = Just (TCon CNum)
-                   , eabs =
-                       Var
-                         { epos = Pos 30 2 1
-                         , etype = Just (TArr (TCon CNum) (TCon CNum))
-                         , ename = "inc"
-                         }
-                   , earg =
-                       LInt { epos = Pos 34 2 5 , etype = Just (TCon CNum) , eval = "3" }
-                   , efieldAccess = False
-                   }
-               ]
-           , aadts = []
-           , apath = Just "ModubleB.mad"
-           }
-       )
-     , ( "ModuleA.mad"
+     [ ( "./ModuleA.mad"
        , AST
            { aimports = []
            , aexps =
@@ -72,7 +47,32 @@ Right
                    }
                ]
            , aadts = []
-           , apath = Just "ModuleA.mad"
+           , apath = Just "./ModuleA.mad"
+           }
+       )
+     , ( "./ModuleB.mad"
+       , AST
+           { aimports =
+               [ NamedImport
+                   { ipos = Pos 0 1 1 , inames = [ "inc" ] , ipath = "ModuleA" }
+               ]
+           , aexps =
+               [ App
+                   { epos = Pos 30 2 1
+                   , etype = Just (TCon CNum)
+                   , eabs =
+                       Var
+                         { epos = Pos 30 2 1
+                         , etype = Just (TArr (TCon CNum) (TCon CNum))
+                         , ename = "inc"
+                         }
+                   , earg =
+                       LInt { epos = Pos 34 2 5 , etype = Just (TCon CNum) , eval = "3" }
+                   , efieldAccess = False
+                   }
+               ]
+           , aadts = []
+           , apath = Just "./ModuleB.mad"
            }
        )
      ])

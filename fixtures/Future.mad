@@ -1,0 +1,14 @@
+data Future e a = Bad e
+                | Good a
+
+of :: a -> Future e a
+export of = (a) => #- Promise.resolve(a) -#
+
+map :: (a -> b) -> Future e a -> Future e b
+export map = (f, x) => #- x.then(f) -#
+
+mapErr :: (e -> f) -> Future e a -> Future f a
+export mapErr = (f, x) => #- x.catch(f) -#
+
+run :: (e -> f) -> (a -> b) -> Future e a -> Void
+export run = (bad, good, x) => #- x.then(good).catch(bad) -#

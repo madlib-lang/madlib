@@ -200,10 +200,41 @@ infer env abs@Abs { eparam, ebody } = do
   let t = apply s1 tv `TArr` t1
   return (s1, t, abs { ebody = e, etype = Just t })
 
+-- Field Access
+infer env app@App { eabs = abs@Var { ename = '.':name }, earg } = do
+
+  (rs, rt, re) <- case etype earg of
+        Just x -> return (M.empty, x, earg)
+        Nothing -> infer env earg
+
+  let ft = case rt of
+        TRecord fields -> M.lookup name fields
+        _ -> Nothing
+  case ft of
+    Just t -> do
+      (_, t1, _) <- infer env abs
+      return (M.empty, t, app { etype = Just t, earg = earg { etype = Just rt }, eabs = abs { etype = Just t1 } })
+    Nothing -> do
+      tv           <- newTVar
+      -- (s2, t2, e2) <- infer env earg
+      (s1, t1, e1) <- infer env abs
+
+      s3           <- unify (apply rs t1) (TArr rt tv)
+      let t = apply s3 tv
+      return
+        ( s3 `compose` rs `compose` s1
+        , t
+        , app { eabs  = e1
+              , earg  = re { etype = Just $ apply s3 rt }
+              , etype = Just t
+              }
+        )
+
 infer env app@App { eabs, earg } = do
   tv           <- newTVar
   (s1, t1, e1) <- infer env eabs
   (s2, t2, e2) <- infer env earg
+
   -- TODO: That commented line caused inline functions in pipe to be wrongly typed.
   -- Not applying the substitution to the env seems to fix the problem. Nevertheless
   -- we should confirm that this is correct with the paper from Milner.
@@ -225,7 +256,7 @@ infer env ass@Assignment { eexp, ename } = case eexp of
 
     case M.lookup ename $ envtypings env of
       Just (Forall fv t2) -> do
-        let bv = boundVariables t2
+        let bv = S.toList $ ftv t2
         it2 <- instantiate (Forall (fv <> bv) t2)
         s2  <- unify t1 it2
         return
@@ -400,9 +431,6 @@ infer env sw@Switch { ecases, eexp } = do
 
       Nothing           -> throwError $ UnknownType cname
 
-
-
-
 infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
 
 
@@ -425,12 +453,6 @@ unifyElems t (t' : xs) = do
   s2 <- unifyElems t xs
   return $ s1 `compose` s2
 
-boundVariables :: Type -> [TVar]
-boundVariables (TVar t    ) = [t]
-boundVariables (TComp _ xs) = concat $ boundVariables <$> xs
-boundVariables (TArr  t t') = boundVariables t `union` boundVariables t'
-boundVariables _            = []
-
 
 arrowReturnType :: Type -> Type
 arrowReturnType (TArr _ (TArr y x)) = arrowReturnType (TArr y x)
@@ -442,18 +464,20 @@ arrowReturnType x                   = x
 -- make it work at any depth of the AST.
 inferExps :: Env -> [Exp] -> Infer [Exp]
 inferExps _   []       = return []
-inferExps env [exp   ] = (: []) . trd <$> infer env exp
+inferExps env [exp   ] = (:[]) . trd <$> infer env exp
 inferExps env (e : xs) = do
-  r <- infer env e
+  (_, t, e') <- infer env e
   let env' = case e of
         -- TODO: We need to add a case where that name is already in the env.
         -- Reassigning a name should not be allowed.
-        Assignment { ename } -> extendVars env (ename, Forall [] $ mid r)
+        Assignment { ename } -> extendVars env (ename, Forall ((S.toList . ftv) t) $ t)
 
         TypedExp { eexp = Var { ename } } ->
-          extendTypings env (ename, Forall [] $ mid r)
+          extendTypings env (ename, Forall ((S.toList . ftv) t) $ t)
+
         _ -> env
-  (\n -> trd r : n) <$> inferExps env' xs
+
+  (\n -> e' : n) <$> inferExps env' xs
 
 
 trd :: (a, b, c) -> c
@@ -479,44 +503,57 @@ inferAST :: FilePath -> AST.ASTTable -> AST -> Infer AST.ASTTable
 inferAST rootPath table ast@AST { aimports } = do
   env <- buildInitialEnv ast
 
-  let importPaths = ipath <$> aimports
-      asts        = mapM (AST.findAST table)
-                         ((rootPath ++) . (++ ".mad") <$> importPaths)
+  (inferredASTs, imports) <- resolveImports rootPath table aimports
+  let envWithImports = env { envimports = imports }
 
-  inferredASTs <- case asts of
-    Right x                         -> inferASTs rootPath table x
-
-    Left  (AST.ImportNotFound fp _) -> throwError $ ImportNotFound fp ""
-    Left  (AST.ASTNotFound fp     ) -> throwError $ ImportNotFound fp ""
-
-  exportedExps <- M.fromList . join <$> mapM exportedExps (M.elems inferredASTs)
-
-  let exportedTypes = mapM etype exportedExps
-  envWithImports <- case exportedTypes of
-    Just et -> return env { envimports = et }
-    Nothing -> throwError $ ImportNotFound "" ""
-
-  inferredAST <- inferASTExps envWithImports ast
+  inferredAST <- inferASTExps (trace ("ENVWITHIMPORTS: "<>ppShow envWithImports) envWithImports) ast
 
   case apath inferredAST of
-    Just fp -> return $ M.union inferredASTs $ M.fromList [(fp, inferredAST)]
+    Just fp -> return $ M.insert fp inferredAST inferredASTs
     Nothing -> throwError ASTHasNoPath
 
 
 exportedExps :: AST -> Infer [(Name, Exp)]
 exportedExps AST { aexps, apath } = case apath of
-  Just p  -> mapM (bundleExports p) $ filter eexported aexps
+  Just p  -> mapM (bundleExports p) $ filter isExport aexps
 
   Nothing -> throwError ASTHasNoPath
-  where bundleExports _ exp@Assignment { ename } = return (ename, exp)
+  
+  where 
+    bundleExports _ exp@Assignment { ename } = return (ename, exp)
+    
+    isExport :: Exp -> Bool
+    isExport a = case a of
+      Assignment { eexported } -> eexported
+      _                        -> False
 
 
-inferASTs :: FilePath -> AST.ASTTable -> [AST] -> Infer AST.ASTTable
-inferASTs _ _     []       = return M.empty
-inferASTs rootPath table [l     ] = inferAST rootPath table l
-inferASTs rootPath table (a : xs) = do
-  nexts <- inferASTs rootPath table xs
-  M.union nexts <$> inferAST rootPath table a
+
+resolveImports :: FilePath -> AST.ASTTable -> [Import] -> Infer (AST.ASTTable, Imports)
+resolveImports root table (imp:is) = do
+  let modulePath = ipath imp
+  let path = root <> modulePath <> ".mad"
+  
+  inferredAST <- case AST.findAST table path of
+        Right ast -> do
+          env <- buildInitialEnv ast
+          inferASTExps env ast
+        Left (AST.ASTNotFound path) -> throwError $ ImportNotFound path ""
+        Left (AST.ImportNotFound path _) -> throwError $ ImportNotFound path ""
+
+  exportedExps <- M.fromList <$> exportedExps inferredAST
+  let exportedTypes = mapM etype exportedExps
+
+  exports <- case (exportedTypes, imp) of
+    (Just exports, DefaultImport { ialias }) -> return $ M.fromList [(ialias, TRecord exports)]
+    (Just exports, _)                        -> return exports
+    (Nothing, _)                             -> throwError $ ImportNotFound path ""
+
+  (nextTable, nextExports) <- resolveImports root table is
+
+  return $ (M.union (M.insert path inferredAST table) nextTable, M.union exports nextExports)
+
+resolveImports _ _ [] = return (M.empty, M.empty)
 
 
 inferASTExps :: Env -> AST -> Infer AST

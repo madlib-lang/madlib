@@ -15,7 +15,7 @@ where
 
 import           Grammar                        ( parse
                                                 , AST(aimports, apath)
-                                                , ImportDecl(ipath)
+                                                , Import(ipath)
                                                 )
 import qualified Data.Map                      as M
 import           Control.Monad                  ( liftM2 )

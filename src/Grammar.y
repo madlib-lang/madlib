@@ -55,7 +55,7 @@ import Data.Char(isUpper)
 %left '+' '-'
 %left '*' '/'
 %right ','
-%right name
+-- %right name
 %nonassoc '=' '=>' '::' ':'
 -- %nonassoc '=' '=>' '::' ':' '(' ')'
 %left '->' '|' '|>' 'ret'
@@ -83,12 +83,13 @@ ast :: { AST }
   | rRet ast          { $2 }
   | ast rRet          { $1 }
 
-importDecls :: { [ImportDecl] }
+importDecls :: { [Import] }
   : importDecl importDecls { $1:$2 }
   | importDecl             { [$1] }
   
-importDecl :: { ImportDecl }
-  : 'import' '{' importNames '}' 'from' str rRet { ImportDecl { ipos = tokenToPos $1, inames = $3, ipath = strV $6 } }
+importDecl :: { Import }
+  : 'import' '{' importNames '}' 'from' str rRet { NamedImport { ipos = tokenToPos $1, inames = $3, ipath = strV $6 } }
+  | 'import' name 'from' str rRet { DefaultImport { ipos = tokenToPos $1, ialias = strV $2, ipath = strV $4 } }
 
 importNames :: { [Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
@@ -179,12 +180,14 @@ exp :: { Exp }
   | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3, eexported = False }}
   | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
   | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
-  | exp '(' args ')'         %shift { buildApp (epos $1) $1 $3 }
+  | exp '(' args ')'                { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
   | '(' exp ')'              %shift { $2 }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
   | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } }
+  | exp '.' name '(' args ')' %shift      { buildApp (epos $1) App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } $5 }
+  -- | exp '.' name '(' args ')'       { App { epos = epos $1, etype = Nothing, earg = $5, eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } } }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}' {
     App { epos = tokenToPos $1, etype = Nothing, eabs =
       App { epos = tokenToPos $1, etype = Nothing, eabs = 
@@ -323,20 +326,17 @@ nameToPattern n | n == "_"           = PAny
 
 data AST =
   AST
-    { aimports   :: [ImportDecl]
+    { aimports   :: [Import]
     , aexps      :: [Exp]
     , aadts       :: [ADT]
     , apath      :: Maybe FilePath
     }
     deriving(Eq, Show)
 
-data ImportDecl =
-  ImportDecl
-    { ipos   :: Pos
-    , inames :: [Name]
-    , ipath  :: FilePath
-    }
-    deriving(Eq, Show)
+data Import 
+  = NamedImport   { ipos :: Pos, inames :: [Name], ipath :: FilePath }
+  | DefaultImport { ipos :: Pos, ialias :: Name, ipath :: FilePath }
+  deriving(Eq, Show)
 
 -- TODO: Add Pos
 data ADT =

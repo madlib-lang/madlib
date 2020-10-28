@@ -177,13 +177,15 @@ instance Compilable ADTConstructor where
 buildPCompArg :: String -> String
 buildPCompArg a = "__buildCtorParam(" <> a <> ")"
 
-instance Compilable ImportDecl where
-  compile ImportDecl { ipath, inames } =
+instance Compilable Import where
+  compile NamedImport { ipath, inames } =
     "import { " <> compileNames inames <> " } from \"./" <> ipath <> ".mjs\""
     where compileNames names = (init . init . concat) $ (++ ", ") <$> names
+  compile DefaultImport { ipath, ialias } =
+    "import " <> ialias <> " from \"./" <> ipath <> ".mjs\""
 
 
--- TODO: Add imports compilation
+-- TODO: Add default export with all exported names compilation
 instance Compilable AST where
   compile AST { aexps, aadts, apath, aimports } =
 
@@ -202,11 +204,26 @@ instance Compilable AST where
         imports = case aimports of
           [] -> ""
           x  -> foldr1 (<>) (terminate . compile <$> x) <> "\n"
-    in  infoComment <> imports <> helpers <> adts <> exps
+        defaultExport = buildDefaultExport aexps
+    in  infoComment <> imports <> helpers <> adts <> exps <> defaultExport
    where
     terminate :: String -> String
     terminate a | null a    = ""
                 | otherwise = a <> ";\n"
+
+
+buildDefaultExport :: [Exp] -> String
+buildDefaultExport es =
+  let exports = filter isExport es
+  in  case exports of
+    []   -> ""
+    exps -> "export default { " <> intercalate "," (ename <$> exps) <> " };\n"
+
+  where
+    isExport :: Exp -> Bool
+    isExport a = case a of
+      Assignment { eexported } -> eexported
+      _                        -> False
 
 
 buildPCompArgFn :: String

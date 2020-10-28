@@ -387,17 +387,31 @@ spec = do
     -- Imports:
     it "should resolve names from imported modules" $ do
       let codeA = "export inc = (a) => a + 1"
-          astA  = buildAST "ModuleA.mad" codeA
+          astA  = buildAST "./ModuleA.mad" codeA
           codeB = unlines
             [ "import { inc } from \"ModuleA\""
             , "inc(3)"
             ]
-          astB = buildAST "ModubleB.mad" codeB
+          astB = buildAST "./ModuleB.mad" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
               let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
               in  tableTester astTable b
       snapshotTest "should resolve names from imported modules" actual
+    
+    it "should resolve namespaced imports" $ do
+      let codeA = "export singleton = (a) => [a]"
+          astA  = buildAST "./ModuleA.mad" codeA
+          codeB = unlines
+            [ "import L from \"ModuleA\""
+            , "L.singleton(3)"
+            ]
+          astB = buildAST "./ModuleB.mad" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              in  tableTester astTable b
+      snapshotTest "should resolve namespaced imports" actual
 
     ---------------------------------------------------------------------------
 

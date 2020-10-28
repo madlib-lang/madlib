@@ -1,8 +1,8 @@
-import { inc } from "imported"
+import I from "imported"
 
 print = (a) => #- console.log(a) -#
 
-fn = (a, b) => a + inc(b)
+fn = (a, b) => a + I.inc(b)
 
 x = [3, 4]
 

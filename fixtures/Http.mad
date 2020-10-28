@@ -1,0 +1,18 @@
+get :: String -> Future e String
+export get = (url) => #- {
+return new Promise((good, bad) => {
+  let chunks = '';
+  const req = http.request(url, (res) => {
+    res.setEncoding('utf8');
+    res.on('data', (chunk) => {
+      chunks += chunk;
+    });
+
+    res.on('end', () => {
+      good(chunks);
+    });
+  });
+  req.on('error', bad)
+  req.end();
+});
+} -#
