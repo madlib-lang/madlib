@@ -1,0 +1,56 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Assignment
+            { epos = Pos 0 1 1
+            , etype =
+                Just
+                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+            , eexp =
+                Record
+                  { epos = Pos 4 1 5
+                  , etype =
+                      Just
+                        (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  , erfields =
+                      fromList
+                        [ ( "x"
+                          , LInt
+                              { epos = Pos 9 1 10 , etype = Just (TCon CNum) , eval = "3" }
+                          )
+                        , ( "y"
+                          , LInt
+                              { epos = Pos 15 1 16 , etype = Just (TCon CNum) , eval = "5" }
+                          )
+                        ]
+                  }
+            , ename = "a"
+            , eexported = False
+            }
+        , App
+            { epos = Pos 19 2 1
+            , etype = Just (TCon CNum)
+            , eabs =
+                Var
+                  { epos = Pos 21 2 3
+                  , etype =
+                      Just
+                        (TArr
+                           (TRecord (fromList [ ( "x" , TVar (TV "b") ) ])) (TVar (TV "b")))
+                  , ename = ".x"
+                  }
+            , earg =
+                Var
+                  { epos = Pos 19 2 1
+                  , etype =
+                      Just
+                        (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  , ename = "a"
+                  }
+            , efieldAccess = True
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

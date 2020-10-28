@@ -1,0 +1,67 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Assignment
+            { epos = Pos 32 2 1
+            , etype = Just (TComp "Maybe" [ TCon CNum ])
+            , eexp =
+                App
+                  { epos = Pos 42 2 11
+                  , etype = Just (TComp "Maybe" [ TCon CNum ])
+                  , eabs =
+                      Var
+                        { epos = Pos 42 2 11
+                        , etype =
+                            Just (TArr (TVar (TV "b")) (TComp "Maybe" [ TVar (TV "b") ]))
+                        , ename = "Just"
+                        }
+                  , earg =
+                      LInt { epos = Pos 47 2 16 , etype = Just (TCon CNum) , eval = "4" }
+                  , efieldAccess = False
+                  }
+            , ename = "perhaps"
+            , eexported = False
+            }
+        , Switch
+            { epos = Pos 50 3 1
+            , etype = Just (TCon CNum)
+            , ecases =
+                [ Case
+                    { casepos = Pos 70 4 3
+                    , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                    , casepattern = PCtor "Just" [ PVar "a" ]
+                    , caseexp =
+                        Var
+                          { epos = Pos 83 4 16 , etype = Just (TVar (TV "a")) , ename = "a" }
+                    }
+                , Case
+                    { casepos = Pos 87 5 3
+                    , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                    , casepattern = PCtor "Nothing" []
+                    , caseexp =
+                        LInt
+                          { epos = Pos 101 5 17 , etype = Just (TCon CNum) , eval = "0" }
+                    }
+                ]
+            , eexp =
+                Var
+                  { epos = Pos 57 3 8
+                  , etype = Just (TComp "Maybe" [ TCon CNum ])
+                  , ename = "perhaps"
+                  }
+            }
+        ]
+    , aadts =
+        [ ADT
+            { adtname = "Maybe"
+            , adtparams = [ "a" ]
+            , adtconstructors =
+                [ ADTConstructor
+                    { adtcname = "Just" , adtcargs = Just [ TRSingle "a" ] }
+                , ADTConstructor { adtcname = "Nothing" , adtcargs = Nothing }
+                ]
+            }
+        ]
+    , apath = Just "path"
+    }

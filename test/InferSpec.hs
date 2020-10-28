@@ -89,7 +89,7 @@ spec = do
     ---------------------------------------------------------------------------
 
 
-    -- ADT:
+    -- ADTs:
 
     it "should infer adts" $ do
       let code = unlines
@@ -170,6 +170,24 @@ spec = do
 
     ---------------------------------------------------------------------------
 
+
+    -- Records:
+
+    it "should infer a record field access" $ do
+      let code   = unlines ["a = { x: 3, y: 5 }", "a.x"]
+          actual = tester code
+      snapshotTest "should infer a record field access" actual
+
+    it "should infer an App with a record" $ do
+      let
+        code = unlines
+          ["a = { x: 3, y: 5 }", "xPlusY = (r) => r.x + r.y", "xPlusY(a)"]
+        actual = tester code
+      snapshotTest "should infer an App with a record" actual
+
+    ---------------------------------------------------------------------------
+
+
     -- Abstractions:
 
     -- TODO: Write and implement the same test with ADTs
@@ -191,3 +209,56 @@ spec = do
           actual = tester code
       snapshotTest "should fail for abstractions with a wrong type definition"
                    actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- If/Else:
+
+    it "should infer a simple if else expression" $ do
+      let
+        code =
+          unlines ["if(True) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+        actual = tester code
+      snapshotTest "should infer a simple if else expression" actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Pattern matching:
+
+    it "should resolve switch with a boolean literal" $ do
+      let code = unlines
+            [ "switch(True) {"
+            , "  case True: \"OK\""
+            , "  case False: \"NOT OK\""
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest "should resolve switch with a boolean literal" actual
+
+    it "should resolve switch with a number input" $ do
+      let code = unlines
+            [ "switch(42) {"
+            , "  case 1: \"NOPE\""
+            , "  case 3: \"NOPE\""
+            , "  case 33: \"NOPE\""
+            , "  case 42: \"YEAH\""
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest "should resolve switch with a number input" actual
+
+    it "should resolve switch with an ADT that has unary constructors" $ do
+      let code = unlines
+            [ "data Maybe a = Just a | Nothing"
+            , "perhaps = Just(4)"
+            , "switch(perhaps) {"
+            , "  case Just a: a"
+            , "  case Nothing: 0"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should resolve switch with an ADT that has unary constructors"
+        actual

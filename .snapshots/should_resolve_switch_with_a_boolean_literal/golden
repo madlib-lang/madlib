@@ -1,0 +1,36 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Switch
+            { epos = Pos 0 1 1
+            , etype = Just (TCon CString)
+            , ecases =
+                [ Case
+                    { casepos = Pos 17 2 3
+                    , casetype = Just (TArr (TCon CBool) (TCon CString))
+                    , casepattern = PBool "True"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 28 2 14 , etype = Just (TCon CString) , eval = "OK" }
+                    }
+                , Case
+                    { casepos = Pos 35 3 3
+                    , casetype = Just (TArr (TCon CBool) (TCon CString))
+                    , casepattern = PBool "False"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 47 3 15
+                          , etype = Just (TCon CString)
+                          , eval = "NOT OK"
+                          }
+                    }
+                ]
+            , eexp =
+                LBool
+                  { epos = Pos 7 1 8 , etype = Just (TCon CBool) , eval = "True" }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

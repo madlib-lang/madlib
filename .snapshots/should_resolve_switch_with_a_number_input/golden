@@ -1,0 +1,60 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Switch
+            { epos = Pos 0 1 1
+            , etype = Just (TCon CString)
+            , ecases =
+                [ Case
+                    { casepos = Pos 15 2 3
+                    , casetype = Just (TArr (TCon CNum) (TCon CString))
+                    , casepattern = PNum "1"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 23 2 11
+                          , etype = Just (TCon CString)
+                          , eval = "NOPE"
+                          }
+                    }
+                , Case
+                    { casepos = Pos 32 3 3
+                    , casetype = Just (TArr (TCon CNum) (TCon CString))
+                    , casepattern = PNum "3"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 40 3 11
+                          , etype = Just (TCon CString)
+                          , eval = "NOPE"
+                          }
+                    }
+                , Case
+                    { casepos = Pos 49 4 3
+                    , casetype = Just (TArr (TCon CNum) (TCon CString))
+                    , casepattern = PNum "33"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 58 4 12
+                          , etype = Just (TCon CString)
+                          , eval = "NOPE"
+                          }
+                    }
+                , Case
+                    { casepos = Pos 67 5 3
+                    , casetype = Just (TArr (TCon CNum) (TCon CString))
+                    , casepattern = PNum "42"
+                    , caseexp =
+                        LStr
+                          { epos = Pos 76 5 12
+                          , etype = Just (TCon CString)
+                          , eval = "YEAH"
+                          }
+                    }
+                ]
+            , eexp =
+                LInt { epos = Pos 7 1 8 , etype = Just (TCon CNum) , eval = "42" }
+            }
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

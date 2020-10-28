@@ -3,7 +3,9 @@ x.x
 data R = R { x :: String, w :: { y :: Num } }
 
 r = R({ x: "Hellow", w: { y: 3 }})
-r.x
+switch(r) {
+  case R { x: String, w: { y: y }}: y
+}
 
 doIt :: { x :: Num } -> { x :: Num }
 doIt = (withX) => withX

@@ -127,7 +127,12 @@ instantiate (Forall as t) = do
 
 
 compose :: Substitution -> Substitution -> Substitution
-s1 `compose` s2 = M.map (apply s1) $ M.union s2 s1
+s1 `compose` s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
+ where
+  mergeTypes :: Type -> Type -> Type
+  mergeTypes t1 t2 = case (t1, t2) of
+    (TRecord fields1, TRecord fields2) -> TRecord $ M.union fields1 fields2
+    (t              , _              ) -> t
 
 
 occursCheck :: Substitutable a => TVar -> a -> Bool
@@ -180,9 +185,11 @@ unifyVars s _           = return s
 
 
 infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
-infer _ v@Var { ename = '.' : name } =
-  let t = TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
-  in  return (M.empty, t, v { etype = Just t })
+infer _ v@Var { ename = '.' : name } = do
+  let s = Forall [TV "a"]
+        $ TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
+  t <- instantiate s
+  return (M.empty, t, v { etype = Just t })
 infer env v@Var { ename } =
   (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
 
@@ -204,7 +211,7 @@ infer env app@App { eabs, earg } = do
   s3           <- unify (apply s2 t1) (TArr t2 tv)
   let t = apply s3 tv
   return
-    ( s3 `compose` s2 `compose` s1
+    ( s3 `compose` s2 `compose` s1 --`compose` sMergedRecords
     , t
     , app { eabs  = e1
           , earg  = e2 { etype = Just $ apply s3 t2 }
@@ -273,8 +280,7 @@ infer env lc@ListConstructor { eelems } = do
 infer env sw@Switch { ecases, eexp } = do
   (se, te, ee)  <- infer env eexp
 
-  inferredCases <- mapM (inferCase env (trace ("EEXP: " <> ppShow te) te))
-                        ecases
+  inferredCases <- mapM (inferCase env te) ecases
   let casesSubstitution = foldr1 compose $ se : (beg <$> inferredCases)
   let casesTypes        = mid <$> inferredCases
   let cases             = trd <$> inferredCases
@@ -301,12 +307,12 @@ infer env sw@Switch { ecases, eexp } = do
  where
   inferCase :: Env -> Type -> Case -> Infer (Substitution, Type, Case)
   inferCase e tinput c@Case { casepattern, caseexp } = do
-    tp <- buildPatternType e casepattern
-    tu <- flip apply (trace ("TP: " <> ppShow tp) tp) <$> unify tp tinput
-    e' <- generateCaseEnv (trace ("TU: " <> ppShow tu) tu) e casepattern
+    tp           <- buildPatternType e casepattern
+    tu           <- flip apply tp <$> unify tp tinput
+    e'           <- generateCaseEnv tu e casepattern
 
-    (se, te, ee) <- infer (trace ("ENV': " <> ppShow e') e') caseexp
-    let tarr = TArr (apply se (trace ("Type Pattern: " <> ppShow tu) tu)) te
+    (se, te, ee) <- infer e' caseexp
+    let tarr  = TArr (apply se tu) te
     let tarr' = TArr (apply se tinput) te
     su <- unify tarr tarr'
 
@@ -479,7 +485,7 @@ inferAST table ast@AST { aimports } = do
     Just et -> return env { envimports = et }
     Nothing -> throwError $ ImportNotFound "" ""
 
-  inferredAST <- inferASTExps (trace (ppShow envWithImports) envWithImports) ast
+  inferredAST <- inferASTExps envWithImports ast
 
   case apath inferredAST of
     Just fp -> return $ M.union inferredASTs $ M.fromList [(fp, inferredAST)]
@@ -561,8 +567,8 @@ buildInitialEnv AST { aadts } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars    = trace (ppShow allVars) allVars
-             , envadts    = trace (ppShow tadts) tadts
+  return Env { envvars    = allVars
+             , envadts    = tadts
              , envtypings = M.empty
              , envimports = M.empty
              }
@@ -610,8 +616,7 @@ resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
     Just cargs -> do
       t' <- mapM (argToType tadts n params) cargs
       let ctype = foldr1 (TArr) (t' <> [t])
-      return $ M.fromList
-        [(adtcname, Forall (TV <$> params) ((trace (show ctype) ctype)))]
+      return $ M.fromList [(adtcname, Forall (TV <$> params) ctype)]
     Nothing -> return $ M.fromList [(adtcname, Forall (TV <$> params) t)]
 
 -- TODO: This should probably be merged with typingToType somehow
