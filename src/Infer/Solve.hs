@@ -11,47 +11,12 @@ import           Control.Monad.Except
 import           Control.Monad.State
 import           Grammar
 import           Data.Foldable                  ( foldrM )
-import           Debug.Trace                    ( trace )
 import qualified AST
-import           Text.Show.Pretty               ( ppShow )
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
-import           Infer.Infer
 import           Infer.Unify
-import           Infer.ADT
-
-
-lookupVar :: Env -> String -> Infer (Substitution, Type)
-lookupVar env x = do
-  case M.lookup x $ envvars env of
-    Nothing -> case M.lookup x $ envimports env of
-      Nothing -> throwError $ UnboundVariable x
-      Just s  -> do
-        t <- instantiate $ Forall [] s
-        return (M.empty, t)
-
-    Just s -> do
-      t <- instantiate s
-      return (M.empty, t)
-
-
-letters :: [String]
-letters = [1 ..] >>= flip replicateM ['a' .. 'z']
-
-
-newTVar :: Infer Type
-newTVar = do
-  s <- get
-  put s { count = count s + 1 }
-  return $ TVar $ TV (letters !! count s)
-
-
-instantiate :: Scheme -> Infer Type
-instantiate (Forall as t) = do
-  as' <- mapM (const newTVar) as
-  let s = M.fromList $ zip as as'
-  return $ apply s t
+import           Infer.Instantiate
 
 
 -- TODO: Move Env to a ReaderMonad
@@ -152,6 +117,7 @@ inferApp env app@App { eabs, earg } = do
 
   s3           <- unify (apply s2 t1) (TArr t2 tv)
   let t = apply s3 tv
+
   return
     ( s3 `compose` s2 `compose` s1
     , t
@@ -173,10 +139,13 @@ inferFieldAccess env app@App { eabs = abs@Var { ename = '.':name }, earg } = do
   let ft = case rt of
         TRecord fields -> M.lookup name fields
         _ -> Nothing -- That one should be a fail then
+
   case ft of
+
     Just t -> do
       (_, t1, _) <- infer env abs
       return (M.empty, t, app { etype = Just t, earg = earg { etype = Just rt }, eabs = abs { etype = Just t1 } })
+
     Nothing -> inferApp env app
 
 
@@ -235,7 +204,9 @@ inferSwitch env sw@Switch { ecases, eexp } = do
          , eexp   = ee { etype = Just $ apply s te }
          }
     )
+
  where
+
   inferCase :: Env -> Type -> Case -> Infer (Substitution, Type, Case)
   inferCase e tinput c@Case { casepattern, caseexp } = do
     tp           <- buildPatternType e casepattern
@@ -284,6 +255,7 @@ inferSwitch env sw@Switch { ecases, eexp } = do
       ctor'' <- instantiate $ Forall fv ctor
       s      <- unify ctor' ctor''
       return $ apply s rt
+
      where
       argPatternsToArrowType :: Type -> [Pattern] -> Infer Type
       argPatternsToArrowType rt (f : xs) = do
@@ -292,6 +264,7 @@ inferSwitch env sw@Switch { ecases, eexp } = do
         return $ TArr l r
       argPatternsToArrowType _  [x] = buildPatternType e x
       argPatternsToArrowType rt []  = return rt
+
     _ -> return $ TVar $ TV "x"
 
 
@@ -336,7 +309,9 @@ inferSwitch env sw@Switch { ecases, eexp } = do
 -- make it work at any depth of the AST.
 inferExps :: Env -> [Exp] -> Infer [Exp]
 inferExps _   []       = return []
+
 inferExps env [exp   ] = (:[]) . trd <$> infer env exp
+
 inferExps env (e : xs) = do
   (_, t, e') <- infer env e
   let env' = case e of
@@ -381,8 +356,11 @@ inferAST rootPath table ast@AST { aimports } = do
   inferredAST <- inferASTExps envWithImports ast
 
   case apath inferredAST of
+
     Just fp -> return $ M.insert fp inferredAST inferredASTs
+
     Nothing -> throwError ASTHasNoPath
+
 
 
 exportedExps :: AST -> Infer [(Name, Exp)]
@@ -396,7 +374,9 @@ exportedExps AST { aexps, apath } = case apath of
     
     isExport :: Exp -> Bool
     isExport a = case a of
+
       Assignment { eexported } -> eexported
+
       _                        -> False
 
 
@@ -407,10 +387,13 @@ resolveImports root table (imp:is) = do
   let path = root <> modulePath <> ".mad"
   
   inferredAST <- case AST.findAST table path of
+
         Right ast -> do
           env <- buildInitialEnv ast
           inferASTExps env ast
+
         Left (AST.ASTNotFound path) -> throwError $ ImportNotFound path ""
+
         Left (AST.ImportNotFound path _) -> throwError $ ImportNotFound path ""
 
   exportedExps <- M.fromList <$> exportedExps inferredAST
@@ -418,7 +401,9 @@ resolveImports root table (imp:is) = do
 
   exports <- case (exportedTypes, imp) of
     (Just exports, DefaultImport { ialias }) -> return $ M.fromList [(ialias, TRecord exports)]
+
     (Just exports, _)                        -> return exports
+
     (Nothing, _)                             -> throwError $ ImportNotFound path ""
 
   (nextTable, nextExports) <- resolveImports root table is
@@ -432,52 +417,6 @@ inferASTExps :: Env -> AST -> Infer AST
 inferASTExps env ast@AST { aexps } = do
   inferredExps <- inferExps env aexps
   return ast { aexps = inferredExps }
-
-
-initialEnv :: Env
-initialEnv = Env
-  { envvars    = M.fromList
-    [ ( "==="
-      , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
-      )
-    , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ( "|>"
-      , Forall [TV "a", TV "b"]
-          $      TVar (TV "a")
-          `TArr` (TVar (TV "a") `TArr` TVar (TV "b"))
-          `TArr` TVar (TV "b")
-      )
-    , ( "ifElse"
-      , Forall [TV "a"]
-          $      TCon CBool
-          `TArr` TVar (TV "a")
-          `TArr` TVar (TV "a")
-          `TArr` TVar (TV "a")
-      )
-    , ( "asList"
-      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "List" [TVar $ TV "a"]
-      )
-    ]
-  , envadts    = M.empty
-  , envtypings = M.empty
-  , envimports = M.empty
-  }
-
-
--- TODO: Should we build imported names here ?
-buildInitialEnv :: AST -> Infer Env
-buildInitialEnv AST { aadts } = do
-  tadts <- buildADTTypes aadts
-  vars  <- resolveADTs tadts aadts
-  let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars    = allVars
-             , envadts    = tadts
-             , envtypings = M.empty
-             , envimports = M.empty
-             }
 
 
 typingsToType :: TypeRef -> Infer Type

@@ -8,8 +8,6 @@ import           Control.Monad.Except
 import           Data.Char                      ( isLower )
 
 import           Grammar
-import           Infer.Infer
-import           Infer.Env
 import           Infer.Type
 
 

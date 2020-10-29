@@ -13,17 +13,16 @@ import           AST                            ( ASTTable
                                                 , findAST
                                                 )
 import           Infer.Solve
-import           Infer.Infer
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 import           Compile
-import           Debug.Trace                    ( trace )
 import           Grammar
 import           System.FilePath                ( takeDirectory
                                                 , replaceExtension
                                                 )
 import           System.Directory               ( createDirectoryIfMissing )
 import           Path
+import           Infer.Type
 
 main :: IO ()
 main = do

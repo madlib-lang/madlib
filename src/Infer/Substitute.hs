@@ -4,9 +4,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import           Data.Foldable                  ( Foldable(foldl') )
 import           Infer.Type
-import           Infer.Env
 
-type Substitution = M.Map TVar Type
 
 class Substitutable a where
   apply :: Substitution -> a -> a

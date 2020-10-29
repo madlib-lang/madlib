@@ -3,6 +3,8 @@ module Infer.SolveSpec where
 import           Grammar
 import           Infer.Solve
 import           Infer.Infer
+import           Infer.Type
+import           Infer.Env
 import           AST
 import qualified Data.Map as M
 import           Test.Hspec                     ( describe
