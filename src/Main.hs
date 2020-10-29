@@ -12,7 +12,8 @@ import           AST                            ( ASTTable
                                                 , buildASTTable
                                                 , findAST
                                                 )
-import           Infer
+import           Infer.Solve
+import           Infer.Infer
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 import           Compile

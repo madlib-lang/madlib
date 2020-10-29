@@ -1,4 +1,4 @@
-module Type where
+module Infer.Type where
 
 import qualified Data.Map                      as M
 

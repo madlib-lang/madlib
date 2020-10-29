@@ -3,7 +3,7 @@ module Grammar where
 import Lexer
 import Text.Printf
 import Control.Monad.Except
-import Type
+import Infer.Type
 import qualified Data.Map as M
 import Data.Char(isUpper)
 }

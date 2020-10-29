@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
-module Infer where
+module Infer.Solve where
 
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
@@ -13,85 +13,16 @@ import           Grammar
 import           Data.Foldable                  ( foldrM
                                                 , Foldable(foldl')
                                                 )
-import           Type
 import           Data.Char                      ( isLower )
 import           Debug.Trace                    ( trace )
 import qualified AST                           as AST
 import           Text.Show.Pretty               ( ppShow )
 import           Data.List                      ( union )
-
-
-type Substitution = M.Map TVar Type
-
-
-type Vars = M.Map String Scheme
-type ADTs = M.Map String Type
-type Typings = M.Map String Scheme
-type Imports = M.Map (Name) Type
-
-
-data Env
-  = Env
-    { envvars :: Vars
-    , envadts :: ADTs
-    , envtypings :: Typings
-    , envimports :: Imports
-    }
-    deriving(Eq, Show)
-
-
-data InferError
-  = InfiniteType TVar Type
-  | UnboundVariable String
-  | UnificationError Type Type
-  | ADTAlreadyDefined Type
-  | UnknownType String
-  | FieldNotExisting String
-  | FieldNotInitialized String
-  | ImportNotFound String String
-  | FatalError
-  | ASTHasNoPath
-  deriving (Show, Eq, Ord)
-
-
-newtype Unique = Unique { count :: Int }
-  deriving (Show, Eq, Ord)
-
-
-type Infer a = forall m . (MonadError InferError m, MonadState Unique m) => m a
-
-
-class Substitutable a where
-  apply :: Substitution -> a -> a
-  ftv   :: a -> S.Set TVar
-
-instance Substitutable Type where
-  apply _ (  TCon a           ) = TCon a
-  apply s t@(TVar a           ) = M.findWithDefault t a s
-  apply s (  t1    `TArr` t2  ) = apply s t1 `TArr` apply s t2
-  apply s (  TComp main   vars) = TComp main (apply s <$> vars)
-  apply s (  TRecord fields   ) = TRecord (apply s <$> fields)
-  apply _ TAny                  = TAny
-
-  ftv TCon{}              = S.empty
-  ftv TAny                = S.empty
-  ftv (TVar a           ) = S.singleton a
-  ftv (t1    `TArr` t2  ) = ftv t1 `S.union` ftv t2
-  ftv (TComp _      vars) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
-  ftv (TRecord fields   ) = foldl' (\s v -> S.union s $ ftv v) S.empty fields
-
-instance Substitutable Scheme where
-  apply s (Forall as t) = Forall as $ apply s' t
-    where s' = foldr M.delete s as
-  ftv (Forall as t) = S.difference (ftv t) (S.fromList as)
-
-instance Substitutable a => Substitutable [a] where
-  apply = fmap . apply
-  ftv   = foldr (S.union . ftv) S.empty
-
-instance Substitutable Env where
-  apply s env = env { envvars = M.map (apply s) $ envvars env }
-  ftv env = ftv $ M.elems $ envvars env
+import           Infer.Type
+import           Infer.Env
+import           Infer.Substitute
+import           Infer.Infer
+import           Infer.Unify
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
@@ -126,156 +57,21 @@ instantiate (Forall as t) = do
   return $ apply s t
 
 
-compose :: Substitution -> Substitution -> Substitution
-s1 `compose` s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
- where
-  mergeTypes :: Type -> Type -> Type
-  mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1, TRecord fields2) -> TRecord $ M.union fields1 fields2
-    (t              , _              ) -> t
-
-
-occursCheck :: Substitutable a => TVar -> a -> Bool
-occursCheck a t = S.member a $ ftv t
-
-
-bind :: TVar -> Type -> Infer Substitution
-bind a t | t == TVar a     = return M.empty
-         | occursCheck a t = throwError $ InfiniteType a t
-         | otherwise       = return $ M.singleton a t
-
-
-unify :: Type -> Type -> Infer Substitution
-unify (l `TArr` r) (l' `TArr` r') = do
-  s1 <- unify l l'
-  s2 <- unify (apply s1 r) (apply s1 r')
-  return (s2 `compose` s1)
-
-unify (TComp main vars) (TComp main' vars')
-  | main == main' = do
-    let z = zip vars vars'
-    s2 <- unifyVars M.empty z
-    return s2
-  | otherwise = throwError
-  $ UnificationError (TComp main vars) (TComp main' vars')
-
-unify (TRecord fields) (TRecord fields')
-  | M.difference fields fields' /= M.empty = throwError
-  $ UnificationError (TRecord fields) (TRecord fields')
-  | otherwise = do
-    let types  = M.elems fields
-        types' = M.elems fields'
-        z      = zip types types'
-    unifyVars M.empty z
-
-unify (TVar a) t                 = bind a t
-unify t        (TVar a)          = bind a t
-unify (TCon a) (TCon b) | a == b = return M.empty
-unify TAny _                     = return M.empty
-unify _    TAny                  = return M.empty
-unify t1   t2                    = throwError $ UnificationError t1 t2
-
-
-unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
-unifyVars s ((tp, tp') : xs) = do
-  s1 <- unify (apply s tp) (apply s tp')
-  unifyVars s1 xs
-unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
-unifyVars s _           = return s
-
-
 infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
-infer _ v@Var { ename = '.' : name } = do
-  let s = Forall [TV "a"]
-        $ TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
-  t <- instantiate s
-  return (M.empty, t, v { etype = Just t })
-infer env v@Var { ename } =
-  (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
-
-infer env abs@Abs { eparam, ebody } = do
-  tv <- newTVar
-  let env' = extendVars env (eparam, Forall [] tv)
-  (s1, t1, e) <- infer env' ebody
-  let t = apply s1 tv `TArr` t1
-  return (s1, t, abs { ebody = e, etype = Just t })
-
--- Field Access
-infer env app@App { eabs = abs@Var { ename = '.':name }, earg } = do
-
-  (rs, rt, re) <- case etype earg of
-        Just x -> return (M.empty, x, earg)
-        Nothing -> infer env earg
-
-  let ft = case rt of
-        TRecord fields -> M.lookup name fields
-        _ -> Nothing
-  case ft of
-    Just t -> do
-      (_, t1, _) <- infer env abs
-      return (M.empty, t, app { etype = Just t, earg = earg { etype = Just rt }, eabs = abs { etype = Just t1 } })
-    Nothing -> do
-      tv           <- newTVar
-      -- (s2, t2, e2) <- infer env earg
-      (s1, t1, e1) <- infer env abs
-
-      s3           <- unify (apply rs t1) (TArr rt tv)
-      let t = apply s3 tv
-      return
-        ( s3 `compose` rs `compose` s1
-        , t
-        , app { eabs  = e1
-              , earg  = re { etype = Just $ apply s3 rt }
-              , etype = Just t
-              }
-        )
-
-infer env app@App { eabs, earg } = do
-  tv           <- newTVar
-  (s1, t1, e1) <- infer env eabs
-  (s2, t2, e2) <- infer env earg
-
-  -- TODO: That commented line caused inline functions in pipe to be wrongly typed.
-  -- Not applying the substitution to the env seems to fix the problem. Nevertheless
-  -- we should confirm that this is correct with the paper from Milner.
-  -- (s2, t2, e2) <- infer (apply s1 env) earg
-  s3           <- unify (apply s2 t1) (TArr t2 tv)
-  let t = apply s3 tv
-  return
-    ( s3 `compose` s2 `compose` s1
-    , t
-    , app { eabs  = e1
-          , earg  = e2 { etype = Just $ apply s3 t2 }
-          , etype = Just t
-          }
-    )
-
-infer env ass@Assignment { eexp, ename } = case eexp of
-  Abs{} -> do
-    (s1, t1, e1) <- infer env eexp
-
-    case M.lookup ename $ envtypings env of
-      Just (Forall fv t2) -> do
-        let bv = S.toList $ ftv t2
-        it2 <- instantiate (Forall (fv <> bv) t2)
-        s2  <- unify t1 it2
-        return
-          ( s2 `compose` s1
-          , it2
-          , ass { eexp = e1 { etype = Just it2 }, etype = Just it2 }
-          )
-
-      Nothing -> return (s1, t1, ass { eexp = e1, etype = Just t1 })
-
-  _ -> do
-    (s1, t1, e1) <- infer env eexp
-    return (s1, t1, ass { eexp = e1, etype = Just t1 })
-
 infer _ l@LInt{} = return (M.empty, TCon CNum, l { etype = Just $ TCon CNum })
 infer _ l@LStr{} =
   return (M.empty, TCon CString, l { etype = Just $ TCon CString })
 infer _ l@LBool{} =
   return (M.empty, TCon CBool, l { etype = Just $ TCon CBool })
+
+
+infer env v@Var {}          = inferVar env v
+infer env abs@Abs {}        = inferAbs env abs
+infer env app@App { eabs = Var { ename = '.':_ } } = inferFieldAccess env app
+infer env app@App {}        = inferApp env app
+infer env ass@Assignment {} = inferAssignment env ass
+infer env sw@Switch {}      = inferSwitch env sw
+
 
 -- TODO: Needs to handle quantified variables ?
 -- TODO: Add TComp
@@ -308,7 +104,100 @@ infer env lc@ListConstructor { eelems } = do
 
   return (s, t, lc { etype = Just t })
 
-infer env sw@Switch { ecases, eexp } = do
+infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
+
+
+-- INFER VAR
+
+inferVar :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferVar env v@Var { ename } = case ename of
+  ('.' : name) -> do
+    let s = Forall [TV "a"]
+          $ TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
+    t <- instantiate s
+    return (M.empty, t, v { etype = Just t })
+
+  _ -> (\(s, t) -> (s, t, v { etype = Just t })) <$> lookupVar env ename
+
+
+-- INFER ABS
+
+inferAbs :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferAbs env abs@Abs { eparam, ebody } = do
+  tv <- newTVar
+  let env' = extendVars env (eparam, Forall [] tv)
+  (s1, t1, e) <- infer env' ebody
+  let t = apply s1 tv `TArr` t1
+  return (s1, t, abs { ebody = e, etype = Just t })
+
+
+-- INFER APP
+
+inferApp :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferApp env app@App { eabs, earg } = do
+  tv           <- newTVar
+  (s1, t1, e1) <- infer env eabs
+  (s2, t2, e2) <- infer env earg
+
+  s3           <- unify (apply s2 t1) (TArr t2 tv)
+  let t = apply s3 tv
+  return
+    ( s3 `compose` s2 `compose` s1
+    , t
+    , app { eabs  = e1
+          , earg  = e2 { etype = Just $ apply s3 t2 }
+          , etype = Just t
+          }
+    )
+
+
+-- INFER FIELD ACCESS
+
+inferFieldAccess :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferFieldAccess env app@App { eabs = abs@Var { ename = '.':name }, earg } = do
+  (_, rt, _) <- case etype earg of
+        Just x -> return (M.empty, x, earg)
+        Nothing -> infer env earg
+
+  let ft = case rt of
+        TRecord fields -> M.lookup name fields
+        _ -> Nothing -- That one should be a fail then
+  case ft of
+    Just t -> do
+      (_, t1, _) <- infer env abs
+      return (M.empty, t, app { etype = Just t, earg = earg { etype = Just rt }, eabs = abs { etype = Just t1 } })
+    Nothing -> inferApp env app
+
+
+-- INFER ASSIGNMENT
+
+inferAssignment :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferAssignment env ass@Assignment { eexp, ename } = case eexp of
+  Abs{} -> do
+    (s1, t1, e1) <- infer env eexp
+
+    case M.lookup ename $ envtypings env of
+      Just (Forall fv t2) -> do
+        let bv = S.toList $ ftv t2
+        it2 <- instantiate (Forall (fv <> bv) t2)
+        s2  <- unify t1 it2
+        return
+          ( s2 `compose` s1
+          , it2
+          , ass { eexp = e1 { etype = Just it2 }, etype = Just it2 }
+          )
+
+      Nothing -> return (s1, t1, ass { eexp = e1, etype = Just t1 })
+
+  _ -> do
+    (s1, t1, e1) <- infer env eexp
+    return (s1, t1, ass { eexp = e1, etype = Just t1 })
+
+
+-- INFER SWITCH
+
+inferSwitch :: Env -> Exp -> Infer (Substitution, Type, Exp)
+inferSwitch env sw@Switch { ecases, eexp } = do
   (se, te, ee)  <- infer env eexp
 
   inferredCases <- mapM (inferCase env te) ecases
@@ -431,8 +320,6 @@ infer env sw@Switch { ecases, eexp } = do
 
       Nothing           -> throwError $ UnknownType cname
 
-infer _ e@JSExp { etype = Just t } = return (M.empty, t, e)
-
 
 -- TODO: Needs to be extended with all cases of unifyElems ?
 -- Should this only happen for free vars ?
@@ -528,7 +415,7 @@ exportedExps AST { aexps, apath } = case apath of
       _                        -> False
 
 
-
+-- TODO: Needs to handle data types as well.
 resolveImports :: FilePath -> AST.ASTTable -> [Import] -> Infer (AST.ASTTable, Imports)
 resolveImports root table (imp:is) = do
   let modulePath = ipath imp

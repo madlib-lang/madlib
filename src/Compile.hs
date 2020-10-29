@@ -217,7 +217,7 @@ buildDefaultExport es =
   let exports = filter isExport es
   in  case exports of
     []   -> ""
-    exps -> "export default { " <> intercalate "," (ename <$> exps) <> " };\n"
+    exps -> "export default { " <> intercalate ", " (ename <$> exps) <> " };\n"
 
   where
     isExport :: Exp -> Bool

@@ -1,7 +1,8 @@
-module InferSpec where
+module Infer.SolveSpec where
 
 import           Grammar
-import           Infer
+import           Infer.Solve
+import           Infer.Infer
 import           AST
 import qualified Data.Map as M
 import           Test.Hspec                     ( describe
