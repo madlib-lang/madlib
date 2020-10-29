@@ -56,3 +56,22 @@ unifyVars s ((tp, tp') : xs) = do
   unifyVars s1 xs
 unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
 unifyVars s _           = return s
+
+-- TODO: Needs to be extended with all cases of unifyElems ?
+-- Should this only happen for free vars ?
+unifyPatternElems :: Type -> [Type] -> Infer Substitution
+unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
+  where
+    anyCheck :: InferError -> Infer Substitution
+    anyCheck e = case e of
+      (UnificationError (TCon _) (TCon _)) -> return M.empty
+      _                                    -> throwError e
+
+
+unifyElems :: Type -> [Type] -> Infer Substitution
+unifyElems _ []        = return M.empty
+unifyElems t [t'     ] = unify t t'
+unifyElems t (t' : xs) = do
+  s1 <- unify t t'
+  s2 <- unifyElems t xs
+  return $ s1 `compose` s2

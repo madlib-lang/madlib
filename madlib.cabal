@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ecd63128c8000699674774281053432e210a26f2c730b35582d9aed7a5998311
+-- hash: ab9cf114e452f30e65b52f64ac1fd06a6a6a39f8a5e4f2709156f514db3ef79c
 
 name:           madlib
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       AST
       Compile
       Grammar
+      Infer.ADT
       Infer.Env
       Infer.Infer
       Infer.Solve
@@ -68,6 +69,7 @@ executable madlib-exe
       AST
       Compile
       Grammar
+      Infer.ADT
       Infer.Env
       Infer.Infer
       Infer.Solve

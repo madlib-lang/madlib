@@ -29,3 +29,9 @@ infixr `TArr`
 
 data Scheme = Forall [TVar] Type
   deriving (Show, Eq, Ord)
+
+
+arrowReturnType :: Type -> Type
+arrowReturnType (TArr _ (TArr y x)) = arrowReturnType (TArr y x)
+arrowReturnType (TArr _ x         ) = x
+arrowReturnType x                   = x

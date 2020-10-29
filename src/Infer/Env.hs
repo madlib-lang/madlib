@@ -18,3 +18,10 @@ data Env
     , envimports :: Imports
     }
     deriving(Eq, Show)
+
+extendVars :: Env -> (String, Scheme) -> Env
+extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
+
+
+extendTypings :: Env -> (String, Scheme) -> Env
+extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
