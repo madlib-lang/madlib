@@ -9,9 +9,9 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Control.Monad.State
-import           Grammar
 import           Data.Foldable                  ( foldrM )
 import qualified AST
+import           AST.AST
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
@@ -23,6 +23,7 @@ import           Infer.Instantiate
 infer :: Env -> Exp -> Infer (Substitution, Type, Exp)
 infer env exp =
   -- Push backtrace here
+  -- Extract Exp from Located
   case exp of
     l@LInt{} -> return (M.empty, TCon CNum, l { etype = Just $ TCon CNum })
     l@LStr{} -> return (M.empty, TCon CString, l { etype = Just $ TCon CString })

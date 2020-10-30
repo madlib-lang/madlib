@@ -5,21 +5,21 @@ Right
            { aimports = []
            , aexps =
                [ Assignment
-                   { epos = Pos 0 1 1
+                   { epos = Loc 0 1 1
                    , etype =
                        Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
                    , eexp =
                        Abs
-                         { epos = Pos 19 1 20
+                         { epos = Loc 19 1 20
                          , etype =
                              Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
                          , eparam = "a"
                          , ebody =
                              ListConstructor
-                               { epos = Pos 26 1 27
+                               { epos = Loc 26 1 27
                                , etype = Just (TComp "List" [ TVar (TV "a") ])
                                , eelems =
-                                   [ Var { epos = Pos 27 1 28 , etype = Nothing , ename = "a" } ]
+                                   [ Var { epos = Loc 27 1 28 , etype = Nothing , ename = "a" } ]
                                }
                          }
                    , ename = "singleton"
@@ -34,20 +34,20 @@ Right
        , AST
            { aimports =
                [ DefaultImport
-                   { ipos = Pos 0 1 1 , ialias = "L" , ipath = "ModuleA" }
+                   { ipos = Loc 0 1 1 , ialias = "L" , ipath = "ModuleA" }
                ]
            , aexps =
                [ App
-                   { epos = Pos 24 2 1
+                   { epos = Loc 24 2 1
                    , etype = Just (TComp "List" [ TCon CNum ])
                    , eabs =
                        App
-                         { epos = Pos 24 2 1
+                         { epos = Loc 24 2 1
                          , etype =
                              Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
                          , eabs =
                              Var
-                               { epos = Pos 26 2 3
+                               { epos = Loc 26 2 3
                                , etype =
                                    Just
                                      (TArr
@@ -57,7 +57,7 @@ Right
                                }
                          , earg =
                              Var
-                               { epos = Pos 24 2 1
+                               { epos = Loc 24 2 1
                                , etype =
                                    Just
                                      (TRecord
@@ -71,7 +71,7 @@ Right
                          , efieldAccess = True
                          }
                    , earg =
-                       LInt { epos = Pos 36 2 13 , etype = Just (TCon CNum) , eval = "3" }
+                       LInt { epos = Loc 36 2 13 , etype = Just (TCon CNum) , eval = "3" }
                    , efieldAccess = False
                    }
                ]

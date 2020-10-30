@@ -1,11 +1,15 @@
 {
-module Grammar where
-import Lexer
-import Text.Printf
-import Control.Monad.Except
-import Infer.Type
-import qualified Data.Map as M
-import Data.Char(isUpper)
+module Parse.Grammar where
+
+import           Text.Printf
+import           Control.Monad.Except
+import qualified Data.Map             as M
+import           Data.Char(isUpper)
+
+import           Parse.Lexer
+import           Infer.Type
+import           AST.AST
+import           Explain.Context
 }
 
 %name parseMadlib ast
@@ -71,7 +75,7 @@ ast :: { AST }
   | 'export' name '=' exp ast %shift { $5 {
                                        aexps =
                                        [Assignment
-                                        { epos = tokenToPos $1
+                                        { epos = tokenToLoc $1
                                         , etype = Nothing
                                         , ename = strV $2
                                         , eexp = $4
@@ -88,8 +92,8 @@ importDecls :: { [Import] }
   | importDecl             { [$1] }
   
 importDecl :: { Import }
-  : 'import' '{' importNames '}' 'from' str rRet { NamedImport { ipos = tokenToPos $1, inames = $3, ipath = strV $6 } }
-  | 'import' name 'from' str rRet { DefaultImport { ipos = tokenToPos $1, ialias = strV $2, ipath = strV $4 } }
+  : 'import' '{' importNames '}' 'from' str rRet { NamedImport { ipos = tokenToLoc $1, inames = $3, ipath = strV $6 } }
+  | 'import' name 'from' str rRet { DefaultImport { ipos = tokenToLoc $1, ialias = strV $2, ipath = strV $4 } }
 
 importNames :: { [Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
@@ -176,33 +180,33 @@ exp :: { Exp }
   | switch                          { $1 }
   | operation                       { $1 }
   | listConstructor          %shift { $1 }
-  | js                       %shift { JSExp { epos = tokenToPos $1, etype = Just TAny, econtent = strV $1 } }
-  | name '=' exp             %shift { Assignment { epos = tokenToPos $1, etype = Nothing, ename = strV $1, eexp = $3, eexported = False }}
-  | name                     %shift { Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 }}
-  | name rParenL args ')'    %shift { buildApp (tokenToPos $1) Var { epos = tokenToPos $1, etype = Nothing, ename = strV $1 } $3 }
+  | js                       %shift { JSExp { epos = tokenToLoc $1, etype = Just TAny, econtent = strV $1 } }
+  | name '=' exp             %shift { Assignment { epos = tokenToLoc $1, etype = Nothing, ename = strV $1, eexp = $3, eexported = False }}
+  | name                     %shift { Var { epos = tokenToLoc $1, etype = Nothing, ename = strV $1 }}
+  | name rParenL args ')'    %shift { buildApp (tokenToLoc $1) Var { epos = tokenToLoc $1, etype = Nothing, ename = strV $1 } $3 }
   | exp '(' args ')'                { buildApp (epos $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift { buildApp (epos $2) $2 $5 }
-  | '(' params ')' '=>' exp  %shift { buildAbs (tokenToPos $1) $2 $5 }
+  | '(' params ')' '=>' exp  %shift { buildAbs (tokenToLoc $1) $2 $5 }
   | '(' exp ')'              %shift { $2 }
   | exp '::' typings                { TypedExp { epos = epos $1, etype = Nothing, eexp = $1, etyping = $3 } }
-  | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } }
-  | exp '.' name '(' args ')' %shift      { buildApp (epos $1) App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } $5 }
-  -- | exp '.' name '(' args ')'       { App { epos = epos $1, etype = Nothing, earg = $5, eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } } }
+  | exp '.' name                    { App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } }
+  | exp '.' name '(' args ')' %shift      { buildApp (epos $1) App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } $5 }
+  -- | exp '.' name '(' args ')'       { App { epos = epos $1, etype = Nothing, earg = $5, eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $3, etype = Nothing, ename = "." <> strV $3 }, earg = $1, efieldAccess = True } } }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}' {
-    App { epos = tokenToPos $1, etype = Nothing, eabs =
-      App { epos = tokenToPos $1, etype = Nothing, eabs = 
-        App { epos = tokenToPos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "ifElse" }, earg = $3, efieldAccess = False }
+    App { epos = tokenToLoc $1, etype = Nothing, eabs =
+      App { epos = tokenToLoc $1, etype = Nothing, eabs = 
+        App { epos = tokenToLoc $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "ifElse" }, earg = $3, efieldAccess = False }
     , earg = $7, efieldAccess = False }, earg = $15, efieldAccess = False
     }
   }
 
 
 switch :: { Exp }
-  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Switch { epos = tokenToPos $1, etype = Nothing, eexp = $3, ecases = $7 } }
+  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Switch { epos = tokenToLoc $1, etype = Nothing, eexp = $3, ecases = $7 } }
 
 cases :: { [Case] }
-  : 'case' pattern ':' exp             { [Case { casepos = tokenToPos $1, casetype = Nothing, casepattern = $2, caseexp = $4 }] }
-  | cases 'ret' 'case' pattern ':' exp { $1 <> [Case { casepos = tokenToPos $3, casetype = Nothing, casepattern = $4, caseexp = $6 }] }
+  : 'case' pattern ':' exp             { [Case { casepos = tokenToLoc $1, casetype = Nothing, casepattern = $2, caseexp = $4 }] }
+  | cases 'ret' 'case' pattern ':' exp { $1 <> [Case { casepos = tokenToLoc $3, casetype = Nothing, casepattern = $4, caseexp = $6 }] }
 
 pattern :: { Pattern }
   : nonCompositePattern { $1 }
@@ -234,7 +238,7 @@ recordFieldPatterns :: { M.Map Name Pattern }
 
 
 record :: { Exp }
-  : '{' recordFields '}' { Record { epos = tokenToPos $1, etype = Nothing, erfields = $2 } }
+  : '{' recordFields '}' { Record { epos = tokenToLoc $1, etype = Nothing, erfields = $2 } }
 
 recordFields :: { M.Map Name Exp }
   : name ':' exp                  { M.fromList [(strV $1, $3)] }
@@ -244,49 +248,49 @@ recordFields :: { M.Map Name Exp }
 operation :: { Exp }
   : exp '+' exp  { App { epos = epos $1
                        , etype = Nothing
-                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "+" }, earg = $1, efieldAccess = False }
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "+" }, earg = $1, efieldAccess = False }
                        , earg = $3
                        , efieldAccess = False 
                        }
                  }
   | exp '-' exp  { App { epos = epos $1
                        , etype = Nothing
-                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "-" }, earg = $1, efieldAccess = False }
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "-" }, earg = $1, efieldAccess = False }
                        , earg = $3
                        , efieldAccess = False 
                        }
                  }
   | exp '*' exp  { App { epos = epos $1
                        , etype = Nothing
-                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "*" }, earg = $1, efieldAccess = False }
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "*" }, earg = $1, efieldAccess = False }
                        , earg = $3
                        , efieldAccess = False 
                        }
                  }
   | exp '/' exp  { App { epos = epos $1
                        , etype = Nothing
-                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "/" }, earg = $1, efieldAccess = False }
+                       , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "/" }, earg = $1, efieldAccess = False }
                        , earg = $3
                        , efieldAccess = False 
                        }
                  }
   | exp '===' exp  { App { epos = epos $1
                          , etype = Nothing
-                         , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "===" }, earg = $1, efieldAccess = False }
+                         , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "===" }, earg = $1, efieldAccess = False }
                          , earg = $3
                          , efieldAccess = False 
                          }
                    }
   | exp '|>' exp  { App { epos = epos $1
                         , etype = Nothing
-                        , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToPos $2, etype = Nothing, ename = "|>" }, earg = $1, efieldAccess = False }
+                        , eabs = App { epos = epos $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "|>" }, earg = $1, efieldAccess = False }
                         , earg = $3
                         , efieldAccess = False 
                         }
                   }
 
 listConstructor :: { Exp }
-  : '[' listItems ']' { ListConstructor { epos = tokenToPos $1, etype = Nothing, eelems = $2 } }
+  : '[' listItems ']' { ListConstructor { epos = tokenToLoc $1, etype = Nothing, eelems = $2 } }
 
 listItems :: { [Exp] }
   : exp               { [$1] }
@@ -294,10 +298,10 @@ listItems :: { [Exp] }
   | {- empty -}       { [] }
 
 literal :: { Exp }
-  : int                       { LInt  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
-  | str                       { LStr  { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
-  | false                     { LBool { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
-  | true                      { LBool { epos = tokenToPos $1, etype = Nothing, eval = strV $1 } }
+  : int                       { LInt  { epos = tokenToLoc $1, etype = Nothing, eval = strV $1 } }
+  | str                       { LStr  { epos = tokenToLoc $1, etype = Nothing, eval = strV $1 } }
+  | false                     { LBool { epos = tokenToLoc $1, etype = Nothing, eval = strV $1 } }
+  | true                      { LBool { epos = tokenToLoc $1, etype = Nothing, eval = strV $1 } }
 
 args :: { [Exp] }
   : exp rComa args %shift { $1:$3 }
@@ -308,11 +312,11 @@ params :: { [Name] }
   | name                   { [strV $1] }
 
 {
-buildAbs :: Pos -> [Name] -> Exp -> Exp
+buildAbs :: Loc -> [Name] -> Exp -> Exp
 buildAbs pos [param] body = Abs { epos = pos, etype = Nothing, eparam = param, ebody = body }
 buildAbs pos (x:xs) body  = Abs { epos = pos, etype = Nothing, eparam = x, ebody = buildAbs pos xs body }
 
-buildApp :: Pos -> Exp -> [Exp] -> Exp
+buildApp :: Loc -> Exp -> [Exp] -> Exp
 buildApp pos f [arg]  = App { epos = pos, etype = Nothing, eabs = f, earg = arg, efieldAccess = False }
 buildApp pos f xs = App { epos = pos, etype = Nothing, eabs = buildApp pos f (init xs) , earg = last xs, efieldAccess = False }
 
@@ -324,86 +328,12 @@ nameToPattern n | n == "_"           = PAny
                 | (isUpper . head) n = PCtor n []
                 | otherwise          = PVar n
 
-data AST =
-  AST
-    { aimports   :: [Import]
-    , aexps      :: [Exp]
-    , aadts       :: [ADT]
-    , apath      :: Maybe FilePath
-    }
-    deriving(Eq, Show)
-
-data Import 
-  = NamedImport   { ipos :: Pos, inames :: [Name], ipath :: FilePath }
-  | DefaultImport { ipos :: Pos, ialias :: Name, ipath :: FilePath }
-  deriving(Eq, Show)
-
--- TODO: Add Pos
-data ADT =
-  ADT
-    { adtname :: Name
-    , adtparams :: [Name]
-    , adtconstructors :: [ADTConstructor]
-    }
-    deriving(Eq, Show)
-
--- TODO: Add Pos
-data ADTConstructor
-  = ADTConstructor       { adtcname :: Name, adtcargs :: Maybe [TypeRef] }
-  deriving(Eq, Show)
-
--- TODO: Rename
-data TypeRef
-  = TRSingle Name
-  | TRComp Name [TypeRef]
-  | TRArr TypeRef TypeRef
-  | TRRecord (M.Map Name TypeRef)
-  deriving(Eq, Show)
-
-data Case =
-  Case
-    { casepos :: Pos
-    , casetype :: Maybe Type
-    , casepattern :: Pattern
-    , caseexp :: Exp
-    }
-    deriving(Eq, Show)
-
-data Pattern
-  = PVar Name
-  | PAny
-  | PCtor Name [Pattern]
-  | PNum String
-  | PStr String
-  | PBool String
-  | PCon Name
-  | PUserDef Name
-  | PRecord (M.Map Name Pattern)
-  deriving(Eq, Show)
-
-data Exp = LInt            { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LStr            { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | LBool           { epos :: Pos, etype :: Maybe Type, eval :: String }
-         | JSExp           { epos :: Pos, etype :: Maybe Type, econtent :: String }
-         | App             { epos :: Pos, etype :: Maybe Type, eabs :: Exp, earg :: Exp, efieldAccess :: Bool }
-         | Abs             { epos :: Pos, etype :: Maybe Type, eparam :: Name, ebody :: Exp }
-         | Assignment      { epos :: Pos, etype :: Maybe Type, eexp :: Exp, ename :: Name, eexported :: Bool }
-         | Var             { epos :: Pos, etype :: Maybe Type, ename :: Name }
-         | TypedExp        { epos :: Pos, etype :: Maybe Type, eexp :: Exp, etyping :: TypeRef }
-         | ListConstructor { epos :: Pos, etype :: Maybe Type, eelems :: [Exp] }
-         | Record          { epos :: Pos, etype :: Maybe Type, erfields :: M.Map Name Exp }
-         | Switch          { epos :: Pos, etype :: Maybe Type, ecases :: [Case], eexp :: Exp }
-         deriving(Eq, Show)
-
-type Name  = String
-newtype Typing = Typing String deriving(Eq, Show)
-
 
 lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
 
 parseError :: Token -> Alex a
-parseError (Token (Pos a l c) cls) =
+parseError (Token (Loc a l c) cls) =
   alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
 parse :: String -> Either String AST

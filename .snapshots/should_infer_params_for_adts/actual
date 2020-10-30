@@ -3,7 +3,7 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 42 2 1
+            { epos = Loc 42 2 1
             , etype =
                 Just
                   (TArr
@@ -11,7 +11,7 @@ Right
                      (TComp "Result" []))
             , eexp =
                 Var
-                  { epos = Pos 46 2 5
+                  { epos = Loc 46 2 5
                   , etype =
                       Just
                         (TArr
@@ -23,18 +23,18 @@ Right
             , eexported = False
             }
         , Record
-            { epos = Pos 54 2 13
+            { epos = Loc 54 2 13
             , etype = Just (TRecord (fromList [ ( "value" , TCon CString ) ]))
             , erfields =
                 fromList
                   [ ( "value"
                     , LStr
-                        { epos = Pos 63 2 22 , etype = Just (TCon CString) , eval = "42" }
+                        { epos = Loc 63 2 22 , etype = Just (TCon CString) , eval = "42" }
                     )
                   ]
             }
         , App
-            { epos = Pos 71 3 2
+            { epos = Loc 71 3 2
             , etype =
                 Just
                   (TArr
@@ -42,16 +42,16 @@ Right
                      (TComp "Result" []))
             , eabs =
                 Abs
-                  { epos = Pos 71 3 2
+                  { epos = Loc 71 3 2
                   , etype = Just (TArr (TVar (TV "b")) (TVar (TV "b")))
                   , eparam = "a"
                   , ebody =
                       Var
-                        { epos = Pos 78 3 9 , etype = Just (TVar (TV "b")) , ename = "a" }
+                        { epos = Loc 78 3 9 , etype = Just (TVar (TV "b")) , ename = "a" }
                   }
             , earg =
                 Var
-                  { epos = Pos 81 3 12
+                  { epos = Loc 81 3 12
                   , etype =
                       Just
                         (TArr

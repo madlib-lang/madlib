@@ -3,36 +3,36 @@ Right
     { aimports = []
     , aexps =
         [ TypedExp
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            , eexp = Var { epos = Pos 0 1 1 , etype = Nothing , ename = "fn" }
+            , eexp = Var { epos = Loc 0 1 1 , etype = Nothing , ename = "fn" }
             , etyping =
                 TRArr (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))
             }
         , Assignment
-            { epos = Pos 25 2 1
+            { epos = Loc 25 2 1
             , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
             , eexp =
                 Abs
-                  { epos = Pos 30 2 6
+                  { epos = Loc 30 2 6
                   , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
                   , eparam = "a"
                   , ebody =
                       Abs
-                        { epos = Pos 30 2 6
+                        { epos = Loc 30 2 6
                         , etype = Just (TArr (TVar (TV "b")) (TCon CBool))
                         , eparam = "b"
                         , ebody =
                             App
-                              { epos = Pos 40 2 16
+                              { epos = Loc 40 2 16
                               , etype = Just (TCon CBool)
                               , eabs =
                                   App
-                                    { epos = Pos 40 2 16
+                                    { epos = Loc 40 2 16
                                     , etype = Just (TArr (TVar (TV "a")) (TCon CBool))
                                     , eabs =
                                         Var
-                                          { epos = Pos 42 2 18
+                                          { epos = Loc 42 2 18
                                           , etype =
                                               Just
                                                 (TArr
@@ -42,7 +42,7 @@ Right
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 40 2 16
+                                          { epos = Loc 40 2 16
                                           , etype = Just (TVar (TV "a"))
                                           , ename = "a"
                                           }
@@ -50,7 +50,7 @@ Right
                                     }
                               , earg =
                                   Var
-                                    { epos = Pos 46 2 22
+                                    { epos = Loc 46 2 22
                                     , etype = Just (TVar (TV "b"))
                                     , ename = "b"
                                     }
@@ -62,24 +62,24 @@ Right
             , eexported = False
             }
         , App
-            { epos = Pos 48 3 1
+            { epos = Loc 48 3 1
             , etype = Just (TCon CBool)
             , eabs =
                 App
-                  { epos = Pos 48 3 1
+                  { epos = Loc 48 3 1
                   , etype = Just (TArr (TCon CNum) (TCon CBool))
                   , eabs =
                       Var
-                        { epos = Pos 48 3 1
+                        { epos = Loc 48 3 1
                         , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
                         , ename = "fn"
                         }
                   , earg =
-                      LInt { epos = Pos 51 3 4 , etype = Just (TCon CNum) , eval = "3" }
+                      LInt { epos = Loc 51 3 4 , etype = Just (TCon CNum) , eval = "3" }
                   , efieldAccess = False
                   }
             , earg =
-                LInt { epos = Pos 54 3 7 , etype = Just (TCon CNum) , eval = "4" }
+                LInt { epos = Loc 54 3 7 , etype = Just (TCon CNum) , eval = "4" }
             , efieldAccess = False
             }
         ]

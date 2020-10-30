@@ -3,36 +3,36 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
             , eexp =
                 Abs
-                  { epos = Pos 5 1 6
+                  { epos = Loc 5 1 6
                   , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                   , eparam = "b"
                   , ebody =
                       Abs
-                        { epos = Pos 5 1 6
+                        { epos = Loc 5 1 6
                         , etype = Just (TArr (TCon CNum) (TCon CNum))
                         , eparam = "c"
                         , ebody =
                             App
-                              { epos = Pos 15 1 16
+                              { epos = Loc 15 1 16
                               , etype = Just (TCon CNum)
                               , eabs =
                                   App
-                                    { epos = Pos 15 1 16
+                                    { epos = Loc 15 1 16
                                     , etype = Just (TArr (TCon CNum) (TCon CNum))
                                     , eabs =
                                         Var
-                                          { epos = Pos 16 1 17
+                                          { epos = Loc 16 1 17
                                           , etype =
                                               Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                                           , ename = "+"
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 15 1 16
+                                          { epos = Loc 15 1 16
                                           , etype = Just (TCon CNum)
                                           , ename = "b"
                                           }
@@ -40,7 +40,7 @@ Right
                                     }
                               , earg =
                                   Var
-                                    { epos = Pos 19 1 20 , etype = Just (TCon CNum) , ename = "c" }
+                                    { epos = Loc 19 1 20 , etype = Just (TCon CNum) , ename = "c" }
                               , efieldAccess = False
                               }
                         }
@@ -49,24 +49,24 @@ Right
             , eexported = False
             }
         , App
-            { epos = Pos 21 2 1
+            { epos = Loc 21 2 1
             , etype = Just (TCon CNum)
             , eabs =
                 App
-                  { epos = Pos 21 2 1
+                  { epos = Loc 21 2 1
                   , etype = Just (TArr (TCon CNum) (TCon CNum))
                   , eabs =
                       Var
-                        { epos = Pos 21 2 1
+                        { epos = Loc 21 2 1
                         , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                         , ename = "fn"
                         }
                   , earg =
-                      LInt { epos = Pos 24 2 4 , etype = Just (TCon CNum) , eval = "2" }
+                      LInt { epos = Loc 24 2 4 , etype = Just (TCon CNum) , eval = "2" }
                   , efieldAccess = False
                   }
             , earg =
-                LInt { epos = Pos 27 2 7 , etype = Just (TCon CNum) , eval = "3" }
+                LInt { epos = Loc 27 2 7 , etype = Just (TCon CNum) , eval = "3" }
             , efieldAccess = False
             }
         ]

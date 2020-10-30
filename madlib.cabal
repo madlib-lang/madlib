@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c09953c20ec74c196581a81afc6fef3bcbb385fe95d51151b2478dde1dd13bba
+-- hash: 2203e6e9e0f5163b9f1d1ea028a5af32c4a13ffd2f11fe1decde098c59188936
 
 name:           madlib
 version:        0.1.0.0
@@ -28,18 +28,19 @@ source-repository head
 library
   exposed-modules:
       AST
+      AST.AST
       Compile
-      Grammar
+      Explain.Context
       Infer.ADT
       Infer.Env
-      Infer.Infer
       Infer.Instantiate
       Infer.Solve
       Infer.Substitute
       Infer.Type
       Infer.Unify
-      Lexer
       Main
+      Parse.Grammar
+      Parse.Lexer
       Path
   other-modules:
       Paths_madlib
@@ -68,17 +69,18 @@ executable madlib-exe
   main-is: Main.hs
   other-modules:
       AST
+      AST.AST
       Compile
-      Grammar
+      Explain.Context
       Infer.ADT
       Infer.Env
-      Infer.Infer
       Infer.Instantiate
       Infer.Solve
       Infer.Substitute
       Infer.Type
       Infer.Unify
-      Lexer
+      Parse.Grammar
+      Parse.Lexer
       Path
       Paths_madlib
   hs-source-dirs:

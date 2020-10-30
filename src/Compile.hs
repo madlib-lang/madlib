@@ -1,11 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Compile where
 
-import           Grammar
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Debug.Trace                    ( trace )
 import           Data.List                      ( intercalate )
+import           AST.AST
 
 class Compilable a where
   -- If the Bool is True it indicates that the expression terminates.
@@ -92,15 +91,15 @@ instance Compilable Exp where
         <> "\""
         <> n
         <> "\""
-        <> if not (null (args)) then " && " <> args else ""
+        <> if not (null args) then " && " <> args else ""
      where
       args =
         intercalate " && "
-          $   (filter (not . null))
+          $   filter (not . null)
           $   compileCtorArg scope n
           <$> zip [0 ..] ps
     compilePattern scope (PRecord m) =
-      intercalate " && " $ (filter (not . null)) $ M.elems $ M.mapWithKey
+      intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey
         (compileRecord scope)
         m
     compilePattern scope (PUserDef n) = scope <> " === \"" <> n <> "\""
@@ -139,13 +138,10 @@ instance Compilable Exp where
 
 instance Compilable ADT where
   compile ADT { adtconstructors = [] }                = ""
-  compile ADT { adtname, adtparams, adtconstructors } = foldr1
+  compile ADT { adtconstructors } = foldr1
     (<>)
     (compile <$> adtconstructors)
-   where
-      -- TODO: Remove ?
-      -- compileADTType :: Name -> [Name] -> String
-      -- compileADTType name params = "const " <> name <> " = { __params: [" <> intercalate "," params <> "] };\n"
+
 
 instance Compilable ADTConstructor where
   compile ADTConstructor { adtcname, adtcargs } = case adtcargs of

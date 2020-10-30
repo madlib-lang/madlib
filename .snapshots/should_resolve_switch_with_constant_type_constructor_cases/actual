@@ -3,35 +3,35 @@ Right
     { aimports = []
     , aexps =
         [ Switch
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TCon CNum)
             , ecases =
                 [ Case
-                    { casepos = Pos 17 2 3
+                    { casepos = Loc 17 2 3
                     , casetype = Just (TArr (TCon CString) (TCon CNum))
                     , casepattern = PCon "String"
                     , caseexp =
-                        LInt { epos = Pos 31 2 17 , etype = Just (TCon CNum) , eval = "1" }
+                        LInt { epos = Loc 31 2 17 , etype = Just (TCon CNum) , eval = "1" }
                     }
                 , Case
-                    { casepos = Pos 35 3 3
+                    { casepos = Loc 35 3 3
                     , casetype = Just (TArr (TCon CBool) (TCon CNum))
                     , casepattern = PCon "Bool"
                     , caseexp =
-                        LInt { epos = Pos 49 3 17 , etype = Just (TCon CNum) , eval = "3" }
+                        LInt { epos = Loc 49 3 17 , etype = Just (TCon CNum) , eval = "3" }
                     }
                 , Case
-                    { casepos = Pos 53 4 3
+                    { casepos = Loc 53 4 3
                     , casetype = Just (TArr (TCon CNum) (TCon CNum))
                     , casepattern = PCon "Num"
                     , caseexp =
                         LInt
-                          { epos = Pos 67 4 17 , etype = Just (TCon CNum) , eval = "33" }
+                          { epos = Loc 67 4 17 , etype = Just (TCon CNum) , eval = "33" }
                     }
                 ]
             , eexp =
                 LStr
-                  { epos = Pos 7 1 8 , etype = Just (TCon CString) , eval = "42" }
+                  { epos = Loc 7 1 8 , etype = Just (TCon CString) , eval = "42" }
             }
         ]
     , aadts = []

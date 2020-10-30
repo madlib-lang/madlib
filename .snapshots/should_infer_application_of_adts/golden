@@ -3,21 +3,21 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 37 2 1
+            { epos = Loc 37 2 1
             , etype = Just (TComp "Result" [])
             , eexp =
                 App
-                  { epos = Pos 47 2 11
+                  { epos = Loc 47 2 11
                   , etype = Just (TComp "Result" [])
                   , eabs =
                       Var
-                        { epos = Pos 47 2 11
+                        { epos = Loc 47 2 11
                         , etype = Just (TArr (TCon CString) (TComp "Result" []))
                         , ename = "Success"
                         }
                   , earg =
                       LStr
-                        { epos = Pos 55 2 19
+                        { epos = Loc 55 2 19
                         , etype = Just (TCon CString)
                         , eval = "response"
                         }
@@ -27,11 +27,11 @@ Right
             , eexported = False
             }
         , Assignment
-            { epos = Pos 67 3 1
+            { epos = Loc 67 3 1
             , etype = Just (TComp "Result" [])
             , eexp =
                 Var
-                  { epos = Pos 77 3 11
+                  { epos = Loc 77 3 11
                   , etype = Just (TComp "Result" [])
                   , ename = "Error"
                   }
@@ -39,34 +39,34 @@ Right
             , eexported = False
             }
         , App
-            { epos = Pos 84 4 2
+            { epos = Loc 84 4 2
             , etype = Just (TCon CBool)
             , eabs =
                 App
-                  { epos = Pos 84 4 2
+                  { epos = Loc 84 4 2
                   , etype = Just (TArr (TComp "Result" []) (TCon CBool))
                   , eabs =
                       Abs
-                        { epos = Pos 84 4 2
+                        { epos = Loc 84 4 2
                         , etype =
                             Just (TArr (TVar (TV "e")) (TArr (TVar (TV "e")) (TCon CBool)))
                         , eparam = "a"
                         , ebody =
                             Abs
-                              { epos = Pos 84 4 2
+                              { epos = Loc 84 4 2
                               , etype = Just (TArr (TVar (TV "e")) (TCon CBool))
                               , eparam = "b"
                               , ebody =
                                   App
-                                    { epos = Pos 94 4 12
+                                    { epos = Loc 94 4 12
                                     , etype = Just (TCon CBool)
                                     , eabs =
                                         App
-                                          { epos = Pos 94 4 12
+                                          { epos = Loc 94 4 12
                                           , etype = Just (TArr (TVar (TV "d")) (TCon CBool))
                                           , eabs =
                                               Var
-                                                { epos = Pos 96 4 14
+                                                { epos = Loc 96 4 14
                                                 , etype =
                                                     Just
                                                       (TArr
@@ -76,7 +76,7 @@ Right
                                                 }
                                           , earg =
                                               Var
-                                                { epos = Pos 94 4 12
+                                                { epos = Loc 94 4 12
                                                 , etype = Just (TVar (TV "d"))
                                                 , ename = "a"
                                                 }
@@ -84,7 +84,7 @@ Right
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 100 4 18
+                                          { epos = Loc 100 4 18
                                           , etype = Just (TVar (TV "e"))
                                           , ename = "b"
                                           }
@@ -94,7 +94,7 @@ Right
                         }
                   , earg =
                       Var
-                        { epos = Pos 103 4 21
+                        { epos = Loc 103 4 21
                         , etype = Just (TComp "Result" [])
                         , ename = "result1"
                         }
@@ -102,7 +102,7 @@ Right
                   }
             , earg =
                 Var
-                  { epos = Pos 112 4 30
+                  { epos = Loc 112 4 30
                   , etype = Just (TComp "Result" [])
                   , ename = "result2"
                   }

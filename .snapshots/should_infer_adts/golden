@@ -3,21 +3,21 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 37 2 1
+            { epos = Loc 37 2 1
             , etype = Just (TComp "Result" [])
             , eexp =
                 App
-                  { epos = Pos 46 2 10
+                  { epos = Loc 46 2 10
                   , etype = Just (TComp "Result" [])
                   , eabs =
                       Var
-                        { epos = Pos 46 2 10
+                        { epos = Loc 46 2 10
                         , etype = Just (TArr (TCon CString) (TComp "Result" []))
                         , ename = "Success"
                         }
                   , earg =
                       LStr
-                        { epos = Pos 54 2 18
+                        { epos = Loc 54 2 18
                         , etype = Just (TCon CString)
                         , eval = "response"
                         }

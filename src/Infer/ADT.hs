@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import           Control.Monad.Except
 import           Data.Char                      ( isLower )
 
-import           Grammar
+import           AST.AST
 import           Infer.Type
 
 

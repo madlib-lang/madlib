@@ -1,11 +1,5 @@
 module Infer.SolveSpec where
 
-import           Grammar
-import           Infer.Solve
-import           Infer.Infer
-import           Infer.Type
-import           Infer.Env
-import           AST
 import qualified Data.Map as M
 import           Test.Hspec                     ( describe
                                                 , it
@@ -22,6 +16,12 @@ import           Data.Text                      ( Text
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
+
+import           AST.AST
+import           Infer.Solve
+import           Infer.Type
+import           Infer.Env
+import           AST
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden

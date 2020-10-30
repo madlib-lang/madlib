@@ -3,56 +3,56 @@ Right
     { aimports = []
     , aexps =
         [ Switch
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TCon CString)
             , ecases =
                 [ Case
-                    { casepos = Pos 15 2 3
+                    { casepos = Loc 15 2 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "1"
                     , caseexp =
                         LStr
-                          { epos = Pos 24 2 12
+                          { epos = Loc 24 2 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 33 3 3
+                    { casepos = Loc 33 3 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "3"
                     , caseexp =
                         LStr
-                          { epos = Pos 42 3 12
+                          { epos = Loc 42 3 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 51 4 3
+                    { casepos = Loc 51 4 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "33"
                     , caseexp =
                         LStr
-                          { epos = Pos 60 4 12
+                          { epos = Loc 60 4 12
                           , etype = Just (TCon CString)
                           , eval = "NOPE"
                           }
                     }
                 , Case
-                    { casepos = Pos 69 5 3
+                    { casepos = Loc 69 5 3
                     , casetype = Just (TArr (TCon CNum) (TCon CString))
                     , casepattern = PNum "42"
                     , caseexp =
                         LStr
-                          { epos = Pos 78 5 12
+                          { epos = Loc 78 5 12
                           , etype = Just (TCon CString)
                           , eval = "YEAH"
                           }
                     }
                 ]
             , eexp =
-                LInt { epos = Pos 7 1 8 , etype = Just (TCon CNum) , eval = "42" }
+                LInt { epos = Loc 7 1 8 , etype = Just (TCon CNum) , eval = "42" }
             }
         ]
     , aadts = []

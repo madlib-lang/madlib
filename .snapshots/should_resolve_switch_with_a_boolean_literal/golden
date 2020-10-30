@@ -3,24 +3,24 @@ Right
     { aimports = []
     , aexps =
         [ Switch
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TCon CString)
             , ecases =
                 [ Case
-                    { casepos = Pos 17 2 3
+                    { casepos = Loc 17 2 3
                     , casetype = Just (TArr (TCon CBool) (TCon CString))
                     , casepattern = PBool "True"
                     , caseexp =
                         LStr
-                          { epos = Pos 29 2 15 , etype = Just (TCon CString) , eval = "OK" }
+                          { epos = Loc 29 2 15 , etype = Just (TCon CString) , eval = "OK" }
                     }
                 , Case
-                    { casepos = Pos 36 3 3
+                    { casepos = Loc 36 3 3
                     , casetype = Just (TArr (TCon CBool) (TCon CString))
                     , casepattern = PBool "False"
                     , caseexp =
                         LStr
-                          { epos = Pos 48 3 15
+                          { epos = Loc 48 3 15
                           , etype = Just (TCon CString)
                           , eval = "NOT OK"
                           }
@@ -28,7 +28,7 @@ Right
                 ]
             , eexp =
                 LBool
-                  { epos = Pos 7 1 8 , etype = Just (TCon CBool) , eval = "True" }
+                  { epos = Loc 7 1 8 , etype = Just (TCon CBool) , eval = "True" }
             }
         ]
     , aadts = []

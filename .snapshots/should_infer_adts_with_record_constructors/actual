@@ -3,15 +3,15 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 72 2 1
+            { epos = Loc 72 2 1
             , etype = Just (TComp "Result" [])
             , eexp =
                 App
-                  { epos = Pos 82 2 11
+                  { epos = Loc 82 2 11
                   , etype = Just (TComp "Result" [])
                   , eabs =
                       Var
-                        { epos = Pos 82 2 11
+                        { epos = Loc 82 2 11
                         , etype =
                             Just
                               (TArr
@@ -21,13 +21,13 @@ Right
                         }
                   , earg =
                       Record
-                        { epos = Pos 90 2 19
+                        { epos = Loc 90 2 19
                         , etype = Just (TRecord (fromList [ ( "value" , TCon CString ) ]))
                         , erfields =
                             fromList
                               [ ( "value"
                                 , LStr
-                                    { epos = Pos 99 2 28
+                                    { epos = Loc 99 2 28
                                     , etype = Just (TCon CString)
                                     , eval = "42"
                                     }
@@ -40,15 +40,15 @@ Right
             , eexported = False
             }
         , Assignment
-            { epos = Pos 107 3 1
+            { epos = Loc 107 3 1
             , etype = Just (TComp "Result" [])
             , eexp =
                 App
-                  { epos = Pos 117 3 11
+                  { epos = Loc 117 3 11
                   , etype = Just (TComp "Result" [])
                   , eabs =
                       Var
-                        { epos = Pos 117 3 11
+                        { epos = Loc 117 3 11
                         , etype =
                             Just
                               (TArr
@@ -58,14 +58,14 @@ Right
                         }
                   , earg =
                       Record
-                        { epos = Pos 123 3 17
+                        { epos = Loc 123 3 17
                         , etype =
                             Just (TRecord (fromList [ ( "message" , TCon CString ) ]))
                         , erfields =
                             fromList
                               [ ( "message"
                                 , LStr
-                                    { epos = Pos 134 3 28
+                                    { epos = Loc 134 3 28
                                     , etype = Just (TCon CString)
                                     , eval = "Err"
                                     }
@@ -78,34 +78,34 @@ Right
             , eexported = False
             }
         , App
-            { epos = Pos 144 4 2
+            { epos = Loc 144 4 2
             , etype = Just (TCon CBool)
             , eabs =
                 App
-                  { epos = Pos 144 4 2
+                  { epos = Loc 144 4 2
                   , etype = Just (TArr (TComp "Result" []) (TCon CBool))
                   , eabs =
                       Abs
-                        { epos = Pos 144 4 2
+                        { epos = Loc 144 4 2
                         , etype =
                             Just (TArr (TVar (TV "f")) (TArr (TVar (TV "f")) (TCon CBool)))
                         , eparam = "a"
                         , ebody =
                             Abs
-                              { epos = Pos 144 4 2
+                              { epos = Loc 144 4 2
                               , etype = Just (TArr (TVar (TV "f")) (TCon CBool))
                               , eparam = "b"
                               , ebody =
                                   App
-                                    { epos = Pos 154 4 12
+                                    { epos = Loc 154 4 12
                                     , etype = Just (TCon CBool)
                                     , eabs =
                                         App
-                                          { epos = Pos 154 4 12
+                                          { epos = Loc 154 4 12
                                           , etype = Just (TArr (TVar (TV "e")) (TCon CBool))
                                           , eabs =
                                               Var
-                                                { epos = Pos 156 4 14
+                                                { epos = Loc 156 4 14
                                                 , etype =
                                                     Just
                                                       (TArr
@@ -115,7 +115,7 @@ Right
                                                 }
                                           , earg =
                                               Var
-                                                { epos = Pos 154 4 12
+                                                { epos = Loc 154 4 12
                                                 , etype = Just (TVar (TV "e"))
                                                 , ename = "a"
                                                 }
@@ -123,7 +123,7 @@ Right
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 160 4 18
+                                          { epos = Loc 160 4 18
                                           , etype = Just (TVar (TV "f"))
                                           , ename = "b"
                                           }
@@ -133,7 +133,7 @@ Right
                         }
                   , earg =
                       Var
-                        { epos = Pos 163 4 21
+                        { epos = Loc 163 4 21
                         , etype = Just (TComp "Result" [])
                         , ename = "result1"
                         }
@@ -141,7 +141,7 @@ Right
                   }
             , earg =
                 Var
-                  { epos = Pos 172 4 30
+                  { epos = Loc 172 4 30
                   , etype = Just (TComp "Result" [])
                   , ename = "result2"
                   }

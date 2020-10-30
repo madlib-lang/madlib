@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts   #-}
 module Main where
 
@@ -7,22 +6,20 @@ import qualified Data.Map                      as M
 import           GHC.IO                         ( )
 import           System.Environment             ( getArgs )
 import           Text.Show.Pretty               ( ppShow )
-import           AST                            ( ASTTable
-                                                , ASTError(..)
-                                                , buildASTTable
-                                                , findAST
-                                                )
-import           Infer.Solve
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           Compile
-import           Grammar
 import           System.FilePath                ( takeDirectory
                                                 , replaceExtension
                                                 )
 import           System.Directory               ( createDirectoryIfMissing )
+
 import           Path
+import           AST
+
 import           Infer.Type
+import           Infer.Solve
+import           Compile
+import           AST.AST
 
 main :: IO ()
 main = do
@@ -43,17 +40,17 @@ main = do
   case resolvedASTTable of
     Left  _          -> putStrLn "Err"
     Right (table, _) -> do
-      build table
+      generate table
       putStrLn "compiled JS:"
       putStrLn $ concat $ compile <$> M.elems table
 
 
-build :: ASTTable -> IO ()
-build table = (head <$>) <$> mapM buildAST $ M.elems table
+generate :: ASTTable -> IO ()
+generate table = (head <$>) <$> mapM generateAST $ M.elems table
 
 
-buildAST :: AST -> IO ()
-buildAST ast@AST { apath = Just path } = do
+generateAST :: AST -> IO ()
+generateAST ast@AST { apath = Just path } = do
   let outputPath = makeOutputPath path
 
   createDirectoryIfMissing True $ takeDirectory outputPath

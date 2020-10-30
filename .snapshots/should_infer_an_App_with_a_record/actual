@@ -3,13 +3,13 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype =
                 Just
                   (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
             , eexp =
                 Record
-                  { epos = Pos 4 1 5
+                  { epos = Loc 4 1 5
                   , etype =
                       Just
                         (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
@@ -17,11 +17,11 @@ Right
                       fromList
                         [ ( "x"
                           , LInt
-                              { epos = Pos 9 1 10 , etype = Just (TCon CNum) , eval = "3" }
+                              { epos = Loc 9 1 10 , etype = Just (TCon CNum) , eval = "3" }
                           )
                         , ( "y"
                           , LInt
-                              { epos = Pos 15 1 16 , etype = Just (TCon CNum) , eval = "5" }
+                              { epos = Loc 15 1 16 , etype = Just (TCon CNum) , eval = "5" }
                           )
                         ]
                   }
@@ -29,7 +29,7 @@ Right
             , eexported = False
             }
         , Assignment
-            { epos = Pos 19 2 1
+            { epos = Loc 19 2 1
             , etype =
                 Just
                   (TArr
@@ -37,7 +37,7 @@ Right
                      (TCon CNum))
             , eexp =
                 Abs
-                  { epos = Pos 28 2 10
+                  { epos = Loc 28 2 10
                   , etype =
                       Just
                         (TArr
@@ -46,25 +46,25 @@ Right
                   , eparam = "r"
                   , ebody =
                       App
-                        { epos = Pos 35 2 17
+                        { epos = Loc 35 2 17
                         , etype = Just (TCon CNum)
                         , eabs =
                             App
-                              { epos = Pos 35 2 17
+                              { epos = Loc 35 2 17
                               , etype = Just (TArr (TCon CNum) (TCon CNum))
                               , eabs =
                                   Var
-                                    { epos = Pos 38 2 20
+                                    { epos = Loc 38 2 20
                                     , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                                     , ename = "+"
                                     }
                               , earg =
                                   App
-                                    { epos = Pos 35 2 17
+                                    { epos = Loc 35 2 17
                                     , etype = Just (TCon CNum)
                                     , eabs =
                                         Var
-                                          { epos = Pos 37 2 19
+                                          { epos = Loc 37 2 19
                                           , etype =
                                               Just
                                                 (TArr
@@ -74,7 +74,7 @@ Right
                                           }
                                     , earg =
                                         Var
-                                          { epos = Pos 35 2 17
+                                          { epos = Loc 35 2 17
                                           , etype =
                                               Just (TRecord (fromList [ ( "x" , TVar (TV "d") ) ]))
                                           , ename = "r"
@@ -85,11 +85,11 @@ Right
                               }
                         , earg =
                             App
-                              { epos = Pos 41 2 23
+                              { epos = Loc 41 2 23
                               , etype = Just (TCon CNum)
                               , eabs =
                                   Var
-                                    { epos = Pos 43 2 25
+                                    { epos = Loc 43 2 25
                                     , etype =
                                         Just
                                           (TArr
@@ -99,7 +99,7 @@ Right
                                     }
                               , earg =
                                   Var
-                                    { epos = Pos 41 2 23
+                                    { epos = Loc 41 2 23
                                     , etype = Just (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]))
                                     , ename = "r"
                                     }
@@ -112,11 +112,11 @@ Right
             , eexported = False
             }
         , App
-            { epos = Pos 45 3 1
+            { epos = Loc 45 3 1
             , etype = Just (TCon CNum)
             , eabs =
                 Var
-                  { epos = Pos 45 3 1
+                  { epos = Loc 45 3 1
                   , etype =
                       Just
                         (TArr
@@ -126,7 +126,7 @@ Right
                   }
             , earg =
                 Var
-                  { epos = Pos 52 3 8
+                  { epos = Loc 52 3 8
                   , etype =
                       Just
                         (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))

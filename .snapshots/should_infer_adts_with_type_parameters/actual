@@ -3,22 +3,22 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 38 4 1
+            { epos = Loc 38 4 1
             , etype = Just (TComp "Result" [ TCon CBool ])
             , eexp =
                 App
-                  { epos = Pos 47 4 10
+                  { epos = Loc 47 4 10
                   , etype = Just (TComp "Result" [ TCon CBool ])
                   , eabs =
                       Var
-                        { epos = Pos 47 4 10
+                        { epos = Loc 47 4 10
                         , etype =
                             Just (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
                         , ename = "Success"
                         }
                   , earg =
                       LBool
-                        { epos = Pos 55 4 18 , etype = Just (TCon CBool) , eval = "True" }
+                        { epos = Loc 55 4 18 , etype = Just (TCon CBool) , eval = "True" }
                   , efieldAccess = False
                   }
             , ename = "result"

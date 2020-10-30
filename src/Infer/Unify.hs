@@ -9,7 +9,6 @@ import qualified Data.Set as S
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
-import           Infer.Infer
 
 
 occursCheck :: Substitutable a => TVar -> a -> Bool

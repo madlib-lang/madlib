@@ -13,10 +13,6 @@ module AST
   )
 where
 
-import           Grammar                        ( parse
-                                                , AST(aimports, apath)
-                                                , Import(ipath)
-                                                )
 import qualified Data.Map                      as M
 import           Control.Monad                  ( liftM2 )
 import           Data.Either                    ( fromRight )
@@ -24,6 +20,9 @@ import           Control.Exception              ( IOException
                                                 , try
                                                 )
 import           Data.Either.Combinators        ( mapLeft )
+
+import           Parse.Grammar                  ( parse )
+import           AST.AST
 import           Path                           ( computeRootPath )
 
 

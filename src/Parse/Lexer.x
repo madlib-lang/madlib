@@ -10,24 +10,25 @@
 {-# OPTIONS_GHC -fno-warn-tabs                  #-}
 {-# OPTIONS_GHC -funbox-strict-fields           #-}
 
-module Lexer
+module Parse.Lexer
   ( Alex(..)
   , AlexState(..)
   , alexEOF
   , Token(..)
-  , Pos(..)
+  , Loc(..)
   , TokenClass(..)
   , alexError
   , alexMonadScan
   , runAlex
-  , tokenToPos
+  , tokenToLoc
   , strV
   )
 where
 
 import           System.Exit
 import           Debug.Trace
-import qualified Data.Text as T
+import qualified Data.Text     as T
+import           Explain.Context
 }
 
 %wrapper "monad"
@@ -89,18 +90,16 @@ strip  = T.unpack . T.strip . T.pack
 
 --type AlexAction result = AlexInput -> Int -> Alex result
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makePos posn) token
+mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makeLoc posn) token
   where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
 
-makePos :: AlexPosn -> Pos
-makePos (AlexPn a l c) = Pos a l c
+makeLoc :: AlexPosn -> Loc
+makeLoc (AlexPn a l c) = Loc a l c
 
-tokenToPos :: Token -> Pos
-tokenToPos (Token x _) = x
+tokenToLoc :: Token -> Loc
+tokenToLoc (Token x _) = x
 
-data Token = Token Pos TokenClass deriving (Eq, Show)
-
-data Pos = Pos Int Int Int deriving (Eq, Show)
+data Token = Token Loc TokenClass deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
@@ -159,5 +158,5 @@ strV (Token _ (TokenJSBlock x)) = x
 -- boolV (Token _ (TokenBool x)) = x
 
 alexEOF :: Alex Token
-alexEOF = return (Token (Pos 1 1 1) TokenEOF)
+alexEOF = return (Token (Loc 1 1 1) TokenEOF)
 }

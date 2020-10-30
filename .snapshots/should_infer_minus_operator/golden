@@ -3,35 +3,35 @@ Right
     { aimports = []
     , aexps =
         [ Abs
-            { epos = Pos 0 1 1
+            { epos = Loc 0 1 1
             , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
             , eparam = "b"
             , ebody =
                 Abs
-                  { epos = Pos 0 1 1
+                  { epos = Loc 0 1 1
                   , etype = Just (TArr (TCon CNum) (TCon CNum))
                   , eparam = "c"
                   , ebody =
                       App
-                        { epos = Pos 10 1 11
+                        { epos = Loc 10 1 11
                         , etype = Just (TCon CNum)
                         , eabs =
                             App
-                              { epos = Pos 10 1 11
+                              { epos = Loc 10 1 11
                               , etype = Just (TArr (TCon CNum) (TCon CNum))
                               , eabs =
                                   Var
-                                    { epos = Pos 12 1 13
+                                    { epos = Loc 12 1 13
                                     , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                                     , ename = "-"
                                     }
                               , earg =
                                   Var
-                                    { epos = Pos 10 1 11 , etype = Just (TCon CNum) , ename = "b" }
+                                    { epos = Loc 10 1 11 , etype = Just (TCon CNum) , ename = "b" }
                               , efieldAccess = False
                               }
                         , earg =
-                            Var { epos = Pos 14 1 15 , etype = Just (TCon CNum) , ename = "c" }
+                            Var { epos = Loc 14 1 15 , etype = Just (TCon CNum) , ename = "c" }
                         , efieldAccess = False
                         }
                   }

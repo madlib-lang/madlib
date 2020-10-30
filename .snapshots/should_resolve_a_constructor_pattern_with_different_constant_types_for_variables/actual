@@ -3,19 +3,19 @@ Right
     { aimports = []
     , aexps =
         [ Assignment
-            { epos = Pos 29 2 1
+            { epos = Loc 29 2 1
             , etype = Just (TComp "User" [ TCon CString ])
             , eexp =
                 App
-                  { epos = Pos 33 2 5
+                  { epos = Loc 33 2 5
                   , etype = Just (TComp "User" [ TCon CString ])
                   , eabs =
                       App
-                        { epos = Pos 33 2 5
+                        { epos = Loc 33 2 5
                         , etype = Just (TArr (TCon CNum) (TComp "User" [ TCon CString ]))
                         , eabs =
                             Var
-                              { epos = Pos 33 2 5
+                              { epos = Loc 33 2 5
                               , etype =
                                   Just
                                     (TArr
@@ -25,7 +25,7 @@ Right
                               }
                         , earg =
                             LStr
-                              { epos = Pos 42 2 14
+                              { epos = Loc 42 2 14
                               , etype = Just (TCon CString)
                               , eval = "John"
                               }
@@ -33,36 +33,36 @@ Right
                         }
                   , earg =
                       LInt
-                        { epos = Pos 50 2 22 , etype = Just (TCon CNum) , eval = "33" }
+                        { epos = Loc 50 2 22 , etype = Just (TCon CNum) , eval = "33" }
                   , efieldAccess = False
                   }
             , ename = "u"
             , eexported = False
             }
         , Switch
-            { epos = Pos 54 3 1
+            { epos = Loc 54 3 1
             , etype = Just (TCon CNum)
             , ecases =
                 [ Case
-                    { casepos = Pos 68 4 3
+                    { casepos = Loc 68 4 3
                     , casetype = Just (TArr (TComp "User" [ TCon CNum ]) (TCon CNum))
                     , casepattern = PCtor "LoggedIn" [ PCon "Num" , PVar "x" ]
                     , caseexp =
-                        Var { epos = Pos 92 4 27 , etype = Just (TCon CNum) , ename = "x" }
+                        Var { epos = Loc 92 4 27 , etype = Just (TCon CNum) , ename = "x" }
                     }
                 , Case
-                    { casepos = Pos 96 5 3
+                    { casepos = Loc 96 5 3
                     , casetype =
                         Just (TArr (TComp "User" [ TCon CString ]) (TCon CNum))
                     , casepattern = PCtor "LoggedIn" [ PCon "String" , PVar "x" ]
                     , caseexp =
                         Var
-                          { epos = Pos 120 5 27 , etype = Just (TCon CNum) , ename = "x" }
+                          { epos = Loc 120 5 27 , etype = Just (TCon CNum) , ename = "x" }
                     }
                 ]
             , eexp =
                 Var
-                  { epos = Pos 61 3 8
+                  { epos = Loc 61 3 8
                   , etype = Just (TComp "User" [ TCon CString ])
                   , ename = "u"
                   }

@@ -5,7 +5,7 @@ module Infer.Env where
 
 import qualified Data.Map as M
 import           Infer.Type
-import           Grammar
+import           AST.AST
 import Control.Monad.Except
 import Infer.Instantiate
 import Infer.ADT
