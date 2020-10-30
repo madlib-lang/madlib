@@ -2,86 +2,70 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ TypedExp
-            { epos = Loc 0 1 1
-            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            , eexp = Var { epos = Loc 0 1 1 , etype = Nothing , ename = "fn" }
-            , etyping =
-                TRArr (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))
-            }
-        , Assignment
-            { epos = Loc 25 2 1
-            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            , eexp =
-                Abs
-                  { epos = Loc 30 2 6
-                  , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                  , eparam = "a"
-                  , ebody =
-                      Abs
-                        { epos = Loc 30 2 6
-                        , etype = Just (TArr (TVar (TV "b")) (TCon CBool))
-                        , eparam = "b"
-                        , ebody =
-                            App
-                              { epos = Loc 40 2 16
-                              , etype = Just (TCon CBool)
-                              , eabs =
-                                  App
-                                    { epos = Loc 40 2 16
-                                    , etype = Just (TArr (TVar (TV "a")) (TCon CBool))
-                                    , eabs =
-                                        Var
-                                          { epos = Loc 42 2 18
-                                          , etype =
-                                              Just
-                                                (TArr
-                                                   (TVar (TV "e"))
-                                                   (TArr (TVar (TV "e")) (TCon CBool)))
-                                          , ename = "==="
-                                          }
-                                    , earg =
-                                        Var
-                                          { epos = Loc 40 2 16
-                                          , etype = Just (TVar (TV "a"))
-                                          , ename = "a"
-                                          }
-                                    , efieldAccess = False
-                                    }
-                              , earg =
-                                  Var
-                                    { epos = Loc 46 2 22
-                                    , etype = Just (TVar (TV "b"))
-                                    , ename = "b"
-                                    }
-                              , efieldAccess = False
-                              }
-                        }
-                  }
-            , ename = "fn"
-            , eexported = False
-            }
-        , App
-            { epos = Loc 48 3 1
-            , etype = Just (TCon CBool)
-            , eabs =
-                App
-                  { epos = Loc 48 3 1
-                  , etype = Just (TArr (TCon CNum) (TCon CBool))
-                  , eabs =
-                      Var
-                        { epos = Loc 48 3 1
-                        , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                        , ename = "fn"
-                        }
-                  , earg =
-                      LInt { epos = Loc 51 3 4 , etype = Just (TCon CNum) , eval = "3" }
-                  , efieldAccess = False
-                  }
-            , earg =
-                LInt { epos = Loc 54 3 7 , etype = Just (TCon CNum) , eval = "4" }
-            , efieldAccess = False
-            }
+        [ Solved
+            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+            (Located
+               (Loc 0 1 1)
+               (TypedExp
+                  (Solved
+                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                     (Located (Loc 0 1 1) (Var "fn")))
+                  (TRArr
+                     (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool")))))
+        , Solved
+            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+            (Located
+               (Loc 25 2 1)
+               (Assignment
+                  "fn"
+                  (Solved
+                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                     (Located
+                        (Loc 30 2 6)
+                        (Abs
+                           "a"
+                           (Solved
+                              (TArr (TVar (TV "b")) (TCon CBool))
+                              (Located
+                                 (Loc 30 2 6)
+                                 (Abs
+                                    "b"
+                                    (Solved
+                                       (TCon CBool)
+                                       (Located
+                                          (Loc 40 2 16)
+                                          (App
+                                             (Solved
+                                                (TArr (TVar (TV "a")) (TCon CBool))
+                                                (Located
+                                                   (Loc 40 2 16)
+                                                   (App
+                                                      (Solved
+                                                         (TArr
+                                                            (TVar (TV "e"))
+                                                            (TArr (TVar (TV "e")) (TCon CBool)))
+                                                         (Located (Loc 42 2 18) (Var "===")))
+                                                      (Solved
+                                                         (TVar (TV "a"))
+                                                         (Located (Loc 40 2 16) (Var "a"))))))
+                                             (Solved
+                                                (TVar (TV "b"))
+                                                (Located (Loc 46 2 22) (Var "b"))))))))))))))
+        , Solved
+            (TCon CBool)
+            (Located
+               (Loc 48 3 1)
+               (App
+                  (Solved
+                     (TArr (TCon CNum) (TCon CBool))
+                     (Located
+                        (Loc 48 3 1)
+                        (App
+                           (Solved
+                              (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                              (Located (Loc 48 3 1) (Var "fn")))
+                           (Solved (TCon CNum) (Located (Loc 51 3 4) (LInt "3"))))))
+                  (Solved (TCon CNum) (Located (Loc 54 3 7) (LInt "4")))))
         ]
     , aadts = []
     , apath = Just "path"

@@ -3,15 +3,7 @@
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances   #-}
-module AST
-  ( ASTTable(..)
-  , ASTError(..)
-  , buildAST
-  , buildASTTable
-  , buildASTTable'
-  , findAST
-  )
-where
+module AST where
 
 import qualified Data.Map                      as M
 import           Control.Monad                  ( liftM2 )
@@ -22,11 +14,10 @@ import           Control.Exception              ( IOException
 import           Data.Either.Combinators        ( mapLeft )
 
 import           Parse.Grammar                  ( parse )
-import           AST.AST
+import           AST.Source
 import           Path                           ( computeRootPath )
 
 
-type ASTTable = M.Map FilePath AST
 
 data ASTError = ImportNotFound FilePath (Maybe AST)
               | GrammarError FilePath String
@@ -34,7 +25,7 @@ data ASTError = ImportNotFound FilePath (Maybe AST)
               deriving(Eq, Show)
 
 -- TODO: Write an integration test with real files ?
-buildASTTable :: FilePath -> IO (Either ASTError ASTTable)
+buildASTTable :: FilePath -> IO (Either ASTError Table)
 buildASTTable path =
   let rootPath = computeRootPath path
   in  buildASTTable' readFile Nothing rootPath path
@@ -45,7 +36,7 @@ buildASTTable'
   -> Maybe AST
   -> FilePath
   -> FilePath
-  -> IO (Either ASTError ASTTable)
+  -> IO (Either ASTError Table)
 buildASTTable' rf parent rootPath entrypoint = do
   s <- try $ rf entrypoint :: IO (Either IOException String)
   let source = either (const $ Left $ ImportNotFound entrypoint parent) Right s
@@ -59,10 +50,14 @@ buildASTTable' rf parent rootPath entrypoint = do
 
 importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
 importPathsFromAST rootPath ast =
-  fromRight [] (((rootPath ++) . (++ ".mad") . ipath <$>) . aimports <$> ast)
+  fromRight [] (((rootPath ++) . (++ ".mad") . getImportPath <$>) . aimports <$> ast)
+
+getImportPath :: Import -> FilePath
+getImportPath (NamedImport _ p)   = p
+getImportPath (DefaultImport _ p) = p
 
 
-findAST :: ASTTable -> FilePath -> Either ASTError AST
+findAST :: Table -> FilePath -> Either ASTError AST
 findAST table path = case M.lookup path table of
   Just x  -> return x
   Nothing -> Left $ ASTNotFound path

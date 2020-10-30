@@ -2,73 +2,60 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 0 1 1
-            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-            , eexp =
-                Abs
-                  { epos = Loc 5 1 6
-                  , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                  , eparam = "b"
-                  , ebody =
-                      Abs
-                        { epos = Loc 5 1 6
-                        , etype = Just (TArr (TCon CNum) (TCon CNum))
-                        , eparam = "c"
-                        , ebody =
-                            App
-                              { epos = Loc 15 1 16
-                              , etype = Just (TCon CNum)
-                              , eabs =
-                                  App
-                                    { epos = Loc 15 1 16
-                                    , etype = Just (TArr (TCon CNum) (TCon CNum))
-                                    , eabs =
-                                        Var
-                                          { epos = Loc 16 1 17
-                                          , etype =
-                                              Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                          , ename = "+"
-                                          }
-                                    , earg =
-                                        Var
-                                          { epos = Loc 15 1 16
-                                          , etype = Just (TCon CNum)
-                                          , ename = "b"
-                                          }
-                                    , efieldAccess = False
-                                    }
-                              , earg =
-                                  Var
-                                    { epos = Loc 19 1 20 , etype = Just (TCon CNum) , ename = "c" }
-                              , efieldAccess = False
-                              }
-                        }
-                  }
-            , ename = "fn"
-            , eexported = False
-            }
-        , App
-            { epos = Loc 21 2 1
-            , etype = Just (TCon CNum)
-            , eabs =
-                App
-                  { epos = Loc 21 2 1
-                  , etype = Just (TArr (TCon CNum) (TCon CNum))
-                  , eabs =
-                      Var
-                        { epos = Loc 21 2 1
-                        , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                        , ename = "fn"
-                        }
-                  , earg =
-                      LInt { epos = Loc 24 2 4 , etype = Just (TCon CNum) , eval = "2" }
-                  , efieldAccess = False
-                  }
-            , earg =
-                LInt { epos = Loc 27 2 7 , etype = Just (TCon CNum) , eval = "3" }
-            , efieldAccess = False
-            }
+        [ Solved
+            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+            (Located
+               (Loc 0 1 1)
+               (Assignment
+                  "fn"
+                  (Solved
+                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                     (Located
+                        (Loc 5 1 6)
+                        (Abs
+                           "b"
+                           (Solved
+                              (TArr (TCon CNum) (TCon CNum))
+                              (Located
+                                 (Loc 5 1 6)
+                                 (Abs
+                                    "c"
+                                    (Solved
+                                       (TCon CNum)
+                                       (Located
+                                          (Loc 15 1 16)
+                                          (App
+                                             (Solved
+                                                (TArr (TCon CNum) (TCon CNum))
+                                                (Located
+                                                   (Loc 15 1 16)
+                                                   (App
+                                                      (Solved
+                                                         (TArr
+                                                            (TCon CNum)
+                                                            (TArr (TCon CNum) (TCon CNum)))
+                                                         (Located (Loc 16 1 17) (Var "+")))
+                                                      (Solved
+                                                         (TCon CNum)
+                                                         (Located (Loc 15 1 16) (Var "b"))))))
+                                             (Solved
+                                                (TCon CNum)
+                                                (Located (Loc 19 1 20) (Var "c"))))))))))))))
+        , Solved
+            (TCon CNum)
+            (Located
+               (Loc 21 2 1)
+               (App
+                  (Solved
+                     (TArr (TCon CNum) (TCon CNum))
+                     (Located
+                        (Loc 21 2 1)
+                        (App
+                           (Solved
+                              (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                              (Located (Loc 21 2 1) (Var "fn")))
+                           (Solved (TCon CNum) (Located (Loc 24 2 4) (LInt "2"))))))
+                  (Solved (TCon CNum) (Located (Loc 27 2 7) (LInt "3")))))
         ]
     , aadts = []
     , apath = Just "path"

@@ -2,65 +2,47 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 42 2 1
-            , etype =
-                Just
-                  (TArr
-                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
-                     (TComp "Result" []))
-            , eexp =
-                Var
-                  { epos = Loc 46 2 5
-                  , etype =
-                      Just
-                        (TArr
-                           (TRecord (fromList [ ( "value" , TCon CString ) ]))
-                           (TComp "Result" []))
-                  , ename = "Success"
-                  }
-            , ename = "r"
-            , eexported = False
-            }
-        , Record
-            { epos = Loc 54 2 13
-            , etype = Just (TRecord (fromList [ ( "value" , TCon CString ) ]))
-            , erfields =
-                fromList
-                  [ ( "value"
-                    , LStr
-                        { epos = Loc 63 2 22 , etype = Just (TCon CString) , eval = "42" }
-                    )
-                  ]
-            }
-        , App
-            { epos = Loc 71 3 2
-            , etype =
-                Just
-                  (TArr
-                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
-                     (TComp "Result" []))
-            , eabs =
-                Abs
-                  { epos = Loc 71 3 2
-                  , etype = Just (TArr (TVar (TV "b")) (TVar (TV "b")))
-                  , eparam = "a"
-                  , ebody =
-                      Var
-                        { epos = Loc 78 3 9 , etype = Just (TVar (TV "b")) , ename = "a" }
-                  }
-            , earg =
-                Var
-                  { epos = Loc 81 3 12
-                  , etype =
-                      Just
-                        (TArr
-                           (TRecord (fromList [ ( "value" , TCon CString ) ]))
-                           (TComp "Result" []))
-                  , ename = "r"
-                  }
-            , efieldAccess = False
-            }
+        [ Solved
+            (TArr
+               (TRecord (fromList [ ( "value" , TCon CString ) ]))
+               (TComp "Result" []))
+            (Located
+               (Loc 42 2 1)
+               (Assignment
+                  "r"
+                  (Solved
+                     (TArr
+                        (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                        (TComp "Result" []))
+                     (Located (Loc 46 2 5) (Var "Success")))))
+        , Solved
+            (TRecord (fromList [ ( "value" , TCon CString ) ]))
+            (Located
+               (Loc 54 2 13)
+               (Record
+                  (fromList
+                     [ ( "value"
+                       , Solved (TCon CString) (Located (Loc 63 2 22) (LStr "42"))
+                       )
+                     ])))
+        , Solved
+            (TArr
+               (TRecord (fromList [ ( "value" , TCon CString ) ]))
+               (TComp "Result" []))
+            (Located
+               (Loc 71 3 2)
+               (App
+                  (Solved
+                     (TArr (TVar (TV "b")) (TVar (TV "b")))
+                     (Located
+                        (Loc 71 3 2)
+                        (Abs
+                           "a" (Solved (TVar (TV "b")) (Located (Loc 78 3 9) (Var "a"))))))
+                  (Solved
+                     (TArr
+                        (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                        (TComp "Result" []))
+                     (Located (Loc 81 3 12) (Var "r")))))
         ]
     , aadts =
         [ ADT

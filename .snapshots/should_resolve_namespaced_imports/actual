@@ -4,27 +4,32 @@ Right
        , AST
            { aimports = []
            , aexps =
-               [ Assignment
-                   { epos = Loc 0 1 1
-                   , etype =
-                       Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                   , eexp =
-                       Abs
-                         { epos = Loc 19 1 20
-                         , etype =
-                             Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                         , eparam = "a"
-                         , ebody =
-                             ListConstructor
-                               { epos = Loc 26 1 27
-                               , etype = Just (TComp "List" [ TVar (TV "a") ])
-                               , eelems =
-                                   [ Var { epos = Loc 27 1 28 , etype = Nothing , ename = "a" } ]
-                               }
-                         }
-                   , ename = "singleton"
-                   , eexported = True
-                   }
+               [ Solved
+                   (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                   (Located
+                      (Loc 0 1 1)
+                      (Export
+                         (Solved
+                            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                            (Located
+                               (Loc 7 1 8)
+                               (Assignment
+                                  "singleton"
+                                  (Solved
+                                     (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                                     (Located
+                                        (Loc 19 1 20)
+                                        (Abs
+                                           "a"
+                                           (Solved
+                                              (TComp "List" [ TVar (TV "a") ])
+                                              (Located
+                                                 (Loc 26 1 27)
+                                                 (ListConstructor
+                                                    [ Solved
+                                                        (TVar (TV "a"))
+                                                        (Located (Loc 27 1 28) (Var "a"))
+                                                    ])))))))))))
                ]
            , aadts = []
            , apath = Just "./ModuleA.mad"
@@ -32,48 +37,32 @@ Right
        )
      , ( "./ModuleB.mad"
        , AST
-           { aimports =
-               [ DefaultImport
-                   { ipos = Loc 0 1 1 , ialias = "L" , ipath = "ModuleA" }
-               ]
+           { aimports = [ DefaultImport "L" "ModuleA" ]
            , aexps =
-               [ App
-                   { epos = Loc 24 2 1
-                   , etype = Just (TComp "List" [ TCon CNum ])
-                   , eabs =
-                       App
-                         { epos = Loc 24 2 1
-                         , etype =
-                             Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                         , eabs =
-                             Var
-                               { epos = Loc 26 2 3
-                               , etype =
-                                   Just
-                                     (TArr
-                                        (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]))
-                                        (TVar (TV "c")))
-                               , ename = ".singleton"
-                               }
-                         , earg =
-                             Var
-                               { epos = Loc 24 2 1
-                               , etype =
-                                   Just
+               [ Solved
+                   (TComp "List" [ TCon CNum ])
+                   (Located
+                      (Loc 24 2 1)
+                      (App
+                         (Solved
+                            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                            (Located
+                               (Loc 24 2 1)
+                               (FieldAccess
+                                  (Solved
                                      (TRecord
                                         (fromList
                                            [ ( "singleton"
                                              , TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ])
                                              )
                                            ]))
-                               , ename = "L"
-                               }
-                         , efieldAccess = True
-                         }
-                   , earg =
-                       LInt { epos = Loc 36 2 13 , etype = Just (TCon CNum) , eval = "3" }
-                   , efieldAccess = False
-                   }
+                                     (Located (Loc 24 2 1) (Var "L")))
+                                  (Solved
+                                     (TArr
+                                        (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]))
+                                        (TVar (TV "c")))
+                                     (Located (Loc 26 2 3) (Var ".singleton"))))))
+                         (Solved (TCon CNum) (Located (Loc 36 2 13) (LInt "3")))))
                ]
            , aadts = []
            , apath = Just "./ModuleB.mad"

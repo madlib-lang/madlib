@@ -2,29 +2,27 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ ListConstructor
-            { epos = Loc 0 1 1
-            , etype = Just (TComp "List" [ TVar (TV "a") ])
-            , eelems = []
-            }
-        , ListConstructor
-            { epos = Loc 3 2 1
-            , etype = Just (TComp "List" [ TCon CNum ])
-            , eelems =
-                [ LInt { epos = Loc 4 2 2 , etype = Nothing , eval = "1" }
-                , LInt { epos = Loc 7 2 5 , etype = Nothing , eval = "2" }
-                , LInt { epos = Loc 10 2 8 , etype = Nothing , eval = "3" }
-                ]
-            }
-        , ListConstructor
-            { epos = Loc 13 3 1
-            , etype = Just (TComp "List" [ TCon CString ])
-            , eelems =
-                [ LStr { epos = Loc 14 3 2 , etype = Nothing , eval = "one" }
-                , LStr { epos = Loc 21 3 9 , etype = Nothing , eval = "two" }
-                , LStr { epos = Loc 28 3 16 , etype = Nothing , eval = "three" }
-                ]
-            }
+        [ Solved
+            (TComp "List" [ TVar (TV "a") ])
+            (Located (Loc 0 1 1) (ListConstructor []))
+        , Solved
+            (TComp "List" [ TCon CNum ])
+            (Located
+               (Loc 3 2 1)
+               (ListConstructor
+                  [ Solved (TCon CNum) (Located (Loc 4 2 2) (LInt "1"))
+                  , Solved (TCon CNum) (Located (Loc 7 2 5) (LInt "2"))
+                  , Solved (TCon CNum) (Located (Loc 10 2 8) (LInt "3"))
+                  ]))
+        , Solved
+            (TComp "List" [ TCon CString ])
+            (Located
+               (Loc 13 3 1)
+               (ListConstructor
+                  [ Solved (TCon CString) (Located (Loc 14 3 2) (LStr "one"))
+                  , Solved (TCon CString) (Located (Loc 21 3 9) (LStr "two"))
+                  , Solved (TCon CString) (Located (Loc 28 3 16) (LStr "three"))
+                  ]))
         ]
     , aadts = []
     , apath = Just "path"

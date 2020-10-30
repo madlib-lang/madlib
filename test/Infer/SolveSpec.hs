@@ -17,7 +17,8 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 
-import           AST.AST
+import qualified AST.Source                     as Src
+import qualified AST.Solved                     as Slv
 import           Infer.Solve
 import           Infer.Type
 import           Infer.Env
@@ -35,7 +36,7 @@ snapshotTest name actualOutput = Golden
   }
 
 -- TODO: Refactor in order to use the inferAST function instead that supports imports
-tester :: String -> Either InferError AST
+tester :: String -> Either InferError Slv.AST
 tester code = case buildAST "path" code of
   (Right ast) -> runEnv ast >>= (`runInfer` ast)
   _           -> Left $ UnboundVariable ""
@@ -43,7 +44,7 @@ tester code = case buildAST "path" code of
   runEnv x =
     fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
-tableTester :: ASTTable -> AST -> Either InferError ASTTable
+tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
 tableTester table ast = fst <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
 
 spec :: Spec

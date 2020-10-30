@@ -2,30 +2,22 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 37 2 1
-            , etype = Just (TComp "Result" [])
-            , eexp =
-                App
-                  { epos = Loc 46 2 10
-                  , etype = Just (TComp "Result" [])
-                  , eabs =
-                      Var
-                        { epos = Loc 46 2 10
-                        , etype = Just (TArr (TCon CString) (TComp "Result" []))
-                        , ename = "Success"
-                        }
-                  , earg =
-                      LStr
-                        { epos = Loc 54 2 18
-                        , etype = Just (TCon CString)
-                        , eval = "response"
-                        }
-                  , efieldAccess = False
-                  }
-            , ename = "result"
-            , eexported = False
-            }
+        [ Solved
+            (TComp "Result" [])
+            (Located
+               (Loc 37 2 1)
+               (Assignment
+                  "result"
+                  (Solved
+                     (TComp "Result" [])
+                     (Located
+                        (Loc 46 2 10)
+                        (App
+                           (Solved
+                              (TArr (TCon CString) (TComp "Result" []))
+                              (Located (Loc 46 2 10) (Var "Success")))
+                           (Solved
+                              (TCon CString) (Located (Loc 54 2 18) (LStr "response"))))))))
         ]
     , aadts =
         [ ADT

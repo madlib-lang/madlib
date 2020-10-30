@@ -28,7 +28,7 @@ where
 import           System.Exit
 import           Debug.Trace
 import qualified Data.Text     as T
-import           Explain.Context
+import           Explain.Location
 }
 
 %wrapper "monad"

@@ -2,55 +2,43 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 32 2 1
-            , etype = Just (TComp "Maybe" [ TCon CNum ])
-            , eexp =
-                App
-                  { epos = Loc 42 2 11
-                  , etype = Just (TComp "Maybe" [ TCon CNum ])
-                  , eabs =
-                      Var
-                        { epos = Loc 42 2 11
-                        , etype =
-                            Just (TArr (TVar (TV "b")) (TComp "Maybe" [ TVar (TV "b") ]))
-                        , ename = "Just"
-                        }
-                  , earg =
-                      LInt { epos = Loc 47 2 16 , etype = Just (TCon CNum) , eval = "4" }
-                  , efieldAccess = False
-                  }
-            , ename = "perhaps"
-            , eexported = False
-            }
-        , Switch
-            { epos = Loc 50 3 1
-            , etype = Just (TCon CNum)
-            , ecases =
-                [ Case
-                    { casepos = Loc 70 4 3
-                    , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
-                    , casepattern = PCtor "Just" [ PVar "a" ]
-                    , caseexp =
-                        Var
-                          { epos = Loc 83 4 16 , etype = Just (TVar (TV "a")) , ename = "a" }
-                    }
-                , Case
-                    { casepos = Loc 87 5 3
-                    , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
-                    , casepattern = PCtor "Nothing" []
-                    , caseexp =
-                        LInt
-                          { epos = Loc 101 5 17 , etype = Just (TCon CNum) , eval = "0" }
-                    }
-                ]
-            , eexp =
-                Var
-                  { epos = Loc 57 3 8
-                  , etype = Just (TComp "Maybe" [ TCon CNum ])
-                  , ename = "perhaps"
-                  }
-            }
+        [ Solved
+            (TComp "Maybe" [ TCon CNum ])
+            (Located
+               (Loc 32 2 1)
+               (Assignment
+                  "perhaps"
+                  (Solved
+                     (TComp "Maybe" [ TCon CNum ])
+                     (Located
+                        (Loc 42 2 11)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "b")) (TComp "Maybe" [ TVar (TV "b") ]))
+                              (Located (Loc 42 2 11) (Var "Just")))
+                           (Solved (TCon CNum) (Located (Loc 47 2 16) (LInt "4"))))))))
+        , Solved
+            (TCon CNum)
+            (Located
+               (Loc 50 3 1)
+               (Switch
+                  (Solved
+                     (TComp "Maybe" [ TCon CNum ])
+                     (Located (Loc 57 3 8) (Var "perhaps")))
+                  [ Case
+                      { casepos = Loc 70 4 3
+                      , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                      , casepattern = PCtor "Just" [ PVar "a" ]
+                      , caseexp =
+                          Solved (TVar (TV "a")) (Located (Loc 83 4 16) (Var "a"))
+                      }
+                  , Case
+                      { casepos = Loc 87 5 3
+                      , casetype = Just (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                      , casepattern = PCtor "Nothing" []
+                      , caseexp = Solved (TCon CNum) (Located (Loc 101 5 17) (LInt "0"))
+                      }
+                  ]))
         ]
     , aadts =
         [ ADT

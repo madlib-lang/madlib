@@ -19,7 +19,8 @@ import           AST
 import           Infer.Type
 import           Infer.Solve
 import           Compile
-import           AST.AST
+import qualified AST.Source as Src
+import qualified AST.Solved as Slv
 
 main :: IO ()
 main = do
@@ -45,12 +46,12 @@ main = do
       putStrLn $ concat $ compile <$> M.elems table
 
 
-generate :: ASTTable -> IO ()
+generate :: Slv.Table -> IO ()
 generate table = (head <$>) <$> mapM generateAST $ M.elems table
 
 
-generateAST :: AST -> IO ()
-generateAST ast@AST { apath = Just path } = do
+generateAST :: Slv.AST -> IO ()
+generateAST ast@Slv.AST { Slv.apath = Just path } = do
   let outputPath = makeOutputPath path
 
   createDirectoryIfMissing True $ takeDirectory outputPath

@@ -2,58 +2,41 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Switch
-            { epos = Loc 0 1 1
-            , etype = Just (TCon CString)
-            , ecases =
-                [ Case
-                    { casepos = Loc 15 2 3
-                    , casetype = Just (TArr (TCon CNum) (TCon CString))
-                    , casepattern = PNum "1"
-                    , caseexp =
-                        LStr
-                          { epos = Loc 24 2 12
-                          , etype = Just (TCon CString)
-                          , eval = "NOPE"
-                          }
-                    }
-                , Case
-                    { casepos = Loc 33 3 3
-                    , casetype = Just (TArr (TCon CNum) (TCon CString))
-                    , casepattern = PNum "3"
-                    , caseexp =
-                        LStr
-                          { epos = Loc 42 3 12
-                          , etype = Just (TCon CString)
-                          , eval = "NOPE"
-                          }
-                    }
-                , Case
-                    { casepos = Loc 51 4 3
-                    , casetype = Just (TArr (TCon CNum) (TCon CString))
-                    , casepattern = PNum "33"
-                    , caseexp =
-                        LStr
-                          { epos = Loc 60 4 12
-                          , etype = Just (TCon CString)
-                          , eval = "NOPE"
-                          }
-                    }
-                , Case
-                    { casepos = Loc 69 5 3
-                    , casetype = Just (TArr (TCon CNum) (TCon CString))
-                    , casepattern = PNum "42"
-                    , caseexp =
-                        LStr
-                          { epos = Loc 78 5 12
-                          , etype = Just (TCon CString)
-                          , eval = "YEAH"
-                          }
-                    }
-                ]
-            , eexp =
-                LInt { epos = Loc 7 1 8 , etype = Just (TCon CNum) , eval = "42" }
-            }
+        [ Solved
+            (TCon CString)
+            (Located
+               (Loc 0 1 1)
+               (Switch
+                  (Solved (TCon CNum) (Located (Loc 7 1 8) (LInt "42")))
+                  [ Case
+                      { casepos = Loc 15 2 3
+                      , casetype = Just (TArr (TCon CNum) (TCon CString))
+                      , casepattern = PNum "1"
+                      , caseexp =
+                          Solved (TCon CString) (Located (Loc 24 2 12) (LStr "NOPE"))
+                      }
+                  , Case
+                      { casepos = Loc 33 3 3
+                      , casetype = Just (TArr (TCon CNum) (TCon CString))
+                      , casepattern = PNum "3"
+                      , caseexp =
+                          Solved (TCon CString) (Located (Loc 42 3 12) (LStr "NOPE"))
+                      }
+                  , Case
+                      { casepos = Loc 51 4 3
+                      , casetype = Just (TArr (TCon CNum) (TCon CString))
+                      , casepattern = PNum "33"
+                      , caseexp =
+                          Solved (TCon CString) (Located (Loc 60 4 12) (LStr "NOPE"))
+                      }
+                  , Case
+                      { casepos = Loc 69 5 3
+                      , casetype = Just (TArr (TCon CNum) (TCon CString))
+                      , casepattern = PNum "42"
+                      , caseexp =
+                          Solved (TCon CString) (Located (Loc 78 5 12) (LStr "YEAH"))
+                      }
+                  ]))
         ]
     , aadts = []
     , apath = Just "path"

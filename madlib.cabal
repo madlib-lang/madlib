@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2203e6e9e0f5163b9f1d1ea028a5af32c4a13ffd2f11fe1decde098c59188936
+-- hash: c6f16bd86d2106086f8c68fb8ee2c9acc0d66bf0c5cfd6797efed224517dbaac
 
 name:           madlib
 version:        0.1.0.0
@@ -28,9 +28,10 @@ source-repository head
 library
   exposed-modules:
       AST
-      AST.AST
+      AST.Solved
+      AST.Source
       Compile
-      Explain.Context
+      Explain.Location
       Infer.ADT
       Infer.Env
       Infer.Instantiate
@@ -69,9 +70,10 @@ executable madlib-exe
   main-is: Main.hs
   other-modules:
       AST
-      AST.AST
+      AST.Solved
+      AST.Source
       Compile
-      Explain.Context
+      Explain.Location
       Infer.ADT
       Infer.Env
       Infer.Instantiate

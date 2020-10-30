@@ -2,114 +2,84 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 34 2 1
-            , etype = Just (TComp "Result" [ TCon CString ])
-            , eexp =
-                App
-                  { epos = Loc 44 2 11
-                  , etype = Just (TComp "Result" [ TCon CString ])
-                  , eabs =
-                      Var
-                        { epos = Loc 44 2 11
-                        , etype =
-                            Just (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
-                        , ename = "Success"
-                        }
-                  , earg =
-                      LStr
-                        { epos = Loc 52 2 19
-                        , etype = Just (TCon CString)
-                        , eval = "response"
-                        }
-                  , efieldAccess = False
-                  }
-            , ename = "result1"
-            , eexported = False
-            }
-        , Assignment
-            { epos = Loc 64 3 1
-            , etype = Just (TComp "Result" [ TVar (TV "c") ])
-            , eexp =
-                Var
-                  { epos = Loc 74 3 11
-                  , etype = Just (TComp "Result" [ TVar (TV "c") ])
-                  , ename = "Error"
-                  }
-            , ename = "result2"
-            , eexported = False
-            }
-        , App
-            { epos = Loc 81 4 2
-            , etype = Just (TCon CBool)
-            , eabs =
-                App
-                  { epos = Loc 81 4 2
-                  , etype =
-                      Just (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
-                  , eabs =
-                      Abs
-                        { epos = Loc 81 4 2
-                        , etype =
-                            Just (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
-                        , eparam = "a"
-                        , ebody =
-                            Abs
-                              { epos = Loc 81 4 2
-                              , etype = Just (TArr (TVar (TV "g")) (TCon CBool))
-                              , eparam = "b"
-                              , ebody =
-                                  App
-                                    { epos = Loc 91 4 12
-                                    , etype = Just (TCon CBool)
-                                    , eabs =
-                                        App
-                                          { epos = Loc 91 4 12
-                                          , etype = Just (TArr (TVar (TV "f")) (TCon CBool))
-                                          , eabs =
-                                              Var
-                                                { epos = Loc 93 4 14
-                                                , etype =
-                                                    Just
-                                                      (TArr
-                                                         (TVar (TV "j"))
-                                                         (TArr (TVar (TV "j")) (TCon CBool)))
-                                                , ename = "==="
-                                                }
-                                          , earg =
-                                              Var
-                                                { epos = Loc 91 4 12
-                                                , etype = Just (TVar (TV "f"))
-                                                , ename = "a"
-                                                }
-                                          , efieldAccess = False
-                                          }
-                                    , earg =
-                                        Var
-                                          { epos = Loc 97 4 18
-                                          , etype = Just (TVar (TV "g"))
-                                          , ename = "b"
-                                          }
-                                    , efieldAccess = False
-                                    }
-                              }
-                        }
-                  , earg =
-                      Var
-                        { epos = Loc 100 4 21
-                        , etype = Just (TComp "Result" [ TCon CString ])
-                        , ename = "result1"
-                        }
-                  , efieldAccess = False
-                  }
-            , earg =
-                Var
-                  { epos = Loc 109 4 30
-                  , etype = Just (TComp "Result" [ TCon CString ])
-                  , ename = "result2"
-                  }
-            , efieldAccess = False
-            }
+        [ Solved
+            (TComp "Result" [ TCon CString ])
+            (Located
+               (Loc 34 2 1)
+               (Assignment
+                  "result1"
+                  (Solved
+                     (TComp "Result" [ TCon CString ])
+                     (Located
+                        (Loc 44 2 11)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
+                              (Located (Loc 44 2 11) (Var "Success")))
+                           (Solved
+                              (TCon CString) (Located (Loc 52 2 19) (LStr "response"))))))))
+        , Solved
+            (TComp "Result" [ TVar (TV "c") ])
+            (Located
+               (Loc 64 3 1)
+               (Assignment
+                  "result2"
+                  (Solved
+                     (TComp "Result" [ TVar (TV "c") ])
+                     (Located (Loc 74 3 11) (Var "Error")))))
+        , Solved
+            (TCon CBool)
+            (Located
+               (Loc 81 4 2)
+               (App
+                  (Solved
+                     (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
+                     (Located
+                        (Loc 81 4 2)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
+                              (Located
+                                 (Loc 81 4 2)
+                                 (Abs
+                                    "a"
+                                    (Solved
+                                       (TArr (TVar (TV "g")) (TCon CBool))
+                                       (Located
+                                          (Loc 81 4 2)
+                                          (Abs
+                                             "b"
+                                             (Solved
+                                                (TCon CBool)
+                                                (Located
+                                                   (Loc 91 4 12)
+                                                   (App
+                                                      (Solved
+                                                         (TArr (TVar (TV "f")) (TCon CBool))
+                                                         (Located
+                                                            (Loc 91 4 12)
+                                                            (App
+                                                               (Solved
+                                                                  (TArr
+                                                                     (TVar (TV "j"))
+                                                                     (TArr
+                                                                        (TVar (TV "j"))
+                                                                        (TCon CBool)))
+                                                                  (Located
+                                                                     (Loc 93 4 14) (Var "===")))
+                                                               (Solved
+                                                                  (TVar (TV "f"))
+                                                                  (Located
+                                                                     (Loc 91 4 12) (Var "a"))))))
+                                                      (Solved
+                                                         (TVar (TV "g"))
+                                                         (Located (Loc 97 4 18) (Var "b"))))))))))))
+                           (Solved
+                              (TComp "Result" [ TCon CString ])
+                              (Located (Loc 100 4 21) (Var "result1"))))))
+                  (Solved
+                     (TComp "Result" [ TCon CString ])
+                     (Located (Loc 109 4 30) (Var "result2")))))
         ]
     , aadts =
         [ ADT

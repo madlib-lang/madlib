@@ -4,47 +4,46 @@ Right
        , AST
            { aimports = []
            , aexps =
-               [ Assignment
-                   { epos = Loc 0 1 1
-                   , etype = Just (TArr (TCon CNum) (TCon CNum))
-                   , eexp =
-                       Abs
-                         { epos = Loc 13 1 14
-                         , etype = Just (TArr (TCon CNum) (TCon CNum))
-                         , eparam = "a"
-                         , ebody =
-                             App
-                               { epos = Loc 20 1 21
-                               , etype = Just (TCon CNum)
-                               , eabs =
-                                   App
-                                     { epos = Loc 20 1 21
-                                     , etype = Just (TArr (TCon CNum) (TCon CNum))
-                                     , eabs =
-                                         Var
-                                           { epos = Loc 21 1 22
-                                           , etype =
-                                               Just
-                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                           , ename = "+"
-                                           }
-                                     , earg =
-                                         Var
-                                           { epos = Loc 20 1 21
-                                           , etype = Just (TCon CNum)
-                                           , ename = "a"
-                                           }
-                                     , efieldAccess = False
-                                     }
-                               , earg =
-                                   LInt
-                                     { epos = Loc 24 1 25 , etype = Just (TCon CNum) , eval = "1" }
-                               , efieldAccess = False
-                               }
-                         }
-                   , ename = "inc"
-                   , eexported = True
-                   }
+               [ Solved
+                   (TArr (TCon CNum) (TCon CNum))
+                   (Located
+                      (Loc 0 1 1)
+                      (Export
+                         (Solved
+                            (TArr (TCon CNum) (TCon CNum))
+                            (Located
+                               (Loc 7 1 8)
+                               (Assignment
+                                  "inc"
+                                  (Solved
+                                     (TArr (TCon CNum) (TCon CNum))
+                                     (Located
+                                        (Loc 13 1 14)
+                                        (Abs
+                                           "a"
+                                           (Solved
+                                              (TCon CNum)
+                                              (Located
+                                                 (Loc 20 1 21)
+                                                 (App
+                                                    (Solved
+                                                       (TArr (TCon CNum) (TCon CNum))
+                                                       (Located
+                                                          (Loc 20 1 21)
+                                                          (App
+                                                             (Solved
+                                                                (TArr
+                                                                   (TCon CNum)
+                                                                   (TArr (TCon CNum) (TCon CNum)))
+                                                                (Located (Loc 21 1 22) (Var "+")))
+                                                             (Solved
+                                                                (TCon CNum)
+                                                                (Located
+                                                                   (Loc 20 1 21) (Var "a"))))))
+                                                    (Solved
+                                                       (TCon CNum)
+                                                       (Located
+                                                          (Loc 24 1 25) (LInt "1"))))))))))))))
                ]
            , aadts = []
            , apath = Just "./ModuleA.mad"
@@ -52,24 +51,16 @@ Right
        )
      , ( "./ModuleB.mad"
        , AST
-           { aimports =
-               [ NamedImport
-                   { ipos = Loc 0 1 1 , inames = [ "inc" ] , ipath = "ModuleA" }
-               ]
+           { aimports = [ NamedImport [ "inc" ] "ModuleA" ]
            , aexps =
-               [ App
-                   { epos = Loc 30 2 1
-                   , etype = Just (TCon CNum)
-                   , eabs =
-                       Var
-                         { epos = Loc 30 2 1
-                         , etype = Just (TArr (TCon CNum) (TCon CNum))
-                         , ename = "inc"
-                         }
-                   , earg =
-                       LInt { epos = Loc 34 2 5 , etype = Just (TCon CNum) , eval = "3" }
-                   , efieldAccess = False
-                   }
+               [ Solved
+                   (TCon CNum)
+                   (Located
+                      (Loc 30 2 1)
+                      (App
+                         (Solved
+                            (TArr (TCon CNum) (TCon CNum)) (Located (Loc 30 2 1) (Var "inc")))
+                         (Solved (TCon CNum) (Located (Loc 34 2 5) (LInt "3")))))
                ]
            , aadts = []
            , apath = Just "./ModuleB.mad"

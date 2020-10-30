@@ -7,16 +7,16 @@ double = (n) => n * 2
 
 F.of([3, 4])
   |> F.map(L.map(double))
-  |> F.run(IO.print, IO.print)
+  |> F.run(IO.log, IO.log)
 
 -- get("http://www.google.com")
---   |> run(id, print)
+--   |> run(id, IO.log)
 
-L.singleton(3) |> IO.print
+L.singleton(3) |> IO.log
 
 t = (x) => if (x) { False } else { True }
 
 F.of(True)
   |> F.map((x) => if (x) { 2 } else { 4 })
   |> F.map((x) => x * 2)
-  |> F.run((x) => x, IO.print)
+  |> F.run((x) => x, IO.log)

@@ -2,28 +2,21 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Abs
-            { epos = Loc 0 1 1
-            , etype =
-                Just (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-            , eparam = "a"
-            , ebody =
-                App
-                  { epos = Loc 7 1 8
-                  , etype = Just (TComp "List" [ TVar (TV "a") ])
-                  , eabs =
-                      Var
-                        { epos = Loc 7 1 8
-                        , etype =
-                            Just (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
-                        , ename = "asList"
-                        }
-                  , earg =
-                      Var
-                        { epos = Loc 14 1 15 , etype = Just (TVar (TV "a")) , ename = "a" }
-                  , efieldAccess = False
-                  }
-            }
+        [ Solved
+            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+            (Located
+               (Loc 0 1 1)
+               (Abs
+                  "a"
+                  (Solved
+                     (TComp "List" [ TVar (TV "a") ])
+                     (Located
+                        (Loc 7 1 8)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
+                              (Located (Loc 7 1 8) (Var "asList")))
+                           (Solved (TVar (TV "a")) (Located (Loc 14 1 15) (Var "a"))))))))
         ]
     , aadts = []
     , apath = Just "path"

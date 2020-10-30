@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import           Control.Monad.Except
 import           Data.Char                      ( isLower )
 
-import           AST.AST
+import           AST.Source
 import           Infer.Type
 
 
@@ -61,7 +61,7 @@ buildADTConstructorReturnType tname tparams =
   TComp tname $ TVar . TV <$> tparams
 
 -- TODO: This should probably be merged with typingToType somehow
-argToType :: ADTs -> Name -> [Name] -> TypeRef -> Infer Type
+argToType :: ADTs -> Name -> [Name] -> Typing -> Infer Type
 argToType tadts _ params (TRSingle n)
   | n == "Num" = return $ TCon CNum
   | n == "Bool" = return $ TCon CBool

@@ -2,71 +2,50 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 29 2 1
-            , etype = Just (TComp "User" [ TCon CString ])
-            , eexp =
-                App
-                  { epos = Loc 33 2 5
-                  , etype = Just (TComp "User" [ TCon CString ])
-                  , eabs =
-                      App
-                        { epos = Loc 33 2 5
-                        , etype = Just (TArr (TCon CNum) (TComp "User" [ TCon CString ]))
-                        , eabs =
-                            Var
-                              { epos = Loc 33 2 5
-                              , etype =
-                                  Just
-                                    (TArr
-                                       (TVar (TV "c"))
-                                       (TArr (TCon CNum) (TComp "User" [ TVar (TV "c") ])))
-                              , ename = "LoggedIn"
-                              }
-                        , earg =
-                            LStr
-                              { epos = Loc 42 2 14
-                              , etype = Just (TCon CString)
-                              , eval = "John"
-                              }
-                        , efieldAccess = False
-                        }
-                  , earg =
-                      LInt
-                        { epos = Loc 50 2 22 , etype = Just (TCon CNum) , eval = "33" }
-                  , efieldAccess = False
-                  }
-            , ename = "u"
-            , eexported = False
-            }
-        , Switch
-            { epos = Loc 54 3 1
-            , etype = Just (TCon CNum)
-            , ecases =
-                [ Case
-                    { casepos = Loc 68 4 3
-                    , casetype = Just (TArr (TComp "User" [ TCon CNum ]) (TCon CNum))
-                    , casepattern = PCtor "LoggedIn" [ PCon "Num" , PVar "x" ]
-                    , caseexp =
-                        Var { epos = Loc 92 4 27 , etype = Just (TCon CNum) , ename = "x" }
-                    }
-                , Case
-                    { casepos = Loc 96 5 3
-                    , casetype =
-                        Just (TArr (TComp "User" [ TCon CString ]) (TCon CNum))
-                    , casepattern = PCtor "LoggedIn" [ PCon "String" , PVar "x" ]
-                    , caseexp =
-                        Var
-                          { epos = Loc 120 5 27 , etype = Just (TCon CNum) , ename = "x" }
-                    }
-                ]
-            , eexp =
-                Var
-                  { epos = Loc 61 3 8
-                  , etype = Just (TComp "User" [ TCon CString ])
-                  , ename = "u"
-                  }
-            }
+        [ Solved
+            (TComp "User" [ TCon CString ])
+            (Located
+               (Loc 29 2 1)
+               (Assignment
+                  "u"
+                  (Solved
+                     (TComp "User" [ TCon CString ])
+                     (Located
+                        (Loc 33 2 5)
+                        (App
+                           (Solved
+                              (TArr (TCon CNum) (TComp "User" [ TCon CString ]))
+                              (Located
+                                 (Loc 33 2 5)
+                                 (App
+                                    (Solved
+                                       (TArr
+                                          (TVar (TV "c"))
+                                          (TArr (TCon CNum) (TComp "User" [ TVar (TV "c") ])))
+                                       (Located (Loc 33 2 5) (Var "LoggedIn")))
+                                    (Solved (TCon CString) (Located (Loc 42 2 14) (LStr "John"))))))
+                           (Solved (TCon CNum) (Located (Loc 50 2 22) (LInt "33"))))))))
+        , Solved
+            (TCon CNum)
+            (Located
+               (Loc 54 3 1)
+               (Switch
+                  (Solved
+                     (TComp "User" [ TCon CString ]) (Located (Loc 61 3 8) (Var "u")))
+                  [ Case
+                      { casepos = Loc 68 4 3
+                      , casetype = Just (TArr (TComp "User" [ TCon CNum ]) (TCon CNum))
+                      , casepattern = PCtor "LoggedIn" [ PCon "Num" , PVar "x" ]
+                      , caseexp = Solved (TCon CNum) (Located (Loc 92 4 27) (Var "x"))
+                      }
+                  , Case
+                      { casepos = Loc 96 5 3
+                      , casetype =
+                          Just (TArr (TComp "User" [ TCon CString ]) (TCon CNum))
+                      , casepattern = PCtor "LoggedIn" [ PCon "String" , PVar "x" ]
+                      , caseexp = Solved (TCon CNum) (Located (Loc 120 5 27) (Var "x"))
+                      }
+                  ]))
         ]
     , aadts =
         [ ADT

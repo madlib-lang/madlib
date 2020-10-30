@@ -2,68 +2,55 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ App
-            { epos = Loc 1 1 2
-            , etype = Just (TCon CBool)
-            , eabs =
-                App
-                  { epos = Loc 1 1 2
-                  , etype = Just (TArr (TCon CNum) (TCon CBool))
-                  , eabs =
-                      Abs
-                        { epos = Loc 1 1 2
-                        , etype =
-                            Just (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
-                        , eparam = "a"
-                        , ebody =
-                            Abs
-                              { epos = Loc 1 1 2
-                              , etype = Just (TArr (TVar (TV "d")) (TCon CBool))
-                              , eparam = "b"
-                              , ebody =
-                                  App
-                                    { epos = Loc 11 1 12
-                                    , etype = Just (TCon CBool)
-                                    , eabs =
-                                        App
-                                          { epos = Loc 11 1 12
-                                          , etype = Just (TArr (TVar (TV "c")) (TCon CBool))
-                                          , eabs =
-                                              Var
-                                                { epos = Loc 13 1 14
-                                                , etype =
-                                                    Just
-                                                      (TArr
-                                                         (TVar (TV "g"))
-                                                         (TArr (TVar (TV "g")) (TCon CBool)))
-                                                , ename = "==="
-                                                }
-                                          , earg =
-                                              Var
-                                                { epos = Loc 11 1 12
-                                                , etype = Just (TVar (TV "c"))
-                                                , ename = "a"
-                                                }
-                                          , efieldAccess = False
-                                          }
-                                    , earg =
-                                        Var
-                                          { epos = Loc 17 1 18
-                                          , etype = Just (TVar (TV "d"))
-                                          , ename = "b"
-                                          }
-                                    , efieldAccess = False
-                                    }
-                              }
-                        }
-                  , earg =
-                      LInt { epos = Loc 20 1 21 , etype = Just (TCon CNum) , eval = "1" }
-                  , efieldAccess = False
-                  }
-            , earg =
-                LInt { epos = Loc 23 1 24 , etype = Just (TCon CNum) , eval = "3" }
-            , efieldAccess = False
-            }
+        [ Solved
+            (TCon CBool)
+            (Located
+               (Loc 1 1 2)
+               (App
+                  (Solved
+                     (TArr (TCon CNum) (TCon CBool))
+                     (Located
+                        (Loc 1 1 2)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
+                              (Located
+                                 (Loc 1 1 2)
+                                 (Abs
+                                    "a"
+                                    (Solved
+                                       (TArr (TVar (TV "d")) (TCon CBool))
+                                       (Located
+                                          (Loc 1 1 2)
+                                          (Abs
+                                             "b"
+                                             (Solved
+                                                (TCon CBool)
+                                                (Located
+                                                   (Loc 11 1 12)
+                                                   (App
+                                                      (Solved
+                                                         (TArr (TVar (TV "c")) (TCon CBool))
+                                                         (Located
+                                                            (Loc 11 1 12)
+                                                            (App
+                                                               (Solved
+                                                                  (TArr
+                                                                     (TVar (TV "g"))
+                                                                     (TArr
+                                                                        (TVar (TV "g"))
+                                                                        (TCon CBool)))
+                                                                  (Located
+                                                                     (Loc 13 1 14) (Var "===")))
+                                                               (Solved
+                                                                  (TVar (TV "c"))
+                                                                  (Located
+                                                                     (Loc 11 1 12) (Var "a"))))))
+                                                      (Solved
+                                                         (TVar (TV "d"))
+                                                         (Located (Loc 17 1 18) (Var "b"))))))))))))
+                           (Solved (TCon CNum) (Located (Loc 20 1 21) (LInt "1"))))))
+                  (Solved (TCon CNum) (Located (Loc 23 1 24) (LInt "3")))))
         ]
     , aadts = []
     , apath = Just "path"

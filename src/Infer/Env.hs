@@ -5,7 +5,7 @@ module Infer.Env where
 
 import qualified Data.Map as M
 import           Infer.Type
-import           AST.AST
+import           AST.Source
 import Control.Monad.Except
 import Infer.Instantiate
 import Infer.ADT

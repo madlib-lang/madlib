@@ -2,40 +2,34 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Abs
-            { epos = Loc 0 1 1
-            , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-            , eparam = "b"
-            , ebody =
-                Abs
-                  { epos = Loc 0 1 1
-                  , etype = Just (TArr (TCon CNum) (TCon CNum))
-                  , eparam = "c"
-                  , ebody =
-                      App
-                        { epos = Loc 10 1 11
-                        , etype = Just (TCon CNum)
-                        , eabs =
-                            App
-                              { epos = Loc 10 1 11
-                              , etype = Just (TArr (TCon CNum) (TCon CNum))
-                              , eabs =
-                                  Var
-                                    { epos = Loc 11 1 12
-                                    , etype = Just (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                    , ename = "+"
-                                    }
-                              , earg =
-                                  Var
-                                    { epos = Loc 10 1 11 , etype = Just (TCon CNum) , ename = "b" }
-                              , efieldAccess = False
-                              }
-                        , earg =
-                            Var { epos = Loc 14 1 15 , etype = Just (TCon CNum) , ename = "c" }
-                        , efieldAccess = False
-                        }
-                  }
-            }
+        [ Solved
+            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+            (Located
+               (Loc 0 1 1)
+               (Abs
+                  "b"
+                  (Solved
+                     (TArr (TCon CNum) (TCon CNum))
+                     (Located
+                        (Loc 0 1 1)
+                        (Abs
+                           "c"
+                           (Solved
+                              (TCon CNum)
+                              (Located
+                                 (Loc 10 1 11)
+                                 (App
+                                    (Solved
+                                       (TArr (TCon CNum) (TCon CNum))
+                                       (Located
+                                          (Loc 10 1 11)
+                                          (App
+                                             (Solved
+                                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                (Located (Loc 11 1 12) (Var "+")))
+                                             (Solved
+                                                (TCon CNum) (Located (Loc 10 1 11) (Var "b"))))))
+                                    (Solved (TCon CNum) (Located (Loc 14 1 15) (Var "c")))))))))))
         ]
     , aadts = []
     , apath = Just "path"

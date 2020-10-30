@@ -2,28 +2,21 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Assignment
-            { epos = Loc 38 4 1
-            , etype = Just (TComp "Result" [ TCon CBool ])
-            , eexp =
-                App
-                  { epos = Loc 47 4 10
-                  , etype = Just (TComp "Result" [ TCon CBool ])
-                  , eabs =
-                      Var
-                        { epos = Loc 47 4 10
-                        , etype =
-                            Just (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
-                        , ename = "Success"
-                        }
-                  , earg =
-                      LBool
-                        { epos = Loc 55 4 18 , etype = Just (TCon CBool) , eval = "True" }
-                  , efieldAccess = False
-                  }
-            , ename = "result"
-            , eexported = False
-            }
+        [ Solved
+            (TComp "Result" [ TCon CBool ])
+            (Located
+               (Loc 38 4 1)
+               (Assignment
+                  "result"
+                  (Solved
+                     (TComp "Result" [ TCon CBool ])
+                     (Located
+                        (Loc 47 4 10)
+                        (App
+                           (Solved
+                              (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
+                              (Located (Loc 47 4 10) (Var "Success")))
+                           (Solved (TCon CBool) (Located (Loc 55 4 18) (LBool "True"))))))))
         ]
     , aadts =
         [ ADT

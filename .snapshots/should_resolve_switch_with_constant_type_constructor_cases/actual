@@ -2,37 +2,31 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Switch
-            { epos = Loc 0 1 1
-            , etype = Just (TCon CNum)
-            , ecases =
-                [ Case
-                    { casepos = Loc 17 2 3
-                    , casetype = Just (TArr (TCon CString) (TCon CNum))
-                    , casepattern = PCon "String"
-                    , caseexp =
-                        LInt { epos = Loc 31 2 17 , etype = Just (TCon CNum) , eval = "1" }
-                    }
-                , Case
-                    { casepos = Loc 35 3 3
-                    , casetype = Just (TArr (TCon CBool) (TCon CNum))
-                    , casepattern = PCon "Bool"
-                    , caseexp =
-                        LInt { epos = Loc 49 3 17 , etype = Just (TCon CNum) , eval = "3" }
-                    }
-                , Case
-                    { casepos = Loc 53 4 3
-                    , casetype = Just (TArr (TCon CNum) (TCon CNum))
-                    , casepattern = PCon "Num"
-                    , caseexp =
-                        LInt
-                          { epos = Loc 67 4 17 , etype = Just (TCon CNum) , eval = "33" }
-                    }
-                ]
-            , eexp =
-                LStr
-                  { epos = Loc 7 1 8 , etype = Just (TCon CString) , eval = "42" }
-            }
+        [ Solved
+            (TCon CNum)
+            (Located
+               (Loc 0 1 1)
+               (Switch
+                  (Solved (TCon CString) (Located (Loc 7 1 8) (LStr "42")))
+                  [ Case
+                      { casepos = Loc 17 2 3
+                      , casetype = Just (TArr (TCon CString) (TCon CNum))
+                      , casepattern = PCon "String"
+                      , caseexp = Solved (TCon CNum) (Located (Loc 31 2 17) (LInt "1"))
+                      }
+                  , Case
+                      { casepos = Loc 35 3 3
+                      , casetype = Just (TArr (TCon CBool) (TCon CNum))
+                      , casepattern = PCon "Bool"
+                      , caseexp = Solved (TCon CNum) (Located (Loc 49 3 17) (LInt "3"))
+                      }
+                  , Case
+                      { casepos = Loc 53 4 3
+                      , casetype = Just (TArr (TCon CNum) (TCon CNum))
+                      , casepattern = PCon "Num"
+                      , caseexp = Solved (TCon CNum) (Located (Loc 67 4 17) (LInt "33"))
+                      }
+                  ]))
         ]
     , aadts = []
     , apath = Just "path"
