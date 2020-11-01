@@ -5,22 +5,28 @@ Right
         [ Solved
             (TCon CString)
             (Located
-               (Loc 0 1 1)
+               (Area (Loc 0 1 1) (Loc 6 1 7))
                (Switch
-                  (Solved (TCon CBool) (Located (Loc 7 1 8) (LBool "True")))
+                  (Solved
+                     (TCon CBool)
+                     (Located (Area (Loc 7 1 8) (Loc 11 1 12)) (LBool "True")))
                   [ Case
-                      { casepos = Loc 17 2 3
+                      { casepos = Area (Loc 17 2 3) (Loc 21 2 7)
                       , casetype = Just (TArr (TCon CBool) (TCon CString))
                       , casepattern = PBool "True"
                       , caseexp =
-                          Solved (TCon CString) (Located (Loc 29 2 15) (LStr "OK"))
+                          Solved
+                            (TCon CString)
+                            (Located (Area (Loc 29 2 15) (Loc 33 2 19)) (LStr "OK"))
                       }
                   , Case
-                      { casepos = Loc 36 3 3
+                      { casepos = Area (Loc 36 3 3) (Loc 40 3 7)
                       , casetype = Just (TArr (TCon CBool) (TCon CString))
                       , casepattern = PBool "False"
                       , caseexp =
-                          Solved (TCon CString) (Located (Loc 48 3 15) (LStr "NOT OK"))
+                          Solved
+                            (TCon CString)
+                            (Located (Area (Loc 48 3 15) (Loc 56 3 23)) (LStr "NOT OK"))
                       }
                   ]))
         ]

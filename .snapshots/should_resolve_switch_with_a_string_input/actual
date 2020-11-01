@@ -5,32 +5,44 @@ Right
         [ Solved
             (TCon CNum)
             (Located
-               (Loc 0 1 1)
+               (Area (Loc 0 1 1) (Loc 6 1 7))
                (Switch
-                  (Solved (TCon CString) (Located (Loc 7 1 8) (LStr "42")))
+                  (Solved
+                     (TCon CString)
+                     (Located (Area (Loc 7 1 8) (Loc 11 1 12)) (LStr "42")))
                   [ Case
-                      { casepos = Loc 17 2 3
+                      { casepos = Area (Loc 17 2 3) (Loc 21 2 7)
                       , casetype = Just (TArr (TCon CString) (TCon CNum))
                       , casepattern = PStr "1"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 28 2 14) (LInt "1"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum) (Located (Area (Loc 28 2 14) (Loc 29 2 15)) (LInt "1"))
                       }
                   , Case
-                      { casepos = Loc 32 3 3
+                      { casepos = Area (Loc 32 3 3) (Loc 36 3 7)
                       , casetype = Just (TArr (TCon CString) (TCon CNum))
                       , casepattern = PStr "3"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 43 3 14) (LInt "3"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum) (Located (Area (Loc 43 3 14) (Loc 44 3 15)) (LInt "3"))
                       }
                   , Case
-                      { casepos = Loc 47 4 3
+                      { casepos = Area (Loc 47 4 3) (Loc 51 4 7)
                       , casetype = Just (TArr (TCon CString) (TCon CNum))
                       , casepattern = PStr "33"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 58 4 14) (LInt "33"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum)
+                            (Located (Area (Loc 58 4 14) (Loc 60 4 16)) (LInt "33"))
                       }
                   , Case
-                      { casepos = Loc 63 5 3
+                      { casepos = Area (Loc 63 5 3) (Loc 67 5 7)
                       , casetype = Just (TArr (TCon CString) (TCon CNum))
                       , casepattern = PStr "42"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 74 5 14) (LInt "42"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum)
+                            (Located (Area (Loc 74 5 14) (Loc 76 5 16)) (LInt "42"))
                       }
                   ]))
         ]

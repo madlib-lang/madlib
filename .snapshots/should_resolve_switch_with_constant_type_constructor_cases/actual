@@ -5,26 +5,35 @@ Right
         [ Solved
             (TCon CNum)
             (Located
-               (Loc 0 1 1)
+               (Area (Loc 0 1 1) (Loc 6 1 7))
                (Switch
-                  (Solved (TCon CString) (Located (Loc 7 1 8) (LStr "42")))
+                  (Solved
+                     (TCon CString)
+                     (Located (Area (Loc 7 1 8) (Loc 11 1 12)) (LStr "42")))
                   [ Case
-                      { casepos = Loc 17 2 3
+                      { casepos = Area (Loc 17 2 3) (Loc 21 2 7)
                       , casetype = Just (TArr (TCon CString) (TCon CNum))
                       , casepattern = PCon "String"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 31 2 17) (LInt "1"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum) (Located (Area (Loc 31 2 17) (Loc 32 2 18)) (LInt "1"))
                       }
                   , Case
-                      { casepos = Loc 35 3 3
+                      { casepos = Area (Loc 35 3 3) (Loc 39 3 7)
                       , casetype = Just (TArr (TCon CBool) (TCon CNum))
                       , casepattern = PCon "Bool"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 49 3 17) (LInt "3"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum) (Located (Area (Loc 49 3 17) (Loc 50 3 18)) (LInt "3"))
                       }
                   , Case
-                      { casepos = Loc 53 4 3
+                      { casepos = Area (Loc 53 4 3) (Loc 57 4 7)
                       , casetype = Just (TArr (TCon CNum) (TCon CNum))
                       , casepattern = PCon "Num"
-                      , caseexp = Solved (TCon CNum) (Located (Loc 67 4 17) (LInt "33"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum)
+                            (Located (Area (Loc 67 4 17) (Loc 69 4 19)) (LInt "33"))
                       }
                   ]))
         ]

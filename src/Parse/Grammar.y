@@ -70,7 +70,7 @@ ast :: { Src.AST }
   | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Located (tokenToLoc $1) (Src.Export (Located (tokenToLoc $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Located (tokenToArea $1) (Src.Export (Located (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | rRet              { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | rRet ast          { $2 }
   | ast rRet          { $1 }
@@ -162,41 +162,33 @@ type :: { Src.Typing }
   | name '(' type ')' { Src.TRComp (strV $1) [$3] }
   | type '->' type    { Src.TRArr $1 $3 }
 
-exp :: { Src.LExp }
+exp :: { Src.Exp }
   : literal                          { $1 }
   | record                           { $1 }
   | switch                           { $1 }
   | operation                        { $1 }
   | listConstructor          %shift  { $1 }
-  | js                       %shift  { Located (tokenToLoc $1) (Src.JSExp $ strV $1) }
-  | name '=' exp             %shift  { Located (tokenToLoc $1) (Src.Assignment (strV $1) $3) }
-  | name                     %shift  { Located (tokenToLoc $1) (Src.Var $ strV $1) }
-  | name rParenL args ')'    %shift  { buildApp (tokenToLoc $1) (Located (tokenToLoc $1) (Src.Var $ strV $1)) $3 }
-  | exp '(' args ')'                 { buildApp (Src.getLoc $1) $1 $3 }
-  | '(' exp ')' '(' args ')' %shift  { buildApp (Src.getLoc $2) $2 $5 }
-  | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToLoc $1) $2 $5 }
+  | js                       %shift  { Located (tokenToArea $1) (Src.JSExp $ strV $1) }
+  | name '=' exp             %shift  { Located (tokenToArea $1) (Src.Assignment (strV $1) $3) }
+  | name                     %shift  { Located (tokenToArea $1) (Src.Var $ strV $1) }
+  | name rParenL args ')'    %shift  { buildApp (tokenToArea $1) (Located (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | exp '(' args ')'                 { buildApp (getArea $1) $1 $3 }
+  | '(' exp ')' '(' args ')' %shift  { buildApp (getArea $2) $2 $5 }
+  | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToArea $1) $2 $5 }
   | '(' exp ')'              %shift  { $2 }
-  | exp '::' typings                 { Located (Src.getLoc $1) (Src.TypedExp $1 $3) }
-  | exp '.' name                     { Located (Src.getLoc $1) (Src.FieldAccess $1 (Located (tokenToLoc $3) (Src.Var $ "." <> strV $3))) }
-  | exp '.' name '(' args ')' %shift { buildApp (Src.getLoc $1) (Located (Src.getLoc $1) (Src.FieldAccess $1 (Located (tokenToLoc $3) (Src.Var $ "." <> strV $3)))) $5 }
+  | exp '::' typings                 { Located (getArea $1) (Src.TypedExp $1 $3) }
+  | exp '.' name                     { Located (getArea $1) (Src.FieldAccess $1 (Located (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
+  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Located (getArea $1) (Src.FieldAccess $1 (Located (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
-      { Located (tokenToLoc $1) (Src.If $3 $7 $15) }
-
-  -- | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}' {
-  --   App { epos = tokenToLoc $1, etype = Nothing, eabs =
-  --     App { epos = tokenToLoc $1, etype = Nothing, eabs = 
-  --       App { epos = tokenToLoc $1, etype = Nothing, eabs = Var { epos = tokenToLoc $2, etype = Nothing, ename = "ifElse" }, earg = $3, efieldAccess = False }
-  --   , earg = $7, efieldAccess = False }, earg = $15, efieldAccess = False
-  --   }
-  -- }
+      { Located (tokenToArea $1) (Src.If $3 $7 $15) }
 
 
-switch :: { Src.LExp }
-  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Located (tokenToLoc $1) (Src.Switch $3 $7) }
+switch :: { Src.Exp }
+  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Located (tokenToArea $1) (Src.Switch $3 $7) }
 
 cases :: { [Src.Case] }
-  : 'case' pattern ':' exp             { [Src.Case { Src.casepos = tokenToLoc $1, Src.casetype = Nothing, Src.casepattern = $2, Src.caseexp = $4 }] }
-  | cases 'ret' 'case' pattern ':' exp { $1 <> [Src.Case { Src.casepos = tokenToLoc $3, Src.casetype = Nothing, Src.casepattern = $4, Src.caseexp = $6 }] }
+  : 'case' pattern ':' exp             { [Src.Case { Src.casepos = tokenToArea $1, Src.casepattern = $2, Src.caseexp = $4 }] }
+  | cases 'ret' 'case' pattern ':' exp { $1 <> [Src.Case { Src.casepos = tokenToArea $3, Src.casepattern = $4, Src.caseexp = $6 }] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern { $1 }
@@ -211,7 +203,7 @@ nonCompositePattern :: { Src.Pattern }
   | recordPattern    { $1 }
   | '(' pattern ')'  { $2 }
 
--- Constructor pattern pattern
+
 compositePattern :: { Src.Pattern }
   : name patterns %shift { Src.PCtor (strV $1) $2 }
 
@@ -227,68 +219,68 @@ recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
   | recordFieldPatterns ',' name ':' pattern { M.insert (strV $3) $5 $1 }
 
 
-record :: { Src.LExp }
-  : '{' recordFields '}' { Located (tokenToLoc $1) (Src.Record $2) }
+record :: { Src.Exp }
+  : '{' recordFields '}' { Located (tokenToArea $1) (Src.Record $2) }
 
 recordFields :: { Src.Fields }
   : name ':' exp                  { M.fromList [(strV $1, $3)] }
   | recordFields ',' name ':' exp { M.insert (strV $3) $5 $1 }
 
 
-operation :: { Src.LExp }
-  : exp '+' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "+")) 
+operation :: { Src.Exp }
+  : exp '+' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "+")) 
                          $1))) 
                       $3)
                  }
-  | exp '-' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "-")) 
+  | exp '-' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "-")) 
                          $1))) 
                       $3)
                  }
-  | exp '*' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "*")) 
+  | exp '*' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "*")) 
                          $1))) 
                       $3)
                  }
-  | exp '/' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "/")) 
+  | exp '/' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "/")) 
                          $1))) 
                       $3)
                  }
-  | exp '===' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "===")) 
+  | exp '===' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "===")) 
                          $1))) 
                       $3)
                    }
-  | exp '|>' exp  { Located (Src.getLoc $1) (Src.App
-                      ((Located (Src.getLoc $1) (Src.App
-                         (Located (tokenToLoc $2) (Src.Var "|>")) 
+  | exp '|>' exp  { Located (getArea $1) (Src.App
+                      ((Located (getArea $1) (Src.App
+                         (Located (tokenToArea $2) (Src.Var "|>")) 
                          $1))) 
                       $3)
                   
                   }
 
-listConstructor :: { Src.LExp }
-  : '[' listItems ']' { Located (tokenToLoc $1) (Src.ListConstructor $2) }
+listConstructor :: { Src.Exp }
+  : '[' listItems ']' { Located (tokenToArea $1) (Src.ListConstructor $2) }
 
-listItems :: { [Src.LExp] }
+listItems :: { [Src.Exp] }
   : exp               { [$1] }
   | exp ',' listItems { $1 : $3 }
   | {- empty -}       { [] }
 
-literal :: { Src.LExp }
-  : int                       { Located (tokenToLoc $1) (Src.LInt $ strV $1) }
-  | str                       { Located (tokenToLoc $1) (Src.LStr $ strV $1) }
-  | true                      { Located (tokenToLoc $1) (Src.LBool $ strV $1) }
-  | false                     { Located (tokenToLoc $1) (Src.LBool $ strV $1) }
+literal :: { Src.Exp }
+  : int                       { Located (tokenToArea $1) (Src.LInt $ strV $1) }
+  | str                       { Located (tokenToArea $1) (Src.LStr $ strV $1) }
+  | true                      { Located (tokenToArea $1) (Src.LBool $ strV $1) }
+  | false                     { Located (tokenToArea $1) (Src.LBool $ strV $1) }
 
-args :: { [Src.LExp] }
+args :: { [Src.Exp] }
   : exp rComa args %shift { $1:$3 }
   | exp maybeRet   %shift { [$1] }
 
@@ -297,13 +289,23 @@ params :: { [Src.Name] }
   | name                   { [strV $1] }
 
 {
-buildAbs :: Loc -> [Src.Name] -> Src.LExp -> Src.LExp
-buildAbs loc [param] body = Located loc (Src.Abs param body)
-buildAbs loc (x:xs) body  = Located loc (Src.Abs x (buildAbs loc xs body))
+buildAbs :: Area -> [Src.Name] -> Src.Exp -> Src.Exp
+buildAbs area params body = buildAbs' 0 area params body
 
-buildApp :: Loc -> Src.LExp -> [Src.LExp] -> Src.LExp
-buildApp loc f [arg]  = Located loc (Src.App f arg)
-buildApp loc f xs     = Located loc (Src.App (buildApp loc f (init xs)) (last xs))
+-- TODO: use that nth to add context to params
+buildAbs' :: Int -> Area -> [Src.Name] -> Src.Exp -> Src.Exp
+buildAbs' nth area [param] body = Located area (Src.Abs param body)
+buildAbs' nth area (x:xs) body  = Located area (Src.Abs x (buildAbs' (nth + 1) area xs body))
+
+
+
+buildApp :: Area -> Src.Exp -> [Src.Exp] -> Src.Exp
+buildApp area f args = buildApp' 0 area f args
+
+-- TODO: use that nth to add context to args
+buildApp' :: Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
+buildApp' nth area f [arg]  = Located area (Src.App f arg)
+buildApp' nth area f xs     = Located area (Src.App (buildApp' (nth + 1) area f (init xs)) (last xs))
 
 nameToPattern :: String -> Src.Pattern
 nameToPattern n | n == "_"           = Src.PAny
@@ -318,7 +320,7 @@ lexerWrap :: (Token -> Alex a) -> Alex a
 lexerWrap f = alexMonadScan >>= f
 
 parseError :: Token -> Alex a
-parseError (Token (Loc a l c) cls) =
+parseError (Token (Area (Loc a l c) _) cls) =
   alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
 
 parse :: String -> Either String Src.AST

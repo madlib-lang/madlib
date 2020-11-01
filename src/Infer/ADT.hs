@@ -9,6 +9,9 @@ import           Data.Char                      ( isLower )
 
 import           AST.Source
 import           Infer.Type
+import           Infer.Infer
+import           Error.Error
+import           Explain.Reason
 
 
 buildADTTypes :: [ADT] -> Infer ADTs
@@ -28,7 +31,7 @@ buildADTTypes' adts (adt : xs) = do
 
 buildADTType :: ADTs -> ADT -> Infer (String, Type)
 buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
-  Just t  -> throwError $ ADTAlreadyDefined t
+  Just t  -> throwError $ InferError (ADTAlreadyDefined t) NoReason
   Nothing -> return (adtname, TComp adtname (TVar . TV <$> adtparams))
 
 
@@ -67,7 +70,7 @@ argToType tadts _ params (TRSingle n)
   | n == "Bool" = return $ TCon CBool
   | n == "String" = return $ TCon CString
   | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
-  | isLower (head n) = throwError $ UnboundVariable n
+  | isLower (head n) = throwError $ InferError (UnboundVariable n) NoReason
   | otherwise = case M.lookup n tadts of
     Just a  -> return a
     -- If the lookup gives a Nothing, it should most likely be an undefined type error ?

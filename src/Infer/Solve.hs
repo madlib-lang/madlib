@@ -13,19 +13,21 @@ import           Data.Foldable                  ( foldrM )
 import qualified AST
 import qualified AST.Source as Src
 import qualified AST.Solved as Slv
+import           Infer.Infer
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
+import           Error.Error
 import           Explain.Location
-import Text.Show.Pretty (ppShow)
-import Debug.Trace (trace)
+import           Explain.Reason
+import Debug.Trace
+import Text.Show.Pretty
 
 
-infer :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
-  -- Push backtrace here
 
   let Located loc exp = lexp
   in  case exp of
@@ -48,26 +50,26 @@ infer env lexp =
 
 
 -- TODO: Should probably just take a Loc instead of the old Expression !
-applyLitSolve :: Src.LExp -> Type -> Slv.SExp
+applyLitSolve :: Src.Exp -> Type -> Slv.Exp
 applyLitSolve (Located loc exp) t = case exp of
   Src.LInt v  -> Slv.Solved t (Located loc $ Slv.LInt v)
   Src.LStr v  -> Slv.Solved t (Located loc $ Slv.LStr v)
   Src.LBool v -> Slv.Solved t (Located loc $ Slv.LBool v)
 
-applyVarSolve :: Src.LExp -> Type -> Slv.SExp
+applyVarSolve :: Src.Exp -> Type -> Slv.Exp
 applyVarSolve (Located loc (Src.Var v)) t = Slv.Solved t (Located loc $ Slv.Var v)
 
-applyAbsSolve :: Src.LExp -> Slv.Name -> Slv.SExp -> Type -> Slv.SExp
+applyAbsSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
 applyAbsSolve (Located loc _) param body t = Slv.Solved t (Located loc $ Slv.Abs param body)
 
-applyAppSolve :: Src.LExp -> Slv.SExp -> Slv.SExp -> Type -> Slv.SExp
+applyAppSolve :: Src.Exp -> Slv.Exp -> Slv.Exp -> Type -> Slv.Exp
 applyAppSolve (Located loc _) abs arg t = Slv.Solved t (Located loc $ Slv.App abs arg)
 
-applyAssignmentSolve :: Src.LExp -> Slv.Name -> Slv.SExp -> Type -> Slv.SExp
+applyAssignmentSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
 applyAssignmentSolve (Located loc _) n exp t = Slv.Solved t (Located loc $ Slv.Assignment n exp)
 
 
-updateType :: Slv.SExp -> Type -> Slv.SExp
+updateType :: Slv.Exp -> Type -> Slv.Exp
 updateType (Slv.Solved t a) t' = Slv.Solved t' a
 
 
@@ -103,7 +105,7 @@ updateTyping t = case t of
 
 -- INFER VAR
 
-inferVar :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferVar :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferVar env l@(Located loc (Src.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [TV "a"]
@@ -116,7 +118,7 @@ inferVar env l@(Located loc (Src.Var n)) = case n of
 
 -- INFER ABS
 
-inferAbs :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferAbs :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferAbs env l@(Located loc (Src.Abs param body)) = do
   tv <- newTVar
   let env' = extendVars env (param, Forall [] tv)
@@ -127,13 +129,16 @@ inferAbs env l@(Located loc (Src.Abs param body)) = do
 
 -- INFER APP
 
-inferApp :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferApp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferApp env l@(Located loc (Src.App abs arg)) = do
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
   (s2, t2, earg) <- infer env arg
 
-  s3             <- unify (apply s2 t1) (TArr t2 tv)
+  s3             <- case unify (apply s2 t1) (TArr t2 tv) of
+    Right s -> return s
+    Left e  -> throwError $ InferError e
+      $ Reason (WrongTypeApplied arg) (getArea arg)
   let t = apply s3 tv
 
   return
@@ -145,7 +150,7 @@ inferApp env l@(Located loc (Src.App abs arg)) = do
 
 -- INFER ASSIGNMENT
 
-inferAssignment :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferAssignment :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferAssignment env e@(Located loc (Src.Assignment name exp)) = case exp of
   (Located _ (Src.Abs _ _)) -> do
     (s1, t1, e1) <- infer env exp
@@ -154,7 +159,7 @@ inferAssignment env e@(Located loc (Src.Assignment name exp)) = case exp of
       Just (Forall fv t2) -> do
         let bv = S.toList $ ftv t2
         it2 <- instantiate (Forall (fv <> bv) t2)
-        s2  <- unify t1 it2
+        s2  <- unifyToInfer env $ unify (trace ("T1: "<>ppShow t1) t1) (trace ("IT2: "<>ppShow it2) it2)
         return
           ( s2 `compose` s1
           , it2
@@ -170,7 +175,7 @@ inferAssignment env e@(Located loc (Src.Assignment name exp)) = case exp of
 
 -- INFER EXPORT
 
-inferExport :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferExport :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferExport env (Located loc (Src.Export exp)) = do
   (s, t, e) <- infer env exp
   return (s, t, Slv.Solved t (Located loc (Slv.Export e)))
@@ -178,7 +183,7 @@ inferExport env (Located loc (Src.Export exp)) = do
 
 -- INFER RECORD
 
-inferRecord :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferRecord :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferRecord env (Located loc (Src.Record fields)) = do
   inferred <- mapM (infer env) fields
   let inferredFields = M.map trd inferred
@@ -197,9 +202,9 @@ inferRecord env (Located loc (Src.Record fields)) = do
 -- TODO: Add TArr
 -- So that we can write a type :
 -- :: (a -> b) -> List a -> List b
-inferTypedExp :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferTypedExp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferTypedExp _ (Located loc (Src.TypedExp exp typing)) = do
-  t <- typingsToType typing
+  t <- typingToType typing
   
   -- TODO: Handle other cases
   let e = case exp of
@@ -207,45 +212,45 @@ inferTypedExp _ (Located loc (Src.TypedExp exp typing)) = do
 
   return (M.empty, t, Slv.Solved t (Located loc (Slv.TypedExp e (updateTyping typing))))
 
-typingsToType :: Src.Typing -> Infer Type
-typingsToType (Src.TRSingle t) | t == "Num"    = return $ TCon CNum
+typingToType :: Src.Typing -> Infer Type
+typingToType (Src.TRSingle t) | t == "Num"    = return $ TCon CNum
                            | t == "Bool"   = return $ TCon CBool
                            | t == "String" = return $ TCon CString
                            | t == "Void"   = return $ TCon CVoid
                            | otherwise     = return $ TVar $ TV t
 
-typingsToType (Src.TRComp t ts) = do
-  params <- mapM typingsToType ts
+typingToType (Src.TRComp t ts) = do
+  params <- mapM typingToType ts
   return $ TComp t params
 
-typingsToType (Src.TRArr l r) = do
-  l' <- typingsToType l
-  r' <- typingsToType r
+typingToType (Src.TRArr l r) = do
+  l' <- typingToType l
+  r' <- typingToType r
   return $ TArr l' r'
 
-typingsToType (Src.TRRecord f) = do
-  f' <- mapM typingsToType f
+typingToType (Src.TRRecord f) = do
+  f' <- mapM typingToType f
   return $ TRecord f'
 
 
 -- INFER LISTCONSTRUCTOR
 
-inferListConstructor :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferListConstructor :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferListConstructor env (Located loc (Src.ListConstructor elems)) = case elems of
   [] -> let t = TComp "List" [TVar $ TV "a"]
         in  return (M.empty, t, Slv.Solved t (Located loc (Slv.ListConstructor [])))
 
   elems -> do
     inferred <- mapM (infer env) elems
-    let (s1, t1, e1) = head inferred
-    let t            = TComp "List" [t1]
-    s <- unifyElems t1 (mid <$> inferred)
+    let (_, t1, _) = head inferred
+    let t          = TComp "List" [t1]
+    s <- unifyToInfer env $ unifyElems t1 (mid <$> inferred)
     return (s, t, Slv.Solved t (Located loc (Slv.ListConstructor (trd <$> inferred))))
 
 
 -- INFER FIELD ACCESS
 
-inferFieldAccess :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferFieldAccess :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferFieldAccess env (Located loc (Src.FieldAccess rec@(Located l arg) abs@(Located _ (Src.Var ('.':name))))) = do
   (rs, rt, re) <- infer env (Located l arg)
 
@@ -266,21 +271,21 @@ inferFieldAccess env (Located loc (Src.FieldAccess rec@(Located l arg) abs@(Loca
 
 -- INFER IF
 
-inferIf :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferIf :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferIf env (Located loc (Src.If cond truthy falsy)) = do
   (_, tcond, econd)     <- infer env cond
   (_, ttruthy, etruthy) <- infer env truthy
   (_, tfalsy, efalsy)   <- infer env falsy
 
-  s1 <- unify tcond (TCon CBool)
-  s2 <- unify ttruthy tfalsy
+  s1 <- unifyToInfer env $ unify tcond (TCon CBool)
+  s2 <- unifyToInfer env $ unify ttruthy tfalsy
 
   return (s1 `compose` s2, ttruthy, Slv.Solved ttruthy (Located loc (Slv.If econd etruthy efalsy)))
 
 
 -- INFER SWITCH
 
-inferSwitch :: Env -> Src.LExp -> Infer (Substitution, Type, Slv.SExp)
+inferSwitch :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferSwitch env (Located loc (Src.Switch exp cases)) = do
   (se, te, ee)  <- infer env exp
 
@@ -292,7 +297,7 @@ inferSwitch env (Located loc (Src.Switch exp cases)) = do
   let typeMatrix        = (, casesTypes) <$> casesTypes
   s <-
     foldr1 compose
-      <$> mapM (\(t, ts) -> unifyPatternElems (apply casesSubstitution t) ts)
+      <$> mapM (\(t, ts) -> unifyToInfer env $ unifyPatternElems (apply casesSubstitution t) ts)
                typeMatrix
 
   let updatedCases =
@@ -316,7 +321,7 @@ inferSwitch env (Located loc (Src.Switch exp cases)) = do
     (se, te, ee) <- infer e' caseexp
     let tarr  = TArr (apply se tp) te
     let tarr' = TArr (apply se tinput) te
-    su <- unifyPatternElems tarr [tarr']
+    su <- unifyToInfer env $ unifyPatternElems tarr [tarr']
 
     let sf = su `compose` se
 
@@ -351,12 +356,12 @@ inferSwitch env (Located loc (Src.Switch exp cases)) = do
     Src.PCtor n as -> do
       (Forall fv ctor) <- case M.lookup n envvars of
         Just x  -> return x
-        Nothing -> throwError $ UnknownType n
+        Nothing -> throwError $ InferError (UnknownType n) NoReason
 
       let rt = arrowReturnType ctor
       ctor'  <- argPatternsToArrowType rt as
       ctor'' <- instantiate $ Forall fv ctor
-      s      <- unify ctor' ctor''
+      s      <- unifyToInfer env $ unify ctor' ctor''
       return $ apply s rt
 
      where
@@ -405,11 +410,11 @@ inferSwitch env (Located loc (Src.Switch exp cases)) = do
     findConstructor cname = case M.lookup cname envvars of
       Just (Forall _ t) -> return t
 
-      Nothing           -> throwError $ UnknownType cname
+      Nothing           -> throwError $ InferError (UnknownType cname) NoReason
 
 
 
-inferExps :: Env -> [Src.LExp] -> Infer [Slv.SExp]
+inferExps :: Env -> [Src.Exp] -> Infer [Slv.Exp]
 inferExps _   []       = return []
 
 inferExps env [exp   ] = (:[]) . trd <$> infer env exp
@@ -453,22 +458,22 @@ inferAST rootPath table ast@Src.AST { Src.aimports } = do
 
     Just fp -> return $ M.insert fp inferredAST inferredASTs
 
-    Nothing -> throwError ASTHasNoPath
+    Nothing -> throwError $ InferError ASTHasNoPath NoReason
 
 
 
-exportedExps :: Slv.AST -> Infer [(Slv.Name, Slv.SExp)]
+exportedExps :: Slv.AST -> Infer [(Slv.Name, Slv.Exp)]
 exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
   Just p  -> mapM (bundleExports p) $ filter isExport aexps
 
-  Nothing -> throwError ASTHasNoPath
+  Nothing -> throwError $ InferError ASTHasNoPath NoReason
   
   where
     bundleExports _ (Slv.Solved _ (Located _ (Slv.Export e))) =
       let (Slv.Solved _ (Located _ (Slv.Assignment n e'))) = e
       in  return (n, e')
     
-    isExport :: Slv.SExp -> Bool
+    isExport :: Slv.Exp -> Bool
     isExport a = case a of
       (Slv.Solved _ (Located _ (Slv.Export _))) -> True
 
@@ -491,9 +496,9 @@ resolveImports root table (imp:is) = do
           env <- buildInitialEnv ast
           inferASTExps env ast
 
-        Left (AST.ASTNotFound path) -> throwError $ ImportNotFound path ""
+        Left (AST.ASTNotFound path) -> throwError $ InferError (ImportNotFound path "") NoReason
 
-        Left (AST.ImportNotFound path _) -> throwError $ ImportNotFound path ""
+        Left (AST.ImportNotFound path _) -> throwError $ InferError (ImportNotFound path "") NoReason
 
   exportedExps <- M.fromList <$> exportedExps solvedAST
   let exportedTypes = mapM (return . Slv.getType) exportedExps
@@ -503,7 +508,7 @@ resolveImports root table (imp:is) = do
 
     (Just exports, _)                         -> return exports
 
-    (Nothing, _)                              -> throwError $ ImportNotFound path ""
+    (Nothing, _)                              -> throwError $ InferError (ImportNotFound path "") NoReason
 
   (nextTable, nextExports) <- resolveImports root table is
 
@@ -539,6 +544,12 @@ updateADTConstructor Src.ADTConstructor { Src.adtcname, Src.adtcargs }
   = Slv.ADTConstructor { Slv.adtcname = adtcname
                        , Slv.adtcargs = (updateTyping <$>) <$> adtcargs
                        }
+
+
+unifyToInfer :: Env -> Either TypeError Substitution -> Infer Substitution
+unifyToInfer env u = case u of
+  Right s -> return s
+  Left  e -> throwError $ InferError e NoReason
 
 
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)

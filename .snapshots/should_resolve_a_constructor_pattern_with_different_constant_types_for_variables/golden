@@ -5,45 +5,56 @@ Right
         [ Solved
             (TComp "User" [ TCon CString ])
             (Located
-               (Loc 29 2 1)
+               (Area (Loc 29 2 1) (Loc 30 2 2))
                (Assignment
                   "u"
                   (Solved
                      (TComp "User" [ TCon CString ])
                      (Located
-                        (Loc 33 2 5)
+                        (Area (Loc 33 2 5) (Loc 41 2 13))
                         (App
                            (Solved
                               (TArr (TCon CNum) (TComp "User" [ TCon CString ]))
                               (Located
-                                 (Loc 33 2 5)
+                                 (Area (Loc 33 2 5) (Loc 41 2 13))
                                  (App
                                     (Solved
                                        (TArr
                                           (TVar (TV "c"))
                                           (TArr (TCon CNum) (TComp "User" [ TVar (TV "c") ])))
-                                       (Located (Loc 33 2 5) (Var "LoggedIn")))
-                                    (Solved (TCon CString) (Located (Loc 42 2 14) (LStr "John"))))))
-                           (Solved (TCon CNum) (Located (Loc 50 2 22) (LInt "33"))))))))
+                                       (Located (Area (Loc 33 2 5) (Loc 41 2 13)) (Var "LoggedIn")))
+                                    (Solved
+                                       (TCon CString)
+                                       (Located
+                                          (Area (Loc 42 2 14) (Loc 48 2 20)) (LStr "John"))))))
+                           (Solved
+                              (TCon CNum)
+                              (Located (Area (Loc 50 2 22) (Loc 52 2 24)) (LInt "33"))))))))
         , Solved
             (TCon CNum)
             (Located
-               (Loc 54 3 1)
+               (Area (Loc 54 3 1) (Loc 60 3 7))
                (Switch
                   (Solved
-                     (TComp "User" [ TCon CString ]) (Located (Loc 61 3 8) (Var "u")))
+                     (TComp "User" [ TCon CString ])
+                     (Located (Area (Loc 61 3 8) (Loc 62 3 9)) (Var "u")))
                   [ Case
-                      { casepos = Loc 68 4 3
+                      { casepos = Area (Loc 68 4 3) (Loc 72 4 7)
                       , casetype = Just (TArr (TComp "User" [ TCon CNum ]) (TCon CNum))
                       , casepattern = PCtor "LoggedIn" [ PCon "Num" , PVar "x" ]
-                      , caseexp = Solved (TCon CNum) (Located (Loc 92 4 27) (Var "x"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum) (Located (Area (Loc 92 4 27) (Loc 93 4 28)) (Var "x"))
                       }
                   , Case
-                      { casepos = Loc 96 5 3
+                      { casepos = Area (Loc 96 5 3) (Loc 100 5 7)
                       , casetype =
                           Just (TArr (TComp "User" [ TCon CString ]) (TCon CNum))
                       , casepattern = PCtor "LoggedIn" [ PCon "String" , PVar "x" ]
-                      , caseexp = Solved (TCon CNum) (Located (Loc 120 5 27) (Var "x"))
+                      , caseexp =
+                          Solved
+                            (TCon CNum)
+                            (Located (Area (Loc 120 5 27) (Loc 121 5 28)) (Var "x"))
                       }
                   ]))
         ]

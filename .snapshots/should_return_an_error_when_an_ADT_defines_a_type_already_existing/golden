@@ -1,1 +1,3 @@
-Left (ADTAlreadyDefined (TComp "Result" [ TVar (TV "a") ]))
+Left
+  (InferError
+     (ADTAlreadyDefined (TComp "Result" [ TVar (TV "a") ])) NoReason)

@@ -1,3 +1,5 @@
 Left
-  (UnificationError
-     (TComp "Maybe" [ TVar (TV "a") ]) (TComp "Failure" []))
+  (InferError
+     (UnificationError
+        (TComp "Maybe" [ TVar (TV "a") ]) (TComp "Failure" []))
+     NoReason)

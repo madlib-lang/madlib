@@ -9,13 +9,16 @@ import           AST.Source
 import Control.Monad.Except
 import Infer.Instantiate
 import Infer.ADT
+import Infer.Infer
+import Explain.Reason
+import Error.Error
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
 lookupVar env x = do
   case M.lookup x $ envvars env of
     Nothing -> case M.lookup x $ envimports env of
-      Nothing -> throwError $ UnboundVariable x
+      Nothing -> throwError $ InferError (UnboundVariable x) NoReason
       Just s  -> do
         t <- instantiate $ Forall [] s
         return (M.empty, t)

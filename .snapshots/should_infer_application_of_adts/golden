@@ -5,58 +5,61 @@ Right
         [ Solved
             (TComp "Result" [])
             (Located
-               (Loc 37 2 1)
+               (Area (Loc 37 2 1) (Loc 44 2 8))
                (Assignment
                   "result1"
                   (Solved
                      (TComp "Result" [])
                      (Located
-                        (Loc 47 2 11)
+                        (Area (Loc 47 2 11) (Loc 54 2 18))
                         (App
                            (Solved
                               (TArr (TCon CString) (TComp "Result" []))
-                              (Located (Loc 47 2 11) (Var "Success")))
+                              (Located (Area (Loc 47 2 11) (Loc 54 2 18)) (Var "Success")))
                            (Solved
-                              (TCon CString) (Located (Loc 55 2 19) (LStr "response"))))))))
+                              (TCon CString)
+                              (Located
+                                 (Area (Loc 55 2 19) (Loc 65 2 29)) (LStr "response"))))))))
         , Solved
             (TComp "Result" [])
             (Located
-               (Loc 67 3 1)
+               (Area (Loc 67 3 1) (Loc 74 3 8))
                (Assignment
                   "result2"
                   (Solved
-                     (TComp "Result" []) (Located (Loc 77 3 11) (Var "Error")))))
+                     (TComp "Result" [])
+                     (Located (Area (Loc 77 3 11) (Loc 82 3 16)) (Var "Error")))))
         , Solved
             (TCon CBool)
             (Located
-               (Loc 84 4 2)
+               (Area (Loc 84 4 2) (Loc 85 4 3))
                (App
                   (Solved
                      (TArr (TComp "Result" []) (TCon CBool))
                      (Located
-                        (Loc 84 4 2)
+                        (Area (Loc 84 4 2) (Loc 85 4 3))
                         (App
                            (Solved
                               (TArr (TVar (TV "e")) (TArr (TVar (TV "e")) (TCon CBool)))
                               (Located
-                                 (Loc 84 4 2)
+                                 (Area (Loc 84 4 2) (Loc 85 4 3))
                                  (Abs
                                     "a"
                                     (Solved
                                        (TArr (TVar (TV "e")) (TCon CBool))
                                        (Located
-                                          (Loc 84 4 2)
+                                          (Area (Loc 84 4 2) (Loc 85 4 3))
                                           (Abs
                                              "b"
                                              (Solved
                                                 (TCon CBool)
                                                 (Located
-                                                   (Loc 94 4 12)
+                                                   (Area (Loc 94 4 12) (Loc 95 4 13))
                                                    (App
                                                       (Solved
                                                          (TArr (TVar (TV "d")) (TCon CBool))
                                                          (Located
-                                                            (Loc 94 4 12)
+                                                            (Area (Loc 94 4 12) (Loc 95 4 13))
                                                             (App
                                                                (Solved
                                                                   (TArr
@@ -65,19 +68,26 @@ Right
                                                                         (TVar (TV "h"))
                                                                         (TCon CBool)))
                                                                   (Located
-                                                                     (Loc 96 4 14) (Var "===")))
+                                                                     (Area
+                                                                        (Loc 96 4 14) (Loc 99 4 17))
+                                                                     (Var "===")))
                                                                (Solved
                                                                   (TVar (TV "d"))
                                                                   (Located
-                                                                     (Loc 94 4 12) (Var "a"))))))
+                                                                     (Area
+                                                                        (Loc 94 4 12) (Loc 95 4 13))
+                                                                     (Var "a"))))))
                                                       (Solved
                                                          (TVar (TV "e"))
                                                          (Located
-                                                            (Loc 100 4 18) (Var "b"))))))))))))
+                                                            (Area (Loc 100 4 18) (Loc 101 4 19))
+                                                            (Var "b"))))))))))))
                            (Solved
-                              (TComp "Result" []) (Located (Loc 103 4 21) (Var "result1"))))))
+                              (TComp "Result" [])
+                              (Located (Area (Loc 103 4 21) (Loc 110 4 28)) (Var "result1"))))))
                   (Solved
-                     (TComp "Result" []) (Located (Loc 112 4 30) (Var "result2")))))
+                     (TComp "Result" [])
+                     (Located (Area (Loc 112 4 30) (Loc 119 4 37)) (Var "result2")))))
         ]
     , aadts =
         [ ADT

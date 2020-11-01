@@ -22,6 +22,9 @@ import qualified AST.Solved                     as Slv
 import           Infer.Solve
 import           Infer.Type
 import           Infer.Env
+import           Infer.Infer
+import           Error.Error
+import           Explain.Reason
 import           AST
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -39,7 +42,7 @@ snapshotTest name actualOutput = Golden
 tester :: String -> Either InferError Slv.AST
 tester code = case buildAST "path" code of
   (Right ast) -> runEnv ast >>= (`runInfer` ast)
-  _           -> Left $ UnboundVariable ""
+  _           -> Left $ InferError (UnboundVariable "") NoReason
  where
   runEnv x =
     fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
@@ -220,6 +223,21 @@ spec = do
     ---------------------------------------------------------------------------
 
 
+    -- Applications:
+
+    it "should fail for applications with a wrong argument type" $ do
+      let code =
+            unlines
+              [ "fn = (a, b) => a === b"
+              , "fn(\"3\", 4)"
+              ]
+          actual = tester code
+      snapshotTest "should fail for applications with a wrong argument type"
+                   actual
+
+    ---------------------------------------------------------------------------
+
+
     -- Abstractions:
 
     -- TODO: Write and implement the same test with ADTs
@@ -389,6 +407,7 @@ spec = do
 
 
     -- Imports:
+
     it "should resolve names from imported modules" $ do
       let codeA = "export inc = (a) => a + 1"
           astA  = buildAST "./ModuleA.mad" codeA

@@ -15,7 +15,7 @@ class Compilable a where
   -- If the Bool is True it indicates that the expression terminates.
   compile :: a -> String
 
-instance Compilable SExp where
+instance Compilable Exp where
   compile (Solved _ (Located _ exp)) = case exp of
     LInt v  -> v
     LStr v  -> "\"" <> v <> "\""
@@ -205,7 +205,7 @@ instance Compilable AST where
                 | otherwise = a <> ";\n"
 
 
-buildDefaultExport :: [SExp] -> String
+buildDefaultExport :: [Exp] -> String
 buildDefaultExport es =
   let exports = filter isExport es
   in  case exports of
@@ -213,13 +213,13 @@ buildDefaultExport es =
     exps -> "export default { " <> intercalate ", " (getExportName <$> exps) <> " };\n"
 
   where
-    isExport :: SExp -> Bool
+    isExport :: Exp -> Bool
     isExport a = case a of
       (Solved _ (Located _ (Export _))) -> True
 
       _                                     -> False
 
-    getExportName :: SExp -> String
+    getExportName :: Exp -> String
     getExportName (Solved _ (Located _ (Export (Solved _ (Located _ (Assignment n _)))))) = n
 
 

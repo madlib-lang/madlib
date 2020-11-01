@@ -5,18 +5,20 @@ Right
         [ Solved
             (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
             (Located
-               (Loc 0 1 1)
+               (Area (Loc 0 1 1) (Loc 1 1 2))
                (Abs
                   "a"
                   (Solved
                      (TComp "List" [ TVar (TV "a") ])
                      (Located
-                        (Loc 7 1 8)
+                        (Area (Loc 7 1 8) (Loc 13 1 14))
                         (App
                            (Solved
                               (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
-                              (Located (Loc 7 1 8) (Var "asList")))
-                           (Solved (TVar (TV "a")) (Located (Loc 14 1 15) (Var "a"))))))))
+                              (Located (Area (Loc 7 1 8) (Loc 13 1 14)) (Var "asList")))
+                           (Solved
+                              (TVar (TV "a"))
+                              (Located (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "a"))))))))
         ]
     , aadts = []
     , apath = Just "path"

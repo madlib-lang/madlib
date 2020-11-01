@@ -7,16 +7,16 @@ import Explain.Location
 
 data Solved a = Solved Type (Located a) deriving(Show, Eq)
 
-getType :: SExp -> Type
+getType :: Exp -> Type
 getType (Solved t _) = t
 
-extractExp :: SExp -> Exp
+extractExp :: Exp -> Exp_
 extractExp (Solved _ (Located _ e)) = e
 
 data AST =
   AST
     { aimports   :: [Import]
-    , aexps      :: [SExp]
+    , aexps      :: [Exp]
     , aadts      :: [ADT]
     , apath      :: Maybe FilePath
     }
@@ -48,10 +48,10 @@ data Typing
 
 data Case =
   Case
-    { casepos :: Loc
+    { casepos :: Area
     , casetype :: Maybe Type
     , casepattern :: Pattern
-    , caseexp :: SExp
+    , caseexp :: Exp
     }
     deriving(Eq, Show)
 
@@ -67,26 +67,26 @@ data Pattern
   | PRecord (M.Map Name Pattern)
   deriving(Eq, Show)
 
-type Fields = M.Map Name SExp
+type Fields = M.Map Name Exp
 
-type SExp = Solved Exp
+type Exp = Solved Exp_
 
-data Exp = LInt String
-         | LStr String
-         | LBool String
-         | JSExp String
-         | App SExp SExp
-         | FieldAccess SExp SExp
-         | Abs Name SExp
-         | Assignment Name SExp
-         | Export SExp
-         | Var Name
-         | TypedExp SExp Typing
-         | ListConstructor [SExp]
-         | Record Fields
-         | If SExp SExp SExp
-         | Switch SExp [Case]
-         deriving(Eq, Show)
+data Exp_ = LInt String
+          | LStr String
+          | LBool String
+          | JSExp String
+          | App Exp Exp
+          | FieldAccess Exp Exp
+          | Abs Name Exp
+          | Assignment Name Exp
+          | Export Exp
+          | Var Name
+          | TypedExp Exp Typing
+          | ListConstructor [Exp]
+          | Record Fields
+          | If Exp Exp Exp
+          | Switch Exp [Case]
+          deriving(Eq, Show)
 
 type Name  = String
 

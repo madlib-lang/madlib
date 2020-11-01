@@ -7,20 +7,20 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import           Infer.Type
-import           Infer.Env
 import           Infer.Substitute
+import           Error.Error
 
 
 occursCheck :: Substitutable a => TVar -> a -> Bool
 occursCheck a t = S.member a $ ftv t
 
-bind :: TVar -> Type -> Infer Substitution
+bind :: TVar -> Type -> Either TypeError Substitution
 bind a t | t == TVar a     = return M.empty
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = return $ M.singleton a t
 
 
-unify :: Type -> Type -> Infer Substitution
+unify :: Type -> Type -> Either TypeError Substitution
 unify (l `TArr` r) (l' `TArr` r') = do
   s1 <- unify l l'
   s2 <- unify (apply s1 r) (apply s1 r')
@@ -44,12 +44,12 @@ unify (TRecord fields) (TRecord fields')
 
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
-unify (TCon a) (TCon b) | a == b = return M.empty
-unify TAny _                     = return M.empty
-unify _    TAny                  = return M.empty
+unify (TCon a) (TCon b) | a == b   = return M.empty
+unify TAny _                       = return M.empty
+unify _    TAny                    = return M.empty
 unify t1   t2                    = throwError $ UnificationError t1 t2
 
-unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
+unifyVars :: Substitution -> [(Type, Type)] -> Either TypeError Substitution
 unifyVars s ((tp, tp') : xs) = do
   s1 <- unify (apply s tp) (apply s tp')
   unifyVars s1 xs
@@ -58,16 +58,16 @@ unifyVars s _           = return s
 
 -- TODO: Needs to be extended with all cases of unifyElems ?
 -- Should this only happen for free vars ?
-unifyPatternElems :: Type -> [Type] -> Infer Substitution
+unifyPatternElems :: Type -> [Type] -> Either TypeError Substitution
 unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
   where
-    anyCheck :: InferError -> Infer Substitution
+    anyCheck :: TypeError -> Either TypeError Substitution
     anyCheck e = case e of
-      (UnificationError (TCon _) (TCon _)) -> return M.empty
-      _                                    -> throwError e
+      UnificationError (TCon _) (TCon _) -> return M.empty
+      _                                  -> throwError e
 
 
-unifyElems :: Type -> [Type] -> Infer Substitution
+unifyElems :: Type -> [Type] -> Either TypeError Substitution
 unifyElems _ []        = return M.empty
 unifyElems t [t'     ] = unify t t'
 unifyElems t (t' : xs) = do

@@ -8,6 +8,7 @@ import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.State
 import Infer.Substitute
+import Infer.Infer
 
 
 letters :: [String]

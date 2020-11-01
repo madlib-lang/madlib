@@ -20,7 +20,7 @@ module Parse.Lexer
   , alexError
   , alexMonadScan
   , runAlex
-  , tokenToLoc
+  , tokenToArea
   , strV
   )
 where
@@ -90,16 +90,24 @@ strip  = T.unpack . T.strip . T.pack
 
 --type AlexAction result = AlexInput -> Int -> Alex result
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makeLoc posn) token
+mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makeArea posn (take len input)) token
   where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
 
-makeLoc :: AlexPosn -> Loc
-makeLoc (AlexPn a l c) = Loc a l c
+makeArea :: AlexPosn -> String -> Area
+makeArea (AlexPn a l c) tokenContent =
+  let start         = Loc a l c
+      contentLines  = lines tokenContent
+      lastLine      = last contentLines
+      numberOfLines = length contentLines
+      end           = if numberOfLines > 1
+                      then Loc (a + length tokenContent) (l + numberOfLines - 1) (length lastLine)
+                      else Loc (a + length tokenContent) l (c + length tokenContent)
+  in  Area start end
 
-tokenToLoc :: Token -> Loc
-tokenToLoc (Token x _) = x
+tokenToArea :: Token -> Area
+tokenToArea (Token area _) = area
 
-data Token = Token Loc TokenClass deriving (Eq, Show)
+data Token = Token Area TokenClass deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
@@ -151,12 +159,6 @@ strV (Token _ (TokenName x)) = x
 strV (Token _ (TokenJSBlock x)) = x
 
 
--- intV :: Token -> Int
--- intV (Token _ (TokenInt x)) = x
-
--- boolV :: Token -> Bool
--- boolV (Token _ (TokenBool x)) = x
-
 alexEOF :: Alex Token
-alexEOF = return (Token (Loc 1 1 1) TokenEOF)
+alexEOF = return (Token (Area (Loc 1 1 1) (Loc 1 1 1)) TokenEOF)
 }

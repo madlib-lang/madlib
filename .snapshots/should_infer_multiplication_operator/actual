@@ -5,31 +5,37 @@ Right
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
             (Located
-               (Loc 0 1 1)
+               (Area (Loc 0 1 1) (Loc 1 1 2))
                (Abs
                   "b"
                   (Solved
                      (TArr (TCon CNum) (TCon CNum))
                      (Located
-                        (Loc 0 1 1)
+                        (Area (Loc 0 1 1) (Loc 1 1 2))
                         (Abs
                            "c"
                            (Solved
                               (TCon CNum)
                               (Located
-                                 (Loc 10 1 11)
+                                 (Area (Loc 10 1 11) (Loc 11 1 12))
                                  (App
                                     (Solved
                                        (TArr (TCon CNum) (TCon CNum))
                                        (Located
-                                          (Loc 10 1 11)
+                                          (Area (Loc 10 1 11) (Loc 11 1 12))
                                           (App
                                              (Solved
                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                                (Located (Loc 11 1 12) (Var "*")))
+                                                (Located
+                                                   (Area (Loc 11 1 12) (Loc 13 1 14)) (Var "*")))
                                              (Solved
-                                                (TCon CNum) (Located (Loc 10 1 11) (Var "b"))))))
-                                    (Solved (TCon CNum) (Located (Loc 14 1 15) (Var "c")))))))))))
+                                                (TCon CNum)
+                                                (Located
+                                                   (Area (Loc 10 1 11) (Loc 11 1 12)) (Var "b"))))))
+                                    (Solved
+                                       (TCon CNum)
+                                       (Located
+                                          (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "c")))))))))))
         ]
     , aadts = []
     , apath = Just "path"

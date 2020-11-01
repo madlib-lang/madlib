@@ -7,22 +7,24 @@ Right
                (TRecord (fromList [ ( "value" , TCon CString ) ]))
                (TComp "Result" []))
             (Located
-               (Loc 42 2 1)
+               (Area (Loc 42 2 1) (Loc 43 2 2))
                (Assignment
                   "r"
                   (Solved
                      (TArr
                         (TRecord (fromList [ ( "value" , TCon CString ) ]))
                         (TComp "Result" []))
-                     (Located (Loc 46 2 5) (Var "Success")))))
+                     (Located (Area (Loc 46 2 5) (Loc 53 2 12)) (Var "Success")))))
         , Solved
             (TRecord (fromList [ ( "value" , TCon CString ) ]))
             (Located
-               (Loc 54 2 13)
+               (Area (Loc 54 2 13) (Loc 55 2 14))
                (Record
                   (fromList
                      [ ( "value"
-                       , Solved (TCon CString) (Located (Loc 63 2 22) (LStr "42"))
+                       , Solved
+                           (TCon CString)
+                           (Located (Area (Loc 63 2 22) (Loc 67 2 26)) (LStr "42"))
                        )
                      ])))
         , Solved
@@ -30,19 +32,22 @@ Right
                (TRecord (fromList [ ( "value" , TCon CString ) ]))
                (TComp "Result" []))
             (Located
-               (Loc 71 3 2)
+               (Area (Loc 71 3 2) (Loc 72 3 3))
                (App
                   (Solved
                      (TArr (TVar (TV "b")) (TVar (TV "b")))
                      (Located
-                        (Loc 71 3 2)
+                        (Area (Loc 71 3 2) (Loc 72 3 3))
                         (Abs
-                           "a" (Solved (TVar (TV "b")) (Located (Loc 78 3 9) (Var "a"))))))
+                           "a"
+                           (Solved
+                              (TVar (TV "b"))
+                              (Located (Area (Loc 78 3 9) (Loc 79 3 10)) (Var "a"))))))
                   (Solved
                      (TArr
                         (TRecord (fromList [ ( "value" , TCon CString ) ]))
                         (TComp "Result" []))
-                     (Located (Loc 81 3 12) (Var "r")))))
+                     (Located (Area (Loc 81 3 12) (Loc 82 3 13)) (Var "r")))))
         ]
     , aadts =
         [ ADT

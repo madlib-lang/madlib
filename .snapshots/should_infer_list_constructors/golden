@@ -4,24 +4,33 @@ Right
     , aexps =
         [ Solved
             (TComp "List" [ TVar (TV "a") ])
-            (Located (Loc 0 1 1) (ListConstructor []))
+            (Located (Area (Loc 0 1 1) (Loc 1 1 2)) (ListConstructor []))
         , Solved
             (TComp "List" [ TCon CNum ])
             (Located
-               (Loc 3 2 1)
+               (Area (Loc 3 2 1) (Loc 4 2 2))
                (ListConstructor
-                  [ Solved (TCon CNum) (Located (Loc 4 2 2) (LInt "1"))
-                  , Solved (TCon CNum) (Located (Loc 7 2 5) (LInt "2"))
-                  , Solved (TCon CNum) (Located (Loc 10 2 8) (LInt "3"))
+                  [ Solved
+                      (TCon CNum) (Located (Area (Loc 4 2 2) (Loc 5 2 3)) (LInt "1"))
+                  , Solved
+                      (TCon CNum) (Located (Area (Loc 7 2 5) (Loc 8 2 6)) (LInt "2"))
+                  , Solved
+                      (TCon CNum) (Located (Area (Loc 10 2 8) (Loc 11 2 9)) (LInt "3"))
                   ]))
         , Solved
             (TComp "List" [ TCon CString ])
             (Located
-               (Loc 13 3 1)
+               (Area (Loc 13 3 1) (Loc 14 3 2))
                (ListConstructor
-                  [ Solved (TCon CString) (Located (Loc 14 3 2) (LStr "one"))
-                  , Solved (TCon CString) (Located (Loc 21 3 9) (LStr "two"))
-                  , Solved (TCon CString) (Located (Loc 28 3 16) (LStr "three"))
+                  [ Solved
+                      (TCon CString)
+                      (Located (Area (Loc 14 3 2) (Loc 19 3 7)) (LStr "one"))
+                  , Solved
+                      (TCon CString)
+                      (Located (Area (Loc 21 3 9) (Loc 26 3 14)) (LStr "two"))
+                  , Solved
+                      (TCon CString)
+                      (Located (Area (Loc 28 3 16) (Loc 35 3 23)) (LStr "three"))
                   ]))
         ]
     , aadts = []

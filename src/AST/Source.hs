@@ -1,16 +1,14 @@
-{-# LANGUAGE TupleSections #-}
 module AST.Source where
 
 import qualified Data.Map as M
 
-import qualified Infer.Type as T
 import           Explain.Location
 
 
 data AST =
   AST
     { aimports   :: [Import]
-    , aexps      :: [LExp]
+    , aexps      :: [Exp]
     , aadts      :: [ADT]
     , apath      :: Maybe FilePath
     }
@@ -44,10 +42,9 @@ data Typing
 
 data Case =
   Case
-    { casepos :: Loc
-    , casetype :: Maybe T.Type
+    { casepos :: Area
     , casepattern :: Pattern
-    , caseexp :: LExp
+    , caseexp :: Exp
     }
     deriving(Eq, Show)
 -- TODO:
@@ -65,32 +62,28 @@ data Pattern
   | PRecord (M.Map Name Pattern)
   deriving(Eq, Show)
 
-type Fields = M.Map Name LExp
+type Fields = M.Map Name Exp
 
-type LExp = Located Exp
+type Exp = Located Exp_
 
-data Exp = LInt String
-         | LStr String
-         | LBool String
-         | Var Name
-         | App LExp LExp
-         | Abs Name LExp
-         | FieldAccess LExp LExp
-         | Assignment Name LExp
-         | Record Fields
-         | If LExp LExp LExp
-         | Switch LExp [Case]
-         | Export LExp
-         | TypedExp LExp Typing
-         | ListConstructor [LExp]
-         | JSExp String
-         deriving(Eq, Show)
+data Exp_ = LInt String
+          | LStr String
+          | LBool String
+          | Var Name
+          | App Exp Exp
+          | Abs Name Exp
+          | FieldAccess Exp Exp
+          | Assignment Name Exp
+          | Record Fields
+          | If Exp Exp Exp
+          | Switch Exp [Case]
+          | Export Exp
+          | TypedExp Exp Typing
+          | ListConstructor [Exp]
+          | JSExp String
+          deriving(Eq, Show)
 
 type Name  = String
-
-getLoc :: LExp -> Loc
-getLoc (Located l _) = l
-
 
 
 -- AST TABLE

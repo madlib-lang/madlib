@@ -2,7 +2,9 @@ module Explain.Location where
 
 data Loc = Loc Int Int Int deriving(Eq, Show)
 
-data Located a = Located Loc a deriving(Eq, Show)
+data Area = Area Loc Loc deriving(Show, Eq)
 
-getLoc :: Located a -> Loc
-getLoc (Located l _) = l
+data Located a = Located Area a deriving(Eq, Show)
+
+getArea :: Located a -> Area
+getArea (Located a _) = a

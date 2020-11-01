@@ -5,34 +5,34 @@ Right
         [ Solved
             (TCon CBool)
             (Located
-               (Loc 1 1 2)
+               (Area (Loc 1 1 2) (Loc 2 1 3))
                (App
                   (Solved
                      (TArr (TCon CNum) (TCon CBool))
                      (Located
-                        (Loc 1 1 2)
+                        (Area (Loc 1 1 2) (Loc 2 1 3))
                         (App
                            (Solved
                               (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
                               (Located
-                                 (Loc 1 1 2)
+                                 (Area (Loc 1 1 2) (Loc 2 1 3))
                                  (Abs
                                     "a"
                                     (Solved
                                        (TArr (TVar (TV "d")) (TCon CBool))
                                        (Located
-                                          (Loc 1 1 2)
+                                          (Area (Loc 1 1 2) (Loc 2 1 3))
                                           (Abs
                                              "b"
                                              (Solved
                                                 (TCon CBool)
                                                 (Located
-                                                   (Loc 11 1 12)
+                                                   (Area (Loc 11 1 12) (Loc 12 1 13))
                                                    (App
                                                       (Solved
                                                          (TArr (TVar (TV "c")) (TCon CBool))
                                                          (Located
-                                                            (Loc 11 1 12)
+                                                            (Area (Loc 11 1 12) (Loc 12 1 13))
                                                             (App
                                                                (Solved
                                                                   (TArr
@@ -41,16 +41,26 @@ Right
                                                                         (TVar (TV "g"))
                                                                         (TCon CBool)))
                                                                   (Located
-                                                                     (Loc 13 1 14) (Var "===")))
+                                                                     (Area
+                                                                        (Loc 13 1 14) (Loc 16 1 17))
+                                                                     (Var "===")))
                                                                (Solved
                                                                   (TVar (TV "c"))
                                                                   (Located
-                                                                     (Loc 11 1 12) (Var "a"))))))
+                                                                     (Area
+                                                                        (Loc 11 1 12) (Loc 12 1 13))
+                                                                     (Var "a"))))))
                                                       (Solved
                                                          (TVar (TV "d"))
-                                                         (Located (Loc 17 1 18) (Var "b"))))))))))))
-                           (Solved (TCon CNum) (Located (Loc 20 1 21) (LInt "1"))))))
-                  (Solved (TCon CNum) (Located (Loc 23 1 24) (LInt "3")))))
+                                                         (Located
+                                                            (Area (Loc 17 1 18) (Loc 18 1 19))
+                                                            (Var "b"))))))))))))
+                           (Solved
+                              (TCon CNum)
+                              (Located (Area (Loc 20 1 21) (Loc 21 1 22)) (LInt "1"))))))
+                  (Solved
+                     (TCon CNum)
+                     (Located (Area (Loc 23 1 24) (Loc 24 1 25)) (LInt "3")))))
         ]
     , aadts = []
     , apath = Just "path"
