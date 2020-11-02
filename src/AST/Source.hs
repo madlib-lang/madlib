@@ -3,6 +3,7 @@ module AST.Source where
 import qualified Data.Map as M
 
 import           Explain.Location
+import           Explain.Meta
 
 
 data AST =
@@ -64,7 +65,7 @@ data Pattern
 
 type Fields = M.Map Name Exp
 
-type Exp = Located Exp_
+type Exp = Meta Exp_
 
 data Exp_ = LInt String
           | LStr String

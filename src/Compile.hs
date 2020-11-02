@@ -16,18 +16,18 @@ class Compilable a where
   compile :: a -> String
 
 instance Compilable Exp where
-  compile (Solved _ (Located _ exp)) = case exp of
+  compile (Solved _ _ exp) = case exp of
     LInt v  -> v
     LStr v  -> "\"" <> v <> "\""
     LBool v -> toLower <$> v
 
     App abs arg -> case abs of
-      Solved _ (Located _ (Var "+"))   -> "(" <> compile arg <> ") + "
-      Solved _ (Located _ (Var "-"))   -> "(" <> compile arg <> ") - "
-      Solved _ (Located _ (Var "*"))   -> "(" <> compile arg <> ") * "
-      Solved _ (Located _ (Var "/"))   -> "(" <> compile arg <> ") / "
-      Solved _ (Located _ (Var "===")) -> "(" <> compile arg <> ") === "
-      Solved _ (Located _ (App (Solved _ (Located _ (Var "|>"))) arg')) -> 
+      Solved _ _ (Var "+")   -> "(" <> compile arg <> ") + "
+      Solved _ _ (Var "-")   -> "(" <> compile arg <> ") - "
+      Solved _ _ (Var "*")   -> "(" <> compile arg <> ") * "
+      Solved _ _ (Var "/")   -> "(" <> compile arg <> ") / "
+      Solved _ _ (Var "===") -> "(" <> compile arg <> ") === "
+      Solved _ _ (App (Solved _ _ (Var "|>")) arg') -> 
         compile arg <> "(" <> compile arg' <> ")"
       
       _ -> compile abs <> "(" <> compile arg <> ")"
@@ -45,10 +45,10 @@ instance Compilable Exp where
     Assignment name exp -> "const " <> name <> " = " <> compile exp <> ""
 
     TypedExp exp _ -> case exp of
-      Solved _ (Located _ (Var _)) -> ""
+      Solved _ _ (Var _) -> ""
       _     -> compile exp
 
-    Export (Solved _ (Located _ (Assignment name exp))) ->
+    Export (Solved _ _ (Assignment name exp)) ->
       "export const " <> name <> " = " <> compile exp <> ""
 
     Record fields ->
@@ -215,12 +215,12 @@ buildDefaultExport es =
   where
     isExport :: Exp -> Bool
     isExport a = case a of
-      (Solved _ (Located _ (Export _))) -> True
+      (Solved _ _ (Export _)) -> True
 
       _                                     -> False
 
     getExportName :: Exp -> String
-    getExportName (Solved _ (Located _ (Export (Solved _ (Located _ (Assignment n _)))))) = n
+    getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
 
 
 buildPCompArgFn :: String

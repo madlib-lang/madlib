@@ -5,13 +5,13 @@ import qualified Data.Map as M
 import Infer.Type
 import Explain.Location
 
-data Solved a = Solved Type (Located a) deriving(Show, Eq)
+-- data Solved a = Solved Type (Located a) deriving(Show, Eq)
 
 getType :: Exp -> Type
-getType (Solved t _) = t
+getType (Solved t _ _) = t
 
 extractExp :: Exp -> Exp_
-extractExp (Solved _ (Located _ e)) = e
+extractExp (Solved _ (Area _ _) e) = e
 
 data AST =
   AST
@@ -69,7 +69,8 @@ data Pattern
 
 type Fields = M.Map Name Exp
 
-type Exp = Solved Exp_
+data Exp = Solved Type Area Exp_
+         deriving(Eq, Show)
 
 data Exp_ = LInt String
           | LStr String

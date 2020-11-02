@@ -3,5 +3,5 @@ Left
      (UnificationError (TCon CString) (TCon CNum))
      (Reason
         (WrongTypeApplied
-           (Located (Area (Loc 31 2 9) (Loc 32 2 10)) (LInt "4")))
+           (Meta [ NthArg 2 ] (Area (Loc 31 2 9) (Loc 32 2 10)) (LInt "4")))
         (Area (Loc 31 2 9) (Loc 32 2 10))))

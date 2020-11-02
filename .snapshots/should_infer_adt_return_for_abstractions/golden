@@ -4,90 +4,78 @@ Right
     , aexps =
         [ Solved
             (TComp "Result" [ TCon CString ])
-            (Located
-               (Area (Loc 34 2 1) (Loc 41 2 8))
-               (Assignment
-                  "result1"
-                  (Solved
-                     (TComp "Result" [ TCon CString ])
-                     (Located
+            (Area (Loc 34 2 1) (Loc 41 2 8))
+            (Assignment
+               "result1"
+               (Solved
+                  (TComp "Result" [ TCon CString ])
+                  (Area (Loc 44 2 11) (Loc 51 2 18))
+                  (App
+                     (Solved
+                        (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
                         (Area (Loc 44 2 11) (Loc 51 2 18))
-                        (App
-                           (Solved
-                              (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
-                              (Located (Area (Loc 44 2 11) (Loc 51 2 18)) (Var "Success")))
-                           (Solved
-                              (TCon CString)
-                              (Located
-                                 (Area (Loc 52 2 19) (Loc 62 2 29)) (LStr "response"))))))))
+                        (Var "Success"))
+                     (Solved
+                        (TCon CString)
+                        (Area (Loc 52 2 19) (Loc 62 2 29))
+                        (LStr "response")))))
         , Solved
             (TComp "Result" [ TVar (TV "c") ])
-            (Located
-               (Area (Loc 64 3 1) (Loc 71 3 8))
-               (Assignment
-                  "result2"
-                  (Solved
-                     (TComp "Result" [ TVar (TV "c") ])
-                     (Located (Area (Loc 74 3 11) (Loc 79 3 16)) (Var "Error")))))
+            (Area (Loc 64 3 1) (Loc 71 3 8))
+            (Assignment
+               "result2"
+               (Solved
+                  (TComp "Result" [ TVar (TV "c") ])
+                  (Area (Loc 74 3 11) (Loc 79 3 16))
+                  (Var "Error")))
         , Solved
             (TCon CBool)
-            (Located
-               (Area (Loc 81 4 2) (Loc 82 4 3))
-               (App
-                  (Solved
-                     (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
-                     (Located
+            (Area (Loc 109 4 30) (Loc 116 4 37))
+            (App
+               (Solved
+                  (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
+                  (Area (Loc 109 4 30) (Loc 116 4 37))
+                  (App
+                     (Solved
+                        (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
                         (Area (Loc 81 4 2) (Loc 82 4 3))
-                        (App
+                        (Abs
+                           "a"
                            (Solved
-                              (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
-                              (Located
-                                 (Area (Loc 81 4 2) (Loc 82 4 3))
-                                 (Abs
-                                    "a"
-                                    (Solved
-                                       (TArr (TVar (TV "g")) (TCon CBool))
-                                       (Located
-                                          (Area (Loc 81 4 2) (Loc 82 4 3))
-                                          (Abs
-                                             "b"
+                              (TArr (TVar (TV "g")) (TCon CBool))
+                              (Area (Loc 81 4 2) (Loc 82 4 3))
+                              (Abs
+                                 "b"
+                                 (Solved
+                                    (TCon CBool)
+                                    (Area (Loc 91 4 12) (Loc 92 4 13))
+                                    (App
+                                       (Solved
+                                          (TArr (TVar (TV "f")) (TCon CBool))
+                                          (Area (Loc 91 4 12) (Loc 92 4 13))
+                                          (App
                                              (Solved
-                                                (TCon CBool)
-                                                (Located
-                                                   (Area (Loc 91 4 12) (Loc 92 4 13))
-                                                   (App
-                                                      (Solved
-                                                         (TArr (TVar (TV "f")) (TCon CBool))
-                                                         (Located
-                                                            (Area (Loc 91 4 12) (Loc 92 4 13))
-                                                            (App
-                                                               (Solved
-                                                                  (TArr
-                                                                     (TVar (TV "j"))
-                                                                     (TArr
-                                                                        (TVar (TV "j"))
-                                                                        (TCon CBool)))
-                                                                  (Located
-                                                                     (Area
-                                                                        (Loc 93 4 14) (Loc 96 4 17))
-                                                                     (Var "===")))
-                                                               (Solved
-                                                                  (TVar (TV "f"))
-                                                                  (Located
-                                                                     (Area
-                                                                        (Loc 91 4 12) (Loc 92 4 13))
-                                                                     (Var "a"))))))
-                                                      (Solved
-                                                         (TVar (TV "g"))
-                                                         (Located
-                                                            (Area (Loc 97 4 18) (Loc 98 4 19))
-                                                            (Var "b"))))))))))))
-                           (Solved
-                              (TComp "Result" [ TCon CString ])
-                              (Located (Area (Loc 100 4 21) (Loc 107 4 28)) (Var "result1"))))))
-                  (Solved
-                     (TComp "Result" [ TCon CString ])
-                     (Located (Area (Loc 109 4 30) (Loc 116 4 37)) (Var "result2")))))
+                                                (TArr
+                                                   (TVar (TV "j"))
+                                                   (TArr (TVar (TV "j")) (TCon CBool)))
+                                                (Area (Loc 93 4 14) (Loc 96 4 17))
+                                                (Var "==="))
+                                             (Solved
+                                                (TVar (TV "f"))
+                                                (Area (Loc 91 4 12) (Loc 92 4 13))
+                                                (Var "a"))))
+                                       (Solved
+                                          (TVar (TV "g"))
+                                          (Area (Loc 97 4 18) (Loc 98 4 19))
+                                          (Var "b"))))))))
+                     (Solved
+                        (TComp "Result" [ TCon CString ])
+                        (Area (Loc 100 4 21) (Loc 107 4 28))
+                        (Var "result1"))))
+               (Solved
+                  (TComp "Result" [ TCon CString ])
+                  (Area (Loc 109 4 30) (Loc 116 4 37))
+                  (Var "result2")))
         ]
     , aadts =
         [ ADT

@@ -6,50 +6,38 @@ Right
            , aexps =
                [ Solved
                    (TArr (TCon CNum) (TCon CNum))
-                   (Located
-                      (Area (Loc 0 1 1) (Loc 6 1 7))
-                      (Export
-                         (Solved
-                            (TArr (TCon CNum) (TCon CNum))
-                            (Located
-                               (Area (Loc 7 1 8) (Loc 10 1 11))
-                               (Assignment
-                                  "inc"
+                   (Area (Loc 0 1 1) (Loc 6 1 7))
+                   (Export
+                      (Solved
+                         (TArr (TCon CNum) (TCon CNum))
+                         (Area (Loc 7 1 8) (Loc 10 1 11))
+                         (Assignment
+                            "inc"
+                            (Solved
+                               (TArr (TCon CNum) (TCon CNum))
+                               (Area (Loc 13 1 14) (Loc 14 1 15))
+                               (Abs
+                                  "a"
                                   (Solved
-                                     (TArr (TCon CNum) (TCon CNum))
-                                     (Located
-                                        (Area (Loc 13 1 14) (Loc 14 1 15))
-                                        (Abs
-                                           "a"
-                                           (Solved
-                                              (TCon CNum)
-                                              (Located
+                                     (TCon CNum)
+                                     (Area (Loc 20 1 21) (Loc 21 1 22))
+                                     (App
+                                        (Solved
+                                           (TArr (TCon CNum) (TCon CNum))
+                                           (Area (Loc 20 1 21) (Loc 21 1 22))
+                                           (App
+                                              (Solved
+                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                 (Area (Loc 21 1 22) (Loc 23 1 24))
+                                                 (Var "+"))
+                                              (Solved
+                                                 (TCon CNum)
                                                  (Area (Loc 20 1 21) (Loc 21 1 22))
-                                                 (App
-                                                    (Solved
-                                                       (TArr (TCon CNum) (TCon CNum))
-                                                       (Located
-                                                          (Area (Loc 20 1 21) (Loc 21 1 22))
-                                                          (App
-                                                             (Solved
-                                                                (TArr
-                                                                   (TCon CNum)
-                                                                   (TArr (TCon CNum) (TCon CNum)))
-                                                                (Located
-                                                                   (Area
-                                                                      (Loc 21 1 22) (Loc 23 1 24))
-                                                                   (Var "+")))
-                                                             (Solved
-                                                                (TCon CNum)
-                                                                (Located
-                                                                   (Area
-                                                                      (Loc 20 1 21) (Loc 21 1 22))
-                                                                   (Var "a"))))))
-                                                    (Solved
-                                                       (TCon CNum)
-                                                       (Located
-                                                          (Area (Loc 24 1 25) (Loc 25 1 26))
-                                                          (LInt "1"))))))))))))))
+                                                 (Var "a"))))
+                                        (Solved
+                                           (TCon CNum)
+                                           (Area (Loc 24 1 25) (Loc 25 1 26))
+                                           (LInt "1")))))))))
                ]
            , aadts = []
            , apath = Just "./ModuleA.mad"
@@ -61,15 +49,13 @@ Right
            , aexps =
                [ Solved
                    (TCon CNum)
-                   (Located
-                      (Area (Loc 30 2 1) (Loc 33 2 4))
-                      (App
-                         (Solved
-                            (TArr (TCon CNum) (TCon CNum))
-                            (Located (Area (Loc 30 2 1) (Loc 33 2 4)) (Var "inc")))
-                         (Solved
-                            (TCon CNum)
-                            (Located (Area (Loc 34 2 5) (Loc 35 2 6)) (LInt "3")))))
+                   (Area (Loc 30 2 1) (Loc 33 2 4))
+                   (App
+                      (Solved
+                         (TArr (TCon CNum) (TCon CNum))
+                         (Area (Loc 30 2 1) (Loc 33 2 4))
+                         (Var "inc"))
+                      (Solved (TCon CNum) (Area (Loc 34 2 5) (Loc 35 2 6)) (LInt "3")))
                ]
            , aadts = []
            , apath = Just "./ModuleB.mad"

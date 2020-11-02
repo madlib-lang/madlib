@@ -10,6 +10,7 @@ import           Parse.Lexer
 import           Infer.Type
 import qualified AST.Source           as Src
 import           Explain.Location
+import           Explain.Meta
 }
 
 %name parseMadlib ast
@@ -300,12 +301,15 @@ buildAbs' nth area (x:xs) body  = Located area (Src.Abs x (buildAbs' (nth + 1) a
 
 
 buildApp :: Area -> Src.Exp -> [Src.Exp] -> Src.Exp
-buildApp area f args = buildApp' 0 area f args
+buildApp area f args = buildApp' (length args) area f args
 
 -- TODO: use that nth to add context to args
 buildApp' :: Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
-buildApp' nth area f [arg]  = Located area (Src.App f arg)
-buildApp' nth area f xs     = Located area (Src.App (buildApp' (nth + 1) area f (init xs)) (last xs))
+buildApp' nth area f [(Located area' arg)]  = Located area (Src.App f (Meta [NthArg nth] area' arg))
+buildApp' nth area f xs     = 
+  let (Located area arg) = last xs
+      argWithMeta        = Meta [NthArg nth] area arg
+  in  Located area (Src.App (buildApp' (nth - 1) area f (init xs)) argWithMeta)
 
 nameToPattern :: String -> Src.Pattern
 nameToPattern n | n == "_"           = Src.PAny

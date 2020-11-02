@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d44aba87b235b7c5ab7129fb9f8efd50cb40c4db827818254bea7c77e783b580
+-- hash: c4a7524edc5738ececbca1df09919299699e0fa68c2c8a5660dc613f0f87ac16
 
 name:           madlib
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       Compile
       Error.Error
       Explain.Location
+      Explain.Meta
       Explain.Reason
       Infer.ADT
       Infer.Env
@@ -80,6 +81,7 @@ executable madlib-exe
       Compile
       Error.Error
       Explain.Location
+      Explain.Meta
       Explain.Reason
       Infer.ADT
       Infer.Env

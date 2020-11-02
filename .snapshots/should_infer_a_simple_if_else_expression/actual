@@ -4,18 +4,13 @@ Right
     , aexps =
         [ Solved
             (TCon CString)
-            (Located
-               (Area (Loc 0 1 1) (Loc 2 1 3))
-               (If
-                  (Solved
-                     (TCon CBool)
-                     (Located (Area (Loc 3 1 4) (Loc 7 1 8)) (LBool "True")))
-                  (Solved
-                     (TCon CString)
-                     (Located (Area (Loc 13 2 3) (Loc 17 2 7)) (LStr "OK")))
-                  (Solved
-                     (TCon CString)
-                     (Located (Area (Loc 29 5 3) (Loc 37 5 11)) (LStr "NOT OK")))))
+            (Area (Loc 0 1 1) (Loc 2 1 3))
+            (If
+               (Solved (TCon CBool) (Area (Loc 3 1 4) (Loc 7 1 8)) (LBool "True"))
+               (Solved
+                  (TCon CString) (Area (Loc 13 2 3) (Loc 17 2 7)) (LStr "OK"))
+               (Solved
+                  (TCon CString) (Area (Loc 29 5 3) (Loc 37 5 11)) (LStr "NOT OK")))
         ]
     , aadts = []
     , apath = Just "path"

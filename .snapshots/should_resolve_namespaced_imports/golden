@@ -6,32 +6,27 @@ Right
            , aexps =
                [ Solved
                    (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                   (Located
-                      (Area (Loc 0 1 1) (Loc 6 1 7))
-                      (Export
-                         (Solved
-                            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                            (Located
-                               (Area (Loc 7 1 8) (Loc 16 1 17))
-                               (Assignment
-                                  "singleton"
+                   (Area (Loc 0 1 1) (Loc 6 1 7))
+                   (Export
+                      (Solved
+                         (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                         (Area (Loc 7 1 8) (Loc 16 1 17))
+                         (Assignment
+                            "singleton"
+                            (Solved
+                               (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                               (Area (Loc 19 1 20) (Loc 20 1 21))
+                               (Abs
+                                  "a"
                                   (Solved
-                                     (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                                     (Located
-                                        (Area (Loc 19 1 20) (Loc 20 1 21))
-                                        (Abs
-                                           "a"
-                                           (Solved
-                                              (TComp "List" [ TVar (TV "a") ])
-                                              (Located
-                                                 (Area (Loc 26 1 27) (Loc 27 1 28))
-                                                 (ListConstructor
-                                                    [ Solved
-                                                        (TVar (TV "a"))
-                                                        (Located
-                                                           (Area (Loc 27 1 28) (Loc 28 1 29))
-                                                           (Var "a"))
-                                                    ])))))))))))
+                                     (TComp "List" [ TVar (TV "a") ])
+                                     (Area (Loc 26 1 27) (Loc 27 1 28))
+                                     (ListConstructor
+                                        [ Solved
+                                            (TVar (TV "a"))
+                                            (Area (Loc 27 1 28) (Loc 28 1 29))
+                                            (Var "a")
+                                        ])))))))
                ]
            , aadts = []
            , apath = Just "./ModuleA.mad"
@@ -43,31 +38,28 @@ Right
            , aexps =
                [ Solved
                    (TComp "List" [ TCon CNum ])
-                   (Located
-                      (Area (Loc 24 2 1) (Loc 25 2 2))
-                      (App
-                         (Solved
-                            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                            (Located
+                   (Area (Loc 24 2 1) (Loc 25 2 2))
+                   (App
+                      (Solved
+                         (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+                         (Area (Loc 24 2 1) (Loc 25 2 2))
+                         (FieldAccess
+                            (Solved
+                               (TRecord
+                                  (fromList
+                                     [ ( "singleton"
+                                       , TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ])
+                                       )
+                                     ]))
                                (Area (Loc 24 2 1) (Loc 25 2 2))
-                               (FieldAccess
-                                  (Solved
-                                     (TRecord
-                                        (fromList
-                                           [ ( "singleton"
-                                             , TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ])
-                                             )
-                                           ]))
-                                     (Located (Area (Loc 24 2 1) (Loc 25 2 2)) (Var "L")))
-                                  (Solved
-                                     (TArr
-                                        (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]))
-                                        (TVar (TV "c")))
-                                     (Located
-                                        (Area (Loc 26 2 3) (Loc 35 2 12)) (Var ".singleton"))))))
-                         (Solved
-                            (TCon CNum)
-                            (Located (Area (Loc 36 2 13) (Loc 37 2 14)) (LInt "3")))))
+                               (Var "L"))
+                            (Solved
+                               (TArr
+                                  (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]))
+                                  (TVar (TV "c")))
+                               (Area (Loc 26 2 3) (Loc 35 2 12))
+                               (Var ".singleton"))))
+                      (Solved (TCon CNum) (Area (Loc 36 2 13) (Loc 37 2 14)) (LInt "3")))
                ]
            , aadts = []
            , apath = Just "./ModuleB.mad"

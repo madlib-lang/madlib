@@ -4,135 +4,105 @@ Right
     , aexps =
         [ Solved
             (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-            (Located
-               (Area (Loc 0 1 1) (Loc 1 1 2))
-               (Assignment
-                  "a"
-                  (Solved
-                     (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-                     (Located
-                        (Area (Loc 4 1 5) (Loc 5 1 6))
-                        (Record
-                           (fromList
-                              [ ( "x"
-                                , Solved
-                                    (TCon CNum)
-                                    (Located (Area (Loc 9 1 10) (Loc 10 1 11)) (LInt "3"))
-                                )
-                              , ( "y"
-                                , Solved
-                                    (TCon CNum)
-                                    (Located (Area (Loc 15 1 16) (Loc 16 1 17)) (LInt "5"))
-                                )
-                              ]))))))
+            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Assignment
+               "a"
+               (Solved
+                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (Area (Loc 4 1 5) (Loc 5 1 6))
+                  (Record
+                     (fromList
+                        [ ( "x"
+                          , Solved (TCon CNum) (Area (Loc 9 1 10) (Loc 10 1 11)) (LInt "3")
+                          )
+                        , ( "y"
+                          , Solved (TCon CNum) (Area (Loc 15 1 16) (Loc 16 1 17)) (LInt "5")
+                          )
+                        ]))))
         , Solved
             (TArr
                (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
                (TCon CNum))
-            (Located
-               (Area (Loc 19 2 1) (Loc 25 2 7))
-               (Assignment
-                  "xPlusY"
-                  (Solved
-                     (TArr
-                        (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-                        (TCon CNum))
-                     (Located
-                        (Area (Loc 28 2 10) (Loc 29 2 11))
-                        (Abs
-                           "r"
+            (Area (Loc 19 2 1) (Loc 25 2 7))
+            (Assignment
+               "xPlusY"
+               (Solved
+                  (TArr
+                     (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                     (TCon CNum))
+                  (Area (Loc 28 2 10) (Loc 29 2 11))
+                  (Abs
+                     "r"
+                     (Solved
+                        (TCon CNum)
+                        (Area (Loc 35 2 17) (Loc 36 2 18))
+                        (App
                            (Solved
-                              (TCon CNum)
-                              (Located
-                                 (Area (Loc 35 2 17) (Loc 36 2 18))
-                                 (App
-                                    (Solved
-                                       (TArr (TCon CNum) (TCon CNum))
-                                       (Located
+                              (TArr (TCon CNum) (TCon CNum))
+                              (Area (Loc 35 2 17) (Loc 36 2 18))
+                              (App
+                                 (Solved
+                                    (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                    (Area (Loc 38 2 20) (Loc 40 2 22))
+                                    (Var "+"))
+                                 (Solved
+                                    (TCon CNum)
+                                    (Area (Loc 35 2 17) (Loc 36 2 18))
+                                    (FieldAccess
+                                       (Solved
+                                          (TRecord (fromList [ ( "x" , TVar (TV "d") ) ]))
+                                          (Area (Loc 35 2 17) (Loc 36 2 18))
+                                          (Var "r"))
+                                       (Solved
+                                          (TVar (TV "d"))
                                           (Area (Loc 35 2 17) (Loc 36 2 18))
                                           (App
                                              (Solved
-                                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                                (Located
-                                                   (Area (Loc 38 2 20) (Loc 40 2 22)) (Var "+")))
+                                                (TArr
+                                                   (TRecord (fromList [ ( "x" , TVar (TV "e") ) ]))
+                                                   (TVar (TV "e")))
+                                                (Area (Loc 37 2 19) (Loc 38 2 20))
+                                                (Var ".x"))
                                              (Solved
-                                                (TCon CNum)
-                                                (Located
-                                                   (Area (Loc 35 2 17) (Loc 36 2 18))
-                                                   (FieldAccess
-                                                      (Solved
-                                                         (TRecord
-                                                            (fromList [ ( "x" , TVar (TV "d") ) ]))
-                                                         (Located
-                                                            (Area (Loc 35 2 17) (Loc 36 2 18))
-                                                            (Var "r")))
-                                                      (Solved
-                                                         (TVar (TV "d"))
-                                                         (Located
-                                                            (Area (Loc 35 2 17) (Loc 36 2 18))
-                                                            (App
-                                                               (Solved
-                                                                  (TArr
-                                                                     (TRecord
-                                                                        (fromList
-                                                                           [ ( "x" , TVar (TV "e") )
-                                                                           ]))
-                                                                     (TVar (TV "e")))
-                                                                  (Located
-                                                                     (Area
-                                                                        (Loc 37 2 19) (Loc 38 2 20))
-                                                                     (Var ".x")))
-                                                               (Solved
-                                                                  (TRecord
-                                                                     (fromList
-                                                                        [ ( "x" , TVar (TV "d") )
-                                                                        ]))
-                                                                  (Located
-                                                                     (Area
-                                                                        (Loc 35 2 17) (Loc 36 2 18))
-                                                                     (Var "r"))))))))))))
-                                    (Solved
-                                       (TCon CNum)
-                                       (Located
+                                                (TRecord (fromList [ ( "x" , TVar (TV "d") ) ]))
+                                                (Area (Loc 35 2 17) (Loc 36 2 18))
+                                                (Var "r"))))))))
+                           (Solved
+                              (TCon CNum)
+                              (Area (Loc 41 2 23) (Loc 42 2 24))
+                              (FieldAccess
+                                 (Solved
+                                    (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]))
+                                    (Area (Loc 41 2 23) (Loc 42 2 24))
+                                    (Var "r"))
+                                 (Solved
+                                    (TVar (TV "f"))
+                                    (Area (Loc 41 2 23) (Loc 42 2 24))
+                                    (App
+                                       (Solved
+                                          (TArr
+                                             (TRecord (fromList [ ( "y" , TVar (TV "g") ) ]))
+                                             (TVar (TV "g")))
+                                          (Area (Loc 43 2 25) (Loc 44 2 26))
+                                          (Var ".y"))
+                                       (Solved
+                                          (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]))
                                           (Area (Loc 41 2 23) (Loc 42 2 24))
-                                          (FieldAccess
-                                             (Solved
-                                                (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]))
-                                                (Located
-                                                   (Area (Loc 41 2 23) (Loc 42 2 24)) (Var "r")))
-                                             (Solved
-                                                (TVar (TV "f"))
-                                                (Located
-                                                   (Area (Loc 41 2 23) (Loc 42 2 24))
-                                                   (App
-                                                      (Solved
-                                                         (TArr
-                                                            (TRecord
-                                                               (fromList
-                                                                  [ ( "y" , TVar (TV "g") ) ]))
-                                                            (TVar (TV "g")))
-                                                         (Located
-                                                            (Area (Loc 43 2 25) (Loc 44 2 26))
-                                                            (Var ".y")))
-                                                      (Solved
-                                                         (TRecord
-                                                            (fromList [ ( "y" , TVar (TV "f") ) ]))
-                                                         (Located
-                                                            (Area (Loc 41 2 23) (Loc 42 2 24))
-                                                            (Var "r")))))))))))))))))
+                                          (Var "r")))))))))))
         , Solved
             (TCon CNum)
-            (Located
-               (Area (Loc 45 3 1) (Loc 51 3 7))
-               (App
-                  (Solved
-                     (TArr
-                        (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-                        (TCon CNum))
-                     (Located (Area (Loc 45 3 1) (Loc 51 3 7)) (Var "xPlusY")))
-                  (Solved
+            (Area (Loc 45 3 1) (Loc 51 3 7))
+            (App
+               (Solved
+                  (TArr
                      (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-                     (Located (Area (Loc 52 3 8) (Loc 53 3 9)) (Var "a")))))
+                     (TCon CNum))
+                  (Area (Loc 45 3 1) (Loc 51 3 7))
+                  (Var "xPlusY"))
+               (Solved
+                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (Area (Loc 52 3 8) (Loc 53 3 9))
+                  (Var "a")))
         ]
     , aadts = []
     , apath = Just "path"

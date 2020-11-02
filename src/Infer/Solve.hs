@@ -20,16 +20,19 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
 import           Error.Error
-import           Explain.Location
 import           Explain.Reason
 import Debug.Trace
 import Text.Show.Pretty
+import Explain.Meta
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
 
-  let Located loc exp = lexp
+  let (area, exp) = case lexp of
+        Located area exp -> (area, exp)
+        Meta _ area exp  -> (area, exp)
+
   in  case exp of
     Src.LInt _            -> return (M.empty, num, applyLitSolve lexp num)
     Src.LStr _            -> return (M.empty, str, applyLitSolve lexp str)
@@ -44,33 +47,38 @@ infer env lexp =
     Src.FieldAccess _ _   -> inferFieldAccess env lexp
     Src.TypedExp _ _      -> inferTypedExp env lexp
     Src.ListConstructor _ -> inferListConstructor env lexp
-    Src.JSExp c -> return (M.empty, TAny, Slv.Solved TAny (Located loc (Slv.JSExp c)))
     Src.Export _          -> inferExport env lexp
     Src.If _ _ _          -> inferIf env lexp
+    Src.JSExp c ->
+      return (M.empty, TAny, Slv.Solved TAny area (Slv.JSExp c))
 
 
 -- TODO: Should probably just take a Loc instead of the old Expression !
 applyLitSolve :: Src.Exp -> Type -> Slv.Exp
-applyLitSolve (Located loc exp) t = case exp of
-  Src.LInt v  -> Slv.Solved t (Located loc $ Slv.LInt v)
-  Src.LStr v  -> Slv.Solved t (Located loc $ Slv.LStr v)
-  Src.LBool v -> Slv.Solved t (Located loc $ Slv.LBool v)
+applyLitSolve (Located area exp) t = case exp of
+  Src.LInt v  -> Slv.Solved t area $ Slv.LInt v
+  Src.LStr v  -> Slv.Solved t area $ Slv.LStr v
+  Src.LBool v -> Slv.Solved t area $ Slv.LBool v
+applyLitSolve (Meta _ area exp) t = case exp of
+  Src.LInt v  -> Slv.Solved t area $ Slv.LInt v
+  Src.LStr v  -> Slv.Solved t area $ Slv.LStr v
+  Src.LBool v -> Slv.Solved t area $ Slv.LBool v
 
 applyVarSolve :: Src.Exp -> Type -> Slv.Exp
-applyVarSolve (Located loc (Src.Var v)) t = Slv.Solved t (Located loc $ Slv.Var v)
+applyVarSolve (Located loc (Src.Var v)) t = Slv.Solved t loc $ Slv.Var v
 
 applyAbsSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
-applyAbsSolve (Located loc _) param body t = Slv.Solved t (Located loc $ Slv.Abs param body)
+applyAbsSolve (Located loc _) param body t = Slv.Solved t loc $ Slv.Abs param body
 
 applyAppSolve :: Src.Exp -> Slv.Exp -> Slv.Exp -> Type -> Slv.Exp
-applyAppSolve (Located loc _) abs arg t = Slv.Solved t (Located loc $ Slv.App abs arg)
+applyAppSolve (Located loc _) abs arg t = Slv.Solved t loc $ Slv.App abs arg
 
 applyAssignmentSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
-applyAssignmentSolve (Located loc _) n exp t = Slv.Solved t (Located loc $ Slv.Assignment n exp)
+applyAssignmentSolve (Located loc _) n exp t = Slv.Solved t loc $ Slv.Assignment n exp
 
 
 updateType :: Slv.Exp -> Type -> Slv.Exp
-updateType (Slv.Solved t a) t' = Slv.Solved t' a
+updateType (Slv.Solved _ a e) t' = Slv.Solved t' a e
 
 
 updatePattern :: Src.Pattern -> Slv.Pattern
@@ -106,14 +114,19 @@ updateTyping t = case t of
 -- INFER VAR
 
 inferVar :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferVar env l@(Located loc (Src.Var n)) = case n of
-  ('.' : name) -> do
-    let s = Forall [TV "a"]
-          $ TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
-    t <- instantiate s
-    return (M.empty, t, applyVarSolve l t)
+inferVar env exp = do
+  let (n, area) = case exp of
+        Located area (Src.Var n) -> (n, area)
+        Meta _ area (Src.Var n)  -> (n, area)
 
-  _ -> (\(s, t) -> (s, t, applyVarSolve l t)) <$> lookupVar env n
+  case n of
+    ('.' : name) -> do
+      let s = Forall [TV "a"]
+            $ TArr (TRecord (M.fromList [(name, TVar $ TV "a")])) (TVar $ TV "a")
+      t <- instantiate s
+      return (M.empty, t, Slv.Solved t area $ Slv.Var n)
+
+    _ -> (\(s, t) -> (s, t, Slv.Solved t area $ Slv.Var n)) <$> lookupVar env n
 
 
 -- INFER ABS
@@ -130,7 +143,12 @@ inferAbs env l@(Located loc (Src.Abs param body)) = do
 -- INFER APP
 
 inferApp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferApp env l@(Located loc (Src.App abs arg)) = do
+inferApp env exp = do
+  let (area, abs, arg) = case exp of
+        Located area (Src.App abs arg) -> (area, abs, arg)
+        Meta _ area (Src.App abs arg)  -> (area, abs, arg)
+
+
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
   (s2, t2, earg) <- infer env arg
@@ -144,7 +162,7 @@ inferApp env l@(Located loc (Src.App abs arg)) = do
   return
     ( s3 `compose` s2 `compose` s1
     , t
-    , applyAppSolve l eabs (updateType earg $ apply s3 t2) t
+    , Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2) --applyAppSolve exp eabs (updateType earg $ apply s3 t2) t
     )
 
 
@@ -178,20 +196,24 @@ inferAssignment env e@(Located loc (Src.Assignment name exp)) = case exp of
 inferExport :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferExport env (Located loc (Src.Export exp)) = do
   (s, t, e) <- infer env exp
-  return (s, t, Slv.Solved t (Located loc (Slv.Export e)))
+  return (s, t, Slv.Solved t loc (Slv.Export e))
 
 
 -- INFER RECORD
 
 inferRecord :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferRecord env (Located loc (Src.Record fields)) = do
+inferRecord env exp = do
+  let (area, fields) = case exp of
+        (Located area (Src.Record fields)) -> (area, fields)
+        Meta _ area (Src.Record fields)    -> (area, fields)
+
   inferred <- mapM (infer env) fields
   let inferredFields = M.map trd inferred
       recordType     = TRecord $ M.map mid inferred
   return
     ( M.empty
     , recordType
-    , Slv.Solved recordType (Located loc (Slv.Record inferredFields))
+    , Slv.Solved recordType area (Slv.Record inferredFields)
     )
 
 
@@ -208,9 +230,9 @@ inferTypedExp _ (Located loc (Src.TypedExp exp typing)) = do
   
   -- TODO: Handle other cases
   let e = case exp of
-        Located loc (Src.Var name) -> Slv.Solved t (Located loc (Slv.Var name))
+        Located loc (Src.Var name) -> Slv.Solved t loc (Slv.Var name)
 
-  return (M.empty, t, Slv.Solved t (Located loc (Slv.TypedExp e (updateTyping typing))))
+  return (M.empty, t, Slv.Solved t loc (Slv.TypedExp e (updateTyping typing)))
 
 typingToType :: Src.Typing -> Infer Type
 typingToType (Src.TRSingle t) | t == "Num"    = return $ TCon CNum
@@ -238,14 +260,14 @@ typingToType (Src.TRRecord f) = do
 inferListConstructor :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferListConstructor env (Located loc (Src.ListConstructor elems)) = case elems of
   [] -> let t = TComp "List" [TVar $ TV "a"]
-        in  return (M.empty, t, Slv.Solved t (Located loc (Slv.ListConstructor [])))
+        in  return (M.empty, t, Slv.Solved t loc (Slv.ListConstructor []))
 
   elems -> do
     inferred <- mapM (infer env) elems
     let (_, t1, _) = head inferred
     let t          = TComp "List" [t1]
     s <- unifyToInfer env $ unifyElems t1 (mid <$> inferred)
-    return (s, t, Slv.Solved t (Located loc (Slv.ListConstructor (trd <$> inferred))))
+    return (s, t, Slv.Solved t loc (Slv.ListConstructor (trd <$> inferred)))
 
 
 -- INFER FIELD ACCESS
@@ -261,12 +283,12 @@ inferFieldAccess env (Located loc (Src.FieldAccess rec@(Located l arg) abs@(Loca
   case ft of
     Just t -> do
       (s1, _, e1) <- infer env abs
-      return (rs `compose` s1, t, Slv.Solved t (Located loc (Slv.FieldAccess re e1)))
+      return (rs `compose` s1, t, Slv.Solved t loc (Slv.FieldAccess re e1))
 
     Nothing -> do
       (s1, t1, e1) <- inferApp env (Located loc (Src.App abs rec))
       let rt' = apply s1 rt
-      return (rs `compose` s1, t1, Slv.Solved t1 (Located loc (Slv.FieldAccess (updateType re rt') e1)))
+      return (rs `compose` s1, t1, Slv.Solved t1 loc (Slv.FieldAccess (updateType re rt') e1))
 
 
 -- INFER IF
@@ -280,7 +302,7 @@ inferIf env (Located loc (Src.If cond truthy falsy)) = do
   s1 <- unifyToInfer env $ unify tcond (TCon CBool)
   s2 <- unifyToInfer env $ unify ttruthy tfalsy
 
-  return (s1 `compose` s2, ttruthy, Slv.Solved ttruthy (Located loc (Slv.If econd etruthy efalsy)))
+  return (s1 `compose` s2, ttruthy, Slv.Solved ttruthy loc (Slv.If econd etruthy efalsy))
 
 
 -- INFER SWITCH
@@ -308,7 +330,7 @@ inferSwitch env (Located loc (Src.Switch exp cases)) = do
   return
     ( s
     , switchType
-    , Slv.Solved switchType (Located loc $ Slv.Switch (updateType ee (apply s te)) updatedCases)
+    , Slv.Solved switchType loc $ Slv.Switch (updateType ee (apply s te)) updatedCases
     )
 
  where
@@ -427,7 +449,7 @@ inferExps env (e : xs) = do
         -- Reassigning a name should not be allowed.
         Slv.Assignment name _ -> extendVars env (name, Forall ((S.toList . ftv) t) t)
 
-        Slv.TypedExp (Slv.Solved _ (Located _ (Slv.Var name))) _ ->
+        Slv.TypedExp (Slv.Solved _ _ (Slv.Var name)) _ ->
           extendTypings env (name, Forall ((S.toList . ftv) t) t)
 
         _ -> env
@@ -469,13 +491,13 @@ exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
   Nothing -> throwError $ InferError ASTHasNoPath NoReason
   
   where
-    bundleExports _ (Slv.Solved _ (Located _ (Slv.Export e))) =
-      let (Slv.Solved _ (Located _ (Slv.Assignment n e'))) = e
+    bundleExports _ (Slv.Solved _ _ (Slv.Export e)) =
+      let (Slv.Solved _ _ (Slv.Assignment n e')) = e
       in  return (n, e')
     
     isExport :: Slv.Exp -> Bool
     isExport a = case a of
-      (Slv.Solved _ (Located _ (Slv.Export _))) -> True
+      (Slv.Solved _ _ (Slv.Export _)) -> True
 
       _                                     -> False
 

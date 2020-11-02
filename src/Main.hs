@@ -24,6 +24,7 @@ import qualified AST.Solved as Slv
 import qualified AST.Source as Src
 import Explain.Location
 import Infer.Type
+import Explain.Meta
 
 main :: IO ()
 main = do
@@ -69,16 +70,29 @@ makeOutputPath path = "./build/" <> replaceExtension path "mjs"
 
 formatError :: InferError -> IO String
 formatError (InferError err reason) = case reason of
-  Reason (WrongTypeApplied (Located (Area (Loc a li c) _) e)) area -> do
+  Reason (WrongTypeApplied (Meta infos (Area (Loc a li c) _) e)) area -> do
     fc <- readFile "fixtures/wrong.mad"
     let l = lines fc !! (li - 1)
     let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
     let (UnificationError expected actual) = err
-    let message = "\nThe [nth] argument [TBD] has type\n\t"<>typeToStr actual<>"\nBut it was expected to be\n\t"<>typeToStr expected
+
+    let nthInfo = case getNthArgFromInfos infos of
+          Just nth -> "The "<>show nth<>nthEnding nth<>" "
+          Nothing  -> "The "
+
+
+    let message = "\n"<> nthInfo <> "argument of [TBD] has type\n\t"<>typeToStr actual<>"\nBut it was expected to be\n\t"<>typeToStr expected
 
     return $ "Error in function call at line "<>show li<>":\n"
       <> l <> "\n" <> concat [" " | _ <- [1..(colStart - 1)]] <> concat ["^" | _ <- [colStart..(colEnd - 1)]] <> message
 
+
+nthEnding :: Int -> String
+nthEnding n = case n of
+  1 -> "st"
+  2 -> "nd"
+  3 -> "rd"
+  _ -> "th"
 
 typeToStr :: Type -> String
 typeToStr t = case t of

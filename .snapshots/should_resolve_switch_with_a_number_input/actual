@@ -4,48 +4,42 @@ Right
     , aexps =
         [ Solved
             (TCon CString)
-            (Located
-               (Area (Loc 0 1 1) (Loc 6 1 7))
-               (Switch
-                  (Solved
-                     (TCon CNum) (Located (Area (Loc 7 1 8) (Loc 9 1 10)) (LInt "42")))
-                  [ Case
-                      { casepos = Area (Loc 15 2 3) (Loc 19 2 7)
-                      , casetype = Just (TArr (TCon CNum) (TCon CString))
-                      , casepattern = PNum "1"
-                      , caseexp =
-                          Solved
-                            (TCon CString)
-                            (Located (Area (Loc 24 2 12) (Loc 30 2 18)) (LStr "NOPE"))
-                      }
-                  , Case
-                      { casepos = Area (Loc 33 3 3) (Loc 37 3 7)
-                      , casetype = Just (TArr (TCon CNum) (TCon CString))
-                      , casepattern = PNum "3"
-                      , caseexp =
-                          Solved
-                            (TCon CString)
-                            (Located (Area (Loc 42 3 12) (Loc 48 3 18)) (LStr "NOPE"))
-                      }
-                  , Case
-                      { casepos = Area (Loc 51 4 3) (Loc 55 4 7)
-                      , casetype = Just (TArr (TCon CNum) (TCon CString))
-                      , casepattern = PNum "33"
-                      , caseexp =
-                          Solved
-                            (TCon CString)
-                            (Located (Area (Loc 60 4 12) (Loc 66 4 18)) (LStr "NOPE"))
-                      }
-                  , Case
-                      { casepos = Area (Loc 69 5 3) (Loc 73 5 7)
-                      , casetype = Just (TArr (TCon CNum) (TCon CString))
-                      , casepattern = PNum "42"
-                      , caseexp =
-                          Solved
-                            (TCon CString)
-                            (Located (Area (Loc 78 5 12) (Loc 84 5 18)) (LStr "YEAH"))
-                      }
-                  ]))
+            (Area (Loc 0 1 1) (Loc 6 1 7))
+            (Switch
+               (Solved (TCon CNum) (Area (Loc 7 1 8) (Loc 9 1 10)) (LInt "42"))
+               [ Case
+                   { casepos = Area (Loc 15 2 3) (Loc 19 2 7)
+                   , casetype = Just (TArr (TCon CNum) (TCon CString))
+                   , casepattern = PNum "1"
+                   , caseexp =
+                       Solved
+                         (TCon CString) (Area (Loc 24 2 12) (Loc 30 2 18)) (LStr "NOPE")
+                   }
+               , Case
+                   { casepos = Area (Loc 33 3 3) (Loc 37 3 7)
+                   , casetype = Just (TArr (TCon CNum) (TCon CString))
+                   , casepattern = PNum "3"
+                   , caseexp =
+                       Solved
+                         (TCon CString) (Area (Loc 42 3 12) (Loc 48 3 18)) (LStr "NOPE")
+                   }
+               , Case
+                   { casepos = Area (Loc 51 4 3) (Loc 55 4 7)
+                   , casetype = Just (TArr (TCon CNum) (TCon CString))
+                   , casepattern = PNum "33"
+                   , caseexp =
+                       Solved
+                         (TCon CString) (Area (Loc 60 4 12) (Loc 66 4 18)) (LStr "NOPE")
+                   }
+               , Case
+                   { casepos = Area (Loc 69 5 3) (Loc 73 5 7)
+                   , casetype = Just (TArr (TCon CNum) (TCon CString))
+                   , casepattern = PNum "42"
+                   , caseexp =
+                       Solved
+                         (TCon CString) (Area (Loc 78 5 12) (Loc 84 5 18)) (LStr "YEAH")
+                   }
+               ])
         ]
     , aadts = []
     , apath = Just "path"
