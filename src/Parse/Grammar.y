@@ -71,7 +71,7 @@ ast :: { Src.AST }
   | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Located (tokenToArea $1) (Src.Export (Located (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | rRet              { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | rRet ast          { $2 }
   | ast rRet          { $1 }
@@ -169,23 +169,23 @@ exp :: { Src.Exp }
   | switch                           { $1 }
   | operation                        { $1 }
   | listConstructor          %shift  { $1 }
-  | js                       %shift  { Located (tokenToArea $1) (Src.JSExp $ strV $1) }
-  | name '=' exp             %shift  { Located (tokenToArea $1) (Src.Assignment (strV $1) $3) }
-  | name                     %shift  { Located (tokenToArea $1) (Src.Var $ strV $1) }
-  | name rParenL args ')'    %shift  { buildApp (tokenToArea $1) (Located (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | js                       %shift  { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
+  | name '=' exp             %shift  { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
+  | name                     %shift  { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
+  | name rParenL args ')'    %shift  { buildApp (tokenToArea $1) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
   | exp '(' args ')'                 { buildApp (getArea $1) $1 $3 }
   | '(' exp ')' '(' args ')' %shift  { buildApp (getArea $2) $2 $5 }
   | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToArea $1) $2 $5 }
   | '(' exp ')'              %shift  { $2 }
-  | exp '::' typings                 { Located (getArea $1) (Src.TypedExp $1 $3) }
-  | exp '.' name                     { Located (getArea $1) (Src.FieldAccess $1 (Located (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
-  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Located (getArea $1) (Src.FieldAccess $1 (Located (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
+  | exp '::' typings                 { Meta emptyInfos (getArea $1) (Src.TypedExp $1 $3) }
+  | exp '.' name                     { Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
+  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
-      { Located (tokenToArea $1) (Src.If $3 $7 $15) }
+      { Meta emptyInfos (tokenToArea $1) (Src.If $3 $7 $15) }
 
 
 switch :: { Src.Exp }
-  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Located (tokenToArea $1) (Src.Switch $3 $7) }
+  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Meta emptyInfos (tokenToArea $1) (Src.Switch $3 $7) }
 
 cases :: { [Src.Case] }
   : 'case' pattern ':' exp             { [Src.Case { Src.casepos = tokenToArea $1, Src.casepattern = $2, Src.caseexp = $4 }] }
@@ -221,7 +221,7 @@ recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
 
 
 record :: { Src.Exp }
-  : '{' recordFields '}' { Located (tokenToArea $1) (Src.Record $2) }
+  : '{' recordFields '}' { Meta emptyInfos (tokenToArea $1) (Src.Record $2) }
 
 recordFields :: { Src.Fields }
   : name ':' exp                  { M.fromList [(strV $1, $3)] }
@@ -229,46 +229,46 @@ recordFields :: { Src.Fields }
 
 
 operation :: { Src.Exp }
-  : exp '+' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "+")) 
+  : exp '+' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "+")) 
                          $1))) 
                       $3)
                  }
-  | exp '-' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "-")) 
+  | exp '-' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "-")) 
                          $1))) 
                       $3)
                  }
-  | exp '*' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "*")) 
+  | exp '*' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "*")) 
                          $1))) 
                       $3)
                  }
-  | exp '/' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "/")) 
+  | exp '/' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "/")) 
                          $1))) 
                       $3)
                  }
-  | exp '===' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "===")) 
+  | exp '===' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "===")) 
                          $1))) 
                       $3)
                    }
-  | exp '|>' exp  { Located (getArea $1) (Src.App
-                      ((Located (getArea $1) (Src.App
-                         (Located (tokenToArea $2) (Src.Var "|>")) 
+  | exp '|>' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "|>")) 
                          $1))) 
                       $3)
                   
                   }
 
 listConstructor :: { Src.Exp }
-  : '[' listItems ']' { Located (tokenToArea $1) (Src.ListConstructor $2) }
+  : '[' listItems ']' { Meta emptyInfos (tokenToArea $1) (Src.ListConstructor $2) }
 
 listItems :: { [Src.Exp] }
   : exp               { [$1] }
@@ -276,10 +276,10 @@ listItems :: { [Src.Exp] }
   | {- empty -}       { [] }
 
 literal :: { Src.Exp }
-  : int                       { Located (tokenToArea $1) (Src.LInt $ strV $1) }
-  | str                       { Located (tokenToArea $1) (Src.LStr $ strV $1) }
-  | true                      { Located (tokenToArea $1) (Src.LBool $ strV $1) }
-  | false                     { Located (tokenToArea $1) (Src.LBool $ strV $1) }
+  : int                       { Meta emptyInfos (tokenToArea $1) (Src.LInt $ strV $1) }
+  | str                       { Meta emptyInfos (tokenToArea $1) (Src.LStr $ strV $1) }
+  | true                      { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
+  | false                     { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
 
 args :: { [Src.Exp] }
   : exp rComa args %shift { $1:$3 }
@@ -295,8 +295,8 @@ buildAbs area params body = buildAbs' 0 area params body
 
 -- TODO: use that nth to add context to params
 buildAbs' :: Int -> Area -> [Src.Name] -> Src.Exp -> Src.Exp
-buildAbs' nth area [param] body = Located area (Src.Abs param body)
-buildAbs' nth area (x:xs) body  = Located area (Src.Abs x (buildAbs' (nth + 1) area xs body))
+buildAbs' nth area [param] body = Meta emptyInfos area (Src.Abs param body)
+buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x (buildAbs' (nth + 1) area xs body))
 
 
 
@@ -305,11 +305,11 @@ buildApp area f args = buildApp' (length args) area f args
 
 -- TODO: use that nth to add context to args
 buildApp' :: Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
-buildApp' nth area f [(Located area' arg)]  = Located area (Src.App f (Meta [NthArg nth] area' arg))
-buildApp' nth area f xs     = 
-  let (Located area arg) = last xs
-      argWithMeta        = Meta [NthArg nth] area arg
-  in  Located area (Src.App (buildApp' (nth - 1) area f (init xs)) argWithMeta)
+buildApp' nth area f@(Meta _ _ f') [(Meta emptyInfos area' arg)]  = Meta emptyInfos area (Src.App f (Meta Infos { origin = Just f', nthArg = Just nth } area' arg))
+buildApp' nth area f@(Meta _ _ f') xs     = 
+  let (Meta emptyInfos area arg) = last xs
+      argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area arg
+  in  Meta emptyInfos area (Src.App (buildApp' (nth - 1) area f (init xs)) argWithMeta)
 
 nameToPattern :: String -> Src.Pattern
 nameToPattern n | n == "_"           = Src.PAny

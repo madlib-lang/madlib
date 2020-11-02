@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Infer.ADT where
 
-import qualified Data.Map as M
+import qualified Data.Map                      as M
 import           Control.Monad.Except
 import           Data.Char                      ( isLower )
 

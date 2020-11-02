@@ -5,7 +5,7 @@ module Compile where
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Data.List                      ( intercalate )
-import           Data.Char (toLower)
+import           Data.Char                      ( toLower )
 
 import           AST.Solved
 import           Explain.Location
@@ -17,36 +17,41 @@ class Compilable a where
 
 instance Compilable Exp where
   compile (Solved _ _ exp) = case exp of
-    LInt v  -> v
-    LStr v  -> "\"" <> v <> "\""
-    LBool v -> toLower <$> v
+    LInt  v     -> v
+    LStr  v     -> "\"" <> v <> "\""
+    LBool v     -> toLower <$> v
 
     App abs arg -> case abs of
-      Solved _ _ (Var "+")   -> "(" <> compile arg <> ") + "
-      Solved _ _ (Var "-")   -> "(" <> compile arg <> ") - "
-      Solved _ _ (Var "*")   -> "(" <> compile arg <> ") * "
-      Solved _ _ (Var "/")   -> "(" <> compile arg <> ") / "
+      Solved _ _ (Var "+"  ) -> "(" <> compile arg <> ") + "
+      Solved _ _ (Var "-"  ) -> "(" <> compile arg <> ") - "
+      Solved _ _ (Var "*"  ) -> "(" <> compile arg <> ") * "
+      Solved _ _ (Var "/"  ) -> "(" <> compile arg <> ") / "
       Solved _ _ (Var "===") -> "(" <> compile arg <> ") === "
-      Solved _ _ (App (Solved _ _ (Var "|>")) arg') -> 
+      Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
         compile arg <> "(" <> compile arg' <> ")"
-      
+
       _ -> compile abs <> "(" <> compile arg <> ")"
 
     If cond truthy falsy ->
-      "(" <> compile cond <> " ? " <> compile truthy <> " : " <> compile falsy <> ")"
+      "("
+        <> compile cond
+        <> " ? "
+        <> compile truthy
+        <> " : "
+        <> compile falsy
+        <> ")"
 
-    FieldAccess record field ->
-      compile record <> compile field
+    FieldAccess record field -> compile record <> compile field
 
-    Abs param body -> "(" <> param <> " => " <> compile body <> ")"
+    Abs         param  body  -> "(" <> param <> " => " <> compile body <> ")"
 
-    Var name -> name
+    Var name                 -> name
 
-    Assignment name exp -> "const " <> name <> " = " <> compile exp <> ""
+    Assignment name exp      -> "const " <> name <> " = " <> compile exp <> ""
 
-    TypedExp exp _ -> case exp of
+    TypedExp   exp  _        -> case exp of
       Solved _ _ (Var _) -> ""
-      _     -> compile exp
+      _                  -> compile exp
 
     Export (Solved _ _ (Assignment name exp)) ->
       "export const " <> name <> " = " <> compile exp <> ""
@@ -55,15 +60,15 @@ instance Compilable Exp where
       -- Maybe just map and intercalate ?
       let fs = init $ M.foldrWithKey compileField "" fields
       in  "{" <> fs <> " }"
-      where
-        compileField name exp res =
-          " " <> name <> ": " <> compile exp <> "," <> res
+     where
+      compileField name exp res =
+        " " <> name <> ": " <> compile exp <> "," <> res
 
     JSExp content -> content
 
     ListConstructor elems -> "[" <> intercalate ", " (compile <$> elems) <> "]"
 
-    Switch exp (first:cs) ->
+    Switch exp (first : cs) ->
       "((__x__) => {\n  "
         <> compileCase first
         <> concat (("  else " ++) . compileCase <$> cs)
@@ -71,77 +76,75 @@ instance Compilable Exp where
         <> "})("
         <> compile exp
         <> ")"
-      where
-        compilePattern :: String -> Pattern -> String
-        compilePattern _     (PVar _) = "true"
-        compilePattern _     PAny     = "true"
-        compilePattern scope (PNum n) = scope <> " === " <> n
-        compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
-        compilePattern scope (PBool n) | n == "True" = scope <> " === true"
-                                      | otherwise   = scope <> " === false"
-        compilePattern scope (PCon n)
-          | n == "String" = "typeof " <> scope <> " === \"string\""
-          | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
-          | n == "Num"    = "typeof " <> scope <> " === \"number\""
-          | otherwise     = ""
-        compilePattern scope (PCtor n []) =
-          scope <> ".__constructor === " <> "\"" <> n <> "\""
-        compilePattern scope (PCtor n ps) =
-          scope
-            <> ".__constructor === "
-            <> "\""
-            <> n
-            <> "\""
-            <> if not (null args) then " && " <> args else ""
-          where
-          args =
-            intercalate " && "
-              $   filter (not . null)
-              $   compileCtorArg scope n
-              <$> zip [0 ..] ps
-        compilePattern scope (PRecord m) =
-          intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey
-            (compileRecord scope)
-            m
-        compilePattern scope (PUserDef n) = scope <> " === \"" <> n <> "\""
-        compilePattern _     _            = ""
+     where
+      compilePattern :: String -> Pattern -> String
+      compilePattern _     (PVar _) = "true"
+      compilePattern _     PAny     = "true"
+      compilePattern scope (PNum n) = scope <> " === " <> n
+      compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
+      compilePattern scope (PBool n) | n == "True" = scope <> " === true"
+                                     | otherwise   = scope <> " === false"
+      compilePattern scope (PCon n)
+        | n == "String" = "typeof " <> scope <> " === \"string\""
+        | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
+        | n == "Num"    = "typeof " <> scope <> " === \"number\""
+        | otherwise     = ""
+      compilePattern scope (PCtor n []) =
+        scope <> ".__constructor === " <> "\"" <> n <> "\""
+      compilePattern scope (PCtor n ps) =
+        scope
+          <> ".__constructor === "
+          <> "\""
+          <> n
+          <> "\""
+          <> if not (null args) then " && " <> args else ""
+       where
+        args =
+          intercalate " && "
+            $   filter (not . null)
+            $   compileCtorArg scope n
+            <$> zip [0 ..] ps
+      compilePattern scope (PRecord m) =
+        intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey
+          (compileRecord scope)
+          m
+      compilePattern scope (PUserDef n) = scope <> " === \"" <> n <> "\""
+      compilePattern _     _            = ""
 
-        compileCase :: Case -> String
-        compileCase Case { casepattern, caseexp } =
-          "if ("
-            <> compilePattern "__x__" casepattern
-            <> ") {\n"
-            <> buildVars "__x__" casepattern
-            <> "    return "
-            <> compile caseexp
-            <> ";\n  }\n"
+      compileCase :: Case -> String
+      compileCase Case { casepattern, caseexp } =
+        "if ("
+          <> compilePattern "__x__" casepattern
+          <> ") {\n"
+          <> buildVars "__x__" casepattern
+          <> "    return "
+          <> compile caseexp
+          <> ";\n  }\n"
 
-        buildVars :: String -> Pattern -> String
-        buildVars v p = case p of
-          PRecord fields ->
-            concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
-          PCtor _ ps ->
-            concat
-              $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
-              <$> zip [0 ..] ps
-          PVar n -> "    const " <> n <> " = " <> v <> ";\n"
-          _      -> ""
+      buildVars :: String -> Pattern -> String
+      buildVars v p = case p of
+        PRecord fields ->
+          concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
+        PCtor _ ps ->
+          concat
+            $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
+            <$> zip [0 ..] ps
+        PVar n -> "    const " <> n <> " = " <> v <> ";\n"
+        _      -> ""
 
-        compileRecord :: String -> Name -> Pattern -> String
-        compileRecord scope n p = compilePattern (scope <> "." <> n) p
+      compileRecord :: String -> Name -> Pattern -> String
+      compileRecord scope n p = compilePattern (scope <> "." <> n) p
 
-        compileCtorArg :: String -> String -> (Int, Pattern) -> String
-        compileCtorArg scope _ (x, p) =
-          compilePattern (scope <> ".__args[" <> show x <> "].value") p
+      compileCtorArg :: String -> String -> (Int, Pattern) -> String
+      compileCtorArg scope _ (x, p) =
+        compilePattern (scope <> ".__args[" <> show x <> "].value") p
 
     _ -> "// Not implemented\n"
 
 
 instance Compilable ADT where
-  compile ADT { adtconstructors = [] }                = ""
-  compile ADT { adtconstructors } = foldr1
-    (<>)
-    (compile <$> adtconstructors)
+  compile ADT { adtconstructors = [] } = ""
+  compile ADT { adtconstructors } = foldr1 (<>) (compile <$> adtconstructors)
 
 
 instance Compilable ADTConstructor where
@@ -209,18 +212,21 @@ buildDefaultExport :: [Exp] -> String
 buildDefaultExport es =
   let exports = filter isExport es
   in  case exports of
-    []   -> ""
-    exps -> "export default { " <> intercalate ", " (getExportName <$> exps) <> " };\n"
+        [] -> ""
+        exps ->
+          "export default { "
+            <> intercalate ", " (getExportName <$> exps)
+            <> " };\n"
 
-  where
-    isExport :: Exp -> Bool
-    isExport a = case a of
-      (Solved _ _ (Export _)) -> True
+ where
+  isExport :: Exp -> Bool
+  isExport a = case a of
+    (Solved _ _ (Export _)) -> True
 
-      _                                     -> False
+    _                       -> False
 
-    getExportName :: Exp -> String
-    getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
+  getExportName :: Exp -> String
+  getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
 
 
 buildPCompArgFn :: String

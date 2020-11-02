@@ -3,8 +3,8 @@
 module Infer.Unify where
 
 import           Control.Monad.Except
-import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 
 import           Infer.Type
 import           Infer.Substitute
@@ -27,9 +27,7 @@ unify (l `TArr` r) (l' `TArr` r') = do
   return (s2 `compose` s1)
 
 unify (TComp main vars) (TComp main' vars')
-  | main == main' =
-    let z = zip vars vars'
-    in  unifyVars M.empty z
+  | main == main' = let z = zip vars vars' in unifyVars M.empty z
   | otherwise = throwError
   $ UnificationError (TComp main vars) (TComp main' vars')
 
@@ -44,9 +42,9 @@ unify (TRecord fields) (TRecord fields')
 
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
-unify (TCon a) (TCon b) | a == b   = return M.empty
-unify TAny _                       = return M.empty
-unify _    TAny                    = return M.empty
+unify (TCon a) (TCon b) | a == b = return M.empty
+unify TAny _                     = return M.empty
+unify _    TAny                  = return M.empty
 unify t1   t2                    = throwError $ UnificationError t1 t2
 
 unifyVars :: Substitution -> [(Type, Type)] -> Either TypeError Substitution
@@ -60,11 +58,11 @@ unifyVars s _           = return s
 -- Should this only happen for free vars ?
 unifyPatternElems :: Type -> [Type] -> Either TypeError Substitution
 unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
-  where
-    anyCheck :: TypeError -> Either TypeError Substitution
-    anyCheck e = case e of
-      UnificationError (TCon _) (TCon _) -> return M.empty
-      _                                  -> throwError e
+ where
+  anyCheck :: TypeError -> Either TypeError Substitution
+  anyCheck e = case e of
+    UnificationError (TCon _) (TCon _) -> return M.empty
+    _ -> throwError e
 
 
 unifyElems :: Type -> [Type] -> Either TypeError Substitution

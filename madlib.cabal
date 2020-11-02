@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c4a7524edc5738ececbca1df09919299699e0fa68c2c8a5660dc613f0f87ac16
+-- hash: 55af91f4e165017204206150054c0f7185cbac8b42209185a46e4a228866f6d8
 
 name:           madlib
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
       AST.Source
       Compile
       Error.Error
+      Explain.Format
       Explain.Location
       Explain.Meta
       Explain.Reason
@@ -80,6 +81,7 @@ executable madlib-exe
       AST.Source
       Compile
       Error.Error
+      Explain.Format
       Explain.Location
       Explain.Meta
       Explain.Reason

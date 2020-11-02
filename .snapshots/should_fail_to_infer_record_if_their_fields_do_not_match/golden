@@ -5,12 +5,16 @@ Left
         (TRecord (fromList [ ( "name" , TCon CString ) ])))
      (Reason
         (WrongTypeApplied
-           (Located
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
               (Area (Loc 19 1 20) (Loc 20 1 21))
               (Record
                  (fromList
                     [ ( "name"
-                      , Located (Area (Loc 27 1 28) (Loc 33 1 34)) (LStr "John")
+                      , Meta
+                          Infos { nthArg = Nothing , origin = Nothing }
+                          (Area (Loc 27 1 28) (Loc 33 1 34))
+                          (LStr "John")
                       )
                     ]))))
         (Area (Loc 19 1 20) (Loc 20 1 21))))

@@ -1,6 +1,6 @@
 module AST.Source where
 
-import qualified Data.Map as M
+import qualified Data.Map                      as M
 
 import           Explain.Location
 import           Explain.Meta
@@ -15,7 +15,7 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Import 
+data Import
   = NamedImport [Name] FilePath
   | DefaultImport Name FilePath
   deriving(Eq, Show)
@@ -84,7 +84,7 @@ data Exp_ = LInt String
           | JSExp String
           deriving(Eq, Show)
 
-type Name  = String
+type Name = String
 
 
 -- AST TABLE

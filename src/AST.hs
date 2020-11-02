@@ -49,11 +49,12 @@ buildASTTable' rf parent rootPath entrypoint = do
 
 
 importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
-importPathsFromAST rootPath ast =
-  fromRight [] (((rootPath ++) . (++ ".mad") . getImportPath <$>) . aimports <$> ast)
+importPathsFromAST rootPath ast = fromRight
+  []
+  (((rootPath ++) . (++ ".mad") . getImportPath <$>) . aimports <$> ast)
 
 getImportPath :: Import -> FilePath
-getImportPath (NamedImport _ p)   = p
+getImportPath (NamedImport   _ p) = p
 getImportPath (DefaultImport _ p) = p
 
 

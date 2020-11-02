@@ -1,1 +1,10 @@
-Left (InferError (UnboundVariable "x") NoReason)
+Left
+  (InferError
+     (UnboundVariable "x")
+     (Reason
+        (VariableNotDeclared
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 0 1 1) (Loc 1 1 2))
+              (Var "x")))
+        (Area (Loc 0 1 1) (Loc 1 1 2))))

@@ -3,15 +3,15 @@
 {-# LANGUAGE RankNTypes #-}
 module Infer.Env where
 
-import qualified Data.Map as M
+import qualified Data.Map                      as M
 import           Infer.Type
 import           AST.Source
-import Control.Monad.Except
-import Infer.Instantiate
-import Infer.ADT
-import Infer.Infer
-import Explain.Reason
-import Error.Error
+import           Control.Monad.Except
+import           Infer.Instantiate
+import           Infer.ADT
+import           Infer.Infer
+import           Explain.Reason
+import           Error.Error
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
@@ -48,16 +48,16 @@ initialEnv = Env
     , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ( "|>"
       , Forall [TV "a", TV "b"]
-          $      TVar (TV "a")
-          `TArr` (TVar (TV "a") `TArr` TVar (TV "b"))
-          `TArr` TVar (TV "b")
+      $      TVar (TV "a")
+      `TArr` (TVar (TV "a") `TArr` TVar (TV "b"))
+      `TArr` TVar (TV "b")
       )
     , ( "ifElse"
       , Forall [TV "a"]
-          $      TCon CBool
-          `TArr` TVar (TV "a")
-          `TArr` TVar (TV "a")
-          `TArr` TVar (TV "a")
+      $      TCon CBool
+      `TArr` TVar (TV "a")
+      `TArr` TVar (TV "a")
+      `TArr` TVar (TV "a")
       )
     , ( "asList"
       , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "List" [TVar $ TV "a"]

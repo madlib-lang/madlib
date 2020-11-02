@@ -2,9 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 module Error.Error where
 
-import Infer.Type
+import           Infer.Type
 -- import Infer.Env
-import Explain.Reason
+import           Explain.Reason
 
 
 data InferError = InferError TypeError Reason deriving(Eq, Show)
@@ -16,7 +16,6 @@ data TypeError
   | ADTAlreadyDefined Type
   | UnknownType String
   | FieldNotExisting String
-  | FieldNotInitialized String
   | ImportNotFound String String
   | FatalError
   | ASTHasNoPath

@@ -1,9 +1,9 @@
 module AST.Solved where
 
-import qualified Data.Map as M
+import qualified Data.Map                      as M
 
-import Infer.Type
-import Explain.Location
+import           Infer.Type
+import           Explain.Location
 
 -- data Solved a = Solved Type (Located a) deriving(Show, Eq)
 
@@ -22,7 +22,7 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Import 
+data Import
   = NamedImport [Name] FilePath
   | DefaultImport Name FilePath
   deriving(Eq, Show)
@@ -89,7 +89,7 @@ data Exp_ = LInt String
           | Switch Exp [Case]
           deriving(Eq, Show)
 
-type Name  = String
+type Name = String
 
 
 -- AST TABLE

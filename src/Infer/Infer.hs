@@ -2,9 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 module Infer.Infer where
 
-import Control.Monad.Except
-import Control.Monad.State
-import Error.Error
+import           Control.Monad.Except
+import           Control.Monad.State
+import           Error.Error
 
 
 newtype Unique = Unique { count :: Int }

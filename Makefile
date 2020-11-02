@@ -6,6 +6,7 @@ lint:
 
 pretty:
 	stack exec -- brittany --indent=2 --write-mode=inplace src/*.hs; \
+	stack exec -- brittany --indent=2 --write-mode=inplace src/*/*.hs; \
 	stack exec -- brittany --indent=2 --write-mode=inplace test/*.hs
 
 test:

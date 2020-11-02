@@ -3,5 +3,8 @@ Left
      (UnificationError (TCon CString) (TCon CNum))
      (Reason
         (WrongTypeApplied
-           (Meta [ NthArg 2 ] (Area (Loc 31 2 9) (Loc 32 2 10)) (LInt "4")))
+           (Meta
+              Infos { nthArg = Just 2 , origin = Just (Var "fn") }
+              (Area (Loc 31 2 9) (Loc 32 2 10))
+              (LInt "4")))
         (Area (Loc 31 2 9) (Loc 32 2 10))))

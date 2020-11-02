@@ -5,10 +5,10 @@ module Infer.Type where
 import qualified Data.Map                      as M
 
 
-type Vars      = M.Map String Scheme
-type ADTs      = M.Map String Type
-type Typings   = M.Map String Scheme
-type Imports   = M.Map String Type
+type Vars = M.Map String Scheme
+type ADTs = M.Map String Type
+type Typings = M.Map String Scheme
+type Imports = M.Map String Type
 
 data Env
   = Env
