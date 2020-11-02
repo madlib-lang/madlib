@@ -12,6 +12,7 @@ import           Infer.ADT
 import           Infer.Infer
 import           Explain.Reason
 import           Error.Error
+import Data.Maybe (fromMaybe)
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
@@ -66,12 +67,13 @@ initialEnv = Env
   , envadts    = M.empty
   , envtypings = M.empty
   , envimports = M.empty
+  , envcurrentpath = ""
   }
 
 
 -- TODO: Should we build imported names here ?
 buildInitialEnv :: AST -> Infer Env
-buildInitialEnv AST { aadts } = do
+buildInitialEnv AST { aadts, apath } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
@@ -79,4 +81,5 @@ buildInitialEnv AST { aadts } = do
              , envadts    = tadts
              , envtypings = M.empty
              , envimports = M.empty
+             , envcurrentpath = fromMaybe "" apath
              }

@@ -25,6 +25,8 @@ data ASTError = ImportNotFound FilePath (Maybe AST)
               deriving(Eq, Show)
 
 -- TODO: Write an integration test with real files ?
+-- Move that to Main and rename buildASTTable' to buildASTTable
+-- Then use the scoped name in Main in order to partially apply it.
 buildASTTable :: FilePath -> IO (Either ASTError Table)
 buildASTTable path =
   let rootPath = computeRootPath path

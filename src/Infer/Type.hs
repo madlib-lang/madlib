@@ -16,6 +16,7 @@ data Env
     , envadts :: ADTs
     , envtypings :: Typings
     , envimports :: Imports
+    , envcurrentpath :: FilePath
     }
     deriving(Eq, Show)
 

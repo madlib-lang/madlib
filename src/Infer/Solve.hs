@@ -28,7 +28,6 @@ import           Explain.Meta
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
-
   let (area, exp) = case lexp of
         Located area exp -> (area, exp)
         Meta _ area exp  -> (area, exp)
@@ -125,7 +124,7 @@ inferVar env exp =
           (s, t) <- catchError
             (lookupVar env n)
             (\(InferError e _) -> throwError
-              $ InferError e (Reason (VariableNotDeclared exp) area)
+              $ InferError e (Reason (VariableNotDeclared exp) (envcurrentpath env) area)
             )
           return (s, t, Slv.Solved t area $ Slv.Var n)
 
@@ -156,7 +155,7 @@ inferApp env exp = do
   s3             <- case unify (apply s2 t1) (TArr t2 tv) of
     Right s -> return s
     Left e ->
-      throwError $ InferError e $ Reason (WrongTypeApplied arg) (getArea arg)
+      throwError $ InferError e $ Reason (WrongTypeApplied arg) (envcurrentpath env) (getArea arg)
   let t = apply s3 tv
 
   return
