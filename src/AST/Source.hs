@@ -41,15 +41,17 @@ data Typing
   | TRRecord (M.Map Name Typing)
   deriving(Eq, Show)
 
-data Case =
-  Case
-    { casepos :: Area
-    , casepattern :: Pattern
-    , caseexp :: Exp
-    }
-    deriving(Eq, Show)
+-- data Case =
+--   Case
+--     { casepos :: Area
+--     , casepattern :: Pattern
+--     , caseexp :: Exp
+--     }
+--     deriving(Eq, Show)
 -- TODO:
--- data Case = Case Pattern LExp
+
+type Case = Meta Case_
+data Case_ = Case Pattern Exp deriving(Eq, Show)
 
 data Pattern
   = PVar Name

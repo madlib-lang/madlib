@@ -185,11 +185,13 @@ exp :: { Src.Exp }
 
 
 switch :: { Src.Exp }
-  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Meta emptyInfos (tokenToArea $1) (Src.Switch $3 $7) }
+  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Switch $3 $7) }
 
 cases :: { [Src.Case] }
-  : 'case' pattern ':' exp             { [Src.Case { Src.casepos = tokenToArea $1, Src.casepattern = $2, Src.caseexp = $4 }] }
-  | cases 'ret' 'case' pattern ':' exp { $1 <> [Src.Case { Src.casepos = tokenToArea $3, Src.casepattern = $4, Src.caseexp = $6 }] }
+  : 'case' pattern ':' exp             { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $4)) (Src.Case $2 $4)] }
+  | cases 'ret' 'case' pattern ':' exp { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $6)) (Src.Case $4 $6)] }
+  -- : 'case' pattern ':' exp             { [Src.Case { Src.casepos = tokenToArea $1, Src.casepattern = $2, Src.caseexp = $4 }] }
+  -- | cases 'ret' 'case' pattern ':' exp { $1 <> [Src.Case { Src.casepos = tokenToArea $3, Src.casepattern = $4, Src.caseexp = $6 }] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern { $1 }

@@ -338,7 +338,7 @@ addBranchReason env ifExp falsyExp area (InferError e _) =
 -- INFER SWITCH
 
 inferSwitch :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferSwitch env (Meta _ loc (Src.Switch exp cases)) = do
+inferSwitch env (Meta _ loc switch@(Src.Switch exp cases)) = do
   (se, te, ee)  <- infer env exp
 
   inferredCases <- mapM (inferCase env te) cases
@@ -356,7 +356,7 @@ inferSwitch env (Meta _ loc (Src.Switch exp cases)) = do
             typeMatrix
 
   let updatedCases =
-        (\(t, e) -> e { Slv.casetype = Just $ apply s t })
+        (\(t, (Slv.Solved _ a e)) -> Slv.Solved (apply s t) a e)
           <$> zip casesTypes cases
 
   let (TArr _ switchType) = (apply s . head) casesTypes
@@ -369,14 +369,13 @@ inferSwitch env (Meta _ loc (Src.Switch exp cases)) = do
     )
 
  where
-
   inferCase :: Env -> Type -> Src.Case -> Infer (Substitution, Type, Slv.Case)
-  inferCase e tinput c@Src.Case { Src.casepattern, Src.caseexp, Src.casepos } =
+  inferCase e tinput c@(Meta _ area (Src.Case pattern exp)) =
     do
-      tp           <- buildPatternType e casepattern
-      e'           <- generateCaseEnv tp e casepattern
+      tp           <- buildPatternType e pattern
+      e'           <- generateCaseEnv tp e pattern
 
-      (se, te, ee) <- infer e' caseexp
+      (se, te, ee) <- infer e' exp
       let tarr  = TArr (apply se tp) te
       let tarr' = TArr (apply se tinput) te
       su <- unifyToInfer env $ unifyPatternElems tarr [tarr']
@@ -386,11 +385,7 @@ inferSwitch env (Meta _ loc (Src.Switch exp cases)) = do
       return
         ( sf
         , tarr
-        , Slv.Case { Slv.casetype    = Just $ apply sf tarr
-                   , Slv.caseexp     = updateType ee $ apply sf te
-                   , Slv.casepos     = casepos
-                   , Slv.casepattern = updatePattern casepattern
-                   }
+        , Slv.Solved (apply sf te) area $ Slv.Case (updatePattern pattern) (updateType ee $ apply sf te)
         )
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
@@ -469,6 +464,15 @@ inferSwitch env (Meta _ loc (Src.Switch exp cases)) = do
       Just (Forall _ t) -> return t
 
       Nothing           -> throwError $ InferError (UnknownType cname) NoReason
+
+
+addPatternReason
+  :: Env -> Src.Exp -> Src.Pattern -> Area -> InferError -> Infer (Substitution)
+addPatternReason env switchExp pattern area (InferError e _) =
+  throwError $ InferError
+    e
+    (Reason (PatternTypeError switchExp pattern) (envcurrentpath env) area)
+
 
 
 

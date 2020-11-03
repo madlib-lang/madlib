@@ -112,13 +112,13 @@ instance Compilable Exp where
       compilePattern _     _            = ""
 
       compileCase :: Case -> String
-      compileCase Case { casepattern, caseexp } =
+      compileCase (Solved _ _ (Case pattern exp)) =
         "if ("
-          <> compilePattern "__x__" casepattern
+          <> compilePattern "__x__" pattern
           <> ") {\n"
-          <> buildVars "__x__" casepattern
+          <> buildVars "__x__" pattern
           <> "    return "
-          <> compile caseexp
+          <> compile exp
           <> ";\n  }\n"
 
       buildVars :: String -> Pattern -> String

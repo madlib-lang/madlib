@@ -46,14 +46,19 @@ data Typing
   | TRRecord (M.Map Name Typing)
   deriving(Eq, Show)
 
-data Case =
-  Case
-    { casepos :: Area
-    , casetype :: Maybe Type
-    , casepattern :: Pattern
-    , caseexp :: Exp
-    }
-    deriving(Eq, Show)
+-- data Case =
+--   Case
+--     { casepos :: Area
+--     , casetype :: Maybe Type
+--     , casepattern :: Pattern
+--     , caseexp :: Exp
+--     }
+--     deriving(Eq, Show)
+
+data Solved a = Solved Type Area a deriving(Eq, Show)
+
+type Case = Solved Case_
+data Case_ = Case Pattern Exp deriving(Eq, Show)
 
 data Pattern
   = PVar Name
@@ -69,8 +74,7 @@ data Pattern
 
 type Fields = M.Map Name Exp
 
-data Exp = Solved Type Area Exp_
-         deriving(Eq, Show)
+type Exp = Solved Exp_
 
 data Exp_ = LInt String
           | LStr String
