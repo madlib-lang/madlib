@@ -146,6 +146,35 @@ format rf (InferError err reason) = do
         <> "\n\n"
         <> hint
 
+    Reason (PatternTypeError switch pattern) _ _ -> do
+      let switchArea                         = getArea switch
+      let patternArea                        = getArea pattern
+      let (Area (Loc _ patternLine _) _)     = patternArea
+      let (showStart, showEnd) = computeLinesToShow switchArea patternArea
+      let linesToShow = slice showStart showEnd moduleContent
+      let (UnificationError expected actual) = err
+
+      let message =
+            "\n"
+              <> "The pattern has type\n\t"
+              <> typeToStr actual
+              <> "\nBut it was expected to be\n\t"
+              <> typeToStr expected
+
+      let
+        hint
+          = "Hint: the case patterns of a switch expression should match constructors of the type given to the switch. A common mistake is to mix up type constructor and type. For example, given:\ndata Maybe a = Just a | Nothing\nYou could have the following valid patterns when called with Just(True):\n\t* case Just False: ...\n\t* case Just _: ...\n\t* case Just a: a"
+
+      return
+        $  "Error in switch expression at line "
+        <> show patternLine
+        <> ":\n\n"
+        <> unlines linesToShow
+        <> formatHighlightArea patternArea
+        <> message
+        <> "\n\n"
+        <> hint
+
 
 -- computeLinesToShow - returns the first line and the last line to show
 computeLinesToShow :: Area -> Area -> (Int, Int)

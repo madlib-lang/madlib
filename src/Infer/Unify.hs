@@ -56,13 +56,13 @@ unifyVars s _           = return s
 
 -- TODO: Needs to be extended with all cases of unifyElems ?
 -- Should this only happen for free vars ?
-unifyPatternElems :: Type -> [Type] -> Either TypeError Substitution
-unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
- where
-  anyCheck :: TypeError -> Either TypeError Substitution
-  anyCheck e = case e of
-    UnificationError (TCon _) (TCon _) -> return M.empty
-    _ -> throwError e
+-- unifyPatternElems :: Type -> [Type] -> Either TypeError Substitution
+-- unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
+--  where
+--   anyCheck :: TypeError -> Either TypeError Substitution
+--   anyCheck e = case e of
+--     UnificationError (TCon _) (TCon _) -> return M.empty
+--     _ -> throwError e
 
 
 unifyElems :: Type -> [Type] -> Either TypeError Substitution

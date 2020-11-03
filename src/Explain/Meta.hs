@@ -21,13 +21,11 @@ emptyInfos = Infos { nthArg = Nothing, origin = Nothing }
 
 data Meta a
   = Meta (Infos a) Area a
-  | Located Area a
   deriving(Eq, Show)
 
 
 getArea :: Meta a -> Area
-getArea (Located a _) = a
-getArea (Meta _ a _ ) = a
+getArea (Meta _ a _) = a
 
 
 -- getOrigin :: Meta a -> Maybe (Info a)

@@ -1,5 +1,57 @@
 Left
   (InferError
      (UnificationError
-        (TComp "Maybe" [ TVar (TV "a") ]) (TComp "Failure" []))
-     NoReason)
+        (TComp "Failure" []) (TComp "Maybe" [ TVar (TV "a") ]))
+     (Reason
+        (PatternTypeError
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 67 4 1) (Loc 121 7 2))
+              (Switch
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 74 4 8) (Loc 81 4 15))
+                    (Var "perhaps"))
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 87 5 3) (Loc 101 5 17))
+                     (Case
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 92 5 8) (Loc 98 5 14))
+                           (PCtor
+                              "Just"
+                              [ Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 97 5 13) (Loc 98 5 14))
+                                  (PVar "a")
+                              ]))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 100 5 16) (Loc 101 5 17))
+                           (Var "a")))
+                 , Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 104 6 3) (Loc 119 6 18))
+                     (Case
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 109 6 8) (Loc 116 6 15))
+                           (PCtor "Nothing" []))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 118 6 17) (Loc 119 6 18))
+                           (LInt "0")))
+                 ]))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 92 5 8) (Loc 98 5 14))
+              (PCtor
+                 "Just"
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 97 5 13) (Loc 98 5 14))
+                     (PVar "a")
+                 ])))
+        "path"
+        (Area (Loc 87 5 3) (Loc 101 5 17))))

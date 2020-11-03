@@ -18,5 +18,6 @@ data Explanation = WrongTypeApplied Src.Exp
 -- in favor of more meaningful Src.Exp in Explanations.
 data Reason
   = Reason Explanation FilePath Area
+  | SimpleReason FilePath Area
   | NoReason
   deriving(Show, Eq)

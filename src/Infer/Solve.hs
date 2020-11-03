@@ -29,9 +29,7 @@ import           Explain.Location
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
-  let (area, exp) = case lexp of
-        Located area exp -> (area, exp)
-        Meta _ area exp  -> (area, exp)
+  let (Meta _ area exp) = lexp
   in
     case exp of
       Src.LInt  _           -> return (M.empty, num, applyLitSolve lexp num)
@@ -79,7 +77,7 @@ updateType (Slv.Solved _ a e) t' = Slv.Solved t' a e
 
 
 updatePattern :: Src.Pattern -> Slv.Pattern
-updatePattern p = case p of
+updatePattern (Meta _ _ p) = case p of
   Src.PVar name           -> Slv.PVar name
 
   Src.PAny                -> Slv.PAny
@@ -338,7 +336,7 @@ addBranchReason env ifExp falsyExp area (InferError e _) =
 -- INFER SWITCH
 
 inferSwitch :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferSwitch env (Meta _ loc switch@(Src.Switch exp cases)) = do
+inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
   (se, te, ee)  <- infer env exp
 
   inferredCases <- mapM (inferCase env te) cases
@@ -350,8 +348,8 @@ inferSwitch env (Meta _ loc switch@(Src.Switch exp cases)) = do
   s <-
     foldr1 compose
       <$> mapM
-            (\(t, ts) -> unifyToInfer env
-              $ unifyPatternElems (apply casesSubstitution t) ts
+            (\(t, ts) ->
+              unifyToInfer env $ unifyElems (apply casesSubstitution t) ts
             )
             typeMatrix
 
@@ -370,26 +368,27 @@ inferSwitch env (Meta _ loc switch@(Src.Switch exp cases)) = do
 
  where
   inferCase :: Env -> Type -> Src.Case -> Infer (Substitution, Type, Slv.Case)
-  inferCase e tinput c@(Meta _ area (Src.Case pattern exp)) =
-    do
-      tp           <- buildPatternType e pattern
-      e'           <- generateCaseEnv tp e pattern
+  inferCase e tinput c@(Meta _ area (Src.Case pattern exp)) = do
+    tp           <- buildPatternType e pattern
+    env'         <- generateCaseEnv tp e pattern
 
-      (se, te, ee) <- infer e' exp
-      let tarr  = TArr (apply se tp) te
-      let tarr' = TArr (apply se tinput) te
-      su <- unifyToInfer env $ unifyPatternElems tarr [tarr']
+    (se, te, ee) <- infer env' exp
+    let tarr  = TArr (apply se tinput) te
+    let tarr' = TArr (apply se tp) te
+    su <- catchError (unifyToInfer env $ unify tarr tarr')
+                     (addPatternReason e switch pattern area)
 
-      let sf = su `compose` se
+    let sf = su `compose` se
 
-      return
-        ( sf
-        , tarr
-        , Slv.Solved (apply sf te) area $ Slv.Case (updatePattern pattern) (updateType ee $ apply sf te)
-        )
+    return
+      ( sf
+      , tarr
+      , Slv.Solved (apply sf te) area
+        $ Slv.Case (updatePattern pattern) (updateType ee $ apply sf te)
+      )
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
-  buildPatternType e@Env { envvars } pat = case pat of
+  buildPatternType e@Env { envvars } (Meta _ _ pat) = case pat of
     Src.PVar  v        -> return $ TVar $ TV v
 
     Src.PCon  "String" -> return $ TCon CString
@@ -430,7 +429,7 @@ inferSwitch env (Meta _ loc switch@(Src.Switch exp cases)) = do
 
 
   generateCaseEnv :: Type -> Env -> Src.Pattern -> Infer Env
-  generateCaseEnv t e@Env { envvars } pat = case (pat, t) of
+  generateCaseEnv t e@Env { envvars } (Meta _ _ pat) = case (pat, t) of
     (Src.PVar v, t') -> do
       return $ extendVars e (v, Forall [] t')
 

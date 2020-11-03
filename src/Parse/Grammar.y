@@ -198,24 +198,24 @@ pattern :: { Src.Pattern }
   | compositePattern    { $1 }
 
 nonCompositePattern :: { Src.Pattern }
-  : name             { nameToPattern $ strV $1 }
-  | int              { Src.PNum $ strV $1 }
-  | str              { Src.PStr $ strV $1 }
-  | true             { Src.PBool $ strV $1 }
-  | false            { Src.PBool $ strV $1 }
+  : name             { nameToPattern (tokenToArea $1) (strV $1) }
+  | int              { Meta emptyInfos (tokenToArea $1) (Src.PNum $ strV $1) }
+  | str              { Meta emptyInfos (tokenToArea $1) (Src.PStr $ strV $1) }
+  | true             { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
+  | false            { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
   | recordPattern    { $1 }
   | '(' pattern ')'  { $2 }
 
 
 compositePattern :: { Src.Pattern }
-  : name patterns %shift { Src.PCtor (strV $1) $2 }
+  : name patterns %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.PCtor (strV $1) $2) }
 
 patterns :: { [Src.Pattern] }
   : nonCompositePattern          { [$1] }
   | patterns nonCompositePattern { $1 <> [$2] }
 
 recordPattern :: { Src.Pattern }
-  : '{' recordFieldPatterns '}' { Src.PRecord $2 }
+  : '{' recordFieldPatterns '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PRecord $2) }
 
 recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
   : name ':' pattern { M.fromList [(strV $1, $3)] }
@@ -223,7 +223,7 @@ recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
 
 
 record :: { Src.Exp }
-  : '{' recordFields '}' { Meta emptyInfos (tokenToArea $1) (Src.Record $2) }
+  : '{' recordFields '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.Record $2) }
 
 recordFields :: { Src.Fields }
   : name ':' exp                  { M.fromList [(strV $1, $3)] }
@@ -320,13 +320,13 @@ mergeAreas :: Area -> Area -> Area
 mergeAreas (Area l _) (Area _ r) = Area l r
 
 
-nameToPattern :: String -> Src.Pattern
-nameToPattern n | n == "_"           = Src.PAny
-                | n == "String"      = Src.PCon n
-                | n == "Bool"        = Src.PCon n
-                | n == "Num"         = Src.PCon n
-                | (isUpper . head) n = Src.PCtor n []
-                | otherwise          = Src.PVar n
+nameToPattern :: Area -> String -> Src.Pattern
+nameToPattern area n | n == "_"      = Meta emptyInfos area Src.PAny
+                | n == "String"      = Meta emptyInfos area (Src.PCon n)
+                | n == "Bool"        = Meta emptyInfos area (Src.PCon n)
+                | n == "Num"         = Meta emptyInfos area (Src.PCon n)
+                | (isUpper . head) n = Meta emptyInfos area (Src.PCtor n [])
+                | otherwise          = Meta emptyInfos area (Src.PVar n)
 
 
 lexerWrap :: (Token -> Alex a) -> Alex a

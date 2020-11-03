@@ -321,8 +321,6 @@ spec = do
       let code = unlines
             [ "switch(\"42\") {"
             , "  case String : 1"
-            , "  case Bool   : 3"
-            , "  case Num    : 33"
             , "}"
             ]
           actual = tester code
@@ -347,10 +345,9 @@ spec = do
             [ "data Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
             , "switch(perhaps) {"
-            , "  case Just String: 1"
             , "  case Just Num   : 2"
-            , "  case Just Bool  : 3"
             , "  case Nothing    : 0"
+            , "  case Just _     : 1"
             , "}"
             ]
           actual = tester code
@@ -386,7 +383,7 @@ spec = do
         "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
         actual
     
-    it "should resolve a constructor pattern with different constant types for variables" $ do
+    it "should fail to resolve a constructor pattern with different type variables applied" $ do
       let code = unlines
             [ "data User a = LoggedIn a Num"
             , "u = LoggedIn(\"John\", 33)"
@@ -397,7 +394,7 @@ spec = do
             ]
           actual = tester code
       snapshotTest
-        "should resolve a constructor pattern with different constant types for variables"
+        "should fail to resolve a constructor pattern with different type variables applied"
         actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update

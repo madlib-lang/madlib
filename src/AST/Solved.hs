@@ -5,7 +5,7 @@ import qualified Data.Map                      as M
 import           Infer.Type
 import           Explain.Location
 
--- data Solved a = Solved Type (Located a) deriving(Show, Eq)
+data Solved a = Solved Type Area a deriving(Eq, Show)
 
 getType :: Exp -> Type
 getType (Solved t _ _) = t
@@ -46,16 +46,6 @@ data Typing
   | TRRecord (M.Map Name Typing)
   deriving(Eq, Show)
 
--- data Case =
---   Case
---     { casepos :: Area
---     , casetype :: Maybe Type
---     , casepattern :: Pattern
---     , caseexp :: Exp
---     }
---     deriving(Eq, Show)
-
-data Solved a = Solved Type Area a deriving(Eq, Show)
 
 type Case = Solved Case_
 data Case_ = Case Pattern Exp deriving(Eq, Show)

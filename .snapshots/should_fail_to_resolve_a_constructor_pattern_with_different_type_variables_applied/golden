@@ -1,0 +1,74 @@
+Left
+  (InferError
+     (UnificationError (TCon CString) (TCon CNum))
+     (Reason
+        (PatternTypeError
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 54 3 1) (Loc 123 6 2))
+              (Switch
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 61 3 8) (Loc 62 3 9))
+                    (Var "u"))
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 68 4 3) (Loc 93 4 28))
+                     (Case
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 73 4 8) (Loc 87 4 22))
+                           (PCtor
+                              "LoggedIn"
+                              [ Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 82 4 17) (Loc 85 4 20))
+                                  (PCon "Num")
+                              , Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 86 4 21) (Loc 87 4 22))
+                                  (PVar "x")
+                              ]))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 92 4 27) (Loc 93 4 28))
+                           (Var "x")))
+                 , Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 96 5 3) (Loc 121 5 28))
+                     (Case
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 101 5 8) (Loc 118 5 25))
+                           (PCtor
+                              "LoggedIn"
+                              [ Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 110 5 17) (Loc 116 5 23))
+                                  (PCon "String")
+                              , Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 117 5 24) (Loc 118 5 25))
+                                  (PVar "x")
+                              ]))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 120 5 27) (Loc 121 5 28))
+                           (Var "x")))
+                 ]))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 73 4 8) (Loc 87 4 22))
+              (PCtor
+                 "LoggedIn"
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 82 4 17) (Loc 85 4 20))
+                     (PCon "Num")
+                 , Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 86 4 21) (Loc 87 4 22))
+                     (PVar "x")
+                 ])))
+        "path"
+        (Area (Loc 68 4 3) (Loc 93 4 28))))

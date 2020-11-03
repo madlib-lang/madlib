@@ -41,19 +41,13 @@ data Typing
   | TRRecord (M.Map Name Typing)
   deriving(Eq, Show)
 
--- data Case =
---   Case
---     { casepos :: Area
---     , casepattern :: Pattern
---     , caseexp :: Exp
---     }
---     deriving(Eq, Show)
--- TODO:
 
 type Case = Meta Case_
 data Case_ = Case Pattern Exp deriving(Eq, Show)
 
-data Pattern
+
+type Pattern = Meta Pattern_
+data Pattern_
   = PVar Name
   | PAny
   | PCtor Name [Pattern]
@@ -64,6 +58,7 @@ data Pattern
   | PUserDef Name
   | PRecord (M.Map Name Pattern)
   deriving(Eq, Show)
+
 
 type Fields = M.Map Name Exp
 
