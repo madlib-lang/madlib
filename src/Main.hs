@@ -21,7 +21,7 @@ import           Explain.Reason
 import           Error.Error
 import           Compile
 import qualified AST.Solved                    as Slv
-import qualified Explain.Format as Explain
+import qualified Explain.Format                as Explain
 
 main :: IO ()
 main = do
@@ -40,7 +40,7 @@ main = do
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
 
   case resolvedASTTable of
-    Left err -> Explain.format readFile err >>= putStrLn
+    Left  err        -> Explain.format readFile err >>= putStrLn
     Right (table, _) -> do
       generate table
       putStrLn "compiled JS:"
@@ -61,4 +61,4 @@ generateAST ast@Slv.AST { Slv.apath = Just path } = do
 
 makeOutputPath :: FilePath -> FilePath
 makeOutputPath path = "./build/" <> replaceExtension path "mjs"
- 
+

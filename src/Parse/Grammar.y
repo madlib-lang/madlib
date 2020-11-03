@@ -172,16 +172,16 @@ exp :: { Src.Exp }
   | js                       %shift  { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
   | name '=' exp             %shift  { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
   | name                     %shift  { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
-  | name rParenL args ')'    %shift  { buildApp (tokenToArea $1) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
-  | exp '(' args ')'                 { buildApp (getArea $1) $1 $3 }
-  | '(' exp ')' '(' args ')' %shift  { buildApp (getArea $2) $2 $5 }
+  | name rParenL args ')'    %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | exp '(' args ')'                 { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
+  | '(' exp ')' '(' args ')' %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToArea $1) $2 $5 }
   | '(' exp ')'              %shift  { $2 }
   | exp '::' typings                 { Meta emptyInfos (getArea $1) (Src.TypedExp $1 $3) }
   | exp '.' name                     { Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
-      { Meta emptyInfos (tokenToArea $1) (Src.If $3 $7 $15) }
+      { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
 
 
 switch :: { Src.Exp }
@@ -291,9 +291,10 @@ params :: { [Src.Name] }
 
 {
 buildAbs :: Area -> [Src.Name] -> Src.Exp -> Src.Exp
-buildAbs area params body = buildAbs' 0 area params body
+buildAbs area params body = buildAbs' (length params) area params body
 
 -- TODO: use that nth to add context to params
+-- To do this we need to somehow extend the Name with a version that is in a Meta
 buildAbs' :: Int -> Area -> [Src.Name] -> Src.Exp -> Src.Exp
 buildAbs' nth area [param] body = Meta emptyInfos area (Src.Abs param body)
 buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x (buildAbs' (nth + 1) area xs body))
@@ -310,6 +311,12 @@ buildApp' nth area f@(Meta _ _ f') xs     =
   let (Meta emptyInfos area arg) = last xs
       argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area arg
   in  Meta emptyInfos area (Src.App (buildApp' (nth - 1) area f (init xs)) argWithMeta)
+
+
+
+mergeAreas :: Area -> Area -> Area
+mergeAreas (Area l _) (Area _ r) = Area l r
+
 
 nameToPattern :: String -> Src.Pattern
 nameToPattern n | n == "_"           = Src.PAny

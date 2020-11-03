@@ -24,6 +24,7 @@ import           Explain.Reason
 import           Debug.Trace
 import           Text.Show.Pretty
 import           Explain.Meta
+import           Explain.Location
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -121,14 +122,13 @@ inferVar env exp =
           return (M.empty, t, Slv.Solved t area $ Slv.Var n)
 
         _ -> do
-          (s, t) <- catchError
-            (lookupVar env n)
-            (\(InferError e _) -> throwError
-              $ InferError e (Reason (VariableNotDeclared exp) (envcurrentpath env) area)
-            )
+          (s, t) <- catchError (lookupVar env n) (enhanceVarError env exp area)
           return (s, t, Slv.Solved t area $ Slv.Var n)
 
-
+enhanceVarError
+  :: Env -> Src.Exp -> Area -> InferError -> Infer (Substitution, Type)
+enhanceVarError env exp area (InferError e _) = throwError
+  $ InferError e (Reason (VariableNotDeclared exp) (envcurrentpath env) area)
 
 -- INFER ABS
 
@@ -154,8 +154,9 @@ inferApp env exp = do
 
   s3             <- case unify (apply s2 t1) (TArr t2 tv) of
     Right s -> return s
-    Left e ->
-      throwError $ InferError e $ Reason (WrongTypeApplied arg) (envcurrentpath env) (getArea arg)
+    Left  e -> throwError $ InferError e $ Reason (WrongTypeApplied arg)
+                                                  (envcurrentpath env)
+                                                  (getArea arg)
   let t = apply s3 tv
 
   return
@@ -301,20 +302,38 @@ inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is l arg) abs@(Meta 
 -- INFER IF
 
 inferIf :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferIf env (Meta _ loc (Src.If cond truthy falsy)) = do
+inferIf env exp@(Meta _ area (Src.If cond truthy falsy)) = do
   (_, tcond  , econd  ) <- infer env cond
   (_, ttruthy, etruthy) <- infer env truthy
   (_, tfalsy , efalsy ) <- infer env falsy
 
-  s1                    <- unifyToInfer env $ unify tcond (TCon CBool)
-  s2                    <- unifyToInfer env $ unify ttruthy tfalsy
+  s1 <- catchError (unifyToInfer env $ unify (TCon CBool) tcond)
+                   (addConditionReason env exp cond area)
+  s2 <- catchError (unifyToInfer env $ unify ttruthy tfalsy)
+                   (addBranchReason env exp falsy area)
 
   return
     ( s1 `compose` s2
     , ttruthy
-    , Slv.Solved ttruthy loc (Slv.If econd etruthy efalsy)
+    , Slv.Solved ttruthy area (Slv.If econd etruthy efalsy)
     )
 
+addConditionReason
+  :: Env -> Src.Exp -> Src.Exp -> Area -> InferError -> Infer (Substitution)
+addConditionReason env ifExp condExp area (InferError e _) =
+  throwError $ InferError
+    e
+    (Reason (IfElseCondIsNotBool ifExp condExp) (envcurrentpath env) area)
+
+addBranchReason
+  :: Env -> Src.Exp -> Src.Exp -> Area -> InferError -> Infer (Substitution)
+addBranchReason env ifExp falsyExp area (InferError e _) =
+  throwError $ InferError
+    e
+    (Reason (IfElseBranchTypesDontMatch ifExp falsyExp)
+            (envcurrentpath env)
+            area
+    )
 
 -- INFER SWITCH
 

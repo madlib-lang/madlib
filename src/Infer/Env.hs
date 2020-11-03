@@ -12,7 +12,7 @@ import           Infer.ADT
 import           Infer.Infer
 import           Explain.Reason
 import           Error.Error
-import Data.Maybe (fromMaybe)
+import           Data.Maybe                     ( fromMaybe )
 
 
 lookupVar :: Env -> String -> Infer (Substitution, Type)
@@ -39,7 +39,7 @@ extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
 
 initialEnv :: Env
 initialEnv = Env
-  { envvars    = M.fromList
+  { envvars        = M.fromList
     [ ( "==="
       , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
       )
@@ -64,9 +64,9 @@ initialEnv = Env
       , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "List" [TVar $ TV "a"]
       )
     ]
-  , envadts    = M.empty
-  , envtypings = M.empty
-  , envimports = M.empty
+  , envadts        = M.empty
+  , envtypings     = M.empty
+  , envimports     = M.empty
   , envcurrentpath = ""
   }
 
@@ -77,9 +77,9 @@ buildInitialEnv AST { aadts, apath } = do
   tadts <- buildADTTypes aadts
   vars  <- resolveADTs tadts aadts
   let allVars = M.union (envvars initialEnv) vars
-  return Env { envvars    = allVars
-             , envadts    = tadts
-             , envtypings = M.empty
-             , envimports = M.empty
+  return Env { envvars        = allVars
+             , envadts        = tadts
+             , envtypings     = M.empty
+             , envimports     = M.empty
              , envcurrentpath = fromMaybe "" apath
              }
