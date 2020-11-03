@@ -14,6 +14,7 @@ data Explanation = WrongTypeApplied Src.Exp
                  | PatternTypeError Src.Exp Src.Pattern
                  -- PatternTypeError switch :: Src.Exp pattern :: Src.Pattern
                  | PatternConstructorDoesNotExist Src.Exp Src.Pattern
+                 | WrongImport Src.Import
                  deriving(Show, Eq)
 
 -- TODO: I think we should get rid of that Area in the Reason

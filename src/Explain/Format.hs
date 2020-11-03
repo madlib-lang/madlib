@@ -201,6 +201,31 @@ format rf (InferError err reason) = do
         <> message
         <> "\n\n"
         <> hint
+    
+    Reason (WrongImport imp) _ _ -> do
+      let importArea                         = getArea imp
+      let highlightArea                      = getArea imp
+      let (Area (Loc _ importLine _) _)      = highlightArea
+      let (showStart, showEnd) = computeLinesToShow importArea highlightArea
+      let linesToShow = slice showStart showEnd moduleContent
+
+      let message =
+            "\n"
+              <> "The module you want to import could not be found\n"
+
+      let
+        hint
+          = "Hint: make sure that the module exists and that it is in the right folder"
+
+      return
+        $  "Import not found at line "
+        <> show importLine
+        <> ":\n\n"
+        <> unlines linesToShow
+        <> formatHighlightArea highlightArea
+        <> message
+        <> "\n\n"
+        <> hint
 
 
 -- computeLinesToShow - returns the first line and the last line to show

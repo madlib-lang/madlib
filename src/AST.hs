@@ -31,32 +31,45 @@ import Explain.Reason
 buildASTTable :: FilePath -> IO (Either InferError Table)
 buildASTTable path =
   let rootPath = computeRootPath path
-  in  buildASTTable' readFile rootPath path
+  in  buildASTTable' readFile path Nothing rootPath path
 
 
 buildASTTable'
   :: (FilePath -> IO String)
   -> FilePath
+  -> Maybe Import
+  -> FilePath
   -> FilePath
   -> IO (Either InferError Table)
-buildASTTable' rf rootPath entrypoint = do
+buildASTTable' rf parentPath imp rootPath entrypoint = do
   s <- try $ rf entrypoint :: IO (Either IOException String)
-  let source = either (const $ Left (InferError (ImportNotFound entrypoint "-") NoReason)) Right s
+  let reason = case imp of
+        Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
+        Nothing   -> NoReason
+
+      source = either (const $ Left (InferError (ImportNotFound entrypoint "-") reason)) Right s
       ast            = source >>= buildAST entrypoint
       importPaths    = importPathsFromAST rootPath ast
       generatedTable = uncurry M.singleton . (entrypoint, ) <$> ast
-  childTables <- mapM (buildASTTable' rf rootPath) importPaths
+  childTables <- mapM (buildImport rf parentPath rootPath) importPaths
   return $ foldr (liftM2 M.union) generatedTable childTables
 
 
-importPathsFromAST :: FilePath -> Either e AST -> [FilePath]
+buildImport :: (FilePath -> IO String) -> FilePath -> FilePath -> (Import, FilePath) -> IO (Either InferError Table)
+buildImport rf parentPath rootPath (imp, fp) = buildASTTable' rf parentPath (Just imp) rootPath fp
+
+importPathsFromAST :: FilePath -> Either e AST -> [(Import, FilePath)]
 importPathsFromAST rootPath ast = fromRight
   []
-  (((rootPath ++) . (++ ".mad") . getImportPath <$>) . aimports <$> ast)
+  ((mapSnd ((rootPath ++) . (++ ".mad")) . getImportPath <$>) . aimports <$> ast)
 
-getImportPath :: Import -> FilePath
-getImportPath (Meta _ _ (NamedImport   _ p)) = p
-getImportPath (Meta _ _ (DefaultImport _ p)) = p
+getImportPath :: Import -> (Import, FilePath)
+getImportPath imp@(Meta _ _ (NamedImport   _ p)) = (imp, p)
+getImportPath imp@(Meta _ _ (DefaultImport _ p)) = (imp, p)
+
+
+mapSnd f (a, b) = (a, f b)
+
 
 
 findAST :: Table -> FilePath -> Either InferError AST

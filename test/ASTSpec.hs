@@ -37,7 +37,7 @@ spec = do
 
           rf          = makeReadFile files
 
-      r <- buildASTTable' rf "fixtures/" "fixtures/source.mad"
+      r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source.mad"
       actual `shouldBe` expected
 
@@ -52,7 +52,7 @@ spec = do
 
           rf          = makeReadFile files
 
-      r <- buildASTTable' rf "fixtures/" "fixtures/source.mad"
+      r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source-not-there.mad"
       actual `shouldBe` expected
 
@@ -79,7 +79,7 @@ spec = do
 
         rf = makeReadFile files
 
-      r <- buildASTTable' rf "fixtures/" "fixtures/sourceA.mad"
+      r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/sourceA.mad"
       r `shouldBe` expected
 
     it "should fail if the source file is not found" $ do
@@ -96,7 +96,7 @@ spec = do
 
           rf           = makeReadFile files
 
-      r <- buildASTTable' rf "fixtures/" "fixtures/sourceA.mad"
+      r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/sourceA.mad"
       r `shouldBe` expected
 
     -- TODO: Add tests for other error constructors than ImportNotFound
@@ -122,7 +122,7 @@ spec = do
 
         rf = makeReadFile files
 
-      r <- buildASTTable' rf "src/" "src/sourceA.mad"
+      r <- buildASTTable' rf "" Nothing "src/" "src/sourceA.mad"
       r `shouldBe` expected
   describe "buildAST" $ do
     it "should return a GrammarError if the source is not valid" $ do

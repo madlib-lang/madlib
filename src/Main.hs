@@ -35,7 +35,7 @@ main = do
       resolvedASTTable = case (entryAST, astTable) of
         (Right ast, Right table) -> runExcept
           (runStateT (inferAST rootPath table ast) Unique { count = 0 })
-        (_, _) -> Left $ InferError (UnboundVariable "") NoReason
+        (_, Left e) -> Left e
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
 
