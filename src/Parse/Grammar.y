@@ -81,8 +81,8 @@ importDecls :: { [Src.Import] }
   | importDecl             { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str rRet { Src.NamedImport $3 (strV $6) }
-  | 'import' name 'from' str rRet                { Src.DefaultImport (strV $2) (strV $4) }
+  : 'import' '{' importNames '}' 'from' str rRet { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6)) }
+  | 'import' name 'from' str rRet                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4)) }
 
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }

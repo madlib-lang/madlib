@@ -388,7 +388,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
       )
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
-  buildPatternType e@Env { envvars } (Meta _ _ pat) = case pat of
+  buildPatternType e@Env { envvars } pattern@(Meta _ area pat) = case pat of
     Src.PVar  v        -> return $ TVar $ TV v
 
     Src.PCon  "String" -> return $ TCon CString
@@ -408,7 +408,12 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
     Src.PCtor n as -> do
       (Forall fv ctor) <- case M.lookup n envvars of
         Just x  -> return x
-        Nothing -> throwError $ InferError (UnknownType n) NoReason
+        Nothing -> throwError $ InferError
+          (UnknownType n)
+          (Reason (PatternConstructorDoesNotExist switch pattern)
+                  (envcurrentpath e)
+                  area
+          )
 
       let rt = arrowReturnType ctor
       ctor'  <- argPatternsToArrowType rt as
@@ -429,40 +434,46 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
 
 
   generateCaseEnv :: Type -> Env -> Src.Pattern -> Infer Env
-  generateCaseEnv t e@Env { envvars } (Meta _ _ pat) = case (pat, t) of
-    (Src.PVar v, t') -> do
-      return $ extendVars e (v, Forall [] t')
+  generateCaseEnv t e@Env { envvars } pattern@(Meta _ area pat) =
+    case (pat, t) of
+      (Src.PVar v, t') -> do
+        return $ extendVars e (v, Forall [] t')
 
-    (Src.PRecord fields, TRecord fields') ->
-      let allFields = zip (M.elems fields) (M.elems fields')
-      in  foldrM (\(p, t) e' -> generateCaseEnv t e' p) e allFields
+      (Src.PRecord fields, TRecord fields') ->
+        let allFields = zip (M.elems fields) (M.elems fields')
+        in  foldrM (\(p, t) e' -> generateCaseEnv t e' p) e allFields
 
-    (Src.PCtor cname as, t) -> do
-      ctor <- findConstructor cname
+      (Src.PCtor cname as, t) -> do
+        ctor <- findConstructor cname
 
-      case (ctor, as) of
-        (TArr a _, [a']) -> do
-          generateCaseEnv a e a'
+        case (ctor, as) of
+          (TArr a _, [a']) -> do
+            generateCaseEnv a e a'
 
-        (TArr a (TArr b _), [a', b']) -> do
-          e1 <- generateCaseEnv a e a'
-          generateCaseEnv b e1 b'
+          (TArr a (TArr b _), [a', b']) -> do
+            e1 <- generateCaseEnv a e a'
+            generateCaseEnv b e1 b'
 
-        (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
-          e1 <- generateCaseEnv a e a'
-          e2 <- generateCaseEnv b e1 b'
-          generateCaseEnv c e2 c'
+          (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
+            e1 <- generateCaseEnv a e a'
+            e2 <- generateCaseEnv b e1 b'
+            generateCaseEnv c e2 c'
 
-        _ -> return e
+          _ -> return e
 
-    _ -> return e
+      _ -> return e
 
    where
     findConstructor :: String -> Infer Type
     findConstructor cname = case M.lookup cname envvars of
       Just (Forall _ t) -> return t
 
-      Nothing           -> throwError $ InferError (UnknownType cname) NoReason
+      Nothing           -> throwError $ InferError
+        (UnknownType cname)
+        (Reason (PatternConstructorDoesNotExist switch pattern)
+                (envcurrentpath e)
+                area
+        )
 
 
 addPatternReason
@@ -517,7 +528,6 @@ inferAST rootPath table ast@Src.AST { Src.aimports } = do
   inferredAST <- inferASTExps envWithImports ast
 
   case Slv.apath inferredAST of
-
     Just fp -> return $ M.insert fp inferredAST inferredASTs
 
     Nothing -> throwError $ InferError ASTHasNoPath NoReason
@@ -546,29 +556,24 @@ resolveImports
   :: FilePath -> Src.Table -> [Src.Import] -> Infer (Slv.Table, Imports)
 resolveImports root table (imp : is) = do
   let modulePath = case imp of
-        Src.NamedImport   _ n -> n
+        Meta _ _ (Src.NamedImport   _ n) -> n
 
-        Src.DefaultImport _ n -> n
+        Meta _ _ (Src.DefaultImport _ n) -> n
 
   let path = root <> modulePath <> ".mad"
 
   solvedAST <- case AST.findAST table path of
-
     Right ast -> do
       env <- buildInitialEnv ast
       inferASTExps env ast
 
-    Left (AST.ASTNotFound path) ->
-      throwError $ InferError (ImportNotFound path "") NoReason
-
-    Left (AST.ImportNotFound path _) ->
-      throwError $ InferError (ImportNotFound path "") NoReason
+    Left e -> throwError e
 
   exportedExps <- M.fromList <$> exportedExps solvedAST
   let exportedTypes = mapM (return . Slv.getType) exportedExps
 
   exports <- case (exportedTypes, imp) of
-    (Just exports, Src.DefaultImport alias _) ->
+    (Just exports, Meta _ _ (Src.DefaultImport alias _)) ->
       return $ M.fromList [(alias, TRecord exports)]
 
     (Just exports, _) -> return exports
@@ -593,9 +598,9 @@ inferASTExps env Src.AST { Src.aexps, Src.apath, Src.aimports, Src.aadts } = do
 
 updateImport :: Src.Import -> Slv.Import
 updateImport i = case i of
-  Src.NamedImport   ns fp -> Slv.NamedImport ns fp
+  Meta _ _ (Src.NamedImport   ns fp) -> Slv.NamedImport ns fp
 
-  Src.DefaultImport n  fp -> Slv.DefaultImport n fp
+  Meta _ _ (Src.DefaultImport n  fp) -> Slv.DefaultImport n fp
 
 
 updateADT :: Src.ADT -> Slv.ADT

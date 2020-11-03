@@ -2,7 +2,6 @@ module AST.Source where
 
 import qualified Data.Map                      as M
 
-import           Explain.Location
 import           Explain.Meta
 
 
@@ -15,7 +14,9 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Import
+type Import = Meta Import_
+
+data Import_
   = NamedImport [Name] FilePath
   | DefaultImport Name FilePath
   deriving(Eq, Show)

@@ -12,6 +12,8 @@ data Explanation = WrongTypeApplied Src.Exp
                  | IfElseCondIsNotBool Src.Exp Src.Exp
                  -- PatternTypeError switch :: Src.Exp pattern :: Src.Pattern
                  | PatternTypeError Src.Exp Src.Pattern
+                 -- PatternTypeError switch :: Src.Exp pattern :: Src.Pattern
+                 | PatternConstructorDoesNotExist Src.Exp Src.Pattern
                  deriving(Show, Eq)
 
 -- TODO: I think we should get rid of that Area in the Reason

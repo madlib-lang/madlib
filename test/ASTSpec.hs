@@ -4,8 +4,9 @@ module ASTSpec where
 import qualified Data.Map                      as M
 import           AST
 import           Test.Hspec
-import           Text.Show.Pretty               ( ppShow )
 import           GHC.IO.Exception
+import Error.Error
+import Explain.Reason
 
 type MockFiles = M.Map FilePath String
 
@@ -36,22 +37,22 @@ spec = do
 
           rf          = makeReadFile files
 
-      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
+      r <- buildASTTable' rf "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source.mad"
       actual `shouldBe` expected
 
-    it "should return a Left ASTNotFound if it does not exist" $ do
+    it "should return a Left ImportNotFound if it does not exist" $ do
       let source =
             unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => fn2(a, b) + a"]
 
           (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Left (ASTNotFound "fixtures/source-not-there.mad")
+          expected    = Left (InferError (ImportNotFound "fixtures/source-not-there.mad" "") NoReason)
           files       = M.fromList [("fixtures/source.mad", source)]
 
           rf          = makeReadFile files
 
-      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/source.mad"
+      r <- buildASTTable' rf "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source-not-there.mad"
       actual `shouldBe` expected
 
@@ -78,7 +79,7 @@ spec = do
 
         rf = makeReadFile files
 
-      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/sourceA.mad"
+      r <- buildASTTable' rf "fixtures/" "fixtures/sourceA.mad"
       r `shouldBe` expected
 
     it "should fail if the source file is not found" $ do
@@ -90,12 +91,12 @@ spec = do
 
           (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
 
-          expected = Left $ ImportNotFound "fixtures/sourceB.mad" (Just astA)
+          expected = Left $ InferError (ImportNotFound "fixtures/sourceB.mad" "-") NoReason
           files        = M.fromList [("fixtures/sourceA.mad", sourceA)]
 
           rf           = makeReadFile files
 
-      r <- buildASTTable' rf Nothing "fixtures/" "fixtures/sourceA.mad"
+      r <- buildASTTable' rf "fixtures/" "fixtures/sourceA.mad"
       r `shouldBe` expected
 
     -- TODO: Add tests for other error constructors than ImportNotFound
@@ -121,16 +122,16 @@ spec = do
 
         rf = makeReadFile files
 
-      r <- buildASTTable' rf Nothing "src/" "src/sourceA.mad"
+      r <- buildASTTable' rf "src/" "src/sourceA.mad"
       r `shouldBe` expected
   describe "buildAST" $ do
     it "should return a GrammarError if the source is not valid" $ do
       let
         source   = unlines ["fn :: Num -> Num -> Num", "fn : a, b => a + b"]
         actual   = buildAST "source.mad" source
-        expected = Left $ GrammarError
+        expected = Left $ InferError (GrammarError
           "source.mad"
-          "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon"
+          "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon") NoReason
       actual `shouldBe` expected
 
     it "should return a valid AST with boolean expressions" $ do

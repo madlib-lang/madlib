@@ -16,37 +16,36 @@ import           Data.Either.Combinators        ( mapLeft )
 import           Parse.Grammar                  ( parse )
 import           AST.Source
 import           Path                           ( computeRootPath )
+import Explain.Meta
+import Error.Error
+import Explain.Reason
 
 
 
-data ASTError = ImportNotFound FilePath (Maybe AST)
-              | GrammarError FilePath String
-              | ASTNotFound FilePath
-              deriving(Eq, Show)
+-- newtype ASTError = ASTNotFound FilePath
+--               deriving(Eq, Show)
 
 -- TODO: Write an integration test with real files ?
 -- Move that to Main and rename buildASTTable' to buildASTTable
 -- Then use the scoped name in Main in order to partially apply it.
-buildASTTable :: FilePath -> IO (Either ASTError Table)
+buildASTTable :: FilePath -> IO (Either InferError Table)
 buildASTTable path =
   let rootPath = computeRootPath path
-  in  buildASTTable' readFile Nothing rootPath path
+  in  buildASTTable' readFile rootPath path
 
 
 buildASTTable'
   :: (FilePath -> IO String)
-  -> Maybe AST
   -> FilePath
   -> FilePath
-  -> IO (Either ASTError Table)
-buildASTTable' rf parent rootPath entrypoint = do
+  -> IO (Either InferError Table)
+buildASTTable' rf rootPath entrypoint = do
   s <- try $ rf entrypoint :: IO (Either IOException String)
-  let source = either (const $ Left $ ImportNotFound entrypoint parent) Right s
+  let source = either (const $ Left (InferError (ImportNotFound entrypoint "-") NoReason)) Right s
       ast            = source >>= buildAST entrypoint
       importPaths    = importPathsFromAST rootPath ast
       generatedTable = uncurry M.singleton . (entrypoint, ) <$> ast
-      nextParent     = either (const Nothing) Just ast
-  childTables <- mapM (buildASTTable' rf nextParent rootPath) importPaths
+  childTables <- mapM (buildASTTable' rf rootPath) importPaths
   return $ foldr (liftM2 M.union) generatedTable childTables
 
 
@@ -56,18 +55,18 @@ importPathsFromAST rootPath ast = fromRight
   (((rootPath ++) . (++ ".mad") . getImportPath <$>) . aimports <$> ast)
 
 getImportPath :: Import -> FilePath
-getImportPath (NamedImport   _ p) = p
-getImportPath (DefaultImport _ p) = p
+getImportPath (Meta _ _ (NamedImport   _ p)) = p
+getImportPath (Meta _ _ (DefaultImport _ p)) = p
 
 
-findAST :: Table -> FilePath -> Either ASTError AST
+findAST :: Table -> FilePath -> Either InferError AST
 findAST table path = case M.lookup path table of
   Just x  -> return x
-  Nothing -> Left $ ASTNotFound path
+  Nothing -> Left $ InferError (ImportNotFound path "") NoReason
 
 
-buildAST :: FilePath -> String -> Either ASTError AST
-buildAST path code = mapLeft (GrammarError path) $ parse code >>= setPath
+buildAST :: FilePath -> String -> Either InferError AST
+buildAST path code = mapLeft (\message -> InferError (GrammarError path message) NoReason) $ parse code >>= setPath
  where
   setPath :: AST -> Either e AST
   setPath a = return a { apath = Just path }

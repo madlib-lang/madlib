@@ -174,6 +174,33 @@ format rf (InferError err reason) = do
         <> message
         <> "\n\n"
         <> hint
+    
+    Reason (PatternConstructorDoesNotExist switch pattern) _ _ -> do
+      let switchArea                         = getArea switch
+      let patternArea                        = getArea pattern
+      let (Area (Loc _ patternLine _) _)     = patternArea
+      let (showStart, showEnd) = computeLinesToShow switchArea patternArea
+      let linesToShow = slice showStart showEnd moduleContent
+      let (UnknownType unknown) = err
+
+      let message =
+            "\n"
+              <> "Constructor used in pattern does not exist\n\t"
+              <> unknown
+
+      let
+        hint
+          = "Hint: make sure that you imported this type."
+
+      return
+        $  "Error in switch expression at line "
+        <> show patternLine
+        <> ":\n\n"
+        <> unlines linesToShow
+        <> formatHighlightArea patternArea
+        <> message
+        <> "\n\n"
+        <> hint
 
 
 -- computeLinesToShow - returns the first line and the last line to show

@@ -17,6 +17,7 @@ data TypeError
   | UnknownType String
   | FieldNotExisting String
   | ImportNotFound String String
+  | GrammarError FilePath String
   | FatalError
   | ASTHasNoPath
   deriving (Show, Eq, Ord)
