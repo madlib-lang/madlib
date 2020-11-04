@@ -54,6 +54,7 @@ import           Explain.Meta
   'from'   { Token _ TokenFrom }
   '|'      { Token _ TokenPipe }
   '|>'     { Token _ TokenPipeOperator }
+  '...'    { Token _ TokenSpreadOperator }
   'data'   { Token _ TokenData }
 
 %left '==='
@@ -225,9 +226,11 @@ recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
 record :: { Src.Exp }
   : '{' recordFields '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.Record $2) }
 
-recordFields :: { Src.Fields }
-  : name ':' exp                  { M.fromList [(strV $1, $3)] }
-  | recordFields ',' name ':' exp { M.insert (strV $3) $5 $1 }
+recordFields :: { [Src.Field] }
+  : name ':' exp                  { [Src.Field (strV $1, $3)] }
+  | '...' exp                     { [Src.Spread $2] }
+  | recordFields ',' name ':' exp { $1 <> [Src.Field (strV $3, $5)] }
+  | recordFields ',' '...' exp    { $1 <> [Src.Spread $4] }
 
 
 operation :: { Src.Exp }

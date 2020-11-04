@@ -49,6 +49,7 @@ resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
 
 
 -- TODO: Verify that Constructors aren't already in the global space or else throw a name clash error
+-- Use lookupADT for that
 resolveADTConstructor :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer Vars
 resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
   let t = buildADTConstructorReturnType n params

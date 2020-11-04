@@ -41,15 +41,13 @@ instance Compilable Exp where
         <> compile falsy
         <> ")"
 
-    FieldAccess record field -> compile record <> compile field
+    Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
 
-    Abs         param  body  -> "(" <> param <> " => " <> compile body <> ")"
+    Var name            -> name
 
-    Var name                 -> name
+    Assignment name exp -> "const " <> name <> " = " <> compile exp <> ""
 
-    Assignment name exp      -> "const " <> name <> " = " <> compile exp <> ""
-
-    TypedExp   exp  _        -> case exp of
+    TypedExp   exp  _   -> case exp of
       Solved _ _ (Var _) -> ""
       _                  -> compile exp
 
@@ -58,11 +56,14 @@ instance Compilable Exp where
 
     Record fields ->
       -- Maybe just map and intercalate ?
-      let fs = init $ M.foldrWithKey compileField "" fields
-      in  "{" <> fs <> " }"
+      let fs = init $ foldr compileField "" fields in "{" <> fs <> " }"
      where
-      compileField name exp res =
-        " " <> name <> ": " <> compile exp <> "," <> res
+      compileField :: Field -> String -> String
+      compileField field res = case field of
+        Field  (name, exp) -> " " <> name <> ": " <> compile exp <> "," <> res
+        Spread exp         -> " ..." <> compile exp <> "," <> res
+
+    FieldAccess record field -> compile record <> compile field
 
     JSExp content -> content
 

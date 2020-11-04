@@ -19,12 +19,12 @@ Right
             (TRecord (fromList [ ( "value" , TCon CString ) ]))
             (Area (Loc 54 2 13) (Loc 69 2 28))
             (Record
-               (fromList
-                  [ ( "value"
-                    , Solved
-                        (TCon CString) (Area (Loc 63 2 22) (Loc 67 2 26)) (LStr "42")
-                    )
-                  ]))
+               [ Field
+                   ( "value"
+                   , Solved
+                       (TCon CString) (Area (Loc 63 2 22) (Loc 67 2 26)) (LStr "42")
+                   )
+               ])
         , Solved
             (TArr
                (TRecord (fromList [ ( "value" , TCon CString ) ]))

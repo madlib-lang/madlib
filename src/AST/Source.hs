@@ -61,7 +61,13 @@ data Pattern_
   deriving(Eq, Show)
 
 
-type Fields = M.Map Name Exp
+data Field
+  = Field (Name, Exp)
+  | Spread Exp
+  deriving(Eq, Show)
+
+
+-- type Fields = M.Map Name Exp
 
 type Exp = Meta Exp_
 
@@ -73,7 +79,7 @@ data Exp_ = LInt String
           | Abs Name Exp
           | FieldAccess Exp Exp
           | Assignment Name Exp
-          | Record Fields
+          | Record [Field]
           | If Exp Exp Exp
           | Switch Exp [Case]
           | Export Exp

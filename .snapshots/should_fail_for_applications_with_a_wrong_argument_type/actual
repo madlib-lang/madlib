@@ -4,6 +4,18 @@ Left
      (Reason
         (WrongTypeApplied
            (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 31 2 9) (Loc 32 2 10))
+              (App
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 23 2 1) (Loc 25 2 3))
+                    (Var "fn"))
+                 (Meta
+                    Infos { nthArg = Just 1 , origin = Just (Var "fn") }
+                    (Area (Loc 26 2 4) (Loc 29 2 7))
+                    (LStr "3"))))
+           (Meta
               Infos { nthArg = Just 2 , origin = Just (Var "fn") }
               (Area (Loc 31 2 9) (Loc 32 2 10))
               (LInt "4")))

@@ -14,6 +14,7 @@ import           Error.Error
 occursCheck :: Substitutable a => TVar -> a -> Bool
 occursCheck a t = S.member a $ ftv t
 
+
 bind :: TVar -> Type -> Either TypeError Substitution
 bind a t | t == TVar a     = return M.empty
          | occursCheck a t = throwError $ InfiniteType a t
@@ -47,22 +48,13 @@ unify TAny _                     = return M.empty
 unify _    TAny                  = return M.empty
 unify t1   t2                    = throwError $ UnificationError t1 t2
 
+
 unifyVars :: Substitution -> [(Type, Type)] -> Either TypeError Substitution
 unifyVars s ((tp, tp') : xs) = do
   s1 <- unify (apply s tp) (apply s tp')
   unifyVars s1 xs
 unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
 unifyVars s _           = return s
-
--- TODO: Needs to be extended with all cases of unifyElems ?
--- Should this only happen for free vars ?
--- unifyPatternElems :: Type -> [Type] -> Either TypeError Substitution
--- unifyPatternElems t ts = catchError (unifyElems t ts) anyCheck
---  where
---   anyCheck :: TypeError -> Either TypeError Substitution
---   anyCheck e = case e of
---     UnificationError (TCon _) (TCon _) -> return M.empty
---     _ -> throwError e
 
 
 unifyElems :: Type -> [Type] -> Either TypeError Substitution

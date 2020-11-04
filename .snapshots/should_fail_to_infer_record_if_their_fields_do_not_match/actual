@@ -7,15 +7,42 @@ Left
         (WrongTypeApplied
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 0 1 1) (Loc 14 1 15))
+              (App
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 15 1 16) (Loc 18 1 19))
+                    (Var "==="))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 0 1 1) (Loc 14 1 15))
+                    (Record
+                       [ Field
+                           ( "x"
+                           , Meta
+                               Infos { nthArg = Nothing , origin = Nothing }
+                               (Area (Loc 5 1 6) (Loc 6 1 7))
+                               (LInt "3")
+                           )
+                       , Field
+                           ( "y"
+                           , Meta
+                               Infos { nthArg = Nothing , origin = Nothing }
+                               (Area (Loc 11 1 12) (Loc 12 1 13))
+                               (LInt "5")
+                           )
+                       ]))))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
               (Area (Loc 19 1 20) (Loc 35 1 36))
               (Record
-                 (fromList
-                    [ ( "name"
-                      , Meta
-                          Infos { nthArg = Nothing , origin = Nothing }
-                          (Area (Loc 27 1 28) (Loc 33 1 34))
-                          (LStr "John")
-                      )
-                    ]))))
+                 [ Field
+                     ( "name"
+                     , Meta
+                         Infos { nthArg = Nothing , origin = Nothing }
+                         (Area (Loc 27 1 28) (Loc 33 1 34))
+                         (LStr "John")
+                     )
+                 ])))
         "path"
         (Area (Loc 19 1 20) (Loc 35 1 36))))

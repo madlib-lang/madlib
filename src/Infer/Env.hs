@@ -29,6 +29,13 @@ lookupVar env x = do
       return (M.empty, t)
 
 
+lookupADT :: Env -> String -> Infer Type
+lookupADT env x = do
+  case M.lookup x $ envadts env of
+    Nothing -> throwError $ InferError (UnknownType x) NoReason
+    Just x  -> return x
+
+
 extendVars :: Env -> (String, Scheme) -> Env
 extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 

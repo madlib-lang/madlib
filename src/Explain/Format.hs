@@ -6,7 +6,8 @@ import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import           Infer.Type
-import           Data.List
+import Debug.Trace
+import Text.Show.Pretty (ppShow)
 
 
 
@@ -18,7 +19,13 @@ format :: (FilePath -> IO String) -> InferError -> IO String
 format rf (InferError err reason) = do
   moduleContent <- lines <$> getModuleContent rf reason
   case reason of
-    Reason (WrongTypeApplied (Meta infos (Area (Loc a li c) _) e)) _ area -> do
+    Reason (WrongTypeApplied (Meta _ _ abs) (Meta infos (Area (Loc a li c) _) e)) _ area -> do
+      let beginning = case (trace (ppShow abs) abs) of
+            -- TODO: Extend to other operators
+            Src.App (Meta _ _ (Src.Var "+")) _ -> "Error applying the operator +"
+            Src.Var "+" -> "Error applying the operator +"
+            _           -> "Error in function call"
+
       let l = moduleContent !! (li - 1)
       let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
       let (UnificationError expected actual) = err
@@ -52,7 +59,7 @@ format rf (InferError err reason) = do
           ]
 
       return
-        $  "Error in function call at line "
+        $  beginning <> " at line "
         <> show li
         <> ":\n\n"
         <> l
@@ -174,23 +181,19 @@ format rf (InferError err reason) = do
         <> message
         <> "\n\n"
         <> hint
-    
+
     Reason (PatternConstructorDoesNotExist switch pattern) _ _ -> do
-      let switchArea                         = getArea switch
-      let patternArea                        = getArea pattern
-      let (Area (Loc _ patternLine _) _)     = patternArea
+      let switchArea                     = getArea switch
+      let patternArea                    = getArea pattern
+      let (Area (Loc _ patternLine _) _) = patternArea
       let (showStart, showEnd) = computeLinesToShow switchArea patternArea
       let linesToShow = slice showStart showEnd moduleContent
-      let (UnknownType unknown) = err
+      let (UnknownType unknown)          = err
 
       let message =
-            "\n"
-              <> "Constructor used in pattern does not exist\n\t"
-              <> unknown
+            "\n" <> "Constructor used in pattern does not exist\n\t" <> unknown
 
-      let
-        hint
-          = "Hint: make sure that you imported this type."
+      let hint = "Hint: make sure that you imported this type."
 
       return
         $  "Error in switch expression at line "
@@ -201,17 +204,16 @@ format rf (InferError err reason) = do
         <> message
         <> "\n\n"
         <> hint
-    
+
     Reason (WrongImport imp) _ _ -> do
-      let importArea                         = getArea imp
-      let highlightArea                      = getArea imp
-      let (Area (Loc _ importLine _) _)      = highlightArea
+      let importArea                    = getArea imp
+      let highlightArea                 = getArea imp
+      let (Area (Loc _ importLine _) _) = highlightArea
       let (showStart, showEnd) = computeLinesToShow importArea highlightArea
-      let linesToShow = slice showStart showEnd moduleContent
+      let linesToShow                   = slice showStart showEnd moduleContent
 
       let message =
-            "\n"
-              <> "The module you want to import could not be found\n"
+            "\n" <> "The module you want to import could not be found\n"
 
       let
         hint

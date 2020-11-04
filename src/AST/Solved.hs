@@ -62,7 +62,10 @@ data Pattern
   | PRecord (M.Map Name Pattern)
   deriving(Eq, Show)
 
-type Fields = M.Map Name Exp
+data Field
+  = Field (Name, Exp)
+  | Spread Exp
+  deriving(Eq, Show)
 
 type Exp = Solved Exp_
 
@@ -78,7 +81,7 @@ data Exp_ = LInt String
           | Var Name
           | TypedExp Exp Typing
           | ListConstructor [Exp]
-          | Record Fields
+          | Record [Field]
           | If Exp Exp Exp
           | Switch Exp [Case]
           deriving(Eq, Show)

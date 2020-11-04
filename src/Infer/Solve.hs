@@ -128,15 +128,18 @@ enhanceVarError
 enhanceVarError env exp area (InferError e _) = throwError
   $ InferError e (Reason (VariableNotDeclared exp) (envcurrentpath env) area)
 
+
+
 -- INFER ABS
 
 inferAbs :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferAbs env l@(Meta _ loc (Src.Abs param body)) = do
+inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
   tv <- newTVar
   let env' = extendVars env (param, Forall [] tv)
   (s1, t1, e) <- infer env' body
   let t = apply s1 tv `TArr` t1
   return (s1, t, applyAbsSolve l param e t)
+
 
 
 -- INFER APP
@@ -145,14 +148,13 @@ inferApp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferApp env exp = do
   let Meta _ area (Src.App abs arg) = exp
 
-
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
   (s2, t2, earg) <- infer env arg
 
   s3             <- case unify (apply s2 t1) (TArr t2 tv) of
     Right s -> return s
-    Left  e -> throwError $ InferError e $ Reason (WrongTypeApplied arg)
+    Left  e -> throwError $ InferError e $ Reason (WrongTypeApplied abs arg)
                                                   (envcurrentpath env)
                                                   (getArea arg)
   let t = apply s3 tv
@@ -160,8 +162,9 @@ inferApp env exp = do
   return
     ( s3 `compose` s2 `compose` s1
     , t
-    , Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2) --applyAppSolve exp eabs (updateType earg $ apply s3 t2) t
+    , Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2)
     )
+
 
 
 -- INFER ASSIGNMENT
@@ -175,6 +178,7 @@ inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = case exp of
       Just (Forall fv t2) -> do
         let bv = S.toList $ ftv t2
         it2 <- instantiate (Forall (fv <> bv) t2)
+        -- TODO: Error should be handled
         s2  <- unifyToInfer env $ unify (trace ("T1: " <> ppShow t1) t1)
                                         (trace ("IT2: " <> ppShow it2) it2)
         return
@@ -190,6 +194,7 @@ inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = case exp of
     return (s1, t1, applyAssignmentSolve e name e1 t1)
 
 
+
 -- INFER EXPORT
 
 inferExport :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -198,22 +203,39 @@ inferExport env (Meta _ loc (Src.Export exp)) = do
   return (s, t, Slv.Solved t loc (Slv.Export e))
 
 
+
 -- INFER RECORD
 
 inferRecord :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferRecord env exp = do
-  let (area, fields) = case exp of
-        (Meta _ area (Src.Record fields)) -> (area, fields)
-        Meta _ area (Src.Record fields)   -> (area, fields)
+  let Meta _ area (Src.Record fields) = exp
 
-  inferred <- mapM (infer env) fields
-  let inferredFields = M.map trd inferred
-      recordType     = TRecord $ M.map mid inferred
+  inferred <- mapM (inferRecordField env) fields
+  let inferredFields = trd <$> inferred
+      recordType     = TRecord $ M.fromList $ concat $ mid <$> inferred
   return
     ( M.empty
     , recordType
     , Slv.Solved recordType area (Slv.Record inferredFields)
     )
+
+inferRecordField
+  :: Env -> Src.Field -> Infer (Substitution, [(Name, Type)], Slv.Field)
+inferRecordField env field = case field of
+  Src.Field (name, exp) -> do
+    (s, t, e) <- infer env exp
+    return (s, [(name, t)], Slv.Field (name, e))
+
+  Src.Spread exp -> do
+    (s, t, e) <- infer env exp
+    case t of
+      TRecord tfields ->
+        let Slv.Solved _ _ (Slv.Record fields) = e
+        in  return (s, M.toList tfields, Slv.Spread e)
+
+      -- TODO: This needs to be a new error type maybe ?
+      _ -> throwError $ InferError FatalError NoReason
+
 
 
 -- INFER TYPEDEXP
@@ -267,34 +289,56 @@ inferListConstructor env (Meta _ loc (Src.ListConstructor elems)) =
       inferred <- mapM (infer env) elems
       let (_, t1, _) = head inferred
       let t          = TComp "List" [t1]
+      -- TODO: Error should be handled
       s <- unifyToInfer env $ unifyElems t1 (mid <$> inferred)
       return (s, t, Slv.Solved t loc (Slv.ListConstructor (trd <$> inferred)))
+
 
 
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is l arg) abs@(Meta _ _ (Src.Var ('.' : name)))))
+inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is _ _) abs@(Meta _ area (Src.Var ('.' : name)))))
   = do
-    (rs, rt, re) <- infer env (Meta is l arg)
+    (fieldSubstitution , fieldType , fieldExp ) <- infer env abs
+    (recordSubstitution, recordType, recordExp) <- infer env rec
 
-    let ft = case rt of
-          TRecord fields -> M.lookup name fields
-          _              -> Nothing
 
-    case ft of
-      Just t -> do
-        (s1, _, e1) <- infer env abs
-        return (rs `compose` s1, t, Slv.Solved t loc (Slv.FieldAccess re e1))
+    let maybeSolved = case recordType of
+          TRecord fields -> case M.lookup name fields of
+            Just t -> Just
+              ( fieldSubstitution
+              , t
+              , Slv.Solved t loc (Slv.FieldAccess recordExp fieldExp)
+              )
+            Nothing -> Nothing
 
-      Nothing -> do
-        (s1, t1, e1) <- inferApp env (Meta is loc (Src.App abs rec))
-        let rt' = apply s1 rt
+          _ -> Nothing
+
+
+    case maybeSolved of
+      Just solved -> return solved
+      Nothing     -> do
+        tv    <- newTVar
+        subst <-
+          case
+            unify (apply recordSubstitution fieldType) (TArr recordType tv)
+          of
+            Right s -> return s
+            Left  e -> throwError $ InferError e NoReason
+        let t = apply subst tv
+
         return
-          ( rs `compose` s1
-          , t1
-          , Slv.Solved t1 loc (Slv.FieldAccess (updateType re rt') e1)
+          ( subst `compose` recordSubstitution `compose` fieldSubstitution
+          , t
+          , Slv.Solved
+            tv
+            loc
+            (Slv.FieldAccess (updateType recordExp (apply subst recordType))
+                             (updateType fieldExp tv)
+            )
           )
+
 
 
 -- INFER IF
@@ -349,6 +393,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
     foldr1 compose
       <$> mapM
             (\(t, ts) ->
+              -- TODO: Error should be handled
               unifyToInfer env $ unifyElems (apply casesSubstitution t) ts
             )
             typeMatrix
@@ -418,6 +463,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
       let rt = arrowReturnType ctor
       ctor'  <- argPatternsToArrowType rt as
       ctor'' <- instantiate $ Forall fv ctor
+      -- TODO: Error should be handled
       s      <- unifyToInfer env $ unify ctor' ctor''
       return $ apply s rt
 
@@ -616,7 +662,7 @@ updateADTConstructor Src.ADTConstructor { Src.adtcname, Src.adtcargs } =
                      , Slv.adtcargs = (updateTyping <$>) <$> adtcargs
                      }
 
-
+-- TODO: Should get rid of that and handle the Either correctly where it is called
 unifyToInfer :: Env -> Either TypeError Substitution -> Infer Substitution
 unifyToInfer env u = case u of
   Right s -> return s

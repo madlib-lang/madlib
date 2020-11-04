@@ -21,12 +21,12 @@ Right
                         (TRecord (fromList [ ( "value" , TCon CString ) ]))
                         (Area (Loc 90 2 19) (Loc 105 2 34))
                         (Record
-                           (fromList
-                              [ ( "value"
-                                , Solved
-                                    (TCon CString) (Area (Loc 99 2 28) (Loc 103 2 32)) (LStr "42")
-                                )
-                              ]))))))
+                           [ Field
+                               ( "value"
+                               , Solved
+                                   (TCon CString) (Area (Loc 99 2 28) (Loc 103 2 32)) (LStr "42")
+                               )
+                           ])))))
         , Solved
             (TComp "Result" [])
             (Area (Loc 107 3 1) (Loc 114 3 8))
@@ -46,12 +46,12 @@ Right
                         (TRecord (fromList [ ( "message" , TCon CString ) ]))
                         (Area (Loc 123 3 17) (Loc 141 3 35))
                         (Record
-                           (fromList
-                              [ ( "message"
-                                , Solved
-                                    (TCon CString) (Area (Loc 134 3 28) (Loc 139 3 33)) (LStr "Err")
-                                )
-                              ]))))))
+                           [ Field
+                               ( "message"
+                               , Solved
+                                   (TCon CString) (Area (Loc 134 3 28) (Loc 139 3 33)) (LStr "Err")
+                               )
+                           ])))))
         , Solved
             (TCon CBool)
             (Area (Loc 172 4 30) (Loc 179 4 37))

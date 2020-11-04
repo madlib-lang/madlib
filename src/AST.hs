@@ -16,9 +16,9 @@ import           Data.Either.Combinators        ( mapLeft )
 import           Parse.Grammar                  ( parse )
 import           AST.Source
 import           Path                           ( computeRootPath )
-import Explain.Meta
-import Error.Error
-import Explain.Reason
+import           Explain.Meta
+import           Error.Error
+import           Explain.Reason
 
 
 
@@ -47,7 +47,10 @@ buildASTTable' rf parentPath imp rootPath entrypoint = do
         Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
         Nothing   -> NoReason
 
-      source = either (const $ Left (InferError (ImportNotFound entrypoint "-") reason)) Right s
+      source = either
+        (const $ Left (InferError (ImportNotFound entrypoint "-") reason))
+        Right
+        s
       ast            = source >>= buildAST entrypoint
       importPaths    = importPathsFromAST rootPath ast
       generatedTable = uncurry M.singleton . (entrypoint, ) <$> ast
@@ -55,13 +58,20 @@ buildASTTable' rf parentPath imp rootPath entrypoint = do
   return $ foldr (liftM2 M.union) generatedTable childTables
 
 
-buildImport :: (FilePath -> IO String) -> FilePath -> FilePath -> (Import, FilePath) -> IO (Either InferError Table)
-buildImport rf parentPath rootPath (imp, fp) = buildASTTable' rf parentPath (Just imp) rootPath fp
+buildImport
+  :: (FilePath -> IO String)
+  -> FilePath
+  -> FilePath
+  -> (Import, FilePath)
+  -> IO (Either InferError Table)
+buildImport rf parentPath rootPath (imp, fp) =
+  buildASTTable' rf parentPath (Just imp) rootPath fp
 
 importPathsFromAST :: FilePath -> Either e AST -> [(Import, FilePath)]
 importPathsFromAST rootPath ast = fromRight
   []
-  ((mapSnd ((rootPath ++) . (++ ".mad")) . getImportPath <$>) . aimports <$> ast)
+  ((mapSnd ((rootPath ++) . (++ ".mad")) . getImportPath <$>) . aimports <$> ast
+  )
 
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Meta _ _ (NamedImport   _ p)) = (imp, p)
@@ -79,7 +89,10 @@ findAST table path = case M.lookup path table of
 
 
 buildAST :: FilePath -> String -> Either InferError AST
-buildAST path code = mapLeft (\message -> InferError (GrammarError path message) NoReason) $ parse code >>= setPath
+buildAST path code =
+  mapLeft (\message -> InferError (GrammarError path message) NoReason)
+    $   parse code
+    >>= setPath
  where
   setPath :: AST -> Either e AST
   setPath a = return a { apath = Just path }

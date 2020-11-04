@@ -5,8 +5,11 @@ import qualified Data.Map                      as M
 import           AST
 import           Test.Hspec
 import           GHC.IO.Exception
-import Error.Error
-import Explain.Reason
+import           Error.Error
+import           Explain.Reason
+import           Explain.Meta
+import           Explain.Location
+import           AST.Source
 
 type MockFiles = M.Map FilePath String
 
@@ -42,15 +45,20 @@ spec = do
       actual `shouldBe` expected
 
     it "should return a Left ImportNotFound if it does not exist" $ do
-      let source =
-            unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => fn2(a, b) + a"]
+      let
+        source =
+          unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => fn2(a, b) + a"]
 
-          (Right ast) = buildAST "fixtures/source.mad" source
+        (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Left (InferError (ImportNotFound "fixtures/source-not-there.mad" "") NoReason)
-          files       = M.fromList [("fixtures/source.mad", source)]
+        expected =
+          Left
+            (InferError (ImportNotFound "fixtures/source-not-there.mad" "")
+                        NoReason
+            )
+        files = M.fromList [("fixtures/source.mad", source)]
 
-          rf          = makeReadFile files
+        rf    = makeReadFile files
 
       r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source-not-there.mad"
@@ -91,10 +99,21 @@ spec = do
 
           (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
 
-          expected = Left $ InferError (ImportNotFound "fixtures/sourceB.mad" "-") NoReason
-          files        = M.fromList [("fixtures/sourceA.mad", sourceA)]
+          expected     = Left $ InferError
+            (ImportNotFound "fixtures/sourceB.mad" "-")
+            (Reason
+              (WrongImport
+                (Meta (Infos { nthArg = Nothing, origin = Nothing })
+                      (Area (Loc 0 1 1) (Loc 29 1 30))
+                      (NamedImport ["fn2"] "sourceB")
+                )
+              )
+              ""
+              (Area (Loc 0 1 1) (Loc 29 1 30))
+            )
+          files = M.fromList [("fixtures/sourceA.mad", sourceA)]
 
-          rf           = makeReadFile files
+          rf    = makeReadFile files
 
       r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/sourceA.mad"
       r `shouldBe` expected
@@ -129,9 +148,12 @@ spec = do
       let
         source   = unlines ["fn :: Num -> Num -> Num", "fn : a, b => a + b"]
         actual   = buildAST "source.mad" source
-        expected = Left $ InferError (GrammarError
-          "source.mad"
-          "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon") NoReason
+        expected = Left $ InferError
+          (GrammarError
+            "source.mad"
+            "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon"
+          )
+          NoReason
       actual `shouldBe` expected
 
     it "should return a valid AST with boolean expressions" $ do

@@ -77,6 +77,7 @@ tokens :-
   [\n \ ]*\*                            { mapToken (\_ -> TokenStar) }
   [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
   [\n \ ]*\|\>                          { mapToken (\_ -> TokenPipeOperator) }
+  \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   $empty+                               ;
 
 {
@@ -145,6 +146,7 @@ data TokenClass
  | TokenFrom
  | TokenPipe
  | TokenPipeOperator
+ | TokenSpreadOperator
  | TokenData
  | TokenSemiColon
  | TokenReturn
