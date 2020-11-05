@@ -53,7 +53,7 @@ spec = do
 
         expected =
           Left
-            (InferError (ImportNotFound "fixtures/source-not-there.mad" "")
+            (InferError (ImportNotFound "fixtures/source-not-there.mad")
                         NoReason
             )
         files = M.fromList [("fixtures/source.mad", source)]
@@ -100,7 +100,7 @@ spec = do
           (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
 
           expected     = Left $ InferError
-            (ImportNotFound "fixtures/sourceB.mad" "-")
+            (ImportNotFound "fixtures/sourceB.mad")
             (Reason
               (WrongImport
                 (Meta (Infos { nthArg = Nothing, origin = Nothing })

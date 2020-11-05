@@ -4,49 +4,47 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            (Area (Loc 0 1 1) (Loc 2 1 3))
+            (Area (Loc 0 1 1) (Loc 41 2 17))
             (TypedExp
                (Solved
-                  (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                  (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
                   (Area (Loc 0 1 1) (Loc 2 1 3))
-                  (Var "fn"))
-               (TRArr
-                  (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))))
-        , Solved
-            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            (Area (Loc 25 2 1) (Loc 27 2 3))
-            (Assignment
-               "fn"
-               (Solved
-                  (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                  (Area (Loc 30 2 6) (Loc 31 2 7))
-                  (Abs
-                     "a"
+                  (Assignment
+                     "fn"
                      (Solved
-                        (TArr (TVar (TV "b")) (TCon CBool))
-                        (Area (Loc 30 2 6) (Loc 31 2 7))
+                        (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
+                        (Area (Loc 30 2 6) (Loc 41 2 17))
                         (Abs
-                           "b"
+                           "a"
                            (Solved
-                              (TCon CBool)
-                              (Area (Loc 40 2 16) (Loc 41 2 17))
-                              (App
+                              (TArr (TVar (TV "b")) (TCon CBool))
+                              (Area (Loc 30 2 6) (Loc 41 2 17))
+                              (Abs
+                                 "b"
                                  (Solved
-                                    (TArr (TVar (TV "a")) (TCon CBool))
+                                    (TCon CBool)
                                     (Area (Loc 40 2 16) (Loc 41 2 17))
                                     (App
                                        (Solved
-                                          (TArr (TVar (TV "e")) (TArr (TVar (TV "e")) (TCon CBool)))
-                                          (Area (Loc 42 2 18) (Loc 45 2 21))
-                                          (Var "==="))
-                                       (Solved
-                                          (TVar (TV "a"))
+                                          (TArr (TVar (TV "a")) (TCon CBool))
                                           (Area (Loc 40 2 16) (Loc 41 2 17))
-                                          (Var "a"))))
-                                 (Solved
-                                    (TVar (TV "b"))
-                                    (Area (Loc 46 2 22) (Loc 47 2 23))
-                                    (Var "b")))))))))
+                                          (App
+                                             (Solved
+                                                (TArr
+                                                   (TVar (TV "e"))
+                                                   (TArr (TVar (TV "e")) (TCon CBool)))
+                                                (Area (Loc 42 2 18) (Loc 45 2 21))
+                                                (Var "==="))
+                                             (Solved
+                                                (TVar (TV "a"))
+                                                (Area (Loc 40 2 16) (Loc 41 2 17))
+                                                (Var "a"))))
+                                       (Solved
+                                          (TVar (TV "b"))
+                                          (Area (Loc 46 2 22) (Loc 47 2 23))
+                                          (Var "b"))))))))))
+               (TRArr
+                  (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))))
         , Solved
             (TCon CBool)
             (Area (Loc 54 3 7) (Loc 55 3 8))

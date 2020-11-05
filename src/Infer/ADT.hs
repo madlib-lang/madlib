@@ -12,6 +12,7 @@ import           Infer.Type
 import           Infer.Infer
 import           Error.Error
 import           Explain.Reason
+import           Explain.Meta
 
 
 buildADTTypes :: [ADT] -> Infer ADTs
@@ -64,9 +65,10 @@ buildADTConstructorReturnType :: Name -> [Name] -> Type
 buildADTConstructorReturnType tname tparams =
   TComp tname $ TVar . TV <$> tparams
 
+
 -- TODO: This should probably be merged with typingToType somehow
 argToType :: ADTs -> Name -> [Name] -> Typing -> Infer Type
-argToType tadts _ params (TRSingle n)
+argToType tadts _ params (Meta _ _ (TRSingle n))
   | n == "Num" = return $ TCon CNum
   | n == "Bool" = return $ TCon CBool
   | n == "String" = return $ TCon CString
@@ -77,17 +79,18 @@ argToType tadts _ params (TRSingle n)
     -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
     Nothing -> return $ TCon $ CUserDef n
 
-argToType tadts name params (TRComp tname targs) = case M.lookup tname tadts of
+argToType tadts name params (Meta _ _ (TRComp tname targs)) =
+  case M.lookup tname tadts of
   -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
   -- we have a type application error.
-  Just (TComp n _) -> TComp n <$> mapM (argToType tadts name params) targs
-  Nothing          -> return $ TCon $ CUserDef name
+    Just (TComp n _) -> TComp n <$> mapM (argToType tadts name params) targs
+    Nothing          -> return $ TCon $ CUserDef name
 
-argToType tadts name params (TRArr l r) = do
+argToType tadts name params (Meta _ _ (TRArr l r)) = do
   l' <- argToType tadts name params l
   r' <- argToType tadts name params r
   return $ TArr l' r'
 
-argToType tadts name params (TRRecord f) = do
+argToType tadts name params (Meta _ _ (TRRecord f)) = do
   f' <- mapM (argToType tadts name params) f
   return $ TRecord f'

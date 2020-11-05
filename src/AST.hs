@@ -48,7 +48,7 @@ buildASTTable' rf parentPath imp rootPath entrypoint = do
         Nothing   -> NoReason
 
       source = either
-        (const $ Left (InferError (ImportNotFound entrypoint "-") reason))
+        (const $ Left (InferError (ImportNotFound entrypoint) reason))
         Right
         s
       ast            = source >>= buildAST entrypoint
@@ -85,7 +85,7 @@ mapSnd f (a, b) = (a, f b)
 findAST :: Table -> FilePath -> Either InferError AST
 findAST table path = case M.lookup path table of
   Just x  -> return x
-  Nothing -> Left $ InferError (ImportNotFound path "") NoReason
+  Nothing -> Left $ InferError (ImportNotFound path) NoReason
 
 
 buildAST :: FilePath -> String -> Either InferError AST

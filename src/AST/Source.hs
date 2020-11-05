@@ -35,7 +35,10 @@ data ADTConstructor
   = ADTConstructor       { adtcname :: Name, adtcargs :: Maybe [Typing] }
   deriving(Eq, Show)
 
-data Typing
+
+type Typing = Meta Typing_
+
+data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing

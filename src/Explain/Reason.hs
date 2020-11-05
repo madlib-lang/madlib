@@ -17,6 +17,9 @@ data Explanation
   -- PatternTypeError switch :: Src.Exp pattern :: Src.Pattern
   | PatternConstructorDoesNotExist Src.Exp Src.Pattern
   | WrongImport Src.Import
+  -- For now it just holds the Exp, not the TypedExp
+  -- More info here: https://github.com/open-sorcerers/madlib/issues/8
+  | TypeAndTypingMismatch Src.Exp
   deriving(Show, Eq)
 
 -- TODO: I think we should get rid of that Area in the Reason

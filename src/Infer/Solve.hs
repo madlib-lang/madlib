@@ -97,13 +97,13 @@ updatePattern (Meta _ _ p) = case p of
 
 updateTyping :: Src.Typing -> Slv.Typing
 updateTyping t = case t of
-  Src.TRSingle name    -> Slv.TRSingle name
+  Meta _ _ (Src.TRSingle name   ) -> Slv.TRSingle name
 
-  Src.TRComp name vars -> Slv.TRComp name (updateTyping <$> vars)
+  Meta _ _ (Src.TRComp name vars) -> Slv.TRComp name (updateTyping <$> vars)
 
-  Src.TRArr  l    r    -> Slv.TRArr (updateTyping l) (updateTyping r)
+  Meta _ _ (Src.TRArr  l    r   ) -> Slv.TRArr (updateTyping l) (updateTyping r)
 
-  Src.TRRecord fields  -> Slv.TRRecord (updateTyping <$> fields)
+  Meta _ _ (Src.TRRecord fields ) -> Slv.TRRecord (updateTyping <$> fields)
 
 
 -- INFER VAR
@@ -170,28 +170,9 @@ inferApp env exp = do
 -- INFER ASSIGNMENT
 
 inferAssignment :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = case exp of
-  (Meta _ _ (Src.Abs _ _)) -> do
-    (s1, t1, e1) <- infer env exp
-
-    case M.lookup name $ envtypings env of
-      Just (Forall fv t2) -> do
-        let bv = S.toList $ ftv t2
-        it2 <- instantiate (Forall (fv <> bv) t2)
-        -- TODO: Error should be handled
-        s2  <- unifyToInfer env $ unify (trace ("T1: " <> ppShow t1) t1)
-                                        (trace ("IT2: " <> ppShow it2) it2)
-        return
-          ( s2 `compose` s1
-          , it2
-          , applyAssignmentSolve e name (updateType e1 it2) it2
-          )
-
-      Nothing -> return (s1, t1, applyAssignmentSolve e name e1 t1)
-
-  _ -> do
-    (s1, t1, e1) <- infer env exp
-    return (s1, t1, applyAssignmentSolve e name e1 t1)
+inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = do
+  (s1, t1, e1) <- infer env exp
+  return (s1, t1, applyAssignmentSolve e name e1 t1)
 
 
 
@@ -240,38 +221,43 @@ inferRecordField env field = case field of
 
 -- INFER TYPEDEXP
 
--- TODO: Needs to handle quantified variables ?
--- TODO: Add TComp
--- TODO: Add TArr
--- So that we can write a type :
--- :: (a -> b) -> List a -> List b
 inferTypedExp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferTypedExp _ (Meta _ loc (Src.TypedExp exp typing)) = do
+inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
   t <- typingToType typing
+  let freevars = ftv t
 
-  -- TODO: Handle other cases
-  let e = case exp of
-        Meta _ loc (Src.Var name) -> Slv.Solved t loc (Slv.Var name)
+  t'           <- instantiate $ Forall (S.toList freevars) t
 
-  return (M.empty, t, Slv.Solved t loc (Slv.TypedExp e (updateTyping typing)))
+  (s1, t1, e1) <- infer env exp
+  s2           <- unifyToInfer env $ unify t' t1
+
+  let resolvedType = apply s2 t1
+
+  return
+    ( s1 `compose` s2
+    , resolvedType
+    , Slv.Solved resolvedType area (Slv.TypedExp e1 (updateTyping typing))
+    )
+
+
 
 typingToType :: Src.Typing -> Infer Type
-typingToType (Src.TRSingle t) | t == "Num"    = return $ TCon CNum
-                              | t == "Bool"   = return $ TCon CBool
-                              | t == "String" = return $ TCon CString
-                              | t == "Void"   = return $ TCon CVoid
-                              | otherwise     = return $ TVar $ TV t
+typingToType (Meta _ _ (Src.TRSingle t)) | t == "Num"    = return $ TCon CNum
+                                         | t == "Bool"   = return $ TCon CBool
+                                         | t == "String" = return $ TCon CString
+                                         | t == "Void"   = return $ TCon CVoid
+                                         | otherwise     = return $ TVar $ TV t
 
-typingToType (Src.TRComp t ts) = do
+typingToType (Meta _ _ (Src.TRComp t ts)) = do
   params <- mapM typingToType ts
   return $ TComp t params
 
-typingToType (Src.TRArr l r) = do
+typingToType (Meta _ _ (Src.TRArr l r)) = do
   l' <- typingToType l
   r' <- typingToType r
   return $ TArr l' r'
 
-typingToType (Src.TRRecord f) = do
+typingToType (Meta _ _ (Src.TRRecord f)) = do
   f' <- mapM typingToType f
   return $ TRecord f'
 
@@ -546,6 +532,9 @@ inferExps env (e : xs) = do
         Slv.Assignment name _ ->
           extendVars env (name, Forall ((S.toList . ftv) t) t)
 
+        Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ ->
+          extendVars env (name, Forall ((S.toList . ftv) t) t)
+
         Slv.TypedExp (Slv.Solved _ _ (Slv.Var name)) _ ->
           extendTypings env (name, Forall ((S.toList . ftv) t) t)
 
@@ -587,12 +576,16 @@ exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
   Nothing -> throwError $ InferError ASTHasNoPath NoReason
 
  where
-  bundleExports _ (Slv.Solved _ _ (Slv.Export e)) =
-    let (Slv.Solved _ _ (Slv.Assignment n e')) = e in return (n, e')
+  bundleExports _ exp = return $ case exp of
+    (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n e')))) ->
+      (n, e')
+    (Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n e')))) _))
+      -> (n, e')
 
   isExport :: Slv.Exp -> Bool
   isExport a = case a of
     (Slv.Solved _ _ (Slv.Export _)) -> True
+    (Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Export _)) _)) -> True
 
     _                               -> False
 
@@ -624,7 +617,7 @@ resolveImports root table (imp : is) = do
 
     (Just exports, _) -> return exports
 
-    (Nothing, _) -> throwError $ InferError (ImportNotFound path "") NoReason
+    (Nothing     , _) -> throwError $ InferError (ImportNotFound path) NoReason
 
   (nextTable, nextExports) <- resolveImports root table is
 

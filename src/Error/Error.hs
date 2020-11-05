@@ -16,7 +16,7 @@ data TypeError
   | ADTAlreadyDefined Type
   | UnknownType String
   | FieldNotExisting String
-  | ImportNotFound String String
+  | ImportNotFound String
   | GrammarError FilePath String
   | FatalError
   | ASTHasNoPath

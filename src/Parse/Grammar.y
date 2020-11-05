@@ -72,10 +72,12 @@ ast :: { Src.AST }
   | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | rRet              { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | rRet ast          { $2 }
   | ast rRet          { $1 }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
+  | name '::' typings maybeRet 'export' name '=' exp ast %shift
+      { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls { $1:$2 }
@@ -136,33 +138,33 @@ adtConstructorArgs :: { [Src.Typing] }
   | adtConstructorArgs typing { $1 <> [$2] }
 
 typings :: { Src.Typing }
-  : typing '->' typings          { Src.TRArr $1 $3 }
-  | compositeTyping '->' typings { Src.TRArr $1 $3 }
+  : typing '->' typings          { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  | compositeTyping '->' typings { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | compositeTyping              { $1 }
   | typing                       { $1 }
 
 typing :: { Src.Typing }
-  : name                       { Src.TRSingle $ strV $1 }
+  : name                       { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
   | '(' compositeTyping ')'    { $2 }
-  | '(' typing '->' typing ')' { Src.TRArr $2 $4 }
-  | '{' recordTypingArgs '}'   { Src.TRRecord $2 }
+  | '(' typing '->' typing ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
+  | '{' recordTypingArgs '}'   { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
 
 compositeTyping :: { Src.Typing }
-  : name compositeTypingArgs { Src.TRComp (strV $1) $2 }
+  : name compositeTypingArgs { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.TRComp (strV $1) $2) }
 
 compositeTypingArgs :: { [Src.Typing] }
-  : name                     { [Src.TRSingle $ strV $1] }
-  | name compositeTypingArgs { (Src.TRSingle $ strV $1) : $2 }
+  : name                     { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
+  | name compositeTypingArgs { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
   : name '::' typing                      { M.fromList [(strV $1, $3)] }
   | recordTypingArgs ',' name '::' typing { M.insert (strV $3) $5 $1 }
 
 type :: { Src.Typing }
-  : name              { Src.TRSingle $ strV $1 }
-  | name type         { Src.TRComp (strV $1) [$2] }
-  | name '(' type ')' { Src.TRComp (strV $1) [$3] }
-  | type '->' type    { Src.TRArr $1 $3 }
+  : name              { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
+  | name type         { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $2)) (Src.TRComp (strV $1) [$2]) }
+  | name '(' type ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.TRComp (strV $1) [$3]) }
+  | type '->' type    { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
 
 exp :: { Src.Exp }
   : literal                          { $1 }
@@ -176,13 +178,15 @@ exp :: { Src.Exp }
   | name rParenL args ')'    %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
   | exp '(' args ')'                 { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')' %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | '(' params ')' '=>' exp  %shift  { buildAbs (tokenToArea $1) $2 $5 }
+  | '(' params ')' '=>' exp  %shift  { buildAbs (mergeAreas (tokenToArea $1) (getArea $5)) $2 $5 }
   | '(' exp ')'              %shift  { $2 }
   | exp '::' typings                 { Meta emptyInfos (getArea $1) (Src.TypedExp $1 $3) }
   | exp '.' name                     { Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
+  | name '::' typings maybeRet name '=' exp %shift 
+      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $5) $7)) $3) }
 
 
 switch :: { Src.Exp }

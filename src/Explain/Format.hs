@@ -6,8 +6,8 @@ import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import           Infer.Type
-import Debug.Trace
-import Text.Show.Pretty (ppShow)
+import           Debug.Trace
+import           Text.Show.Pretty               ( ppShow )
 
 
 
@@ -19,56 +19,59 @@ format :: (FilePath -> IO String) -> InferError -> IO String
 format rf (InferError err reason) = do
   moduleContent <- lines <$> getModuleContent rf reason
   case reason of
-    Reason (WrongTypeApplied (Meta _ _ abs) (Meta infos (Area (Loc a li c) _) e)) _ area -> do
-      let beginning = case (trace (ppShow abs) abs) of
-            -- TODO: Extend to other operators
-            Src.App (Meta _ _ (Src.Var "+")) _ -> "Error applying the operator +"
-            Src.Var "+" -> "Error applying the operator +"
-            _           -> "Error in function call"
+    Reason (WrongTypeApplied (Meta _ _ abs) (Meta infos (Area (Loc a li c) _) e)) _ area
+      -> do
+        let beginning = case (trace (ppShow abs) abs) of
+              -- TODO: Extend to other operators
+              Src.App (Meta _ _ (Src.Var "+")) _ ->
+                "Error applying the operator +"
+              Src.Var "+" -> "Error applying the operator +"
+              _           -> "Error in function call"
 
-      let l = moduleContent !! (li - 1)
-      let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
-      let (UnificationError expected actual) = err
+        let l = moduleContent !! (li - 1)
+        let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
+        let (UnificationError expected actual) = err
 
-      let nthInfo = case nthArg infos of
-            Just nth -> "The " <> show nth <> nthEnding nth <> " "
-            Nothing  -> "The "
-      let fn = case origin infos of
-            Just origin -> case origin of
-              Src.Var n -> " of \"" <> n <> "\" "
-              _         -> " "
-            Nothing -> " "
+        let nthInfo = case nthArg infos of
+              Just nth -> "The " <> show nth <> nthEnding nth <> " "
+              Nothing  -> "The "
+        let fn = case origin infos of
+              Just origin -> case origin of
+                Src.Var n -> " of \"" <> n <> "\" "
+                _         -> " "
+              Nothing -> " "
 
 
-      let message =
-            "\n"
-              <> nthInfo
-              <> "argument"
-              <> fn
-              <> "has type\n\t"
-              <> typeToStr actual
-              <> "\nBut it was expected to be\n\t"
-              <> typeToStr expected
+        let message =
+              "\n"
+                <> nthInfo
+                <> "argument"
+                <> fn
+                <> "has type\n\t"
+                <> typeToStr actual
+                <> "\nBut it was expected to be\n\t"
+                <> typeToStr expected
 
-      let
-        hint = unlines
-          [ "Hint: if the function is polymorphic it is possible that the error comes from"
-          , "the application of other arguments. Otherwise you might want to add a typing to"
-          , "to the signature to improve documentation and make error messages more"
-          , "precise !"
-          ]
+        let
+          hint = unlines
+            [ "Hint: if the function is polymorphic it is possible that the error comes from"
+            , "the application of other arguments. Otherwise you might want to add a typing to"
+            , "to the signature to improve documentation and make error messages more"
+            , "precise !"
+            ]
 
-      return
-        $  beginning <> " at line "
-        <> show li
-        <> ":\n\n"
-        <> l
-        <> "\n"
-        <> concat [ " " | _ <- [1 .. (colStart - 1)] ]
-        <> concat [ "^" | _ <- [colStart .. (colEnd - 1)] ]
-        <> message
-        <> "\n\n"
-        <> hint
+        return
+          $  beginning
+          <> " at line "
+          <> show li
+          <> ":\n\n"
+          <> l
+          <> "\n"
+          <> concat [ " " | _ <- [1 .. (colStart - 1)] ]
+          <> concat [ "^" | _ <- [colStart .. (colEnd - 1)] ]
+          <> message
+          <> "\n\n"
+          <> hint
 
     Reason (VariableNotDeclared (Meta _ (Area (Loc a li c) _) exp)) _ area ->
       do

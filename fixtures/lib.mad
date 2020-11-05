@@ -2,27 +2,27 @@ import L  from "List"
 import IO from "IO"
 import F  from "Future"
 
--- id = (a) => a
--- double = (n) => n * 2
+id = (a) => a
+double = (n) => n * 2
 
--- F.of([3, 4])
---   |> F.map(L.map(double))
---   |> F.run(IO.log, IO.log)
+F.of([3, 4])
+  |> F.map(L.map(double))
+  |> F.run(IO.log, IO.log)
 
--- -- get("http://www.google.com")
--- --   |> run(id, IO.log)
+-- get("http://www.google.com")
+--   |> run(id, IO.log)
 
--- L.singleton(3) |> L.map((x) => x + 1) |> IO.log
+L.singleton(3) |> L.map((x) => x + 1) |> IO.log
 
--- t = (x) => if (x) { False } else { True }
+t = (x) => if (x) { False } else { True }
 
--- F.of(True)
---   |> F.map((x) => if (x) { 2 } else { 4 })
---   |> F.map((x) => x * 2)
---   |> F.run((x) => x, IO.log)
+F.of(True)
+  |> F.map((x) => if (x) { 2 } else { 4 })
+  |> F.map((x) => x * 2)
+  |> F.run((x) => x, IO.log)
 
 
-a = { x: "3" }
+a = { x: 3 }
 b = { y: 4 }
 c = { ...a, ...b }
 
@@ -31,3 +31,11 @@ c.x + c.y
 total = (a) => a.x + a.y
 
 total(c) |> IO.log
+
+data A = A (Num -> Num)
+
+p = A((x) => x + 1)
+
+switch(p) {
+  case A f: f(3)
+} |> IO.log

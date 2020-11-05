@@ -4,12 +4,12 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Area (Loc 0 1 1) (Loc 11 1 12))
             (Abs
                "b"
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 0 1 1) (Loc 1 1 2))
+                  (Area (Loc 0 1 1) (Loc 11 1 12))
                   (Abs
                      "c"
                      (Solved
