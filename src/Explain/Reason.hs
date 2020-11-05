@@ -2,6 +2,7 @@ module Explain.Reason where
 
 import           Explain.Location
 import qualified AST.Source                    as Src
+import           Infer.Type
 
 
 data Explanation
@@ -19,7 +20,7 @@ data Explanation
   | WrongImport Src.Import
   -- For now it just holds the Exp, not the TypedExp
   -- More info here: https://github.com/open-sorcerers/madlib/issues/8
-  | TypeAndTypingMismatch Src.Exp
+  | TypeAndTypingMismatch Src.Exp Src.Typing Type Type
   deriving(Show, Eq)
 
 -- TODO: I think we should get rid of that Area in the Reason

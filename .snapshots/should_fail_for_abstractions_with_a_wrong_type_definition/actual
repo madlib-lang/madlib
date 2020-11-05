@@ -1,2 +1,64 @@
 Left
-  (InferError (UnificationError (TCon CNum) (TCon CString)) NoReason)
+  (InferError
+     (UnificationError (TCon CNum) (TCon CString))
+     (Reason
+        (TypeAndTypingMismatch
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 28 2 1) (Loc 44 2 17))
+              (Assignment
+                 "fn"
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 33 2 6) (Loc 44 2 17))
+                    (Abs
+                       "a"
+                       (Meta
+                          Infos { nthArg = Nothing , origin = Nothing }
+                          (Area (Loc 33 2 6) (Loc 44 2 17))
+                          (Abs
+                             "b"
+                             (Meta
+                                Infos { nthArg = Nothing , origin = Nothing }
+                                (Area (Loc 43 2 16) (Loc 44 2 17))
+                                (App
+                                   (Meta
+                                      Infos { nthArg = Nothing , origin = Nothing }
+                                      (Area (Loc 43 2 16) (Loc 44 2 17))
+                                      (App
+                                         (Meta
+                                            Infos { nthArg = Nothing , origin = Nothing }
+                                            (Area (Loc 45 2 18) (Loc 48 2 21))
+                                            (Var "==="))
+                                         (Meta
+                                            Infos { nthArg = Nothing , origin = Nothing }
+                                            (Area (Loc 43 2 16) (Loc 44 2 17))
+                                            (Var "a"))))
+                                   (Meta
+                                      Infos { nthArg = Nothing , origin = Nothing }
+                                      (Area (Loc 49 2 22) (Loc 50 2 23))
+                                      (Var "b"))))))))))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 6 1 7) (Loc 27 1 28))
+              (TRArr
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 6 1 7) (Loc 12 1 13))
+                    (TRSingle "String"))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 16 1 17) (Loc 27 1 28))
+                    (TRArr
+                       (Meta
+                          Infos { nthArg = Nothing , origin = Nothing }
+                          (Area (Loc 16 1 17) (Loc 19 1 20))
+                          (TRSingle "Num"))
+                       (Meta
+                          Infos { nthArg = Nothing , origin = Nothing }
+                          (Area (Loc 23 1 24) (Loc 27 1 28))
+                          (TRSingle "Bool"))))))
+           (TArr (TCon CString) (TArr (TCon CNum) (TCon CBool)))
+           (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool))))
+        "path"
+        (Area (Loc 0 1 1) (Loc 44 2 17))))

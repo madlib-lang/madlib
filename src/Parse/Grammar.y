@@ -186,7 +186,7 @@ exp :: { Src.Exp }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
   | name '::' typings maybeRet name '=' exp %shift 
-      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $5) $7)) $3) }
+      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
 
 switch :: { Src.Exp }

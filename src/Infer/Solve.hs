@@ -229,7 +229,10 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
   t'           <- instantiate $ Forall (S.toList freevars) t
 
   (s1, t1, e1) <- infer env exp
-  s2           <- unifyToInfer env $ unify t' t1
+  s2           <- case unify t' t1 of
+    Right solved -> return solved
+
+    Left err -> throwError $ InferError err (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area)
 
   let resolvedType = apply s2 t1
 
