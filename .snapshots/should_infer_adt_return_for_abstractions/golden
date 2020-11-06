@@ -30,11 +30,11 @@ Right
                   (Var "Error")))
         , Solved
             (TCon CBool)
-            (Area (Loc 109 4 30) (Loc 116 4 37))
+            (Area (Loc 108 4 29) (Loc 115 4 36))
             (App
                (Solved
                   (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
-                  (Area (Loc 109 4 30) (Loc 116 4 37))
+                  (Area (Loc 108 4 29) (Loc 115 4 36))
                   (App
                      (Solved
                         (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
@@ -58,7 +58,7 @@ Right
                                                 (TArr
                                                    (TVar (TV "j"))
                                                    (TArr (TVar (TV "j")) (TCon CBool)))
-                                                (Area (Loc 93 4 14) (Loc 96 4 17))
+                                                (Area (Loc 93 4 14) (Loc 95 4 16))
                                                 (Var "==="))
                                              (Solved
                                                 (TVar (TV "f"))
@@ -66,15 +66,15 @@ Right
                                                 (Var "a"))))
                                        (Solved
                                           (TVar (TV "g"))
-                                          (Area (Loc 97 4 18) (Loc 98 4 19))
+                                          (Area (Loc 96 4 17) (Loc 97 4 18))
                                           (Var "b"))))))))
                      (Solved
                         (TComp "Result" [ TCon CString ])
-                        (Area (Loc 100 4 21) (Loc 107 4 28))
+                        (Area (Loc 99 4 20) (Loc 106 4 27))
                         (Var "result1"))))
                (Solved
                   (TComp "Result" [ TCon CString ])
-                  (Area (Loc 109 4 30) (Loc 116 4 37))
+                  (Area (Loc 108 4 29) (Loc 115 4 36))
                   (Var "result2")))
         ]
     , aadts =

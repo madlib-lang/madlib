@@ -4,11 +4,11 @@ Right
     , aexps =
         [ Solved
             (TCon CBool)
-            (Area (Loc 23 1 24) (Loc 24 1 25))
+            (Area (Loc 22 1 23) (Loc 23 1 24))
             (App
                (Solved
                   (TArr (TCon CNum) (TCon CBool))
-                  (Area (Loc 23 1 24) (Loc 24 1 25))
+                  (Area (Loc 22 1 23) (Loc 23 1 24))
                   (App
                      (Solved
                         (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
@@ -32,7 +32,7 @@ Right
                                                 (TArr
                                                    (TVar (TV "g"))
                                                    (TArr (TVar (TV "g")) (TCon CBool)))
-                                                (Area (Loc 13 1 14) (Loc 16 1 17))
+                                                (Area (Loc 13 1 14) (Loc 15 1 16))
                                                 (Var "==="))
                                              (Solved
                                                 (TVar (TV "c"))
@@ -40,11 +40,11 @@ Right
                                                 (Var "a"))))
                                        (Solved
                                           (TVar (TV "d"))
-                                          (Area (Loc 17 1 18) (Loc 18 1 19))
+                                          (Area (Loc 16 1 17) (Loc 17 1 18))
                                           (Var "b"))))))))
                      (Solved
-                        (TCon CNum) (Area (Loc 20 1 21) (Loc 21 1 22)) (LInt "1"))))
-               (Solved (TCon CNum) (Area (Loc 23 1 24) (Loc 24 1 25)) (LInt "3")))
+                        (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (LInt "1"))))
+               (Solved (TCon CNum) (Area (Loc 22 1 23) (Loc 23 1 24)) (LInt "3")))
         ]
     , aadts = []
     , apath = Just "path"

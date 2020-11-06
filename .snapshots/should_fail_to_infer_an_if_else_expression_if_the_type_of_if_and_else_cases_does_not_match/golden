@@ -1,0 +1,27 @@
+Left
+  (InferError
+     (UnificationError (TCon CString) (TCon CNum))
+     (Reason
+        (IfElseBranchTypesDontMatch
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 0 1 1) (Loc 33 6 2))
+              (If
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 4 1 5) (Loc 8 1 9))
+                    (LBool "True"))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 14 2 3) (Loc 18 2 7))
+                    (LStr "OK"))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 30 5 3) (Loc 31 5 4))
+                    (LInt "1"))))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 30 5 3) (Loc 31 5 4))
+              (LInt "1")))
+        "path"
+        (Area (Loc 0 1 1) (Loc 33 6 2))))

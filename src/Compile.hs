@@ -181,7 +181,6 @@ instance Compilable Import where
     "import " <> alias <> " from \"./" <> path <> ".mjs\""
 
 
--- TODO: Add default export with all exported names compilation
 instance Compilable AST where
   compile AST { aexps, aadts, apath, aimports } =
 
@@ -223,16 +222,12 @@ buildDefaultExport es =
     (Solved _ _ (Export _)) -> True
     (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
 
-    _                               -> False
-  -- isExport :: Exp -> Bool
-  -- isExport a = case a of
-  --   (Solved _ _ (Export _)) -> True
-
-  --   _                       -> False
+    _ -> False
 
   getExportName :: Exp -> String
   getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
-  getExportName (Solved _ _ (TypedExp (Solved _ _ (Export(Solved _ _ (Assignment n _)))) _)) = n
+  getExportName (Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _))
+    = n
 
 
 buildPCompArgFn :: String

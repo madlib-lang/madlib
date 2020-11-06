@@ -25,7 +25,7 @@ import           Debug.Trace
 import           Text.Show.Pretty
 import           Explain.Meta
 import           Explain.Location
-import Data.Char (isLower)
+import           Data.Char                      ( isLower )
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -48,7 +48,12 @@ infer env lexp =
       Src.ListConstructor _ -> inferListConstructor env lexp
       Src.Export          _ -> inferExport env lexp
       Src.If _ _ _          -> inferIf env lexp
-      Src.JSExp c -> return (M.empty, TVar $ TV "a", Slv.Solved (TVar $ TV "a") area (Slv.JSExp c))
+      Src.JSExp c ->
+        return
+          ( M.empty
+          , TVar $ TV "a"
+          , Slv.Solved (TVar $ TV "a") area (Slv.JSExp c)
+          )
 
 
 -- TODO: Should probably just take a Loc instead of the old Expression !
@@ -233,7 +238,10 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
   s2           <- case unify t' t1 of
     Right solved -> return solved
 
-    Left err -> throwError $ InferError err (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area)
+    Left  err    -> throwError $ InferError
+      err
+      (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area
+      )
 
   return
     ( s1 `compose` s2
@@ -244,12 +252,13 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
 
 
 typingToType :: Src.Typing -> Infer Type
-typingToType (Meta _ _ (Src.TRSingle t)) | t == "Num"    = return $ TCon CNum
-                                         | t == "Bool"   = return $ TCon CBool
-                                         | t == "String" = return $ TCon CString
-                                         | t == "Void"   = return $ TCon CVoid
-                                         | isLower $ head t = return $ TVar $ TV t
-                                         | otherwise     = return $ TComp t []
+typingToType (Meta _ _ (Src.TRSingle t))
+  | t == "Num"       = return $ TCon CNum
+  | t == "Bool"      = return $ TCon CBool
+  | t == "String"    = return $ TCon CString
+  | t == "Void"      = return $ TCon CVoid
+  | isLower $ head t = return $ TVar $ TV t
+  | otherwise        = return $ TComp t []
 
 typingToType (Meta _ _ (Src.TRComp t ts)) = do
   params <- mapM typingToType ts
@@ -370,14 +379,14 @@ addBranchReason env ifExp falsyExp area (InferError e _) =
 
 inferWhere :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
-  (se, te, ee)  <- infer env exp
+  (se, te, ee) <- infer env exp
 
-  inferredIss <- mapM (inferIs env te) iss
+  inferredIss  <- mapM (inferIs env te) iss
   let issSubstitution = foldr1 compose $ se : (beg <$> inferredIss)
   let issTypes        = mid <$> inferredIss
   let iss             = trd <$> inferredIss
 
-  let typeMatrix        = (, issTypes) <$> issTypes
+  let typeMatrix      = (, issTypes) <$> issTypes
   s <-
     foldr1 compose
       <$> mapM
@@ -471,14 +480,13 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
   generateIsEnv :: Type -> Env -> Src.Pattern -> Infer Env
   generateIsEnv t e@Env { envvars } pattern@(Meta _ area pat) =
     case (pat, t) of
-      (Src.PVar v, t') -> do
-        return $ extendVars e (v, Forall [] t')
+      (Src.PVar v, t') -> return $ extendVars e (v, Forall [] t')
 
       (Src.PRecord fields, TRecord fields') ->
         let allFields = zip (M.elems fields) (M.elems fields')
         in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
 
-      (Src.PCtor cname as, t) -> do
+      (Src.PCtor cname as, _) -> do
         ctor <- findConstructor cname
 
         case (ctor, as) of

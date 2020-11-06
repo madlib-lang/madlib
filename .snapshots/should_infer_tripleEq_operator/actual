@@ -12,10 +12,10 @@ Right
                   (App
                      (Solved
                         (TArr (TVar (TV "c")) (TArr (TVar (TV "c")) (TCon CBool)))
-                        (Area (Loc 2 1 3) (Loc 5 1 6))
+                        (Area (Loc 2 1 3) (Loc 4 1 5))
                         (Var "==="))
                      (Solved (TCon CNum) (Area (Loc 0 1 1) (Loc 1 1 2)) (LInt "1"))))
-               (Solved (TCon CNum) (Area (Loc 6 1 7) (Loc 7 1 8)) (LInt "3")))
+               (Solved (TCon CNum) (Area (Loc 5 1 6) (Loc 6 1 7)) (LInt "3")))
         ]
     , aadts = []
     , apath = Just "path"

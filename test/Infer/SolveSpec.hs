@@ -79,12 +79,12 @@ spec = do
       snapshotTest "should infer division operator" actual
 
     it "should infer tripleEq operator" $ do
-      let code   = "1 === 3"
+      let code   = "1 == 3"
           actual = tester code
       snapshotTest "should infer tripleEq operator" actual
 
     it "should infer wrapped tripleEq operator" $ do
-      let code   = "((a, b) => a === b)(1, 3)"
+      let code   = "((a, b) => a == b)(1, 3)"
           actual = tester code
       snapshotTest "should infer wrapped tripleEq operator" actual
 
@@ -131,7 +131,7 @@ spec = do
             [ "data Result = Success String | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
-            , "((a, b) => a === b)(result1, result2)"
+            , "((a, b) => a == b)(result1, result2)"
             ]
           actual = tester code
       snapshotTest "should infer application of adts" actual
@@ -141,7 +141,7 @@ spec = do
             [ "data Result a = Success a | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
-            , "((a, b) => a === b)(result1, result2)"
+            , "((a, b) => a == b)(result1, result2)"
             ]
           actual = tester code
       snapshotTest "should infer adt return for abstractions" actual
@@ -171,7 +171,7 @@ spec = do
           [ "data Result = Success { value :: String } | Error { message :: String }"
           , "result1 = Success({ value: \"42\" })"
           , "result2 = Error({ message: \"Err\" })"
-          , "((a, b) => a === b)(result1, result2)"
+          , "((a, b) => a == b)(result1, result2)"
           ]
         actual = tester code
       snapshotTest "should infer adts with record constructors" actual
@@ -204,9 +204,14 @@ spec = do
 
     it "should fail to infer record if their fields do not match" $ do
       let
-        code = "{ x: 3, y: 5 } === { name: \"John\" }"
+        code = "{ x: 3, y: 5 } == { name: \"John\" }"
         actual = tester code
       snapshotTest "should fail to infer record if their fields do not match" actual
+
+    it "should infer a record with a type annotation" $ do
+      let code   = "({ x: 3, y: 7 } :: { x :: Num, y :: Num })"
+          actual = tester code
+      snapshotTest "should infer a record with a type annotation" actual
 
     ---------------------------------------------------------------------------
 
@@ -228,7 +233,7 @@ spec = do
     it "should fail for applications with a wrong argument type" $ do
       let code =
             unlines
-              [ "fn = (a, b) => a === b"
+              [ "fn = (a, b) => a == b"
               , "fn(\"3\", 4)"
               ]
           actual = tester code
@@ -245,7 +250,7 @@ spec = do
     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
       let code = unlines
-            ["fn :: Num -> Num -> Bool", "fn = (a, b) => a === b", "fn(3, 4)"]
+            ["fn :: Num -> Num -> Bool", "fn = (a, b) => a == b", "fn(3, 4)"]
           actual = tester code
       snapshotTest "should resolve abstractions with a type definition" actual
 
@@ -253,7 +258,7 @@ spec = do
       let code =
             unlines
               [ "fn :: String -> Num -> Bool"
-              , "fn = (a, b) => a === b"
+              , "fn = (a, b) => a == b"
               , "fn(3, 4)"
               ]
           actual = tester code
@@ -268,9 +273,23 @@ spec = do
     it "should infer a simple if else expression" $ do
       let
         code =
-          unlines ["if(True) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+          unlines ["if (True) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
         actual = tester code
       snapshotTest "should infer a simple if else expression" actual
+
+    it "should fail to infer an if else expression if the condition is not a Bool" $ do
+      let
+        code =
+          unlines ["if (\"True\") {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+        actual = tester code
+      snapshotTest "should fail to infer an if else expression if the condition is not a Bool" actual
+
+    it "should fail to infer an if else expression if the type of if and else cases does not match" $ do
+      let
+        code =
+          unlines ["if (True) {", "  \"OK\"", "}", "else {", "  1", "}"]
+        actual = tester code
+      snapshotTest "should fail to infer an if else expression if the type of if and else cases does not match" actual
 
     ---------------------------------------------------------------------------
 
@@ -376,7 +395,7 @@ spec = do
       snapshotTest
         "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
         actual
-    
+
     it "should fail to resolve a constructor pattern with different type variables applied" $ do
       let code = unlines
             [ "data User a = LoggedIn a Num"
@@ -389,6 +408,18 @@ spec = do
           actual = tester code
       snapshotTest
         "should fail to resolve a constructor pattern with different type variables applied"
+        actual
+
+    it "should fail to resolve if the given constructor does not exist" $ do
+      let code = unlines
+            [ "where(3) {"
+            , "  is LoggedIn Num x   : x"
+            , "  is LoggedIn String x: x"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should fail to resolve if the given constructor does not exist"
         actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update

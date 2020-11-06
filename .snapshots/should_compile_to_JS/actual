@@ -9,8 +9,61 @@ const __buildCtorParam = n => {
 
 const Just = a => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] });
 const Nothing = { __constructor: "Nothing" };
-(b => (c => (b) + (c)));
+export const fn = (b => (c => (b) + (c)));
 const inc = (x => (x) + (1));
+const dec = (x => (x) - (1));
+const double = (x => (x) * (2));
+const half = (x => (x) / (2));
+const true = true;
+const false = false;
+double(half(3));
+(3) === (5);
+const response = { users: [] };
+const users = response.users;
+const carResponse = { cars: [] };
+const allResponses = { ...response, ...carResponse };
+((__x__) => {
+  if (true && __x__.users.__constructor === "List" && true) {
+    const cs = __x__.cars;
+    const a = __x__.users.__args[0].value;
+    return cs;
+  }
+  else if (true) {
+    return [];
+  }
+})(allResponses);
+((__x__) => {
+  if (typeof __x__ === "number") {
+    return 3;
+  }
+})(3);
+((__x__) => {
+  if (typeof __x__ === "string") {
+    return 3;
+  }
+})("3");
+((__x__) => {
+  if (typeof __x__ === "boolean") {
+    return 3;
+  }
+})(true);
+((__x__) => {
+  if (__x__ === 3) {
+    return 3;
+  }
+})(3);
+((__x__) => {
+  if (__x__ === "3") {
+    return 3;
+  }
+})("3");
+((__x__) => {
+  if (__x__ === true) {
+    return 3;
+  }
+})(true);
+const log = (a => { console.log(a); return a; });
+(true ? "OK" : "NOT OK");
 const mapMaybe = (f => (m => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     const x = __x__.__args[0].value;
@@ -30,3 +83,4 @@ const x = ((__x__) => {
     return 1;
   }
 })(might);
+export default { fn };

@@ -8,8 +8,8 @@ import qualified AST.Source                    as Src
 import           Infer.Type
 import           Debug.Trace
 import           Text.Show.Pretty               ( ppShow )
-import Data.List (intercalate)
-import qualified Data.Map as M
+import           Data.List                      ( intercalate )
+import qualified Data.Map                      as M
 
 
 
@@ -233,20 +233,23 @@ format rf (InferError err reason) = do
         <> message
         <> "\n\n"
         <> hint
-    
-    Reason (TypeAndTypingMismatch exp typing expectedType actualType) _ _ -> do
-      let typingArea                    = getArea typing
-      let expArea                       = getArea exp
-      let (Area (Loc _ expLine _) _)    = expArea
-      let (typingStart, typingEnd)          = computeLinesToShow typingArea typingArea
-      let (expStart, expEnd)          = computeLinesToShow expArea expArea
-      let typingContent                   = slice typingStart typingEnd moduleContent
-      let expContent                   = case exp of
-            (Meta _ _ (Src.Assignment _ _)) -> slice expStart expEnd moduleContent
-            _  -> []
 
-      let message =
-            "\n" <> "The type of the expression does not match its type definition.\n\n"
+    Reason (TypeAndTypingMismatch exp typing expectedType actualType) _ _ -> do
+      let typingArea                 = getArea typing
+      let expArea                    = getArea exp
+      let (Area (Loc _ expLine _) _) = expArea
+      let (typingStart, typingEnd) = computeLinesToShow typingArea typingArea
+      let (expStart, expEnd)         = computeLinesToShow expArea expArea
+      let typingContent = slice typingStart typingEnd moduleContent
+      let expContent = case exp of
+            (Meta _ _ (Src.Assignment _ _)) ->
+              slice expStart expEnd moduleContent
+            _ -> []
+
+      let
+        message =
+          "\n"
+            <> "The type of the expression does not match its type definition.\n\n"
             <> "The definition has type\n\t"
             <> typeToStr expectedType
             <> "\nBut the actual type is\n\t"
@@ -287,10 +290,23 @@ typeToStr t = case t of
   TCon CNum    -> "Num"
   TCon CBool   -> "Bool"
   TVar (TV a)  -> a
-  TArr (TArr t1 t2) t2'   -> "(" <> typeToStr t1 <> " -> " <> typeToStr t2 <> ")" <> " -> " <> typeToStr t2'
-  TArr t1 t2   -> typeToStr t1 <> " -> " <> typeToStr t2
-  TComp n vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
-  TRecord fields -> "{ " <> (intercalate ", " $ (\(n, t) -> n <> ": " <> typeToStr t) <$> (M.toList fields)) <> "}"
+  TArr (TArr t1 t2) t2' ->
+    "("
+      <> typeToStr t1
+      <> " -> "
+      <> typeToStr t2
+      <> ")"
+      <> " -> "
+      <> typeToStr t2'
+  TArr  t1 t2   -> typeToStr t1 <> " -> " <> typeToStr t2
+  TComp n  vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
+  TRecord fields ->
+    "{ "
+      <> (   intercalate ", "
+         $   (\(n, t) -> n <> ": " <> typeToStr t)
+         <$> (M.toList fields)
+         )
+      <> "}"
 
 
 

@@ -54,11 +54,11 @@ Right
                            ])))))
         , Solved
             (TCon CBool)
-            (Area (Loc 172 4 30) (Loc 179 4 37))
+            (Area (Loc 171 4 29) (Loc 178 4 36))
             (App
                (Solved
                   (TArr (TComp "Result" []) (TCon CBool))
-                  (Area (Loc 172 4 30) (Loc 179 4 37))
+                  (Area (Loc 171 4 29) (Loc 178 4 36))
                   (App
                      (Solved
                         (TArr (TVar (TV "f")) (TArr (TVar (TV "f")) (TCon CBool)))
@@ -82,7 +82,7 @@ Right
                                                 (TArr
                                                    (TVar (TV "i"))
                                                    (TArr (TVar (TV "i")) (TCon CBool)))
-                                                (Area (Loc 156 4 14) (Loc 159 4 17))
+                                                (Area (Loc 156 4 14) (Loc 158 4 16))
                                                 (Var "==="))
                                              (Solved
                                                 (TVar (TV "e"))
@@ -90,15 +90,15 @@ Right
                                                 (Var "a"))))
                                        (Solved
                                           (TVar (TV "f"))
-                                          (Area (Loc 160 4 18) (Loc 161 4 19))
+                                          (Area (Loc 159 4 17) (Loc 160 4 18))
                                           (Var "b"))))))))
                      (Solved
                         (TComp "Result" [])
-                        (Area (Loc 163 4 21) (Loc 170 4 28))
+                        (Area (Loc 162 4 20) (Loc 169 4 27))
                         (Var "result1"))))
                (Solved
                   (TComp "Result" [])
-                  (Area (Loc 172 4 30) (Loc 179 4 37))
+                  (Area (Loc 171 4 29) (Loc 178 4 36))
                   (Var "result2")))
         ]
     , aadts =

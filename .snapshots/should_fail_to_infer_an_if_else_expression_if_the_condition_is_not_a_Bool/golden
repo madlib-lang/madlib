@@ -1,0 +1,27 @@
+Left
+  (InferError
+     (UnificationError (TCon CBool) (TCon CString))
+     (Reason
+        (IfElseCondIsNotBool
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 0 1 1) (Loc 42 6 2))
+              (If
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 4 1 5) (Loc 10 1 11))
+                    (LStr "True"))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 16 2 3) (Loc 20 2 7))
+                    (LStr "OK"))
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 32 5 3) (Loc 40 5 11))
+                    (LStr "NOT OK"))))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 4 1 5) (Loc 10 1 11))
+              (LStr "True")))
+        "path"
+        (Area (Loc 0 1 1) (Loc 42 6 2))))

@@ -46,7 +46,7 @@ import           Explain.Meta
   'else'   { Token _ TokenElse }
   'where' { Token _ TokenWhere }
   'is'   { Token _ TokenIs }
-  '==='    { Token _ TokenTripleEq }
+  '=='    { Token _ TokenDoubleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
@@ -57,7 +57,7 @@ import           Explain.Meta
   '...'    { Token _ TokenSpreadOperator }
   'data'   { Token _ TokenData }
 
-%left '==='
+%left '=='
 %left '+' '-'
 %left '*' '/'
 %right ','
@@ -259,7 +259,7 @@ operation :: { Src.Exp }
                          $1))) 
                       $3)
                  }
-  | exp '===' exp  { Meta emptyInfos (getArea $1) (Src.App
+  | exp '==' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "===")) 
                          $1))) 

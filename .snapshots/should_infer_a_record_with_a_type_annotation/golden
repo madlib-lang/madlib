@@ -1,0 +1,28 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+            (Area (Loc 1 1 2) (Loc 41 1 42))
+            (TypedExp
+               (Solved
+                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (Area (Loc 1 1 2) (Loc 15 1 16))
+                  (Record
+                     [ Field
+                         ( "x"
+                         , Solved (TCon CNum) (Area (Loc 6 1 7) (Loc 7 1 8)) (LInt "3")
+                         )
+                     , Field
+                         ( "y"
+                         , Solved (TCon CNum) (Area (Loc 12 1 13) (Loc 13 1 14)) (LInt "7")
+                         )
+                     ]))
+               (TRRecord
+                  (fromList
+                     [ ( "x" , TRSingle "Num" ) , ( "y" , TRSingle "Num" ) ])))
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

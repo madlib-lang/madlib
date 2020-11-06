@@ -55,7 +55,7 @@ tokens :-
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
   "False"                               { mapToken (\_ -> (TokenBool "False")) }
-  "==="                                 { mapToken (\_ -> TokenTripleEq) }
+  "=="                                 { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
   \,                                    { mapToken (\_ -> TokenComma) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
@@ -128,7 +128,7 @@ data TokenClass
  | TokenDash
  | TokenStar
  | TokenSlash
- | TokenTripleEq
+ | TokenDoubleEq
  | TokenComma
  | TokenLeftCurly
  | TokenRightCurly

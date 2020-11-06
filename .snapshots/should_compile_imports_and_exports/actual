@@ -1,0 +1,24 @@
+// file: ./ModuleA.mad
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+export const singleton = (a => [a]);
+export default { singleton };
+// file: ./ModuleB.mad
+import L from "./ModuleA.mjs";
+import { singleton } from "./ModuleA.mjs";
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+L.singleton(3);

@@ -28,9 +28,10 @@ unify (l `TArr` r) (l' `TArr` r') = do
   return (s2 `compose` s1)
 
 unify (TComp main vars) (TComp main' vars')
-  | main == main' && length vars == length vars' = let z = zip vars vars' in unifyVars M.empty z
-  | otherwise = throwError
-  $ UnificationError (TComp main vars) (TComp main' vars')
+  | main == main' && length vars == length vars'
+  = let z = zip vars vars' in unifyVars M.empty z
+  | otherwise
+  = throwError $ UnificationError (TComp main vars) (TComp main' vars')
 
 unify (TRecord fields) (TRecord fields')
   | M.difference fields fields' /= M.empty = throwError
@@ -44,7 +45,7 @@ unify (TRecord fields) (TRecord fields')
 unify (TVar a) t                 = bind a t
 unify t        (TVar a)          = bind a t
 unify (TCon a) (TCon b) | a == b = return M.empty
-unify t1   t2                    = throwError $ UnificationError t1 t2
+unify t1 t2                      = throwError $ UnificationError t1 t2
 
 
 unifyVars :: Substitution -> [(Type, Type)] -> Either TypeError Substitution
