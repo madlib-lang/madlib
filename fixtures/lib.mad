@@ -53,4 +53,4 @@ data Maybe a = Just a | Nothing
 
 (1 + 1 :: Num) |> IO.log
 
-!False |> IO.log
+IO.log(!False)
