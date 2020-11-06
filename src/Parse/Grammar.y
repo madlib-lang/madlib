@@ -58,7 +58,13 @@ import           Explain.Meta
   'data'   { Token _ TokenData }
   '&&'     { Token _ TokenDoubleAmpersand }
   '||'     { Token _ TokenDoublePipe }
+  '>'      { Token _ TokenRightChevron }
+  '<'      { Token _ TokenLeftChevron }
+  '>='     { Token _ TokenRightChevronEq }
+  '<='     { Token _ TokenLeftChevronEq }
+  '!'      { Token _ TokenExclamationMark }
 
+%left '>' '<' '>=' '<='
 %left '+' '-' '||'
 %left '*' '/' '&&'
 %left '=='
@@ -66,6 +72,7 @@ import           Explain.Meta
 %left '->' '|' '|>' 'ret'
 %nonassoc '(' ')'
 %nonassoc '=' '=>' '::' ':'
+%right '!'
 %%
 
 ast :: { Src.AST }
@@ -279,6 +286,31 @@ operation :: { Src.Exp }
                          $1))) 
                       $3)
                    }
+  | exp '>' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var ">")) 
+                         $1))) 
+                      $3)
+                   }
+  | exp '<' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "<")) 
+                         $1))) 
+                      $3)
+                   }
+  | exp '>=' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var ">=")) 
+                         $1))) 
+                      $3)
+                   }
+  | exp '<=' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "<=")) 
+                         $1))) 
+                      $3)
+                   }
+  | '!' exp  { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $2)) (Src.App (Meta emptyInfos (tokenToArea $1) (Src.Var "!")) $2) }
   | exp '|>' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "|>")) 

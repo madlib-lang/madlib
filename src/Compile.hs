@@ -26,7 +26,13 @@ instance Compilable Exp where
       Solved _ _ (Var "-"  ) -> "(" <> compile arg <> ") - "
       Solved _ _ (Var "*"  ) -> "(" <> compile arg <> ") * "
       Solved _ _ (Var "/"  ) -> "(" <> compile arg <> ") / "
-      Solved _ _ (Var "===") -> "(" <> compile arg <> ") === "
+      Solved _ _ (Var "==") -> "(" <> compile arg <> ") === "
+      Solved _ _ (Var "&&") -> "(" <> compile arg <> ") && "
+      Solved _ _ (Var "||") -> "(" <> compile arg <> ") || "
+      Solved _ _ (Var ">") -> "(" <> compile arg <> ") > "
+      Solved _ _ (Var "<") -> "(" <> compile arg <> ") < "
+      Solved _ _ (Var ">=") -> "(" <> compile arg <> ") >= "
+      Solved _ _ (Var "<=") -> "(" <> compile arg <> ") <= "
       Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
         compile arg <> "(" <> compile arg' <> ")"
 

@@ -81,6 +81,11 @@ tokens :-
   \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   \&\&                                  { mapToken (\_ -> TokenDoubleAmpersand) }
   \|\|                                  { mapToken (\_ -> TokenDoublePipe) }
+  \>                                    { mapToken (\_ -> TokenRightChevron) }
+  \<                                    { mapToken (\_ -> TokenLeftChevron) }
+  \>\=                                  { mapToken (\_ -> TokenRightChevronEq) }
+  \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
+  \!                                    { mapToken (\_ -> TokenExclamationMark) }
   $empty+                               ;
 
 {
@@ -156,6 +161,11 @@ data TokenClass
  | TokenReturn
  | TokenDoubleAmpersand
  | TokenDoublePipe
+ | TokenRightChevron
+ | TokenLeftChevron
+ | TokenRightChevronEq
+ | TokenLeftChevronEq
+ | TokenExclamationMark
  deriving (Eq, Show)
 
 

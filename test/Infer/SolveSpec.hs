@@ -477,26 +477,61 @@ spec = do
 
 
     -- Bool operators:
-    
+
     it "should resolve the operator &&" $ do
       let code = "True && False"
           actual = tester code
       snapshotTest
         "should resolve the operator &&"
         actual
-    
+
     it "should resolve the operator ||" $ do
       let code = "True || False"
           actual = tester code
       snapshotTest
         "should resolve the operator ||"
         actual
-    
+
     it "should resolve the combination of && and ||" $ do
       let code = "True || False && True"
           actual = tester code
       snapshotTest
         "should resolve the combination of && and ||"
+        actual
+
+    it "should resolve the operator >" $ do
+      let code = "1 > 3"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator >"
+        actual
+
+    it "should resolve the operator <" $ do
+      let code = "1 < 3"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator <"
+        actual
+
+    it "should resolve the operator >=" $ do
+      let code = "1 >= 3"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator >="
+        actual
+
+    it "should resolve the operator <=" $ do
+      let code = "1 <= 3"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator <="
+        actual
+
+    it "should resolve the operator !" $ do
+      let code = "!False"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator !"
         actual
 
     ---------------------------------------------------------------------------

@@ -119,6 +119,19 @@ spec = do
             , "  is Just x : x"
             , "  is Nothing: 1"
             , "}"
+            , "True && False"
+            , "False || True"
+            , "False || True && False"
+            , "1 > 3"
+            , "1 < 3"
+            , "(1 > 3) && (3 < 1) || True"
+            , "1 >= 3"
+            , "1 <= 3"
+            , "(1 >= 3) && (3 <= 1) || True"
+            , "!False"
+            , "!True"
+            , "!False && !True"
+            , "!False || !True"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual
