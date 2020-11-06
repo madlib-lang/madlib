@@ -37,33 +37,33 @@ Right
                (TRArr (TRSingle "Num") (TRSingle "Num")))
         , Solved
             (TCon CNum)
-            (Area (Loc 37 3 1) (Loc 45 3 9))
+            (Area (Loc 38 3 2) (Loc 46 3 10))
             (TypedExp
-               (Solved (TCon CNum) (Area (Loc 37 3 1) (Loc 38 3 2)) (LInt "3"))
+               (Solved (TCon CNum) (Area (Loc 38 3 2) (Loc 39 3 3)) (LInt "3"))
                (TRSingle "Num"))
         , Solved
             (TComp "Maybe" [ TVar (TV "a") ])
-            (Area (Loc 78 5 1) (Loc 96 5 19))
+            (Area (Loc 81 5 2) (Loc 99 5 20))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TVar (TV "a") ])
-                  (Area (Loc 78 5 1) (Loc 85 5 8))
+                  (Area (Loc 81 5 2) (Loc 88 5 9))
                   (Var "Nothing"))
                (TRComp "Maybe" [ TRSingle "a" ]))
         , Solved
             (TComp "Maybe" [ TCon CNum ])
-            (Area (Loc 98 6 2) (Loc 118 6 22))
+            (Area (Loc 102 6 2) (Loc 122 6 22))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TCon CNum ])
-                  (Area (Loc 98 6 2) (Loc 105 6 9))
+                  (Area (Loc 102 6 2) (Loc 109 6 9))
                   (App
                      (Solved
                         (TArr (TVar (TV "g")) (TComp "Maybe" [ TVar (TV "g") ]))
-                        (Area (Loc 98 6 2) (Loc 102 6 6))
+                        (Area (Loc 102 6 2) (Loc 106 6 6))
                         (Var "Just"))
                      (Solved
-                        (TCon CNum) (Area (Loc 103 6 7) (Loc 104 6 8)) (LInt "3"))))
+                        (TCon CNum) (Area (Loc 107 6 7) (Loc 108 6 8)) (LInt "3"))))
                (TRComp "Maybe" [ TRSingle "Num" ]))
         ]
     , aadts =

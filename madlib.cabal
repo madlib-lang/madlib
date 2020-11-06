@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 55af91f4e165017204206150054c0f7185cbac8b42209185a46e4a228866f6d8
+-- hash: a2ffc1f813c5ffd1b2a65a645906b128a72853a9644abd8d4e8fc29426476e24
 
 name:           madlib
 version:        0.1.0.0
@@ -124,6 +124,7 @@ test-suite madlib-test
   main-is: Spec.hs
   other-modules:
       ASTSpec
+      CompileSpec
       Infer.SolveSpec
       PathSpec
       Paths_madlib

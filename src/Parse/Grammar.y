@@ -182,8 +182,8 @@ exp :: { Src.Exp }
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
 
 typedExp :: { Src.Exp }
-  : exp '::' typings maybeRet %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TypedExp $1 $3) }
-  | name '::' typings maybeRet %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $3)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Var (strV $1))) $3) }
+  : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
+  | '(' name '::' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
   -- That grammar won't work well, we need to split the two parts ( before and after the 'ret', and join them during canonicalization )
   | name '::' typings 'ret' name '=' exp 
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }

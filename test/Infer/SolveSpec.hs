@@ -310,13 +310,7 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should resolve where with a string input" actual
-    
-    -- TODO: Currently fails but should be allowed
-    -- We need to have a special case for unification of TCon in inferCase
-    -- Most likely we need to bypass the line:
-    --   * su <- unify tarr tarr'
-    -- and replace it with a special unify for patterns, and/or replace all
-    -- TCon with TAny before unification ( That potentially sounds easier )
+
     it "should resolve where with constant type constructor is cases" $ do
       let code = unlines
             [ "where(\"42\") {"
@@ -457,9 +451,9 @@ spec = do
       let code = unlines
             [ "inc :: Num -> Num"
             , "inc = (a) => a + 1"
-            , "3 :: Num"
+            , "(3 :: Num)"
             , "data Maybe a = Just a | Nothing"
-            , "Nothing :: Maybe a"
+            , "(Nothing :: Maybe a)"
             -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
             -- We need to split the production and reconnect it when building the canonical AST.
             , "(Just(3) :: Maybe Num)"

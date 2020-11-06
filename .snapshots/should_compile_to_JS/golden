@@ -1,0 +1,32 @@
+// file: path
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+const Just = a => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] });
+const Nothing = { __constructor: "Nothing" };
+(b => (c => (b) + (c)));
+const inc = (x => (x) + (1));
+const mapMaybe = (f => (m => ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    const x = __x__.__args[0].value;
+    return Just(f(x));
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return Nothing;
+  }
+})(m)));
+const might = Just(3);
+const x = ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    const x = __x__.__args[0].value;
+    return x;
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return 1;
+  }
+})(might);

@@ -2,7 +2,10 @@ import L  from "List"
 import IO from "IO"
 import F  from "Future"
 
+id :: a -> a
 id = (a) => a
+
+double :: Num -> Num
 double = (n) => n * 2
 
 F.of([3, 4])
@@ -45,6 +48,7 @@ where(p) {
 
 data Maybe a = Just a | Nothing
 
-Nothing :: Maybe a
+(Nothing :: Maybe a)
+(Just(3) :: Maybe Num)
 
-Just(3) :: Maybe Num
+(1 + 1 :: Num) |> IO.log
