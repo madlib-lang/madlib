@@ -476,6 +476,32 @@ spec = do
     ---------------------------------------------------------------------------
 
 
+    -- Bool operators:
+    
+    it "should resolve the operator &&" $ do
+      let code = "True && False"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator &&"
+        actual
+    
+    it "should resolve the operator ||" $ do
+      let code = "True || False"
+          actual = tester code
+      snapshotTest
+        "should resolve the operator ||"
+        actual
+    
+    it "should resolve the combination of && and ||" $ do
+      let code = "True || False && True"
+          actual = tester code
+      snapshotTest
+        "should resolve the combination of && and ||"
+        actual
+
+    ---------------------------------------------------------------------------
+
+
     -- Typed expressions:
 
     it "should validate correct type annotations" $ do

@@ -78,6 +78,9 @@ tokens :-
   [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
   [\n \ ]*\|\>                          { mapToken (\_ -> TokenPipeOperator) }
   \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
+  \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
+  \&\&                                  { mapToken (\_ -> TokenDoubleAmpersand) }
+  \|\|                                  { mapToken (\_ -> TokenDoublePipe) }
   $empty+                               ;
 
 {
@@ -151,6 +154,8 @@ data TokenClass
  | TokenData
  | TokenSemiColon
  | TokenReturn
+ | TokenDoubleAmpersand
+ | TokenDoublePipe
  deriving (Eq, Show)
 
 

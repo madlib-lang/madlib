@@ -43,9 +43,11 @@ extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 initialEnv :: Env
 initialEnv = Env
   { envvars        = M.fromList
-    [ ( "==="
+    [ ( "=="
       , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
       )
+    , ("&&", Forall [] $ TCon CBool `TArr` TCon CBool `TArr` TCon CBool)
+    , ("||", Forall [] $ TCon CBool `TArr` TCon CBool `TArr` TCon CBool)
     , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)

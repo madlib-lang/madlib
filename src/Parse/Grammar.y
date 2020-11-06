@@ -44,9 +44,9 @@ import           Explain.Meta
   ']'      { Token _ TokenRightSquaredBracket }
   'if'     { Token _ TokenIf }
   'else'   { Token _ TokenElse }
-  'where' { Token _ TokenWhere }
-  'is'   { Token _ TokenIs }
-  '=='    { Token _ TokenDoubleEq }
+  'where'  { Token _ TokenWhere }
+  'is'     { Token _ TokenIs }
+  '=='     { Token _ TokenDoubleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
   'import' { Token _ TokenImport }
@@ -56,10 +56,12 @@ import           Explain.Meta
   '|>'     { Token _ TokenPipeOperator }
   '...'    { Token _ TokenSpreadOperator }
   'data'   { Token _ TokenData }
+  '&&'     { Token _ TokenDoubleAmpersand }
+  '||'     { Token _ TokenDoublePipe }
 
+%left '+' '-' '||'
+%left '*' '/' '&&'
 %left '=='
-%left '+' '-'
-%left '*' '/'
 %right ','
 %left '->' '|' '|>' 'ret'
 %nonassoc '(' ')'
@@ -261,7 +263,19 @@ operation :: { Src.Exp }
                  }
   | exp '==' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
-                         (Meta emptyInfos (tokenToArea $2) (Src.Var "===")) 
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "==")) 
+                         $1))) 
+                      $3)
+                   }
+  | exp '&&' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "&&")) 
+                         $1))) 
+                      $3)
+                   }
+  | exp '||' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "||")) 
                          $1))) 
                       $3)
                    }
