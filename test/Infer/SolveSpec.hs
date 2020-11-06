@@ -277,19 +277,19 @@ spec = do
 
     -- Pattern matching:
 
-    it "should resolve switch with a boolean literal" $ do
+    it "should resolve where with a boolean literal" $ do
       let code = unlines
-            [ "switch(True) {"
-            , "  case True : \"OK\""
-            , "  case False: \"NOT OK\""
+            [ "where(True) {"
+            , "  is True : \"OK\""
+            , "  is False: \"NOT OK\""
             , "}"
             ]
           actual = tester code
-      snapshotTest "should resolve switch with a boolean literal" actual
+      snapshotTest "should resolve where with a boolean literal" actual
 
-    it "should resolve switch with a number input" $ do
+    it "should resolve where with a number input" $ do
       let code = unlines
-            [ "switch(42) {"
+            [ "where(42) {"
             , "  case 1 : \"NOPE\""
             , "  case 3 : \"NOPE\""
             , "  case 33: \"NOPE\""
@@ -297,19 +297,19 @@ spec = do
             , "}"
             ]
           actual = tester code
-      snapshotTest "should resolve switch with a number input" actual
+      snapshotTest "should resolve where with a number input" actual
 
-    it "should resolve switch with a string input" $ do
+    it "should resolve where with a string input" $ do
       let code = unlines
-            [ "switch(\"42\") {"
-            , "  case \"1\" : 1"
-            , "  case \"3\" : 3"
-            , "  case \"33\": 33"
-            , "  case \"42\": 42"
+            [ "where(\"42\") {"
+            , "  is \"1\" : 1"
+            , "  is \"3\" : 3"
+            , "  is \"33\": 33"
+            , "  is \"42\": 42"
             , "}"
             ]
           actual = tester code
-      snapshotTest "should resolve switch with a string input" actual
+      snapshotTest "should resolve where with a string input" actual
     
     -- TODO: Currently fails but should be allowed
     -- We need to have a special case for unification of TCon in inferCase
@@ -317,42 +317,42 @@ spec = do
     --   * su <- unify tarr tarr'
     -- and replace it with a special unify for patterns, and/or replace all
     -- TCon with TAny before unification ( That potentially sounds easier )
-    it "should resolve switch with constant type constructor cases" $ do
+    it "should resolve where with constant type constructor is cases" $ do
       let code = unlines
-            [ "switch(\"42\") {"
-            , "  case String : 1"
+            [ "where(\"42\") {"
+            , "  is String : 1"
             , "}"
             ]
           actual = tester code
-      snapshotTest "should resolve switch with constant type constructor cases" actual
+      snapshotTest "should resolve where with constant type constructor is cases" actual
 
-    it "should resolve switch with an ADT that has unary constructors" $ do
+    it "should resolve where with an ADT that has unary constructors" $ do
       let code = unlines
             [ "data Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
-            , "switch(perhaps) {"
-            , "  case Just a: a"
-            , "  case Nothing: 0"
+            , "where(perhaps) {"
+            , "  is Just a: a"
+            , "  is Nothing: 0"
             , "}"
             ]
           actual = tester code
       snapshotTest
-        "should resolve switch with an ADT that has unary constructors"
+        "should resolve where with an ADT that has unary constructors"
         actual
 
-    it "should resolve switch with an ADT and PCon patterns" $ do
+    it "should resolve where with an ADT and PCon patterns" $ do
       let code = unlines
             [ "data Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
-            , "switch(perhaps) {"
-            , "  case Just Num   : 2"
-            , "  case Nothing    : 0"
-            , "  case Just _     : 1"
+            , "where(perhaps) {"
+            , "  is Just Num   : 2"
+            , "  is Nothing    : 0"
+            , "  is Just _     : 1"
             , "}"
             ]
           actual = tester code
       snapshotTest
-        "should resolve switch with an ADT and PCon patterns"
+        "should resolve where with an ADT and PCon patterns"
         actual
 
     it "should fail to resolve a pattern when the pattern constructor does not match the ADT" $ do
@@ -360,9 +360,9 @@ spec = do
             [ "data Maybe a = Just a | Nothing"
             , "data Failure = Nope"
             , "perhaps = Nope"
-            , "switch(perhaps) {"
-            , "  case Just a: a"
-            , "  case Nothing: 0"
+            , "where(perhaps) {"
+            , "  is Just a: a"
+            , "  is Nothing: 0"
             , "}"
             ]
           actual = tester code
@@ -374,8 +374,8 @@ spec = do
       let code = unlines
             [ "data User = LoggedIn String Num"
             , "u = LoggedIn(\"John\", 33)"
-            , "switch(u) {"
-            , "  case LoggedIn Num x: x"
+            , "where(u) {"
+            , "  is LoggedIn Num x: x"
             , "}"
             ]
           actual = tester code
@@ -387,9 +387,9 @@ spec = do
       let code = unlines
             [ "data User a = LoggedIn a Num"
             , "u = LoggedIn(\"John\", 33)"
-            , "switch(u) {"
-            , "  case LoggedIn Num x   : x"
-            , "  case LoggedIn String x: x"
+            , "where(u) {"
+            , "  is LoggedIn Num x   : x"
+            , "  is LoggedIn String x: x"
             , "}"
             ]
           actual = tester code
@@ -437,4 +437,34 @@ spec = do
 
 
     -- Pipe operator:
-    -- TODO: Write tests for it
+
+    it "should resolve the pipe operator" $ do
+      let code = unlines
+            [ "inc = (a) => a + 1"
+            , "3 |> inc"
+            ]
+          actual = tester code
+      snapshotTest
+        "should resolve the pipe operator"
+        actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Typed expressions:
+
+    it "should validate correct type annotations" $ do
+      let code = unlines
+            [ "inc :: Num -> Num"
+            , "inc = (a) => a + 1"
+            , "3 :: Num"
+            , "data Maybe a = Just a | Nothing"
+            , "Nothing :: Maybe a"
+            -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
+            -- We need to split the production and reconnect it when building the canonical AST.
+            , "(Just(3) :: Maybe Num)"
+            ]
+          actual = tester code
+      snapshotTest
+        "should validate correct type annotations"
+        actual

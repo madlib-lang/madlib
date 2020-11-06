@@ -44,8 +44,8 @@ import           Explain.Meta
   ']'      { Token _ TokenRightSquaredBracket }
   'if'     { Token _ TokenIf }
   'else'   { Token _ TokenElse }
-  'switch' { Token _ TokenSwitch }
-  'case'   { Token _ TokenCase }
+  'where' { Token _ TokenWhere }
+  'is'   { Token _ TokenIs }
   '==='    { Token _ TokenTripleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
@@ -62,6 +62,7 @@ import           Explain.Meta
 %left '*' '/'
 %right ','
 %left '->' '|' '|>' 'ret'
+%nonassoc '(' ')'
 %nonassoc '=' '=>' '::' ':'
 %%
 
@@ -163,7 +164,7 @@ recordTypingArgs :: { M.Map Src.Name Src.Typing }
 exp :: { Src.Exp }
   : literal                          { $1 }
   | record                           { $1 }
-  | switch                           { $1 }
+  | where                           { $1 }
   | operation                        { $1 }
   | listConstructor          %shift  { $1 }
   | typedExp                 %shift  { $1 }
@@ -171,7 +172,7 @@ exp :: { Src.Exp }
   | name '=' exp             %shift  { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
   | name                     %shift  { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
   | name rParenL args ')'    %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
-  | exp '(' args ')'                 { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
+  | exp '(' args ')'         %shift  { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')' %shift  { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' exp  %shift  { buildAbs (mergeAreas (tokenToArea $1) (getArea $5)) $2 $5 }
   | '(' exp ')'              %shift  { $2 }
@@ -181,17 +182,18 @@ exp :: { Src.Exp }
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
 
 typedExp :: { Src.Exp }
-  : exp '::' typings         { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TypedExp $1 $3) }
+  : exp '::' typings maybeRet %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TypedExp $1 $3) }
   | name '::' typings maybeRet %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $3)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Var (strV $1))) $3) }
+  -- That grammar won't work well, we need to split the two parts ( before and after the 'ret', and join them during canonicalization )
   | name '::' typings 'ret' name '=' exp 
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
-switch :: { Src.Exp }
-  : 'switch' '(' exp ')' '{' maybeRet cases maybeRet '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Switch $3 $7) }
+where :: { Src.Exp }
+  : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
 
-cases :: { [Src.Case] }
-  : 'case' pattern ':' exp             { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $4)) (Src.Case $2 $4)] }
-  | cases 'ret' 'case' pattern ':' exp { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $6)) (Src.Case $4 $6)] }
+iss :: { [Src.Is] }
+  : 'is' pattern ':' exp             { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $4)) (Src.Is $2 $4)] }
+  | iss 'ret' 'is' pattern ':' exp { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $6)) (Src.Is $4 $6)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern { $1 }

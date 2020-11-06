@@ -47,8 +47,8 @@ data Typing
   deriving(Eq, Show)
 
 
-type Case = Solved Case_
-data Case_ = Case Pattern Exp deriving(Eq, Show)
+type Is = Solved Is_
+data Is_ = Is Pattern Exp deriving(Eq, Show)
 
 data Pattern
   = PVar Name
@@ -83,7 +83,7 @@ data Exp_ = LInt String
           | ListConstructor [Exp]
           | Record [Field]
           | If Exp Exp Exp
-          | Switch Exp [Case]
+          | Where Exp [Is]
           deriving(Eq, Show)
 
 type Name = String

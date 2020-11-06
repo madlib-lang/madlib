@@ -41,7 +41,7 @@ infer env lexp =
       Src.Abs        _ _    -> inferAbs env lexp
       Src.App        _ _    -> inferApp env lexp
       Src.Assignment _ _    -> inferAssignment env lexp
-      Src.Switch     _ _    -> inferSwitch env lexp
+      Src.Where      _ _    -> inferWhere env lexp
       Src.Record _          -> inferRecord env lexp
       Src.FieldAccess _ _   -> inferFieldAccess env lexp
       Src.TypedExp    _ _   -> inferTypedExp env lexp
@@ -368,49 +368,49 @@ addBranchReason env ifExp falsyExp area (InferError e _) =
 
 -- INFER SWITCH
 
-inferSwitch :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
+inferWhere :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
+inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
   (se, te, ee)  <- infer env exp
 
-  inferredCases <- mapM (inferCase env te) cases
-  let casesSubstitution = foldr1 compose $ se : (beg <$> inferredCases)
-  let casesTypes        = mid <$> inferredCases
-  let cases             = trd <$> inferredCases
+  inferredIss <- mapM (inferIs env te) iss
+  let issSubstitution = foldr1 compose $ se : (beg <$> inferredIss)
+  let issTypes        = mid <$> inferredIss
+  let iss             = trd <$> inferredIss
 
-  let typeMatrix        = (, casesTypes) <$> casesTypes
+  let typeMatrix        = (, issTypes) <$> issTypes
   s <-
     foldr1 compose
       <$> mapM
             (\(t, ts) ->
               -- TODO: Error should be handled
-              unifyToInfer env $ unifyElems (apply casesSubstitution t) ts
+              unifyToInfer env $ unifyElems (apply issSubstitution t) ts
             )
             typeMatrix
 
-  let updatedCases =
+  let updatedIss =
         (\(t, (Slv.Solved _ a e)) -> Slv.Solved (apply s t) a e)
-          <$> zip casesTypes cases
+          <$> zip issTypes iss
 
-  let (TArr _ switchType) = (apply s . head) casesTypes
+  let (TArr _ whereType) = (apply s . head) issTypes
 
   return
     ( s
-    , switchType
-    , Slv.Solved switchType loc
-      $ Slv.Switch (updateType ee (apply s te)) updatedCases
+    , whereType
+    , Slv.Solved whereType loc
+      $ Slv.Where (updateType ee (apply s te)) updatedIss
     )
 
  where
-  inferCase :: Env -> Type -> Src.Case -> Infer (Substitution, Type, Slv.Case)
-  inferCase e tinput c@(Meta _ area (Src.Case pattern exp)) = do
+  inferIs :: Env -> Type -> Src.Is -> Infer (Substitution, Type, Slv.Is)
+  inferIs e tinput c@(Meta _ area (Src.Is pattern exp)) = do
     tp           <- buildPatternType e pattern
-    env'         <- generateCaseEnv tp e pattern
+    env'         <- generateIsEnv tp e pattern
 
     (se, te, ee) <- infer env' exp
     let tarr  = TArr (apply se tinput) te
     let tarr' = TArr (apply se tp) te
     su <- catchError (unifyToInfer env $ unify tarr tarr')
-                     (addPatternReason e switch pattern area)
+                     (addPatternReason e whereExp pattern area)
 
     let sf = su `compose` se
 
@@ -418,7 +418,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
       ( sf
       , tarr
       , Slv.Solved (apply sf te) area
-        $ Slv.Case (updatePattern pattern) (updateType ee $ apply sf te)
+        $ Slv.Is (updatePattern pattern) (updateType ee $ apply sf te)
       )
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
@@ -444,7 +444,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
         Just x  -> return x
         Nothing -> throwError $ InferError
           (UnknownType n)
-          (Reason (PatternConstructorDoesNotExist switch pattern)
+          (Reason (PatternConstructorDoesNotExist whereExp pattern)
                   (envcurrentpath e)
                   area
           )
@@ -468,31 +468,31 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
     _ -> return $ TVar $ TV "x"
 
 
-  generateCaseEnv :: Type -> Env -> Src.Pattern -> Infer Env
-  generateCaseEnv t e@Env { envvars } pattern@(Meta _ area pat) =
+  generateIsEnv :: Type -> Env -> Src.Pattern -> Infer Env
+  generateIsEnv t e@Env { envvars } pattern@(Meta _ area pat) =
     case (pat, t) of
       (Src.PVar v, t') -> do
         return $ extendVars e (v, Forall [] t')
 
       (Src.PRecord fields, TRecord fields') ->
         let allFields = zip (M.elems fields) (M.elems fields')
-        in  foldrM (\(p, t) e' -> generateCaseEnv t e' p) e allFields
+        in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
 
       (Src.PCtor cname as, t) -> do
         ctor <- findConstructor cname
 
         case (ctor, as) of
           (TArr a _, [a']) -> do
-            generateCaseEnv a e a'
+            generateIsEnv a e a'
 
           (TArr a (TArr b _), [a', b']) -> do
-            e1 <- generateCaseEnv a e a'
-            generateCaseEnv b e1 b'
+            e1 <- generateIsEnv a e a'
+            generateIsEnv b e1 b'
 
           (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
-            e1 <- generateCaseEnv a e a'
-            e2 <- generateCaseEnv b e1 b'
-            generateCaseEnv c e2 c'
+            e1 <- generateIsEnv a e a'
+            e2 <- generateIsEnv b e1 b'
+            generateIsEnv c e2 c'
 
           _ -> return e
 
@@ -505,7 +505,7 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
 
       Nothing           -> throwError $ InferError
         (UnknownType cname)
-        (Reason (PatternConstructorDoesNotExist switch pattern)
+        (Reason (PatternConstructorDoesNotExist whereExp pattern)
                 (envcurrentpath e)
                 area
         )
@@ -513,10 +513,10 @@ inferSwitch env switch@(Meta _ loc (Src.Switch exp cases)) = do
 
 addPatternReason
   :: Env -> Src.Exp -> Src.Pattern -> Area -> InferError -> Infer (Substitution)
-addPatternReason env switchExp pattern area (InferError e _) =
+addPatternReason env whereExp pattern area (InferError e _) =
   throwError $ InferError
     e
-    (Reason (PatternTypeError switchExp pattern) (envcurrentpath env) area)
+    (Reason (PatternTypeError whereExp pattern) (envcurrentpath env) area)
 
 
 

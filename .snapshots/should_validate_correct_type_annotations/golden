@@ -1,0 +1,81 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TCon CNum) (TCon CNum))
+            (Area (Loc 0 1 1) (Loc 32 2 15))
+            (TypedExp
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 18 2 1) (Loc 32 2 15))
+                  (Assignment
+                     "inc"
+                     (Solved
+                        (TArr (TCon CNum) (TCon CNum))
+                        (Area (Loc 24 2 7) (Loc 32 2 15))
+                        (Abs
+                           "a"
+                           (Solved
+                              (TCon CNum)
+                              (Area (Loc 31 2 14) (Loc 32 2 15))
+                              (App
+                                 (Solved
+                                    (TArr (TCon CNum) (TCon CNum))
+                                    (Area (Loc 31 2 14) (Loc 32 2 15))
+                                    (App
+                                       (Solved
+                                          (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                          (Area (Loc 32 2 15) (Loc 34 2 17))
+                                          (Var "+"))
+                                       (Solved
+                                          (TCon CNum)
+                                          (Area (Loc 31 2 14) (Loc 32 2 15))
+                                          (Var "a"))))
+                                 (Solved
+                                    (TCon CNum) (Area (Loc 35 2 18) (Loc 36 2 19)) (LInt "1"))))))))
+               (TRArr (TRSingle "Num") (TRSingle "Num")))
+        , Solved
+            (TCon CNum)
+            (Area (Loc 37 3 1) (Loc 45 3 9))
+            (TypedExp
+               (Solved (TCon CNum) (Area (Loc 37 3 1) (Loc 38 3 2)) (LInt "3"))
+               (TRSingle "Num"))
+        , Solved
+            (TComp "Maybe" [ TVar (TV "a") ])
+            (Area (Loc 78 5 1) (Loc 96 5 19))
+            (TypedExp
+               (Solved
+                  (TComp "Maybe" [ TVar (TV "a") ])
+                  (Area (Loc 78 5 1) (Loc 85 5 8))
+                  (Var "Nothing"))
+               (TRComp "Maybe" [ TRSingle "a" ]))
+        , Solved
+            (TComp "Maybe" [ TCon CNum ])
+            (Area (Loc 98 6 2) (Loc 118 6 22))
+            (TypedExp
+               (Solved
+                  (TComp "Maybe" [ TCon CNum ])
+                  (Area (Loc 98 6 2) (Loc 105 6 9))
+                  (App
+                     (Solved
+                        (TArr (TVar (TV "g")) (TComp "Maybe" [ TVar (TV "g") ]))
+                        (Area (Loc 98 6 2) (Loc 102 6 6))
+                        (Var "Just"))
+                     (Solved
+                        (TCon CNum) (Area (Loc 103 6 7) (Loc 104 6 8)) (LInt "3"))))
+               (TRComp "Maybe" [ TRSingle "Num" ]))
+        ]
+    , aadts =
+        [ ADT
+            { adtname = "Maybe"
+            , adtparams = [ "a" ]
+            , adtconstructors =
+                [ ADTConstructor
+                    { adtcname = "Just" , adtcargs = Just [ TRSingle "a" ] }
+                , ADTConstructor { adtcname = "Nothing" , adtcargs = Nothing }
+                ]
+            }
+        ]
+    , apath = Just "path"
+    }

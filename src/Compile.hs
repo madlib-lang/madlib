@@ -47,9 +47,7 @@ instance Compilable Exp where
 
     Assignment name exp -> "const " <> name <> " = " <> compile exp <> ""
 
-    TypedExp   exp  _   -> case exp of
-      Solved _ _ (Var _) -> ""
-      _                  -> compile exp
+    TypedExp   exp  _   -> compile exp
 
     Export (Solved _ _ (Assignment name exp)) ->
       "export const " <> name <> " = " <> compile exp <> ""
@@ -69,10 +67,10 @@ instance Compilable Exp where
 
     ListConstructor elems -> "[" <> intercalate ", " (compile <$> elems) <> "]"
 
-    Switch exp (first : cs) ->
+    Where exp (first : cs) ->
       "((__x__) => {\n  "
-        <> compileCase first
-        <> concat (("  else " ++) . compileCase <$> cs)
+        <> compileIs first
+        <> concat (("  else " ++) . compileIs <$> cs)
         -- TODO: Add an else for undefined patterns error and make it throw.
         <> "})("
         <> compile exp
@@ -112,8 +110,8 @@ instance Compilable Exp where
       compilePattern scope (PUserDef n) = scope <> " === \"" <> n <> "\""
       compilePattern _     _            = ""
 
-      compileCase :: Case -> String
-      compileCase (Solved _ _ (Case pattern exp)) =
+      compileIs :: Is -> String
+      compileIs (Solved _ _ (Is pattern exp)) =
         "if ("
           <> compilePattern "__x__" pattern
           <> ") {\n"

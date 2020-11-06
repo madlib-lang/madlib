@@ -6,52 +6,52 @@ Left
         (PatternTypeError
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 67 4 1) (Loc 121 7 2))
-              (Switch
+              (Area (Loc 67 4 1) (Loc 116 7 2))
+              (Where
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 74 4 8) (Loc 81 4 15))
+                    (Area (Loc 73 4 7) (Loc 80 4 14))
                     (Var "perhaps"))
                  [ Meta
                      Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 87 5 3) (Loc 101 5 17))
-                     (Case
+                     (Area (Loc 86 5 3) (Loc 98 5 15))
+                     (Is
                         (Meta
                            Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 92 5 8) (Loc 98 5 14))
+                           (Area (Loc 89 5 6) (Loc 95 5 12))
                            (PCtor
                               "Just"
                               [ Meta
                                   Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 97 5 13) (Loc 98 5 14))
+                                  (Area (Loc 94 5 11) (Loc 95 5 12))
                                   (PVar "a")
                               ]))
                         (Meta
                            Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 100 5 16) (Loc 101 5 17))
+                           (Area (Loc 97 5 14) (Loc 98 5 15))
                            (Var "a")))
                  , Meta
                      Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 104 6 3) (Loc 119 6 18))
-                     (Case
+                     (Area (Loc 101 6 3) (Loc 114 6 16))
+                     (Is
                         (Meta
                            Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 109 6 8) (Loc 116 6 15))
+                           (Area (Loc 104 6 6) (Loc 111 6 13))
                            (PCtor "Nothing" []))
                         (Meta
                            Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 118 6 17) (Loc 119 6 18))
+                           (Area (Loc 113 6 15) (Loc 114 6 16))
                            (LInt "0")))
                  ]))
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 92 5 8) (Loc 98 5 14))
+              (Area (Loc 89 5 6) (Loc 95 5 12))
               (PCtor
                  "Just"
                  [ Meta
                      Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 97 5 13) (Loc 98 5 14))
+                     (Area (Loc 94 5 11) (Loc 95 5 12))
                      (PVar "a")
                  ])))
         "path"
-        (Area (Loc 87 5 3) (Loc 101 5 17))))
+        (Area (Loc 86 5 3) (Loc 98 5 15))))

@@ -39,6 +39,7 @@ $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 
 tokens :-
   [\n]                                  { mapToken (\_ -> TokenReturn) }
+  \#\- [$alpha $digit \" \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   [\ \n]*"--".*                         ;
   import                                { mapToken (\_ -> TokenImport) }
@@ -48,8 +49,8 @@ tokens :-
   const                                 { mapToken (\_ -> TokenConst) }
   if                                    { mapToken (\_ -> TokenIf) }
   else                                  { mapToken (\_ -> TokenElse) }
-  switch                                { mapToken (\_ -> TokenSwitch) }
-  case                                  { mapToken (\_ -> TokenCase) }
+  where                                 { mapToken (\_ -> TokenWhere) }
+  is                                    { mapToken (\_ -> TokenIs) }
   \=                                    { mapToken (\_ -> TokenEq) }
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
@@ -70,7 +71,6 @@ tokens :-
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
-  \#\- [$alpha $digit \_ \' \ \+ \. \, \" \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\n \ ]*\+                            { mapToken (\_ -> TokenPlus) }
   \-                                    { mapToken (\_ -> TokenDash) }
   \n[\ ]*\-                             { mapToken (\_ -> TokenDash) }
@@ -121,8 +121,8 @@ data TokenClass
  | TokenBool String
  | TokenIf
  | TokenElse
- | TokenSwitch
- | TokenCase
+ | TokenWhere
+ | TokenIs
  | TokenEq
  | TokenPlus
  | TokenDash

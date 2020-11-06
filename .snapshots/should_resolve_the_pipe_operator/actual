@@ -1,0 +1,52 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TCon CNum) (TCon CNum))
+            (Area (Loc 0 1 1) (Loc 3 1 4))
+            (Assignment
+               "inc"
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 6 1 7) (Loc 14 1 15))
+                  (Abs
+                     "a"
+                     (Solved
+                        (TCon CNum)
+                        (Area (Loc 13 1 14) (Loc 14 1 15))
+                        (App
+                           (Solved
+                              (TArr (TCon CNum) (TCon CNum))
+                              (Area (Loc 13 1 14) (Loc 14 1 15))
+                              (App
+                                 (Solved
+                                    (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                    (Area (Loc 14 1 15) (Loc 16 1 17))
+                                    (Var "+"))
+                                 (Solved (TCon CNum) (Area (Loc 13 1 14) (Loc 14 1 15)) (Var "a"))))
+                           (Solved
+                              (TCon CNum) (Area (Loc 17 1 18) (Loc 18 1 19)) (LInt "1")))))))
+        , Solved
+            (TCon CNum)
+            (Area (Loc 19 2 1) (Loc 20 2 2))
+            (App
+               (Solved
+                  (TArr (TArr (TCon CNum) (TVar (TV "g"))) (TVar (TV "g")))
+                  (Area (Loc 19 2 1) (Loc 20 2 2))
+                  (App
+                     (Solved
+                        (TArr
+                           (TVar (TV "f"))
+                           (TArr (TArr (TVar (TV "f")) (TVar (TV "g"))) (TVar (TV "g"))))
+                        (Area (Loc 20 2 2) (Loc 23 2 5))
+                        (Var "|>"))
+                     (Solved (TCon CNum) (Area (Loc 19 2 1) (Loc 20 2 2)) (LInt "3"))))
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 24 2 6) (Loc 27 2 9))
+                  (Var "inc")))
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

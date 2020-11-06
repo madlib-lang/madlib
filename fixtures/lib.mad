@@ -38,6 +38,13 @@ p = A((x) => x + 1)
 
 
 
-switch(p) {
-  case A f: f(3)
+where(p) {
+  is A f: f(3)
 } |> IO.log
+
+
+data Maybe a = Just a | Nothing
+
+Nothing :: Maybe a
+
+Just(3) :: Maybe Num

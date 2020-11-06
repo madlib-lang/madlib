@@ -46,8 +46,8 @@ data Typing_
   deriving(Eq, Show)
 
 
-type Case = Meta Case_
-data Case_ = Case Pattern Exp deriving(Eq, Show)
+type Is = Meta Is_
+data Is_ = Is Pattern Exp deriving(Eq, Show)
 
 
 type Pattern = Meta Pattern_
@@ -84,7 +84,7 @@ data Exp_ = LInt String
           | Assignment Name Exp
           | Record [Field]
           | If Exp Exp Exp
-          | Switch Exp [Case]
+          | Where Exp [Is]
           | Export Exp
           | TypedExp Exp Typing
           | ListConstructor [Exp]
