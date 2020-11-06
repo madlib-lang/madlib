@@ -14,7 +14,6 @@ data Env
   = Env
     { envvars :: Vars
     , envadts :: ADTs
-    , envtypings :: Typings
     , envimports :: Imports
     , envcurrentpath :: FilePath
     }
@@ -31,7 +30,6 @@ data Type
   | TArr Type Type    -- Arrow type
   | TComp String [Type] -- Composite type
   | TRecord (M.Map String Type) -- Record type
-  | TAny
   deriving (Show, Eq, Ord)
 
 

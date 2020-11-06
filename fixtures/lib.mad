@@ -30,11 +30,13 @@ c.x + c.y
 
 total = (a) => a.x + a.y
 
-total(c) |> IO.log
+-- total(c) |> IO.log
 
 data A = A (Num -> Num)
 
 p = A((x) => x + 1)
+
+
 
 switch(p) {
   case A f: f(3)

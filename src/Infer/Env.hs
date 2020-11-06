@@ -40,10 +40,6 @@ extendVars :: Env -> (String, Scheme) -> Env
 extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 
 
-extendTypings :: Env -> (String, Scheme) -> Env
-extendTypings env (x, s) = env { envtypings = M.insert x s $ envtypings env }
-
-
 initialEnv :: Env
 initialEnv = Env
   { envvars        = M.fromList
@@ -72,7 +68,6 @@ initialEnv = Env
       )
     ]
   , envadts        = M.empty
-  , envtypings     = M.empty
   , envimports     = M.empty
   , envcurrentpath = ""
   }
@@ -86,7 +81,6 @@ buildInitialEnv AST { aadts, apath } = do
   let allVars = M.union (envvars initialEnv) vars
   return Env { envvars        = allVars
              , envadts        = tadts
-             , envtypings     = M.empty
              , envimports     = M.empty
              , envcurrentpath = fromMaybe "" apath
              }

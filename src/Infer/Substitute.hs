@@ -16,10 +16,8 @@ instance Substitutable Type where
   apply s (  t1    `TArr` t2  ) = apply s t1 `TArr` apply s t2
   apply s (  TComp main   vars) = TComp main (apply s <$> vars)
   apply s (  TRecord fields   ) = TRecord (apply s <$> fields)
-  apply _ TAny                  = TAny
 
   ftv TCon{}              = S.empty
-  ftv TAny                = S.empty
   ftv (TVar a           ) = S.singleton a
   ftv (t1    `TArr` t2  ) = ftv t1 `S.union` ftv t2
   ftv (TComp _      vars) = foldl' (\s v -> S.union s $ ftv v) S.empty vars

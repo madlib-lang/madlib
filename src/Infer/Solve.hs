@@ -25,6 +25,7 @@ import           Debug.Trace
 import           Text.Show.Pretty
 import           Explain.Meta
 import           Explain.Location
+import Data.Char (isLower)
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -47,7 +48,7 @@ infer env lexp =
       Src.ListConstructor _ -> inferListConstructor env lexp
       Src.Export          _ -> inferExport env lexp
       Src.If _ _ _          -> inferIf env lexp
-      Src.JSExp c -> return (M.empty, TAny, Slv.Solved TAny area (Slv.JSExp c))
+      Src.JSExp c -> return (M.empty, TVar $ TV "a", Slv.Solved (TVar $ TV "a") area (Slv.JSExp c))
 
 
 -- TODO: Should probably just take a Loc instead of the old Expression !
@@ -234,12 +235,10 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
 
     Left err -> throwError $ InferError err (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area)
 
-  let resolvedType = apply s2 t1
-
   return
     ( s1 `compose` s2
-    , resolvedType
-    , Slv.Solved resolvedType area (Slv.TypedExp e1 (updateTyping typing))
+    , t
+    , Slv.Solved t area (Slv.TypedExp (updateType e1 t) (updateTyping typing))
     )
 
 
@@ -249,7 +248,8 @@ typingToType (Meta _ _ (Src.TRSingle t)) | t == "Num"    = return $ TCon CNum
                                          | t == "Bool"   = return $ TCon CBool
                                          | t == "String" = return $ TCon CString
                                          | t == "Void"   = return $ TCon CVoid
-                                         | otherwise     = return $ TVar $ TV t
+                                         | isLower $ head t = return $ TVar $ TV t
+                                         | otherwise     = return $ TComp t []
 
 typingToType (Meta _ _ (Src.TRComp t ts)) = do
   params <- mapM typingToType ts
@@ -537,9 +537,6 @@ inferExps env (e : xs) = do
 
         Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ ->
           extendVars env (name, Forall ((S.toList . ftv) t) t)
-
-        Slv.TypedExp (Slv.Solved _ _ (Slv.Var name)) _ ->
-          extendTypings env (name, Forall ((S.toList . ftv) t) t)
 
         _ -> env
 

@@ -223,11 +223,18 @@ buildDefaultExport es =
   isExport :: Exp -> Bool
   isExport a = case a of
     (Solved _ _ (Export _)) -> True
+    (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
 
-    _                       -> False
+    _                               -> False
+  -- isExport :: Exp -> Bool
+  -- isExport a = case a of
+  --   (Solved _ _ (Export _)) -> True
+
+  --   _                       -> False
 
   getExportName :: Exp -> String
   getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
+  getExportName (Solved _ _ (TypedExp (Solved _ _ (Export(Solved _ _ (Assignment n _)))) _)) = n
 
 
 buildPCompArgFn :: String
