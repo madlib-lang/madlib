@@ -56,6 +56,23 @@ Composing functions:
 3 |> inc |> inc // 5
 ```
 
+### Type annotations
+You can provide type annotations for any Madlib function in the following way:
+```javascript
+inc :: Num -> Num
+inc = (x) => x + 1
+```
+
+You may also, even though mostly not necessary thanks to type inference, provide type annotations for any expression with the following syntax: `(exp :: type)`
+```javascript
+(1 :: Num)     // here the annotation says that 1 is a Num
+(1 + 1 :: Num) // here the annotation says that 1 + 1 is a Num
+(1 :: Num) + 1 // here the annotation says that the first 1 is a Num, and lets the type checker figure out what the type of the second one is.
+
+("Madlib" :: String)
+("Madlib" :: Bool) // Type error, "Madlib should be a Bool"
+```
+
 ### Currying
 All functions are curried, therefore you can always partially apply them:
 ```javascript
@@ -99,14 +116,24 @@ nope  = Nothing           // Maybe a
 ### Pattern matching
 We can also match variable values given some pattern that match type constructors:
 
+For data types:
 ```javascript
 data User
   = LoggedIn String
   | Anonymous
 
-userDisplayName = (u) => switch(u) {
-  case LoggedIn name: name
-  case Anonymous    : "Anonymous"
+userDisplayName = (u) => where(u) {
+  is LoggedIn name: name
+  is Anonymous    : "Anonymous"
+}
+```
+
+For records:
+```javascript
+getStreetName :: { address: { street: String } }
+getStreetName = (p1, p2) => where({ p1: p1, p2: p2 }) {
+  is { address: { street: s } }: s
+  _                            : "Unknown address"
 }
 ```
 
@@ -125,10 +152,58 @@ data User = LoggedIn { name :: String, age :: Num, address :: String }
 It can be used in patterns:
 ```javascript
 user = LoggedIn({ name: "John", age: 33, address: "Street" })
-switch(us) {
-  case LoggedIn { name: "John" }: "Hey John !!"
-  case _                        : "It's not John"
+
+where(us) {
+  is LoggedIn { name: "John" }: "Hey John !!"
+  is _                        : "It's not John"
 }
+```
+
+Like for Javascript objects, records can be spread:
+```javascript
+position2D = { x: 3, y: 7 }
+position3D = { ...position2D, z: 1 }
+```
+
+
+### Modules
+In Madlib you can organize your code in modules. A module is simply a source file. A module can export functions or can import functions from other modules. To do this, a module can export any top level assignment.
+
+Right now the entrypoint module that you give to the compiler is the reference and its path defines the root path for your modules.
+
+Given the following structure:
+```
+src/Main.mad
+   /Dependency.mad
+```
+You should define your modules like this:
+```javascript
+// Dependency.mad
+export someFn = (a) => ...
+
+// Main.mad
+import { someFn } from "Dependency"
+
+someFn(...)
+```
+
+It is also possible to create sub folders in order to group related modules together. Let's add one and we end up with the current structure:
+
+```
+src/Main.mad
+   /Dependency.mad
+   /Sub/SubDependency.mad
+```
+
+Then we could have the modules defined like this:
+```javascript
+// Sub/SubDependency.mad
+export someSubFn = (a) => ...
+
+// Main.mad
+import { someSubFn } from "Sub/SubDependency"
+
+someSubFn(...)
 ```
 
 ## build
@@ -137,5 +212,5 @@ switch(us) {
 
 ## run
 
-`stack run < fixtures/example.mad`
-`cat fixtures/example.mad | stack run`
+`stack run "fixtures/example.mad"`
+`node build/fixtures/example.mjs`
