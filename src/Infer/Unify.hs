@@ -33,9 +33,18 @@ unify (TComp main vars) (TComp main' vars')
   | otherwise
   = throwError $ UnificationError (TComp main vars) (TComp main' vars')
 
-unify (TRecord fields) (TRecord fields')
+unify (TRecord fields open) (TRecord fields' open')
+  | open || open' = do
+    let extraFields    = M.difference fields fields'
+        extraFields'   = M.difference fields' fields
+        updatedFields  = M.union fields extraFields'
+        updatedFields' = M.union fields' extraFields
+        types          = M.elems updatedFields
+        types'          = M.elems updatedFields'
+        z      = zip types types'
+    unifyVars M.empty z
   | M.difference fields fields' /= M.empty = throwError
-  $ UnificationError (TRecord fields) (TRecord fields')
+  $ UnificationError (TRecord fields open) (TRecord fields' open')
   | otherwise = do
     let types  = M.elems fields
         types' = M.elems fields'

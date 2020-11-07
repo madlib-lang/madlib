@@ -15,6 +15,7 @@ import           Error.Error
 import           Data.Maybe                     ( fromMaybe )
 
 
+
 lookupVar :: Env -> String -> Infer (Substitution, Type)
 lookupVar env x = do
   case M.lookup x $ envvars env of

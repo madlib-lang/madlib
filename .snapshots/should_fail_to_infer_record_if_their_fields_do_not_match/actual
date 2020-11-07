@@ -1,8 +1,9 @@
 Left
   (InferError
      (UnificationError
-        (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
-        (TRecord (fromList [ ( "name" , TCon CString ) ])))
+        (TRecord
+           (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
+        (TRecord (fromList [ ( "name" , TCon CString ) ]) False))
      (Reason
         (WrongTypeApplied
            (Meta

@@ -13,12 +13,12 @@ Right
                   (App
                      (Solved
                         (TArr
-                           (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                           (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                            (TComp "Result" []))
                         (Area (Loc 82 2 11) (Loc 89 2 18))
                         (Var "Success"))
                      (Solved
-                        (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                        (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                         (Area (Loc 90 2 19) (Loc 105 2 34))
                         (Record
                            [ Field
@@ -38,12 +38,12 @@ Right
                   (App
                      (Solved
                         (TArr
-                           (TRecord (fromList [ ( "message" , TCon CString ) ]))
+                           (TRecord (fromList [ ( "message" , TCon CString ) ]) False)
                            (TComp "Result" []))
                         (Area (Loc 117 3 11) (Loc 122 3 16))
                         (Var "Error"))
                      (Solved
-                        (TRecord (fromList [ ( "message" , TCon CString ) ]))
+                        (TRecord (fromList [ ( "message" , TCon CString ) ]) False)
                         (Area (Loc 123 3 17) (Loc 141 3 35))
                         (Record
                            [ Field

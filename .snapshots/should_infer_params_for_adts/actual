@@ -4,19 +4,19 @@ Right
     , aexps =
         [ Solved
             (TArr
-               (TRecord (fromList [ ( "value" , TCon CString ) ]))
+               (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                (TComp "Result" []))
             (Area (Loc 42 2 1) (Loc 43 2 2))
             (Assignment
                "r"
                (Solved
                   (TArr
-                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                     (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                      (TComp "Result" []))
                   (Area (Loc 46 2 5) (Loc 53 2 12))
                   (Var "Success")))
         , Solved
-            (TRecord (fromList [ ( "value" , TCon CString ) ]))
+            (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
             (Area (Loc 54 2 13) (Loc 69 2 28))
             (Record
                [ Field
@@ -27,7 +27,7 @@ Right
                ])
         , Solved
             (TArr
-               (TRecord (fromList [ ( "value" , TCon CString ) ]))
+               (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                (TComp "Result" []))
             (Area (Loc 70 3 1) (Loc 83 3 14))
             (App
@@ -40,7 +40,7 @@ Right
                         (TVar (TV "b")) (Area (Loc 78 3 9) (Loc 79 3 10)) (Var "a"))))
                (Solved
                   (TArr
-                     (TRecord (fromList [ ( "value" , TCon CString ) ]))
+                     (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                      (TComp "Result" []))
                   (Area (Loc 81 3 12) (Loc 82 3 13))
                   (Var "r")))

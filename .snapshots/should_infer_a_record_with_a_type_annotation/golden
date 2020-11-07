@@ -3,11 +3,13 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+            (TRecord
+               (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
             (Area (Loc 1 1 2) (Loc 41 1 42))
             (TypedExp
                (Solved
-                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (TRecord
+                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                   (Area (Loc 1 1 2) (Loc 15 1 16))
                   (Record
                      [ Field

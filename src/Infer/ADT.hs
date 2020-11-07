@@ -93,4 +93,4 @@ argToType tadts name params (Meta _ _ (TRArr l r)) = do
 
 argToType tadts name params (Meta _ _ (TRRecord f)) = do
   f' <- mapM (argToType tadts name params) f
-  return $ TRecord f'
+  return $ TRecord f' False

@@ -25,11 +25,11 @@ newtype TVar = TV String
 
 
 data Type
-  = TVar TVar         -- Variable type
-  | TCon TCon         -- Constant type
-  | TArr Type Type    -- Arrow type
-  | TComp String [Type] -- Composite type
-  | TRecord (M.Map String Type) -- Record type
+  = TVar TVar                   -- Variable type
+  | TCon TCon                   -- Constant type
+  | TArr Type Type              -- Arrow type
+  | TComp String [Type]         -- Composite type
+  | TRecord (M.Map String Type) Bool -- Record type: Bool means open or closed
   deriving (Show, Eq, Ord)
 
 

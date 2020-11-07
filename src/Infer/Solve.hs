@@ -21,8 +21,6 @@ import           Infer.Unify
 import           Infer.Instantiate
 import           Error.Error
 import           Explain.Reason
-import           Debug.Trace
-import           Text.Show.Pretty
 import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
@@ -120,7 +118,7 @@ inferVar env exp =
   in  case n of
         ('.' : name) -> do
           let s = Forall [TV "a"] $ TArr
-                (TRecord (M.fromList [(name, TVar $ TV "a")]))
+                (TRecord (M.fromList [(name, TVar $ TV "a")]) True)
                 (TVar $ TV "a")
           t <- instantiate s
           return (M.empty, t, Slv.Solved t area $ Slv.Var n)
@@ -156,7 +154,7 @@ inferApp env exp = do
 
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
-  (s2, t2, earg) <- infer env arg
+  (s2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
   s3             <- case unify (apply s2 t1) (TArr t2 tv) of
     Right s -> return s
@@ -200,7 +198,7 @@ inferRecord env exp = do
 
   inferred <- mapM (inferRecordField env) fields
   let inferredFields = trd <$> inferred
-      recordType     = TRecord $ M.fromList $ concat $ mid <$> inferred
+      recordType     = TRecord (M.fromList $ concat $ mid <$> inferred) False
   return
     ( M.empty
     , recordType
@@ -208,7 +206,7 @@ inferRecord env exp = do
     )
 
 inferRecordField
-  :: Env -> Src.Field -> Infer (Substitution, [(Name, Type)], Slv.Field)
+  :: Env -> Src.Field -> Infer (Substitution, [(Slv.Name, Type)], Slv.Field)
 inferRecordField env field = case field of
   Src.Field (name, exp) -> do
     (s, t, e) <- infer env exp
@@ -217,9 +215,8 @@ inferRecordField env field = case field of
   Src.Spread exp -> do
     (s, t, e) <- infer env exp
     case t of
-      TRecord tfields ->
-        let Slv.Solved _ _ (Slv.Record fields) = e
-        in  return (s, M.toList tfields, Slv.Spread e)
+      TRecord tfields _ ->
+        return (s, M.toList tfields, Slv.Spread e)
 
       -- TODO: This needs to be a new error type maybe ?
       _ -> throwError $ InferError FatalError NoReason
@@ -251,7 +248,6 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
     )
 
 
-
 typingToType :: Src.Typing -> Infer Type
 typingToType (Meta _ _ (Src.TRSingle t))
   | t == "Num"       = return $ TCon CNum
@@ -272,7 +268,8 @@ typingToType (Meta _ _ (Src.TRArr l r)) = do
 
 typingToType (Meta _ _ (Src.TRRecord f)) = do
   f' <- mapM typingToType f
-  return $ TRecord f'
+  return $ TRecord f' False
+
 
 
 -- INFER LISTCONSTRUCTOR
@@ -297,21 +294,21 @@ inferListConstructor env (Meta _ loc (Src.ListConstructor elems)) =
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is _ _) abs@(Meta _ area (Src.Var ('.' : name)))))
+inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ _) abs@(Meta _ _ (Src.Var ('.' : name)))))
   = do
     (fieldSubstitution , fieldType , fieldExp ) <- infer env abs
     (recordSubstitution, recordType, recordExp) <- infer env rec
 
-
     let maybeSolved = case recordType of
-          TRecord fields -> case M.lookup name fields of
+          TRecord fields _ -> case M.lookup name fields of
             Just t -> Just
               ( fieldSubstitution
               , t
-              , Slv.Solved t loc (Slv.FieldAccess recordExp fieldExp)
+              , Slv.Solved t area (Slv.FieldAccess recordExp fieldExp)
               )
             Nothing -> Nothing
 
+          -- ERR, recordType must be a TRecord or TVar, otherwise trying to access field on a non record type.
           _ -> Nothing
 
 
@@ -331,8 +328,8 @@ inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is _ _) abs@(Meta _ 
           ( subst `compose` recordSubstitution `compose` fieldSubstitution
           , t
           , Slv.Solved
-            tv
-            loc
+            t
+            area
             (Slv.FieldAccess (updateType recordExp (apply subst recordType))
                              (updateType fieldExp tv)
             )
@@ -344,19 +341,21 @@ inferFieldAccess env (Meta _ loc (Src.FieldAccess rec@(Meta is _ _) abs@(Meta _ 
 
 inferIf :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferIf env exp@(Meta _ area (Src.If cond truthy falsy)) = do
-  (_, tcond  , econd  ) <- infer env cond
-  (_, ttruthy, etruthy) <- infer env truthy
-  (_, tfalsy , efalsy ) <- infer env falsy
+  (s1, tcond  , econd  ) <- infer env cond
+  (s2, ttruthy, etruthy) <- infer env truthy
+  (s3, tfalsy , efalsy ) <- infer env falsy
 
-  s1 <- catchError (unifyToInfer env $ unify (TCon CBool) tcond)
+  s4 <- catchError (unifyToInfer env $ unify (TCon CBool) tcond)
                    (addConditionReason env exp cond area)
-  s2 <- catchError (unifyToInfer env $ unify ttruthy tfalsy)
+  s5 <- catchError (unifyToInfer env $ unify ttruthy tfalsy)
                    (addBranchReason env exp falsy area)
 
+  let t = apply s5 ttruthy
+
   return
-    ( s1 `compose` s2
-    , ttruthy
-    , Slv.Solved ttruthy area (Slv.If econd etruthy efalsy)
+    ( s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+    , t
+    , Slv.Solved t area (Slv.If econd etruthy efalsy)
     )
 
 addConditionReason
@@ -445,7 +444,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
     Src.PAny           -> return $ TVar $ TV "a"
 
-    Src.PRecord fields -> TRecord . M.fromList <$> mapM
+    Src.PRecord fields -> (\fields -> TRecord fields False) . M.fromList <$> mapM
       (\(k, v) -> (k, ) <$> buildPatternType e v)
       (M.toList fields)
 
@@ -483,7 +482,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
     case (pat, t) of
       (Src.PVar v, t') -> return $ extendVars e (v, Forall [] t')
 
-      (Src.PRecord fields, TRecord fields') ->
+      (Src.PRecord fields, TRecord fields' _) ->
         let allFields = zip (M.elems fields) (M.elems fields')
         in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
 
@@ -622,7 +621,7 @@ resolveImports root table (imp : is) = do
 
   exports <- case (exportedTypes, imp) of
     (Just exports, Meta _ _ (Src.DefaultImport alias _)) ->
-      return $ M.fromList [(alias, TRecord exports)]
+      return $ M.fromList [(alias, TRecord exports False)]
 
     (Just exports, _) -> return exports
 

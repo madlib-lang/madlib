@@ -3,12 +3,14 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+            (TRecord
+               (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
             (Area (Loc 0 1 1) (Loc 1 1 2))
             (Assignment
                "a"
                (Solved
-                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (TRecord
+                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                   (Area (Loc 4 1 5) (Loc 18 1 19))
                   (Record
                      [ Field
@@ -22,14 +24,16 @@ Right
                      ])))
         , Solved
             (TArr
-               (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+               (TRecord
+                  (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                (TCon CNum))
             (Area (Loc 19 2 1) (Loc 25 2 7))
             (Assignment
                "xPlusY"
                (Solved
                   (TArr
-                     (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                     (TRecord
+                        (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                      (TCon CNum))
                   (Area (Loc 28 2 10) (Loc 38 2 20))
                   (Abs
@@ -51,7 +55,7 @@ Right
                                     (Area (Loc 35 2 17) (Loc 38 2 20))
                                     (FieldAccess
                                        (Solved
-                                          (TRecord (fromList [ ( "x" , TVar (TV "e") ) ]))
+                                          (TRecord (fromList [ ( "x" , TVar (TV "e") ) ]) True)
                                           (Area (Loc 35 2 17) (Loc 36 2 18))
                                           (Var "r"))
                                        (Solved
@@ -63,7 +67,7 @@ Right
                               (Area (Loc 41 2 23) (Loc 44 2 26))
                               (FieldAccess
                                  (Solved
-                                    (TRecord (fromList [ ( "y" , TVar (TV "g") ) ]))
+                                    (TRecord (fromList [ ( "y" , TVar (TV "g") ) ]) True)
                                     (Area (Loc 41 2 23) (Loc 42 2 24))
                                     (Var "r"))
                                  (Solved
@@ -76,12 +80,14 @@ Right
             (App
                (Solved
                   (TArr
-                     (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                     (TRecord
+                        (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                      (TCon CNum))
                   (Area (Loc 45 3 1) (Loc 51 3 7))
                   (Var "xPlusY"))
                (Solved
-                  (TRecord (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]))
+                  (TRecord
+                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                   (Area (Loc 52 3 8) (Loc 53 3 9))
                   (Var "a")))
         ]

@@ -298,9 +298,9 @@ typeToStr t = case t of
       <> ")"
       <> " -> "
       <> typeToStr t2'
-  TArr  t1 t2   -> typeToStr t1 <> " -> " <> typeToStr t2
-  TComp n  vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
-  TRecord fields ->
+  TArr  t1 t2      -> typeToStr t1 <> " -> " <> typeToStr t2
+  TComp n  vars    -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
+  TRecord fields _ ->
     "{ "
       <> (   intercalate ", "
          $   (\(n, t) -> n <> ": " <> typeToStr t)

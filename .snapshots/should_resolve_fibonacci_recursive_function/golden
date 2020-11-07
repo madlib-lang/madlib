@@ -1,0 +1,113 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TCon CNum) (TCon CNum))
+            (Area (Loc 0 1 1) (Loc 3 1 4))
+            (Assignment
+               "fib"
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 6 1 7) (Loc 62 1 63))
+                  (Abs
+                     "n"
+                     (Solved
+                        (TCon CNum)
+                        (Area (Loc 13 1 14) (Loc 62 1 63))
+                        (If
+                           (Solved
+                              (TCon CBool)
+                              (Area (Loc 17 1 18) (Loc 18 1 19))
+                              (App
+                                 (Solved
+                                    (TArr (TVar (TV "a")) (TCon CBool))
+                                    (Area (Loc 17 1 18) (Loc 18 1 19))
+                                    (App
+                                       (Solved
+                                          (TArr (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
+                                          (Area (Loc 19 1 20) (Loc 20 1 21))
+                                          (Var "<"))
+                                       (Solved
+                                          (TVar (TV "a"))
+                                          (Area (Loc 17 1 18) (Loc 18 1 19))
+                                          (Var "n"))))
+                                 (Solved
+                                    (TCon CNum) (Area (Loc 21 1 22) (Loc 22 1 23)) (LInt "2"))))
+                           (Solved
+                              (TVar (TV "a")) (Area (Loc 26 1 27) (Loc 27 1 28)) (Var "n"))
+                           (Solved
+                              (TCon CNum)
+                              (Area (Loc 37 1 38) (Loc 47 1 48))
+                              (App
+                                 (Solved
+                                    (TArr (TCon CNum) (TCon CNum))
+                                    (Area (Loc 37 1 38) (Loc 47 1 48))
+                                    (App
+                                       (Solved
+                                          (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                          (Area (Loc 47 1 48) (Loc 49 1 50))
+                                          (Var "+"))
+                                       (Solved
+                                          (TCon CNum)
+                                          (Area (Loc 37 1 38) (Loc 47 1 48))
+                                          (App
+                                             (Solved
+                                                (TVar (TV "h"))
+                                                (Area (Loc 37 1 38) (Loc 40 1 41))
+                                                (Var "fib"))
+                                             (Solved
+                                                (TCon CNum)
+                                                (Area (Loc 41 1 42) (Loc 42 1 43))
+                                                (App
+                                                   (Solved
+                                                      (TArr (TCon CNum) (TCon CNum))
+                                                      (Area (Loc 41 1 42) (Loc 42 1 43))
+                                                      (App
+                                                         (Solved
+                                                            (TArr
+                                                               (TCon CNum)
+                                                               (TArr (TCon CNum) (TCon CNum)))
+                                                            (Area (Loc 43 1 44) (Loc 44 1 45))
+                                                            (Var "-"))
+                                                         (Solved
+                                                            (TCon CNum)
+                                                            (Area (Loc 41 1 42) (Loc 42 1 43))
+                                                            (Var "n"))))
+                                                   (Solved
+                                                      (TCon CNum)
+                                                      (Area (Loc 45 1 46) (Loc 46 1 47))
+                                                      (LInt "1"))))))))
+                                 (Solved
+                                    (TCon CNum)
+                                    (Area (Loc 50 1 51) (Loc 60 1 61))
+                                    (App
+                                       (Solved
+                                          (TVar (TV "l"))
+                                          (Area (Loc 50 1 51) (Loc 53 1 54))
+                                          (Var "fib"))
+                                       (Solved
+                                          (TCon CNum)
+                                          (Area (Loc 54 1 55) (Loc 55 1 56))
+                                          (App
+                                             (Solved
+                                                (TArr (TCon CNum) (TCon CNum))
+                                                (Area (Loc 54 1 55) (Loc 55 1 56))
+                                                (App
+                                                   (Solved
+                                                      (TArr
+                                                         (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                      (Area (Loc 56 1 57) (Loc 57 1 58))
+                                                      (Var "-"))
+                                                   (Solved
+                                                      (TCon CNum)
+                                                      (Area (Loc 54 1 55) (Loc 55 1 56))
+                                                      (Var "n"))))
+                                             (Solved
+                                                (TCon CNum)
+                                                (Area (Loc 58 1 59) (Loc 59 1 60))
+                                                (LInt "2")))))))))))))
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

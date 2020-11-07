@@ -50,12 +50,13 @@ Right
                                      [ ( "singleton"
                                        , TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ])
                                        )
-                                     ]))
+                                     ])
+                                  False)
                                (Area (Loc 24 2 1) (Loc 25 2 2))
                                (Var "L"))
                             (Solved
                                (TArr
-                                  (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]))
+                                  (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]) True)
                                   (TVar (TV "c")))
                                (Area (Loc 26 2 3) (Loc 35 2 12))
                                (Var ".singleton"))))

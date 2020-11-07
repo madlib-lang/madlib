@@ -566,3 +566,10 @@ spec = do
       snapshotTest
         "should resolve recursive functions"
         actual
+
+    it "should resolve fibonacci recursive function" $ do
+      let code = "fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }"
+          actual = tester code
+      snapshotTest
+        "should resolve fibonacci recursive function"
+        actual

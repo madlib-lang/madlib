@@ -68,3 +68,10 @@ userDisplayName = (u) => where(u) {
 fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }
 
 fib(8) |> IO.log
+
+
+if (1 < 2) { 1 } else { (1 - 1) + (1 - 2) }
+
+fn = (x) => x + 1
+
+fn(1)
