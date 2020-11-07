@@ -176,8 +176,9 @@ inferApp env exp = do
 -- INFER ASSIGNMENT
 
 inferAssignment :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = do
-  (s1, t1, e1) <- infer env exp
+inferAssignment env e@(Meta _ _ (Src.Assignment name exp)) = do
+  let env' = extendVars env (name, Forall [TV "a"] $ TVar $ TV "a")
+  (s1, t1, e1) <- infer env' exp
   return (s1, t1, applyAssignmentSolve e name e1 t1)
 
 
@@ -185,9 +186,9 @@ inferAssignment env e@(Meta _ loc (Src.Assignment name exp)) = do
 -- INFER EXPORT
 
 inferExport :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferExport env (Meta _ loc (Src.Export exp)) = do
+inferExport env (Meta _ area (Src.Export exp)) = do
   (s, t, e) <- infer env exp
-  return (s, t, Slv.Solved t loc (Slv.Export e))
+  return (s, t, Slv.Solved t area (Slv.Export e))
 
 
 

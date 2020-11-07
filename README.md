@@ -133,7 +133,7 @@ For records:
 getStreetName :: { address: { street: String } }
 getStreetName = (p1, p2) => where({ p1: p1, p2: p2 }) {
   is { address: { street: s } }: s
-  _                            : "Unknown address"
+  is _                         : "Unknown address"
 }
 ```
 

@@ -54,3 +54,17 @@ data Maybe a = Just a | Nothing
 (1 + 1 :: Num) |> IO.log
 
 IO.log(!False)
+
+data User
+  = LoggedIn String
+  | Anonymous
+
+userDisplayName = (u) => where(u) {
+  is LoggedIn name: name
+  is Anonymous    : "Anonymous"
+}
+
+
+fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }
+
+fib(8) |> IO.log

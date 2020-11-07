@@ -554,3 +554,15 @@ spec = do
       snapshotTest
         "should validate correct type annotations"
         actual
+
+    ---------------------------------------------------------------------------
+
+
+    -- Recursion:
+
+    it "should resolve recursive functions" $ do
+      let code = "fn = (x) => x + fn(x)"
+          actual = tester code
+      snapshotTest
+        "should resolve recursive functions"
+        actual
