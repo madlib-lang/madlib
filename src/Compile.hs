@@ -65,13 +65,18 @@ instance Compilable Exp where
       compileField :: Field -> String -> String
       compileField field res = case field of
         Field  (name, exp) -> " " <> name <> ": " <> compile exp <> "," <> res
-        Spread exp         -> " ..." <> compile exp <> "," <> res
+        FieldSpread exp    -> " ..." <> compile exp <> "," <> res
 
     FieldAccess record field -> compile record <> compile field
 
     JSExp content -> content
 
-    ListConstructor elems -> "[" <> intercalate ", " (compile <$> elems) <> "]"
+    ListConstructor elems -> "[" <> intercalate ", " (compileListItem <$> elems) <> "]"
+      where
+        compileListItem :: ListItem -> String
+        compileListItem li = case li of
+          ListItem exp   -> compile exp
+          ListSpread exp -> " ..." <> compile exp
 
     Where exp (first : cs) ->
       "((__x__) => {\n  "

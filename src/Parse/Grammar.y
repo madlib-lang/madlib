@@ -238,9 +238,9 @@ record :: { Src.Exp }
 
 recordFields :: { [Src.Field] }
   : name ':' exp                  { [Src.Field (strV $1, $3)] }
-  | '...' exp                     { [Src.Spread $2] }
+  | '...' exp                     { [Src.FieldSpread $2] }
   | recordFields ',' name ':' exp { $1 <> [Src.Field (strV $3, $5)] }
-  | recordFields ',' '...' exp    { $1 <> [Src.Spread $4] }
+  | recordFields ',' '...' exp    { $1 <> [Src.FieldSpread $4] }
 
 
 operation :: { Src.Exp }
@@ -322,10 +322,12 @@ operation :: { Src.Exp }
 listConstructor :: { Src.Exp }
   : '[' listItems ']' { Meta emptyInfos (tokenToArea $1) (Src.ListConstructor $2) }
 
-listItems :: { [Src.Exp] }
-  : exp               { [$1] }
-  | exp ',' listItems { $1 : $3 }
-  | {- empty -}       { [] }
+listItems :: { [Src.ListItem] }
+  : exp                     { [Src.ListItem $1] }
+  | exp ',' listItems       { Src.ListItem $1 : $3 }
+  | '...' exp               { [Src.ListSpread $2] }
+  | '...' exp ',' listItems { Src.ListSpread $2 : $4 }
+  | {- empty -}             { [] }
 
 literal :: { Src.Exp }
   : int                       { Meta emptyInfos (tokenToArea $1) (Src.LInt $ strV $1) }

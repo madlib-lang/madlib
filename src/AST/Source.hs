@@ -66,11 +66,15 @@ data Pattern_
 
 data Field
   = Field (Name, Exp)
-  | Spread Exp
+  | FieldSpread Exp
   deriving(Eq, Show)
 
 
--- type Fields = M.Map Name Exp
+data ListItem
+  = ListItem Exp
+  | ListSpread Exp
+  deriving(Eq, Show)
+
 
 type Exp = Meta Exp_
 
@@ -87,7 +91,7 @@ data Exp_ = LInt String
           | Where Exp [Is]
           | Export Exp
           | TypedExp Exp Typing
-          | ListConstructor [Exp]
+          | ListConstructor [ListItem]
           | JSExp String
           deriving(Eq, Show)
 

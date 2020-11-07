@@ -10,20 +10,26 @@ Right
             (TComp "List" [ TCon CNum ])
             (Area (Loc 3 2 1) (Loc 4 2 2))
             (ListConstructor
-               [ Solved (TCon CNum) (Area (Loc 4 2 2) (Loc 5 2 3)) (LInt "1")
-               , Solved (TCon CNum) (Area (Loc 7 2 5) (Loc 8 2 6)) (LInt "2")
-               , Solved (TCon CNum) (Area (Loc 10 2 8) (Loc 11 2 9)) (LInt "3")
+               [ ListItem
+                   (Solved (TCon CNum) (Area (Loc 4 2 2) (Loc 5 2 3)) (LInt "1"))
+               , ListItem
+                   (Solved (TCon CNum) (Area (Loc 7 2 5) (Loc 8 2 6)) (LInt "2"))
+               , ListItem
+                   (Solved (TCon CNum) (Area (Loc 10 2 8) (Loc 11 2 9)) (LInt "3"))
                ])
         , Solved
             (TComp "List" [ TCon CString ])
             (Area (Loc 13 3 1) (Loc 14 3 2))
             (ListConstructor
-               [ Solved
-                   (TCon CString) (Area (Loc 14 3 2) (Loc 19 3 7)) (LStr "one")
-               , Solved
-                   (TCon CString) (Area (Loc 21 3 9) (Loc 26 3 14)) (LStr "two")
-               , Solved
-                   (TCon CString) (Area (Loc 28 3 16) (Loc 35 3 23)) (LStr "three")
+               [ ListItem
+                   (Solved
+                      (TCon CString) (Area (Loc 14 3 2) (Loc 19 3 7)) (LStr "one"))
+               , ListItem
+                   (Solved
+                      (TCon CString) (Area (Loc 21 3 9) (Loc 26 3 14)) (LStr "two"))
+               , ListItem
+                   (Solved
+                      (TCon CString) (Area (Loc 28 3 16) (Loc 35 3 23)) (LStr "three"))
                ])
         ]
     , aadts = []

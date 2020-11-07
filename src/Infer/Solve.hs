@@ -190,6 +190,39 @@ inferExport env (Meta _ area (Src.Export exp)) = do
 
 
 
+-- INFER LISTCONSTRUCTOR
+
+inferListConstructor :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
+inferListConstructor env (Meta _ loc (Src.ListConstructor elems)) =
+  case elems of
+    [] ->
+      let t = TComp "List" [TVar $ TV "a"]
+      in  return (M.empty, t, Slv.Solved t loc (Slv.ListConstructor []))
+
+    elems -> do
+      inferred <- mapM (inferListItem env) elems
+      let (_, t1, _) = head inferred
+      let t          = TComp "List" [t1]
+      -- TODO: Error should be handled
+      s <- unifyToInfer env $ unifyElems t1 (mid <$> inferred)
+      return (s, t, Slv.Solved t loc (Slv.ListConstructor (trd <$> inferred)))
+
+
+inferListItem :: Env -> Src.ListItem -> Infer (Substitution, Type, Slv.ListItem)
+inferListItem env li = case li of
+  Src.ListItem exp -> do
+    (s, t, e) <- infer env exp
+    return (s, t, Slv.ListItem e)
+
+  Src.ListSpread exp -> do
+    (s, t, e) <- infer env exp
+    case t of
+      TComp "List" [t'] -> return (s, t', Slv.ListSpread e)
+
+      _ -> throwError $ InferError FatalError NoReason
+
+
+
 -- INFER RECORD
 
 inferRecord :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -212,82 +245,14 @@ inferRecordField env field = case field of
     (s, t, e) <- infer env exp
     return (s, [(name, t)], Slv.Field (name, e))
 
-  Src.Spread exp -> do
+  Src.FieldSpread exp -> do
     (s, t, e) <- infer env exp
     case t of
       TRecord tfields _ ->
-        return (s, M.toList tfields, Slv.Spread e)
+        return (s, M.toList tfields, Slv.FieldSpread e)
 
       -- TODO: This needs to be a new error type maybe ?
       _ -> throwError $ InferError FatalError NoReason
-
-
-
--- INFER TYPEDEXP
-
-inferTypedExp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
-  t <- typingToType typing
-  let freevars = ftv t
-
-  t'           <- instantiate $ Forall (S.toList freevars) t
-
-  (s1, t1, e1) <- infer env exp
-  s2           <- case unify t' t1 of
-    Right solved -> return solved
-
-    Left  err    -> throwError $ InferError
-      err
-      (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area
-      )
-
-  return
-    ( s1 `compose` s2
-    , t
-    , Slv.Solved t area (Slv.TypedExp (updateType e1 t) (updateTyping typing))
-    )
-
-
-typingToType :: Src.Typing -> Infer Type
-typingToType (Meta _ _ (Src.TRSingle t))
-  | t == "Num"       = return $ TCon CNum
-  | t == "Bool"      = return $ TCon CBool
-  | t == "String"    = return $ TCon CString
-  | t == "Void"      = return $ TCon CVoid
-  | isLower $ head t = return $ TVar $ TV t
-  | otherwise        = return $ TComp t []
-
-typingToType (Meta _ _ (Src.TRComp t ts)) = do
-  params <- mapM typingToType ts
-  return $ TComp t params
-
-typingToType (Meta _ _ (Src.TRArr l r)) = do
-  l' <- typingToType l
-  r' <- typingToType r
-  return $ TArr l' r'
-
-typingToType (Meta _ _ (Src.TRRecord f)) = do
-  f' <- mapM typingToType f
-  return $ TRecord f' False
-
-
-
--- INFER LISTCONSTRUCTOR
-
-inferListConstructor :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferListConstructor env (Meta _ loc (Src.ListConstructor elems)) =
-  case elems of
-    [] ->
-      let t = TComp "List" [TVar $ TV "a"]
-      in  return (M.empty, t, Slv.Solved t loc (Slv.ListConstructor []))
-
-    elems -> do
-      inferred <- mapM (infer env) elems
-      let (_, t1, _) = head inferred
-      let t          = TComp "List" [t1]
-      -- TODO: Error should be handled
-      s <- unifyToInfer env $ unifyElems t1 (mid <$> inferred)
-      return (s, t, Slv.Solved t loc (Slv.ListConstructor (trd <$> inferred)))
 
 
 
@@ -526,6 +491,54 @@ addPatternReason env whereExp pattern area (InferError e _) =
     e
     (Reason (PatternTypeError whereExp pattern) (envcurrentpath env) area)
 
+
+
+-- INFER TYPEDEXP
+
+inferTypedExp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
+inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
+  t <- typingToType typing
+  let freevars = ftv t
+
+  t'           <- instantiate $ Forall (S.toList freevars) t
+
+  (s1, t1, e1) <- infer env exp
+  s2           <- case unify t' t1 of
+    Right solved -> return solved
+
+    Left  err    -> throwError $ InferError
+      err
+      (Reason (TypeAndTypingMismatch exp typing t' t1) (envcurrentpath env) area
+      )
+
+  return
+    ( s1 `compose` s2
+    , t
+    , Slv.Solved t area (Slv.TypedExp (updateType e1 t) (updateTyping typing))
+    )
+
+
+typingToType :: Src.Typing -> Infer Type
+typingToType (Meta _ _ (Src.TRSingle t))
+  | t == "Num"       = return $ TCon CNum
+  | t == "Bool"      = return $ TCon CBool
+  | t == "String"    = return $ TCon CString
+  | t == "Void"      = return $ TCon CVoid
+  | isLower $ head t = return $ TVar $ TV t
+  | otherwise        = return $ TComp t []
+
+typingToType (Meta _ _ (Src.TRComp t ts)) = do
+  params <- mapM typingToType ts
+  return $ TComp t params
+
+typingToType (Meta _ _ (Src.TRArr l r)) = do
+  l' <- typingToType l
+  r' <- typingToType r
+  return $ TArr l' r'
+
+typingToType (Meta _ _ (Src.TRRecord f)) = do
+  f' <- mapM typingToType f
+  return $ TRecord f' False
 
 
 

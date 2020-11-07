@@ -22,10 +22,11 @@ Right
                                      (TComp "List" [ TVar (TV "a") ])
                                      (Area (Loc 26 1 27) (Loc 27 1 28))
                                      (ListConstructor
-                                        [ Solved
-                                            (TVar (TV "a"))
-                                            (Area (Loc 27 1 28) (Loc 28 1 29))
-                                            (Var "a")
+                                        [ ListItem
+                                            (Solved
+                                               (TVar (TV "a"))
+                                               (Area (Loc 27 1 28) (Loc 28 1 29))
+                                               (Var "a"))
                                         ])))))))
                ]
            , aadts = []

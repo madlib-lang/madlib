@@ -225,6 +225,20 @@ spec = do
         actual = tester code
       snapshotTest "should infer list constructors" actual
 
+    it "should infer list spread" $ do
+      let
+        code = unlines
+          ["[ 1, ...[1, 2]]"]
+        actual = tester code
+      snapshotTest "should infer list spread" actual
+
+    it "should infer fail when spreading an array of a different type" $ do
+      let
+        code = unlines
+          ["[ 1, ...[\"1\", \"2\"]]"]
+        actual = tester code
+      snapshotTest "should infer fail when spreading an array of a different type" actual
+
     ---------------------------------------------------------------------------
 
 

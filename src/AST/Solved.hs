@@ -64,7 +64,12 @@ data Pattern
 
 data Field
   = Field (Name, Exp)
-  | Spread Exp
+  | FieldSpread Exp
+  deriving(Eq, Show)
+
+data ListItem
+  = ListItem Exp
+  | ListSpread Exp
   deriving(Eq, Show)
 
 type Exp = Solved Exp_
@@ -80,7 +85,7 @@ data Exp_ = LInt String
           | Export Exp
           | Var Name
           | TypedExp Exp Typing
-          | ListConstructor [Exp]
+          | ListConstructor [ListItem]
           | Record [Field]
           | If Exp Exp Exp
           | Where Exp [Is]

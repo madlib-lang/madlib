@@ -132,6 +132,8 @@ spec = do
             , "!True"
             , "!False && !True"
             , "!False || !True"
+            , "arr = [1, 2, 3]"
+            , "all = [ ...arr, 4, 5, 6]"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual
