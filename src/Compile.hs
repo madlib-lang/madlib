@@ -22,15 +22,15 @@ instance Compilable Exp where
     LBool v     -> toLower <$> v
 
     App abs arg -> case abs of
-      Solved _ _ (Var "+"  ) -> "(" <> compile arg <> ") + "
-      Solved _ _ (Var "-"  ) -> "(" <> compile arg <> ") - "
-      Solved _ _ (Var "*"  ) -> "(" <> compile arg <> ") * "
-      Solved _ _ (Var "/"  ) -> "(" <> compile arg <> ") / "
+      Solved _ _ (Var "+" ) -> "(" <> compile arg <> ") + "
+      Solved _ _ (Var "-" ) -> "(" <> compile arg <> ") - "
+      Solved _ _ (Var "*" ) -> "(" <> compile arg <> ") * "
+      Solved _ _ (Var "/" ) -> "(" <> compile arg <> ") / "
       Solved _ _ (Var "==") -> "(" <> compile arg <> ") === "
       Solved _ _ (Var "&&") -> "(" <> compile arg <> ") && "
       Solved _ _ (Var "||") -> "(" <> compile arg <> ") || "
-      Solved _ _ (Var ">") -> "(" <> compile arg <> ") > "
-      Solved _ _ (Var "<") -> "(" <> compile arg <> ") < "
+      Solved _ _ (Var ">" ) -> "(" <> compile arg <> ") > "
+      Solved _ _ (Var "<" ) -> "(" <> compile arg <> ") < "
       Solved _ _ (Var ">=") -> "(" <> compile arg <> ") >= "
       Solved _ _ (Var "<=") -> "(" <> compile arg <> ") <= "
       Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
@@ -64,19 +64,20 @@ instance Compilable Exp where
      where
       compileField :: Field -> String -> String
       compileField field res = case field of
-        Field  (name, exp) -> " " <> name <> ": " <> compile exp <> "," <> res
-        FieldSpread exp    -> " ..." <> compile exp <> "," <> res
+        Field (name, exp) -> " " <> name <> ": " <> compile exp <> "," <> res
+        FieldSpread exp -> " ..." <> compile exp <> "," <> res
 
     FieldAccess record field -> compile record <> compile field
 
-    JSExp content -> content
+    JSExp content            -> content
 
-    ListConstructor elems -> "[" <> intercalate ", " (compileListItem <$> elems) <> "]"
-      where
-        compileListItem :: ListItem -> String
-        compileListItem li = case li of
-          ListItem exp   -> compile exp
-          ListSpread exp -> " ..." <> compile exp
+    ListConstructor elems ->
+      "[" <> intercalate ", " (compileListItem <$> elems) <> "]"
+     where
+      compileListItem :: ListItem -> String
+      compileListItem li = case li of
+        ListItem   exp -> compile exp
+        ListSpread exp -> " ..." <> compile exp
 
     Where exp (first : cs) ->
       "((__x__) => {\n  "
@@ -118,13 +119,21 @@ instance Compilable Exp where
         intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey
           (compileRecord scope)
           m
-      compilePattern scope (PUserDef n)  = scope <> " === \"" <> n <> "\""
-      
-      compilePattern scope (PList [])    = scope <> ".length === 0"
-      compilePattern scope (PList items) =
-        scope <> ".length === " <> show (length items) <> " && " <> (intercalate " && " $ (\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> (zip items [0..]))
 
-      compilePattern _     _            = ""
+      compilePattern scope (PList []) = scope <> ".length === 0"
+      compilePattern scope (PList items) =
+        scope
+          <> ".length === "
+          <> show (length items)
+          <> " && "
+          <> (   intercalate " && "
+             $   (\(item, i) ->
+                   compilePattern (scope <> "[" <> show i <> "]") item
+                 )
+             <$> (zip items [0 ..])
+             )
+
+      compilePattern _ _ = ""
 
 
       compileIs :: Is -> String
@@ -141,8 +150,10 @@ instance Compilable Exp where
       buildVars v p = case p of
         PRecord fields ->
           concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
-        PList items -> 
-          concat $ (\(item, i) -> buildVars (v <> "[" <> show i <> "]") item) <$> (zip items [0..])
+        PList items ->
+          concat
+            $   (\(item, i) -> buildVars (v <> "[" <> show i <> "]") item)
+            <$> (zip items [0 ..])
         PCtor _ ps ->
           concat
             $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)

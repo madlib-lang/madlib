@@ -24,7 +24,7 @@ import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
-import Debug.Trace
+import           Debug.Trace
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -62,15 +62,9 @@ applyLitSolve (Meta _ area exp) t = case exp of
   Src.LStr  v -> Slv.Solved t area $ Slv.LStr v
   Src.LBool v -> Slv.Solved t area $ Slv.LBool v
 
-applyVarSolve :: Src.Exp -> Type -> Slv.Exp
-applyVarSolve (Meta _ loc (Src.Var v)) t = Slv.Solved t loc $ Slv.Var v
-
 applyAbsSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
 applyAbsSolve (Meta _ loc _) param body t =
   Slv.Solved t loc $ Slv.Abs param body
-
-applyAppSolve :: Src.Exp -> Slv.Exp -> Slv.Exp -> Type -> Slv.Exp
-applyAppSolve (Meta _ loc _) abs arg t = Slv.Solved t loc $ Slv.App abs arg
 
 applyAssignmentSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
 applyAssignmentSolve (Meta _ loc _) n exp t =
@@ -89,17 +83,15 @@ updatePattern (Meta _ _ p) = case p of
 
   Src.PCtor name patterns -> Slv.PCtor name (updatePattern <$> patterns)
 
-  Src.PNum     n          -> Slv.PNum n
-  Src.PStr     n          -> Slv.PStr n
-  Src.PBool    n          -> Slv.PBool n
+  Src.PNum    n           -> Slv.PNum n
+  Src.PStr    n           -> Slv.PStr n
+  Src.PBool   n           -> Slv.PBool n
 
-  Src.PCon     n          -> Slv.PCon n
+  Src.PCon    n           -> Slv.PCon n
 
-  Src.PUserDef n          -> Slv.PUserDef n
+  Src.PRecord fields      -> Slv.PRecord (updatePattern <$> fields)
 
-  Src.PRecord  fields     -> Slv.PRecord (updatePattern <$> fields)
-
-  Src.PList patterns      -> Slv.PList (updatePattern <$> patterns)
+  Src.PList   patterns    -> Slv.PList (updatePattern <$> patterns)
 
 
 updateTyping :: Src.Typing -> Slv.Typing
@@ -222,7 +214,7 @@ inferListItem env li = case li of
     case t of
       TComp "List" [t'] -> return (s, t', Slv.ListSpread e)
 
-      TVar _            -> return (s, t, Slv.ListSpread e)
+      TVar _ -> return (s, t, Slv.ListSpread e)
 
       _ -> throwError $ InferError (UnknownType $ show t) NoReason
 
@@ -253,11 +245,10 @@ inferRecordField env field = case field of
   Src.FieldSpread exp -> do
     (s, t, e) <- infer env exp
     case t of
-      TRecord tfields _ ->
-        return (s, M.toList tfields, Slv.FieldSpread e)
+      TRecord tfields _ -> return (s, M.toList tfields, Slv.FieldSpread e)
 
       -- TODO: This needs to be a new error type maybe ?
-      _ -> throwError $ InferError FatalError NoReason
+      _                 -> throwError $ InferError FatalError NoReason
 
 
 
@@ -414,9 +405,10 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
     Src.PAny           -> return $ TVar $ TV "a"
 
-    Src.PRecord fields -> (\fields -> TRecord fields True) . M.fromList <$> mapM
-      (\(k, v) -> (k, ) <$> buildPatternType e v)
-      (M.toList fields)
+    Src.PRecord fields ->
+      (\fields -> TRecord fields True) . M.fromList <$> mapM
+        (\(k, v) -> (k, ) <$> buildPatternType e v)
+        (M.toList fields)
 
     Src.PCtor n as -> do
       (Forall fv ctor) <- case M.lookup n envvars of
@@ -441,11 +433,12 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         l <- buildPatternType e f
         r <- argPatternsToArrowType rt xs
         return $ TArr l r
-      argPatternsToArrowType rt []  = return rt
+      argPatternsToArrowType rt [] = return rt
 
     -- TODO: Need to iterate through items and unify them
-    Src.PList []       -> return $ TComp "List" [TVar $ TV "a"]
-    Src.PList patterns -> TComp "List" . (:[]) <$> buildPatternType e (head patterns)
+    Src.PList [] -> return $ TComp "List" [TVar $ TV "a"]
+    Src.PList patterns ->
+      TComp "List" . (: []) <$> buildPatternType e (head patterns)
 
     _ -> return $ TVar $ TV "x"
 
@@ -459,8 +452,10 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         let allFields = zip (M.elems fields) (M.elems fields')
         in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
 
-      (Src.PList items, TComp "List" [t]) -> foldrM (\p e' -> generateIsEnv t e' p) e items
-      (Src.PList items, t) -> foldrM (\p e' -> generateIsEnv (trace (show t) t) e' p) e items
+      (Src.PList items, TComp "List" [t]) ->
+        foldrM (\p e' -> generateIsEnv t e' p) e items
+      (Src.PList items, t) ->
+        foldrM (\p e' -> generateIsEnv (trace (show t) t) e' p) e items
 
       (Src.PCtor cname as, _) -> do
         ctor <- findConstructor cname

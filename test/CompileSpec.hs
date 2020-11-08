@@ -139,6 +139,14 @@ spec = do
             , "  is [1, 2, n]: n"
             , "  is [n, 3]   : n"
             , "  is [x, y, z]: x + y + z"
+            , "  is []       : 0"
+            , "}"
+            , "map :: (a -> b) -> List a -> List b"
+            , "export map = (f, xs) => where(xs) {"
+            , "  is [a, b, c]: [f(a), ...map(f, [b, c])]"
+            , "  is [a, b]   : [f(a), ...map(f, [b])]"
+            , "  is [a]      : [f(a)]"
+            , "  is []       : []"
             , "}"
             ]
           actual = tester code

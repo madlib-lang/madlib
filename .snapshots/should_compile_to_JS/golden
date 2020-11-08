@@ -116,5 +116,28 @@ const all = [ ...arr, 4, 5, 6];
     const z = __x__[2];
     return ((x) + (y)) + (z);
   }
+  else if (__x__.length === 0) {
+    return 0;
+  }
 })([1, 2, 3, 5, 8]);
-export default { fn };
+export const map = (f => (xs => ((__x__) => {
+  if (__x__.length === 3 && true && true && true) {
+    const a = __x__[0];
+    const b = __x__[1];
+    const c = __x__[2];
+    return [f(a),  ...map(f)([b, c])];
+  }
+  else if (__x__.length === 2 && true && true) {
+    const a = __x__[0];
+    const b = __x__[1];
+    return [f(a),  ...map(f)([b])];
+  }
+  else if (__x__.length === 1 && true) {
+    const a = __x__[0];
+    return [f(a)];
+  }
+  else if (__x__.length === 0) {
+    return [];
+  }
+})(xs)));
+export default { fn, map };

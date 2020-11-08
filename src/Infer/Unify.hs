@@ -40,8 +40,8 @@ unify (TRecord fields open) (TRecord fields' open')
         updatedFields  = M.union fields extraFields'
         updatedFields' = M.union fields' extraFields
         types          = M.elems updatedFields
-        types'          = M.elems updatedFields'
-        z      = zip types types'
+        types'         = M.elems updatedFields'
+        z              = zip types types'
     unifyVars M.empty z
   | M.difference fields fields' /= M.empty = throwError
   $ UnificationError (TRecord fields open) (TRecord fields' open')

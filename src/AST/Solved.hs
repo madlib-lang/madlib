@@ -58,7 +58,6 @@ data Pattern
   | PStr String
   | PBool String
   | PCon Name
-  | PUserDef Name
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
   deriving(Eq, Show)

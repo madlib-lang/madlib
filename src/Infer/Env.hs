@@ -49,11 +49,19 @@ initialEnv = Env
       )
     , ("&&", Forall [] $ TCon CBool `TArr` TCon CBool `TArr` TCon CBool)
     , ("||", Forall [] $ TCon CBool `TArr` TCon CBool `TArr` TCon CBool)
-    , ("!", Forall [] $ TCon CBool `TArr` TCon CBool)
-    , (">", Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool)
-    , ("<", Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool)
-    , (">=", Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool)
-    , ("<=", Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool)
+    , ("!" , Forall [] $ TCon CBool `TArr` TCon CBool)
+    , ( ">"
+      , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
+      )
+    , ( "<"
+      , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
+      )
+    , ( ">="
+      , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
+      )
+    , ( "<="
+      , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
+      )
     , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
