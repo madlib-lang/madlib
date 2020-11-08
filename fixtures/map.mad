@@ -11,3 +11,17 @@ map = (f, xs) => where(xs) {
 addOne = (x) => x + 1
 
 map(addOne, [1, 2, 3]) |> IO.log
+
+True
+  ? "ok"
+  : "not ok"
+
+1 == 2 ? "ok" : "not ok"
+  |> IO.log
+  |> (x) => x == "ok"
+    ? 1
+    : 10
+  |> IO.log
+
+
+1 == 2 ? "ok" : "not ok"

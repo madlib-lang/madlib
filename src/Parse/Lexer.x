@@ -38,10 +38,6 @@ $alpha = [a-zA-Z]               -- alphabetic characters
 $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
 
 tokens :-
-  [\n]                                  { mapToken (\_ -> TokenReturn) }
-  \#\- [$alpha $digit \" \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#   { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
-  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  [\ \n]*"--".*                         ;
   import                                { mapToken (\_ -> TokenImport) }
   export                                { mapToken (\_ -> TokenExport) }
   from                                  { mapToken (\_ -> TokenFrom) }
@@ -55,7 +51,7 @@ tokens :-
   $digit+                               { mapToken (\s -> TokenInt s) }
   "True"                                { mapToken (\_ -> (TokenBool "True")) }
   "False"                               { mapToken (\_ -> (TokenBool "False")) }
-  "=="                                 { mapToken (\_ -> TokenDoubleEq) }
+  "=="                                  { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
   \,                                    { mapToken (\_ -> TokenComma) }
   \{                                    { mapToken (\_ -> TokenLeftCurly) }
@@ -70,9 +66,11 @@ tokens :-
   \=\>                                  { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
+  [\n]                                  { mapToken (\_ -> TokenReturn) }
   [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
   [\n \ ]*\+                            { mapToken (\_ -> TokenPlus) }
   \-                                    { mapToken (\_ -> TokenDash) }
+  [\n \ ]*\?                            { mapToken (\_ -> TokenQuestionMark) }
   \n[\ ]*\-                             { mapToken (\_ -> TokenDash) }
   [\n \ ]*\*                            { mapToken (\_ -> TokenStar) }
   [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
@@ -86,6 +84,10 @@ tokens :-
   \>\=                                  { mapToken (\_ -> TokenRightChevronEq) }
   \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
   \!                                    { mapToken (\_ -> TokenExclamationMark) }
+  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  \#\- [$alpha $digit \" \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#
+    { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
+  [\ \n]*"//".*                         ; -- Comments
   $empty+                               ;
 
 {
@@ -146,6 +148,7 @@ data TokenClass
  | TokenRightParen
  | TokenDoubleColon
  | TokenColon
+ | TokenQuestionMark
  | TokenDot
  | TokenArrow
  | TokenFatArrow

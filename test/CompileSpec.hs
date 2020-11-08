@@ -148,6 +148,16 @@ spec = do
             , "  is [a]      : [f(a)]"
             , "  is []       : []"
             , "}"
+            , "True"
+            , "  ? \"ok\""
+            , "  : \"not ok\""
+            , "1 == 2 ? \"ok\" : \"not ok\""
+            , "  |> (x) => x"
+            , "  |> (x) => x == \"ok\""
+            , "    ? 1"
+            , "    : 10"
+            , "  |> (x) => x"
+            , "1 == 2 ? \"ok\" : \"not ok\""
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

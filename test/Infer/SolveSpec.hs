@@ -305,6 +305,13 @@ spec = do
         actual = tester code
       snapshotTest "should fail to infer an if else expression if the type of if and else cases does not match" actual
 
+    it "should infer a ternary expression" $ do
+      let
+        code =
+          unlines ["True ? \"OK\" : \"NOT OK\""]
+        actual = tester code
+      snapshotTest "should infer a ternary expression" actual
+
     ---------------------------------------------------------------------------
 
 

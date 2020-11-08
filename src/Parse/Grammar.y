@@ -32,6 +32,7 @@ import           Explain.Meta
   '/'      { Token _ TokenSlash }
   '::'     { Token _ TokenDoubleColon }
   ':'      { Token _ TokenColon }
+  '?'      { Token _ TokenQuestionMark }
   '->'     { Token _ TokenArrow }
   '=>'     { Token _ TokenFatArrow }
   '.'      { Token _ TokenDot }
@@ -64,14 +65,11 @@ import           Explain.Meta
   '<='     { Token _ TokenLeftChevronEq }
   '!'      { Token _ TokenExclamationMark }
 
-%left '>' '<' '>=' '<='
+%left '>' '<' '>=' '<=' '==' '?' ':' '->' '|' '|>'
 %left '+' '-' '||'
 %left '*' '/' '&&'
-%left '=='
-%right ','
-%left '->' '|' '|>' 'ret'
-%nonassoc '(' ')'
-%nonassoc '=' '=>' '::' ':'
+%left 'ret' ','
+%nonassoc '(' ')' '=' '=>' '::' 
 %right '!'
 %%
 
@@ -82,9 +80,9 @@ ast :: { Src.AST }
   | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | rRet              { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | rRet ast          { $2 }
-  | ast rRet          { $1 }
+  | rRet             { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
+  | rRet ast         { $2 }
+  | ast rRet         { $1 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' typings maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
@@ -189,6 +187,8 @@ exp :: { Src.Exp }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
+  | exp '?' maybeRet exp maybeRet ':' maybeRet exp
+      { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
 
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
