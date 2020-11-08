@@ -556,16 +556,23 @@ inferExps env [exp   ] = (: []) . trd <$> infer env exp
 inferExps env (e : xs) = do
   (_, t, e') <- infer env e
   let exp = Slv.extractExp e'
-  let env' = case exp of
-        -- TODO: We need to add a case where that name is already in the env.
-        -- Reassigning a name should not be allowed.
-        Slv.Assignment name _ ->
-          extendVars env (name, Forall ((S.toList . ftv) t) t)
+  let
+    env' = case exp of
+      -- TODO: We need to add a case where that name is already in the env.
+      -- Reassigning a name should not be allowed.
+      Slv.Assignment name _ ->
+        extendVars env (name, Forall ((S.toList . ftv) t) t)
 
-        Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ ->
-          extendVars env (name, Forall ((S.toList . ftv) t) t)
+      Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ ->
+        extendVars env (name, Forall ((S.toList . ftv) t) t)
 
-        _ -> env
+      Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment name _)))) _
+        -> extendVars env (name, Forall ((S.toList . ftv) t) t)
+
+      Slv.Export (Slv.Solved _ _ (Slv.Assignment name _)) ->
+        extendVars env (name, Forall ((S.toList . ftv) t) t)
+
+      _ -> env
 
   (e' :) <$> inferExps env' xs
 

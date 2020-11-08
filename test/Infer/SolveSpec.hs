@@ -497,6 +497,23 @@ spec = do
               let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
               in  tableTester astTable b
       snapshotTest "should resolve namespaced imports" actual
+    
+    it "should resolve usage of exported names" $ do
+      let code = unlines
+            [ "export inc = (a) => a + 1"
+            , "inc(3)"
+            ]
+          actual = tester code
+      snapshotTest "should resolve usage of exported names" actual
+    
+    it "should resolve usage of exported typed names" $ do
+      let code = unlines
+            [ "inc :: Num -> Num" 
+            , "export inc = (a) => a + 1"
+            , "inc(3)"
+            ]
+          actual = tester code
+      snapshotTest "should resolve usage of exported typed names" actual
 
     ---------------------------------------------------------------------------
 

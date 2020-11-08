@@ -1,0 +1,56 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TCon CNum) (TCon CNum))
+            (Area (Loc 0 1 1) (Loc 39 2 22))
+            (TypedExp
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 0 1 1) (Loc 3 1 4))
+                  (Export
+                     (Solved
+                        (TArr (TCon CNum) (TCon CNum))
+                        (Area (Loc 4 1 5) (Loc 6 1 7))
+                        (Assignment
+                           "inc"
+                           (Solved
+                              (TArr (TCon CNum) (TCon CNum))
+                              (Area (Loc 31 2 14) (Loc 39 2 22))
+                              (Abs
+                                 "a"
+                                 (Solved
+                                    (TCon CNum)
+                                    (Area (Loc 38 2 21) (Loc 39 2 22))
+                                    (App
+                                       (Solved
+                                          (TArr (TCon CNum) (TCon CNum))
+                                          (Area (Loc 38 2 21) (Loc 39 2 22))
+                                          (App
+                                             (Solved
+                                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                (Area (Loc 39 2 22) (Loc 41 2 24))
+                                                (Var "+"))
+                                             (Solved
+                                                (TCon CNum)
+                                                (Area (Loc 38 2 21) (Loc 39 2 22))
+                                                (Var "a"))))
+                                       (Solved
+                                          (TCon CNum)
+                                          (Area (Loc 42 2 25) (Loc 43 2 26))
+                                          (LInt "1"))))))))))
+               (TRArr (TRSingle "Num") (TRSingle "Num")))
+        , Solved
+            (TCon CNum)
+            (Area (Loc 44 3 1) (Loc 50 3 7))
+            (App
+               (Solved
+                  (TArr (TCon CNum) (TCon CNum))
+                  (Area (Loc 44 3 1) (Loc 47 3 4))
+                  (Var "inc"))
+               (Solved (TCon CNum) (Area (Loc 48 3 5) (Loc 49 3 6)) (LInt "3")))
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }
