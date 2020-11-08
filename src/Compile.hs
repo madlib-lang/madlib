@@ -16,7 +16,7 @@ import           Explain.Location
 
 
 class Compilable a where
-  -- If the Bool is True it indicates that the expression terminates.
+  -- If the Bool is true it indicates that the expression terminates.
   compile :: a -> String
 
 instance Compilable Exp where
@@ -110,7 +110,7 @@ instance Compilable Exp where
       compilePattern _     PAny     = "true"
       compilePattern scope (PNum n) = scope <> " === " <> n
       compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool n) | n == "True" = scope <> " === true"
+      compilePattern scope (PBool n) | n == "true" = scope <> " === true"
                                      | otherwise   = scope <> " === false"
       compilePattern scope (PCon n)
         | n == "String" = "typeof " <> scope <> " === \"string\""

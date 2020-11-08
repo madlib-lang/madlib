@@ -1,6 +1,6 @@
 module Infer.SolveSpec where
 
-import qualified Data.Map as M
+import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
                                                 , it
                                                 , shouldBe
@@ -17,8 +17,8 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 
-import qualified AST.Source                     as Src
-import qualified AST.Solved                     as Slv
+import qualified AST.Source                    as Src
+import qualified AST.Solved                    as Slv
 import           Infer.Solve
 import           Infer.Type
 import           Infer.Env
@@ -48,7 +48,8 @@ tester code = case buildAST "path" code of
     fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
 tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
-tableTester table ast = fst <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
+tableTester table ast =
+  fst <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
 
 spec :: Spec
 spec = do
@@ -121,7 +122,7 @@ spec = do
             [ "data Result a"
             , "  = Success a"
             , "  | Error"
-            , "result = Success(True)"
+            , "result = Success(true)"
             ]
           actual = tester code
       snapshotTest "should infer adts with type parameters" actual
@@ -196,17 +197,16 @@ spec = do
       snapshotTest "should infer a record field access" actual
 
     it "should infer an App with a record" $ do
-      let
-        code = unlines
-          ["a = { x: 3, y: 5 }", "xPlusY = (r) => (r.x + r.y)", "xPlusY(a)"]
-        actual = tester code
+      let code = unlines
+            ["a = { x: 3, y: 5 }", "xPlusY = (r) => (r.x + r.y)", "xPlusY(a)"]
+          actual = tester code
       snapshotTest "should infer an App with a record" actual
 
     it "should fail to infer record if their fields do not match" $ do
-      let
-        code = "{ x: 3, y: 5 } == { name: \"John\" }"
-        actual = tester code
-      snapshotTest "should fail to infer record if their fields do not match" actual
+      let code   = "{ x: 3, y: 5 } == { name: \"John\" }"
+          actual = tester code
+      snapshotTest "should fail to infer record if their fields do not match"
+                   actual
 
     it "should infer a record with a type annotation" $ do
       let code   = "({ x: 3, y: 7 } :: { x :: Num, y :: Num })"
@@ -229,25 +229,21 @@ spec = do
     -- Lists:
 
     it "should infer list constructors" $ do
-      let
-        code = unlines
-          ["[]", "[1, 2, 3]", "[\"one\", \"two\", \"three\"]"]
-        actual = tester code
+      let code   = unlines ["[]", "[1, 2, 3]", "[\"one\", \"two\", \"three\"]"]
+          actual = tester code
       snapshotTest "should infer list constructors" actual
 
     it "should infer list spread" $ do
-      let
-        code = unlines
-          ["[ 1, ...[1, 2]]"]
-        actual = tester code
+      let code   = unlines ["[ 1, ...[1, 2]]"]
+          actual = tester code
       snapshotTest "should infer list spread" actual
 
     it "should infer fail when spreading an array of a different type" $ do
-      let
-        code = unlines
-          ["[ 1, ...[\"1\", \"2\"]]"]
-        actual = tester code
-      snapshotTest "should infer fail when spreading an array of a different type" actual
+      let code   = unlines ["[ 1, ...[\"1\", \"2\"]]"]
+          actual = tester code
+      snapshotTest
+        "should infer fail when spreading an array of a different type"
+        actual
 
     ---------------------------------------------------------------------------
 
@@ -255,11 +251,7 @@ spec = do
     -- Applications:
 
     it "should fail for applications with a wrong argument type" $ do
-      let code =
-            unlines
-              [ "fn = (a, b) => (a == b)"
-              , "fn(\"3\", 4)"
-              ]
+      let code   = unlines ["fn = (a, b) => (a == b)", "fn(\"3\", 4)"]
           actual = tester code
       snapshotTest "should fail for applications with a wrong argument type"
                    actual
@@ -273,8 +265,12 @@ spec = do
     -- TODO: Write tests where implementation and definition don't match to force
     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
-      let code = unlines
-            ["fn :: Num -> Num -> Bool", "fn = (a, b) => (a == b)", "fn(3, 4)"]
+      let code =
+            unlines
+              [ "fn :: Num -> Num -> Bool"
+              , "fn = (a, b) => (a == b)"
+              , "fn(3, 4)"
+              ]
           actual = tester code
       snapshotTest "should resolve abstractions with a type definition" actual
 
@@ -296,30 +292,41 @@ spec = do
 
     it "should infer a simple if else expression" $ do
       let
-        code =
-          unlines ["if (True) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
+        code = unlines
+          ["if (true) {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
         actual = tester code
       snapshotTest "should infer a simple if else expression" actual
 
-    it "should fail to infer an if else expression if the condition is not a Bool" $ do
-      let
-        code =
-          unlines ["if (\"True\") {", "  \"OK\"", "}", "else {", "  \"NOT OK\"", "}"]
-        actual = tester code
-      snapshotTest "should fail to infer an if else expression if the condition is not a Bool" actual
+    it
+        "should fail to infer an if else expression if the condition is not a Bool"
+      $ do
+          let code =
+                unlines
+                  [ "if (\"true\") {"
+                  , "  \"OK\""
+                  , "}"
+                  , "else {"
+                  , "  \"NOT OK\""
+                  , "}"
+                  ]
+              actual = tester code
+          snapshotTest
+            "should fail to infer an if else expression if the condition is not a Bool"
+            actual
 
-    it "should fail to infer an if else expression if the type of if and else cases does not match" $ do
-      let
-        code =
-          unlines ["if (True) {", "  \"OK\"", "}", "else {", "  1", "}"]
-        actual = tester code
-      snapshotTest "should fail to infer an if else expression if the type of if and else cases does not match" actual
+    it
+        "should fail to infer an if else expression if the type of if and else cases does not match"
+      $ do
+          let code =
+                unlines ["if (true) {", "  \"OK\"", "}", "else {", "  1", "}"]
+              actual = tester code
+          snapshotTest
+            "should fail to infer an if else expression if the type of if and else cases does not match"
+            actual
 
     it "should infer a ternary expression" $ do
-      let
-        code =
-          unlines ["True ? \"OK\" : \"NOT OK\""]
-        actual = tester code
+      let code   = unlines ["true ? \"OK\" : \"NOT OK\""]
+          actual = tester code
       snapshotTest "should infer a ternary expression" actual
 
     ---------------------------------------------------------------------------
@@ -328,12 +335,13 @@ spec = do
     -- Pattern matching:
 
     it "should resolve where with a boolean literal" $ do
-      let code = unlines
-            [ "where(True) {"
-            , "  is True : \"OK\""
-            , "  is False: \"NOT OK\""
-            , "}"
-            ]
+      let code =
+            unlines
+              [ "where(true) {"
+              , "  is true : \"OK\""
+              , "  is false: \"NOT OK\""
+              , "}"
+              ]
           actual = tester code
       snapshotTest "should resolve where with a boolean literal" actual
 
@@ -362,13 +370,11 @@ spec = do
       snapshotTest "should resolve where with a string input" actual
 
     it "should resolve where with constant type constructor is cases" $ do
-      let code = unlines
-            [ "where(\"42\") {"
-            , "  is String : 1"
-            , "}"
-            ]
+      let code   = unlines ["where(\"42\") {", "  is String : 1", "}"]
           actual = tester code
-      snapshotTest "should resolve where with constant type constructor is cases" actual
+      snapshotTest
+        "should resolve where with constant type constructor is cases"
+        actual
 
     it "should resolve where with an ADT that has unary constructors" $ do
       let code = unlines
@@ -395,51 +401,55 @@ spec = do
             , "}"
             ]
           actual = tester code
-      snapshotTest
-        "should resolve where with an ADT and PCon patterns"
-        actual
+      snapshotTest "should resolve where with an ADT and PCon patterns" actual
 
-    it "should fail to resolve a pattern when the pattern constructor does not match the ADT" $ do
-      let code = unlines
-            [ "data Maybe a = Just a | Nothing"
-            , "data Failure = Nope"
-            , "perhaps = Nope"
-            , "where(perhaps) {"
-            , "  is Just a: a"
-            , "  is Nothing: 0"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest
+    it
         "should fail to resolve a pattern when the pattern constructor does not match the ADT"
-        actual
+      $ do
+          let code = unlines
+                [ "data Maybe a = Just a | Nothing"
+                , "data Failure = Nope"
+                , "perhaps = Nope"
+                , "where(perhaps) {"
+                , "  is Just a: a"
+                , "  is Nothing: 0"
+                , "}"
+                ]
+              actual = tester code
+          snapshotTest
+            "should fail to resolve a pattern when the pattern constructor does not match the ADT"
+            actual
 
-    it "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types" $ do
-      let code = unlines
-            [ "data User = LoggedIn String Num"
-            , "u = LoggedIn(\"John\", 33)"
-            , "where(u) {"
-            , "  is LoggedIn Num x: x"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest
+    it
         "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
-        actual
+      $ do
+          let code = unlines
+                [ "data User = LoggedIn String Num"
+                , "u = LoggedIn(\"John\", 33)"
+                , "where(u) {"
+                , "  is LoggedIn Num x: x"
+                , "}"
+                ]
+              actual = tester code
+          snapshotTest
+            "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
+            actual
 
-    it "should fail to resolve a constructor pattern with different type variables applied" $ do
-      let code = unlines
-            [ "data User a = LoggedIn a Num"
-            , "u = LoggedIn(\"John\", 33)"
-            , "where(u) {"
-            , "  is LoggedIn Num x   : x"
-            , "  is LoggedIn String x: x"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest
+    it
         "should fail to resolve a constructor pattern with different type variables applied"
-        actual
+      $ do
+          let code = unlines
+                [ "data User a = LoggedIn a Num"
+                , "u = LoggedIn(\"John\", 33)"
+                , "where(u) {"
+                , "  is LoggedIn Num x   : x"
+                , "  is LoggedIn String x: x"
+                , "}"
+                ]
+              actual = tester code
+          snapshotTest
+            "should fail to resolve a constructor pattern with different type variables applied"
+            actual
 
     it "should fail to resolve if the given constructor does not exist" $ do
       let code = unlines
@@ -463,9 +473,7 @@ spec = do
             , "}"
             ]
           actual = tester code
-      snapshotTest
-        "should resolve basic patterns for lists"
-        actual
+      snapshotTest "should resolve basic patterns for lists" actual
 
     it "should fail to resolve patterns of different types for list items" $ do
       let code = unlines
@@ -480,26 +488,21 @@ spec = do
         actual
 
     it "should allow deconstruction of lists" $ do
-      let code = unlines
-            [ "where([1, 2, 3, 5, 8]) {"
-            , "  is [1, 2, ...rest]: rest"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest
-        "should allow deconstruction of lists"
-        actual
-    
+      let
+        code = unlines
+          ["where([1, 2, 3, 5, 8]) {", "  is [1, 2, ...rest]: rest", "}"]
+        actual = tester code
+      snapshotTest "should allow deconstruction of lists" actual
+
     it "should allow deconstruction of records" $ do
-      let code = unlines
-            [ "where({ x: 1, y: 2, z: 3 }) {"
-            , "  is { x: 1, ...rest }: rest.z"
-            , "}"
-            ]
+      let code =
+            unlines
+              [ "where({ x: 1, y: 2, z: 3 }) {"
+              , "  is { x: 1, ...rest }: rest.z"
+              , "}"
+              ]
           actual = tester code
-      snapshotTest
-        "should allow deconstruction of records"
-        actual
+      snapshotTest "should allow deconstruction of records" actual
 
     it "should correctly infer types of record pattern when the input has a variable type" $ do
       let code = unlines
@@ -587,48 +590,39 @@ spec = do
     -- Imports:
 
     it "should resolve names from imported modules" $ do
-      let codeA = "export inc = (a) => (a + 1)"
-          astA  = buildAST "./ModuleA.mad" codeA
-          codeB = unlines
-            [ "import { inc } from \"ModuleA\""
-            , "inc(3)"
-            ]
-          astB = buildAST "./ModuleB.mad" codeB
+      let codeA  = "export inc = (a) => (a + 1)"
+          astA   = buildAST "./ModuleA.mad" codeA
+          codeB  = unlines ["import { inc } from \"ModuleA\"", "inc(3)"]
+          astB   = buildAST "./ModuleB.mad" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
-              let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              let astTable =
+                      M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
               in  tableTester astTable b
       snapshotTest "should resolve names from imported modules" actual
-    
+
     it "should resolve namespaced imports" $ do
-      let codeA = "export singleton = (a) => ([a])"
-          astA  = buildAST "./ModuleA.mad" codeA
-          codeB = unlines
-            [ "import L from \"ModuleA\""
-            , "L.singleton(3)"
-            ]
-          astB = buildAST "./ModuleB.mad" codeB
+      let codeA  = "export singleton = (a) => ([a])"
+          astA   = buildAST "./ModuleA.mad" codeA
+          codeB  = unlines ["import L from \"ModuleA\"", "L.singleton(3)"]
+          astB   = buildAST "./ModuleB.mad" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
-              let astTable = M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              let astTable =
+                      M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
               in  tableTester astTable b
       snapshotTest "should resolve namespaced imports" actual
-    
+
     it "should resolve usage of exported names" $ do
-      let code = unlines
-            [ "export inc = (a) => (a + 1)"
-            , "inc(3)"
-            ]
+      let code   = unlines ["export inc = (a) => (a + 1)", "inc(3)"]
           actual = tester code
       snapshotTest "should resolve usage of exported names" actual
-    
+
     it "should resolve usage of exported typed names" $ do
-      let code = unlines
-            [ "inc :: Num -> Num" 
-            , "export inc = (a) => (a + 1)"
-            , "inc(3)"
-            ]
-          actual = tester code
+      let
+        code =
+          unlines ["inc :: Num -> Num", "export inc = (a) => (a + 1)", "inc(3)"]
+        actual = tester code
       snapshotTest "should resolve usage of exported typed names" actual
 
     ---------------------------------------------------------------------------
@@ -637,14 +631,9 @@ spec = do
     -- Pipe operator:
 
     it "should resolve the pipe operator" $ do
-      let code = unlines
-            [ "inc = (a) => (a + 1)"
-            , "3 |> inc"
-            ]
+      let code   = unlines ["inc = (a) => (a + 1)", "3 |> inc"]
           actual = tester code
-      snapshotTest
-        "should resolve the pipe operator"
-        actual
+      snapshotTest "should resolve the pipe operator" actual
 
     ---------------------------------------------------------------------------
 
@@ -652,60 +641,44 @@ spec = do
     -- Bool operators:
 
     it "should resolve the operator &&" $ do
-      let code = "True && False"
+      let code   = "true && false"
           actual = tester code
-      snapshotTest
-        "should resolve the operator &&"
-        actual
+      snapshotTest "should resolve the operator &&" actual
 
     it "should resolve the operator ||" $ do
-      let code = "True || False"
+      let code   = "true || false"
           actual = tester code
-      snapshotTest
-        "should resolve the operator ||"
-        actual
+      snapshotTest "should resolve the operator ||" actual
 
     it "should resolve the combination of && and ||" $ do
-      let code = "True || False && True"
+      let code   = "true || false && true"
           actual = tester code
-      snapshotTest
-        "should resolve the combination of && and ||"
-        actual
+      snapshotTest "should resolve the combination of && and ||" actual
 
     it "should resolve the operator >" $ do
-      let code = "1 > 3"
+      let code   = "1 > 3"
           actual = tester code
-      snapshotTest
-        "should resolve the operator >"
-        actual
+      snapshotTest "should resolve the operator >" actual
 
     it "should resolve the operator <" $ do
-      let code = "1 < 3"
+      let code   = "1 < 3"
           actual = tester code
-      snapshotTest
-        "should resolve the operator <"
-        actual
+      snapshotTest "should resolve the operator <" actual
 
     it "should resolve the operator >=" $ do
-      let code = "1 >= 3"
+      let code   = "1 >= 3"
           actual = tester code
-      snapshotTest
-        "should resolve the operator >="
-        actual
+      snapshotTest "should resolve the operator >=" actual
 
     it "should resolve the operator <=" $ do
-      let code = "1 <= 3"
+      let code   = "1 <= 3"
           actual = tester code
-      snapshotTest
-        "should resolve the operator <="
-        actual
+      snapshotTest "should resolve the operator <=" actual
 
     it "should resolve the operator !" $ do
-      let code = "!False"
+      let code   = "!false"
           actual = tester code
-      snapshotTest
-        "should resolve the operator !"
-        actual
+      snapshotTest "should resolve the operator !" actual
 
     ---------------------------------------------------------------------------
 
@@ -724,9 +697,7 @@ spec = do
             , "(Just(3) :: Maybe Num)"
             ]
           actual = tester code
-      snapshotTest
-        "should validate correct type annotations"
-        actual
+      snapshotTest "should validate correct type annotations" actual
 
     it "should validate type annotations and instantiate their variables" $ do
       let code = unlines
@@ -746,15 +717,12 @@ spec = do
     -- Recursion:
 
     it "should resolve recursive functions" $ do
-      let code = "fn = (x) => (x + fn(x))"
+      let code   = "fn = (x) => (x + fn(x))"
           actual = tester code
-      snapshotTest
-        "should resolve recursive functions"
-        actual
+      snapshotTest "should resolve recursive functions" actual
 
     it "should resolve fibonacci recursive function" $ do
-      let code = "fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2) })"
+      let code =
+            "fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2) })"
           actual = tester code
-      snapshotTest
-        "should resolve fibonacci recursive function"
-        actual
+      snapshotTest "should resolve fibonacci recursive function" actual

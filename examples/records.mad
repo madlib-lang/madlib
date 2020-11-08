@@ -1,0 +1,24 @@
+// object literals
+data Critter = Creature { name :: String, color :: String, x :: Num, y :: Num }
+
+jigzab = Creature({name: "Jigzab Quotznort", color: "ff0000", x: 0, y: 0})
+aquoob = Creature({name: "Aquoob Zontboo", color: "0000ff", x: 3, y: 3})
+jigaqu = Creature({name: "Jiqaqu Quotzont", color: 'ff00ff', x: 3, y: 2})
+
+menagerie = [jigzab, aquoob, jigaqu]
+
+#- console.log("menagerie", menagerie, menagerie.map(z => (JSON.stringify(z)))) -#
+
+// catchAnimals :: (a -> b) -> List a -> List b
+catchAnimals :: Critter -> Bool
+catchAnimals = (animal) => (where(animal)
+  is Creature {x: 3}: True
+  is _              : False
+)
+
+// construct :: Creature -> Creature
+// construct = (z) => #- z.__args[0].value -#
+
+trace = (tag, x) => (#- { console.log(x); return x; } -#)
+
+jigzab |> catchAnimals |> trace('shit')

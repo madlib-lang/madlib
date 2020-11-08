@@ -49,8 +49,8 @@ tokens :-
   is                                    { mapToken (\_ -> TokenIs) }
   \=                                    { mapToken (\_ -> TokenEq) }
   $digit+                               { mapToken (\s -> TokenInt s) }
-  "True"                                { mapToken (\_ -> (TokenBool "True")) }
-  "False"                               { mapToken (\_ -> (TokenBool "False")) }
+  "true"                                { mapToken (\_ -> (TokenBool "true")) }
+  "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
   \,                                    { mapToken (\_ -> TokenComma) }
@@ -84,7 +84,9 @@ tokens :-
   \>\=                                  { mapToken (\_ -> TokenRightChevronEq) }
   \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
   \!                                    { mapToken (\_ -> TokenExclamationMark) }
-  \"($printable # \")*\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  '($printable # ')+\'                  { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  `($printable # `)+\`                  { mapToken (\s -> TokenStr (sanitizeStr s)) }
   \#\- [$alpha $digit \" \_ \' \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\ \n]*"//".*                         ; -- Comments

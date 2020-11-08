@@ -33,8 +33,6 @@ const inc = curryPowder((x) => (x) + (1));
 const dec = curryPowder((x) => (x) - (1));
 const double = curryPowder((x) => (x) * (2));
 const half = curryPowder((x) => (x) / (2));
-const true = true;
-const false = false;
 double(half(3));
 (3) === (5);
 const response = ({ users: ([]) });

@@ -1,84 +1,11 @@
-Right
-  AST
-    { aimports = []
-    , aexps =
-        [ Solved
-            (TCon CString)
-            (Area (Loc 0 1 1) (Loc 102 4 2))
-            (Where
-               (Solved
-                  (TRecord
-                     (fromList
-                        [ ( "female" , TCon CBool )
-                        , ( "name" , TCon CString )
-                        , ( "x" , TCon CNum )
-                        ])
-                     False)
-                  (Area (Loc 6 1 7) (Loc 43 1 44))
-                  (Record
-                     [ Field
-                         ( "x"
-                         , Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (LInt "4")
-                         )
-                     , Field
-                         ( "name"
-                         , Solved
-                             (TCon CString) (Area (Loc 20 1 21) (Loc 26 1 27)) (LStr "John")
-                         )
-                     , Field
-                         ( "female"
-                         , Solved
-                             (TCon CBool) (Area (Loc 36 1 37) (Loc 41 1 42)) (LBool "False")
-                         )
-                     ]))
-               [ Solved
-                   (TArr
-                      (TRecord
-                         (fromList
-                            [ ( "female" , TCon CBool )
-                            , ( "name" , TCon CString )
-                            , ( "x" , TCon CNum )
-                            ])
-                         False)
-                      (TCon CString))
-                   (Area (Loc 49 2 3) (Loc 72 2 26))
-                   (Is
-                      (PRecord (fromList [ ( "name" , PVar "name" ) ]))
-                      (Solved
-                         (TCon CString) (Area (Loc 68 2 22) (Loc 72 2 26)) (Var "name")))
-               , Solved
-                   (TArr
-                      (TRecord
-                         (fromList
-                            [ ( "female" , TCon CBool )
-                            , ( "name" , TCon CString )
-                            , ( "x" , TCon CNum )
-                            ])
-                         False)
-                      (TCon CString))
-                   (Area (Loc 75 3 3) (Loc 100 3 28))
-                   (Is
-                      (PRecord
-                         (fromList [ ( "..." , PSpread (PVar "b") ) , ( "x" , PVar "x" ) ]))
-                      (Solved
-                         (TCon CString)
-                         (Area (Loc 94 3 22) (Loc 100 3 28))
-                         (FieldAccess
-                            (Solved
-                               (TRecord
-                                  (fromList
-                                     [ ( "female" , TCon CBool ) , ( "name" , TCon CString ) ])
-                                  False)
-                               (Area (Loc 94 3 22) (Loc 95 3 23))
-                               (Var "b"))
-                            (Solved
-                               (TArr
-                                  (TRecord (fromList [ ( "name" , TVar (TV "c") ) ]) True)
-                                  (TVar (TV "c")))
-                               (Area (Loc 96 3 24) (Loc 100 3 28))
-                               (Var ".name")))))
-               ])
-        ]
-    , aadts = []
-    , apath = Just "path"
-    }
+Left
+  (InferError
+     (UnboundVariable "False")
+     (Reason
+        (VariableNotDeclared
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 36 1 37) (Loc 41 1 42))
+              (Var "False")))
+        "path"
+        (Area (Loc 36 1 37) (Loc 41 1 42))))

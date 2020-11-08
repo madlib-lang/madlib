@@ -167,8 +167,8 @@ spec = do
 
       actual `shouldBe` True
 
-    it "should return a valid AST with True literals" $ do
-      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == True)"]
+    it "should return a valid AST with true literals" $ do
+      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == true)"]
           ast    = buildAST "source.mad" source
           actual = case ast of
             Right _ -> True
@@ -176,8 +176,8 @@ spec = do
 
       actual `shouldBe` True
 
-    it "should return a valid AST with False literals" $ do
-      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == False)"]
+    it "should return a valid AST with false literals" $ do
+      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == false)"]
           ast    = buildAST "source.mad" source
           actual = case ast of
             Right _ -> True

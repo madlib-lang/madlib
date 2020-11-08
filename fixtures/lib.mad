@@ -14,13 +14,12 @@ double = (n) => (n * 2)
 
 L.singleton(3) |> L.map((x) => (x + 1)) |> IO.log
 
-t = (x) => (if (x) { False } else { True })
+t = (x) => if (x) { false } else { true }
 
-F.of(True)
-  |> F.map((x) => (if (x) { 2 } else { 4 }))
-  |> F.map((x) => (x * 2))
-  |> F.run((x) => (x), IO.log)
-
+F.of(true)
+  |> F.map((x) => if (x) { 2 } else { 4 })
+  |> F.map((x) => x * 2)
+  |> F.run((x) => x, IO.log)
 
 a = { x: 3 }
 b = { y: 4 }
@@ -50,7 +49,7 @@ data Maybe a = Just a | Nothing
 
 (1 + 1 :: Num) |> IO.log
 
-IO.log(!False)
+IO.log(!false)
 
 data User
   = LoggedIn String
