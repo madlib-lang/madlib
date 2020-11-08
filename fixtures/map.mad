@@ -1,0 +1,13 @@
+import IO from "IO"
+
+map :: (a -> b) -> List a -> List b
+map = (f, xs) => where(xs) {
+  is [a, b, c]: [f(a), ...map(f, [b, c])]
+  is [a, b]   : [f(a), ...map(f, [b])]
+  is [a]      : [f(a)]
+  is []       : []
+}
+
+addOne = (x) => x + 1
+
+map(addOne, [1, 2, 3]) |> IO.log

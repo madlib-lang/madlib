@@ -222,7 +222,9 @@ inferListItem env li = case li of
     case t of
       TComp "List" [t'] -> return (s, t', Slv.ListSpread e)
 
-      _ -> throwError $ InferError FatalError NoReason
+      TVar _            -> return (s, t, Slv.ListSpread e)
+
+      _ -> throwError $ InferError (UnknownType $ show t) NoReason
 
 
 
