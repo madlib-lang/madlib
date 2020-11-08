@@ -436,6 +436,32 @@ spec = do
         "should fail to resolve if the given constructor does not exist"
         actual
 
+    it "should resolve basic patterns for lists" $ do
+      let code = unlines
+            [ "where([1, 2, 3, 5, 8]) {"
+            , "  is [1, 2, 3]: 1"
+            , "  is [1, 2, n]: n"
+            , "  is [n, 3]   : n"
+            , "  is [x, y, z]: x + y + z"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should resolve basic patterns for lists"
+        actual
+
+    it "should fail to resolve patterns of different types for list items" $ do
+      let code = unlines
+            [ "where([1, 2, 3, 5, 8]) {"
+            , "  is [1, 2, 3] : 1"
+            , "  is [\"1\", n]: n"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should fail to resolve patterns of different types for list items"
+        actual
+
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv
 

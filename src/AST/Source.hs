@@ -61,6 +61,7 @@ data Pattern_
   | PCon Name
   | PUserDef Name
   | PRecord (M.Map Name Pattern)
+  | PList [Pattern]
   deriving(Eq, Show)
 
 

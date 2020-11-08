@@ -134,6 +134,12 @@ spec = do
             , "!False || !True"
             , "arr = [1, 2, 3]"
             , "all = [ ...arr, 4, 5, 6]"
+            , "where([1, 2, 3, 5, 8]) {"
+            , "  is [1, 2, 3]: 1"
+            , "  is [1, 2, n]: n"
+            , "  is [n, 3]   : n"
+            , "  is [x, y, z]: x + y + z"
+            , "}"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

@@ -215,6 +215,7 @@ nonCompositePattern :: { Src.Pattern }
   | true             { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
   | false            { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
   | recordPattern    { $1 }
+  | listPattern      { $1 }
   | '(' pattern ')'  { $2 }
 
 
@@ -231,6 +232,14 @@ recordPattern :: { Src.Pattern }
 recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
   : name ':' pattern { M.fromList [(strV $1, $3)] }
   | recordFieldPatterns ',' name ':' pattern { M.insert (strV $3) $5 $1 }
+
+listPattern :: { Src.Pattern }
+  : '[' listItemPatterns ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PList $2) }
+
+listItemPatterns :: { [Src.Pattern] }
+  : pattern                      { [$1] }
+  | listItemPatterns ',' pattern { $1 <> [$3] }
+  | {- empty -}                  { [] }
 
 
 record :: { Src.Exp }

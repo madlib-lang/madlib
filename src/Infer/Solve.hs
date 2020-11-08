@@ -24,6 +24,7 @@ import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
+import Debug.Trace
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -97,6 +98,8 @@ updatePattern (Meta _ _ p) = case p of
   Src.PUserDef n          -> Slv.PUserDef n
 
   Src.PRecord  fields     -> Slv.PRecord (updatePattern <$> fields)
+
+  Src.PList patterns      -> Slv.PList (updatePattern <$> patterns)
 
 
 updateTyping :: Src.Typing -> Slv.Typing
@@ -409,7 +412,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
     Src.PAny           -> return $ TVar $ TV "a"
 
-    Src.PRecord fields -> (\fields -> TRecord fields False) . M.fromList <$> mapM
+    Src.PRecord fields -> (\fields -> TRecord fields True) . M.fromList <$> mapM
       (\(k, v) -> (k, ) <$> buildPatternType e v)
       (M.toList fields)
 
@@ -436,8 +439,11 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         l <- buildPatternType e f
         r <- argPatternsToArrowType rt xs
         return $ TArr l r
-      argPatternsToArrowType _  [x] = buildPatternType e x
       argPatternsToArrowType rt []  = return rt
+
+    -- TODO: Need to iterate through items and unify them
+    Src.PList []       -> return $ TComp "List" [TVar $ TV "a"]
+    Src.PList patterns -> TComp "List" . (:[]) <$> buildPatternType e (head patterns)
 
     _ -> return $ TVar $ TV "x"
 
@@ -450,6 +456,9 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       (Src.PRecord fields, TRecord fields' _) ->
         let allFields = zip (M.elems fields) (M.elems fields')
         in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
+
+      (Src.PList items, TComp "List" [t]) -> foldrM (\p e' -> generateIsEnv t e' p) e items
+      (Src.PList items, t) -> foldrM (\p e' -> generateIsEnv (trace (show t) t) e' p) e items
 
       (Src.PCtor cname as, _) -> do
         ctor <- findConstructor cname

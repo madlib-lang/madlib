@@ -118,8 +118,14 @@ instance Compilable Exp where
         intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey
           (compileRecord scope)
           m
-      compilePattern scope (PUserDef n) = scope <> " === \"" <> n <> "\""
+      compilePattern scope (PUserDef n)  = scope <> " === \"" <> n <> "\""
+      
+      compilePattern scope (PList [])    = scope <> ".length === 0"
+      compilePattern scope (PList items) =
+        scope <> ".length === " <> show (length items) <> " && " <> (intercalate " && " $ (\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> (zip items [0..]))
+
       compilePattern _     _            = ""
+
 
       compileIs :: Is -> String
       compileIs (Solved _ _ (Is pattern exp)) =
@@ -135,6 +141,8 @@ instance Compilable Exp where
       buildVars v p = case p of
         PRecord fields ->
           concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
+        PList items -> 
+          concat $ (\(item, i) -> buildVars (v <> "[" <> show i <> "]") item) <$> (zip items [0..])
         PCtor _ ps ->
           concat
             $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
