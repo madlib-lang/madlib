@@ -158,6 +158,13 @@ spec = do
             , "    : 10"
             , "  |> (x) => x"
             , "1 == 2 ? \"ok\" : \"not ok\""
+            , "where(3)"
+            , "  is 3: 48"
+            , "  is n: 1 |> (x) => x + 1"
+            , "(where(\"3\")"
+            , "  is \"3\": 48"
+            , "  is n: 1"
+            , ") |> (x) => x + 1"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

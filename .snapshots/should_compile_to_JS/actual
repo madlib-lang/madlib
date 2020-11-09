@@ -143,4 +143,22 @@ export const map = (f => (xs => ((__x__) => {
 (true ? "ok" : "not ok");
 (x => (x => (x => x)(((x) === ("ok") ? 1 : 10)))(x))(((1) === (2) ? "ok" : "not ok"));
 ((1) === (2) ? "ok" : "not ok");
+((__x__) => {
+  if (__x__ === 3) {
+    return 48;
+  }
+  else if (true) {
+    const n = __x__;
+    return (x => (x) + (1))(1);
+  }
+})(3);
+(x => (x) + (1))(((__x__) => {
+  if (__x__ === "3") {
+    return 48;
+  }
+  else if (true) {
+    const n = __x__;
+    return 1;
+  }
+})("3"));
 export default { fn, map };

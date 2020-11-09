@@ -102,8 +102,8 @@ strip  = T.unpack . T.strip . T.pack
 --type AlexAction result = AlexInput -> Int -> Alex result
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makeArea posn (take len input)) token
-  where token = tokenizer (take len input)
-  -- where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
+  -- where token = tokenizer (take len input)
+  where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
 
 makeArea :: AlexPosn -> String -> Area
 makeArea (AlexPn a l c) tokenContent =
