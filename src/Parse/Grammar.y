@@ -69,7 +69,6 @@ import           Explain.Meta
 %left '?' '->' '|' where is 'if'
 %left ':' 'else'
 %left '|>'
--- %left '?' ':' '->' '|' where is 'if' 'else'
 %left '>' '<' '>=' '<=' '=='
 %left '+' '-' '||'
 %left '*' '/' '&&'
@@ -252,9 +251,14 @@ listPattern :: { Src.Pattern }
   : '[' listItemPatterns ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PList $2) }
 
 listItemPatterns :: { [Src.Pattern] }
-  : pattern                      { [$1] }
-  | listItemPatterns ',' pattern { $1 <> [$3] }
-  | {- empty -}                  { [] }
+  : pattern                                        { [$1] }
+  -- | pattern ',' spreadPattern                      { [$1] <> [$3] }
+  | listItemPatterns ',' pattern                   { $1 <> [$3] }
+  | listItemPatterns ',' spreadPattern { $1 <> [$3] }
+  | {- empty -}                                    { [] }
+
+spreadPattern :: { Src.Pattern }
+  : '...' name  { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.PSpread (nameToPattern (tokenToArea $2) (strV $2))) }
 
 
 record :: { Src.Exp }

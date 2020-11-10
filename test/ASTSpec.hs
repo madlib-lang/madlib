@@ -30,15 +30,16 @@ spec :: Spec
 spec = do
   describe "findAST" $ do
     it "should return a Right AST if the ast exists" $ do
-      let source =
-            unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => (fn2(a, b) + a)"]
+      let
+        source =
+          unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => (fn2(a, b) + a)"]
 
-          (Right ast) = buildAST "fixtures/source.mad" source
+        (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Right ast
-          files       = M.fromList [("fixtures/source.mad", source)]
+        expected    = Right ast
+        files       = M.fromList [("fixtures/source.mad", source)]
 
-          rf          = makeReadFile files
+        rf          = makeReadFile files
 
       r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source.mad"

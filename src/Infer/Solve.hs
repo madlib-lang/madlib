@@ -93,6 +93,8 @@ updatePattern (Meta _ _ p) = case p of
 
   Src.PList   patterns    -> Slv.PList (updatePattern <$> patterns)
 
+  Src.PSpread pattern     -> Slv.PSpread (updatePattern pattern)
+
 
 updateTyping :: Src.Typing -> Slv.Typing
 updateTyping t = case t of
@@ -435,8 +437,10 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         return $ TArr l r
       argPatternsToArrowType rt [] = return rt
 
+    Src.PSpread pattern -> buildPatternType env pattern
+
     -- TODO: Need to iterate through items and unify them
-    Src.PList [] -> return $ TComp "List" [TVar $ TV "a"]
+    Src.PList   []      -> return $ TComp "List" [TVar $ TV "a"]
     Src.PList patterns ->
       TComp "List" . (: []) <$> buildPatternType e (head patterns)
 
@@ -451,6 +455,8 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       (Src.PRecord fields, TRecord fields' _) ->
         let allFields = zip (M.elems fields) (M.elems fields')
         in  foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
+
+      (Src.PSpread pattern, t) -> generateIsEnv t e pattern
 
       (Src.PList items, TComp "List" [t]) ->
         foldrM (\p e' -> generateIsEnv t e' p) e items

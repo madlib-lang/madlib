@@ -1,10 +1,11 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Compile where
 
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Data.List                      ( intercalate )
+import           Data.List                      (find,  intercalate )
 import           Data.Char                      ( toLower )
 
 import           AST.Solved
@@ -120,28 +121,39 @@ instance Compilable Exp where
           (compileRecord scope)
           m
 
-      compilePattern scope (PList []) = scope <> ".length === 0"
+      compilePattern scope (PSpread pat) = compilePattern scope pat
+      compilePattern scope (PList   [] ) = scope <> ".length === 0"
       compilePattern scope (PList items) =
-        scope
-          <> ".length === "
-          <> show (length items)
-          <> " && "
-          <> (   intercalate " && "
-             $   (\(item, i) ->
-                   compilePattern (scope <> "[" <> show i <> "]") item
-                 )
-             <$> (zip items [0 ..])
-             )
+        scope <> ".length " <> lengthComparator items <> " " <> show (length items) <> " && " <> intercalate
+          " && "
+          ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item)
+          <$> zip items [0 ..]
+          )
+        where
+          lengthComparator :: [Pattern] -> String
+          lengthComparator pats =
+            if containsSpread pats then
+              ">="
+            else
+              "==="
+          containsSpread :: [Pattern] -> Bool
+          containsSpread pats =
+            let isSpread = \case
+                  PSpread _ -> True 
+                  _         -> False
+            in  case find isSpread pats of
+              Just _  -> True
+              Nothing -> False
 
       compilePattern _ _ = ""
 
 
       compileIs :: Is -> String
-      compileIs (Solved _ _ (Is pattern exp)) =
+      compileIs (Solved _ _ (Is pat exp)) =
         "if ("
-          <> compilePattern "__x__" pattern
+          <> compilePattern "__x__" pat
           <> ") {\n"
-          <> buildVars "__x__" pattern
+          <> buildVars "__x__" pat
           <> "    return "
           <> compile exp
           <> ";\n  }\n"
@@ -151,14 +163,22 @@ instance Compilable Exp where
         PRecord fields ->
           concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
         PList items ->
-          concat
-            $   (\(item, i) -> buildVars (v <> "[" <> show i <> "]") item)
-            <$> (zip items [0 ..])
+          let itemsStr = buildListVar <$> items
+          in  "    const [" <> intercalate "," itemsStr <> "] = " <> v <> ";\n"
+         where
+          buildListVar :: Pattern -> String
+          buildListVar pat = case pat of
+            PSpread (PVar n) -> "..." <> n
+            PVar    n        -> n
+            PAny             -> ""
+            _                -> ""
         PCtor _ ps ->
           concat
             $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
             <$> zip [0 ..] ps
         PVar n -> "    const " <> n <> " = " <> v <> ";\n"
+        -- PSpread (PVar n) -> "    const [..." <> n <> "] = " <> v <> ";\n"
+
         _      -> ""
 
       compileRecord :: String -> Name -> Pattern -> String

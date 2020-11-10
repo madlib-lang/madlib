@@ -163,6 +163,10 @@ spec = do
             , "  is \"3\": 48"
             , "  is n: 1"
             , ") |> (x) => (x + 1)"
+            , "where([1, 2, 3, 4, 5]) {"
+            , "  is [2, ...rest]      : rest"
+            , "  is [1, 2, 3, ...rest]: rest"
+            , "} |> (x) => (x)"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

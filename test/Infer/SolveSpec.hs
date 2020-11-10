@@ -469,6 +469,17 @@ spec = do
         "should fail to resolve patterns of different types for list items"
         actual
 
+    it "should allow deconstruction of lists" $ do
+      let code = unlines
+            [ "where([1, 2, 3, 5, 8]) {"
+            , "  is [1, 2, ...rest]: rest"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should allow deconstruction of lists"
+        actual
+
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv
 

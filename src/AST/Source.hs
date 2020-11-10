@@ -61,6 +61,7 @@ data Pattern_
   | PCon Name
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
+  | PSpread Pattern
   deriving(Eq, Show)
 
 
