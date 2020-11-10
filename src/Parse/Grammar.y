@@ -65,15 +65,17 @@ import           Explain.Meta
   '<='     { Token _ TokenLeftChevronEq }
   '!'      { Token _ TokenExclamationMark }
 
+
+%left '?' '->' '|' where is 'if'
+%left ':' 'else'
 %left '|>'
-%left '?' ':' '->' '|' where is
+-- %left '?' ':' '->' '|' where is 'if' 'else'
 %left '>' '<' '>=' '<=' '=='
 %left '+' '-' '||'
 %left '*' '/' '&&'
-%left 'ret' ','
-%nonassoc '(' ')' '=' '=>' '::' where is
+%left ','
+%nonassoc '(' ')' '=' '=>' '::' where is 'ret' '{' '}'
 %right '!'
-%left HIGH
 %%
 
 ast :: { Src.AST }
@@ -83,9 +85,9 @@ ast :: { Src.AST }
   | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | rRet             { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | rRet ast         { $2 }
-  | ast rRet         { $1 }
+  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
+  | 'ret' ast        %shift { $2 }
+  -- | ast 'ret'        %shift      { $1 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' typings maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
@@ -95,8 +97,8 @@ importDecls :: { [Src.Import] }
   | importDecl             { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str rRet { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6)) }
-  | 'import' name 'from' str rRet                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4)) }
+  : 'import' '{' importNames '}' 'from' str 'ret' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6)) }
+  | 'import' name 'from' str 'ret'                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4)) }
 
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
@@ -181,7 +183,8 @@ exp :: { Src.Exp }
   | js                        %shift { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
   | name '=' exp              %shift { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
   | name                      %shift { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
-  | name '(' maybeRet args ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
+  | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' '(' exp ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 $6 }
@@ -190,7 +193,9 @@ exp :: { Src.Exp }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
-  | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp maybeRet
+  | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
+      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $10)) (Src.If $3 $6 $10) }
+  | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp 'ret'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $10)) (Src.If $3 $6 $10) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp
       { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
@@ -205,11 +210,14 @@ typedExp :: { Src.Exp }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
-  | 'where' '(' exp ')' maybeRet iss maybeRet         %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
+  | 'where' '(' exp ')' maybeRet iss                  %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
+  | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
 
 iss :: { [Src.Is] }
-  : 'is' pattern ':' maybeRet exp maybeRet              %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }
-  | iss maybeRet 'is' pattern ':' maybeRet exp maybeRet %shift { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $7)) (Src.Is $4 $7)] }
+  : 'is' pattern ':' maybeRet exp                    %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }
+  | 'is' pattern ':' maybeRet exp 'ret'              %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }
+  | iss maybeRet 'is' pattern ':' maybeRet exp       %shift { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $7)) (Src.Is $4 $7)] }
+  | iss maybeRet 'is' pattern ':' maybeRet exp 'ret' %shift { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $7)) (Src.Is $4 $7)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern { $1 }
@@ -360,7 +368,8 @@ literal :: { Src.Exp }
 
 args :: { [Src.Exp] }
   : exp rComa args %shift { $1:$3 }
-  | exp maybeRet   %shift { [$1] }
+  | exp            %shift { [$1] }
+  | exp 'ret'      %shift { [$1] }
 
 params :: { [Src.Name] }
   : name ',' params %shift { strV $1 : $3 }
