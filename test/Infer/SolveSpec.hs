@@ -54,27 +54,27 @@ spec :: Spec
 spec = do
   describe "infer" $ do
     it "should infer abstractions" $ do
-      let code   = "(b, c) => b + c"
+      let code   = "(b, c) => (b + c)"
           actual = tester code
       snapshotTest "should infer abstractions" actual
 
     it "should infer assignments" $ do
-      let code   = unlines ["fn = (b, c) => b + c", "fn(2, 3)"]
+      let code   = unlines ["fn = (b, c) => (b + c)", "fn(2, 3)"]
           actual = tester code
       snapshotTest "should infer assignments" actual
 
     it "should infer minus operator" $ do
-      let code   = "(b, c) => b - c"
+      let code   = "(b, c) => (b - c)"
           actual = tester code
       snapshotTest "should infer minus operator" actual
 
     it "should infer multiplication operator" $ do
-      let code   = "(b, c) => b * c"
+      let code   = "(b, c) => (b * c)"
           actual = tester code
       snapshotTest "should infer multiplication operator" actual
 
     it "should infer division operator" $ do
-      let code   = "(b, c) => b / c"
+      let code   = "(b, c) => (b / c)"
           actual = tester code
       snapshotTest "should infer division operator" actual
 
@@ -83,13 +83,13 @@ spec = do
           actual = tester code
       snapshotTest "should infer tripleEq operator" actual
 
-    it "should infer wrapped tripleEq operator" $ do
-      let code   = "((a, b) => a == b)(1, 3)"
+    it "should infer wrapped douleEq operator" $ do
+      let code   = "((a, b) => (a == b))(1, 3)"
           actual = tester code
-      snapshotTest "should infer wrapped tripleEq operator" actual
+      snapshotTest "should infer wrapped douleEq operator" actual
 
     it "should infer asList function" $ do
-      let code   = "(a) => asList(a)"
+      let code   = "(a) => (asList(a))"
           actual = tester code
       snapshotTest "should infer asList function" actual
 
@@ -131,7 +131,7 @@ spec = do
             [ "data Result = Success String | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
-            , "((a, b) => a == b)(result1, result2)"
+            , "((a, b) => (a == b))(result1, result2)"
             ]
           actual = tester code
       snapshotTest "should infer application of adts" actual
@@ -141,7 +141,7 @@ spec = do
             [ "data Result a = Success a | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
-            , "((a, b) => a == b)(result1, result2)"
+            , "((a, b) => (a == b))(result1, result2)"
             ]
           actual = tester code
       snapshotTest "should infer adt return for abstractions" actual
@@ -171,7 +171,7 @@ spec = do
           [ "data Result = Success { value :: String } | Error { message :: String }"
           , "result1 = Success({ value: \"42\" })"
           , "result2 = Error({ message: \"Err\" })"
-          , "((a, b) => a == b)(result1, result2)"
+          , "((a, b) => (a == b))(result1, result2)"
           ]
         actual = tester code
       snapshotTest "should infer adts with record constructors" actual
@@ -180,7 +180,7 @@ spec = do
       let code = unlines
             [ "data Result = Success { value :: String }"
             , "r = Success { value: \"42\" }"
-            , "((a) => a)(r)"
+            , "((a) => (a))(r)"
             ]
           actual = tester code
       snapshotTest "should infer params for adts" actual
@@ -198,7 +198,7 @@ spec = do
     it "should infer an App with a record" $ do
       let
         code = unlines
-          ["a = { x: 3, y: 5 }", "xPlusY = (r) => r.x + r.y", "xPlusY(a)"]
+          ["a = { x: 3, y: 5 }", "xPlusY = (r) => (r.x + r.y)", "xPlusY(a)"]
         actual = tester code
       snapshotTest "should infer an App with a record" actual
 
@@ -247,7 +247,7 @@ spec = do
     it "should fail for applications with a wrong argument type" $ do
       let code =
             unlines
-              [ "fn = (a, b) => a == b"
+              [ "fn = (a, b) => (a == b)"
               , "fn(\"3\", 4)"
               ]
           actual = tester code
@@ -264,7 +264,7 @@ spec = do
     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
       let code = unlines
-            ["fn :: Num -> Num -> Bool", "fn = (a, b) => a == b", "fn(3, 4)"]
+            ["fn :: Num -> Num -> Bool", "fn = (a, b) => (a == b)", "fn(3, 4)"]
           actual = tester code
       snapshotTest "should resolve abstractions with a type definition" actual
 
@@ -272,7 +272,7 @@ spec = do
       let code =
             unlines
               [ "fn :: String -> Num -> Bool"
-              , "fn = (a, b) => a == b"
+              , "fn = (a, b) => (a == b)"
               , "fn(3, 4)"
               ]
           actual = tester code
@@ -478,7 +478,7 @@ spec = do
     -- Imports:
 
     it "should resolve names from imported modules" $ do
-      let codeA = "export inc = (a) => a + 1"
+      let codeA = "export inc = (a) => (a + 1)"
           astA  = buildAST "./ModuleA.mad" codeA
           codeB = unlines
             [ "import { inc } from \"ModuleA\""
@@ -492,7 +492,7 @@ spec = do
       snapshotTest "should resolve names from imported modules" actual
     
     it "should resolve namespaced imports" $ do
-      let codeA = "export singleton = (a) => [a]"
+      let codeA = "export singleton = (a) => ([a])"
           astA  = buildAST "./ModuleA.mad" codeA
           codeB = unlines
             [ "import L from \"ModuleA\""
@@ -507,7 +507,7 @@ spec = do
     
     it "should resolve usage of exported names" $ do
       let code = unlines
-            [ "export inc = (a) => a + 1"
+            [ "export inc = (a) => (a + 1)"
             , "inc(3)"
             ]
           actual = tester code
@@ -516,7 +516,7 @@ spec = do
     it "should resolve usage of exported typed names" $ do
       let code = unlines
             [ "inc :: Num -> Num" 
-            , "export inc = (a) => a + 1"
+            , "export inc = (a) => (a + 1)"
             , "inc(3)"
             ]
           actual = tester code
@@ -529,7 +529,7 @@ spec = do
 
     it "should resolve the pipe operator" $ do
       let code = unlines
-            [ "inc = (a) => a + 1"
+            [ "inc = (a) => (a + 1)"
             , "3 |> inc"
             ]
           actual = tester code
@@ -606,7 +606,7 @@ spec = do
     it "should validate correct type annotations" $ do
       let code = unlines
             [ "inc :: Num -> Num"
-            , "inc = (a) => a + 1"
+            , "inc = (a) => (a + 1)"
             , "(3 :: Num)"
             , "data Maybe a = Just a | Nothing"
             , "(Nothing :: Maybe a)"
@@ -625,14 +625,14 @@ spec = do
     -- Recursion:
 
     it "should resolve recursive functions" $ do
-      let code = "fn = (x) => x + fn(x)"
+      let code = "fn = (x) => (x + fn(x))"
           actual = tester code
       snapshotTest
         "should resolve recursive functions"
         actual
 
     it "should resolve fibonacci recursive function" $ do
-      let code = "fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }"
+      let code = "fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2) })"
           actual = tester code
       snapshotTest
         "should resolve fibonacci recursive function"

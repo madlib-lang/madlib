@@ -65,12 +65,15 @@ import           Explain.Meta
   '<='     { Token _ TokenLeftChevronEq }
   '!'      { Token _ TokenExclamationMark }
 
-%left '>' '<' '>=' '<=' '==' '?' ':' '->' '|' '|>'
+%left '|>'
+%left '?' ':' '->' '|' where is
+%left '>' '<' '>=' '<=' '=='
 %left '+' '-' '||'
 %left '*' '/' '&&'
 %left 'ret' ','
-%nonassoc '(' ')' '=' '=>' '::' 
+%nonassoc '(' ')' '=' '=>' '::' where is
 %right '!'
+%left HIGH
 %%
 
 ast :: { Src.AST }
@@ -178,22 +181,25 @@ exp :: { Src.Exp }
   | js                        %shift { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
   | name '=' exp              %shift { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
   | name                      %shift { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
-  | name rParenL args ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | name '(' maybeRet args ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | '(' params ')' '=>' exp   %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $5)) $2 $5 }
+  | '(' params ')' '=>' '(' exp ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 $6 }
   | '(' exp ')'               %shift { $2 }
   | exp '.' name                     { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
+  | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp maybeRet
+      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $10)) (Src.If $3 $6 $10) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp
+      { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
+  | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
       { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
 
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
-  -- That grammar won't work well, we need to split the two parts ( before and after the 'ret', and join them during canonicalization )
   | name '::' typings 'ret' name '=' exp 
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
@@ -328,6 +334,13 @@ operation :: { Src.Exp }
                       $3)
                   
                   }
+  -- | exp '|>' exp 'ret'  { Meta emptyInfos (getArea $1) (Src.App
+  --                     ((Meta emptyInfos (getArea $1) (Src.App
+  --                        (Meta emptyInfos (tokenToArea $2) (Src.Var "|>")) 
+  --                        $1))) 
+  --                     $3)
+                  
+  --                 }
 
 listConstructor :: { Src.Exp }
   : '[' listItems ']' { Meta emptyInfos (tokenToArea $1) (Src.ListConstructor $2) }

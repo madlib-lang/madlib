@@ -29,20 +29,20 @@ Right
             (TArr
                (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                (TComp "Result" []))
-            (Area (Loc 70 3 1) (Loc 83 3 14))
+            (Area (Loc 70 3 1) (Loc 85 3 16))
             (App
                (Solved
                   (TArr (TVar (TV "b")) (TVar (TV "b")))
-                  (Area (Loc 71 3 2) (Loc 79 3 10))
+                  (Area (Loc 71 3 2) (Loc 80 3 11))
                   (Abs
                      "a"
                      (Solved
-                        (TVar (TV "b")) (Area (Loc 78 3 9) (Loc 79 3 10)) (Var "a"))))
+                        (TVar (TV "b")) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a"))))
                (Solved
                   (TArr
                      (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
                      (TComp "Result" []))
-                  (Area (Loc 81 3 12) (Loc 82 3 13))
+                  (Area (Loc 83 3 14) (Loc 84 3 15))
                   (Var "r")))
         ]
     , aadts =

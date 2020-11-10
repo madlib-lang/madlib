@@ -4,29 +4,29 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-            (Area (Loc 0 1 1) (Loc 11 1 12))
+            (Area (Loc 0 1 1) (Loc 12 1 13))
             (Abs
                "b"
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 0 1 1) (Loc 11 1 12))
+                  (Area (Loc 0 1 1) (Loc 12 1 13))
                   (Abs
                      "c"
                      (Solved
                         (TCon CNum)
-                        (Area (Loc 10 1 11) (Loc 11 1 12))
+                        (Area (Loc 11 1 12) (Loc 12 1 13))
                         (App
                            (Solved
                               (TArr (TCon CNum) (TCon CNum))
-                              (Area (Loc 10 1 11) (Loc 11 1 12))
+                              (Area (Loc 11 1 12) (Loc 12 1 13))
                               (App
                                  (Solved
                                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                    (Area (Loc 11 1 12) (Loc 13 1 14))
+                                    (Area (Loc 12 1 13) (Loc 14 1 15))
                                     (Var "/"))
-                                 (Solved (TCon CNum) (Area (Loc 10 1 11) (Loc 11 1 12)) (Var "b"))))
+                                 (Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (Var "b"))))
                            (Solved
-                              (TCon CNum) (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "c")))))))
+                              (TCon CNum) (Area (Loc 15 1 16) (Loc 16 1 17)) (Var "c")))))))
         ]
     , aadts = []
     , apath = Just "path"

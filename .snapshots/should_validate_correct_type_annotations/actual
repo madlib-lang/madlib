@@ -4,66 +4,66 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TCon CNum))
-            (Area (Loc 0 1 1) (Loc 32 2 15))
+            (Area (Loc 0 1 1) (Loc 33 2 16))
             (TypedExp
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 18 2 1) (Loc 32 2 15))
+                  (Area (Loc 18 2 1) (Loc 33 2 16))
                   (Assignment
                      "inc"
                      (Solved
                         (TArr (TCon CNum) (TCon CNum))
-                        (Area (Loc 24 2 7) (Loc 32 2 15))
+                        (Area (Loc 24 2 7) (Loc 33 2 16))
                         (Abs
                            "a"
                            (Solved
                               (TCon CNum)
-                              (Area (Loc 31 2 14) (Loc 32 2 15))
+                              (Area (Loc 32 2 15) (Loc 33 2 16))
                               (App
                                  (Solved
                                     (TArr (TCon CNum) (TCon CNum))
-                                    (Area (Loc 31 2 14) (Loc 32 2 15))
+                                    (Area (Loc 32 2 15) (Loc 33 2 16))
                                     (App
                                        (Solved
                                           (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                          (Area (Loc 32 2 15) (Loc 34 2 17))
+                                          (Area (Loc 33 2 16) (Loc 35 2 18))
                                           (Var "+"))
                                        (Solved
                                           (TCon CNum)
-                                          (Area (Loc 31 2 14) (Loc 32 2 15))
+                                          (Area (Loc 32 2 15) (Loc 33 2 16))
                                           (Var "a"))))
                                  (Solved
-                                    (TCon CNum) (Area (Loc 35 2 18) (Loc 36 2 19)) (LInt "1"))))))))
+                                    (TCon CNum) (Area (Loc 36 2 19) (Loc 37 2 20)) (LInt "1"))))))))
                (TRArr (TRSingle "Num") (TRSingle "Num")))
         , Solved
             (TCon CNum)
-            (Area (Loc 38 3 2) (Loc 46 3 10))
+            (Area (Loc 40 3 2) (Loc 48 3 10))
             (TypedExp
-               (Solved (TCon CNum) (Area (Loc 38 3 2) (Loc 39 3 3)) (LInt "3"))
+               (Solved (TCon CNum) (Area (Loc 40 3 2) (Loc 41 3 3)) (LInt "3"))
                (TRSingle "Num"))
         , Solved
             (TComp "Maybe" [ TVar (TV "a") ])
-            (Area (Loc 81 5 2) (Loc 99 5 20))
+            (Area (Loc 83 5 2) (Loc 101 5 20))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TVar (TV "a") ])
-                  (Area (Loc 81 5 2) (Loc 88 5 9))
+                  (Area (Loc 83 5 2) (Loc 90 5 9))
                   (Var "Nothing"))
                (TRComp "Maybe" [ TRSingle "a" ]))
         , Solved
             (TComp "Maybe" [ TCon CNum ])
-            (Area (Loc 102 6 2) (Loc 122 6 22))
+            (Area (Loc 104 6 2) (Loc 124 6 22))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TCon CNum ])
-                  (Area (Loc 102 6 2) (Loc 109 6 9))
+                  (Area (Loc 104 6 2) (Loc 111 6 9))
                   (App
                      (Solved
                         (TArr (TVar (TV "g")) (TComp "Maybe" [ TVar (TV "g") ]))
-                        (Area (Loc 102 6 2) (Loc 106 6 6))
+                        (Area (Loc 104 6 2) (Loc 108 6 6))
                         (Var "Just"))
                      (Solved
-                        (TCon CNum) (Area (Loc 107 6 7) (Loc 108 6 8)) (LInt "3"))))
+                        (TCon CNum) (Area (Loc 109 6 7) (Loc 110 6 8)) (LInt "3"))))
                (TRComp "Maybe" [ TRSingle "Num" ]))
         ]
     , aadts =

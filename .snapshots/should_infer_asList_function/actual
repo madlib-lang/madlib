@@ -4,19 +4,19 @@ Right
     , aexps =
         [ Solved
             (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-            (Area (Loc 0 1 1) (Loc 16 1 17))
+            (Area (Loc 0 1 1) (Loc 17 1 18))
             (Abs
                "a"
                (Solved
                   (TComp "List" [ TVar (TV "a") ])
-                  (Area (Loc 7 1 8) (Loc 16 1 17))
+                  (Area (Loc 8 1 9) (Loc 17 1 18))
                   (App
                      (Solved
                         (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
-                        (Area (Loc 7 1 8) (Loc 13 1 14))
+                        (Area (Loc 8 1 9) (Loc 14 1 15))
                         (Var "asList"))
                      (Solved
-                        (TVar (TV "a")) (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "a")))))
+                        (TVar (TV "a")) (Area (Loc 15 1 16) (Loc 16 1 17)) (Var "a")))))
         ]
     , aadts = []
     , apath = Just "path"

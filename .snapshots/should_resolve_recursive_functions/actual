@@ -9,30 +9,30 @@ Right
                "fn"
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 5 1 6) (Loc 13 1 14))
+                  (Area (Loc 5 1 6) (Loc 14 1 15))
                   (Abs
                      "x"
                      (Solved
                         (TCon CNum)
-                        (Area (Loc 12 1 13) (Loc 13 1 14))
+                        (Area (Loc 13 1 14) (Loc 14 1 15))
                         (App
                            (Solved
                               (TArr (TCon CNum) (TCon CNum))
-                              (Area (Loc 12 1 13) (Loc 13 1 14))
+                              (Area (Loc 13 1 14) (Loc 14 1 15))
                               (App
                                  (Solved
                                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                    (Area (Loc 13 1 14) (Loc 15 1 16))
+                                    (Area (Loc 14 1 15) (Loc 16 1 17))
                                     (Var "+"))
-                                 (Solved (TCon CNum) (Area (Loc 12 1 13) (Loc 13 1 14)) (Var "x"))))
+                                 (Solved (TCon CNum) (Area (Loc 13 1 14) (Loc 14 1 15)) (Var "x"))))
                            (Solved
                               (TCon CNum)
-                              (Area (Loc 16 1 17) (Loc 21 1 22))
+                              (Area (Loc 17 1 18) (Loc 22 1 23))
                               (App
                                  (Solved
-                                    (TVar (TV "e")) (Area (Loc 16 1 17) (Loc 18 1 19)) (Var "fn"))
+                                    (TVar (TV "e")) (Area (Loc 17 1 18) (Loc 19 1 20)) (Var "fn"))
                                  (Solved
-                                    (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (Var "x")))))))))
+                                    (TCon CNum) (Area (Loc 20 1 21) (Loc 21 1 22)) (Var "x")))))))))
         ]
     , aadts = []
     , apath = Just "path"

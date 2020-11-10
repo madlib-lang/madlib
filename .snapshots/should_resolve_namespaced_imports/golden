@@ -15,17 +15,17 @@ Right
                             "singleton"
                             (Solved
                                (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
-                               (Area (Loc 19 1 20) (Loc 27 1 28))
+                               (Area (Loc 19 1 20) (Loc 28 1 29))
                                (Abs
                                   "a"
                                   (Solved
                                      (TComp "List" [ TVar (TV "a") ])
-                                     (Area (Loc 26 1 27) (Loc 27 1 28))
+                                     (Area (Loc 27 1 28) (Loc 28 1 29))
                                      (ListConstructor
                                         [ ListItem
                                             (Solved
                                                (TVar (TV "a"))
-                                               (Area (Loc 27 1 28) (Loc 28 1 29))
+                                               (Area (Loc 28 1 29) (Loc 29 1 30))
                                                (Var "a"))
                                         ])))))))
                ]

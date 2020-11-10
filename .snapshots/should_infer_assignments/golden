@@ -9,46 +9,46 @@ Right
                "fn"
                (Solved
                   (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                  (Area (Loc 5 1 6) (Loc 16 1 17))
+                  (Area (Loc 5 1 6) (Loc 17 1 18))
                   (Abs
                      "b"
                      (Solved
                         (TArr (TCon CNum) (TCon CNum))
-                        (Area (Loc 5 1 6) (Loc 16 1 17))
+                        (Area (Loc 5 1 6) (Loc 17 1 18))
                         (Abs
                            "c"
                            (Solved
                               (TCon CNum)
-                              (Area (Loc 15 1 16) (Loc 16 1 17))
+                              (Area (Loc 16 1 17) (Loc 17 1 18))
                               (App
                                  (Solved
                                     (TArr (TCon CNum) (TCon CNum))
-                                    (Area (Loc 15 1 16) (Loc 16 1 17))
+                                    (Area (Loc 16 1 17) (Loc 17 1 18))
                                     (App
                                        (Solved
                                           (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                          (Area (Loc 16 1 17) (Loc 18 1 19))
+                                          (Area (Loc 17 1 18) (Loc 19 1 20))
                                           (Var "+"))
                                        (Solved
                                           (TCon CNum)
-                                          (Area (Loc 15 1 16) (Loc 16 1 17))
+                                          (Area (Loc 16 1 17) (Loc 17 1 18))
                                           (Var "b"))))
                                  (Solved
-                                    (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (Var "c")))))))))
+                                    (TCon CNum) (Area (Loc 20 1 21) (Loc 21 1 22)) (Var "c")))))))))
         , Solved
             (TCon CNum)
-            (Area (Loc 27 2 7) (Loc 28 2 8))
+            (Area (Loc 29 2 7) (Loc 30 2 8))
             (App
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 27 2 7) (Loc 28 2 8))
+                  (Area (Loc 29 2 7) (Loc 30 2 8))
                   (App
                      (Solved
                         (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                        (Area (Loc 21 2 1) (Loc 23 2 3))
+                        (Area (Loc 23 2 1) (Loc 25 2 3))
                         (Var "fn"))
-                     (Solved (TCon CNum) (Area (Loc 24 2 4) (Loc 25 2 5)) (LInt "2"))))
-               (Solved (TCon CNum) (Area (Loc 27 2 7) (Loc 28 2 8)) (LInt "3")))
+                     (Solved (TCon CNum) (Area (Loc 26 2 4) (Loc 27 2 5)) (LInt "2"))))
+               (Solved (TCon CNum) (Area (Loc 29 2 7) (Loc 30 2 8)) (LInt "3")))
         ]
     , aadts = []
     , apath = Just "path"
