@@ -244,18 +244,18 @@ recordPattern :: { Src.Pattern }
   : '{' recordFieldPatterns '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PRecord $2) }
 
 recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
-  : name ':' pattern { M.fromList [(strV $1, $3)] }
+  : name ':' pattern                         { M.fromList [(strV $1, $3)] }
+  | recordFieldPatterns ',' spreadPattern    { M.insert "..." $3 $1 }
   | recordFieldPatterns ',' name ':' pattern { M.insert (strV $3) $5 $1 }
 
 listPattern :: { Src.Pattern }
   : '[' listItemPatterns ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PList $2) }
 
 listItemPatterns :: { [Src.Pattern] }
-  : pattern                                        { [$1] }
-  -- | pattern ',' spreadPattern                      { [$1] <> [$3] }
-  | listItemPatterns ',' pattern                   { $1 <> [$3] }
+  : pattern                            { [$1] }
+  | listItemPatterns ',' pattern       { $1 <> [$3] }
   | listItemPatterns ',' spreadPattern { $1 <> [$3] }
-  | {- empty -}                                    { [] }
+  | {- empty -}                        { [] }
 
 spreadPattern :: { Src.Pattern }
   : '...' name  { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.PSpread (nameToPattern (tokenToArea $2) (strV $2))) }

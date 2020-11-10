@@ -167,6 +167,10 @@ spec = do
             , "  is [2, ...rest]      : rest"
             , "  is [1, 2, 3, ...rest]: rest"
             , "} |> (x) => (x)"
+            , "where({ x: 4, name: \"John\" }) {"
+            , "  is { name: \"Bob\" }: \"Bob\""
+            , "  is { x: x, ...b } : b.name"
+            , "}"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

@@ -5,7 +5,7 @@ module Compile where
 
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Data.List                      (find,  intercalate )
+import           Data.List                      (sort, find,  intercalate )
 import           Data.Char                      ( toLower )
 
 import           AST.Solved
@@ -161,7 +161,13 @@ instance Compilable Exp where
       buildVars :: String -> Pattern -> String
       buildVars v p = case p of
         PRecord fields ->
-          concat $ M.mapWithKey (\k p' -> buildVars (v <> "." <> k) p') fields
+          "    const { " <> intercalate ", " (((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields) <> " } = " <> v <> ";\n"
+         where
+          buildFieldVar :: String -> Pattern -> String
+          buildFieldVar name pat = case pat of
+            PSpread (PVar n) -> "..." <> n
+            PVar    n        -> name <> ": " <> n
+            _                -> ""
         PList items ->
           let itemsStr = buildListVar <$> items
           in  "    const [" <> intercalate "," itemsStr <> "] = " <> v <> ";\n"
@@ -170,7 +176,6 @@ instance Compilable Exp where
           buildListVar pat = case pat of
             PSpread (PVar n) -> "..." <> n
             PVar    n        -> n
-            PAny             -> ""
             _                -> ""
         PCtor _ ps ->
           concat

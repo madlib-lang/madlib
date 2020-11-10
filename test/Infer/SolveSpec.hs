@@ -479,6 +479,17 @@ spec = do
       snapshotTest
         "should allow deconstruction of lists"
         actual
+    
+    it "should allow deconstruction of records" $ do
+      let code = unlines
+            [ "where({ x: 1, y: 2, z: 3 }) {"
+            , "  is { x: 1, ...rest }: rest.z"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should allow deconstruction of records"
+        actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv

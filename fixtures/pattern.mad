@@ -19,13 +19,6 @@ where(x) {
   is _   : "Not YOUHOU"
 } |> IO.log
 
-w = { x: 4, name: "John" }
-where(w) {
-  is { name: x }: x
-} |> IO.log
-
-
-
 data R = R { x :: Num }
 r = R({ x: 42 })
 where(r) {
@@ -85,3 +78,11 @@ where([1, 2, 3, 4, 5]) {
   is [2, ...rest]      : rest
   is [1, 2, 3, ...rest]: rest
 } |> IO.log
+
+w = { x: 4, name: "John" }
+where(w) {
+  is { name: "Bob" }: "Bob"
+  is { x: x, ...b } : b.name
+} |> IO.log
+
+3 |> IO.log

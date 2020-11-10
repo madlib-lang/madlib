@@ -1,0 +1,61 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TVar (TV "b"))
+            (Area (Loc 0 1 1) (Loc 62 3 2))
+            (Where
+               (Solved
+                  (TRecord
+                     (fromList
+                        [ ( "x" , TCon CNum )
+                        , ( "y" , TCon CNum )
+                        , ( "z" , TCon CNum )
+                        ])
+                     False)
+                  (Area (Loc 6 1 7) (Loc 26 1 27))
+                  (Record
+                     [ Field
+                         ( "x"
+                         , Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (LInt "1")
+                         )
+                     , Field
+                         ( "y"
+                         , Solved (TCon CNum) (Area (Loc 17 1 18) (Loc 18 1 19)) (LInt "2")
+                         )
+                     , Field
+                         ( "z"
+                         , Solved (TCon CNum) (Area (Loc 23 1 24) (Loc 24 1 25)) (LInt "3")
+                         )
+                     ]))
+               [ Solved
+                   (TArr
+                      (TRecord
+                         (fromList
+                            [ ( "x" , TCon CNum )
+                            , ( "y" , TCon CNum )
+                            , ( "z" , TCon CNum )
+                            ])
+                         False)
+                      (TVar (TV "b")))
+                   (Area (Loc 32 2 3) (Loc 60 2 31))
+                   (Is
+                      (PRecord
+                         (fromList
+                            [ ( "..." , PSpread (PVar "rest") ) , ( "x" , PNum "1" ) ]))
+                      (Solved
+                         (TVar (TV "b"))
+                         (Area (Loc 54 2 25) (Loc 60 2 31))
+                         (FieldAccess
+                            (Solved
+                               (TRecord (fromList []) True)
+                               (Area (Loc 54 2 25) (Loc 58 2 29))
+                               (Var "rest"))
+                            (Solved
+                               (TVar (TV "b")) (Area (Loc 59 2 30) (Loc 60 2 31)) (Var ".z")))))
+               ])
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }
