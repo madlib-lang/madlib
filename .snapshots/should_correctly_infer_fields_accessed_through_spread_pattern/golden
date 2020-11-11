@@ -1,0 +1,73 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr
+               (TRecord
+                  (fromList [ ( "x" , TVar (TV "e") ) , ( "z" , TVar (TV "e") ) ])
+                  False)
+               (TVar (TV "e")))
+            (Area (Loc 0 1 1) (Loc 2 1 3))
+            (Assignment
+               "fn"
+               (Solved
+                  (TArr
+                     (TRecord
+                        (fromList [ ( "x" , TVar (TV "e") ) , ( "z" , TVar (TV "e") ) ])
+                        False)
+                     (TVar (TV "e")))
+                  (Area (Loc 5 1 6) (Loc 67 4 2))
+                  (Abs
+                     "a"
+                     (Solved
+                        (TVar (TV "e"))
+                        (Area (Loc 13 1 14) (Loc 67 4 2))
+                        (Where
+                           (Solved
+                              (TRecord
+                                 (fromList [ ( "x" , TVar (TV "e") ) , ( "z" , TVar (TV "e") ) ])
+                                 False)
+                              (Area (Loc 19 1 20) (Loc 20 1 21))
+                              (Var "a"))
+                           [ Solved
+                               (TArr
+                                  (TRecord
+                                     (fromList
+                                        [ ( "x" , TVar (TV "e") ) , ( "z" , TVar (TV "e") ) ])
+                                     False)
+                                  (TVar (TV "e")))
+                               (Area (Loc 26 2 3) (Loc 48 2 25))
+                               (Is
+                                  (PRecord
+                                     (fromList
+                                        [ ( "..." , PSpread (PVar "b") ) , ( "x" , PVar "x" ) ]))
+                                  (Solved
+                                     (TVar (TV "d"))
+                                     (Area (Loc 45 2 22) (Loc 48 2 25))
+                                     (FieldAccess
+                                        (Solved
+                                           (TRecord (fromList []) False)
+                                           (Area (Loc 45 2 22) (Loc 46 2 23))
+                                           (Var "b"))
+                                        (Solved
+                                           (TVar (TV "d"))
+                                           (Area (Loc 47 2 24) (Loc 48 2 25))
+                                           (Var ".z")))))
+                           , Solved
+                               (TArr
+                                  (TRecord
+                                     (fromList
+                                        [ ( "x" , TVar (TV "e") ) , ( "z" , TVar (TV "e") ) ])
+                                     False)
+                                  (TVar (TV "e")))
+                               (Area (Loc 51 3 3) (Loc 65 3 17))
+                               (Is
+                                  (PRecord (fromList [ ( "x" , PVar "x" ) ]))
+                                  (Solved
+                                     (TVar (TV "e")) (Area (Loc 64 3 16) (Loc 65 3 17)) (Var "x")))
+                           ])))))
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

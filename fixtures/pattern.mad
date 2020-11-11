@@ -1,88 +1,28 @@
-import IO from "IO"
-
-data Maybe a = Just a | Nothing
-
-p = Just("just")
-s = Just(p)
-
-
-where(s) {
-  is Just k        : k
-  is Just (Just x) : x
-  is Just (Nothing): "1"
+response     = { users: [] }
+users        = response.users
+carResponse  = { cars: [] }
+allResponses = { ...response, ...carResponse }
+where(allResponses) {
+  is { users: List a, cars: cs }: cs
+  is _                          : []
 }
 
-x = 3 == 5
-
-where(x) {
-  is True: "YOUHOU"
-  is _   : "Not YOUHOU"
-} |> IO.log
-
-data R = R { x :: Num }
-r = R({ x: 42 })
-where(r) {
-  is R { x: x }: x
-} |> IO.log
-
-data User = User String String Num | Anonymous
-u = User("john", "smith", 32)
-
-where(u)
-  is User _ n m: m + 48 |> IO.log
-
-  is Anonymous : 1 |> IO.log
-
-where(u) {
-  is User _ n m: m + 48 |> IO.log
-
-  is Anonymous : 1 |> IO.log
-}
-
-True ? 1 |> IO.log : 2 + 3 |> IO.log
-if (True) 1 |> IO.log else 2 + 3 |> IO.log
-if (True) { 1 |> IO.log } else { 2 + 3 |> IO.log }
-
-True ? 1 : 2 + 3 |> IO.log
-if (True) 1 else 2 + 3 |> IO.log
-if (True) { 1 } else { 2 + 3 |> IO.log }
-
-4
-  |> (x) => (x)
-  |> (x) => (x + 1)
-  |> (x) => (True ? 1 : 2 + 3 |> IO.log)
-  |> IO.log
-
-
-True
-  ? "ok"
-  : "not ok"
-
-1 == 2 ? "ok" : "not ok"
-where(3)
-  is 3: 48
-  is n: 1|> (x) => (x + 1)
-where("3")
-  is "3": 48
-  is n: 1
-
-|> (x) => (x + 1) |> IO.log
-
-
-(1 == 2 ? "ok" : "not ok")
-  |> (x) => (x)
-  |> (x) => (x == "ok" ? 1 : 10)
-  |> (x) => (x)
-
-where([1, 2, 3, 4, 5]) {
-  is [2, ...rest]      : rest
-  is [1, 2, 3, ...rest]: rest
-} |> IO.log
-
-w = { x: 4, name: "John" }
+w = { x: 4, name: "John", female: False }
 where(w) {
-  is { name: "Bob" }: "Bob"
-  is { x: x, ...b } : b.name
-} |> IO.log
+  is { name: name }: name
+  is { x: x, ...b }: b.name
+}
 
-3 |> IO.log
+fn2 = (x) => (where(x) {
+  is { z: z }: z
+  is { x: x }: x
+})
+
+fn2({x: 2, z: 3})
+
+fn = (a) => (where(a) {
+  is { x: x, ...b }: b.z
+  is { x: x }: x
+})
+
+fn({x: 2, z: 3})

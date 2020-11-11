@@ -3,7 +3,7 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TVar (TV "b"))
+            (TCon CNum)
             (Area (Loc 0 1 1) (Loc 62 3 2))
             (Where
                (Solved
@@ -38,22 +38,27 @@ Right
                             , ( "z" , TCon CNum )
                             ])
                          False)
-                      (TVar (TV "b")))
+                      (TCon CNum))
                    (Area (Loc 32 2 3) (Loc 60 2 31))
                    (Is
                       (PRecord
                          (fromList
                             [ ( "..." , PSpread (PVar "rest") ) , ( "x" , PNum "1" ) ]))
                       (Solved
-                         (TVar (TV "b"))
+                         (TCon CNum)
                          (Area (Loc 54 2 25) (Loc 60 2 31))
                          (FieldAccess
                             (Solved
-                               (TRecord (fromList []) True)
+                               (TRecord
+                                  (fromList [ ( "y" , TCon CNum ) , ( "z" , TCon CNum ) ]) False)
                                (Area (Loc 54 2 25) (Loc 58 2 29))
                                (Var "rest"))
                             (Solved
-                               (TVar (TV "b")) (Area (Loc 59 2 30) (Loc 60 2 31)) (Var ".z")))))
+                               (TArr
+                                  (TRecord (fromList [ ( "z" , TVar (TV "a") ) ]) True)
+                                  (TVar (TV "a")))
+                               (Area (Loc 59 2 30) (Loc 60 2 31))
+                               (Var ".z")))))
                ])
         ]
     , aadts = []

@@ -24,9 +24,7 @@ import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
-import           Debug.Trace
-import Data.List (find)
-import Text.Show.Pretty (ppShow)
+import           Data.List                      ( find )
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -259,7 +257,7 @@ inferRecordField env field = case field of
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ _) abs@(Meta _ _ (Src.Var ('.' : name)))))
+inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _ _ (Src.Var ('.' : name)))))
   = do
     (fieldSubstitution , fieldType , fieldExp ) <- infer env abs
     (recordSubstitution, recordType, recordExp) <- infer env rec
@@ -289,8 +287,17 @@ inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ _) abs@(Meta _ 
             Left  e -> throwError $ InferError e NoReason
         let t = apply subst tv
 
+        let rs = case re of
+              (Src.Var n) ->
+                let (TArr recordType' _) = fieldType
+                in  M.fromList [(TV n, recordType')]
+              _ -> M.empty
+
         return
-          ( subst `compose` recordSubstitution `compose` fieldSubstitution
+          ( subst
+          `compose` recordSubstitution
+          `compose` fieldSubstitution
+          `compose` rs
           , t
           , Slv.Solved
             t
@@ -340,7 +347,7 @@ addBranchReason env ifExp falsyExp area (InferError e _) =
             area
     )
 
--- INFER SWITCH
+-- INFER WHERE
 
 inferWhere :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
@@ -377,28 +384,51 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
  where
   inferIs :: Env -> Type -> Src.Is -> Infer (Substitution, Type, Slv.Is)
   inferIs e tinput c@(Meta _ area (Src.Is pattern exp)) = do
-    tp           <- buildPatternType e pattern
-    -- TODO: Should we use tinput to generate the env ?
-    env'         <- generateIsEnv tp e pattern
+    tp   <- buildPatternType e pattern
+    env' <- case tinput of
+      TVar _ -> generateIsEnv tp e pattern
+      _      -> generateIsEnv tinput e pattern
 
     (se, te, ee) <- infer env' exp
+
+    -- TODO: Ugly fix for now, we'll have to rethink and remodel the way records and record patterns
+    -- are currently implemented.
+    let newTP = case pattern of
+          (Meta _ _ (Src.PRecord fields)) ->
+            case find (isSpread) (snd <$> M.toList fields) of
+              Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
+                case M.lookup (TV n) se of
+                  Just (TRecord ff _) ->
+                    let (TRecord ff' open) = tp
+                    in  TRecord (M.union ff ff') False
+                  Nothing -> tp
+
+              Nothing -> tp
+          _ -> tp
+         where
+          isSpread fPat = case fPat of
+            (Meta _ _ (Src.PSpread _)) -> True
+            _                          -> False
+
+
     let tarr  = TArr (apply se tinput) te
-    let tarr' = TArr (apply se tp) te
-    su <- catchError (unifyToInfer env $ unify tarr tarr')
+    let tarr' = TArr (apply se newTP) te
+    su <- catchError (unifyToInfer env' $ unify tarr tarr')
                      (addPatternReason e whereExp pattern area)
+
 
     let sf = su `compose` se
 
     return
       ( sf
       , tarr
-      , Slv.Solved (apply sf te) area
+      , Slv.Solved tarr area
         $ Slv.Is (updatePattern pattern) (updateType ee $ apply sf te)
       )
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
   buildPatternType e@Env { envvars } pattern@(Meta _ area pat) = case pat of
-    Src.PVar  v        -> return $ TVar $ TV v
+    Src.PVar  _        -> newTVar
 
     Src.PCon  "String" -> return $ TCon CString
     Src.PCon  "Bool"   -> return $ TCon CBool
@@ -408,13 +438,13 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
     Src.PBool _        -> return $ TCon CBool
     Src.PNum  _        -> return $ TCon CNum
 
-    Src.PAny           -> return $ TVar $ TV "a"
+    Src.PAny           -> newTVar
 
     Src.PRecord fields ->
       let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields
       in  (\fields -> TRecord fields True) . M.fromList <$> mapM
-          (\(k, v) -> (k, ) <$> buildPatternType e v)
-          (M.toList fieldsWithoutSpread)
+            (\(k, v) -> (k, ) <$> buildPatternType e v)
+            (M.toList fieldsWithoutSpread)
 
     Src.PCtor n as -> do
       (Forall fv ctor) <- case M.lookup n envvars of
@@ -448,34 +478,52 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
     Src.PList patterns ->
       TComp "List" . (: []) <$> buildPatternType e (head patterns)
 
-    _ -> return $ TVar $ TV "x"
+    _ -> newTVar
 
 
   generateIsEnv :: Type -> Env -> Src.Pattern -> Infer Env
   generateIsEnv t e@Env { envvars = vars } pattern@(Meta _ area pat) =
     case (pat, t) of
-      (Src.PVar v, t') -> return $ extendVars e (v, Forall [] t')
+      (Src.PVar    v     , t'  ) -> return $ extendVars e (v, Forall [] t')
 
-      (Src.PRecord fields, TRecord fields' _) ->
+      (Src.PRecord fields, tipe) -> do
+        let fields' = case tipe of
+              TVar _       -> M.empty
+              TRecord f' _ -> f'
+
         let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields
-            spreadField = snd <$> find (\(k, v) -> k == "...") (M.toList fields)
-            allFields = zip (M.elems fieldsWithoutSpread) (M.elems fields')
-            fieldsEnv = foldrM (\(p, t) e' -> generateIsEnv t e' p) e allFields
-            envForSpread = case spreadField of
-                  Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
-                    let keysToRemove = M.keys fieldsWithoutSpread
-                        -- TODO: It should likely not be opened and would cause weird issues like accessing non spread properties
-                        spreadType   = TRecord (foldr (\k f -> M.delete k f) fields' keysToRemove) True
-                    in  extendVars e (n, Forall [] spreadType)
-                  Nothing                      -> e
-        in  (\e' -> e' { envvars = M.union (envvars e') (envvars envForSpread) }) <$> fieldsEnv
+        let spreadField =
+              snd <$> find (\(k, v) -> k == "...") (M.toList fields)
+
+        declaredFields <- mapM (\(k, pat) -> (pat, ) <$> lookupType k fields')
+                               (M.toList fieldsWithoutSpread)
+        let fieldsEnv =
+              foldrM (\(p, t') e' -> generateIsEnv t' e' p) e declaredFields
+
+        let
+          envForSpread = case spreadField of
+            Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
+              let
+                keysToRemove = M.keys fieldsWithoutSpread
+                -- TODO: It should likely not be opened and would cause weird issues like accessing non spread properties
+                spreadType   = TRecord
+                  (foldr (\k f -> M.delete k f) fields' keysToRemove)
+                  False
+              in
+                extendVars e (n, Forall [] spreadType)
+            Nothing -> e
+        (\e' -> e' { envvars = M.union (envvars e') (envvars envForSpread) })
+          <$> fieldsEnv
+       where
+        lookupType fieldName fields = case M.lookup fieldName fields of
+          Just x  -> return x
+          Nothing -> newTVar
 
       (Src.PSpread pattern, t) -> generateIsEnv t e pattern
 
       (Src.PList items, TComp "List" [t]) ->
         foldrM (\p e' -> generateIsEnv t e' p) e items
-      (Src.PList items, t) ->
-        foldrM (\p e' -> generateIsEnv (trace (show t) t) e' p) e items
+      (Src.PList items   , t) -> foldrM (\p e' -> generateIsEnv t e' p) e items
 
       (Src.PCtor cname as, _) -> do
         ctor <- findConstructor cname

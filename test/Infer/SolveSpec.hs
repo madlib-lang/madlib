@@ -491,6 +491,42 @@ spec = do
         "should allow deconstruction of records"
         actual
 
+    it "should correctly infer types of record pattern when the input has a variable type" $ do
+      let code = unlines
+            [ "fn2 = (x) => (where(x) {"
+            , "  is { z: z }: z"
+            , "  is { x: x }: x"
+            , "})"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer types of record pattern when the input has a variable type"
+        actual
+
+    it "should correctly infer types of spread record patterns" $ do
+      let code = unlines
+            [ "where({ x: 4, name: \"John\", female: False }) {"
+            , "  is { name: name }: name"
+            , "  is { x: x, ...b }: b.name"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer types of spread record patterns"
+        actual
+
+    it "should correctly infer fields accessed through spread pattern" $ do
+      let code = unlines
+            [ "fn = (a) => (where(a) {"
+            , "  is { x: x, ...b }: b.z"
+            , "  is { x: x }: x"
+            , "})"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer fields accessed through spread pattern"
+        actual
+
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv
 

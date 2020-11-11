@@ -59,9 +59,9 @@ unify t1 t2                      = throwError $ UnificationError t1 t2
 
 unifyVars :: Substitution -> [(Type, Type)] -> Either TypeError Substitution
 unifyVars s ((tp, tp') : xs) = do
-  s1 <- unify (apply s tp) (apply s tp')
-  unifyVars s1 xs
-unifyVars s [(tp, tp')] = unify (apply s tp) (apply s tp')
+  s1 <- unify tp tp'
+  unifyVars (s1 `compose` s) xs
+unifyVars s [(tp, tp')] = (`compose` s) <$> unify tp tp'
 unifyVars s _           = return s
 
 

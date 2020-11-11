@@ -5,7 +5,10 @@ module Compile where
 
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Data.List                      (sort, find,  intercalate )
+import           Data.List                      ( sort
+                                                , find
+                                                , intercalate
+                                                )
 import           Data.Char                      ( toLower )
 
 import           AST.Solved
@@ -124,26 +127,30 @@ instance Compilable Exp where
       compilePattern scope (PSpread pat) = compilePattern scope pat
       compilePattern scope (PList   [] ) = scope <> ".length === 0"
       compilePattern scope (PList items) =
-        scope <> ".length " <> lengthComparator items <> " " <> show (length items) <> " && " <> intercalate
-          " && "
-          ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item)
-          <$> zip items [0 ..]
-          )
-        where
-          lengthComparator :: [Pattern] -> String
-          lengthComparator pats =
-            if containsSpread pats then
-              ">="
-            else
-              "==="
-          containsSpread :: [Pattern] -> Bool
-          containsSpread pats =
-            let isSpread = \case
-                  PSpread _ -> True 
-                  _         -> False
-            in  case find isSpread pats of
-              Just _  -> True
-              Nothing -> False
+        scope
+          <> ".length "
+          <> lengthComparator items
+          <> " "
+          <> show (length items)
+          <> " && "
+          <> intercalate
+               " && "
+               (   (\(item, i) ->
+                     compilePattern (scope <> "[" <> show i <> "]") item
+                   )
+               <$> zip items [0 ..]
+               )
+       where
+        lengthComparator :: [Pattern] -> String
+        lengthComparator pats = if containsSpread pats then ">=" else "==="
+        containsSpread :: [Pattern] -> Bool
+        containsSpread pats =
+          let isSpread = \case
+                PSpread _ -> True
+                _         -> False
+          in  case find isSpread pats of
+                Just _  -> True
+                Nothing -> False
 
       compilePattern _ _ = ""
 
@@ -161,7 +168,15 @@ instance Compilable Exp where
       buildVars :: String -> Pattern -> String
       buildVars v p = case p of
         PRecord fields ->
-          "    const { " <> intercalate ", " (((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields) <> " } = " <> v <> ";\n"
+          "    const { "
+            <> intercalate
+                 ", "
+                 ( filter (not . null) . ((snd <$>) . reverse . sort . M.toList)
+                 $ M.mapWithKey buildFieldVar fields
+                 )
+            <> " } = "
+            <> v
+            <> ";\n"
          where
           buildFieldVar :: String -> Pattern -> String
           buildFieldVar name pat = case pat of
