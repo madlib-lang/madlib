@@ -107,6 +107,11 @@ rRet :: { [TokenClass] }
   : 'ret'       { [] }
   -- | 'ret' rret { [] }
 
+rets :: { [TokenClass] }
+  : 'ret'       { [] }
+  | rets 'ret'  { [] }
+  | {- empty -} { [] }
+
 maybeRet :: { [TokenClass] }
   : 'ret'       { [] }
   | {- empty -} { [] }
@@ -186,7 +191,8 @@ exp :: { Src.Exp }
   | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | '(' params ')' '=>' '(' exp ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 $6 }
+  | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
+  -- | '(' params ')' '=>' '(' 'ret' exp ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $8)) $2 $7 }
   | '(' exp ')'               %shift { $2 }
   | exp '.' name                     { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }

@@ -4,21 +4,21 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            (Area (Loc 0 1 1) (Loc 42 2 18))
+            (Area (Loc 0 1 1) (Loc 48 2 24))
             (TypedExp
                (Solved
                   (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                  (Area (Loc 25 2 1) (Loc 42 2 18))
+                  (Area (Loc 25 2 1) (Loc 48 2 24))
                   (Assignment
                      "fn"
                      (Solved
                         (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
-                        (Area (Loc 30 2 6) (Loc 42 2 18))
+                        (Area (Loc 30 2 6) (Loc 48 2 24))
                         (Abs
                            "a"
                            (Solved
                               (TArr (TVar (TV "b")) (TCon CBool))
-                              (Area (Loc 30 2 6) (Loc 42 2 18))
+                              (Area (Loc 30 2 6) (Loc 48 2 24))
                               (Abs
                                  "b"
                                  (Solved

@@ -5,17 +5,17 @@ Left
         (TypeAndTypingMismatch
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 28 2 1) (Loc 45 2 18))
+              (Area (Loc 28 2 1) (Loc 51 2 24))
               (Assignment
                  "fn"
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 33 2 6) (Loc 45 2 18))
+                    (Area (Loc 33 2 6) (Loc 51 2 24))
                     (Abs
                        "a"
                        (Meta
                           Infos { nthArg = Nothing , origin = Nothing }
-                          (Area (Loc 33 2 6) (Loc 45 2 18))
+                          (Area (Loc 33 2 6) (Loc 51 2 24))
                           (Abs
                              "b"
                              (Meta
@@ -61,4 +61,4 @@ Left
            (TArr (TCon CString) (TArr (TCon CNum) (TCon CBool)))
            (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool))))
         "path"
-        (Area (Loc 0 1 1) (Loc 45 2 18))))
+        (Area (Loc 0 1 1) (Loc 51 2 24))))
