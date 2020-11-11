@@ -631,9 +631,9 @@ exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
 
  where
   bundleExports _ exp = return $ case exp of
-    (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n e')))) ->
+    e'@(Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) ->
       (n, e')
-    (Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n e')))) _))
+    (Slv.Solved _ _ (Slv.TypedExp e'@(Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _))
       -> (n, e')
 
   isExport :: Slv.Exp -> Bool
