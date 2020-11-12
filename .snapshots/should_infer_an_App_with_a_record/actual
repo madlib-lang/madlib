@@ -59,7 +59,9 @@ Right
                                           (Area (Loc 36 2 18) (Loc 37 2 19))
                                           (Var "r"))
                                        (Solved
-                                          (TVar (TV "e"))
+                                          (TArr
+                                             (TRecord (fromList [ ( "x" , TVar (TV "d") ) ]) True)
+                                             (TVar (TV "d")))
                                           (Area (Loc 38 2 20) (Loc 39 2 21))
                                           (Var ".x"))))))
                            (Solved
@@ -71,7 +73,9 @@ Right
                                     (Area (Loc 42 2 24) (Loc 43 2 25))
                                     (Var "r"))
                                  (Solved
-                                    (TVar (TV "g"))
+                                    (TArr
+                                       (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]) True)
+                                       (TVar (TV "f")))
                                     (Area (Loc 44 2 26) (Loc 45 2 27))
                                     (Var ".y")))))))))
         , Solved

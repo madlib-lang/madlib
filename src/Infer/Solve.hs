@@ -25,6 +25,8 @@ import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
 import           Data.List                      ( find )
+import           Debug.Trace                    ( trace )
+import           Text.Show.Pretty               ( ppShow )
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -146,9 +148,7 @@ inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
 -- INFER APP
 
 inferApp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferApp env exp = do
-  let Meta _ area (Src.App abs arg) = exp
-
+inferApp env (Meta _ area (Src.App abs arg)) = do
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
   (s2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
@@ -158,13 +158,10 @@ inferApp env exp = do
     Left  e -> throwError $ InferError e $ Reason (WrongTypeApplied abs arg)
                                                   (envcurrentpath env)
                                                   (getArea arg)
-  let t = apply s3 tv
+  let t      = apply s3 tv
+  let solved = Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2)
 
-  return
-    ( s3 `compose` s2 `compose` s1
-    , t
-    , Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2)
-    )
+  return (s3 `compose` s2 `compose` s1, t, solved)
 
 
 
@@ -259,53 +256,36 @@ inferRecordField env field = case field of
 inferFieldAccess :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _ _ (Src.Var ('.' : name)))))
   = do
-    (fieldSubstitution , fieldType , fieldExp ) <- infer env abs
-    (recordSubstitution, recordType, recordExp) <- infer env rec
+    (fieldSubst , fieldType , fieldExp ) <- infer env abs
+    (recordSubst, recordType, recordExp) <- infer env rec
 
-    let maybeSolved = case recordType of
-          TRecord fields _ -> case M.lookup name fields of
-            Just t -> Just
-              ( fieldSubstitution
-              , t
-              , Slv.Solved t area (Slv.FieldAccess recordExp fieldExp)
-              )
-            Nothing -> Nothing
+    let foundFieldType = case recordType of
+          TRecord fields _ -> M.lookup name fields
+          _                -> Nothing
 
-          -- ERR, recordType must be a TRecord or TVar, otherwise trying to access field on a non record type.
-          _ -> Nothing
+    case foundFieldType of
+      Just t ->
+        let solved = Slv.Solved t area (Slv.FieldAccess recordExp fieldExp)
+        in  return (fieldSubst, t, solved)
 
+      Nothing -> do
+        tv <- newTVar
+        s3 <- case unify (apply recordSubst fieldType) (TArr recordType tv) of
+          Right s -> return s
+          Left  e -> throwError $ InferError e NoReason
 
-    case maybeSolved of
-      Just solved -> return solved
-      Nothing     -> do
-        tv    <- newTVar
-        subst <-
-          case
-            unify (apply recordSubstitution fieldType) (TArr recordType tv)
-          of
-            Right s -> return s
-            Left  e -> throwError $ InferError e NoReason
-        let t = apply subst tv
+        let t          = apply s3 tv
+        let rs         = recordSubstForVar re fieldType
 
-        let rs = case re of
-              (Src.Var n) ->
-                let (TArr recordType' _) = fieldType
-                in  M.fromList [(TV n, recordType')]
-              _ -> M.empty
+        let recordExp' = updateType recordExp (apply s3 recordType)
+        let solved = Slv.Solved t area (Slv.FieldAccess recordExp' fieldExp)
 
-        return
-          ( subst
-          `compose` recordSubstitution
-          `compose` fieldSubstitution
-          `compose` rs
-          , t
-          , Slv.Solved
-            t
-            area
-            (Slv.FieldAccess (updateType recordExp (apply subst recordType))
-                             (updateType fieldExp tv)
-            )
-          )
+        return (s3 `compose` rs, t, solved)
+
+recordSubstForVar :: Src.Exp_ -> Type -> Substitution
+recordSubstForVar (Src.Var n) fieldType =
+  let (TArr recordType' _) = fieldType in M.fromList [(TV n, recordType')]
+recordSubstForVar _ _ = M.empty
 
 
 
@@ -399,7 +379,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
               Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
                 case M.lookup (TV n) se of
                   Just (TRecord ff _) ->
-                    let (TRecord ff' _) = tp in TRecord (M.union ff ff') False
+                    let (TRecord ff' _) = tp in TRecord (M.union ff ff') True
                   Nothing -> tp
 
               Nothing -> tp
