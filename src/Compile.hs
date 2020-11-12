@@ -171,7 +171,8 @@ instance Compilable Exp where
           "    const { "
             <> intercalate
                  ", "
-                 ( filter (not . null) . ((snd <$>) . reverse . sort . M.toList)
+                 ( filter (not . null)
+                 . ((snd <$>) . reverse . sort . M.toList)
                  $ M.mapWithKey buildFieldVar fields
                  )
             <> " } = "

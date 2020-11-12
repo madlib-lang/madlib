@@ -399,8 +399,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
               Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
                 case M.lookup (TV n) se of
                   Just (TRecord ff _) ->
-                    let (TRecord ff' open) = tp
-                    in  TRecord (M.union ff ff') False
+                    let (TRecord ff' _) = tp in TRecord (M.union ff ff') False
                   Nothing -> tp
 
               Nothing -> tp
@@ -409,7 +408,6 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
           isSpread fPat = case fPat of
             (Meta _ _ (Src.PSpread _)) -> True
             _                          -> False
-
 
     let tarr  = TArr (apply se tinput) te
     let tarr' = TArr (apply se newTP) te
@@ -525,10 +523,19 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         foldrM (\p e' -> generateIsEnv t e' p) e items
       (Src.PList items   , t) -> foldrM (\p e' -> generateIsEnv t e' p) e items
 
-      (Src.PCtor cname as, _) -> do
+      (Src.PCtor cname as, t) -> do
         ctor <- findConstructor cname
+        let adtT = arrowReturnType ctor
+        s <- case unify adtT t of
+          Right a -> return a
+          Left  e -> throwError $ InferError
+            e
+            (Reason (PatternTypeError whereExp pattern)
+                    (envcurrentpath env)
+                    area
+            )
 
-        case (ctor, as) of
+        case (apply s ctor, as) of
           (TArr a _, [a']) -> do
             generateIsEnv a e a'
 
@@ -548,9 +555,9 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
    where
     findConstructor :: String -> Infer Type
     findConstructor cname = case M.lookup cname vars of
-      Just (Forall _ t) -> return t
+      Just s  -> instantiate s
 
-      Nothing           -> throwError $ InferError
+      Nothing -> throwError $ InferError
         (UnknownType cname)
         (Reason (PatternConstructorDoesNotExist whereExp pattern)
                 (envcurrentpath e)

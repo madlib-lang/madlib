@@ -1,0 +1,62 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TComp "Maybe" [ TVar (TV "c") ]) (TVar (TV "c")))
+            (Area (Loc 32 2 1) (Loc 34 2 3))
+            (Assignment
+               "fn"
+               (Solved
+                  (TArr (TComp "Maybe" [ TVar (TV "c") ]) (TVar (TV "c")))
+                  (Area (Loc 37 2 6) (Loc 81 6 2))
+                  (Abs
+                     "b"
+                     (Solved
+                        (TVar (TV "c"))
+                        (Area (Loc 48 3 3) (Loc 79 5 4))
+                        (Where
+                           (Solved
+                              (TComp "Maybe" [ TVar (TV "c") ])
+                              (Area (Loc 54 3 9) (Loc 55 3 10))
+                              (Var "b"))
+                           [ Solved
+                               (TArr (TComp "Maybe" [ TVar (TV "c") ]) (TVar (TV "c")))
+                               (Area (Loc 63 4 5) (Loc 75 4 17))
+                               (Is
+                                  (PCtor "Just" [ PVar "x" ])
+                                  (Solved
+                                     (TVar (TV "c")) (Area (Loc 74 4 16) (Loc 75 4 17)) (Var "x")))
+                           ])))))
+        , Solved
+            (TCon CNum)
+            (Area (Loc 82 7 1) (Loc 93 7 12))
+            (App
+               (Solved
+                  (TArr (TComp "Maybe" [ TVar (TV "f") ]) (TVar (TV "f")))
+                  (Area (Loc 82 7 1) (Loc 84 7 3))
+                  (Var "fn"))
+               (Solved
+                  (TComp "Maybe" [ TCon CNum ])
+                  (Area (Loc 85 7 4) (Loc 92 7 11))
+                  (App
+                     (Solved
+                        (TArr (TVar (TV "h")) (TComp "Maybe" [ TVar (TV "h") ]))
+                        (Area (Loc 85 7 4) (Loc 89 7 8))
+                        (Var "Just"))
+                     (Solved
+                        (TCon CNum) (Area (Loc 90 7 9) (Loc 91 7 10)) (LInt "3")))))
+        ]
+    , aadts =
+        [ ADT
+            { adtname = "Maybe"
+            , adtparams = [ "a" ]
+            , adtconstructors =
+                [ ADTConstructor
+                    { adtcname = "Just" , adtcargs = Just [ TRSingle "a" ] }
+                , ADTConstructor { adtcname = "Nothing" , adtcargs = Nothing }
+                ]
+            }
+        ]
+    , apath = Just "path"
+    }

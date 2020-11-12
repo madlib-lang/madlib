@@ -30,8 +30,7 @@ Right
                    (Area (Loc 69 4 3) (Loc 81 4 15))
                    (Is
                       (PCtor "Just" [ PVar "a" ])
-                      (Solved
-                         (TVar (TV "a")) (Area (Loc 80 4 14) (Loc 81 4 15)) (Var "a")))
+                      (Solved (TCon CNum) (Area (Loc 80 4 14) (Loc 81 4 15)) (Var "a")))
                , Solved
                    (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
                    (Area (Loc 84 5 3) (Loc 97 5 16))

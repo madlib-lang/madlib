@@ -527,6 +527,21 @@ spec = do
         "should correctly infer fields accessed through spread pattern"
         actual
 
+    it "should correctly infer constructor patterns given a var" $ do
+      let code = unlines
+            [ "data Maybe a = Just a | Nothing"
+            , "fn = (b) => ("
+            , "  where(b) {"
+            , "    is Just x: x"
+            , "  }"
+            , ")"
+            , "fn(Just(3))"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer constructor patterns given a var"
+        actual
+
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv
 

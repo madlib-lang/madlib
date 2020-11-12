@@ -1,7 +1,7 @@
 Left
   (InferError
      (UnificationError
-        (TComp "Failure" []) (TComp "Maybe" [ TVar (TV "b") ]))
+        (TComp "Maybe" [ TVar (TV "c") ]) (TComp "Failure" []))
      (Reason
         (PatternTypeError
            (Meta
@@ -54,4 +54,4 @@ Left
                      (PVar "a")
                  ])))
         "path"
-        (Area (Loc 86 5 3) (Loc 98 5 15))))
+        (Area (Loc 89 5 6) (Loc 95 5 12))))
