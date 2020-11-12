@@ -1,1 +1,7 @@
-xPlusY = (r) => (r.x + r.y)
+fn = (r) => (
+  where(r) {
+    is { x: { y: y, ...b }}: b.z + y
+  }
+)
+
+// fn({ x: { y: 3, z: 5 }})

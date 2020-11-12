@@ -183,7 +183,17 @@ instance Compilable Exp where
           buildFieldVar name pat = case pat of
             PSpread (PVar n) -> "..." <> n
             PVar    n        -> name <> ": " <> n
-            _                -> ""
+            PRecord fields ->
+              name
+                <> ": { "
+                <> intercalate
+                     ", "
+                     ( filter (not . null)
+                     . ((snd <$>) . reverse . sort . M.toList)
+                     $ M.mapWithKey buildFieldVar fields
+                     )
+                <> " }"
+            _ -> ""
         PList items ->
           let itemsStr = buildListVar <$> items
           in  "    const [" <> intercalate "," itemsStr <> "] = " <> v <> ";\n"
