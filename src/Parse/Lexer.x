@@ -84,8 +84,8 @@ tokens :-
   \>\=                                  { mapToken (\_ -> TokenRightChevronEq) }
   \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
   \!                                    { mapToken (\_ -> TokenExclamationMark) }
-  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  \#\- [$alpha $digit \" \_ \' \ \+ \. \, \( \) \; \: \{ \} \n \= \> \\ \/]* \-\#
+  \"($printable # \")*\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  \#\- [$alpha $digit \" \_ \' \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\ \n]*"//".*                         ; -- Comments
   $empty+                               ;

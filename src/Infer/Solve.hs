@@ -25,6 +25,8 @@ import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
 import           Data.List                      ( find )
+import           Debug.Trace                    ( trace )
+import           Text.Show.Pretty               ( ppShow )
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -225,12 +227,10 @@ inferRecord env exp = do
 
   inferred <- mapM (inferRecordField env) fields
   let inferredFields = trd <$> inferred
+      subst          = foldr1 compose (beg <$> inferred)
       recordType     = TRecord (M.fromList $ concat $ mid <$> inferred) False
   return
-    ( M.empty
-    , recordType
-    , Slv.Solved recordType area (Slv.Record inferredFields)
-    )
+    (subst, recordType, Slv.Solved recordType area (Slv.Record inferredFields))
 
 inferRecordField
   :: Env -> Src.Field -> Infer (Substitution, [(Slv.Name, Type)], Slv.Field)
@@ -243,6 +243,8 @@ inferRecordField env field = case field of
     (s, t, e) <- infer env exp
     case t of
       TRecord tfields _ -> return (s, M.toList tfields, Slv.FieldSpread e)
+
+      TVar _            -> return (s, [], Slv.FieldSpread e)
 
       -- TODO: This needs to be a new error type maybe ?
       _                 -> throwError $ InferError FatalError NoReason
@@ -278,8 +280,7 @@ inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _
         let recordExp' = updateType recordExp (apply s3 recordType)
         let solved = Slv.Solved t area (Slv.FieldAccess recordExp' fieldExp)
 
-        return
-          ( s3 `compose` rs `compose` recordSubst, t, solved)
+        return (s3 `compose` rs `compose` recordSubst, t, solved)
 
 recordSubstForVar :: Src.Exp_ -> Type -> Substitution
 recordSubstForVar (Src.Var n) fieldType =
@@ -375,7 +376,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
     let newTP = completePatternType tp pattern se
 
     let tarr  = TArr (apply se tinput) te
-    let tarr' = TArr (apply se newTP ) te
+    let tarr' = TArr (apply se newTP) te
     su <- catchError (unifyToInfer env' $ unify tarr tarr')
                      (addPatternReason e whereExp pattern area)
 
@@ -389,21 +390,18 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       )
 
 
-  completePatternType
-    :: Type -> Src.Pattern -> Substitution -> Type
+  completePatternType :: Type -> Src.Pattern -> Substitution -> Type
   completePatternType tp pattern se =
     let step1   = findSpreadTypes tp pattern se
         applied = apply se step1
         step2   = spreadSpreads applied
     in  step2
 
-  findSpreadTypes
-    :: Type -> Src.Pattern -> Substitution -> Type
-  findSpreadTypes tp@(TRecord ff' _) pattern se =
-    case pattern of
-      (Meta _ _ (Src.PRecord fields)) -> do
-        let ft = M.mapWithKey (assignSpreadType ff' se) fields
-        TRecord ft True
+  findSpreadTypes :: Type -> Src.Pattern -> Substitution -> Type
+  findSpreadTypes tp@(TRecord ff' _) pattern se = case pattern of
+    (Meta _ _ (Src.PRecord fields)) -> do
+      let ft = M.mapWithKey (assignSpreadType ff' se) fields
+      TRecord ft True
 
   findSpreadTypes tp _ _ = tp
 
@@ -412,8 +410,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
     (Meta _ _ (Src.PRecord _                      )) -> case M.lookup key ff' of
       Just x -> findSpreadTypes x field se
-      _ ->
-        findSpreadTypes (TRecord M.empty True) field se
+      _      -> findSpreadTypes (TRecord M.empty True) field se
 
     _ -> case M.lookup key ff' of
       Just x -> x

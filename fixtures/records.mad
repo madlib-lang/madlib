@@ -1,19 +1,22 @@
-f = (x) => (x.y.z)
+addTodo = (state) => ({ ...state, x: "3", y: state.y })
+// addTodo = (state) => ({ todos: state.todos.concat(state.value) })
+
+// f = (x) => (x.y.z)
 
 
-data Maybe a = Just a | Nothing
+// data Maybe a = Just a | Nothing
 
-fn = (r) => (
-  where(r) {
-    is { x: { y: { y: Just y }, ...k }, ...c }: y + k.z + c.o + c.i
-  }
-)
+// fn = (r) => (
+//   where(r) {
+//     is { x: { y: { y: Just y }, ...k }, ...c }: y + k.z + c.o + c.i
+//   }
+// )
 
 
-fn2 = (r) => (
-  where(r) {
-    is { x, y }: x + y
-  }
-)
+// fn2 = (r) => (
+//   where(r) {
+//     is { x, y }: x + y
+//   }
+// )
 
 // fn({ x: { y: 3, z: 5 }})

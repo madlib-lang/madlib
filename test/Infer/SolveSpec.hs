@@ -218,6 +218,11 @@ spec = do
           actual = tester code
       snapshotTest "should infer abstraction param that is a deep record" actual
 
+    it "should infer abstraction param that having a record exp as body" $ do
+      let code   = "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
+          actual = tester code
+      snapshotTest "should infer abstraction param that having a record exp as body" actual
+
     ---------------------------------------------------------------------------
 
 
