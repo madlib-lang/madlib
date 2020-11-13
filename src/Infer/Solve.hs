@@ -25,8 +25,6 @@ import           Explain.Meta
 import           Explain.Location
 import           Data.Char                      ( isLower )
 import           Data.List                      ( find )
-import           Debug.Trace                    ( trace )
-import           Text.Show.Pretty               ( ppShow )
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
@@ -140,7 +138,7 @@ inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
   tv <- newTVar
   let env' = extendVars env (param, Forall [] tv)
   (s1, t1, e) <- infer env' body
-  let t = apply s1 tv `TArr` t1
+  let t = apply s1 (tv `TArr` t1)
   return (s1, t, applyAbsSolve l param e t)
 
 
@@ -280,7 +278,8 @@ inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _
         let recordExp' = updateType recordExp (apply s3 recordType)
         let solved = Slv.Solved t area (Slv.FieldAccess recordExp' fieldExp)
 
-        return (s3 `compose` rs, t, solved)
+        return
+          ( s3 `compose` rs `compose` recordSubst, t, solved)
 
 recordSubstForVar :: Src.Exp_ -> Type -> Substitution
 recordSubstForVar (Src.Var n) fieldType =
@@ -373,27 +372,12 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
     -- TODO: Ugly fix for now, we'll have to rethink and remodel the way records and record patterns
     -- are currently implemented.
-    let newTP = case pattern of
-          (Meta _ _ (Src.PRecord fields)) ->
-            case find (isSpread) (snd <$> M.toList fields) of
-              Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
-                case M.lookup (TV n) se of
-                  Just (TRecord ff _) ->
-                    let (TRecord ff' _) = tp in TRecord (M.union ff ff') True
-                  Nothing -> tp
-
-              Nothing -> tp
-          _ -> tp
-         where
-          isSpread fPat = case fPat of
-            (Meta _ _ (Src.PSpread _)) -> True
-            _                          -> False
+    let newTP = completePatternType tp pattern se
 
     let tarr  = TArr (apply se tinput) te
-    let tarr' = TArr (apply se newTP) te
+    let tarr' = TArr (apply se newTP ) te
     su <- catchError (unifyToInfer env' $ unify tarr tarr')
                      (addPatternReason e whereExp pattern area)
-
 
     let sf = su `compose` se
 
@@ -403,6 +387,53 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       , Slv.Solved tarr area
         $ Slv.Is (updatePattern pattern) (updateType ee $ apply sf te)
       )
+
+
+  completePatternType
+    :: Type -> Src.Pattern -> Substitution -> Type
+  completePatternType tp pattern se =
+    let step1   = findSpreadTypes tp pattern se
+        applied = apply se step1
+        step2   = spreadSpreads applied
+    in  step2
+
+  findSpreadTypes
+    :: Type -> Src.Pattern -> Substitution -> Type
+  findSpreadTypes tp@(TRecord ff' _) pattern se =
+    case pattern of
+      (Meta _ _ (Src.PRecord fields)) -> do
+        let ft = M.mapWithKey (assignSpreadType ff' se) fields
+        TRecord ft True
+
+  findSpreadTypes tp _ _ = tp
+
+  assignSpreadType ff' se key field = case field of
+    (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) -> TVar $ TV n
+
+    (Meta _ _ (Src.PRecord _                      )) -> case M.lookup key ff' of
+      Just x -> findSpreadTypes x field se
+      _ ->
+        findSpreadTypes (TRecord M.empty True) field se
+
+    _ -> case M.lookup key ff' of
+      Just x -> x
+      _      -> TVar $ TV "pp"
+
+  spreadSpreads :: Type -> Type
+  spreadSpreads (TRecord fields open) =
+    let (TRecord spreadFields _) = case M.lookup "..." fields of
+          Just (TRecord spreadFields _) ->
+            let withoutSpread = M.filterWithKey (\k v -> k /= "...") fields
+            in  TRecord (M.union withoutSpread spreadFields) open
+          Just _  -> TRecord fields open
+          Nothing -> TRecord fields open
+    in  TRecord (M.map updateSubRecord spreadFields) open
+  spreadSpreads t = t
+
+  updateSubRecord field = case field of
+    (TRecord _ _) -> spreadSpreads field
+    _             -> field
+
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
   buildPatternType e@Env { envvars } pattern@(Meta _ area pat) = case pat of

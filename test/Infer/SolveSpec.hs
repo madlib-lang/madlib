@@ -213,6 +213,11 @@ spec = do
           actual = tester code
       snapshotTest "should infer a record with a type annotation" actual
 
+    it "should infer abstraction param that is a deep record" $ do
+      let code   = "f = (x) => (x.a.b.c.d.e)"
+          actual = tester code
+      snapshotTest "should infer abstraction param that is a deep record" actual
+
     ---------------------------------------------------------------------------
 
 
@@ -540,6 +545,19 @@ spec = do
           actual = tester code
       snapshotTest
         "should correctly infer constructor patterns given a var"
+        actual
+    
+    it "should correctly infer nested spread patterns" $ do
+      let code = unlines
+            [ "fn = (r) => ("
+            , "  where(r) {"
+            , "    is { x: { y: { y: y }, ...k }, ...c }: y + k.z + c.o + c.i"
+            , "  }"
+            , ")"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer nested spread patterns"
         actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
