@@ -4,11 +4,11 @@ Right
     , aexps =
         [ Solved
             (TComp "List" [ TVar (TV "a") ])
-            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Area (Loc 0 1 1) (Loc 2 1 3))
             (ListConstructor [])
         , Solved
             (TComp "List" [ TCon CNum ])
-            (Area (Loc 3 2 1) (Loc 4 2 2))
+            (Area (Loc 3 2 1) (Loc 12 2 10))
             (ListConstructor
                [ ListItem
                    (Solved (TCon CNum) (Area (Loc 4 2 2) (Loc 5 2 3)) (LInt "1"))
@@ -19,7 +19,7 @@ Right
                ])
         , Solved
             (TComp "List" [ TCon CString ])
-            (Area (Loc 13 3 1) (Loc 14 3 2))
+            (Area (Loc 13 3 1) (Loc 36 3 24))
             (ListConstructor
                [ ListItem
                    (Solved

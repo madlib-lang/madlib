@@ -7,7 +7,7 @@ var EMPTY_ARR = []
 var SVG_NS = "http://www.w3.org/2000/svg"
 
 var id = (a) => a
-var map = EMPTY_ARR.map
+var _map = EMPTY_ARR.map
 var isArray = Array.isArray
 var enqueue =
   typeof requestAnimationFrame !== "undefined"
@@ -343,7 +343,7 @@ var recycleNode = (node) =>
     : createVNode(
         node.nodeName.toLowerCase(),
         EMPTY_OBJ,
-        map.call(node.childNodes, recycleNode),
+        _map.call(node.childNodes, recycleNode),
         node,
         null,
         SSR_NODE
@@ -358,12 +358,32 @@ var createVNode = (type, props, children, node, key, tag) => ({
   tag,
 })
 
-export var memo = (tag, memo) => ({ tag, memo })
+var memo = (tag, memo) => ({ tag, memo })
 
 -#
 
+h :: String -> b -> List c -> d
+h = (type, props, children) => (
+#-
+  createVNode(
+    type,
+    props,
+    isArray(children) ? children : children == null ? EMPTY_ARR : [children],
+    null,
+    props.key
+  )
+-#
+)
+
+text :: String -> a -> b
+text = (value) => (
+#-
+  createVNode(value, EMPTY_OBJ, EMPTY_ARR, null, null, TEXT_NODE)
+-#
+)
+
 app :: a -> b
-export app = (props) => ( #- {
+app = (props) => ( #- {
     var view = props.view
     var node = props.node
     var subscriptions = props.subscriptions
@@ -414,30 +434,25 @@ export app = (props) => ( #- {
     dispatch(props.init)
 } -# )
 
-h :: String -> b -> List c -> d
-export h = (type, props, children) => (
-#-
-  createVNode(
-    type,
-    props,
-    isArray(children) ? children : children == null ? EMPTY_ARR : [children],
-    null,
-    props.key
-  )
--#
-)
 
-text :: String -> a -> b
-export text = (value, node) => (
-#-
-  createVNode(value, EMPTY_OBJ, EMPTY_ARR, node, null, TEXT_NODE)
--#
-)
+concat :: List a -> List a -> List a
+concat = (as, bs) => (#- as.concat(bs) -#)
 
+map :: (a -> b) -> List a -> List b
+map = (f, xs) => (#- xs.map(f) -#)
 
 // addTodo :: { todos: List  }
-addTodo = (state) => ({ ...state, todos: state.todos.concat(state.value) })
+addTodo = (state) => ({ ...state, todos: concat(state.todos, state.value) })
 
 newValue = (state, event) => ({ ...state, value: event.target.value })
 
-app({ init: { todos: [], value: "" }, view: (input) => (h("main", { x: 3 }, [ h("input", { type: "text", oninput: newValue }), h("button", { onclick: addTodo }, [text("Add")]), h("ul", { x: 3 }, [h("li", { x: 3 }, [text(input.todo)])]) ])), node: #-document.getElementById("app")-# })
+app({ init: { todos: [], value: "" }
+    , view: (state) => ( h("main"
+                       , { x: 3 }
+                       , [ h("input", { type: "text", oninput: newValue }, [])
+                         , h("button", { onclick: addTodo }, [text("Add")])
+                         , h("ul", {}, map((todo) => (h("li", {}, [text(todo)])), state.todos))
+                         ]
+                       )
+      )
+    , node: #-document.getElementById("app")-# })

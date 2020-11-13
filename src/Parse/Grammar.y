@@ -73,8 +73,9 @@ import           Explain.Meta
 %left '+' '-' '||'
 %left '*' '/' '&&'
 %left ','
-%nonassoc '(' ')' '=' '=>' '::' where is 'ret' '{' '}'
+%nonassoc '(' ')' '=' '=>' '::' where is 'ret' '{' '}' '[' ']'
 %right '!'
+%left HIGHEST
 %%
 
 ast :: { Src.AST }
@@ -270,13 +271,15 @@ spreadPattern :: { Src.Pattern }
 
 
 record :: { Src.Exp }
-  : '{' recordFields '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.Record $2) }
+  : '{' rets recordFields rets '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Record $3) }
 
 recordFields :: { [Src.Field] }
-  : name ':' exp                  { [Src.Field (strV $1, $3)] }
-  | '...' exp                     { [Src.FieldSpread $2] }
-  | recordFields ',' name ':' exp { $1 <> [Src.Field (strV $3, $5)] }
-  | recordFields ',' '...' exp    { $1 <> [Src.FieldSpread $4] }
+  : name ':' exp                            { [Src.Field (strV $1, $3)] }
+  | '...' exp                               { [Src.FieldSpread $2] }
+  | recordFields ',' name ':' exp           { $1 <> [Src.Field (strV $3, $5)] }
+  | recordFields rets ',' rets name ':' exp { $1 <> [Src.Field (strV $5, $7)] }
+  | recordFields ',' '...' exp              { $1 <> [Src.FieldSpread $4] }
+  | {- empty -}                             { [] }
 
 
 operation :: { Src.Exp }
@@ -354,23 +357,18 @@ operation :: { Src.Exp }
                       $3)
                   
                   }
-  -- | exp '|>' exp 'ret'  { Meta emptyInfos (getArea $1) (Src.App
-  --                     ((Meta emptyInfos (getArea $1) (Src.App
-  --                        (Meta emptyInfos (tokenToArea $2) (Src.Var "|>")) 
-  --                        $1))) 
-  --                     $3)
-                  
-  --                 }
 
 listConstructor :: { Src.Exp }
-  : '[' listItems ']' { Meta emptyInfos (tokenToArea $1) (Src.ListConstructor $2) }
+  : '[' rets listItems rets ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.ListConstructor $3) }
+  -- | '[' rets listItems ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.ListConstructor $3) }
 
 listItems :: { [Src.ListItem] }
-  : exp                     { [Src.ListItem $1] }
-  | exp ',' listItems       { Src.ListItem $1 : $3 }
-  | '...' exp               { [Src.ListSpread $2] }
-  | '...' exp ',' listItems { Src.ListSpread $2 : $4 }
-  | {- empty -}             { [] }
+  : exp                         { [Src.ListItem $1] }
+  | listItems ',' exp           { $1 <> [Src.ListItem $3] }
+  | listItems rets ',' rets exp { $1 <> [Src.ListItem $5] }
+  | '...' exp                   { [Src.ListSpread $2] }
+  | listItems ',' '...' exp     { $1 <> [Src.ListSpread $4] }
+  | {- empty -}                 { [] }
 
 literal :: { Src.Exp }
   : int                       { Meta emptyInfos (tokenToArea $1) (Src.LInt $ strV $1) }

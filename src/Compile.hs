@@ -51,7 +51,20 @@ instance Compilable Exp where
         <> compile falsy
         <> ")"
 
-    Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
+    -- Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
+    Abs param body      -> compileAbs Nothing param body
+      where
+        -- TODO: Check if parent is Nothing we add (
+        -- Check if body is Abs we just call it again with a parent
+        compileAbs :: Maybe Exp -> Name -> Exp -> String
+        compileAbs parent param body =
+          let start = case parent of
+                Just _  -> ", " <> param
+                Nothing -> "curryPowder((" <> param
+              next = case body of
+                (Solved _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
+                _                               -> ") => " <> compile body <> ")"
+          in  start <> next
 
     Var name            -> name
 
@@ -64,19 +77,19 @@ instance Compilable Exp where
 
     Record fields ->
       -- Maybe just map and intercalate ?
-      let fs = init $ foldr compileField "" fields in "{" <> fs <> " }"
+      let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
      where
-      compileField :: Field -> String -> String
-      compileField field res = case field of
-        Field (name, exp) -> " " <> name <> ": " <> compile exp <> "," <> res
-        FieldSpread exp -> " ..." <> compile exp <> "," <> res
+      compileField :: Field -> String
+      compileField field = case field of
+        Field (name, exp) -> " " <> name <> ": " <> compile exp
+        FieldSpread exp -> " ..." <> compile exp
 
     FieldAccess record field -> compile record <> compile field
 
     JSExp content            -> content
 
     ListConstructor elems ->
-      "[" <> intercalate ", " (compileListItem <$> elems) <> "]"
+      "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
      where
       compileListItem :: ListItem -> String
       compileListItem li = case li of
@@ -268,7 +281,7 @@ instance Compilable AST where
     let path        = fromMaybe "Unknown" apath
 
         infoComment = "// file: " <> path <> "\n"
-        helpers     = buildPCompArgFn
+        helpers     = curryPowder <> buildPCompArgFn
 
         adts        = case aadts of
           [] -> ""
@@ -313,11 +326,35 @@ buildDefaultExport es =
 
 buildPCompArgFn :: String
 buildPCompArgFn = unlines
-  [ "const __buildCtorParam = n => {"
+  [ ""
+  , "const __buildCtorParam = n => {"
   , "  if (typeof n === \"string\") {"
   , "    return { type: \"String\", value: n };"
   , "  } else {"
   , "    return { type: \"\", value: n };"
   , "  }"
-  , "};\n"
+  , "};"
+  , ""
+  ]
+
+curryPowder :: String
+curryPowder = unlines
+  [ "" 
+  , "const curryPowder = (fn) => {"
+  , "  function curried(...args) {"
+  , "    const length = args.length"
+  , "    function saucy(...args2) {"
+  , "      return curried.apply(this, args.concat(args2))"
+  , "    }"
+  , "    saucy.toString = toString(fn, args)"
+  , "    return ("
+  , "      length >= fn.length ?"
+  , "      fn.apply(this, args) :"
+  , "      saucy"
+  , "    )"
+  , "  }"
+  , "  curried.toString = toString(fn)"
+  , "  return curried"
+  , "};"
+  , ""
   ]

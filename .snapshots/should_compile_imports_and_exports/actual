@@ -1,4 +1,23 @@
 // file: ./ModuleA.mad
+
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
 const __buildCtorParam = n => {
   if (typeof n === "string") {
     return { type: "String", value: n };
@@ -7,11 +26,30 @@ const __buildCtorParam = n => {
   }
 };
 
-export const singleton = (a => [a]);
+export const singleton = curryPowder((a) => ([a]));
 export default { singleton };
 // file: ./ModuleB.mad
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";
+
+
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
 
 const __buildCtorParam = n => {
   if (typeof n === "string") {

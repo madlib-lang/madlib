@@ -227,7 +227,7 @@ inferRecord env exp = do
 
   inferred <- mapM (inferRecordField env) fields
   let inferredFields = trd <$> inferred
-      subst          = foldr1 compose (beg <$> inferred)
+      subst          = foldr compose M.empty (beg <$> inferred)
       recordType     = TRecord (M.fromList $ concat $ mid <$> inferred) False
   return
     (subst, recordType, Slv.Solved recordType area (Slv.Record inferredFields))
