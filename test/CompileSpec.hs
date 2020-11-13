@@ -171,6 +171,17 @@ spec = do
             , "  is { name: \"Bob\" }: \"Bob\""
             , "  is { x: x, ...b } : b.name"
             , "}"
+            , "addXAndY = (r) => ("
+            , "  where(r) {"
+            , "    is { x, y }: x + y"
+            , "  }"
+            , ")"
+            , "fnTCHOU = (x) => (x.a.b.c.d.e)"
+            , "crazyRecordPattern = (r) => ("
+            , "  where(r) {"
+            , "    is { x: { y: { y: y }, ...k }, ...c }: y + k.z + c.o + c.i"
+            , "  }"
+            , ")"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual

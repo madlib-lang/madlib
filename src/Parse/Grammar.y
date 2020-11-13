@@ -251,8 +251,10 @@ recordPattern :: { Src.Pattern }
 
 recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
   : name ':' pattern                         { M.fromList [(strV $1, $3)] }
+  | name                                     { M.fromList [(strV $1, Meta emptyInfos (tokenToArea $1) (Src.PVar (strV $1)))] }
   | recordFieldPatterns ',' spreadPattern    { M.insert "..." $3 $1 }
   | recordFieldPatterns ',' name ':' pattern { M.insert (strV $3) $5 $1 }
+  | recordFieldPatterns ',' name             { M.insert (strV $3) (Meta emptyInfos (tokenToArea $3) (Src.PVar (strV $3))) $1 }
 
 listPattern :: { Src.Pattern }
   : '[' listItemPatterns ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PList $2) }

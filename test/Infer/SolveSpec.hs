@@ -559,6 +559,19 @@ spec = do
       snapshotTest
         "should correctly infer nested spread patterns"
         actual
+    
+    it "should correctly infer shorthand syntax for record property matching" $ do
+      let code = unlines
+            [ "fn = (r) => ("
+            , "  where(r) {"
+            , "    is { x, y }: x + y"
+            , "  }"
+            , ")"
+            ]
+          actual = tester code
+      snapshotTest
+        "should correctly infer shorthand syntax for record property matching"
+        actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv

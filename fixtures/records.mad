@@ -1,9 +1,18 @@
 f = (x) => (x.y.z)
 
 
+data Maybe a = Just a | Nothing
+
 fn = (r) => (
   where(r) {
-    is { x: { y: { y: y }, ...k }, ...c }: y + k.z + c.o + c.i
+    is { x: { y: { y: Just y }, ...k }, ...c }: y + k.z + c.o + c.i
+  }
+)
+
+
+fn2 = (r) => (
+  where(r) {
+    is { x, y }: x + y
   }
 )
 

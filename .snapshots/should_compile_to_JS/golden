@@ -178,4 +178,17 @@ export const map = (f => (xs => ((__x__) => {
     return b.name;
   }
 })({ x: 4, name: "John" });
+const addXAndY = (r => ((__x__) => {
+  if (true && true) {
+    const { y: y, x: x } = __x__;
+    return (x) + (y);
+  }
+})(r));
+const fnTCHOU = (x => x.a.b.c.d.e);
+const crazyRecordPattern = (r => ((__x__) => {
+  if (true && true && true) {
+    const { x: { y: { y: y }, ...k }, ...c } = __x__;
+    return (((y) + (k.z)) + (c.o)) + (c.i);
+  }
+})(r));
 export default { fn, map };
