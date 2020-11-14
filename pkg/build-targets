@@ -1,0 +1,23 @@
+#!/bin/sh
+
+PATH_TARGETS="./pkg/targets"
+
+DARWIN_NAME="madlib-macos"
+DARWIN_TAR_FILENAME="$DARWIN_NAME.tar.gz"
+
+PATH_DARWIN_TARGET="$PATH_TARGETS/$DARWIN_NAME"
+
+
+# prepare
+mkdir $PATH_TARGETS
+mkdir $PATH_DARWIN_TARGET
+
+
+# build osx
+PATH_OSX_EXE="$(stack path --dist-dir)/build/madlib/madlib"
+
+stack build
+cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
+tar -C $PATH_TARGETS -czvf $DARWIN_TAR_FILENAME $DARWIN_NAME
+mv $DARWIN_TAR_FILENAME $PATH_TARGETS
+rm -r $PATH_DARWIN_TARGET

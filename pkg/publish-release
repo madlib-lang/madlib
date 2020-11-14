@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# $1 : GITHUB TOKEN
+# $2 : Release version
+
+#GITHUB_TOKEN=$1
+VERSION=$2
+
+PATH_TARGETS="./pkg/targets/*.tar.gz"
+
+GITHUB_TOKEN=$1 gh release create $VERSION $PATH_TARGETS -t "Release $VERSION"

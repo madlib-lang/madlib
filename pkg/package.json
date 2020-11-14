@@ -1,0 +1,20 @@
+{
+  "name": "@open-sorcerers/madlib",
+  "version": "0.0.1",
+  "main": "./src/run.js",
+  "bin": {
+    "madlib": "src/run.js"
+  },
+  "scripts": {
+    "postinstall": "node ./src/install.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "binary-install": "^0.1.0",
+    "madlib": "0.0.0"
+  },
+  "devDependencies": {},
+  "description": ""
+}
