@@ -1,2 +1,0 @@
-#!/bin/sh
-rg -U -s --multiline-dotall -P -v "TN:\nSF:((?!end_of_record).)*$1\.hs((?!end_of_record).)*end_of_record\n" $2 > $3
