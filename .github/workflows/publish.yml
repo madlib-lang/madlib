@@ -1,0 +1,98 @@
+# on:
+#   push:
+#     tags:
+#       - 'v*'
+name: 'Publish new version'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish ( ex: v0.0.1 )'
+        required: true
+
+env:
+  node-version: 14.x
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - run: \
+          STACK_PKG_VERSION="v$(cat package.yaml | grep version | cut -d":" -f2 | xargs)" \
+          JS_PKG_VERSION="v$(cat pkg/package.json | grep version | cut -d":" -f2 | cut -d"\"" -f2)" \
+          TAG_NAME=${{ github.event.inputs.version }} \
+          if [ $TAG_NAME = $STACK_PKG_VERSION -a $TAG_NAME = $JS_PKG_VERSION ]; \
+          then \
+            echo "Versions match" \
+          else \
+            echo "Versions in package.yaml and package.json don't match the tag" \
+            exit 1 \
+          fi
+
+
+  release:
+    needs: check-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-haskell@v1.1
+        with:
+          ghc-version: "8.8.4"
+          cabal-version: "latest"
+          enable-stack: true
+          stack-version: "latest"
+
+      - run: ./pkg/build-targets
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.1.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: Release ${{ github.event.inputs.version }}
+          body: Release ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload OSX target
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./pkg/targets/madlib-macos.tar.gz
+          asset_name: madlib-macos.tar.gz
+          asset_content_type: application/tar+gzip
+     
+      - name: Upload Linux target
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./pkg/targets/madlib-linux.tar.gz
+          asset_name: madlib-linux.tar.gz
+          asset_content_type: application/tar+gzip
+
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./pkg
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.node-version }}
+      - run: npm install
+      - name: Publish package
+        uses: JS-DevTools/npm-publish@v1.4.0
+        with:
+          working-directory: ./pkg
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public

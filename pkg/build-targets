@@ -1,16 +1,29 @@
 #!/bin/sh
 
+PKG_PATH="./pkg"
 PATH_TARGETS="./pkg/targets"
 
 DARWIN_NAME="madlib-macos"
+LINUX_NAME="madlib-linux"
+
 DARWIN_TAR_FILENAME="$DARWIN_NAME.tar.gz"
+LINUX_TAR_FILENAME="$LINUX_NAME.tar.gz"
 
 PATH_DARWIN_TARGET="$PATH_TARGETS/$DARWIN_NAME"
+PATH_LINUX_TARGET="$PATH_TARGETS/$LINUX_NAME"
 
 
 # prepare
 mkdir $PATH_TARGETS
 mkdir $PATH_DARWIN_TARGET
+mkdir $PATH_LINUX_TARGET
+
+
+# build linux x64
+DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile.ubuntu" -o $PATH_LINUX_TARGET .
+tar -C $PATH_TARGETS -czvf $LINUX_TAR_FILENAME $LINUX_NAME
+mv $LINUX_TAR_FILENAME $PATH_TARGETS
+rm -r $PATH_LINUX_TARGET
 
 
 # build osx

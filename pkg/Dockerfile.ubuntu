@@ -1,0 +1,16 @@
+# Should build static binary
+# https://vadosware.io/post/static-binaries-for-haskell-a-convoluted-approach/
+# Should use alpine:3.12 to get ghc 8.8.3
+
+FROM haskell:8.8.3 AS build-stage
+
+COPY . .
+
+RUN stack install alex happy
+RUN stack build
+
+RUN cp "$(stack path --dist-dir)/build/madlib/madlib" .
+
+
+FROM scratch AS export-stage
+COPY --from=build-stage ./madlib /
