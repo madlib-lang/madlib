@@ -40,6 +40,10 @@ jobs:
           enable-stack: true
           stack-version: "latest"
 
+      - uses: docker-practice/actions-setup-docker@master
+
+      - run: stack install alex happy
+
       - run: ./pkg/build-targets
 
       - name: Create Release
