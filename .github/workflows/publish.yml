@@ -15,16 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: \
-          STACK_PKG_VERSION="v$(cat package.yaml | grep version | cut -d":" -f2 | xargs)" \
-          JS_PKG_VERSION="v$(cat pkg/package.json | grep version | cut -d":" -f2 | cut -d"\"" -f2)" \
-          TAG_NAME=${{ github.event.inputs.version }} \
-          if [ $TAG_NAME = $STACK_PKG_VERSION -a $TAG_NAME = $JS_PKG_VERSION ]; \
-          then \
-            echo "Versions match" \
-          else \
-            echo "Versions in package.yaml and package.json don't match the tag" \
-            exit 1 \
+      - run: |
+          STACK_PKG_VERSION="v$(cat package.yaml | grep version | cut -d":" -f2 | xargs)"
+          JS_PKG_VERSION="v$(cat pkg/package.json | grep version | cut -d":" -f2 | cut -d"\"" -f2)"
+          TAG_NAME=${{ github.event.inputs.version }}
+          if [ $TAG_NAME = $STACK_PKG_VERSION -a $TAG_NAME = $JS_PKG_VERSION ];
+          then
+            echo "Versions match"
+          else
+            echo "Versions in package.yaml and package.json don't match the tag"
+            exit 1
           fi
 
 
