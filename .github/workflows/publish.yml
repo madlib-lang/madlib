@@ -28,58 +28,58 @@ jobs:
           fi
 
 
-  release:
-    needs: check-version
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-haskell@v1.1
-        with:
-          ghc-version: "8.8.3"
-          cabal-version: "latest"
-          enable-stack: true
-          stack-version: "latest"
+  # release:
+  #   needs: check-version
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-haskell@v1.1
+  #       with:
+  #         ghc-version: "8.8.3"
+  #         cabal-version: "latest"
+  #         enable-stack: true
+  #         stack-version: "latest"
 
-      - uses: docker-practice/actions-setup-docker@master
+  #     - uses: docker-practice/actions-setup-docker@master
 
-      - run: stack install alex happy
+  #     - run: stack install alex happy
 
-      - run: ./pkg/build-targets
+  #     - run: ./pkg/build-targets
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          release_name: Release ${{ github.event.inputs.version }}
-          body: Release ${{ github.event.inputs.version }}
-          draft: false
-          prerelease: false
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: actions/create-release@v1.1.4
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+  #       with:
+  #         tag_name: ${{ github.event.inputs.version }}
+  #         release_name: Release ${{ github.event.inputs.version }}
+  #         body: Release ${{ github.event.inputs.version }}
+  #         draft: false
+  #         prerelease: false
 
-      - name: Upload OSX target
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./pkg/targets/madlib-macos.tar.gz
-          asset_name: madlib-macos.tar.gz
-          asset_content_type: application/tar+gzip
+  #     - name: Upload OSX target
+  #       uses: actions/upload-release-asset@v1.0.2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ./pkg/targets/madlib-macos.tar.gz
+  #         asset_name: madlib-macos.tar.gz
+  #         asset_content_type: application/tar+gzip
      
-      - name: Upload Linux target
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./pkg/targets/madlib-linux.tar.gz
-          asset_name: madlib-linux.tar.gz
-          asset_content_type: application/tar+gzip
+  #     - name: Upload Linux target
+  #       uses: actions/upload-release-asset@v1.0.2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ./pkg/targets/madlib-linux.tar.gz
+  #         asset_name: madlib-linux.tar.gz
+  #         asset_content_type: application/tar+gzip
 
   publish:
-    needs: release
+    # needs: release
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -91,9 +91,13 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
       - run: npm install
-      - name: Publish package
-        uses: JS-DevTools/npm-publish@v1.4.0
-        with:
-          working-directory: ./pkg
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
+      - run:
+          npm publish --access public
+      - env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+        # uses: JS-DevTools/npm-publish@v1.4.0
+        # with:
+        #   working-directory: ./pkg
+        #   token: ${{ secrets.NPM_TOKEN }}
+        #   access: public
