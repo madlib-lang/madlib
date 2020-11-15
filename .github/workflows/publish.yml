@@ -91,10 +91,9 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
       - run: npm install
+      - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - run:
           npm publish --access public
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
         # uses: JS-DevTools/npm-publish@v1.4.0
         # with:
