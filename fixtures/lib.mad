@@ -3,26 +3,23 @@ import IO from "IO"
 import F  from "Future"
 
 id :: a -> a
-id = (a) => a
+id = (a) => (a)
 
 double :: Num -> Num
-double = (n) => n * 2
+double = (n) => (n * 2)
 
-F.of([3, 4])
-  |> F.map(L.map(double))
-  |> F.run(IO.log, IO.log)
 
--- get("http://www.google.com")
---   |> run(id, IO.log)
+// get("http://www.google.com")
+//   |> run(id, IO.log)
 
-L.singleton(3) |> L.map((x) => x + 1) |> IO.log
+L.singleton(3) |> L.map((x) => (x + 1)) |> IO.log
 
-t = (x) => if (x) { False } else { True }
+t = (x) => (if (x) { False } else { True })
 
 F.of(True)
-  |> F.map((x) => if (x) { 2 } else { 4 })
-  |> F.map((x) => x * 2)
-  |> F.run((x) => x, IO.log)
+  |> F.map((x) => (if (x) { 2 } else { 4 }))
+  |> F.map((x) => (x * 2))
+  |> F.run((x) => (x), IO.log)
 
 
 a = { x: 3 }
@@ -31,13 +28,13 @@ c = { ...a, ...b }
 
 c.x + c.y
 
-total = (a) => a.x + a.y
+total = (a) => (a.x + a.y)
 
--- total(c) |> IO.log
+// -- total(c) |> IO.log
 
 data A = A (Num -> Num)
 
-p = A((x) => x + 1)
+p = A((x) => (x + 1))
 
 
 
@@ -59,19 +56,27 @@ data User
   = LoggedIn String
   | Anonymous
 
-userDisplayName = (u) => where(u) {
+userDisplayName = (u) => (where(u) {
   is LoggedIn name: name
   is Anonymous    : "Anonymous"
-}
+})
 
 
-fib = (n) => if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }
+fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2)})
 
 fib(8) |> IO.log
 
 
 if (1 < 2) { 1 } else { (1 - 1) + (1 - 2) }
 
-fn = (x) => x + 1
+fn = (x) => (x + 1)
 
 fn(1)
+
+
+F.of([3, 4])
+  |> F.map(L.map(double))
+  |> F.run(IO.log, IO.log)
+
+
+L.map(L.map(double), [[1, 2], [3, 4]])

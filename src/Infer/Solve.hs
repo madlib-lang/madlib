@@ -49,11 +49,12 @@ infer env lexp =
       Src.ListConstructor _ -> inferListConstructor env lexp
       Src.Export          _ -> inferExport env lexp
       Src.If _ _ _          -> inferIf env lexp
-      Src.JSExp c ->
+      Src.JSExp c -> do
+        v <- newTVar
         return
           ( M.empty
-          , TVar $ TV "a"
-          , Slv.Solved (TVar $ TV "a") area (Slv.JSExp c)
+          , v
+          , Slv.Solved v area (Slv.JSExp c)
           )
 
 
@@ -264,9 +265,11 @@ inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _
           _                -> Nothing
 
     case foundFieldType of
-      Just t ->
-        let solved = Slv.Solved t area (Slv.FieldAccess recordExp fieldExp)
-        in  return (fieldSubst, t, solved)
+      Just t -> do
+        let freeVars = ftv t
+        t' <- instantiate $ Forall (S.toList freeVars) t
+        let solved = Slv.Solved t' area (Slv.FieldAccess recordExp fieldExp)
+        return (fieldSubst, t', solved)
 
       Nothing -> do
         tv <- newTVar
@@ -602,8 +605,8 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
 
   return
     ( s1 `compose` s2
-    , t
-    , Slv.Solved t area (Slv.TypedExp (updateType e1 t) (updateTyping typing))
+    , t'
+    , Slv.Solved t area (Slv.TypedExp (updateType e1 t') (updateTyping typing))
     )
 
 

@@ -11,14 +11,11 @@ import           System.FilePath                ( takeDirectory
                                                 , replaceExtension
                                                 )
 import           System.Directory               ( createDirectoryIfMissing )
-
 import           Path
 import           AST
 
 import           Infer.Solve
 import           Infer.Infer
-import           Explain.Reason
-import           Error.Error
 import           Compile
 import qualified AST.Solved                    as Slv
 import qualified Explain.Format                as Explain

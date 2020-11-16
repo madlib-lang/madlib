@@ -728,6 +728,18 @@ spec = do
         "should validate correct type annotations"
         actual
 
+    it "should validate type annotations and instantiate their variables" $ do
+      let code = unlines
+            [ "map :: (a -> b) -> List a -> List b"
+            , "map = (f, xs) => (#- some JS -#)"
+            , "[[1, 2], [3, 4]]"
+            , "  |> map(map((x) => (x * 2)))"
+            ]
+          actual = tester code
+      snapshotTest
+        "should validate type annotations and instantiate their variables"
+        actual
+
     ---------------------------------------------------------------------------
 
 
