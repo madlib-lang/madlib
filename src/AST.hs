@@ -43,6 +43,7 @@ buildASTTable'
   -> IO (Either InferError Table)
 buildASTTable' rf parentPath imp rootPath entrypoint = do
   s <- try $ rf entrypoint :: IO (Either IOException String)
+  putStrLn $ "AST ENTRYPOINT: " ++ entrypoint
   let reason = case imp of
         Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
         Nothing   -> NoReason

@@ -10,6 +10,7 @@ import           Control.Monad.State            ( StateT(runStateT) )
 import           System.FilePath                ( takeDirectory
                                                 , replaceExtension
                                                 )
+import           System.FilePath.Posix          ( splitFileName )
 import           System.Directory               ( createDirectoryIfMissing )
 import           Path
 import           AST
@@ -23,21 +24,29 @@ import           Compile
 import qualified AST.Solved                    as Slv
 import qualified Explain.Format                as Explain
 
+
 main :: IO ()
 
+-- >>>>>>>>>>>>>>>>>>>>
+-- main = do
+--   entrypoint <- head <$> getArgs
+-- ====================
 main = run =<< execParser opts
  where
-  opts = info (parseTransform <**> helper)
-              (fullDesc <> progDesc "madlib transform" <> header hashBar)
+  opts = info
+    (parseTransform <**> helper)
+    (fullDesc <> progDesc "swap insanity with _______" <> header hashBar)
 
 run :: TransformFlags -> IO ()
 run (TransformFlags i o c) = do
-  -- entrypoint <- head <$> getArgs
   let entrypoint = show i
+-- <<<<<<<<<<<<<<<<<<<<
   putStrLn $ "ENTRYPOINT: " ++ entrypoint
+  putStrLn $ show (computeRootPath entrypoint)
   astTable <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
   let rootPath = computeRootPath entrypoint
+  putStrLn $ "ROOT PATH: " ++ rootPath
 
   let entryAST         = astTable >>= flip findAST entrypoint
       resolvedASTTable = case (entryAST, astTable) of
