@@ -1,3 +1,5 @@
+module Tools.CommandLine where
+
 import           System.IO                      ( hPutStrLn
                                                 , stderr
                                                 )
@@ -78,20 +80,20 @@ parseOutput = FileOutput <$> strOption
 parseTransform :: Parser TransformFlags
 parseTransform = TransformFlags <$> parseInput <*> parseOutput <*> parseConfig
 
-main :: IO ()
-main = smokeTest =<< execParser opts
- where
-  opts = info (parseTransform <**> helper)
-              (fullDesc <> progDesc "madlib transform" <> header hashBar)
+-- main :: IO ()
+-- main = smokeTest =<< execParser opts
+--  where
+--   opts = info (parseTransform <**> helper)
+--               (fullDesc <> progDesc "madlib transform" <> header hashBar)
 
-smokeTest :: TransformFlags -> IO ()
-smokeTest (TransformFlags i o c) =
-  putStrLn
-    $  headerString
-    ++ "\ninput: "
-    ++ show i
-    ++ ",\noutput: "
-    ++ show o
-    ++ ",\nconfig: "
-    ++ show c
-smokeTest _ = return ()
+-- smokeTest :: TransformFlags -> IO ()
+-- smokeTest (TransformFlags i o c) =
+--   putStrLn
+--     $  headerString
+--     ++ "\ninput: "
+--     ++ show i
+--     ++ ",\noutput: "
+--     ++ show o
+--     ++ ",\nconfig: "
+--     ++ show c
+-- smokeTest _ = return ()

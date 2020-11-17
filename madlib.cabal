@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9c73aa01f956f86b02a4a71b4f55582f1989665b42098527bc8b54a2be3f3c12
+-- hash: d13e890d0caed5613f948640b1948ea0bf347ab75172b84d792e909eea64b1c8
 
 name:           madlib
 version:        0.0.2
@@ -50,60 +50,11 @@ library
       Parse.Grammar
       Parse.Lexer
       Path
+      Tools.CommandLine
   other-modules:
       Paths_madlib
   hs-source-dirs:
       src
-  build-depends:
-      array ==0.5.4.0
-    , base >=4.7 && <5
-    , brittany
-    , containers ==0.6.2.1
-    , directory ==1.3.6.0
-    , either
-    , exceptions
-    , filepath
-    , hpc-lcov
-    , hspec
-    , hspec-golden
-    , monad-validate ==1.2.0.0
-    , mtl
-    , optparse-applicative
-    , pretty-show
-    , text
-    , transformers
-  default-language: Haskell2010
-
-executable madass-exe
-  main-is: cli.hs
-  other-modules:
-      AST
-      AST.Canonical
-      AST.Solved
-      AST.Source
-      Compile
-      Constants.Flags
-      Error.Error
-      Explain.Format
-      Explain.Location
-      Explain.Meta
-      Explain.Reason
-      Infer.ADT
-      Infer.Env
-      Infer.Infer
-      Infer.Instantiate
-      Infer.Solve
-      Infer.Substitute
-      Infer.Type
-      Infer.Unify
-      Main
-      Parse.Grammar
-      Parse.Lexer
-      Path
-      Paths_madlib
-  hs-source-dirs:
-      src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       array ==0.5.4.0
     , base >=4.7 && <5
@@ -149,6 +100,7 @@ executable madlib-exe
       Parse.Grammar
       Parse.Lexer
       Path
+      Tools.CommandLine
       Paths_madlib
   hs-source-dirs:
       src

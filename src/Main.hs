@@ -16,14 +16,25 @@ import           AST
 
 import           Infer.Solve
 import           Infer.Infer
+import           Options.Applicative
+import           Constants.Flags
+import           Tools.CommandLine
 import           Compile
 import qualified AST.Solved                    as Slv
 import qualified Explain.Format                as Explain
 
 main :: IO ()
-main = do
-  entrypoint <- head <$> getArgs
-  astTable   <- buildASTTable entrypoint
+
+main = run =<< execParser opts
+ where
+  opts = info (parseTransform <**> helper)
+              (fullDesc <> progDesc "madlib transform" <> header hashBar)
+
+run :: TransformFlags -> IO ()
+run (TransformFlags i o c) = do
+  -- entrypoint <- head <$> getArgs
+  let entrypoint = show i
+  astTable <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
 
   let rootPath = computeRootPath entrypoint

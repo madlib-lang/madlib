@@ -54,11 +54,7 @@ executables:
     <<: *exe-defaults
     main:                Main.hs
     source-dirs: src
-  madass-exe:
-    <<: *exe-defaults
-    main:                cli.hs
-    source-dirs: src
-    
+      
 tests:
   madlib-test:
     main:                Spec.hs
