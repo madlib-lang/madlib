@@ -34,9 +34,9 @@ run :: TransformFlags -> IO ()
 run (TransformFlags i o c) = do
   -- entrypoint <- head <$> getArgs
   let entrypoint = show i
+  putStrLn $ "ENTRYPOINT: " ++ entrypoint
   astTable <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
-
   let rootPath = computeRootPath entrypoint
 
   let entryAST         = astTable >>= flip findAST entrypoint
