@@ -52,19 +52,20 @@ instance Compilable Exp where
         <> ")"
 
     -- Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
-    Abs param body      -> compileAbs Nothing param body
-      where
+    Abs param body -> compileAbs Nothing param body
+     where
         -- TODO: Check if parent is Nothing we add (
         -- Check if body is Abs we just call it again with a parent
-        compileAbs :: Maybe Exp -> Name -> Exp -> String
-        compileAbs parent param body =
-          let start = case parent of
-                Just _  -> ", " <> param
-                Nothing -> "curryPowder((" <> param
-              next = case body of
-                (Solved _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                _                               -> ") => " <> compile body <> ")"
-          in  start <> next
+      compileAbs :: Maybe Exp -> Name -> Exp -> String
+      compileAbs parent param body =
+        let start = case parent of
+              Just _  -> ", " <> param
+              Nothing -> "curryPowder((" <> param
+            next = case body of
+              (Solved _ _ (Abs param' body')) ->
+                compileAbs (Just body) param' body'
+              _ -> ") => " <> compile body <> ")"
+        in  start <> next
 
     Var name            -> name
 
@@ -81,8 +82,8 @@ instance Compilable Exp where
      where
       compileField :: Field -> String
       compileField field = case field of
-        Field (name, exp) -> " " <> name <> ": " <> compile exp
-        FieldSpread exp -> " ..." <> compile exp
+        Field       (name, exp) -> " " <> name <> ": " <> compile exp
+        FieldSpread exp         -> " ..." <> compile exp
 
     FieldAccess record field -> compile record <> compile field
 
@@ -110,8 +111,8 @@ instance Compilable Exp where
       compilePattern _     PAny     = "true"
       compilePattern scope (PNum n) = scope <> " === " <> n
       compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool n) | n == "true" = scope <> " === true"
-                                     | otherwise   = scope <> " === false"
+      compilePattern scope (PBool n) | True  = scope <> " === true"
+                                     | False = scope <> " === false"
       compilePattern scope (PCon n)
         | n == "String" = "typeof " <> scope <> " === \"string\""
         | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
@@ -339,7 +340,7 @@ buildPCompArgFn = unlines
 
 curryPowder :: String
 curryPowder = unlines
-  [ "" 
+  [ ""
   , "const curryPowder = (fn) => {"
   , "  function curried(...args) {"
   , "    const length = args.length"

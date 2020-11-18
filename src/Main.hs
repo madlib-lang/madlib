@@ -23,24 +23,23 @@ import           Tools.CommandLine
 import           Compile
 import qualified AST.Solved                    as Slv
 import qualified Explain.Format                as Explain
+-- import           Paths_madlib                  as Meta
 
 
 main :: IO ()
 
--- >>>>>>>>>>>>>>>>>>>>
--- main = do
---   entrypoint <- head <$> getArgs
--- ====================
 main = run =<< execParser opts
  where
   opts = info
     (parseTransform <**> helper)
-    (fullDesc <> progDesc "swap insanity with _______" <> header hashBar)
+    (  fullDesc
+    <> progDesc "madlib@0.0.2" -- TODO: make this use Meta.version instead
+    <> header hashBar
+    )
 
 run :: TransformFlags -> IO ()
 run (TransformFlags i o c) = do
-  let entrypoint = show i
--- <<<<<<<<<<<<<<<<<<<<
+  let (FileInput entrypoint) = i
   putStrLn $ "ENTRYPOINT: " ++ entrypoint
   putStrLn $ show (computeRootPath entrypoint)
   astTable <- buildASTTable entrypoint

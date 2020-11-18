@@ -10,33 +10,13 @@ import           Data.Semigroup                 ( (<>) )
 import qualified Data.Text                     as T
 
 import           Constants.Flags
-import           Paths_madlib                  as Lib
 
 hashBar = "################################################"
 h1 = " ____    __  ____   _____   ____    ____  ______"
 h2 = "|    \\  /  ||    \\  |    \\ |    |  |    ||      )"
 h3 = "|     \\/   ||     \\ |     \\|    |_ |    ||     <"
 h4 = "|__/\\__/|__||__|\\__\\|_____/|______||____||______)"
-headerString = h1 ++ "\n" ++ h2 ++ "\n" ++ h3 ++ "\n" ++ h4
-
--- -- parseCommand :: Parser Command
--- -- parseCommand = subparser $ command "transform" parseTransform
--- -- parseCommand = subparser
---   -- $ command "transform" (parseTransform `withInfo` "Transform source code")
-
--- parseOptions :: Parser Options
--- parseOptions = Options <*> parseInput
-
--- run :: Options -> IO ()
--- run (Options command) = do
---   case command of
---     Transform i o c l -> (return ())
---  where
---   printit :: Show a => (Command -> a) -> Maybe Command -> IO ()
---   printit acc = maybe (err "fucked up") (print . acc)
-
--- main :: IO ()
--- main = run =<< execParser (parseOptions `withInfo` "Cool!")
+madlibAscii = h1 ++ "\n" ++ h2 ++ "\n" ++ h3 ++ "\n" ++ h4
 
 data TransformFlags = TransformFlags
   { input      :: FlagInput
@@ -53,7 +33,7 @@ parseConfig = FileConfig <$> strOption
   <> metavar "CONFIG"
   <> help "What config to use"
   <> showDefault
-  <> value "madlib.yaml"
+  <> value "madlib.json"
   )
 
 fileInput :: Parser FlagInput
@@ -80,11 +60,12 @@ parseOutput = FileOutput <$> strOption
 parseTransform :: Parser TransformFlags
 parseTransform = TransformFlags <$> parseInput <*> parseOutput <*> parseConfig
 
+-- TODO: move this into a `--debug` flag or similar
 -- main :: IO ()
 -- main = smokeTest =<< execParser opts
 --  where
 --   opts = info (parseTransform <**> helper)
---               (fullDesc <> progDesc "madlib transform" <> header hashBar)
+--               (fullDesc <> progDesc "madlib transform" <> header "#####")
 
 -- smokeTest :: TransformFlags -> IO ()
 -- smokeTest (TransformFlags i o c) =
