@@ -3,18 +3,18 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "Result" [])
+            (TComp "path" "Result" [])
             (Area (Loc 72 2 1) (Loc 79 2 8))
             (Assignment
                "result1"
                (Solved
-                  (TComp "Result" [])
+                  (TComp "path" "Result" [])
                   (Area (Loc 82 2 11) (Loc 106 2 35))
                   (App
                      (Solved
                         (TArr
                            (TRecord (fromList [ ( "value" , TCon CString ) ]) False)
-                           (TComp "Result" []))
+                           (TComp "path" "Result" []))
                         (Area (Loc 82 2 11) (Loc 89 2 18))
                         (Var "Success"))
                      (Solved
@@ -28,18 +28,18 @@ Right
                                )
                            ])))))
         , Solved
-            (TComp "Result" [])
+            (TComp "path" "Result" [])
             (Area (Loc 107 3 1) (Loc 114 3 8))
             (Assignment
                "result2"
                (Solved
-                  (TComp "Result" [])
+                  (TComp "path" "Result" [])
                   (Area (Loc 117 3 11) (Loc 142 3 36))
                   (App
                      (Solved
                         (TArr
                            (TRecord (fromList [ ( "message" , TCon CString ) ]) False)
-                           (TComp "Result" []))
+                           (TComp "path" "Result" []))
                         (Area (Loc 117 3 11) (Loc 122 3 16))
                         (Var "Error"))
                      (Solved
@@ -57,7 +57,7 @@ Right
             (Area (Loc 173 4 31) (Loc 180 4 38))
             (App
                (Solved
-                  (TArr (TComp "Result" []) (TCon CBool))
+                  (TArr (TComp "path" "Result" []) (TCon CBool))
                   (Area (Loc 173 4 31) (Loc 180 4 38))
                   (App
                      (Solved
@@ -93,11 +93,11 @@ Right
                                           (Area (Loc 160 4 18) (Loc 161 4 19))
                                           (Var "b"))))))))
                      (Solved
-                        (TComp "Result" [])
+                        (TComp "path" "Result" [])
                         (Area (Loc 164 4 22) (Loc 171 4 29))
                         (Var "result1"))))
                (Solved
-                  (TComp "Result" [])
+                  (TComp "path" "Result" [])
                   (Area (Loc 173 4 31) (Loc 180 4 38))
                   (Var "result2")))
         ]
@@ -106,17 +106,14 @@ Right
             { adtname = "Result"
             , adtparams = []
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Success"
-                    , adtcargs =
-                        Just [ TRRecord (fromList [ ( "value" , TRSingle "String" ) ]) ]
-                    }
-                , ADTConstructor
-                    { adtcname = "Error"
-                    , adtcargs =
-                        Just [ TRRecord (fromList [ ( "message" , TRSingle "String" ) ]) ]
-                    }
+                [ Constructor
+                    "Success"
+                    [ TRRecord (fromList [ ( "value" , TRSingle "String" ) ]) ]
+                , Constructor
+                    "Error"
+                    [ TRRecord (fromList [ ( "message" , TRSingle "String" ) ]) ]
                 ]
+            , adtexported = False
             }
         ]
     , apath = Just "path"

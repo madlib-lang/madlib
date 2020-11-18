@@ -6,7 +6,7 @@ module Infer.Env where
 import qualified Data.Map                      as M
 import           Infer.Type
 import           AST.Source
-import           Control.Monad.Except
+import           Control.Monad.Except           ( MonadError(throwError) )
 import           Infer.Instantiate
 import           Infer.ADT
 import           Infer.Infer
@@ -73,13 +73,17 @@ initialEnv = Env
       `TArr` TVar (TV "b")
       )
     , ( "asList"
-      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "List" [TVar $ TV "a"]
+      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "Prelude"
+                                                       "List"
+                                                       [TVar $ TV "a"]
       )
     , ( "List"
-      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "List" [TVar $ TV "a"]
+      , Forall [TV "a"] $ TArr (TVar $ TV "a") $ TComp "Prelude"
+                                                       "List"
+                                                       [TVar $ TV "a"]
       )
     ]
-  , envadts        = M.fromList [("List", TComp "List" [TVar $ TV "a"])]
+  , envadts = M.fromList [("List", TComp "Prelude" "List" [TVar $ TV "a"])]
   , envimports     = M.empty
   , envcurrentpath = ""
   }
@@ -87,12 +91,20 @@ initialEnv = Env
 
 -- TODO: Should we build imported names here ?
 buildInitialEnv :: AST -> Infer Env
-buildInitialEnv AST { aadts, apath } = do
-  tadts <- buildADTTypes aadts
-  vars  <- resolveADTs tadts aadts
+buildInitialEnv AST { aadts, apath = Just apath } = do
+  tadts <- buildADTTypes apath aadts
+  vars  <- resolveADTs apath tadts aadts
   let allVars = M.union (envvars initialEnv) vars
   return Env { envvars        = allVars
-             , envadts        = tadts
+             , envadts        = M.union (envadts initialEnv) tadts
              , envimports     = M.empty
-             , envcurrentpath = fromMaybe "" apath
+             , envcurrentpath = apath
              }
+
+mergeEnvs :: Env -> Env -> Env
+mergeEnvs env env' = Env
+  { envvars        = M.union (envvars env) (envvars env')
+  , envadts        = M.union (envadts env) (envadts env')
+  , envimports     = M.union (envimports env) (envimports env')
+  , envcurrentpath = envcurrentpath env'
+  }

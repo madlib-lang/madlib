@@ -28,8 +28,8 @@ const __buildCtorParam = n => {
   }
 };
 
-const Just = a => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] });
-const Nothing = { __constructor: "Nothing" };
+const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] }));
+const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
 export const fn = curryPowder((b, c) => (b) + (c));
 const inc = curryPowder((x) => (x) + (1));
 const dec = curryPowder((x) => (x) - (1));

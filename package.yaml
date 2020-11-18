@@ -1,5 +1,5 @@
 name:                madlib
-version:             0.0.2
+version:             0.0.3
 github:              "open-sorcerers/madlib"
 license:             BSD3
 author:              "Arnaud Boeglin, Brekk Bockrath"
@@ -37,7 +37,10 @@ dependencies:
 - text
 - optparse-applicative
 - directory == 1.3.6.0
-
+- aeson
+- bytestring
+- MissingH
+- executable-path == 0.0.3.1
 
 library:
   source-dirs: src

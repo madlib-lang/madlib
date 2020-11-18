@@ -7,7 +7,6 @@ import qualified Data.Map                      as M
 
 type Vars = M.Map String Scheme
 type ADTs = M.Map String Type
-type Typings = M.Map String Scheme
 type Imports = M.Map String Type
 
 data Env
@@ -28,7 +27,7 @@ data Type
   = TVar TVar                   -- Variable type
   | TCon TCon                   -- Constant type
   | TArr Type Type              -- Arrow type
-  | TComp String [Type]         -- Composite type
+  | TComp FilePath String [Type]         -- Composite type
   | TRecord (M.Map String Type) Bool -- Record type: Bool means open or closed
   deriving (Show, Eq, Ord)
 

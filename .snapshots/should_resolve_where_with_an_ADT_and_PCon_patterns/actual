@@ -3,16 +3,16 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "Maybe" [ TCon CNum ])
+            (TComp "path" "Maybe" [ TCon CNum ])
             (Area (Loc 32 2 1) (Loc 39 2 8))
             (Assignment
                "perhaps"
                (Solved
-                  (TComp "Maybe" [ TCon CNum ])
+                  (TComp "path" "Maybe" [ TCon CNum ])
                   (Area (Loc 42 2 11) (Loc 49 2 18))
                   (App
                      (Solved
-                        (TArr (TVar (TV "b")) (TComp "Maybe" [ TVar (TV "b") ]))
+                        (TArr (TVar (TV "b")) (TComp "path" "Maybe" [ TVar (TV "b") ]))
                         (Area (Loc 42 2 11) (Loc 46 2 15))
                         (Var "Just"))
                      (Solved
@@ -22,24 +22,24 @@ Right
             (Area (Loc 50 3 1) (Loc 131 7 1))
             (Where
                (Solved
-                  (TComp "Maybe" [ TCon CNum ])
+                  (TComp "path" "Maybe" [ TCon CNum ])
                   (Area (Loc 56 3 7) (Loc 63 3 14))
                   (Var "perhaps"))
                [ Solved
-                   (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                   (TArr (TComp "path" "Maybe" [ TCon CNum ]) (TCon CNum))
                    (Area (Loc 69 4 3) (Loc 89 4 23))
                    (Is
                       (PCtor "Just" [ PCon "Number" ])
                       (Solved (TCon CNum) (Area (Loc 88 4 22) (Loc 89 4 23)) (LInt "2")))
                , Solved
-                   (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                   (TArr (TComp "path" "Maybe" [ TCon CNum ]) (TCon CNum))
                    (Area (Loc 92 5 3) (Loc 109 5 20))
                    (Is
                       (PCtor "Nothing" [])
                       (Solved
                          (TCon CNum) (Area (Loc 108 5 19) (Loc 109 5 20)) (LInt "0")))
                , Solved
-                   (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
+                   (TArr (TComp "path" "Maybe" [ TCon CNum ]) (TCon CNum))
                    (Area (Loc 112 6 3) (Loc 129 6 20))
                    (Is
                       (PCtor "Just" [ PAny ])
@@ -52,10 +52,8 @@ Right
             { adtname = "Maybe"
             , adtparams = [ "a" ]
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Just" , adtcargs = Just [ TRSingle "a" ] }
-                , ADTConstructor { adtcname = "Nothing" , adtcargs = Nothing }
-                ]
+                [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
+            , adtexported = False
             }
         ]
     , apath = Just "path"

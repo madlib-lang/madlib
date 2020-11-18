@@ -1,0 +1,101 @@
+// file: /root/project/madlib_modules/random/src/Main.mad
+import R from "./Utils/Random.mjs";
+
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] }));
+export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
+export const random = curryPowder((seed) => R.random(seed));
+export default { random, Just, Nothing };
+// file: /root/project/madlib_modules/random/src/Utils/Random.mad
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+export const random = curryPowder((seed) => (seed) / (2));
+export default { random };
+// file: /root/project/src/Main.mad
+import R from "./.deps/random/src/Main.mjs";
+
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+R.random(3);

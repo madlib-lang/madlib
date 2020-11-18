@@ -7,7 +7,7 @@ Right
             (Area (Loc 0 1 1) (Loc 53 3 1))
             (Where
                (Solved
-                  (TComp "List" [ TCon CNum ])
+                  (TComp "Prelude" "List" [ TCon CNum ])
                   (Area (Loc 6 1 7) (Loc 21 1 22))
                   (ListConstructor
                      [ ListItem
@@ -22,7 +22,7 @@ Right
                          (Solved (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (LInt "8"))
                      ]))
                [ Solved
-                   (TArr (TComp "List" [ TCon CNum ]) (TCon CNum))
+                   (TArr (TComp "Prelude" "List" [ TCon CNum ]) (TCon CNum))
                    (Area (Loc 27 2 3) (Loc 51 2 27))
                    (Is
                       (PList [ PNum "1" , PNum "2" , PSpread (PVar "rest") ])

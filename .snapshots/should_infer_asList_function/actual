@@ -3,16 +3,16 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TArr (TVar (TV "a")) (TComp "List" [ TVar (TV "a") ]))
+            (TArr (TVar (TV "a")) (TComp "Prelude" "List" [ TVar (TV "a") ]))
             (Area (Loc 0 1 1) (Loc 18 1 19))
             (Abs
                "a"
                (Solved
-                  (TComp "List" [ TVar (TV "a") ])
+                  (TComp "Prelude" "List" [ TVar (TV "a") ])
                   (Area (Loc 8 1 9) (Loc 17 1 18))
                   (App
                      (Solved
-                        (TArr (TVar (TV "c")) (TComp "List" [ TVar (TV "c") ]))
+                        (TArr (TVar (TV "c")) (TComp "Prelude" "List" [ TVar (TV "c") ]))
                         (Area (Loc 8 1 9) (Loc 14 1 15))
                         (Var "asList"))
                      (Solved

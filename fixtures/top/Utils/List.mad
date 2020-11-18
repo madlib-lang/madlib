@@ -1,0 +1,6 @@
+
+singleton :: a -> List a
+export singleton = (a) => ([a])
+
+map :: (a -> b) -> List a -> List b
+export map = (f, xs) => (#- xs.map(f) -#)

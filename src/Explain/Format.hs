@@ -6,8 +6,6 @@ import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import           Infer.Type
-import           Debug.Trace
-import           Text.Show.Pretty               ( ppShow )
 import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
 
@@ -23,7 +21,7 @@ format rf (InferError err reason) = do
   case reason of
     Reason (WrongTypeApplied (Meta _ _ abs) (Meta infos (Area (Loc a li c) _) e)) _ area
       -> do
-        let beginning = case (trace (ppShow abs) abs) of
+        let beginning = case abs of
               -- TODO: Extend to other operators
               Src.App (Meta _ _ (Src.Var "+")) _ ->
                 "Error applying the operator +"
@@ -298,8 +296,8 @@ typeToStr t = case t of
       <> ")"
       <> " -> "
       <> typeToStr t2'
-  TArr  t1 t2   -> typeToStr t1 <> " -> " <> typeToStr t2
-  TComp n  vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
+  TArr t1 t2     -> typeToStr t1 <> " -> " <> typeToStr t2
+  TComp _ n vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
   TRecord fields _ ->
     "{ "
       <> (   intercalate ", "

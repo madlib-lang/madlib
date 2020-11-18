@@ -12,43 +12,59 @@ import           Data.List                      ( sort
 import           Data.Char                      ( toLower )
 
 import           AST.Solved
-import           Explain.Location
+import           Utils.Path                     ( cleanRelativePath
+                                                , computeTargetPath
+                                                , makeRelativeEx
+                                                )
+import           System.FilePath                ( replaceExtension
+                                                , dropFileName
+                                                , joinPath
+                                                )
 
 
 class Compilable a where
-  -- If the Bool is true it indicates that the expression terminates.
-  compile :: a -> String
+  -- first FilePath is the root folder of sources
+  -- second FilePath is the output path
+  compile :: FilePath -> FilePath -> a -> String
 
 instance Compilable Exp where
-  compile (Solved _ _ exp) = case exp of
+  compile astPath outputPath (Solved _ _ exp) = case exp of
     LInt  v     -> v
     LStr  v     -> "\"" <> v <> "\""
     LBool v     -> v
 
     App abs arg -> case abs of
-      Solved _ _ (Var "+" ) -> "(" <> compile arg <> ") + "
-      Solved _ _ (Var "-" ) -> "(" <> compile arg <> ") - "
-      Solved _ _ (Var "*" ) -> "(" <> compile arg <> ") * "
-      Solved _ _ (Var "/" ) -> "(" <> compile arg <> ") / "
-      Solved _ _ (Var "==") -> "(" <> compile arg <> ") === "
-      Solved _ _ (Var "&&") -> "(" <> compile arg <> ") && "
-      Solved _ _ (Var "||") -> "(" <> compile arg <> ") || "
-      Solved _ _ (Var ">" ) -> "(" <> compile arg <> ") > "
-      Solved _ _ (Var "<" ) -> "(" <> compile arg <> ") < "
-      Solved _ _ (Var ">=") -> "(" <> compile arg <> ") >= "
-      Solved _ _ (Var "<=") -> "(" <> compile arg <> ") <= "
+      Solved _ _ (Var "+") -> "(" <> compile astPath outputPath arg <> ") + "
+      Solved _ _ (Var "-") -> "(" <> compile astPath outputPath arg <> ") - "
+      Solved _ _ (Var "*") -> "(" <> compile astPath outputPath arg <> ") * "
+      Solved _ _ (Var "/") -> "(" <> compile astPath outputPath arg <> ") / "
+      Solved _ _ (Var "==") ->
+        "(" <> compile astPath outputPath arg <> ") === "
+      Solved _ _ (Var "&&") -> "(" <> compile astPath outputPath arg <> ") && "
+      Solved _ _ (Var "||") -> "(" <> compile astPath outputPath arg <> ") || "
+      Solved _ _ (Var ">" ) -> "(" <> compile astPath outputPath arg <> ") > "
+      Solved _ _ (Var "<" ) -> "(" <> compile astPath outputPath arg <> ") < "
+      Solved _ _ (Var ">=") -> "(" <> compile astPath outputPath arg <> ") >= "
+      Solved _ _ (Var "<=") -> "(" <> compile astPath outputPath arg <> ") <= "
       Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
-        compile arg <> "(" <> compile arg' <> ")"
+        compile astPath outputPath arg
+          <> "("
+          <> compile astPath outputPath arg'
+          <> ")"
 
-      _ -> compile abs <> "(" <> compile arg <> ")"
+      _ ->
+        compile astPath outputPath abs
+          <> "("
+          <> compile astPath outputPath arg
+          <> ")"
 
     If cond truthy falsy ->
       "("
-        <> compile cond
+        <> compile astPath outputPath cond
         <> " ? "
-        <> compile truthy
+        <> compile astPath outputPath truthy
         <> " : "
-        <> compile falsy
+        <> compile astPath outputPath falsy
         <> ")"
 
     -- Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
@@ -64,17 +80,18 @@ instance Compilable Exp where
             next = case body of
               (Solved _ _ (Abs param' body')) ->
                 compileAbs (Just body) param' body'
-              _ -> ") => " <> compile body <> ")"
+              _ -> ") => " <> compile astPath outputPath body <> ")"
         in  start <> next
 
-    Var name            -> name
+    Var name -> name
 
-    Assignment name exp -> "const " <> name <> " = " <> compile exp <> ""
+    Assignment name exp ->
+      "const " <> name <> " = " <> compile astPath outputPath exp <> ""
 
-    TypedExp   exp  _   -> compile exp
+    TypedExp exp _ -> compile astPath outputPath exp
 
     Export (Solved _ _ (Assignment name exp)) ->
-      "export const " <> name <> " = " <> compile exp <> ""
+      "export const " <> name <> " = " <> compile astPath outputPath exp <> ""
 
     Record fields ->
       -- Maybe just map and intercalate ?
@@ -82,20 +99,22 @@ instance Compilable Exp where
      where
       compileField :: Field -> String
       compileField field = case field of
-        Field       (name, exp) -> " " <> name <> ": " <> compile exp
-        FieldSpread exp         -> " ..." <> compile exp
+        Field (name, exp) ->
+          " " <> name <> ": " <> compile astPath outputPath exp
+        FieldSpread exp -> " ..." <> compile astPath outputPath exp
 
-    FieldAccess record field -> compile record <> compile field
+    FieldAccess record field ->
+      compile astPath outputPath record <> compile astPath outputPath field
 
-    JSExp content            -> content
+    JSExp content -> content
 
     ListConstructor elems ->
       "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
      where
       compileListItem :: ListItem -> String
       compileListItem li = case li of
-        ListItem   exp -> compile exp
-        ListSpread exp -> " ..." <> compile exp
+        ListItem   exp -> compile astPath outputPath exp
+        ListSpread exp -> " ..." <> compile astPath outputPath exp
 
     Where exp (first : cs) ->
       "((__x__) => {\n  "
@@ -103,7 +122,7 @@ instance Compilable Exp where
         <> concat (("  else " ++) . compileIs <$> cs)
         -- TODO: Add an else for undefined patterns error and make it throw.
         <> "})("
-        <> compile exp
+        <> compile astPath outputPath exp
         <> ")"
      where
       compilePattern :: String -> Pattern -> String
@@ -175,7 +194,7 @@ instance Compilable Exp where
           <> ") {\n"
           <> buildVars "__x__" pat
           <> "    return "
-          <> compile exp
+          <> compile astPath outputPath exp
           <> ";\n  }\n"
 
       buildVars :: String -> Pattern -> String
@@ -236,25 +255,29 @@ instance Compilable Exp where
 
 
 instance Compilable ADT where
-  compile ADT { adtconstructors = [] } = ""
-  compile ADT { adtconstructors } = foldr1 (<>) (compile <$> adtconstructors)
-
-
-instance Compilable ADTConstructor where
-  compile ADTConstructor { adtcname, adtcargs } = case adtcargs of
-    Nothing ->
-      "const " <> adtcname <> " = { __constructor: \"" <> adtcname <> "\" };\n"
-    Just args ->
-      "const "
-        <> adtcname
-        <> " = "
-        <> compileArgs args
-        <> compileBody adtcname args
-        <> ";\n"
+  compile _       _          ADT { adtconstructors = [] }         = ""
+  compile astPath outputPath ADT { adtconstructors, adtexported } = foldr
+    (<>)
+    ""
+    (addExport . compile astPath outputPath <$> adtconstructors)
    where
-    compileArgs n =
+    addExport :: String -> String
+    addExport ctor = if adtexported then "export " <> ctor else ctor
+
+
+instance Compilable Constructor where
+  compile _ _ (Constructor cname cparams) =
+    "const "
+      <> cname
+      <> " = curryPowder("
+      <> compileParams cparams
+      <> " => "
+      <> compileBody cname cparams
+      <> ");\n"
+   where
+    compileParams n =
       let argNames = (: []) <$> take (length n) ['a' ..]
-      in  foldr1 (<>) $ (<> " => ") <$> argNames
+      in  "(" <> intercalate ", " argNames <> ")"
 
     compileBody n a =
       let argNames = (: []) <$> take (length a) ['a' ..]
@@ -262,53 +285,69 @@ instance Compilable ADTConstructor where
           argStr   = intercalate ", " args
       in  "({ __constructor: \"" <> n <> "\", __args: [ " <> argStr <> " ] })"
 
-  compile _ = "// Not implemented\n"
 
 buildPCompArg :: String -> String
 buildPCompArg a = "__buildCtorParam(" <> a <> ")"
 
-instance Compilable Import where
-  compile (NamedImport names path) =
-    "import { " <> compileNames names <> " } from \"./" <> path <> ".mjs\""
-    where compileNames names = (init . init . concat) $ (++ ", ") <$> names
-  compile (DefaultImport alias path) =
-    "import " <> alias <> " from \"./" <> path <> ".mjs\""
+
+compileImport :: FilePath -> FilePath -> FilePath -> Import -> String
+compileImport rootPath outputPath astPath (NamedImport names path absPath) =
+  let importPath = buildImportPath outputPath rootPath astPath absPath
+  in  "import { " <> compileNames names <> " } from \"" <> importPath <> "\""
+  where compileNames names = (init . init . concat) $ (++ ", ") <$> names
+
+compileImport rootPath outputPath astPath (DefaultImport alias path absPath) =
+  let importPath = buildImportPath outputPath rootPath astPath absPath
+  in  "import " <> alias <> " from \"" <> importPath <> "\""
+
+buildImportPath outputPath rootPath astPath absPath =
+  let destPath = dropFileName $ computeTargetPath outputPath rootPath astPath
+      depPath  = computeTargetPath outputPath rootPath absPath
+  in  cleanRelativePath $ replaceExtension
+        (joinPath ["./", makeRelativeEx destPath depPath])
+        ".mjs"
+
+
 
 
 instance Compilable AST where
-  compile AST { aexps, aadts, apath, aimports } =
+  compile rootPath outputPath AST { aexps, aadts, apath, aimports } =
 
-    let path        = fromMaybe "Unknown" apath
+    let
+      path        = fromMaybe "Unknown" apath
 
-        infoComment = "// file: " <> path <> "\n"
-        helpers     = curryPowder <> buildPCompArgFn
+      infoComment = "// file: " <> path <> "\n"
+      helpers     = curryPowder <> buildPCompArgFn
 
-        adts        = case aadts of
-          [] -> ""
-          x  -> foldr1 (<>) (compile <$> x)
-        exps = case aexps of
-          [] -> ""
-          x  -> foldr1 (<>) (terminate . compile <$> x)
-        imports = case aimports of
-          [] -> ""
-          x  -> foldr1 (<>) (terminate . compile <$> x) <> "\n"
-        defaultExport = buildDefaultExport aexps
-    in  infoComment <> imports <> helpers <> adts <> exps <> defaultExport
+      adts        = case aadts of
+        [] -> ""
+        x  -> foldr1 (<>) (compile rootPath outputPath <$> x)
+      exps = case aexps of
+        [] -> ""
+        x  -> foldr1 (<>) (terminate . compile rootPath outputPath <$> x)
+      imports = case aimports of
+        [] -> ""
+        x ->
+          foldr1 (<>) (terminate . compileImport rootPath outputPath path <$> x)
+            <> "\n"
+      defaultExport = buildDefaultExport aadts aexps
+    in
+      infoComment <> imports <> helpers <> adts <> exps <> defaultExport
    where
     terminate :: String -> String
     terminate a | null a    = ""
                 | otherwise = a <> ";\n"
 
 
-buildDefaultExport :: [Exp] -> String
-buildDefaultExport es =
-  let exports = filter isExport es
-  in  case exports of
-        [] -> ""
-        exps ->
-          "export default { "
-            <> intercalate ", " (getExportName <$> exps)
-            <> " };\n"
+buildDefaultExport :: [ADT] -> [Exp] -> String
+buildDefaultExport as es =
+  let expExportNames = getExportName <$> filter isExport es
+      adtExportNames = getConstructorName
+        <$> concat (adtconstructors <$> filter adtexported as)
+      allDefaultExports = expExportNames <> adtExportNames
+  in  case allDefaultExports of
+        []      -> ""
+        exports -> "export default { " <> intercalate ", " exports <> " };\n"
 
  where
   isExport :: Exp -> Bool
@@ -322,6 +361,9 @@ buildDefaultExport es =
   getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
   getExportName (Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _))
     = n
+
+  getConstructorName :: Constructor -> String
+  getConstructorName (Constructor cname _) = cname
 
 
 buildPCompArgFn :: String

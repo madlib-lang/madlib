@@ -80,14 +80,13 @@ import           Explain.Meta
 
 ast :: { Src.AST }
   : adt ast          %shift { $2 { Src.aadts =  [$1] <> Src.aadts $2 } }
-  | adt              %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [$1], Src.apath = Nothing } }
+  -- | adt              %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [$1], Src.apath = Nothing } }
   | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
-  | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
+  -- | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
-  -- | ast 'ret'        %shift      { $1 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' typings maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
@@ -97,16 +96,13 @@ importDecls :: { [Src.Import] }
   | importDecl             { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str 'ret' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6)) }
-  | 'import' name 'from' str 'ret'                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4)) }
+  : 'import' '{' importNames '}' 'from' str 'ret' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6) (strV $6)) }
+  | 'import' name 'from' str 'ret'                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4) (strV $4)) }
 
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
   | name                 %shift { [strV $1] }
 
-rRet :: { [TokenClass] }
-  : 'ret'       { [] }
-  -- | 'ret' rret { [] }
 
 rets :: { [TokenClass] }
   : 'ret'       { [] }
@@ -125,10 +121,6 @@ rPipe :: { [TokenClass] }
   : '|'       { [] }
   | 'ret' '|' { [] }
 
-rParenL :: { [TokenClass] }
-  : '('       { [] }
-  | '(' 'ret' { [] }
-
 rComa :: { [TokenClass] }
   : ','       { [] }
   | ',' 'ret' { [] }
@@ -136,20 +128,22 @@ rComa :: { [TokenClass] }
 
 
 adt :: { Src.ADT }
-  : 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5 } }
+  : 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
+  | 'export' 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
 
 adtParameters :: { [Src.Name] }
   : name adtParameters %shift { strV $1 : $2 }
-  | name               %shift { [strV $1] }
+  -- | name               %shift { [strV $1] }
   | {- empty -}               { [] }
 
-adtConstructors :: { [Src.ADTConstructor] }
+adtConstructors :: { [Src.Constructor] }
   : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
-  | adtConstructor rRet                       %shift { [$1] }
+  | adtConstructor 'ret'                      %shift { [$1] }
+  | adtConstructor                            %shift { [$1] }
 
-adtConstructor :: { Src.ADTConstructor }
-  : name adtConstructorArgs %shift { Src.ADTConstructor { Src.adtcname = strV $1, Src.adtcargs = Just $2 } }
-  | name                    %shift { Src.ADTConstructor { Src.adtcname = strV $1, Src.adtcargs = Nothing } }
+adtConstructor :: { Src.Constructor }
+  : name adtConstructorArgs %shift { Src.Constructor (strV $1) $2 }
+  | name                    %shift { Src.Constructor (strV $1) [] }
 
 adtConstructorArgs :: { [Src.Typing] }
   : typing                    { [$1] }
@@ -158,21 +152,26 @@ adtConstructorArgs :: { [Src.Typing] }
 typings :: { Src.Typing }
   : typing '->' typings          { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | compositeTyping '->' typings { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  -- | '(' compositeTyping ')' '->' typings { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.TRArr $2 $5) }
   | compositeTyping              { $1 }
   | typing                       { $1 }
 
 typing :: { Src.Typing }
   : name                       { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
-  | '(' compositeTyping ')'    { $2 }
+  -- | '(' compositeTyping ')'    { $2 }
   | '(' typing '->' typing ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
   | '{' recordTypingArgs '}'   { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
 
 compositeTyping :: { Src.Typing }
-  : name compositeTypingArgs { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.TRComp (strV $1) $2) }
+  : name compositeTypingArgs          { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.TRComp (strV $1) $2) }
+  | name '.' name compositeTypingArgs { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $4))) (Src.TRComp (strV $1<>"."<>strV $3) $4) }
+  | name '.' name                     { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $1)) (Src.TRComp (strV $1<>"."<>strV $3) []) }
 
 compositeTypingArgs :: { [Src.Typing] }
-  : name                     { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
-  | name compositeTypingArgs { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
+  : name                        { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
+  | name compositeTypingArgs    { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
+  | typings { [$1] }
+  | '(' compositeTypingArgs ')' { $2 }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
   : name '::' typing                      { M.fromList [(strV $1, $3)] }
@@ -193,7 +192,6 @@ exp :: { Src.Exp }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
-  -- | '(' params ')' '=>' '(' 'ret' exp ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $8)) $2 $7 }
   | '(' exp ')'               %shift { $2 }
   | exp '.' name                     { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
@@ -241,7 +239,9 @@ nonCompositePattern :: { Src.Pattern }
 
 
 compositePattern :: { Src.Pattern }
-  : name patterns %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.PCtor (strV $1) $2) }
+  : name patterns          %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.PCtor (strV $1) $2) }
+  | name '.' name patterns %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $4))) (Src.PCtor (strV $1 <> "." <> strV $3) $4) }
+  | name '.' name          %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCtor (strV $1 <> "." <> strV $3) []) }
 
 patterns :: { [Src.Pattern] }
   : nonCompositePattern          { [$1] }

@@ -1,0 +1,2 @@
+map :: (a -> b) -> List a -> List b
+export map = (f, xs) => (#- xs.map(f) -#)

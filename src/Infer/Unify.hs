@@ -27,11 +27,12 @@ unify (l `TArr` r) (l' `TArr` r') = do
   s2 <- unify (apply s1 r) (apply s1 r')
   return (s2 `compose` s1)
 
-unify (TComp main vars) (TComp main' vars')
-  | main == main' && length vars == length vars'
+unify (TComp astPath main vars) (TComp astPath' main' vars')
+  | main == main' && astPath == astPath' && length vars == length vars'
   = let z = zip vars vars' in unifyVars M.empty z
   | otherwise
-  = throwError $ UnificationError (TComp main vars) (TComp main' vars')
+  = throwError
+    $ UnificationError (TComp astPath main vars) (TComp astPath' main' vars')
 
 unify (TRecord fields open) (TRecord fields' open')
   | open || open' = do

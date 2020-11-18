@@ -23,20 +23,21 @@ data AST =
     deriving(Eq, Show)
 
 data Import
-  = NamedImport [Name] FilePath
-  | DefaultImport Name FilePath
+  = NamedImport [Name] FilePath FilePath
+  | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
 data ADT =
   ADT
     { adtname :: Name
     , adtparams :: [Name]
-    , adtconstructors :: [ADTConstructor]
+    , adtconstructors :: [Constructor]
+    , adtexported :: Bool
     }
     deriving(Eq, Show)
 
-data ADTConstructor
-  = ADTConstructor       { adtcname :: Name, adtcargs :: Maybe [Typing] }
+data Constructor
+  = Constructor Name [Typing]
   deriving(Eq, Show)
 
 data Typing
@@ -98,3 +99,6 @@ type Name = String
 -- AST TABLE
 
 type Table = M.Map FilePath AST
+
+getConstructorName :: Constructor -> String
+getConstructorName (Constructor name _) = name

@@ -1,4 +1,4 @@
-// file: ./ModuleA.mad
+// file: ./ModuleA
 const toString = (fn, args = []) => () => (
   `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
 )
@@ -30,7 +30,7 @@ const __buildCtorParam = n => {
 
 export const singleton = curryPowder((a) => ([a]));
 export default { singleton };
-// file: ./ModuleB.mad
+// file: ./ModuleB
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";
 

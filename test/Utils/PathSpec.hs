@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
-module PathSpec where
+module Utils.PathSpec where
 
-import           Path
+import           Utils.Path
 import           Test.Hspec
 
 spec :: Spec

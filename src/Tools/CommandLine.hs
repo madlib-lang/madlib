@@ -53,27 +53,9 @@ parseOutput = FileOutput <$> strOption
   <> metavar "OUTPUT"
   <> help "What path to compile to"
   <> showDefault
-  <> value "STANDARD_OUT"
+  <> value "./build"
   )
 
 parseTransform :: Parser TransformFlags
 parseTransform = TransformFlags <$> parseInput <*> parseOutput <*> parseConfig
 
--- TODO: move this into a `--debug` flag or similar
--- main :: IO ()
--- main = smokeTest =<< execParser opts
---  where
---   opts = info (parseTransform <**> helper)
---               (fullDesc <> progDesc "madlib transform" <> header "#####")
-
--- smokeTest :: TransformFlags -> IO ()
--- smokeTest (TransformFlags i o c) =
---   putStrLn
---     $  headerString
---     ++ "\ninput: "
---     ++ show i
---     ++ ",\noutput: "
---     ++ show o
---     ++ ",\nconfig: "
---     ++ show c
--- smokeTest _ = return ()

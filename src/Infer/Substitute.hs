@@ -13,15 +13,15 @@ class Substitutable a where
 instance Substitutable Type where
   apply _ (  TCon a             ) = TCon a
   apply s t@(TVar a             ) = M.findWithDefault t a s
-  apply s (  t1      `TArr` t2  ) = apply s t1 `TArr` apply s t2
-  apply s (  TComp   main   vars) = TComp main (apply s <$> vars)
+  apply s (  t1 `TArr` t2       ) = apply s t1 `TArr` apply s t2
+  apply s (  TComp src main vars) = TComp src main (apply s <$> vars)
   apply s (  TRecord fields open) = TRecord (apply s <$> fields) open
 
-  ftv TCon{}                = S.empty
-  ftv (TVar a             ) = S.singleton a
-  ftv (t1      `TArr` t2  ) = ftv t1 `S.union` ftv t2
-  ftv (TComp   _      vars) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
-  ftv (TRecord fields _   ) = foldl' (\s v -> S.union s $ ftv v) S.empty fields
+  ftv TCon{}             = S.empty
+  ftv (TVar a          ) = S.singleton a
+  ftv (t1 `TArr` t2    ) = ftv t1 `S.union` ftv t2
+  ftv (TComp _ _ vars  ) = foldl' (\s v -> S.union s $ ftv v) S.empty vars
+  ftv (TRecord fields _) = foldl' (\s v -> S.union s $ ftv v) S.empty fields
 
 instance Substitutable Scheme where
   apply s (Forall as t) = Forall as $ apply s' t

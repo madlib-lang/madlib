@@ -3,7 +3,6 @@ module Infer.SolveSpec where
 import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
                                                 , it
-                                                , shouldBe
                                                 , Spec
                                                 )
 import           Test.Hspec.Golden              ( Golden(..) )
@@ -20,12 +19,11 @@ import           Control.Monad.State            ( StateT(runStateT) )
 import qualified AST.Source                    as Src
 import qualified AST.Solved                    as Slv
 import           Infer.Solve
-import           Infer.Type
 import           Infer.Env
 import           Infer.Infer
 import           Error.Error
 import           Explain.Reason
-import           AST
+import           Parse.AST
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -38,7 +36,6 @@ snapshotTest name actualOutput = Golden
   , failFirstTime = False
   }
 
--- TODO: Refactor in order to use the inferAST function instead that supports imports
 tester :: String -> Either InferError Slv.AST
 tester code = case buildAST "path" code of
   (Right ast) -> runEnv ast >>= (`runInfer` ast)
@@ -49,7 +46,7 @@ tester code = case buildAST "path" code of
 
 tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
 tableTester table ast =
-  fst <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
+  fst <$> runExcept (runStateT (solveTable table ast) Unique { count = 0 })
 
 spec :: Spec
 spec = do
@@ -185,6 +182,38 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should infer params for adts" actual
+
+    it "should fail if it uses an ADT not defined" $ do
+      let code =
+            unlines
+              [ "inc :: Maybe Num -> Num"
+              , "export inc = (a) => (a + 1)"
+              , "inc(3)"
+              ]
+          actual = tester code
+      snapshotTest "should fail if it uses an ADT not defined" actual
+
+    it "should resolve namespaced ADTs in patterns" $ do
+      let codeA = "export data Maybe a = Just a | Nothing"
+          astA  = buildAST "./ModuleA" codeA
+          codeB = unlines
+            [ "import M from \"./ModuleA\""
+            , "fn :: M.Maybe Num -> Num"
+            , "export fn = (x) => ("
+            , "  where(x) {"
+            , "    is M.Just a : a"
+            , "    is M.Nothing: 3"
+            , "  }"
+            , ")"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+            (Left e, _     ) -> Left e
+            (_     , Left e) -> Left e
+      snapshotTest "should resolve namespaced ADTs in patterns" actual
 
     ---------------------------------------------------------------------------
 
@@ -592,25 +621,23 @@ spec = do
 
     it "should resolve names from imported modules" $ do
       let codeA  = "export inc = (a) => (a + 1)"
-          astA   = buildAST "./ModuleA.mad" codeA
-          codeB  = unlines ["import { inc } from \"ModuleA\"", "inc(3)"]
-          astB   = buildAST "./ModuleB.mad" codeB
+          astA   = buildAST "./ModuleA" codeA
+          codeB  = unlines ["import { inc } from \"./ModuleA\"", "inc(3)"]
+          astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
-              let astTable =
-                      M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
               in  tableTester astTable b
       snapshotTest "should resolve names from imported modules" actual
 
     it "should resolve namespaced imports" $ do
       let codeA  = "export singleton = (a) => ([a])"
-          astA   = buildAST "./ModuleA.mad" codeA
-          codeB  = unlines ["import L from \"ModuleA\"", "L.singleton(3)"]
-          astB   = buildAST "./ModuleB.mad" codeB
+          astA   = buildAST "./ModuleA" codeA
+          codeB  = unlines ["import L from \"./ModuleA\"", "L.singleton(3)"]
+          astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
-              let astTable =
-                      M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
               in  tableTester astTable b
       snapshotTest "should resolve namespaced imports" actual
 
@@ -628,6 +655,21 @@ spec = do
               ]
           actual = tester code
       snapshotTest "should resolve usage of exported typed names" actual
+
+    it "should resolve ADT typings without vars" $ do
+      let codeA = "export data Something = Something"
+          astA  = buildAST "./ModuleA" codeA
+          codeB = unlines
+            [ "import S from \"./ModuleA\""
+            , "fn :: S.Something -> S.Something"
+            , "export fn = (x) => (x)"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+      snapshotTest "should resolve ADT typings without vars" actual
 
     ---------------------------------------------------------------------------
 

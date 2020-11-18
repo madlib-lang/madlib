@@ -3,17 +3,15 @@ module Main where
 
 import qualified Data.Map                      as M
 import           GHC.IO                         ( )
-import           System.Environment             ( getArgs )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory
-                                                , replaceExtension
+import           System.FilePath                ( takeDirectory )
+import           System.Directory               ( canonicalizePath
+                                                , createDirectoryIfMissing
                                                 )
-import           System.FilePath.Posix          ( splitFileName )
-import           System.Directory               ( createDirectoryIfMissing )
-import           Path
-import           AST
+import           Utils.Path              hiding ( PathUtils(..) )
+import           Parse.AST
 
 import           Infer.Solve
 import           Infer.Infer
@@ -27,54 +25,62 @@ import qualified Explain.Format                as Explain
 
 
 main :: IO ()
-
 main = run =<< execParser opts
  where
   opts = info
     (parseTransform <**> helper)
     (  fullDesc
-    <> progDesc "madlib@0.0.2" -- TODO: make this use Meta.version instead
+    <> progDesc "madlib@0.0.3" -- TODO: make this use Meta.version instead
     <> header hashBar
     )
 
 run :: TransformFlags -> IO ()
 run (TransformFlags i o c) = do
-  let (FileInput entrypoint) = i
+  let (FileInput entrypoint)  = i
+  let (FileOutput outputPath) = o
+  putStrLn $ "OUTPUT: " ++ outputPath
   putStrLn $ "ENTRYPOINT: " ++ entrypoint
-  putStrLn $ show (computeRootPath entrypoint)
+  putStrLn $ computeRootPath entrypoint
   astTable <- buildASTTable entrypoint
   putStrLn $ ppShow astTable
   let rootPath = computeRootPath entrypoint
   putStrLn $ "ROOT PATH: " ++ rootPath
 
-  let entryAST         = astTable >>= flip findAST entrypoint
+  canonicalEntrypoint <- canonicalizePath entrypoint
+  astTable            <- buildASTTable canonicalEntrypoint
+  putStrLn $ ppShow astTable
+
+  rootPath <- canonicalizePath $ computeRootPath entrypoint
+
+  let entryAST         = astTable >>= flip findAST canonicalEntrypoint
       resolvedASTTable = case (entryAST, astTable) of
-        (Right ast, Right table) -> runExcept
-          (runStateT (inferAST rootPath table ast) Unique { count = 0 })
-        (_, Left e) -> Left e
+        (Right ast, Right table) ->
+          runExcept (runStateT (solveTable table ast) Unique { count = 0 })
+        (_     , Left e) -> Left e
+        (Left e, _     ) -> Left e
 
   putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
 
   case resolvedASTTable of
     Left  err        -> Explain.format readFile err >>= putStrLn
     Right (table, _) -> do
-      generate table
+      generate rootPath outputPath table
       putStrLn "compiled JS:"
-      putStrLn $ concat $ compile <$> M.elems table
+      putStrLn $ concat $ compile rootPath outputPath <$> M.elems table
 
 
-generate :: Slv.Table -> IO ()
-generate table = (head <$>) <$> mapM generateAST $ M.elems table
+generate :: FilePath -> FilePath -> Slv.Table -> IO ()
+generate rootPath outputPath table =
+  (head <$>) <$> mapM (generateAST rootPath outputPath) $ M.elems table
 
 
-generateAST :: Slv.AST -> IO ()
-generateAST ast@Slv.AST { Slv.apath = Just path } = do
-  let outputPath = makeOutputPath path
+generateAST :: FilePath -> FilePath -> Slv.AST -> IO ()
+generateAST rootPath outputPath ast@Slv.AST { Slv.apath = Just path } = do
+  let resolvedOutputPath = computeTargetPath outputPath rootPath path
 
-  createDirectoryIfMissing True $ takeDirectory outputPath
-  writeFile outputPath $ compile ast
+  createDirectoryIfMissing True $ takeDirectory resolvedOutputPath
+  writeFile resolvedOutputPath $ compile rootPath resolvedOutputPath ast
 
 
-makeOutputPath :: FilePath -> FilePath
-makeOutputPath path = "./build/" <> replaceExtension path "mjs"
+
 

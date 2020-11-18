@@ -42,24 +42,24 @@ Right
                (Solved (TCon CNum) (Area (Loc 46 3 2) (Loc 47 3 3)) (LInt "3"))
                (TRSingle "Number"))
         , Solved
-            (TComp "Maybe" [ TVar (TV "a") ])
+            (TComp "path" "Maybe" [ TVar (TV "a") ])
             (Area (Loc 92 5 2) (Loc 110 5 20))
             (TypedExp
                (Solved
-                  (TComp "Maybe" [ TVar (TV "d") ])
+                  (TComp "path" "Maybe" [ TVar (TV "d") ])
                   (Area (Loc 92 5 2) (Loc 99 5 9))
                   (Var "Nothing"))
                (TRComp "Maybe" [ TRSingle "a" ]))
         , Solved
-            (TComp "Maybe" [ TCon CNum ])
+            (TComp "path" "Maybe" [ TCon CNum ])
             (Area (Loc 113 6 2) (Loc 136 6 25))
             (TypedExp
                (Solved
-                  (TComp "Maybe" [ TCon CNum ])
+                  (TComp "path" "Maybe" [ TCon CNum ])
                   (Area (Loc 113 6 2) (Loc 120 6 9))
                   (App
                      (Solved
-                        (TArr (TVar (TV "g")) (TComp "Maybe" [ TVar (TV "g") ]))
+                        (TArr (TVar (TV "g")) (TComp "path" "Maybe" [ TVar (TV "g") ]))
                         (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
                      (Solved
@@ -71,10 +71,8 @@ Right
             { adtname = "Maybe"
             , adtparams = [ "a" ]
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Just" , adtcargs = Just [ TRSingle "a" ] }
-                , ADTConstructor { adtcname = "Nothing" , adtcargs = Nothing }
-                ]
+                [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
+            , adtexported = False
             }
         ]
     , apath = Just "path"

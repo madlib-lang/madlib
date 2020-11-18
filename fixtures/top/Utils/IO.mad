@@ -1,0 +1,8 @@
+log :: a -> a
+export log = (a) => (#- { console.log(a); return a; } -#)
+
+warn :: a -> a
+export warn = (a) => (#- { console.warn(a); return a; } -#)
+
+err :: a -> a
+export err = (a) => (#- { console.warn(a); return a; } -#)

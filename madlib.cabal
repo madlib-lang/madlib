@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 96445581a409992a16a5f2434b3b9523198538ee1437a960a235c4aa56b28d8f
+-- hash: 7771283cabf050e34c461e160a5d83dff3b8255042fe685fe89c72ba775b394e
 
 name:           madlib
-version:        0.0.2
+version:        0.0.3
 description:    Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
 homepage:       https://github.com/open-sorcerers/madlib#readme
 bug-reports:    https://github.com/open-sorcerers/madlib/issues
@@ -27,7 +27,6 @@ source-repository head
 
 library
   exposed-modules:
-      AST
       AST.Canonical
       AST.Solved
       AST.Source
@@ -45,24 +44,31 @@ library
       Infer.Substitute
       Infer.Type
       Infer.Unify
+      MadlibDotJSON
       Main
+      Parse.AST
       Parse.Grammar
       Parse.Lexer
-      Path
       Tools.CommandLine
       Tools.CommandLineFlags
+      Utils.Path
+      Utils.PathUtils
   other-modules:
       Paths_madlib
   hs-source-dirs:
       src
   build-depends:
-      array ==0.5.4.0
+      MissingH
+    , aeson
+    , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
+    , bytestring
     , containers ==0.6.2.1
     , directory ==1.3.6.0
     , either
     , exceptions
+    , executable-path ==0.0.3.1
     , filepath
     , hpc-lcov
     , hspec
@@ -78,7 +84,6 @@ library
 executable madlib-exe
   main-is: Main.hs
   other-modules:
-      AST
       AST.Canonical
       AST.Solved
       AST.Source
@@ -96,23 +101,30 @@ executable madlib-exe
       Infer.Substitute
       Infer.Type
       Infer.Unify
+      MadlibDotJSON
+      Parse.AST
       Parse.Grammar
       Parse.Lexer
-      Path
       Tools.CommandLine
       Tools.CommandLineFlags
+      Utils.Path
+      Utils.PathUtils
       Paths_madlib
   hs-source-dirs:
       src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      array ==0.5.4.0
+      MissingH
+    , aeson
+    , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
+    , bytestring
     , containers ==0.6.2.1
     , directory ==1.3.6.0
     , either
     , exceptions
+    , executable-path ==0.0.3.1
     , filepath
     , hpc-lcov
     , hspec
@@ -129,22 +141,27 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      ASTSpec
       CompileSpec
       Infer.SolveSpec
-      PathSpec
+      Parse.ASTSpec
+      TestUtils
+      Utils.PathSpec
       Paths_madlib
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      array ==0.5.4.0
+      MissingH
+    , aeson
+    , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
+    , bytestring
     , containers ==0.6.2.1
     , directory ==1.3.6.0
     , either
     , exceptions
+    , executable-path ==0.0.3.1
     , filepath
     , hpc-lcov
     , hspec ==2.7.2

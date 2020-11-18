@@ -3,16 +3,16 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "Result" [ TCon CString ])
+            (TComp "path" "Result" [ TCon CString ])
             (Area (Loc 34 2 1) (Loc 41 2 8))
             (Assignment
                "result1"
                (Solved
-                  (TComp "Result" [ TCon CString ])
+                  (TComp "path" "Result" [ TCon CString ])
                   (Area (Loc 44 2 11) (Loc 63 2 30))
                   (App
                      (Solved
-                        (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
+                        (TArr (TVar (TV "b")) (TComp "path" "Result" [ TVar (TV "b") ]))
                         (Area (Loc 44 2 11) (Loc 51 2 18))
                         (Var "Success"))
                      (Solved
@@ -20,12 +20,12 @@ Right
                         (Area (Loc 52 2 19) (Loc 62 2 29))
                         (LStr "response")))))
         , Solved
-            (TComp "Result" [ TVar (TV "c") ])
+            (TComp "path" "Result" [ TVar (TV "c") ])
             (Area (Loc 64 3 1) (Loc 71 3 8))
             (Assignment
                "result2"
                (Solved
-                  (TComp "Result" [ TVar (TV "c") ])
+                  (TComp "path" "Result" [ TVar (TV "c") ])
                   (Area (Loc 74 3 11) (Loc 79 3 16))
                   (Var "Error")))
         , Solved
@@ -33,7 +33,7 @@ Right
             (Area (Loc 110 4 31) (Loc 117 4 38))
             (App
                (Solved
-                  (TArr (TComp "Result" [ TCon CString ]) (TCon CBool))
+                  (TArr (TComp "path" "Result" [ TCon CString ]) (TCon CBool))
                   (Area (Loc 110 4 31) (Loc 117 4 38))
                   (App
                      (Solved
@@ -69,11 +69,11 @@ Right
                                           (Area (Loc 97 4 18) (Loc 98 4 19))
                                           (Var "b"))))))))
                      (Solved
-                        (TComp "Result" [ TCon CString ])
+                        (TComp "path" "Result" [ TCon CString ])
                         (Area (Loc 101 4 22) (Loc 108 4 29))
                         (Var "result1"))))
                (Solved
-                  (TComp "Result" [ TCon CString ])
+                  (TComp "path" "Result" [ TCon CString ])
                   (Area (Loc 110 4 31) (Loc 117 4 38))
                   (Var "result2")))
         ]
@@ -82,10 +82,8 @@ Right
             { adtname = "Result"
             , adtparams = [ "a" ]
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = Just [ TRSingle "a" ] }
-                , ADTConstructor { adtcname = "Error" , adtcargs = Nothing }
-                ]
+                [ Constructor "Success" [ TRSingle "a" ] , Constructor "Error" [] ]
+            , adtexported = False
             }
         ]
     , apath = Just "path"

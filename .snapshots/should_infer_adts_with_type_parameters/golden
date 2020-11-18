@@ -3,16 +3,16 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "Result" [ TCon CBool ])
+            (TComp "path" "Result" [ TCon CBool ])
             (Area (Loc 38 4 1) (Loc 44 4 7))
             (Assignment
                "result"
                (Solved
-                  (TComp "Result" [ TCon CBool ])
+                  (TComp "path" "Result" [ TCon CBool ])
                   (Area (Loc 47 4 10) (Loc 60 4 23))
                   (App
                      (Solved
-                        (TArr (TVar (TV "b")) (TComp "Result" [ TVar (TV "b") ]))
+                        (TArr (TVar (TV "b")) (TComp "path" "Result" [ TVar (TV "b") ]))
                         (Area (Loc 47 4 10) (Loc 54 4 17))
                         (Var "Success"))
                      (Solved
@@ -23,10 +23,8 @@ Right
             { adtname = "Result"
             , adtparams = [ "a" ]
             , adtconstructors =
-                [ ADTConstructor
-                    { adtcname = "Success" , adtcargs = Just [ TRSingle "a" ] }
-                , ADTConstructor { adtcname = "Error" , adtcargs = Nothing }
-                ]
+                [ Constructor "Success" [ TRSingle "a" ] , Constructor "Error" [] ]
+            , adtexported = False
             }
         ]
     , apath = Just "path"

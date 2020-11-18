@@ -1,0 +1,54 @@
+Right
+  (fromList
+     [ ( "./ModuleA"
+       , AST
+           { aimports = []
+           , aexps = []
+           , aadts =
+               [ ADT
+                   { adtname = "Something"
+                   , adtparams = []
+                   , adtconstructors = [ Constructor "Something" [] ]
+                   , adtexported = True
+                   }
+               ]
+           , apath = Just "./ModuleA"
+           }
+       )
+     , ( "./ModuleB"
+       , AST
+           { aimports = [ DefaultImport "S" "./ModuleA" "./ModuleA" ]
+           , aexps =
+               [ Solved
+                   (TArr
+                      (TComp "./ModuleA" "Something" [])
+                      (TComp "./ModuleA" "Something" []))
+                   (Area (Loc 26 2 1) (Loc 81 3 23))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TComp "./ModuleA" "Something" [])
+                            (TComp "./ModuleA" "Something" []))
+                         (Area (Loc 26 2 1) (Loc 28 2 3))
+                         (Export
+                            (Solved
+                               (TArr (TVar (TV "a")) (TVar (TV "a")))
+                               (Area (Loc 28 2 3) (Loc 31 2 6))
+                               (Assignment
+                                  "fn"
+                                  (Solved
+                                     (TArr (TVar (TV "a")) (TVar (TV "a")))
+                                     (Area (Loc 71 3 13) (Loc 81 3 23))
+                                     (Abs
+                                        "x"
+                                        (Solved
+                                           (TVar (TV "a"))
+                                           (Area (Loc 79 3 21) (Loc 80 3 22))
+                                           (Var "x"))))))))
+                      (TRArr (TRComp "S.Something" []) (TRComp "S.Something" [])))
+               ]
+           , aadts = []
+           , apath = Just "./ModuleB"
+           }
+       )
+     ])

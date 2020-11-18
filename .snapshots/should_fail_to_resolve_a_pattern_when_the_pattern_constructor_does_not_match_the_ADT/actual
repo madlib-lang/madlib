@@ -1,7 +1,8 @@
 Left
   (InferError
      (UnificationError
-        (TComp "Maybe" [ TVar (TV "c") ]) (TComp "Failure" []))
+        (TComp "path" "Maybe" [ TVar (TV "c") ])
+        (TComp "path" "Failure" []))
      (Reason
         (PatternTypeError
            (Meta

@@ -16,9 +16,10 @@ data AST =
 
 type Import = Meta Import_
 
+-- The second FilePath parameter is the absolute path to that module
 data Import_
-  = NamedImport [Name] FilePath
-  | DefaultImport Name FilePath
+  = NamedImport [Name] FilePath FilePath
+  | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
 -- TODO:
@@ -27,12 +28,13 @@ data ADT =
   ADT
     { adtname :: Name
     , adtparams :: [Name]
-    , adtconstructors :: [ADTConstructor]
+    , adtconstructors :: [Constructor]
+    , adtexported :: Bool
     }
     deriving(Eq, Show)
 
-data ADTConstructor
-  = ADTConstructor       { adtcname :: Name, adtcargs :: Maybe [Typing] }
+data Constructor
+  = Constructor Name [Typing]
   deriving(Eq, Show)
 
 
@@ -102,3 +104,13 @@ type Name = String
 -- AST TABLE
 
 type Table = M.Map FilePath AST
+
+getImportAbsolutePath :: Import -> FilePath
+getImportAbsolutePath imp = case imp of
+  Meta _ _ (NamedImport   _ _ n) -> n
+  Meta _ _ (DefaultImport _ _ n) -> n
+
+getImportPath :: Import -> (Import, FilePath)
+getImportPath imp@(Meta _ _ (NamedImport   _ p _)) = (imp, p)
+getImportPath imp@(Meta _ _ (DefaultImport _ p _)) = (imp, p)
+

@@ -15,55 +15,60 @@ import           Explain.Reason
 import           Explain.Meta
 
 
-buildADTTypes :: [ADT] -> Infer ADTs
-buildADTTypes = buildADTTypes' M.empty
+buildADTTypes :: FilePath -> [ADT] -> Infer ADTs
+buildADTTypes astPath = buildADTTypes' astPath M.empty
 
 
-buildADTTypes' :: ADTs -> [ADT] -> Infer ADTs
-buildADTTypes' _    []    = return M.empty
-buildADTTypes' adts [adt] = do
-  (k, v) <- buildADTType adts adt
+buildADTTypes' :: FilePath -> ADTs -> [ADT] -> Infer ADTs
+buildADTTypes' _       _    []    = return M.empty
+buildADTTypes' astPath adts [adt] = do
+  (k, v) <- buildADTType astPath adts adt
   return $ M.singleton k v
-buildADTTypes' adts (adt : xs) = do
-  a    <- buildADTTypes' adts [adt]
-  next <- buildADTTypes' (M.union a adts) xs
+buildADTTypes' astPath adts (adt : xs) = do
+  a    <- buildADTTypes' astPath adts [adt]
+  next <- buildADTTypes' astPath (M.union a adts) xs
   return $ M.union a next
 
 
-buildADTType :: ADTs -> ADT -> Infer (String, Type)
-buildADTType adts ADT { adtname, adtparams } = case M.lookup adtname adts of
-  Just t  -> throwError $ InferError (ADTAlreadyDefined t) NoReason
-  Nothing -> return (adtname, TComp adtname (TVar . TV <$> adtparams))
+buildADTType :: FilePath -> ADTs -> ADT -> Infer (String, Type)
+buildADTType astPath adts ADT { adtname, adtparams } =
+  case M.lookup adtname adts of
+    Just t -> throwError $ InferError (ADTAlreadyDefined t) NoReason
+    Nothing ->
+      return (adtname, TComp astPath adtname (TVar . TV <$> adtparams))
 
 
-resolveADTs :: ADTs -> [ADT] -> Infer Vars
-resolveADTs tadts adts = mergeVars <$> mapM (resolveADT tadts) adts
+resolveADTs :: FilePath -> ADTs -> [ADT] -> Infer Vars
+resolveADTs astPath tadts adts =
+  mergeVars <$> mapM (resolveADT astPath tadts) adts
  where
   mergeVars []   = M.empty
   mergeVars vars = foldr1 M.union vars
 
 
-resolveADT :: ADTs -> ADT -> Infer Vars
-resolveADT tadts ADT { adtname, adtconstructors, adtparams } =
+resolveADT :: FilePath -> ADTs -> ADT -> Infer Vars
+resolveADT astPath tadts ADT { adtname, adtconstructors, adtparams } =
   foldr1 M.union
-    <$> mapM (resolveADTConstructor tadts adtname adtparams) adtconstructors
+    <$> mapM (resolveADTConstructor astPath tadts adtname adtparams)
+             adtconstructors
 
 
 -- TODO: Verify that Constructors aren't already in the global space or else throw a name clash error
 -- Use lookupADT for that
-resolveADTConstructor :: ADTs -> Name -> [Name] -> ADTConstructor -> Infer Vars
-resolveADTConstructor tadts n params ADTConstructor { adtcname, adtcargs } = do
-  let t = buildADTConstructorReturnType n params
-  case adtcargs of
-    Just cargs -> do
-      t' <- mapM (argToType tadts n params) cargs
-      let ctype = foldr1 TArr (t' <> [t])
-      return $ M.fromList [(adtcname, Forall (TV <$> params) ctype)]
-    Nothing -> return $ M.fromList [(adtcname, Forall (TV <$> params) t)]
+resolveADTConstructor
+  :: FilePath -> ADTs -> Name -> [Name] -> Constructor -> Infer Vars
+resolveADTConstructor astPath tadts n params (Constructor cname cparams) = do
+  let t = buildADTConstructorReturnType astPath n params
+  -- case adtcargs of
+  --   Just cargs -> do
+  t' <- mapM (argToType tadts n params) cparams
+  let ctype = foldr1 TArr (t' <> [t])
+  return $ M.fromList [(cname, Forall (TV <$> params) ctype)]
+    -- Nothing -> return $ M.fromList [(cname, Forall (TV <$> params) t)]
 
-buildADTConstructorReturnType :: Name -> [Name] -> Type
-buildADTConstructorReturnType tname tparams =
-  TComp tname $ TVar . TV <$> tparams
+buildADTConstructorReturnType :: FilePath -> Name -> [Name] -> Type
+buildADTConstructorReturnType astPath tname tparams =
+  TComp astPath tname $ TVar . TV <$> tparams
 
 
 -- TODO: This should probably be merged with typingToType somehow
@@ -83,8 +88,9 @@ argToType tadts name params (Meta _ _ (TRComp tname targs)) =
   case M.lookup tname tadts of
   -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
   -- we have a type application error.
-    Just (TComp n _) -> TComp n <$> mapM (argToType tadts name params) targs
-    Nothing          -> return $ TCon $ CUserDef name
+    Just (TComp "TBD" n _) ->
+      TComp "TBD" n <$> mapM (argToType tadts name params) targs
+    Nothing -> return $ TCon $ CUserDef name
 
 argToType tadts name params (Meta _ _ (TRArr l r)) = do
   l' <- argToType tadts name params l

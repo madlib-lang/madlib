@@ -3,7 +3,6 @@ module CompileSpec where
 import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
                                                 , it
-                                                , shouldBe
                                                 , Spec
                                                 )
 import           Test.Hspec.Golden              ( Golden(..) )
@@ -18,15 +17,19 @@ import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 
 import qualified AST.Source                    as Src
-import qualified AST.Solved                    as Slv
 import           Infer.Solve
-import           Infer.Type
 import           Infer.Env
 import           Infer.Infer
 import           Error.Error
 import           Explain.Reason
-import           AST
+import           Parse.AST
 import           Compile
+import           Prelude                 hiding ( readFile )
+import           GHC.IO                         ( unsafePerformIO )
+import           Utils.PathUtils
+import           TestUtils
+import           Debug.Trace                    ( trace )
+
 
 snapshotTest :: String -> String -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -39,6 +42,7 @@ snapshotTest name actualOutput = Golden
   , failFirstTime = False
   }
 
+
 -- TODO: Refactor in order to use the inferAST function instead that supports imports
 tester :: String -> String
 tester code =
@@ -46,19 +50,19 @@ tester code =
         (Right ast) -> runEnv ast >>= (`runInfer` ast)
         _           -> Left $ InferError (UnboundVariable "") NoReason
   in  case inferred of
-        Right x -> compile x
+        Right x -> compile "" "./build" x
         Left  e -> ppShow e
  where
   runEnv x =
     fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
 
-tableTester :: Src.Table -> Src.AST -> String
-tableTester table ast =
-  let
-    resolved = fst
-      <$> runExcept (runStateT (inferAST "./" table ast) Unique { count = 0 })
+tableTester :: FilePath -> Src.Table -> Src.AST -> String
+tableTester rootPath table ast =
+  let resolved =
+          fst <$> runExcept
+            (runStateT (solveTable table ast) Unique { count = 0 })
   in  case resolved of
-        Right x -> concat $ compile <$> M.elems x
+        Right x -> concat $ compile rootPath "./build" <$> M.elems x
         Left  e -> ppShow e
 
 spec :: Spec
@@ -184,18 +188,231 @@ spec = do
           actual = tester code
       snapshotTest "should compile to JS" actual
 
+
     it "should compile imports and exports" $ do
       let codeA = "export singleton = (a) => ([a])"
-          astA  = buildAST "./ModuleA.mad" codeA
+          astA  = buildAST "./ModuleA" codeA
+
           codeB = unlines
-            [ "import L from \"ModuleA\""
-            , "import { singleton } from \"ModuleA\""
+            [ "import L from \"./ModuleA\""
+            , "import { singleton } from \"./ModuleA\""
             , "L.singleton(3)"
             ]
-          astB   = buildAST "./ModuleB.mad" codeB
+          astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
-              let astTable =
-                      M.fromList [("./ModuleA.mad", a), ("./ModuleB.mad", b)]
-              in  tableTester astTable b
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester "" astTable b
       snapshotTest "should compile imports and exports" actual
+
+
+    it "should compile imports and exports of Namespaced ADTs" $ do
+      let
+        codeA = "export data Maybe a = Just a | Nothing"
+        astA  = buildAST "./ADTs" codeA
+
+        codeB = unlines
+          [ "import ADTs from \"./ADTs\""
+          , "(ADTs.Just(3) :: ADTs.Maybe Num)"
+          , "ADTs.Nothing"
+          , "fn :: ADTs.Maybe (ADTs.Maybe Num) -> ADTs.Maybe (ADTs.Maybe Num)"
+          , "export fn = (m) => (m)"
+          , "fn2 :: ADTs.Maybe (ADTs.Maybe Num) -> Num"
+          , "export fn2 = (m) => ("
+          , "  where(m) {"
+          , "    is ADTs.Just (ADTs.Just n): n"
+          , "  }"
+          , ")"
+          ]
+        astB   = buildAST "./Module" codeB
+        actual = case (astA, astB) of
+          (Right a, Right b) ->
+            let astTable = M.fromList [("./Module", b), ("./ADTs", a)]
+            in  tableTester "" astTable b
+
+      snapshotTest "should compile imports and exports of Namespaced ADTs"
+                   actual
+
+
+    it "should compile and resolve imported packages" $ do
+      let
+        madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+
+        libMain       = unlines
+          [ "import R from \"./Utils/Random\""
+          , "export random = (seed) => (R.random(seed))"
+          ]
+
+        libRandom = "export random = (seed) => (seed / 2)"
+
+        main      = unlines ["import R from \"random\"", "R.random(3)"]
+
+        files     = M.fromList
+          [ ("/madlib_modules/random/madlib.json"         , madlibDotJSON)
+          , ("/madlib_modules/random/src/Main.mad"        , libMain)
+          , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
+          , ("/src/Main.mad"                              , main)
+          ]
+
+        pathUtils = defaultPathUtils
+          { readFile = makeReadFile files
+          , byteStringReadFile = makeByteStringReadFile files
+          , doesFileExist = \f -> if f == "/madlib_modules/random/madlib.json"
+                              then return True
+                              else return False
+          }
+
+      let r = unsafePerformIO
+            $ buildASTTable' pathUtils "/src/Main.mad" Nothing "/src/Main.mad"
+      let ast = r >>= flip findAST "/src/Main.mad"
+      let actual = case (ast, r) of
+            (Right a, Right t) -> tableTester "/src" t a
+
+      snapshotTest "should compile and resolve imported packages" actual
+
+
+    it
+        "should compile and resolve imported packages when project is not at root path"
+      $ do
+          let
+            madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+
+            libMain       = unlines
+              [ "import R from \"./Utils/Random\""
+              , "export random = (seed) => (R.random(seed))"
+              , "export data Maybe a = Just a | Nothing"
+              ]
+
+            libRandom = "export random = (seed) => (seed / 2)"
+
+            main      = unlines ["import R from \"random\"", "R.random(3)"]
+
+            files     = M.fromList
+              [ ( "/root/project/madlib_modules/random/madlib.json"
+                , madlibDotJSON
+                )
+              , ("/root/project/madlib_modules/random/src/Main.mad", libMain)
+              , ( "/root/project/madlib_modules/random/src/Utils/Random.mad"
+                , libRandom
+                )
+              , ("/root/project/src/Main.mad", main)
+              ]
+
+            pathUtils = defaultPathUtils
+              { readFile           = makeReadFile files
+              , byteStringReadFile = makeByteStringReadFile files
+              , doesFileExist      = \f ->
+                if f == "/root/project/madlib_modules/random/madlib.json"
+                  then return True
+                  else return False
+              }
+
+          let r = unsafePerformIO $ buildASTTable'
+                pathUtils
+                "/root/project/src/Main.mad"
+                Nothing
+                "/root/project/src/Main.mad"
+          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+          let actual = case (ast, r) of
+                (Right a, Right t) -> tableTester "/root/project/src" t a
+
+          snapshotTest
+            "should compile and resolve imported packages when project is not at root path"
+            actual
+
+
+    it "should compile and resolve files importing prelude modules" $ do
+      let
+        listModule = unlines
+          [ "map :: (a -> b) -> List a -> List b"
+          , "export map = (f, xs) => (#- xs.map(f) -#)"
+          ]
+
+        main =
+          unlines ["import L from \"List\"", "L.map((x) => (x * 2), [1, 2, 3])"]
+
+        files = M.fromList
+          [ ("/root/project/prelude/__internal__/List.mad", listModule)
+          , ("/root/project/src/Main.mad"                 , main)
+          ]
+
+        pathUtils = defaultPathUtils
+          { readFile           = makeReadFile files
+          , byteStringReadFile = makeByteStringReadFile files
+          , getExecutablePath  = return "/root/project/madlib"
+          }
+
+      let r = unsafePerformIO $ buildASTTable' pathUtils
+                                               "/root/project/src/Main.mad"
+                                               Nothing
+                                               "/root/project/src/Main.mad"
+      let ast = r >>= flip findAST "/root/project/src/Main.mad"
+      let actual = case (ast, r) of
+            (Right a, Right t) -> tableTester "/root/project/src" t a
+            (Left  e, _      ) -> ppShow e
+            (_      , Left e ) -> ppShow e
+
+      snapshotTest
+        "should compile and resolve files importing prelude modules"
+        actual
+
+
+    it "should compile and resolve imported packages that also rely on packages"
+      $ do
+          let
+            mathMadlibDotJSON =
+              unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+            mathMain = unlines ["export avg = (a, b) => ((a + b) / 2)"]
+
+            randomMadlibDotJSON =
+              unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
+
+            randomMain = unlines
+              [ "import R from \"./Utils/Random\""
+              , "import M from \"math\""
+              , "export random = (seed) => (R.random(seed) + M.avg(seed, seed))"
+              ]
+
+            libRandom = "export random = (seed) => (seed / 2)"
+
+            main      = unlines ["import R from \"random\"", "R.random(3)"]
+
+            files     = M.fromList
+              [ ( "/madlib_modules/random/madlib_modules/math/madlib.json"
+                , mathMadlibDotJSON
+                )
+              , ( "/madlib_modules/random/madlib_modules/math/src/Main.mad"
+                , mathMain
+                )
+              , ("/madlib_modules/random/madlib.json", randomMadlibDotJSON)
+              , ("/madlib_modules/random/src/Main.mad"        , randomMain)
+              , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
+              , ("/src/Main.mad"                              , main)
+              ]
+
+            pathUtils = defaultPathUtils
+              { readFile           = makeReadFile files
+              , byteStringReadFile = makeByteStringReadFile files
+              , doesFileExist      = \f ->
+                if f
+                   == "/madlib_modules/random/madlib.json"
+                   || f
+                   == "/madlib_modules/random/madlib_modules/math/madlib.json"
+                then
+                  return True
+                else
+                  return False
+              }
+
+          let r = unsafePerformIO $ buildASTTable' pathUtils
+                                                   "/src/Main.mad"
+                                                   Nothing
+                                                   "/src/Main.mad"
+          let ast = r >>= flip findAST "/src/Main.mad"
+          let actual = case (ast, r) of
+                (Right a, Right t) -> tableTester "/src" t a
+
+          snapshotTest
+            "should compile and resolve imported packages that also rely on packages"
+            actual
+
