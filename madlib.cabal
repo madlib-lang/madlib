@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d13e890d0caed5613f948640b1948ea0bf347ab75172b84d792e909eea64b1c8
+-- hash: 96445581a409992a16a5f2434b3b9523198538ee1437a960a235c4aa56b28d8f
 
 name:           madlib
 version:        0.0.2
@@ -32,7 +32,6 @@ library
       AST.Solved
       AST.Source
       Compile
-      Constants.Flags
       Error.Error
       Explain.Format
       Explain.Location
@@ -51,6 +50,7 @@ library
       Parse.Lexer
       Path
       Tools.CommandLine
+      Tools.CommandLineFlags
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -83,7 +83,6 @@ executable madlib-exe
       AST.Solved
       AST.Source
       Compile
-      Constants.Flags
       Error.Error
       Explain.Format
       Explain.Location
@@ -101,6 +100,7 @@ executable madlib-exe
       Parse.Lexer
       Path
       Tools.CommandLine
+      Tools.CommandLineFlags
       Paths_madlib
   hs-source-dirs:
       src

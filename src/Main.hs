@@ -18,7 +18,7 @@ import           AST
 import           Infer.Solve
 import           Infer.Infer
 import           Options.Applicative
-import           Constants.Flags
+import           Tools.CommandLineFlags
 import           Tools.CommandLine
 import           Compile
 import qualified AST.Solved                    as Slv

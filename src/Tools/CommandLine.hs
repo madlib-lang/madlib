@@ -9,7 +9,7 @@ import           Options.Applicative
 import           Data.Semigroup                 ( (<>) )
 import qualified Data.Text                     as T
 
-import           Constants.Flags
+import           Tools.CommandLineFlags
 
 hashBar = "################################################"
 h1 = " ____    __  ____   _____   ____    ____  ______"
@@ -22,7 +22,6 @@ data TransformFlags = TransformFlags
   { input      :: FlagInput
   , output     :: FlagOutput
   , config     :: FlagConfig
-  -- , stdin      :: Bool
   -- , literate   :: Literate
   }
 
