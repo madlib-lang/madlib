@@ -1,5 +1,6 @@
 ![build](https://github.com/open-sorcerers/madlib/workflows/build/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/open-sorcerers/madlib/badge.svg?branch=master)](https://coveralls.io/github/open-sorcerers/madlib?branch=master)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md) 
 
 # madlib
 
