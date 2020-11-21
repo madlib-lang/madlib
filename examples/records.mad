@@ -1,24 +1,27 @@
-// object literals
-data Critter = Creature { name :: String, color :: String, x :: Num, y :: Num }
+data Critter = Creature { name :: String, color :: String, x :: Num, y :: Num, status :: String, wild :: Bool}
 
-jigzab = Creature({name: "Jigzab Quotznort", color: "ff0000", x: 0, y: 0})
-aquoob = Creature({name: "Aquoob Zontboo", color: "0000ff", x: 3, y: 3})
-jigaqu = Creature({name: "Jiqaqu Quotzont", color: 'ff00ff', x: 3, y: 2})
+randonum = (x) => (#- Math.floor(Math.random() * x) -#)
+
+jigzab = Creature({name: `Jigzab Quotznort`, color: "ff0000", x: randonum(10), y: randonum(10), status: "free", wild: true})
+aquoob = Creature({name: 'Aquoob Zontboo', color: "0000ff", x: 3, y: 3, status: "free", wild: true})
+jigaqu = Creature({name: "Jiqaqu Quotzont", color: 'ff00ff', x: 3, y: 2, status: "free", wild: true})
 
 menagerie = [jigzab, aquoob, jigaqu]
 
-#- console.log("menagerie", menagerie, menagerie.map(z => (JSON.stringify(z)))) -#
+map :: (a -> b) -> List a -> List b
+map = (fn, xs) => (#- xs.map(fn) -#)
 
-// catchAnimals :: (a -> b) -> List a -> List b
-catchAnimals :: Critter -> Bool
-catchAnimals = (animal) => (where(animal)
-  is Creature {x: 3}: True
-  is _              : False
+catchAnimal :: Critter -> Critter
+catchAnimal = (animal) => (where(animal)
+  is Creature {x: 3, name}: Creature({name: name, status: "caught", wild: false, x: 0, y: 0, color: '000000'})
+  // is Creature wild : Creature(wild)
+  is _                : animal
 )
 
-// construct :: Creature -> Creature
-// construct = (z) => #- z.__args[0].value -#
+trace = (tag, x) => (#- { console.log(tag, x); return x; } -#)
 
-trace = (tag, x) => (#- { console.log(x); return x; } -#)
+grabValuesOffCrap = (x) => (#- x.__args[0].value -#)
 
-jigzab |> catchAnimals |> trace('shit')
+j2 = (x) => (#- JSON.stringify(x, null, 2) -#)
+
+menagerie |> map(catchAnimal) |> map(grabValuesOffCrap) |> j2 |> trace('outcome')

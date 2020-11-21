@@ -107,12 +107,13 @@ instance Compilable Exp where
         <> ")"
      where
       compilePattern :: String -> Pattern -> String
-      compilePattern _     (PVar _) = "true"
-      compilePattern _     PAny     = "true"
-      compilePattern scope (PNum n) = scope <> " === " <> n
+      compilePattern _     (PVar _)                = "true"
+      compilePattern _     PAny                    = "true"
+      compilePattern scope (PNum n)                = scope <> " === " <> n
       compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool n) | True  = scope <> " === true"
-                                     | False = scope <> " === false"
+      compilePattern scope (PBool n) | n == "true" = scope <> " === true"
+      compilePattern scope (PBool n) | True      = scope <> " === true"
+                                     | otherwise = scope <> " === false"
       compilePattern scope (PCon n)
         | n == "String" = "typeof " <> scope <> " === \"string\""
         | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
