@@ -1,11 +1,97 @@
-Left
-  (InferError
-     (UnboundVariable "False")
-     (Reason
-        (VariableNotDeclared
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 36 1 37) (Loc 41 1 42))
-              (Var "False")))
-        "path"
-        (Area (Loc 36 1 37) (Loc 41 1 42))))
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TCon CString)
+            (Area (Loc 0 1 1) (Loc 124 4 2))
+            (Where
+               (Solved
+                  (TRecord
+                     (fromList
+                        [ ( "fulfilled" , TCon CBool )
+                        , ( "job" , TCon CString )
+                        , ( "name" , TCon CString )
+                        , ( "x" , TCon CNum )
+                        ])
+                     False)
+                  (Area (Loc 6 1 7) (Loc 65 1 66))
+                  (Record
+                     [ Field
+                         ( "x"
+                         , Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (LInt "4")
+                         )
+                     , Field
+                         ( "name"
+                         , Solved
+                             (TCon CString) (Area (Loc 20 1 21) (Loc 26 1 27)) (LStr "John")
+                         )
+                     , Field
+                         ( "job"
+                         , Solved
+                             (TCon CString)
+                             (Area (Loc 33 1 34) (Loc 45 1 46))
+                             (LStr "Accountant")
+                         )
+                     , Field
+                         ( "fulfilled"
+                         , Solved
+                             (TCon CBool) (Area (Loc 58 1 59) (Loc 63 1 64)) (LBool "false")
+                         )
+                     ]))
+               [ Solved
+                   (TArr
+                      (TRecord
+                         (fromList
+                            [ ( "fulfilled" , TCon CBool )
+                            , ( "job" , TCon CString )
+                            , ( "name" , TCon CString )
+                            , ( "x" , TCon CNum )
+                            ])
+                         False)
+                      (TCon CString))
+                   (Area (Loc 71 2 3) (Loc 94 2 26))
+                   (Is
+                      (PRecord (fromList [ ( "name" , PVar "name" ) ]))
+                      (Solved
+                         (TCon CString) (Area (Loc 90 2 22) (Loc 94 2 26)) (Var "name")))
+               , Solved
+                   (TArr
+                      (TRecord
+                         (fromList
+                            [ ( "fulfilled" , TCon CBool )
+                            , ( "job" , TCon CString )
+                            , ( "name" , TCon CString )
+                            , ( "x" , TCon CNum )
+                            ])
+                         False)
+                      (TCon CString))
+                   (Area (Loc 97 3 3) (Loc 122 3 28))
+                   (Is
+                      (PRecord
+                         (fromList [ ( "..." , PSpread (PVar "b") ) , ( "x" , PVar "x" ) ]))
+                      (Solved
+                         (TCon CString)
+                         (Area (Loc 116 3 22) (Loc 122 3 28))
+                         (FieldAccess
+                            (Solved
+                               (TRecord
+                                  (fromList
+                                     [ ( "fulfilled" , TCon CBool )
+                                     , ( "job" , TCon CString )
+                                     , ( "name" , TCon CString )
+                                     ])
+                                  False)
+                               (Area (Loc 116 3 22) (Loc 117 3 23))
+                               (Var "b"))
+                            (Solved
+                               (TArr
+                                  (TRecord (fromList [ ( "name" , TVar (TV "c") ) ]) True)
+                                  (TVar (TV "c")))
+                               (Area (Loc 118 3 24) (Loc 122 3 28))
+                               (Var ".name")))))
+               ])
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

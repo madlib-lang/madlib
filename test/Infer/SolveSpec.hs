@@ -221,7 +221,9 @@ spec = do
     it "should infer abstraction param that having a record exp as body" $ do
       let code   = "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
           actual = tester code
-      snapshotTest "should infer abstraction param that having a record exp as body" actual
+      snapshotTest
+        "should infer abstraction param that having a record exp as body"
+        actual
 
     ---------------------------------------------------------------------------
 
@@ -504,29 +506,31 @@ spec = do
           actual = tester code
       snapshotTest "should allow deconstruction of records" actual
 
-    it "should correctly infer types of record pattern when the input has a variable type" $ do
-      let code = unlines
-            [ "fn2 = (x) => (where(x) {"
-            , "  is { z: z }: z"
-            , "  is { x: x }: x"
-            , "})"
-            ]
-          actual = tester code
-      snapshotTest
+    it
         "should correctly infer types of record pattern when the input has a variable type"
-        actual
+      $ do
+          let code = unlines
+                [ "fn2 = (x) => (where(x) {"
+                , "  is { z: z }: z"
+                , "  is { x: x }: x"
+                , "})"
+                ]
+              actual = tester code
+          snapshotTest
+            "should correctly infer types of record pattern when the input has a variable type"
+            actual
 
     it "should correctly infer types of spread record patterns" $ do
-      let code = unlines
-            [ "where({ x: 4, name: \"John\", female: False }) {"
-            , "  is { name: name }: name"
-            , "  is { x: x, ...b }: b.name"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest
-        "should correctly infer types of spread record patterns"
-        actual
+      let
+        code = unlines
+          [ "where({ x: 4, name: \"John\", job: \"Accountant\", fulfilled: false }) {"
+          , "  is { name: name }: name"
+          , "  is { x: x, ...b }: b.name"
+          , "}"
+          ]
+        actual = tester code
+      snapshotTest "should correctly infer types of spread record patterns"
+                   actual
 
     it "should correctly infer fields accessed through spread pattern" $ do
       let code = unlines
@@ -551,10 +555,9 @@ spec = do
             , "fn(Just(3))"
             ]
           actual = tester code
-      snapshotTest
-        "should correctly infer constructor patterns given a var"
-        actual
-    
+      snapshotTest "should correctly infer constructor patterns given a var"
+                   actual
+
     it "should correctly infer nested spread patterns" $ do
       let code = unlines
             [ "fn = (r) => ("
@@ -564,22 +567,22 @@ spec = do
             , ")"
             ]
           actual = tester code
-      snapshotTest
-        "should correctly infer nested spread patterns"
-        actual
-    
-    it "should correctly infer shorthand syntax for record property matching" $ do
-      let code = unlines
-            [ "fn = (r) => ("
-            , "  where(r) {"
-            , "    is { x, y }: x + y"
-            , "  }"
-            , ")"
-            ]
-          actual = tester code
-      snapshotTest
-        "should correctly infer shorthand syntax for record property matching"
-        actual
+      snapshotTest "should correctly infer nested spread patterns" actual
+
+    it "should correctly infer shorthand syntax for record property matching"
+      $ do
+          let code =
+                unlines
+                  [ "fn = (r) => ("
+                  , "  where(r) {"
+                  , "    is { x, y }: x + y"
+                  , "  }"
+                  , ")"
+                  ]
+              actual = tester code
+          snapshotTest
+            "should correctly infer shorthand syntax for record property matching"
+            actual
 
     -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
     -- implementation to get out of the that weird handling in generateCaseEnv
