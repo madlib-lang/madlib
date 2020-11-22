@@ -53,7 +53,7 @@ tokens :-
   "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
-  \,[\n]*                               { mapToken (\_ -> TokenComma) }
+  [\n \ ]*\,[\n]*                       { mapToken (\_ -> TokenComma) }
   \{[\n]*                               { mapToken (\_ -> TokenLeftCurly) }
   [\n \ ]*\}                            { mapToken (\_ -> TokenRightCurly) }
   \[[\n]*                               { mapToken (\_ -> TokenLeftSquaredBracket) }
