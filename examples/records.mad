@@ -27,11 +27,11 @@ aquoob = Creature({
 })
 jigaqu = Creature({
   name: "Jiqaqu Quotzont",
- color: 'ff00ff',
- x: 3,
- y: 2,
- status: "free",
- wild: true
+  color: 'ff00ff',
+  x: 3,
+  y: 2,
+  status: "free",
+  wild: true
 })
 
 // wanna do weird comma first shit? fine
@@ -49,7 +49,16 @@ map = (fn, xs) => (#- xs.map(fn) -#)
 catchAnimal :: Critter -> Critter
 export catchAnimal = (animal) => (
   where(animal)
-    is Creature {x: 3, name}: Creature({name: name, status: "caught", wild: false, x: 0, y: 0, color: '000000'})
+    is Creature {x: 3, name}: Creature(
+      {
+        name: name,
+        status: "caught",
+        wild: false,
+        x: 0,
+        y: 0,
+        color: '000000'
+      }
+    )
     is _                    : animal
 )
 
@@ -59,8 +68,11 @@ grabValuesOffCrap = (x) => (#- x.__args[0].value -#)
 
 j2 = (x) => (#- JSON.stringify(x, null, 2) -#)
 
-menagerie
-  |> map(catchAnimal)
-  |> map(grabValuesOffCrap)
-  |> j2
-  |> trace('outcome')
+transformer = (list) => (
+  list |> map(catchAnimal)
+       |> map(grabValuesOffCrap)
+       |> j2
+       |> trace('outcome')
+)
+
+transformer(menagerie)

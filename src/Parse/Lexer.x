@@ -36,6 +36,8 @@ import           Explain.Location
 $digit = 0-9                    -- digits
 $alpha = [a-zA-Z]               -- alphabetic characters
 $empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
+$head = [\n \ ]                 -- leading whitespace and / or newline
+$tail = [\n]                    -- trailing newline
 
 tokens :-
   import                                { mapToken (\_ -> TokenImport) }
@@ -53,14 +55,14 @@ tokens :-
   "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
-  [\n \ ]*\,[\n]*                       { mapToken (\_ -> TokenComma) }
-  \{[\n]*                               { mapToken (\_ -> TokenLeftCurly) }
-  [\n \ ]*\}                            { mapToken (\_ -> TokenRightCurly) }
-  \[[\n]*                               { mapToken (\_ -> TokenLeftSquaredBracket) }
-  [\n \ ]*\]                            { mapToken (\_ -> TokenRightSquaredBracket) }
+  $head*\,$tail*                        { mapToken (\_ -> TokenComma) }
+  \{$tail*                              { mapToken (\_ -> TokenLeftCurly) }
+  $head*\}                              { mapToken (\_ -> TokenRightCurly) }
+  \[$tail*                              { mapToken (\_ -> TokenLeftSquaredBracket) }
+  $head*\]                              { mapToken (\_ -> TokenRightSquaredBracket) }
   \(                                    { mapToken (\_ -> TokenLeftParen) }
-  \([\n]*                               { mapToken (\_ -> TokenLeftParen) }
-  [\n \ ]*\)                            { mapToken (\_ -> TokenRightParen) }
+  \($tail*                              { mapToken (\_ -> TokenLeftParen) }
+  $head*\)                              { mapToken (\_ -> TokenRightParen) }
   \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
   \:                                    { mapToken (\_ -> TokenColon) }
   \-\>                                  { mapToken (\_ -> TokenArrow) }
@@ -69,13 +71,13 @@ tokens :-
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
-  [\n \ ]*\+                            { mapToken (\_ -> TokenPlus) }
+  $head*\+                              { mapToken (\_ -> TokenPlus) }
   \-                                    { mapToken (\_ -> TokenDash) }
-  [\n \ ]*\?                            { mapToken (\_ -> TokenQuestionMark) }
+  $head*\?                              { mapToken (\_ -> TokenQuestionMark) }
   \n[\ ]*\-                             { mapToken (\_ -> TokenDash) }
-  [\n \ ]*\*                            { mapToken (\_ -> TokenStar) }
-  [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
-  [\n \ ]*\|\>                          { mapToken (\_ -> TokenPipeOperator) }
+  $head*\*                              { mapToken (\_ -> TokenStar) }
+  $head*\/                              { mapToken (\_ -> TokenSlash) }
+  $head*\|\>                            { mapToken (\_ -> TokenPipeOperator) }
   \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   \&\&                                  { mapToken (\_ -> TokenDoubleAmpersand) }
   \|\|                                  { mapToken (\_ -> TokenDoublePipe) }
@@ -85,8 +87,8 @@ tokens :-
   \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
   \!                                    { mapToken (\_ -> TokenExclamationMark) }
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  '($printable # ')+\'                  { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  `($printable # `)+\`                  { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  '($printable # ')+'                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  `($printable # `)+`                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
   \#\- [$alpha $digit \" \_ \' \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\ \n]*"//".*                         ; -- Comments
