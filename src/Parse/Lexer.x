@@ -63,10 +63,10 @@ tokens :-
   \(                                    { mapToken (\_ -> TokenLeftParen) }
   \($tail*                              { mapToken (\_ -> TokenLeftParen) }
   $head*\)                              { mapToken (\_ -> TokenRightParen) }
-  \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
+  $head*\:\:$tail*                      { mapToken (\_ -> TokenDoubleColon) }
   \:                                    { mapToken (\_ -> TokenColon) }
-  \-\>                                  { mapToken (\_ -> TokenArrow) }
-  \=\>                                  { mapToken (\_ -> TokenFatArrow) }
+  $head*\-\>$tail*                      { mapToken (\_ -> TokenArrow) }
+  $head*\=\>$tail*                      { mapToken (\_ -> TokenFatArrow) }
   \|                                    { mapToken (\_ -> TokenPipe) }
   \;                                    { mapToken (\_ -> TokenSemiColon) }
   [\n]                                  { mapToken (\_ -> TokenReturn) }

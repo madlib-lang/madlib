@@ -43,8 +43,16 @@ menagerie = [
   jigaqu
 ]
 
-map :: (a -> b) -> List a -> List b
-map = (fn, xs) => (#- xs.map(fn) -#)
+map ::
+(
+ a
+  ->
+    b)
+    -> List a
+    -> List b
+map = (fn, xs)
+=>
+(#- xs.map(fn) -#)
 
 catchAnimal :: Critter -> Critter
 export catchAnimal = (animal) => (
