@@ -22,8 +22,6 @@ data Import_
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
--- TODO:
--- data ADT = ADT Name [Name] [ADTConstructor]
 data ADT =
   ADT
     { adtname :: Name

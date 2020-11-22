@@ -67,7 +67,6 @@ instance Compilable Exp where
         <> compile astPath outputPath falsy
         <> ")"
 
-    -- Abs param body      -> "(" <> param <> " => " <> compile body <> ")"
     Abs param body -> compileAbs Nothing param body
      where
         -- TODO: Check if parent is Nothing we add (
@@ -240,7 +239,6 @@ instance Compilable Exp where
             $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
             <$> zip [0 ..] ps
         PVar n -> "    const " <> n <> " = " <> v <> ";\n"
-        -- PSpread (PVar n) -> "    const [..." <> n <> "] = " <> v <> ";\n"
 
         _      -> ""
 

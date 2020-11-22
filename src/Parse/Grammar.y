@@ -80,9 +80,7 @@ import           Explain.Meta
 
 ast :: { Src.AST }
   : adt ast          %shift { $2 { Src.aadts =  [$1] <> Src.aadts $2 } }
-  -- | adt              %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [$1], Src.apath = Nothing } }
   | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
-  -- | exp              %shift { Src.AST { Src.aimports = [], Src.aexps = [$1], Src.aadts = [], Src.apath = Nothing } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
   | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
@@ -133,7 +131,6 @@ adt :: { Src.ADT }
 
 adtParameters :: { [Src.Name] }
   : name adtParameters %shift { strV $1 : $2 }
-  -- | name               %shift { [strV $1] }
   | {- empty -}               { [] }
 
 adtConstructors :: { [Src.Constructor] }
@@ -152,13 +149,11 @@ adtConstructorArgs :: { [Src.Typing] }
 typings :: { Src.Typing }
   : typing '->' typings          { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | compositeTyping '->' typings { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
-  -- | '(' compositeTyping ')' '->' typings { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.TRArr $2 $5) }
   | compositeTyping              { $1 }
   | typing                       { $1 }
 
 typing :: { Src.Typing }
   : name                       { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
-  -- | '(' compositeTyping ')'    { $2 }
   | '(' typing '->' typing ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
   | '{' recordTypingArgs '}'   { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
 
@@ -360,7 +355,6 @@ operation :: { Src.Exp }
 
 listConstructor :: { Src.Exp }
   : '[' rets listItems rets ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.ListConstructor $3) }
-  -- | '[' rets listItems ']' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.ListConstructor $3) }
 
 listItems :: { [Src.ListItem] }
   : exp                         { [Src.ListItem $1] }

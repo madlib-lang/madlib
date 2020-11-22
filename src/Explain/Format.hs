@@ -156,9 +156,9 @@ format rf (InferError err reason) = do
         <> "\n\n"
         <> hint
 
-    Reason (PatternTypeError switch pattern) _ _ -> do
+    Reason (PatternTypeError switch pat) _ _ -> do
       let switchArea                         = getArea switch
-      let patternArea                        = getArea pattern
+      let patternArea                        = getArea pat
       let (Area (Loc _ patternLine _) _)     = patternArea
       let (showStart, showEnd) = computeLinesToShow switchArea patternArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -185,9 +185,9 @@ format rf (InferError err reason) = do
         <> "\n\n"
         <> hint
 
-    Reason (PatternConstructorDoesNotExist switch pattern) _ _ -> do
+    Reason (PatternConstructorDoesNotExist switch pat) _ _ -> do
       let switchArea                     = getArea switch
-      let patternArea                    = getArea pattern
+      let patternArea                    = getArea pat
       let (Area (Loc _ patternLine _) _) = patternArea
       let (showStart, showEnd) = computeLinesToShow switchArea patternArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -264,7 +264,7 @@ format rf (InferError err reason) = do
         <> message
 
 
--- computeLinesToShow - returns the first line and the last line to show
+-- computeLinesToShow : returns the first line and the last line to show
 computeLinesToShow :: Area -> Area -> (Int, Int)
 computeLinesToShow (Area (Loc _ l _) _) (Area (Loc _ l' _) _) = (l - 1, l' - 1)
 
@@ -297,13 +297,12 @@ typeToStr t = case t of
       <> " -> "
       <> typeToStr t2'
   TArr t1 t2     -> typeToStr t1 <> " -> " <> typeToStr t2
-  TComp _ n vars -> n <> " " <> (intercalate " " $ typeToStr <$> vars)
+  TComp _ n vars -> n <> " " <> unwords (typeToStr <$> vars)
   TRecord fields _ ->
     "{ "
-      <> (   intercalate ", "
-         $   (\(n, t) -> n <> ": " <> typeToStr t)
-         <$> (M.toList fields)
-         )
+      <> intercalate
+           ", "
+           ((\(n, t) -> n <> ": " <> typeToStr t) <$> M.toList fields)
       <> "}"
 
 

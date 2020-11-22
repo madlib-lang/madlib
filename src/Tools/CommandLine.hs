@@ -1,13 +1,6 @@
 module Tools.CommandLine where
 
-import           System.IO                      ( hPutStrLn
-                                                , stderr
-                                                )
-import           System.Exit                    ( exitFailure )
-import           Data.Version
 import           Options.Applicative
-import           Data.Semigroup                 ( (<>) )
-import qualified Data.Text                     as T
 
 import           Tools.CommandLineFlags
 
@@ -22,7 +15,6 @@ data TransformFlags = TransformFlags
   { input      :: FlagInput
   , output     :: FlagOutput
   , config     :: FlagConfig
-  -- , literate   :: Literate
   }
 
 parseConfig :: Parser FlagConfig

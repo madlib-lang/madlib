@@ -59,12 +59,9 @@ resolveADTConstructor
   :: FilePath -> ADTs -> Name -> [Name] -> Constructor -> Infer Vars
 resolveADTConstructor astPath tadts n params (Constructor cname cparams) = do
   let t = buildADTConstructorReturnType astPath n params
-  -- case adtcargs of
-  --   Just cargs -> do
   t' <- mapM (argToType tadts n params) cparams
   let ctype = foldr1 TArr (t' <> [t])
   return $ M.fromList [(cname, Forall (TV <$> params) ctype)]
-    -- Nothing -> return $ M.fromList [(cname, Forall (TV <$> params) t)]
 
 buildADTConstructorReturnType :: FilePath -> Name -> [Name] -> Type
 buildADTConstructorReturnType astPath tname tparams =

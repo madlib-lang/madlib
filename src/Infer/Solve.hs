@@ -89,7 +89,7 @@ updatePattern (Meta _ _ p) = case p of
 
   Src.PList   patterns    -> Slv.PList (updatePattern <$> patterns)
 
-  Src.PSpread pattern     -> Slv.PSpread (updatePattern pattern)
+  Src.PSpread pat         -> Slv.PSpread (updatePattern pat)
 
 
 updateTyping :: Src.Typing -> Slv.Typing
@@ -533,7 +533,6 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       (Src.PList items   , t) -> foldrM (\p e' -> generateIsEnv t e' p) e items
 
       (Src.PCtor cname as, t) -> do
-        -- ctor <- findConstructor cname
         ctor <- if elem '.' cname
           then findNamespacedConstructorInIs e pattern whereExp cname
           else findConstructor cname

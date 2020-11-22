@@ -3,7 +3,6 @@
 module Error.Error where
 
 import           Infer.Type
--- import Infer.Env
 import           Explain.Reason
 
 

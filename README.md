@@ -5,6 +5,18 @@
 # madlib
 > madlib is a general purpose language that compiles to Javascript.
 
+## How to install
+There are currently two ways to install the madlib compiler.
+
+### Npm package
+You can install it globally with the command `npm i -g @open-sorcerers/madlib`. You can then compile code in the following way:
+```
+madlib -i "entryFile.mad" -o "outputFolder"
+```
+
+### Download the release assets
+You can also download the archive of the build directly from the releases [releases](https://github.com/open-sorcerers/madlib/releases) and install it wherever you want in your filesystem. You would then need to make sure that the location is in your PATH environment variable to make it available from everywhere.
+
 ## Features and Ideology
 
 *madlib* shares much of its syntax / ideology with JavaScript. Atop the "good stuff", it introduces functional programing concepts from other functional programming languages including:
@@ -191,6 +203,8 @@ In *madlib* your code is organized in modules.
 
 Right now the entrypoint module that you give to the compiler is the reference and its path defines the root path for your modules.
 
+#### Named imports
+
 Given the following structure:
 ```
 src/Main.mad
@@ -204,7 +218,7 @@ export someFn = (a) => ...
 
 ```
 // Main.mad
-import { someFn } from "Dependency"
+import { someFn } from "./Dependency"
 
 someFn(...)
 ```
@@ -224,10 +238,22 @@ export someSubFn = (a) => ...
 ```
 ```
 // Main.mad
-import { someSubFn } from "Sub/SubDependency"
+import { someSubFn } from "./Sub/SubDependency"
 
 someSubFn(...)
 ```
+
+#### Default imports
+All exported names are automatically added to a default export that can then be imported as a default import in order to avoid naming collisions. For example, when importing `map` from the standard List module, you can do it like this:
+```
+import L from 'List'
+
+L.map((x) => (x * 2), [1, 2, 3])
+```
+
+### Packages
+
+Coming soon.
 
 ### Examples
 
@@ -247,6 +273,6 @@ IO.log("Hello World !")
 ## run
 
 ```
-stack run "fixtures/example.mad"
+stack run -- -i "fixtures/example.mad"
 node build/fixtures/example.mjs
 ```

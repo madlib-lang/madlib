@@ -21,7 +21,6 @@ import           Tools.CommandLine
 import           Compile
 import qualified AST.Solved                    as Slv
 import qualified Explain.Format                as Explain
--- import           Paths_madlib                  as Meta
 
 
 main :: IO ()
