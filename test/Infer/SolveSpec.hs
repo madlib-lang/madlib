@@ -443,7 +443,7 @@ spec = do
                 , "u = LoggedIn(\"John\", 33)"
                 , "where(u) {"
                 , "  is LoggedIn Number x   : x"
-                , "  is LoggedIn String x: x"
+                , "  is LoggedIn String x   : x"
                 , "}"
                 ]
               actual = tester code
