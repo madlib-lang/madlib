@@ -2,16 +2,17 @@
 #- import path from 'path' -#
 
 inc :: Num -> Num
-inc = (z) => z + 1
-
-// cool!
-cool |> inc
+inc = (z) => (z + 1)
 
 log :: a -> a
-log = (a) => (#- console.log(a); return a; -#)
+log = (a) => (#- {console.log(a); return a;} -#)
+
+cool = 5
+// cool!
+cool |> inc |> log
 
 warn :: a -> a
-warn = (a) => (#- console.warn(a); return a; -#)
+warn = (a) => (#- {console.warn(a); return a;} -#)
 
 data Future e a = Bad e
                 | Good a
