@@ -1,21 +1,53 @@
-data Critter = Creature { name :: String, color :: String, x :: Num, y :: Num, status :: String, wild :: Bool}
+data Critter = Creature {
+  name :: String,
+  color :: String,
+  x :: Num,
+  y :: Num,
+  status :: String,
+  wild :: Bool
+}
 
 randonum = (x) => (#- Math.floor(Math.random() * x) -#)
 
-jigzab = Creature({name: `Jigzab Quotznort`, color: "ff0000", x: randonum(10), y: randonum(10), status: "free", wild: true})
-aquoob = Creature({name: 'Aquoob Zontboo', color: "0000ff", x: 3, y: 3, status: "free", wild: true})
-jigaqu = Creature({name: "Jiqaqu Quotzont", color: 'ff00ff', x: 3, y: 2, status: "free", wild: true})
+jigzab = Creature({
+  name: `Jigzab Quotznort`,
+  color: "ff0000",
+  x: randonum(10),
+  y: randonum(10),
+  status: "free",
+  wild: true
+})
+aquoob = Creature({
+  name: 'Aquoob Zontboo',
+  color: "0000ff",
+  x: 3,
+  y: 3,
+  status: "free",
+  wild: true
+})
+jigaqu = Creature({
+  name: "Jiqaqu Quotzont",
+ color: 'ff00ff',
+ x: 3,
+ y: 2,
+ status: "free",
+ wild: true
+})
 
-menagerie = [jigzab, aquoob, jigaqu]
+menagerie = [
+  jigzab,
+  aquoob,
+  jigaqu
+]
 
 map :: (a -> b) -> List a -> List b
 map = (fn, xs) => (#- xs.map(fn) -#)
 
 catchAnimal :: Critter -> Critter
-export catchAnimal = (animal) => (where(animal)
-  is Creature {x: 3, name}: Creature({name: name, status: "caught", wild: false, x: 0, y: 0, color: '000000'})
-  // is Creature wild : Creature(wild)
-  is _                : animal
+export catchAnimal = (animal) => (
+  where(animal)
+    is Creature {x: 3, name}: Creature({name: name, status: "caught", wild: false, x: 0, y: 0, color: '000000'})
+    is _                    : animal
 )
 
 trace = (tag, x) => (#- { console.log(tag, x); return x; } -#)
@@ -24,4 +56,8 @@ grabValuesOffCrap = (x) => (#- x.__args[0].value -#)
 
 j2 = (x) => (#- JSON.stringify(x, null, 2) -#)
 
-menagerie |> map(catchAnimal) |> map(grabValuesOffCrap) |> j2 |> trace('outcome')
+menagerie
+  |> map(catchAnimal)
+  |> map(grabValuesOffCrap)
+  |> j2
+  |> trace('outcome')

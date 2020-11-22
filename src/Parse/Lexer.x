@@ -53,13 +53,14 @@ tokens :-
   "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
-  \,                                    { mapToken (\_ -> TokenComma) }
-  \{                                    { mapToken (\_ -> TokenLeftCurly) }
-  \}                                    { mapToken (\_ -> TokenRightCurly) }
-  \[                                    { mapToken (\_ -> TokenLeftSquaredBracket) }
-  \]                                    { mapToken (\_ -> TokenRightSquaredBracket) }
+  \,[\n]*                               { mapToken (\_ -> TokenComma) }
+  \{[\n]*                               { mapToken (\_ -> TokenLeftCurly) }
+  [\n \ ]*\}                            { mapToken (\_ -> TokenRightCurly) }
+  \[[\n]*                               { mapToken (\_ -> TokenLeftSquaredBracket) }
+  [\n \ ]*\]                            { mapToken (\_ -> TokenRightSquaredBracket) }
   \(                                    { mapToken (\_ -> TokenLeftParen) }
-  \)                                    { mapToken (\_ -> TokenRightParen) }
+  \([\n]*                               { mapToken (\_ -> TokenLeftParen) }
+  [\n \ ]*\)                            { mapToken (\_ -> TokenRightParen) }
   \:\:                                  { mapToken (\_ -> TokenDoubleColon) }
   \:                                    { mapToken (\_ -> TokenColon) }
   \-\>                                  { mapToken (\_ -> TokenArrow) }
@@ -75,7 +76,6 @@ tokens :-
   [\n \ ]*\*                            { mapToken (\_ -> TokenStar) }
   [\n \ ]*\/                            { mapToken (\_ -> TokenSlash) }
   [\n \ ]*\|\>                          { mapToken (\_ -> TokenPipeOperator) }
-  \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   \&\&                                  { mapToken (\_ -> TokenDoubleAmpersand) }
   \|\|                                  { mapToken (\_ -> TokenDoublePipe) }

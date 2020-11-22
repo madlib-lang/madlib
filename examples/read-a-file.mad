@@ -5,7 +5,9 @@ inc :: Num -> Num
 inc = (z) => (z + 1)
 
 log :: a -> a
-log = (a) => (#- {console.log(a); return a;} -#)
+log = (a) => (
+  #- {console.log(a); return a;} -#
+)
 
 cool = 5
 // cool!
