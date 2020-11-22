@@ -170,8 +170,8 @@ spec = do
       let
         code = unlines
           [ "data Result = Success { value :: String } | Error { message :: String }"
-          , "result1 = Success({ value: \"42\" })"
-          , "result2 = Error({ message: \"Err\" })"
+          , "result1 = Success({ value: `42` })"
+          , "result2 = Error({ message: 'Err' })"
           , "((a, b) => (a == b))(result1, result2)"
           ]
         actual = tester code

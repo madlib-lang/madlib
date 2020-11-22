@@ -12,7 +12,7 @@ map :: (a -> b) -> List a -> List b
 map = (fn, xs) => (#- xs.map(fn) -#)
 
 catchAnimal :: Critter -> Critter
-catchAnimal = (animal) => (where(animal)
+export catchAnimal = (animal) => (where(animal)
   is Creature {x: 3, name}: Creature({name: name, status: "caught", wild: false, x: 0, y: 0, color: '000000'})
   // is Creature wild : Creature(wild)
   is _                : animal

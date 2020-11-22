@@ -23,7 +23,7 @@ instance Compilable Exp where
   compile (Solved _ _ exp) = case exp of
     LInt  v     -> v
     LStr  v     -> "\"" <> v <> "\""
-    LBool v     -> toLower <$> v
+    LBool v     -> v
 
     App abs arg -> case abs of
       Solved _ _ (Var "+" ) -> "(" <> compile arg <> ") + "
@@ -107,13 +107,11 @@ instance Compilable Exp where
         <> ")"
      where
       compilePattern :: String -> Pattern -> String
-      compilePattern _     (PVar _)                = "true"
-      compilePattern _     PAny                    = "true"
-      compilePattern scope (PNum n)                = scope <> " === " <> n
-      compilePattern scope (PStr n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool n) | n == "true" = scope <> " === true"
-      compilePattern scope (PBool n) | True      = scope <> " === true"
-                                     | otherwise = scope <> " === false"
+      compilePattern _     (PVar _)  = "true"
+      compilePattern _     PAny      = "true"
+      compilePattern scope (PNum  n) = scope <> " === " <> n
+      compilePattern scope (PStr  n) = scope <> " === \"" <> n <> "\""
+      compilePattern scope (PBool n) = scope <> " === " <> n
       compilePattern scope (PCon n)
         | n == "String" = "typeof " <> scope <> " === \"string\""
         | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
@@ -341,7 +339,9 @@ buildPCompArgFn = unlines
 
 curryPowder :: String
 curryPowder = unlines
-  [ ""
+  [ "const toString = (fn, args = []) => () => ("
+  , "  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`"
+  , ")"
   , "const curryPowder = (fn) => {"
   , "  function curried(...args) {"
   , "    const length = args.length"

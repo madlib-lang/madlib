@@ -1,5 +1,7 @@
 // file: ./ModuleA.mad
-
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
 const curryPowder = (fn) => {
   function curried(...args) {
     const length = args.length
@@ -32,7 +34,9 @@ export default { singleton };
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";
 
-
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
 const curryPowder = (fn) => {
   function curried(...args) {
     const length = args.length

@@ -1,5 +1,7 @@
 // file: path
-
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
 const curryPowder = (fn) => {
   function curried(...args) {
     const length = args.length
