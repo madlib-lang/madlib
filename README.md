@@ -57,13 +57,13 @@ Functions are the heart of *madlib*.
 
 #### Defining a function:
 ```
-inc = (x) => x + 1
+inc = (x) => (x + 1)
 ```
 
 #### Typing a function:
 ```
-inc :: Num -> Num
-inc = (x) => x + 1
+inc :: Number -> Number
+inc = (x) => (x + 1)
 ```
 
 #### Evaluating a function
@@ -87,7 +87,7 @@ inc(inc(3)) // 5
 #### Currying
 All functions are curried, therefore you can always partially apply them:
 ```
-add = (a, b) => a + b
+add = (a, b) => (a + b)
 
 addFive = add(5)
 
@@ -102,7 +102,7 @@ Some examples:
 
 ```
 if (true) { "Yes" } else { "No" }
-if (cost > wallet) { goHome() } else { watchShow() }
+if (cost > wallet) { goHome("With my little money") } else { watchShow("And enjoy it") }
 ```
 
 Because it is an expression, we can directly pipe to whatever it returns:
@@ -112,17 +112,28 @@ if (true) { "Yes" } else { "No" }
   |> IO.log
 ```
 
-#### Type annotations
+Two shorthand syntaxes are also available and the above could then also be written like this:
+```
+// Without brackets:
+(if (true) "Yes" else "No")
+  |> IO.log
 
+// Ternary:
+(true ? "Yes" : "No")
+  |> IO.log
+```
+NB: note that parenthesis are necessary around the expressions then, otherwise the piped `IO.Log` would be applied to the "No" string.
+
+#### Type annotations
 
 Because of *madlib*'s type inference, in the majority of cases you do not need to provide type annotations. However, if needed, you can explicitly define type annotations in the form of `(expression :: type)`:
 
 ```
-(1 :: Num)     // here the annotation says that 1 is a Num
-(1 + 1 :: Num) // here the annotation says that 1 + 1 is a Num
-(1 :: Num) + 1 // here the annotation says that the first 1 is a Num, and tells the type checker to infer the type of the second value
+(1 :: Number)     // here the annotation says that 1 is a Number
+(1 + 1 :: Number) // here the annotation says that 1 + 1 is a Number
+(1 :: Number) + 1 // here the annotation says that the first 1 is a Number, and tells the type checker to infer the type of the second value
 ("Madlib" :: String)
-("Madlib" :: Bool) // Type error, "Madlib should be a Bool"
+("Madlib" :: Boolean) // Type error, "Madlib should be a Boolean"
 ```
 
 ### Algebraic Data Types
@@ -153,19 +164,23 @@ data User
   = LoggedIn String
   | Anonymous
 
-userDisplayName = (u) => where(u) {
-  is LoggedIn name: name
-  is Anonymous    : "Anonymous"
-}
+userDisplayName = (u) => (
+  where(u) {
+    is LoggedIn name: name
+    is Anonymous    : "Anonymous"
+  }
+)
 ```
 
 For [Records](#records):
 ```
 getStreetName :: { address: { street: String } }
-getStreetName = (p1, p2) => where({ p1: p1, p2: p2 }) {
-  is { address: { street: s } }: s
-  is _                         : "Unknown address"
-}
+getStreetName = (p1, p2) => (
+  where({ p1: p1, p2: p2 }) {
+    is { address: { street: s } }: s
+    is _                         : "Unknown address"
+  }
+)
 ```
 
 ### Records
