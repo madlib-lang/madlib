@@ -1,10 +1,10 @@
 data Critter = Creature {
   name :: String,
   color :: String,
-  x :: Num,
-  y :: Num,
+  x :: Number,
+  y :: Number,
   status :: String,
-  wild :: Bool
+  wild :: Boolean
 }
 
 randonum = (x) => (#- Math.floor(Math.random() * x) -#)

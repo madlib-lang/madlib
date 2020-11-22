@@ -417,8 +417,8 @@ mergeAreas (Area l _) (Area _ r) = Area l r
 nameToPattern :: Area -> String -> Src.Pattern
 nameToPattern area n | n == "_"      = Meta emptyInfos area Src.PAny
                 | n == "String"      = Meta emptyInfos area (Src.PCon n)
-                | n == "Bool"        = Meta emptyInfos area (Src.PCon n)
-                | n == "Num"         = Meta emptyInfos area (Src.PCon n)
+                | n == "Boolean"     = Meta emptyInfos area (Src.PCon n)
+                | n == "Number"      = Meta emptyInfos area (Src.PCon n)
                 | (isUpper . head) n = Meta emptyInfos area (Src.PCtor n [])
                 | otherwise          = Meta emptyInfos area (Src.PVar n)
 

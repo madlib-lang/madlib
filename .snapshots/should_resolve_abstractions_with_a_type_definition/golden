@@ -4,61 +4,62 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-            (Area (Loc 0 1 1) (Loc 48 2 24))
+            (Area (Loc 0 1 1) (Loc 57 2 24))
             (TypedExp
                (Solved
                   (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                  (Area (Loc 25 2 1) (Loc 48 2 24))
+                  (Area (Loc 34 2 1) (Loc 57 2 24))
                   (Assignment
                      "fn"
                      (Solved
                         (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool)))
-                        (Area (Loc 30 2 6) (Loc 48 2 24))
+                        (Area (Loc 39 2 6) (Loc 57 2 24))
                         (Abs
                            "a"
                            (Solved
                               (TArr (TVar (TV "b")) (TCon CBool))
-                              (Area (Loc 30 2 6) (Loc 48 2 24))
+                              (Area (Loc 39 2 6) (Loc 57 2 24))
                               (Abs
                                  "b"
                                  (Solved
                                     (TCon CBool)
-                                    (Area (Loc 41 2 17) (Loc 42 2 18))
+                                    (Area (Loc 50 2 17) (Loc 51 2 18))
                                     (App
                                        (Solved
                                           (TArr (TVar (TV "a")) (TCon CBool))
-                                          (Area (Loc 41 2 17) (Loc 42 2 18))
+                                          (Area (Loc 50 2 17) (Loc 51 2 18))
                                           (App
                                              (Solved
                                                 (TArr
                                                    (TVar (TV "e"))
                                                    (TArr (TVar (TV "e")) (TCon CBool)))
-                                                (Area (Loc 43 2 19) (Loc 45 2 21))
+                                                (Area (Loc 52 2 19) (Loc 54 2 21))
                                                 (Var "=="))
                                              (Solved
                                                 (TVar (TV "a"))
-                                                (Area (Loc 41 2 17) (Loc 42 2 18))
+                                                (Area (Loc 50 2 17) (Loc 51 2 18))
                                                 (Var "a"))))
                                        (Solved
                                           (TVar (TV "b"))
-                                          (Area (Loc 46 2 22) (Loc 47 2 23))
+                                          (Area (Loc 55 2 22) (Loc 56 2 23))
                                           (Var "b"))))))))))
                (TRArr
-                  (TRSingle "Num") (TRArr (TRSingle "Num") (TRSingle "Bool"))))
+                  (TRSingle "Number")
+                  (TRArr (TRSingle "Number") (TRSingle "Boolean"))))
         , Solved
             (TCon CBool)
-            (Area (Loc 55 3 7) (Loc 56 3 8))
+            (Area (Loc 64 3 7) (Loc 65 3 8))
             (App
                (Solved
                   (TArr (TCon CNum) (TCon CBool))
-                  (Area (Loc 55 3 7) (Loc 56 3 8))
+                  (Area (Loc 64 3 7) (Loc 65 3 8))
                   (App
                      (Solved
                         (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
-                        (Area (Loc 49 3 1) (Loc 51 3 3))
+                        (Area (Loc 58 3 1) (Loc 60 3 3))
                         (Var "fn"))
-                     (Solved (TCon CNum) (Area (Loc 52 3 4) (Loc 53 3 5)) (LInt "3"))))
-               (Solved (TCon CNum) (Area (Loc 55 3 7) (Loc 56 3 8)) (LInt "4")))
+                     (Solved (TCon CNum) (Area (Loc 61 3 4) (Loc 62 3 5)) (LInt "3"))))
+               (Solved (TCon CNum) (Area (Loc 64 3 7) (Loc 65 3 8)) (LInt "4")))
         ]
     , aadts = []
     , apath = Just "path"

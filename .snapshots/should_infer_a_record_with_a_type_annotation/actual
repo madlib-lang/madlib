@@ -5,7 +5,7 @@ Right
         [ Solved
             (TRecord
                (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
-            (Area (Loc 1 1 2) (Loc 41 1 42))
+            (Area (Loc 1 1 2) (Loc 47 1 48))
             (TypedExp
                (Solved
                   (TRecord
@@ -23,7 +23,7 @@ Right
                      ]))
                (TRRecord
                   (fromList
-                     [ ( "x" , TRSingle "Num" ) , ( "y" , TRSingle "Num" ) ])))
+                     [ ( "x" , TRSingle "Number" ) , ( "y" , TRSingle "Number" ) ])))
         ]
     , aadts = []
     , apath = Just "path"

@@ -19,7 +19,7 @@ Right
                         (TCon CNum) (Area (Loc 47 2 16) (Loc 48 2 17)) (LInt "4")))))
         , Solved
             (TCon CNum)
-            (Area (Loc 50 3 1) (Loc 128 7 1))
+            (Area (Loc 50 3 1) (Loc 131 7 1))
             (Where
                (Solved
                   (TComp "Maybe" [ TCon CNum ])
@@ -27,24 +27,24 @@ Right
                   (Var "perhaps"))
                [ Solved
                    (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
-                   (Area (Loc 69 4 3) (Loc 86 4 20))
+                   (Area (Loc 69 4 3) (Loc 89 4 23))
                    (Is
-                      (PCtor "Just" [ PCon "Num" ])
-                      (Solved (TCon CNum) (Area (Loc 85 4 19) (Loc 86 4 20)) (LInt "2")))
+                      (PCtor "Just" [ PCon "Number" ])
+                      (Solved (TCon CNum) (Area (Loc 88 4 22) (Loc 89 4 23)) (LInt "2")))
                , Solved
                    (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
-                   (Area (Loc 89 5 3) (Loc 106 5 20))
+                   (Area (Loc 92 5 3) (Loc 109 5 20))
                    (Is
                       (PCtor "Nothing" [])
                       (Solved
-                         (TCon CNum) (Area (Loc 105 5 19) (Loc 106 5 20)) (LInt "0")))
+                         (TCon CNum) (Area (Loc 108 5 19) (Loc 109 5 20)) (LInt "0")))
                , Solved
                    (TArr (TComp "Maybe" [ TCon CNum ]) (TCon CNum))
-                   (Area (Loc 109 6 3) (Loc 126 6 20))
+                   (Area (Loc 112 6 3) (Loc 129 6 20))
                    (Is
                       (PCtor "Just" [ PAny ])
                       (Solved
-                         (TCon CNum) (Area (Loc 125 6 19) (Loc 126 6 20)) (LInt "1")))
+                         (TCon CNum) (Area (Loc 128 6 19) (Loc 129 6 20)) (LInt "1")))
                ])
         ]
     , aadts =

@@ -30,16 +30,18 @@ spec :: Spec
 spec = do
   describe "findAST" $ do
     it "should return a Right AST if the ast exists" $ do
-      let
-        source =
-          unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => (fn2(a, b) + a)"]
+      let source =
+            unlines
+              [ "fn :: Number -> Number -> Number"
+              , "fn = (a, b) => (fn2(a, b) + a)"
+              ]
 
-        (Right ast) = buildAST "fixtures/source.mad" source
+          (Right ast) = buildAST "fixtures/source.mad" source
 
-        expected    = Right ast
-        files       = M.fromList [("fixtures/source.mad", source)]
+          expected    = Right ast
+          files       = M.fromList [("fixtures/source.mad", source)]
 
-        rf          = makeReadFile files
+          rf          = makeReadFile files
 
       r <- buildASTTable' rf "" Nothing "fixtures/" "fixtures/source.mad"
       let actual = r >>= flip findAST "fixtures/source.mad"
@@ -48,7 +50,10 @@ spec = do
     it "should return a Left ImportNotFound if it does not exist" $ do
       let
         source =
-          unlines ["fn :: Num -> Num -> Num", "fn = (a, b) => (fn2(a, b) + a)"]
+          unlines
+            [ "fn :: Number -> Number -> Number"
+            , "fn = (a, b) => (fn2(a, b) + a)"
+            ]
 
         (Right ast) = buildAST "fixtures/source.mad" source
 
@@ -70,11 +75,14 @@ spec = do
       let
         sourceA = unlines
           [ "import { fn2 } from \"sourceB\""
-          , "fn :: Num -> Num -> Num"
+          , "fn :: Number -> Number -> Number"
           , "fn = (a, b) => (fn2(a, b) + a)"
           ]
         sourceB =
-          unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => (a + b)"]
+          unlines
+            [ "fn2 :: Number -> Number -> Number"
+            , "export fn2 = (a, b) => (a + b)"
+            ]
 
         (Right astA) = buildAST "fixtures/sourceA.mad" sourceA
         (Right astB) = buildAST "fixtures/sourceB.mad" sourceB
@@ -94,7 +102,7 @@ spec = do
     it "should fail if the source file is not found" $ do
       let sourceA = unlines
             [ "import { fn2 } from \"sourceB\""
-            , "fn :: Num -> Num -> Num"
+            , "fn :: Number -> Number -> Number"
             , "fn = (a, b) => (fn2(a, b) + a)"
             ]
 
@@ -126,11 +134,14 @@ spec = do
       let
         sourceA = unlines
           [ "import { fn2 } from \"sourceB\""
-          , "fn :: Num -> Num -> Num"
+          , "fn :: Number -> Number -> Number"
           , "fn = (a, b) => (fn2(a, b) + a)"
           ]
         sourceB =
-          unlines ["fn2 :: Num -> Num -> Num", "export fn2 = (a, b) => (a + b)"]
+          unlines
+            [ "fn2 :: Number -> Number -> Number"
+            , "export fn2 = (a, b) => (a + b)"
+            ]
 
         (Right astA) = buildAST "src/sourceA.mad" sourceA
         (Right astB) = buildAST "src/sourceB.mad" sourceB
@@ -147,7 +158,8 @@ spec = do
   describe "buildAST" $ do
     it "should return a GrammarError of the source is not valid" $ do
       let
-        source   = unlines ["fn :: Num -> Num -> Num", "fn : a, b => (a + b)"]
+        source =
+          unlines ["fn :: Number -> Number -> Number", "fn : a, b => (a + b)"]
         actual   = buildAST "source.mad" source
         expected = Left $ InferError
           (GrammarError
@@ -157,9 +169,9 @@ spec = do
           NoReason
       actual `shouldBe` expected
 
-    it "should return a valid AST with boolean expressions" $ do
-      let source =
-            unlines ["fn :: Bool -> Bool -> Bool", "fn = (a, b) => (a == b)"]
+    it "should return a valid AST with Boolean expressions" $ do
+      let source = unlines
+            ["fn :: Boolean -> Boolean -> Boolean", "fn = (a, b) => (a == b)"]
           ast    = buildAST "source.mad" source
           actual = case ast of
             Right _ -> True
@@ -168,7 +180,8 @@ spec = do
       actual `shouldBe` True
 
     it "should return a valid AST with true literals" $ do
-      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == true)"]
+      let source =
+            unlines ["fn :: Boolean -> Boolean", "fn = (a) => (a == true)"]
           ast    = buildAST "source.mad" source
           actual = case ast of
             Right _ -> True
@@ -177,7 +190,8 @@ spec = do
       actual `shouldBe` True
 
     it "should return a valid AST with false literals" $ do
-      let source = unlines ["fn :: Bool -> Bool", "fn = (a) => (a == false)"]
+      let source =
+            unlines ["fn :: Boolean -> Boolean", "fn = (a) => (a == false)"]
           ast    = buildAST "source.mad" source
           actual = case ast of
             Right _ -> True

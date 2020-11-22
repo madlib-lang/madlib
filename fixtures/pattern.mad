@@ -17,13 +17,13 @@ where(x) {
   is _   : "Not YOUHOU"
 } |> IO.log
 
-data R = R { x :: Num }
+data R = R { x :: Number }
 r = R({ x: 42 })
 where(r) {
   is R { x: x }: x
 } |> IO.log
 
-data User = User String String Num | Anonymous
+data User = User String String Number | Anonymous
 u = User("john", "smith", 32)
 
 where(u)

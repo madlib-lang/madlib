@@ -32,30 +32,25 @@ import           Text.Show.Pretty               ( ppShow )
 infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
   let (Meta _ area exp) = lexp
-  in
-    case exp of
-      Src.LInt  _           -> return (M.empty, num, applyLitSolve lexp num)
-      Src.LStr  _           -> return (M.empty, str, applyLitSolve lexp str)
-      Src.LBool _           -> return (M.empty, bool, applyLitSolve lexp bool)
+  in  case exp of
+        Src.LInt  _           -> return (M.empty, num, applyLitSolve lexp num)
+        Src.LStr  _           -> return (M.empty, str, applyLitSolve lexp str)
+        Src.LBool _           -> return (M.empty, bool, applyLitSolve lexp bool)
 
-      Src.Var   _           -> inferVar env lexp
-      Src.Abs        _ _    -> inferAbs env lexp
-      Src.App        _ _    -> inferApp env lexp
-      Src.Assignment _ _    -> inferAssignment env lexp
-      Src.Where      _ _    -> inferWhere env lexp
-      Src.Record _          -> inferRecord env lexp
-      Src.FieldAccess _ _   -> inferFieldAccess env lexp
-      Src.TypedExp    _ _   -> inferTypedExp env lexp
-      Src.ListConstructor _ -> inferListConstructor env lexp
-      Src.Export          _ -> inferExport env lexp
-      Src.If _ _ _          -> inferIf env lexp
-      Src.JSExp c -> do
-        v <- newTVar
-        return
-          ( M.empty
-          , v
-          , Slv.Solved v area (Slv.JSExp c)
-          )
+        Src.Var   _           -> inferVar env lexp
+        Src.Abs        _ _    -> inferAbs env lexp
+        Src.App        _ _    -> inferApp env lexp
+        Src.Assignment _ _    -> inferAssignment env lexp
+        Src.Where      _ _    -> inferWhere env lexp
+        Src.Record _          -> inferRecord env lexp
+        Src.FieldAccess _ _   -> inferFieldAccess env lexp
+        Src.TypedExp    _ _   -> inferTypedExp env lexp
+        Src.ListConstructor _ -> inferListConstructor env lexp
+        Src.Export          _ -> inferExport env lexp
+        Src.If _ _ _          -> inferIf env lexp
+        Src.JSExp c           -> do
+          v <- newTVar
+          return (M.empty, v, Slv.Solved v area (Slv.JSExp c))
 
 
 -- TODO: Should probably just take a Loc instead of the old Expression !
@@ -437,17 +432,17 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
   buildPatternType e@Env { envvars } pattern@(Meta _ area pat) = case pat of
-    Src.PVar  _        -> newTVar
+    Src.PVar  _         -> newTVar
 
-    Src.PCon  "String" -> return $ TCon CString
-    Src.PCon  "Bool"   -> return $ TCon CBool
-    Src.PCon  "Num"    -> return $ TCon CNum
+    Src.PCon  "String"  -> return $ TCon CString
+    Src.PCon  "Boolean" -> return $ TCon CBool
+    Src.PCon  "Number"  -> return $ TCon CNum
 
-    Src.PStr  _        -> return $ TCon CString
-    Src.PBool _        -> return $ TCon CBool
-    Src.PNum  _        -> return $ TCon CNum
+    Src.PStr  _         -> return $ TCon CString
+    Src.PBool _         -> return $ TCon CBool
+    Src.PNum  _         -> return $ TCon CNum
 
-    Src.PAny           -> newTVar
+    Src.PAny            -> newTVar
 
     Src.PRecord fields ->
       let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields
@@ -612,8 +607,8 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
 
 typingToType :: Src.Typing -> Infer Type
 typingToType (Meta _ _ (Src.TRSingle t))
-  | t == "Num"       = return $ TCon CNum
-  | t == "Bool"      = return $ TCon CBool
+  | t == "Number"    = return $ TCon CNum
+  | t == "Boolean"   = return $ TCon CBool
   | t == "String"    = return $ TCon CString
   | t == "Void"      = return $ TCon CVoid
   | isLower $ head t = return $ TVar $ TV t

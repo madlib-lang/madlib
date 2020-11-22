@@ -113,10 +113,10 @@ instance Compilable Exp where
       compilePattern scope (PStr  n) = scope <> " === \"" <> n <> "\""
       compilePattern scope (PBool n) = scope <> " === " <> n
       compilePattern scope (PCon n)
-        | n == "String" = "typeof " <> scope <> " === \"string\""
-        | n == "Bool"   = "typeof " <> scope <> " === \"boolean\""
-        | n == "Num"    = "typeof " <> scope <> " === \"number\""
-        | otherwise     = ""
+        | n == "String"  = "typeof " <> scope <> " === \"string\""
+        | n == "Boolean" = "typeof " <> scope <> " === \"boolean\""
+        | n == "Number"  = "typeof " <> scope <> " === \"number\""
+        | otherwise      = ""
       compilePattern scope (PCtor n []) =
         scope <> ".__constructor === " <> "\"" <> n <> "\""
       compilePattern scope (PCtor n ps) =

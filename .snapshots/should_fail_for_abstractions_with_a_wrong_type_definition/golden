@@ -5,42 +5,42 @@ Left
         (TypeAndTypingMismatch
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 28 2 1) (Loc 51 2 24))
+              (Area (Loc 34 2 1) (Loc 57 2 24))
               (Assignment
                  "fn"
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 33 2 6) (Loc 51 2 24))
+                    (Area (Loc 39 2 6) (Loc 57 2 24))
                     (Abs
                        "a"
                        (Meta
                           Infos { nthArg = Nothing , origin = Nothing }
-                          (Area (Loc 33 2 6) (Loc 51 2 24))
+                          (Area (Loc 39 2 6) (Loc 57 2 24))
                           (Abs
                              "b"
                              (Meta
                                 Infos { nthArg = Nothing , origin = Nothing }
-                                (Area (Loc 44 2 17) (Loc 45 2 18))
+                                (Area (Loc 50 2 17) (Loc 51 2 18))
                                 (App
                                    (Meta
                                       Infos { nthArg = Nothing , origin = Nothing }
-                                      (Area (Loc 44 2 17) (Loc 45 2 18))
+                                      (Area (Loc 50 2 17) (Loc 51 2 18))
                                       (App
                                          (Meta
                                             Infos { nthArg = Nothing , origin = Nothing }
-                                            (Area (Loc 46 2 19) (Loc 48 2 21))
+                                            (Area (Loc 52 2 19) (Loc 54 2 21))
                                             (Var "=="))
                                          (Meta
                                             Infos { nthArg = Nothing , origin = Nothing }
-                                            (Area (Loc 44 2 17) (Loc 45 2 18))
+                                            (Area (Loc 50 2 17) (Loc 51 2 18))
                                             (Var "a"))))
                                    (Meta
                                       Infos { nthArg = Nothing , origin = Nothing }
-                                      (Area (Loc 49 2 22) (Loc 50 2 23))
+                                      (Area (Loc 55 2 22) (Loc 56 2 23))
                                       (Var "b"))))))))))
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 6 1 7) (Loc 27 1 28))
+              (Area (Loc 6 1 7) (Loc 33 1 34))
               (TRArr
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
@@ -48,17 +48,17 @@ Left
                     (TRSingle "String"))
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 16 1 17) (Loc 27 1 28))
+                    (Area (Loc 16 1 17) (Loc 33 1 34))
                     (TRArr
                        (Meta
                           Infos { nthArg = Nothing , origin = Nothing }
-                          (Area (Loc 16 1 17) (Loc 19 1 20))
-                          (TRSingle "Num"))
+                          (Area (Loc 16 1 17) (Loc 22 1 23))
+                          (TRSingle "Number"))
                        (Meta
                           Infos { nthArg = Nothing , origin = Nothing }
-                          (Area (Loc 23 1 24) (Loc 27 1 28))
-                          (TRSingle "Bool"))))))
+                          (Area (Loc 26 1 27) (Loc 33 1 34))
+                          (TRSingle "Boolean"))))))
            (TArr (TCon CString) (TArr (TCon CNum) (TCon CBool)))
            (TArr (TVar (TV "b")) (TArr (TVar (TV "b")) (TCon CBool))))
         "path"
-        (Area (Loc 0 1 1) (Loc 51 2 24))))
+        (Area (Loc 0 1 1) (Loc 57 2 24))))

@@ -1,74 +1,23 @@
 Left
   (InferError
-     (UnificationError (TCon CString) (TCon CNum))
+     (UnificationError (TCon (CUserDef "Number")) (TCon CNum))
      (Reason
-        (PatternTypeError
+        (WrongTypeApplied
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 54 3 1) (Loc 118 6 1))
-              (Where
+              (Area (Loc 53 2 22) (Loc 55 2 24))
+              (App
                  (Meta
                     Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 60 3 7) (Loc 61 3 8))
-                    (Var "u"))
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 67 4 3) (Loc 90 4 26))
-                     (Is
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 70 4 6) (Loc 84 4 20))
-                           (PCtor
-                              "LoggedIn"
-                              [ Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 79 4 15) (Loc 82 4 18))
-                                  (PCon "Num")
-                              , Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 83 4 19) (Loc 84 4 20))
-                                  (PVar "x")
-                              ]))
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 89 4 25) (Loc 90 4 26))
-                           (Var "x")))
-                 , Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 93 5 3) (Loc 116 5 26))
-                     (Is
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 96 5 6) (Loc 113 5 23))
-                           (PCtor
-                              "LoggedIn"
-                              [ Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 105 5 15) (Loc 111 5 21))
-                                  (PCon "String")
-                              , Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 112 5 22) (Loc 113 5 23))
-                                  (PVar "x")
-                              ]))
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 115 5 25) (Loc 116 5 26))
-                           (Var "x")))
-                 ]))
+                    (Area (Loc 36 2 5) (Loc 44 2 13))
+                    (Var "LoggedIn"))
+                 (Meta
+                    Infos { nthArg = Just 1 , origin = Just (Var "LoggedIn") }
+                    (Area (Loc 45 2 14) (Loc 51 2 20))
+                    (LStr "John"))))
            (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 70 4 6) (Loc 84 4 20))
-              (PCtor
-                 "LoggedIn"
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 79 4 15) (Loc 82 4 18))
-                     (PCon "Num")
-                 , Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 83 4 19) (Loc 84 4 20))
-                     (PVar "x")
-                 ])))
+              Infos { nthArg = Just 2 , origin = Just (Var "LoggedIn") }
+              (Area (Loc 53 2 22) (Loc 55 2 24))
+              (LInt "33")))
         "path"
-        (Area (Loc 67 4 3) (Loc 90 4 26))))
+        (Area (Loc 53 2 22) (Loc 55 2 24))))

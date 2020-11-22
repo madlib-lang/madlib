@@ -1,4 +1,4 @@
-data Response = Success Num { body :: Num }
+data Response = Success Number { body :: Number }
 
 r = Success(3, { body: 3 })
 -- r = Success({ body: 3 })

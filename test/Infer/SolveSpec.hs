@@ -209,7 +209,7 @@ spec = do
                    actual
 
     it "should infer a record with a type annotation" $ do
-      let code   = "({ x: 3, y: 7 } :: { x :: Num, y :: Num })"
+      let code   = "({ x: 3, y: 7 } :: { x :: Number, y :: Number })"
           actual = tester code
       snapshotTest "should infer a record with a type annotation" actual
 
@@ -267,22 +267,20 @@ spec = do
     -- TODO: Write tests where implementation and definition don't match to force
     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
-      let code =
-            unlines
-              [ "fn :: Num -> Num -> Bool"
-              , "fn = (a, b) => (a == b)"
-              , "fn(3, 4)"
-              ]
+      let code = unlines
+            [ "fn :: Number -> Number -> Boolean"
+            , "fn = (a, b) => (a == b)"
+            , "fn(3, 4)"
+            ]
           actual = tester code
       snapshotTest "should resolve abstractions with a type definition" actual
 
     it "should fail for abstractions with a wrong type definition" $ do
-      let code =
-            unlines
-              [ "fn :: String -> Num -> Bool"
-              , "fn = (a, b) => (a == b)"
-              , "fn(3, 4)"
-              ]
+      let code = unlines
+            [ "fn :: String -> Number -> Boolean"
+            , "fn = (a, b) => (a == b)"
+            , "fn(3, 4)"
+            ]
           actual = tester code
       snapshotTest "should fail for abstractions with a wrong type definition"
                    actual
@@ -300,7 +298,7 @@ spec = do
       snapshotTest "should infer a simple if else expression" actual
 
     it
-        "should fail to infer an if else expression if the condition is not a Bool"
+        "should fail to infer an if else expression if the condition is not a Boolean"
       $ do
           let code =
                 unlines
@@ -313,7 +311,7 @@ spec = do
                   ]
               actual = tester code
           snapshotTest
-            "should fail to infer an if else expression if the condition is not a Bool"
+            "should fail to infer an if else expression if the condition is not a Boolean"
             actual
 
     it
@@ -336,7 +334,7 @@ spec = do
 
     -- Pattern matching:
 
-    it "should resolve where with a boolean literal" $ do
+    it "should resolve where with a Boolean literal" $ do
       let code =
             unlines
               [ "where(true) {"
@@ -345,9 +343,9 @@ spec = do
               , "}"
               ]
           actual = tester code
-      snapshotTest "should resolve where with a boolean literal" actual
+      snapshotTest "should resolve where with a Boolean literal" actual
 
-    it "should resolve where with a number input" $ do
+    it "should resolve where with a Number input" $ do
       let code = unlines
             [ "where(42) {"
             , "  case 1 : \"NOPE\""
@@ -357,7 +355,7 @@ spec = do
             , "}"
             ]
           actual = tester code
-      snapshotTest "should resolve where with a number input" actual
+      snapshotTest "should resolve where with a Number input" actual
 
     it "should resolve where with a string input" $ do
       let code = unlines
@@ -397,7 +395,7 @@ spec = do
             [ "data Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
             , "where(perhaps) {"
-            , "  is Just Num   : 2"
+            , "  is Just Number   : 2"
             , "  is Nothing    : 0"
             , "  is Just _     : 1"
             , "}"
@@ -426,10 +424,10 @@ spec = do
         "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types"
       $ do
           let code = unlines
-                [ "data User = LoggedIn String Num"
+                [ "data User = LoggedIn String Number"
                 , "u = LoggedIn(\"John\", 33)"
                 , "where(u) {"
-                , "  is LoggedIn Num x: x"
+                , "  is LoggedIn Number x: x"
                 , "}"
                 ]
               actual = tester code
@@ -441,10 +439,10 @@ spec = do
         "should fail to resolve a constructor pattern with different type variables applied"
       $ do
           let code = unlines
-                [ "data User a = LoggedIn a Num"
+                [ "data User a = LoggedIn a Number"
                 , "u = LoggedIn(\"John\", 33)"
                 , "where(u) {"
-                , "  is LoggedIn Num x   : x"
+                , "  is LoggedIn Number x   : x"
                 , "  is LoggedIn String x: x"
                 , "}"
                 ]
@@ -456,7 +454,7 @@ spec = do
     it "should fail to resolve if the given constructor does not exist" $ do
       let code = unlines
             [ "where(3) {"
-            , "  is LoggedIn Num x   : x"
+            , "  is LoggedIn Number x   : x"
             , "  is LoggedIn String x: x"
             , "}"
             ]
@@ -622,10 +620,13 @@ spec = do
       snapshotTest "should resolve usage of exported names" actual
 
     it "should resolve usage of exported typed names" $ do
-      let
-        code =
-          unlines ["inc :: Num -> Num", "export inc = (a) => (a + 1)", "inc(3)"]
-        actual = tester code
+      let code =
+            unlines
+              [ "inc :: Number -> Number"
+              , "export inc = (a) => (a + 1)"
+              , "inc(3)"
+              ]
+          actual = tester code
       snapshotTest "should resolve usage of exported typed names" actual
 
     ---------------------------------------------------------------------------
@@ -641,7 +642,7 @@ spec = do
     ---------------------------------------------------------------------------
 
 
-    -- Bool operators:
+    -- Boolean operators:
 
     it "should resolve the operator &&" $ do
       let code   = "true && false"
@@ -690,14 +691,14 @@ spec = do
 
     it "should validate correct type annotations" $ do
       let code = unlines
-            [ "inc :: Num -> Num"
+            [ "inc :: Number -> Number"
             , "inc = (a) => (a + 1)"
-            , "(3 :: Num)"
+            , "(3 :: Number)"
             , "data Maybe a = Just a | Nothing"
             , "(Nothing :: Maybe a)"
             -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
             -- We need to split the production and reconnect it when building the canonical AST.
-            , "(Just(3) :: Maybe Num)"
+            , "(Just(3) :: Maybe Number)"
             ]
           actual = tester code
       snapshotTest "should validate correct type annotations" actual

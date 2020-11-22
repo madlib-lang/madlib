@@ -1,2 +1,23 @@
 Left
-  (InferError (UnificationError (TCon CNum) (TCon CString)) NoReason)
+  (InferError
+     (UnificationError (TCon (CUserDef "Number")) (TCon CNum))
+     (Reason
+        (WrongTypeApplied
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 56 2 22) (Loc 58 2 24))
+              (App
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 39 2 5) (Loc 47 2 13))
+                    (Var "LoggedIn"))
+                 (Meta
+                    Infos { nthArg = Just 1 , origin = Just (Var "LoggedIn") }
+                    (Area (Loc 48 2 14) (Loc 54 2 20))
+                    (LStr "John"))))
+           (Meta
+              Infos { nthArg = Just 2 , origin = Just (Var "LoggedIn") }
+              (Area (Loc 56 2 22) (Loc 58 2 24))
+              (LInt "33")))
+        "path"
+        (Area (Loc 56 2 22) (Loc 58 2 24))))

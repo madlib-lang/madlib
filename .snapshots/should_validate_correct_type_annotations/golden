@@ -4,67 +4,67 @@ Right
     , aexps =
         [ Solved
             (TArr (TCon CNum) (TCon CNum))
-            (Area (Loc 0 1 1) (Loc 38 2 21))
+            (Area (Loc 0 1 1) (Loc 44 2 21))
             (TypedExp
                (Solved
                   (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 18 2 1) (Loc 38 2 21))
+                  (Area (Loc 24 2 1) (Loc 44 2 21))
                   (Assignment
                      "inc"
                      (Solved
                         (TArr (TCon CNum) (TCon CNum))
-                        (Area (Loc 24 2 7) (Loc 38 2 21))
+                        (Area (Loc 30 2 7) (Loc 44 2 21))
                         (Abs
                            "a"
                            (Solved
                               (TCon CNum)
-                              (Area (Loc 32 2 15) (Loc 33 2 16))
+                              (Area (Loc 38 2 15) (Loc 39 2 16))
                               (App
                                  (Solved
                                     (TArr (TCon CNum) (TCon CNum))
-                                    (Area (Loc 32 2 15) (Loc 33 2 16))
+                                    (Area (Loc 38 2 15) (Loc 39 2 16))
                                     (App
                                        (Solved
                                           (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                          (Area (Loc 33 2 16) (Loc 35 2 18))
+                                          (Area (Loc 39 2 16) (Loc 41 2 18))
                                           (Var "+"))
                                        (Solved
                                           (TCon CNum)
-                                          (Area (Loc 32 2 15) (Loc 33 2 16))
+                                          (Area (Loc 38 2 15) (Loc 39 2 16))
                                           (Var "a"))))
                                  (Solved
-                                    (TCon CNum) (Area (Loc 36 2 19) (Loc 37 2 20)) (LInt "1"))))))))
-               (TRArr (TRSingle "Num") (TRSingle "Num")))
+                                    (TCon CNum) (Area (Loc 42 2 19) (Loc 43 2 20)) (LInt "1"))))))))
+               (TRArr (TRSingle "Number") (TRSingle "Number")))
         , Solved
             (TCon CNum)
-            (Area (Loc 40 3 2) (Loc 48 3 10))
+            (Area (Loc 46 3 2) (Loc 57 3 13))
             (TypedExp
-               (Solved (TCon CNum) (Area (Loc 40 3 2) (Loc 41 3 3)) (LInt "3"))
-               (TRSingle "Num"))
+               (Solved (TCon CNum) (Area (Loc 46 3 2) (Loc 47 3 3)) (LInt "3"))
+               (TRSingle "Number"))
         , Solved
             (TComp "Maybe" [ TVar (TV "a") ])
-            (Area (Loc 83 5 2) (Loc 101 5 20))
+            (Area (Loc 92 5 2) (Loc 110 5 20))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TVar (TV "d") ])
-                  (Area (Loc 83 5 2) (Loc 90 5 9))
+                  (Area (Loc 92 5 2) (Loc 99 5 9))
                   (Var "Nothing"))
                (TRComp "Maybe" [ TRSingle "a" ]))
         , Solved
             (TComp "Maybe" [ TCon CNum ])
-            (Area (Loc 104 6 2) (Loc 124 6 22))
+            (Area (Loc 113 6 2) (Loc 136 6 25))
             (TypedExp
                (Solved
                   (TComp "Maybe" [ TCon CNum ])
-                  (Area (Loc 104 6 2) (Loc 111 6 9))
+                  (Area (Loc 113 6 2) (Loc 120 6 9))
                   (App
                      (Solved
                         (TArr (TVar (TV "g")) (TComp "Maybe" [ TVar (TV "g") ]))
-                        (Area (Loc 104 6 2) (Loc 108 6 6))
+                        (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
                      (Solved
-                        (TCon CNum) (Area (Loc 109 6 7) (Loc 110 6 8)) (LInt "3"))))
-               (TRComp "Maybe" [ TRSingle "Num" ]))
+                        (TCon CNum) (Area (Loc 118 6 7) (Loc 119 6 8)) (LInt "3"))))
+               (TRComp "Maybe" [ TRSingle "Number" ]))
         ]
     , aadts =
         [ ADT

@@ -5,7 +5,7 @@ import F  from "Future"
 id :: a -> a
 id = (a) => (a)
 
-double :: Num -> Num
+double :: Number -> Number
 double = (n) => (n * 2)
 
 
@@ -31,7 +31,7 @@ total = (a) => (a.x + a.y)
 
 // -- total(c) |> IO.log
 
-data A = A (Num -> Num)
+data A = A (Number -> Number)
 
 p = A((x) => (x + 1))
 
@@ -45,9 +45,9 @@ where(p) {
 data Maybe a = Just a | Nothing
 
 (Nothing :: Maybe a)
-(Just(3) :: Maybe Num)
+(Just(3) :: Maybe Number)
 
-(1 + 1 :: Num) |> IO.log
+(1 + 1 :: Number) |> IO.log
 
 IO.log(!false)
 
