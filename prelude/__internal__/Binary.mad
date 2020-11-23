@@ -1,0 +1,8 @@
+export data ByteWord
+  = Int8Bit a
+  | Int16Bit a
+  | Int32Bit a
+
+
+export data ByteArray = ByteArray (List ByteWord)
+

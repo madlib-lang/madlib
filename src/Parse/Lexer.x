@@ -26,9 +26,9 @@ module Parse.Lexer
 where
 
 import           System.Exit
-import           Debug.Trace
 import qualified Data.Text     as T
 import           Explain.Location
+import           Text.Regex.TDFA
 }
 
 %wrapper "monad"
@@ -68,6 +68,7 @@ tokens :-
   \(                                    { mapToken (\_ -> TokenLeftParen) }
   \($tail*                              { mapToken (\_ -> TokenLeftParen) }
   $head*\)                              { mapToken (\_ -> TokenRightParen) }
+  \)                                    { mapToken (\_ -> TokenRightParen) }
   $head*\:\:$tail*                      { mapToken (\_ -> TokenDoubleColon) }
   \:                                    { mapToken (\_ -> TokenColon) }
   $head*\-\>$tail*                      { mapToken (\_ -> TokenArrow) }
@@ -77,11 +78,13 @@ tokens :-
   [\n]                                  { mapToken (\_ -> TokenReturn) }
   [$alpha \_] [$alpha $digit \_ \']*    { mapToken (\s -> TokenName s) }
   $head*\+                              { mapToken (\_ -> TokenPlus) }
+  $head*\+\+                            { mapToken (\_ -> TokenDoublePlus) }
   \-                                    { mapToken (\_ -> TokenDash) }
   $head*\?                              { mapToken (\_ -> TokenQuestionMark) }
   \n[\ ]*\-                             { mapToken (\_ -> TokenDash) }
   $head*\*                              { mapToken (\_ -> TokenStar) }
   $head*\/                              { mapToken (\_ -> TokenSlash) }
+  $head*\%                              { mapToken (\_ -> TokenPercent) }
   $head*\|\>                            { mapToken (\_ -> TokenPipeOperator) }
   \.\.\.                                { mapToken (\_ -> TokenSpreadOperator) }
   \&\&                                  { mapToken (\_ -> TokenDoubleAmpersand) }
@@ -94,12 +97,39 @@ tokens :-
   \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   '($printable # ')+'                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
   `($printable # `)+`                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  \#\- [$alpha $digit \" \_ \' \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
+  \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\ \n]*"//".*                         ; -- Comments
   $empty+                               ;
 
 {
+blackList :: String
+blackList = "\\`[\ \t \n]*(where|if|else|is|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
+
+
+whiteList :: String
+whiteList = "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
+
+
+--type AlexAction result = AlexInput -> Int -> Alex result
+mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
+mapToken tokenizer (posn, prevChar, pending, input) len = do
+  return $ Token (makeArea posn (take len input)) token
+  
+  -- where token = tokenizer (take len input)
+  where
+    token = case (tokenizer (take len input)) of
+      TokenRightChevron ->
+        let next  = ((tail . (take 100)) input)
+            matchWL = next =~ whiteList :: String
+            matchBL = matchWL =~ blackList :: String
+        in
+          if ((not . null) matchWL) && null matchBL
+          then TokenRightChevron
+          else TokenTupleEnd
+      tok -> tok
+
+
 sanitizeStr :: String -> String
 sanitizeStr = tail . init
 
@@ -108,11 +138,6 @@ sanitizeJSBlock = strip . tail . tail . init . init
 
 strip  = T.unpack . T.strip . T.pack
 
---type AlexAction result = AlexInput -> Int -> Alex result
-mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (posn, prevChar, pending, input) len = return $ Token (makeArea posn (take len input)) token
-  -- where token = tokenizer (take len input)
-  where token = trace (show $ tokenizer (take len input)) (tokenizer (take len input))
 
 makeArea :: AlexPosn -> String -> Area
 makeArea (AlexPn a l c) tokenContent =
@@ -144,9 +169,11 @@ data TokenClass
  | TokenIs
  | TokenEq
  | TokenPlus
+ | TokenDoublePlus
  | TokenDash
  | TokenStar
  | TokenSlash
+ | TokenPercent
  | TokenDoubleEq
  | TokenComma
  | TokenLeftCurly
@@ -173,6 +200,7 @@ data TokenClass
  | TokenReturn
  | TokenDoubleAmpersand
  | TokenDoublePipe
+ | TokenTupleEnd
  | TokenRightChevron
  | TokenLeftChevron
  | TokenRightChevronEq

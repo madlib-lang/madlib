@@ -1,0 +1,5 @@
+import M from "Maybe"
+
+data MyType = MyType (M.Maybe String)
+
+x = MyType(M.Just("3"))

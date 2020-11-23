@@ -1,0 +1,44 @@
+Left
+  (InferError
+     (UnknownType "M.Maybe")
+     (Reason
+        (PatternConstructorDoesNotExist
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 43 3 17) (Loc 73 5 1))
+              (Where
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 49 3 23) (Loc 50 3 24))
+                    (Var "x"))
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 56 4 3) (Loc 71 4 18))
+                     (Is
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 59 4 6) (Loc 68 4 15))
+                           (PCtor
+                              "M.Maybe"
+                              [ Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 67 4 14) (Loc 68 4 15))
+                                  (PVar "a")
+                              ]))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 70 4 17) (Loc 71 4 18))
+                           (Var "a")))
+                 ]))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 59 4 6) (Loc 68 4 15))
+              (PCtor
+                 "M.Maybe"
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 67 4 14) (Loc 68 4 15))
+                     (PVar "a")
+                 ])))
+        "./ModuleB"
+        (Area (Loc 59 4 6) (Loc 68 4 15))))

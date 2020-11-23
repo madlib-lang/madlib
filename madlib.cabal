@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dda08fd0db00fee49b989d74c4c1a7b1c272c61f4489d00312e1d1f24e35badd
+-- hash: 3e4ac3a54d2e529ac4807961d899177447bd0438061931f8180059ea248e63a6
 
 name:           madlib
 version:        0.0.3
@@ -53,6 +53,7 @@ library
       Tools.CommandLineFlags
       Utils.Path
       Utils.PathUtils
+      Utils.Tuple
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -77,6 +78,7 @@ library
     , mtl
     , optparse-applicative
     , pretty-show
+    , regex-tdfa
     , text
     , transformers
   default-language: Haskell2010
@@ -109,6 +111,7 @@ executable madlib
       Tools.CommandLineFlags
       Utils.Path
       Utils.PathUtils
+      Utils.Tuple
       Paths_madlib
   hs-source-dirs:
       src
@@ -133,6 +136,7 @@ executable madlib
     , mtl
     , optparse-applicative
     , pretty-show
+    , regex-tdfa
     , text
     , transformers
   default-language: Haskell2010
@@ -171,6 +175,7 @@ test-suite madlib-test
     , mtl
     , optparse-applicative
     , pretty-show
+    , regex-tdfa
     , text
     , transformers
   default-language: Haskell2010

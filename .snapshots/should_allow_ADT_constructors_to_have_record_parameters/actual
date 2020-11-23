@@ -1,0 +1,101 @@
+Right
+  (fromList
+     [ ( "./ModuleA"
+       , AST
+           { aimports = []
+           , aexps = []
+           , aadts =
+               [ ADT
+                   { adtname = "Point"
+                   , adtparams = []
+                   , adtconstructors =
+                       [ Constructor
+                           "Point" [ TRTuple [ TRSingle "Number" , TRSingle "Number" ] ]
+                       ]
+                   , adtexported = True
+                   }
+               ]
+           , apath = Just "./ModuleA"
+           }
+       )
+     , ( "./ModuleB"
+       , AST
+           { aimports = [ DefaultImport "P" "./ModuleA" "./ModuleA" ]
+           , aexps =
+               [ Solved
+                   (TComp "./ModuleA" "Point" [])
+                   (Area (Loc 26 2 1) (Loc 27 2 2))
+                   (Assignment
+                      "p"
+                      (Solved
+                         (TComp "./ModuleA" "Point" [])
+                         (Area (Loc 30 2 5) (Loc 31 2 6))
+                         (App
+                            (Solved
+                               (TArr
+                                  (TTuple [ TCon CNum , TCon CNum ]) (TComp "./ModuleA" "Point" []))
+                               (Area (Loc 30 2 5) (Loc 31 2 6))
+                               (FieldAccess
+                                  (Solved
+                                     (TRecord
+                                        (fromList
+                                           [ ( "Point"
+                                             , TArr
+                                                 (TTuple [ TCon CNum , TCon CNum ])
+                                                 (TComp "./ModuleA" "Point" [])
+                                             )
+                                           ])
+                                        False)
+                                     (Area (Loc 30 2 5) (Loc 31 2 6))
+                                     (Var "P"))
+                                  (Solved
+                                     (TArr
+                                        (TRecord (fromList [ ( "Point" , TVar (TV "b") ) ]) True)
+                                        (TVar (TV "b")))
+                                     (Area (Loc 32 2 7) (Loc 37 2 12))
+                                     (Var ".Point"))))
+                            (Solved
+                               (TTuple [ TCon CNum , TCon CNum ])
+                               (Area (Loc 38 2 13) (Loc 44 2 19))
+                               (TupleConstructor
+                                  [ Solved (TCon CNum) (Area (Loc 39 2 14) (Loc 40 2 15)) (LNum "2")
+                                  , Solved (TCon CNum) (Area (Loc 42 2 17) (Loc 43 2 18)) (LNum "4")
+                                  ])))))
+               , Solved
+                   (TCon CNum)
+                   (Area (Loc 46 3 1) (Loc 85 5 1))
+                   (Where
+                      (Solved
+                         (TComp "./ModuleA" "Point" [])
+                         (Area (Loc 52 3 7) (Loc 53 3 8))
+                         (Var "p"))
+                      [ Solved
+                          (TArr (TComp "./ModuleA" "Point" []) (TCon CNum))
+                          (Area (Loc 59 4 3) (Loc 79 4 23))
+                          (Is
+                             (PCtor "P.Point" [ PList [ PVar "a" , PVar "b" ] ])
+                             (Solved
+                                (TCon CNum)
+                                (Area (Loc 78 4 22) (Loc 79 4 23))
+                                (App
+                                   (Solved
+                                      (TArr (TCon CNum) (TCon CNum))
+                                      (Area (Loc 78 4 22) (Loc 79 4 23))
+                                      (App
+                                         (Solved
+                                            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                            (Area (Loc 79 4 23) (Loc 81 4 25))
+                                            (Var "+"))
+                                         (Solved
+                                            (TCon CNum)
+                                            (Area (Loc 78 4 22) (Loc 79 4 23))
+                                            (Var "a"))))
+                                   (Solved
+                                      (TCon CNum) (Area (Loc 82 4 26) (Loc 83 4 27)) (Var "b")))))
+                      ])
+               ]
+           , aadts = []
+           , apath = Just "./ModuleB"
+           }
+       )
+     ])

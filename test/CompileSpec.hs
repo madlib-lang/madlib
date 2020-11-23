@@ -28,7 +28,6 @@ import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
 import           Utils.PathUtils
 import           TestUtils
-import           Debug.Trace                    ( trace )
 
 
 snapshotTest :: String -> String -> Golden Text
@@ -53,8 +52,8 @@ tester code =
         Right x -> compile "" "./build" x
         Left  e -> ppShow e
  where
-  runEnv x =
-    fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
+  runEnv x = fst <$> runExcept
+    (runStateT (buildInitialEnv initialEnv x) Unique { count = 0 })
 
 tableTester :: FilePath -> Src.Table -> Src.AST -> String
 tableTester rootPath table ast =
@@ -184,6 +183,30 @@ spec = do
             , "    is { x: { y: { y: y }, ...k }, ...c }: y + k.z + c.o + c.i"
             , "  }"
             , ")"
+            , ""
+            , "tup = <1, 2, 3>"
+            , ""
+            , "<1, 2, 3> == <1, 2, 3>"
+            , ""
+            , "where(<1, 2>) {"
+            , "  is <a, b>: a + b"
+            , "}"
+            , ""
+            , "fn :: Number -> <Number, Number>"
+            , "fn = (a) => (<a, a>)"
+            , ""
+            , "fst :: <a, b> -> a"
+            , "fst = (tuple) => (where(tuple)"
+            , "  is <a, _>: a"
+            , ")"
+            , ""
+            , "snd :: <a, b> -> b"
+            , "snd = (tuple) => (where(tuple)"
+            , "  is <_, b>: b"
+            , ")"
+            , ""
+            , "fst(<1, 2>)"
+            , "snd(<1, 2>)"
             ]
           actual = tester code
       snapshotTest "should compile to JS" actual
@@ -232,6 +255,130 @@ spec = do
 
       snapshotTest "should compile imports and exports of Namespaced ADTs"
                    actual
+
+
+    it
+        "should compile and resolve imported modules that import namespaced imports"
+      $ do
+          let
+            mainModule = unlines
+              [ "import W from \"./Wish\""
+              , "import B from \"./Binary\""
+              , "import FS from \"./FileSystem\""
+              , "import Http from \"./Http\""
+              , "import IO from \"./IO\""
+              , ""
+              , "Http.get(\"https://github.com/open-sorcerers/madlib/archive/master.zip\")"
+              , "  |> W.map((response) => (where(response) {"
+              , "    is Http.Response { body: Http.BinaryBody d }: d"
+              , "  }))"
+              , "  |> W.map(FS.BinaryData)"
+              , "  |> W.chain(FS.writeFile(\"./f.zip\"))"
+              , "  |> W.fulfill(IO.log, IO.log)"
+              ]
+
+            httpModule = unlines
+              [ "import W from \"./Wish\""
+              , "import B from \"./Binary\""
+              , ""
+              , "export data Response = Response { body :: Body }"
+              , ""
+              , "export data Body"
+              , "  = TextBody String"
+              , "  | BinaryBody B.ByteArray"
+              , ""
+              , "get :: String -> W.Wish e Response"
+              , "export get = (url) => (#- -#)"
+              ]
+
+            fileSystemModule = unlines
+              [ "import W from \"./Wish\""
+              , "import B from \"./Binary\""
+              , ""
+              , "export data Data"
+              , "  = TextData String"
+              , "  | BinaryData B.ByteArray"
+              , ""
+              , "writeFile :: String -> Data -> W.Wish e String"
+              , "export writeFile = (path, d) => (#- -#)"
+              ]
+
+            binaryModule = unlines
+              [ "export data ByteWord"
+              , "  = Int8Bit a"
+              , "  | Int16Bit a"
+              , "  | Int32Bit a"
+              , "export data ByteArray = ByteArray (List ByteWord)"
+              ]
+
+            wishModule = unlines
+              [ "export data Wish e a = Wish ((e -> m) -> (a -> m) -> m)"
+              , ""
+              , "of :: a -> Wish e a"
+              , "export of = (a) => (Wish((bad, good) => (good(a))))"
+              , ""
+              , "map :: (a -> b) -> Wish e a -> Wish e b"
+              , "export map = (f, m) => ("
+              , "  Wish((bad, good) => ("
+              , "    where(m) {"
+              , "      is Wish run: run(bad, (x) => (good(f(x))))"
+              , "    }"
+              , "  ))"
+              , ")"
+              , ""
+              , "chain :: (a -> Wish f b) -> Wish e a -> Wish f b"
+              , "export chain = (f, m) => ("
+              , "  Wish((bad, good) => ("
+              , "    where(m) {"
+              , "      is Wish run: run(bad, (x) => ("
+              , "        where(f(x)) {"
+              , "          is Wish run: run(bad, good)"
+              , "        }"
+              , "      ))"
+              , "    }"
+              , "  ))"
+              , ")"
+              , ""
+              , "fulfill :: (e -> m) -> (a -> m) -> Wish e a -> m"
+              , "export fulfill = (bad, good, m) => (where(m) {"
+              , "  is Wish run: run(bad, good)"
+              , "})"
+              ]
+
+            ioModule = unlines
+              [ "log :: a -> a"
+              , "export log = (a) => (#- { console.log(a); return a; } -#)"
+              ]
+
+
+            files = M.fromList
+              [ ("/root/project/src/Main.mad"      , mainModule)
+              , ("/root/project/src/Http.mad"      , httpModule)
+              , ("/root/project/src/Wish.mad"      , wishModule)
+              , ("/root/project/src/Binary.mad"    , binaryModule)
+              , ("/root/project/src/FileSystem.mad", fileSystemModule)
+              , ("/root/project/src/IO.mad"        , ioModule)
+              ]
+
+            pathUtils = defaultPathUtils
+              { readFile           = makeReadFile files
+              , byteStringReadFile = makeByteStringReadFile files
+              }
+
+          let r = unsafePerformIO $ buildASTTable'
+                pathUtils
+                "/root/project/src/Main.mad"
+                Nothing
+                "/root/project/src/Main.mad"
+          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+          let actual = case (ast, r) of
+                (Right a, Right t) -> tableTester "/root/project/src" t a
+                (Left  e, _      ) -> ppShow e
+                (_      , Left e ) -> ppShow e
+
+          snapshotTest
+            "should compile and resolve imported modules that import namespaced imports"
+            actual
 
 
     it "should compile and resolve imported packages" $ do

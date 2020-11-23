@@ -1,0 +1,15 @@
+data State s v = State (s -> <v, s>)
+
+
+map :: (a -> b) -> State s a -> State s b
+map = (f, state) = (where(state)
+  is State step: State((currState) => (
+    where (step(currState))
+      is <value, newState>: <f(value), newState>
+  ))
+)
+
+run :: s -> State s a -> <a, s>
+run = (initialState, state) = (where(state)
+  is State s: s(initialState)
+)

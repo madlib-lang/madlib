@@ -19,16 +19,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const avg = curryPowder((a, b) => ((a) + (b)) / (2));
+export const avg = curryPowder((a, b) => a + b / 2);
 export default { avg };
 // file: /madlib_modules/random/src/Main.mad
 import R from "./Utils/Random.mjs";
@@ -54,16 +45,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const random = curryPowder((seed) => (R.random(seed)) + (M.avg(seed)(seed)));
+export const random = curryPowder((seed) => R.random(seed) + M.avg(seed, seed));
 export default { random };
 // file: /madlib_modules/random/src/Utils/Random.mad
 const toString = (fn, args = []) => () => (
@@ -86,16 +68,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const random = curryPowder((seed) => (seed) / (2));
+export const random = curryPowder((seed) => seed / 2);
 export default { random };
 // file: /src/Main.mad
 import R from "./.deps/random/src/Main.mjs";
@@ -118,15 +91,6 @@ const curryPowder = (fn) => {
   }
   curried.toString = toString(fn)
   return curried
-};
-
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
 };
 
 R.random(3);

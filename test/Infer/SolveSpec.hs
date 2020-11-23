@@ -39,10 +39,10 @@ snapshotTest name actualOutput = Golden
 tester :: String -> Either InferError Slv.AST
 tester code = case buildAST "path" code of
   (Right ast) -> runEnv ast >>= (`runInfer` ast)
-  _           -> Left $ InferError (UnboundVariable "") NoReason
+  (Left  e  ) -> Left e
  where
-  runEnv x =
-    fst <$> runExcept (runStateT (buildInitialEnv x) Unique { count = 0 })
+  runEnv x = fst <$> runExcept
+    (runStateT (buildInitialEnv initialEnv x) Unique { count = 0 })
 
 tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
 tableTester table ast =
@@ -154,14 +154,11 @@ spec = do
         "should return an error when an ADT defines a type already existing"
         actual
 
-    it
-        "should return an error when an ADT defines a constructor with an unbound variable"
-      $ do
-          let code   = unlines ["data Result a = Success b", ""]
-              actual = tester code
-          snapshotTest
-            "should return an error when an ADT defines a constructor with an unbound variable"
-            actual
+    it "should accept ADTs with constructors that have free vars" $ do
+      let code   = unlines ["data Result = Success b", ""]
+          actual = tester code
+      snapshotTest "should accept ADTs with constructors that have free vars"
+                   actual
 
     it "should infer adts with record constructors" $ do
       let
@@ -192,6 +189,20 @@ spec = do
           actual = tester code
       snapshotTest "should fail if it uses an ADT not defined" actual
 
+    it "should fail if it uses an ADT not defined in patterns" $ do
+      let code   = unlines ["where(3) {", "  is NotExisting: 5", "}"]
+          actual = tester code
+      snapshotTest "should fail if it uses an ADT not defined in patterns"
+                   actual
+
+    it "should resolve ADTs with function parameters" $ do
+      let code = unlines
+            [ "export data Wish e a = Wish ((e -> m) -> (a -> m) -> m)"
+            , "Wish((bad, good) => (good(3)))"
+            ]
+          actual = tester code
+      snapshotTest "should resolve ADTs with function parameters" actual
+
     it "should resolve namespaced ADTs in patterns" $ do
       let codeA = "export data Maybe a = Just a | Nothing"
           astA  = buildAST "./ModuleA" codeA
@@ -213,6 +224,42 @@ spec = do
             (Left e, _     ) -> Left e
             (_     , Left e) -> Left e
       snapshotTest "should resolve namespaced ADTs in patterns" actual
+
+    it "should resolve namespaced ADTs in other ADTs" $ do
+      let codeA = "export data Maybe a = Just a | Nothing"
+          astA  = buildAST "./ModuleA" codeA
+          codeB = unlines
+            [ "import M from \"./ModuleA\""
+            , "data MyType = MyType (M.Maybe String)"
+            , "x = MyType(M.Just(\"3\"))"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+            (Left e, _     ) -> Left e
+            (_     , Left e) -> Left e
+      snapshotTest "should resolve namespaced ADTs in other ADTs" actual
+
+    it "should allow ADT constructors to have record parameters" $ do
+      let codeA = "export data Point = Point <Number, Number>"
+          astA  = buildAST "./ModuleA" codeA
+          codeB = unlines
+            [ "import P from \"./ModuleA\""
+            , "p = P.Point(<2, 4>)"
+            , "where(p) {"
+            , "  is P.Point <a, b>: a + b"
+            , "}"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+            (Left e, _     ) -> Left e
+            (_     , Left e) -> Left e
+      snapshotTest "should allow ADT constructors to have record parameters" actual
 
     ---------------------------------------------------------------------------
 
@@ -274,6 +321,23 @@ spec = do
       snapshotTest
         "should infer fail when spreading an array of a different type"
         actual
+
+    -- Tuples
+
+    it "should infer tuple constructors" $ do
+      let code   = unlines ["<1, 2, 3>", "<true, \"John\", 33>"]
+          actual = tester code
+      snapshotTest "should infer tuple constructors" actual
+
+    it "should not confuse > operator with end of tuples" $ do
+      let code = unlines
+            [ "<1, 2, 3>"
+            , "<true, \"John\", 33>"
+            , "<true, \"John\", 33> 3>"
+            , "<true, \"John\", \"OK\"> \"NOT OK\">"
+            ]
+          actual = tester code
+      snapshotTest "should not confuse > operator with end of tuples" actual
 
     ---------------------------------------------------------------------------
 
@@ -376,10 +440,10 @@ spec = do
     it "should resolve where with a Number input" $ do
       let code = unlines
             [ "where(42) {"
-            , "  case 1 : \"NOPE\""
-            , "  case 3 : \"NOPE\""
-            , "  case 33: \"NOPE\""
-            , "  case 42: \"YEAH\""
+            , "  is 1 : \"NOPE\""
+            , "  is 3 : \"NOPE\""
+            , "  is 33: \"NOPE\""
+            , "  is 42: \"YEAH\""
             , "}"
             ]
           actual = tester code
@@ -610,8 +674,41 @@ spec = do
             "should correctly infer shorthand syntax for record property matching"
             actual
 
-    -- TODO: Add tests with bigger constructors ( 2, 3, 4, 5 -aries ) and update
-    -- implementation to get out of the that weird handling in generateCaseEnv
+    it "should resolve ADTs with 3 parameters in is" $ do
+      let code = unlines
+            [ "export data Wish e a c = Wish e a c"
+            , "where(Wish(1, 2, 3)) {"
+            , "  is Wish _ _ c: c"
+            , "}"
+            ]
+          actual = tester code
+      snapshotTest "should resolve ADTs with 3 parameters in is" actual
+
+    it "should fail to resolve patterns for namespaced ADTs that do not exist" $ do
+      let code = unlines
+            [ "might = (x) => (where(x) {"
+            , "  is M.Maybe a: a"
+            , "})"
+            ]
+          actual = tester code
+      snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist" actual
+
+    it "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" $ do
+      let codeA  = ""
+          astA   = buildAST "./ModuleA" codeA
+          codeB  = unlines 
+            [ "import M from \"./ModuleA\""
+            , ""
+            , "might = (x) => (where(x) {"
+            , "  is M.Maybe a: a"
+            , "})"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+      snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" actual
 
     ---------------------------------------------------------------------------
 
@@ -619,7 +716,12 @@ spec = do
     -- Imports:
 
     it "should resolve names from imported modules" $ do
-      let codeA  = "export inc = (a) => (a + 1)"
+      let codeA  = unlines 
+            [ "export inc = (a) => (a + 1)"
+            , ""
+            , "add = (a, b) => (a + b)"
+            , "addThree = add(3)"
+            ]
           astA   = buildAST "./ModuleA" codeA
           codeB  = unlines ["import { inc } from \"./ModuleA\"", "inc(3)"]
           astB   = buildAST "./ModuleB" codeB
@@ -754,6 +856,13 @@ spec = do
           actual = tester code
       snapshotTest
         "should validate type annotations and instantiate their variables"
+        actual
+
+    it "should validate type annotations for ADTs that have no param" $ do
+      let code   = unlines ["data X = X", "x = (X :: X)"]
+          actual = tester code
+      snapshotTest
+        "should validate type annotations for ADTs that have no param"
         actual
 
     ---------------------------------------------------------------------------

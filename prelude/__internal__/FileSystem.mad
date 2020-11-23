@@ -1,0 +1,39 @@
+import W from "Wish"
+import B from "Binary"
+
+export data Data
+  = TextData String
+  | BinaryData B.ByteArray
+
+
+#- import fs from "fs" -#
+
+writeFile :: String -> Data -> W.Wish e String
+export writeFile = (path, d) => (where(d) {
+  is BinaryData (B.ByteArray arr): (#- 
+    W.Wish((reject, good) => {
+        fs.writeFile(path, arr, (err) => {
+        if (err) {
+            reject(err);
+        }
+        else {
+            good(path)
+        }
+        });
+    });
+   -#)
+})
+
+readFile :: String -> W.Wish e String
+export readFile = (path) => (#- 
+  W.Wish((reject, good) => {
+    fs.readFile(path, "utf8", (err, d) => {
+      if (err) {
+          reject(err);
+      }
+      else {
+          good(d)
+      }
+    });
+  })
+-#)

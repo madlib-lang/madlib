@@ -19,16 +19,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] }));
+export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
 export default { Just, Nothing };
 // file: ./Module
@@ -54,21 +45,12 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
 ADTs.Just(3);
 ADTs.Nothing;
 export const fn = curryPowder((m) => m);
 export const fn2 = curryPowder((m) => ((__x__) => {
-  if (__x__.__constructor === "ADTs.Just" && __x__.__args[0].value.__constructor === "ADTs.Just" && true) {
-    const n = __x__.__args[0].value.__args[0].value;
+  if (__x__.__constructor === "Just" && __x__.__args[0].__constructor === "Just" && true) {
+    const n = __x__.__args[0].__args[0];
     return n;
   }
 })(m));

@@ -9,7 +9,6 @@ import           Data.List                      ( sort
                                                 , find
                                                 , intercalate
                                                 )
-import           Data.Char                      ( toLower )
 
 import           AST.Solved
 import           Utils.Path                     ( cleanRelativePath
@@ -29,34 +28,85 @@ class Compilable a where
 
 instance Compilable Exp where
   compile astPath outputPath (Solved _ _ exp) = case exp of
-    LNum v   -> v
-    LStr    v   -> "\"" <> v <> "\""
-    LBool   v   -> v
+    LNum  v     -> v
+    LStr  v     -> "`" <> v <> "`"
+    LBool v     -> v
 
     App abs arg -> case abs of
-      Solved _ _ (Var "+") -> "(" <> compile astPath outputPath arg <> ") + "
-      Solved _ _ (Var "-") -> "(" <> compile astPath outputPath arg <> ") - "
-      Solved _ _ (Var "*") -> "(" <> compile astPath outputPath arg <> ") * "
-      Solved _ _ (Var "/") -> "(" <> compile astPath outputPath arg <> ") / "
-      Solved _ _ (Var "==") ->
-        "(" <> compile astPath outputPath arg <> ") === "
-      Solved _ _ (Var "&&") -> "(" <> compile astPath outputPath arg <> ") && "
-      Solved _ _ (Var "||") -> "(" <> compile astPath outputPath arg <> ") || "
-      Solved _ _ (Var ">" ) -> "(" <> compile astPath outputPath arg <> ") > "
-      Solved _ _ (Var "<" ) -> "(" <> compile astPath outputPath arg <> ") < "
-      Solved _ _ (Var ">=") -> "(" <> compile astPath outputPath arg <> ") >= "
-      Solved _ _ (Var "<=") -> "(" <> compile astPath outputPath arg <> ") <= "
+      Solved _ _ (App (Solved _ _ (Var "++")) arg') ->
+        compile astPath outputPath arg'
+          <> " + "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "+")) arg') ->
+        compile astPath outputPath arg'
+          <> " + "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "-")) arg') ->
+        compile astPath outputPath arg'
+          <> " - "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "*")) arg') ->
+        compile astPath outputPath arg'
+          <> " * "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "/")) arg') ->
+        compile astPath outputPath arg'
+          <> " / "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "%")) arg') ->
+        compile astPath outputPath arg'
+          <> " % "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "==")) arg') ->
+        compile astPath outputPath arg'
+          <> " === "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "&&")) arg') ->
+        compile astPath outputPath arg'
+          <> " && "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "||")) arg') ->
+        compile astPath outputPath arg'
+          <> " || "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var ">")) arg') ->
+        compile astPath outputPath arg'
+          <> " > "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "<")) arg') ->
+        compile astPath outputPath arg'
+          <> " < "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var ">=")) arg') ->
+        compile astPath outputPath arg'
+          <> " >= "
+          <> compile astPath outputPath arg
+      Solved _ _ (App (Solved _ _ (Var "<=")) arg') ->
+        compile astPath outputPath arg'
+          <> " <= "
+          <> compile astPath outputPath arg
+
       Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
         compile astPath outputPath arg
           <> "("
           <> compile astPath outputPath arg'
           <> ")"
 
-      _ ->
-        compile astPath outputPath abs
-          <> "("
-          <> compile astPath outputPath arg
-          <> ")"
+      _ -> compileApp [] abs arg
+     where
+      compileApp :: [String] -> Exp -> Exp -> String
+      compileApp prevArgs abs arg =
+        let
+          args = [compile astPath outputPath arg] <> prevArgs
+          next = case abs of
+            (Solved _ _ (App abs' arg')) -> compileApp args abs' arg'
+            _ ->
+              compile astPath outputPath abs
+                <> "("
+                <> intercalate ", " args
+                <> ")"
+        in
+          next
 
     If cond truthy falsy ->
       "("
@@ -69,8 +119,6 @@ instance Compilable Exp where
 
     Abs param body -> compileAbs Nothing param body
      where
-        -- TODO: Check if parent is Nothing we add (
-        -- Check if body is Abs we just call it again with a parent
       compileAbs :: Maybe Exp -> Name -> Exp -> String
       compileAbs parent param body =
         let start = case parent of
@@ -115,6 +163,9 @@ instance Compilable Exp where
         ListItem   exp -> compile astPath outputPath exp
         ListSpread exp -> " ..." <> compile astPath outputPath exp
 
+    TupleConstructor elems ->
+      "([" <> intercalate ", " (compile astPath outputPath <$> elems) <> "])"
+
     Where exp (first : cs) ->
       "((__x__) => {\n  "
         <> compileIs first
@@ -125,23 +176,23 @@ instance Compilable Exp where
         <> ")"
      where
       compilePattern :: String -> Pattern -> String
-      compilePattern _     (PVar _)    = "true"
-      compilePattern _     PAny        = "true"
-      compilePattern scope (PNum n) = scope <> " === " <> n
-      compilePattern scope (PStr    n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool   n) = scope <> " === " <> n
+      compilePattern _     (PVar _)  = "true"
+      compilePattern _     PAny      = "true"
+      compilePattern scope (PNum  n) = scope <> " === " <> n
+      compilePattern scope (PStr  n) = scope <> " === \"" <> n <> "\""
+      compilePattern scope (PBool n) = scope <> " === " <> n
       compilePattern scope (PCon n)
         | n == "String"  = "typeof " <> scope <> " === \"string\""
         | n == "Boolean" = "typeof " <> scope <> " === \"boolean\""
         | n == "Number"  = "typeof " <> scope <> " === \"number\""
         | otherwise      = ""
       compilePattern scope (PCtor n []) =
-        scope <> ".__constructor === " <> "\"" <> n <> "\""
+        scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
       compilePattern scope (PCtor n ps) =
         scope
           <> ".__constructor === "
           <> "\""
-          <> n
+          <> removeNamespace n
           <> "\""
           <> if not (null args) then " && " <> args else ""
        where
@@ -213,7 +264,7 @@ instance Compilable Exp where
           buildFieldVar :: String -> Pattern -> String
           buildFieldVar name pat = case pat of
             PSpread (PVar n) -> "..." <> n
-            PVar    n        -> name <> ": " <> n
+            PVar    n        -> if null name then n else name <> ": " <> n
             PRecord fields ->
               name
                 <> ": { "
@@ -224,6 +275,19 @@ instance Compilable Exp where
                      $ M.mapWithKey buildFieldVar fields
                      )
                 <> " }"
+            PCtor _ args -> if null name
+              then
+                "{ __args: ["
+                <> intercalate ", " (buildFieldVar "" <$> args)
+                <> "] }"
+              else
+                name
+                <> ": "
+                <> "{ __args: ["
+                <> intercalate
+                     ", "
+                     ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
+                <> "] }"
             _ -> ""
         PList items ->
           let itemsStr = buildListVar <$> items
@@ -236,7 +300,7 @@ instance Compilable Exp where
             _                -> ""
         PCtor _ ps ->
           concat
-            $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "].value") p)
+            $   (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p)
             <$> zip [0 ..] ps
         PVar n -> "    const " <> n <> " = " <> v <> ";\n"
 
@@ -247,20 +311,26 @@ instance Compilable Exp where
 
       compileCtorArg :: String -> String -> (Int, Pattern) -> String
       compileCtorArg scope _ (x, p) =
-        compilePattern (scope <> ".__args[" <> show x <> "].value") p
+        compilePattern (scope <> ".__args[" <> show x <> "]") p
 
     _ -> "// Not implemented\n"
 
 
+removeNamespace :: String -> String
+removeNamespace = reverse . takeWhile (/= '.') . reverse
+
+
 instance Compilable ADT where
-  compile _       _          ADT { adtconstructors = [] }         = ""
-  compile astPath outputPath ADT { adtconstructors, adtexported } = foldr
-    (<>)
-    ""
-    (addExport . compile astPath outputPath <$> adtconstructors)
+  compile _ _ ADT { adtconstructors = [] } = ""
+  compile astPath outputPath adt =
+    let ctors    = adtconstructors adt
+        exported = adtexported adt
+    in  foldr (<>)
+              ""
+              (addExport exported . compile astPath outputPath <$> ctors)
    where
-    addExport :: String -> String
-    addExport ctor = if adtexported then "export " <> ctor else ctor
+    addExport :: Bool -> String -> String
+    addExport exported ctor = if exported then "export " <> ctor else ctor
 
 
 instance Compilable Constructor where
@@ -279,13 +349,9 @@ instance Compilable Constructor where
 
     compileBody n a =
       let argNames = (: []) <$> take (length a) ['a' ..]
-          args     = buildPCompArg <$> argNames
+          args     = argNames
           argStr   = intercalate ", " args
       in  "({ __constructor: \"" <> n <> "\", __args: [ " <> argStr <> " ] })"
-
-
-buildPCompArg :: String -> String
-buildPCompArg a = "__buildCtorParam(" <> a <> ")"
 
 
 compileImport :: FilePath -> FilePath -> FilePath -> Import -> String
@@ -309,28 +375,39 @@ buildImportPath outputPath rootPath astPath absPath =
 
 
 instance Compilable AST where
-  compile rootPath outputPath AST { aexps, aadts, apath, aimports } =
-
+  compile rootPath outputPath adt =
     let
-      path        = fromMaybe "Unknown" apath
+      exps         = aexps adt
+      adts         = aadts adt
+      path         = apath adt
+      imports      = aimports adt
 
-      infoComment = "// file: " <> path <> "\n"
-      helpers     = curryPowder <> buildPCompArgFn
 
-      adts        = case aadts of
+      path'        = fromMaybe "Unknown" path
+
+      infoComment  = "// file: " <> path' <> "\n"
+      helpers      = curryPowder
+
+      compiledAdts = case adts of
         [] -> ""
         x  -> foldr1 (<>) (compile rootPath outputPath <$> x)
-      exps = case aexps of
+      compiledExps = case exps of
         [] -> ""
         x  -> foldr1 (<>) (terminate . compile rootPath outputPath <$> x)
-      imports = case aimports of
+      compiledImports = case imports of
         [] -> ""
         x ->
-          foldr1 (<>) (terminate . compileImport rootPath outputPath path <$> x)
+          foldr1 (<>)
+                 (terminate . compileImport rootPath outputPath path' <$> x)
             <> "\n"
-      defaultExport = buildDefaultExport aadts aexps
+      defaultExport = buildDefaultExport adts exps
     in
-      infoComment <> imports <> helpers <> adts <> exps <> defaultExport
+      infoComment
+      <> compiledImports
+      <> helpers
+      <> compiledAdts
+      <> compiledExps
+      <> defaultExport
    where
     terminate :: String -> String
     terminate a | null a    = ""
@@ -363,19 +440,6 @@ buildDefaultExport as es =
   getConstructorName :: Constructor -> String
   getConstructorName (Constructor cname _) = cname
 
-
-buildPCompArgFn :: String
-buildPCompArgFn = unlines
-  [ ""
-  , "const __buildCtorParam = n => {"
-  , "  if (typeof n === \"string\") {"
-  , "    return { type: \"String\", value: n };"
-  , "  } else {"
-  , "    return { type: \"\", value: n };"
-  , "  }"
-  , "};"
-  , ""
-  ]
 
 curryPowder :: String
 curryPowder = unlines

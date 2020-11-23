@@ -1,0 +1,59 @@
+import IO from "IO"
+import E from "Either"
+import M from "Map"
+
+
+string :: a -> E.Either String String
+export string = (input) => (#-
+  typeof input === "string"
+    ? E.Right(input)
+    : E.Left(`${input} is not a string`)
+-#)
+
+
+number :: a -> E.Either String String
+export number = (input) => (#-
+  typeof input === "number"
+    ? E.Right(input)
+    : E.Left(`${input} is not a number`)
+-#)
+
+
+map :: (a -> E.Either String b) -> a -> E.Either String (M.Map String b)
+export map = (parser, input) => (#- {
+  const keys = Object.keys(input);
+  let result = M.empty;
+
+  try {
+    keys.forEach((k) => {
+      const parsed = parser(input[k]);
+      if (E.isLeft(parsed)) {
+        throw parsed;
+      } else {
+        result = M.insert(k, E.fromRight("", parsed), result)
+      }
+    })
+
+    return E.Right(result);
+  } catch(e) {
+    return e;
+  }
+} -#)
+
+
+field :: String -> (a -> E.Either String b) -> d -> E.Either String b
+export field = (fieldName, parser, input) => ( #- parser(input[fieldName]) -#)
+
+
+parse :: (a -> E.Either String b) -> String -> E.Either String b
+export parse = (parser, input) => (#- parser(JSON.parse(input)) -#)
+
+
+
+// (parse(field("name", string), `{ "name": "Jesus", "age": 33 }`)) |> IO.log
+
+// (parse(field("age", number), `{ "name": "Jesus", "age": 33 }`)) |> IO.log
+
+
+// (parse(field("dependencies", map(string)), `{ "dependencies": { "jesus": "https://github.com" } }`)) |> IO.log
+

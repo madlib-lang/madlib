@@ -285,7 +285,7 @@ nthEnding n = case n of
 typeToStr :: Type -> String
 typeToStr t = case t of
   TCon CString -> "String"
-  TCon CNum -> "Number"
+  TCon CNum    -> "Number"
   TCon CBool   -> "Boolean"
   TVar (TV a)  -> a
   TArr (TArr t1 t2) t2' ->

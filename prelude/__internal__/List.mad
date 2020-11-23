@@ -1,2 +1,51 @@
+import Fun from "Function"
+import Maybe from "Maybe"
+
 map :: (a -> b) -> List a -> List b
 export map = (f, xs) => (#- xs.map(f) -#)
+
+mapWithIndex :: (a -> Number -> b) -> List a -> List b
+export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
+
+concat :: List a -> List a -> List a
+export concat = (v, xs) => (#- xs.concat(v) -#)
+
+append :: a -> List a -> List a
+export append = (v, xs) => (#- [...xs, v] -#)
+
+last :: List a -> a
+export last = (xs) => (#- xs.slice(-1)[0] -#)
+
+init :: List a -> List a
+export init = (xs) => (#- xs.slice(0, -1) -#)
+
+reduceR :: (a -> b -> a) -> a -> List b -> a
+export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
+
+reduceL :: (a -> b -> a) -> a -> List b -> a
+export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
+
+filter :: (a -> Boolean) -> List a -> List a
+export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
+
+find :: (a -> Boolean) -> List a -> Maybe.Maybe a
+export find = (predicate, xs) => (#- {
+  const found = xs.find(predicate);
+  if (found === undefined) {
+    return Maybe.Nothing()
+  }
+  else {
+    return Maybe.Just(found)
+  }
+} -#)
+
+len :: List a -> Number
+export len = (xs) => (#- xs.length -#)
+
+reject :: (a -> Boolean) -> List a -> List a
+export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
+
+slice :: Number -> Number -> List a -> List a
+export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
+
+

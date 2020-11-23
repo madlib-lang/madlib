@@ -43,6 +43,7 @@ data Typing_
   | TRComp Name [Typing]
   | TRArr Typing Typing
   | TRRecord (M.Map Name Typing)
+  | TRTuple [Typing]
   deriving(Eq, Show)
 
 
@@ -61,6 +62,7 @@ data Pattern_
   | PCon Name
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
+  | PTuple [Pattern]
   | PSpread Pattern
   deriving(Eq, Show)
 
@@ -93,6 +95,7 @@ data Exp_ = LNum String
           | Export Exp
           | TypedExp Exp Typing
           | ListConstructor [ListItem]
+          | TupleConstructor [Exp]
           | JSExp String
           deriving(Eq, Show)
 

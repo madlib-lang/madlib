@@ -30,5 +30,6 @@ data Explanation
 data Reason
   = Reason Explanation FilePath Area
   | SimpleReason FilePath Area
+  | AreaReason Area
   | NoReason
   deriving(Show, Eq)

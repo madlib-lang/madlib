@@ -1,0 +1,9 @@
+fst :: <a, b> -> a
+export fst = (tuple) => (where(tuple)
+  is <a, _>: a
+)
+
+snd :: <a, b> -> b
+export snd = (tuple) => (where(tuple)
+  is <_, b>: b
+)

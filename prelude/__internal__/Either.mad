@@ -1,0 +1,33 @@
+export data Either e a
+  = Left e
+  | Right a
+
+map :: (a -> b) -> Either e a -> Either e b
+export map = (f, m) => (where(m) {
+  is Right a: Right(f(a))
+  is Left  e: Left(e)
+})
+
+mapLeft :: (e -> f) -> Either e a -> Either f a
+export mapLeft = (f, m) => (where(m) {
+  is Right a: Right(a)
+  is Left  e: Left(f(e))
+})
+
+bind :: (a -> Either e b) -> Either e a -> Either e b
+export bind = (f, m) => (where(m) {
+  is Right a: f(a)
+  is Left  e: Left(e)
+})
+
+isLeft :: Either e a -> Boolean
+export isLeft = (either) => (where(either) {
+  is Left _: true
+  is _     : false
+})
+
+fromRight :: a -> Either e a -> a
+export fromRight = (a, either) => (where(either) {
+  is Right a: a
+  is _      : a
+})

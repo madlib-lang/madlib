@@ -21,16 +21,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] }));
+export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
 export const random = curryPowder((seed) => R.random(seed));
 export default { random, Just, Nothing };
@@ -55,16 +46,7 @@ const curryPowder = (fn) => {
   return curried
 };
 
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
-};
-
-export const random = curryPowder((seed) => (seed) / (2));
+export const random = curryPowder((seed) => seed / 2);
 export default { random };
 // file: /root/project/src/Main.mad
 import R from "./.deps/random/src/Main.mjs";
@@ -87,15 +69,6 @@ const curryPowder = (fn) => {
   }
   curried.toString = toString(fn)
   return curried
-};
-
-
-const __buildCtorParam = n => {
-  if (typeof n === "string") {
-    return { type: "String", value: n };
-  } else {
-    return { type: "", value: n };
-  }
 };
 
 R.random(3);

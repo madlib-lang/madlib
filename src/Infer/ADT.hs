@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NamedFieldPuns #-}
 module Infer.ADT where
 
 import qualified Data.Map                      as M
@@ -13,6 +12,7 @@ import           Infer.Infer
 import           Error.Error
 import           Explain.Reason
 import           Explain.Meta
+import           Infer.Instantiate              ( newTVar )
 
 
 buildADTTypes :: FilePath -> [ADT] -> Infer ADTs
@@ -31,37 +31,40 @@ buildADTTypes' astPath adts (adt : xs) = do
 
 
 buildADTType :: FilePath -> ADTs -> ADT -> Infer (String, Type)
-buildADTType astPath adts ADT { adtname, adtparams } =
-  case M.lookup adtname adts of
-    Just t -> throwError $ InferError (ADTAlreadyDefined t) NoReason
-    Nothing ->
-      return (adtname, TComp astPath adtname (TVar . TV <$> adtparams))
+buildADTType astPath adts adt = case M.lookup (adtname adt) adts of
+  Just t  -> throwError $ InferError (ADTAlreadyDefined t) NoReason
+  Nothing -> return
+    (adtname adt, TComp astPath (adtname adt) (TVar . TV <$> adtparams adt))
 
 
-resolveADTs :: FilePath -> ADTs -> [ADT] -> Infer Vars
-resolveADTs astPath tadts adts =
-  mergeVars <$> mapM (resolveADT astPath tadts) adts
+resolveADTs :: Env -> FilePath -> ADTs -> [ADT] -> Infer Vars
+resolveADTs priorEnv astPath tadts adts =
+  mergeVars <$> mapM (resolveADT priorEnv astPath tadts) adts
  where
   mergeVars []   = M.empty
   mergeVars vars = foldr1 M.union vars
 
 
-resolveADT :: FilePath -> ADTs -> ADT -> Infer Vars
-resolveADT astPath tadts ADT { adtname, adtconstructors, adtparams } =
-  foldr1 M.union
-    <$> mapM (resolveADTConstructor astPath tadts adtname adtparams)
-             adtconstructors
+resolveADT :: Env -> FilePath -> ADTs -> ADT -> Infer Vars
+resolveADT priorEnv astPath tadts adt =
+  let name   = adtname adt
+      ctors  = adtconstructors adt
+      params = adtparams adt
+  in  foldr1 M.union
+        <$> mapM (resolveADTConstructor priorEnv astPath tadts name params)
+                 ctors
 
 
 -- TODO: Verify that Constructors aren't already in the global space or else throw a name clash error
 -- Use lookupADT for that
 resolveADTConstructor
-  :: FilePath -> ADTs -> Name -> [Name] -> Constructor -> Infer Vars
-resolveADTConstructor astPath tadts n params (Constructor cname cparams) = do
-  let t = buildADTConstructorReturnType astPath n params
-  t' <- mapM (argToType tadts n params) cparams
-  let ctype = foldr1 TArr (t' <> [t])
-  return $ M.fromList [(cname, Forall (TV <$> params) ctype)]
+  :: Env -> FilePath -> ADTs -> Name -> [Name] -> Constructor -> Infer Vars
+resolveADTConstructor priorEnv astPath tadts n params (Constructor cname cparams)
+  = do
+    let t = buildADTConstructorReturnType astPath n params
+    t' <- mapM (argToType priorEnv tadts n params) cparams
+    let ctype = foldr1 TArr (t' <> [t])
+    return $ M.fromList [(cname, Forall (TV <$> params) ctype)]
 
 buildADTConstructorReturnType :: FilePath -> Name -> [Name] -> Type
 buildADTConstructorReturnType astPath tname tparams =
@@ -69,31 +72,42 @@ buildADTConstructorReturnType astPath tname tparams =
 
 
 -- TODO: This should probably be merged with typingToType somehow
-argToType :: ADTs -> Name -> [Name] -> Typing -> Infer Type
-argToType tadts _ params (Meta _ _ (TRSingle n))
+argToType :: Env -> ADTs -> Name -> [Name] -> Typing -> Infer Type
+argToType _ tadts _ params (Meta _ _ (TRSingle n))
   | n == "Number" = return $ TCon CNum
   | n == "Boolean" = return $ TCon CBool
   | n == "String" = return $ TCon CString
   | isLower (head n) && (n `elem` params) = return $ TVar $ TV n
-  | isLower (head n) = throwError $ InferError (UnboundVariable n) NoReason
-  | otherwise = case M.lookup n tadts of
+  | isLower (head n) = newTVar
+  | -- A free var that is not in type params
+    otherwise = case M.lookup n tadts of
     Just a  -> return a
-    -- If the lookup gives a Nothing, it should most likely be an undefined type error ?
-    Nothing -> return $ TCon $ CUserDef n
+    Nothing -> throwError $ InferError (UnknownType n) NoReason
 
-argToType tadts name params (Meta _ _ (TRComp tname targs)) =
+argToType priorEnv tadts name params (Meta _ _ (TRComp tname targs)) =
   case M.lookup tname tadts of
   -- TODO: Verify the length of tparams and make sure it matches the one of targs ! otherwise
   -- we have a type application error.
-    Just (TComp "TBD" n _) ->
-      TComp "TBD" n <$> mapM (argToType tadts name params) targs
-    Nothing -> return $ TCon $ CUserDef name
+    Just (TComp fp n _) ->
+      TComp fp n <$> mapM (argToType priorEnv tadts name params) targs
+    Nothing -> if tname == "List"
+      then
+        TComp "Prelude" tname
+          <$> mapM (argToType priorEnv tadts name params) targs
+      else case M.lookup tname (envadts priorEnv) of
+        Just (TComp path tname _) ->
+          TComp path tname <$> mapM (argToType priorEnv tadts name params) targs
+        Nothing -> throwError $ InferError (UnknownType tname) NoReason
 
-argToType tadts name params (Meta _ _ (TRArr l r)) = do
-  l' <- argToType tadts name params l
-  r' <- argToType tadts name params r
+argToType priorEnv tadts name params (Meta _ _ (TRArr l r)) = do
+  l' <- argToType priorEnv tadts name params l
+  r' <- argToType priorEnv tadts name params r
   return $ TArr l' r'
 
-argToType tadts name params (Meta _ _ (TRRecord f)) = do
-  f' <- mapM (argToType tadts name params) f
+argToType priorEnv tadts name params (Meta _ _ (TRRecord f)) = do
+  f' <- mapM (argToType priorEnv tadts name params) f
   return $ TRecord f' False
+
+argToType priorEnv tadts name params (Meta _ _ (TRTuple elems)) = do
+  elems' <- mapM (argToType priorEnv tadts name params) elems
+  return $ TTuple elems'

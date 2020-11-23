@@ -21,14 +21,26 @@ bind a t | t == TVar a     = return M.empty
          | otherwise       = return $ M.singleton a t
 
 
+cleanTCompMain :: String -> String
+cleanTCompMain = reverse . takeWhile (/= '.') . reverse
+
 unify :: Type -> Type -> Either TypeError Substitution
 unify (l `TArr` r) (l' `TArr` r') = do
   s1 <- unify l l'
   s2 <- unify (apply s1 r) (apply s1 r')
   return (s2 `compose` s1)
 
+unify (TTuple elems) (TTuple elems') = do
+  if length elems == length elems'
+    then unifyVars M.empty (zip elems elems')
+    else throwError $ UnificationError (TTuple elems) (TTuple elems')
+
 unify (TComp astPath main vars) (TComp astPath' main' vars')
-  | main == main' && astPath == astPath' && length vars == length vars'
+  | (cleanTCompMain main == cleanTCompMain main')
+    && astPath
+    == astPath'
+    && length vars
+    == length vars'
   = let z = zip vars vars' in unifyVars M.empty z
   | otherwise
   = throwError

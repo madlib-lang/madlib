@@ -1,0 +1,5 @@
+complement :: (a -> Boolean) -> (a -> Boolean)
+export complement = (fn) => ((x) => (!fn(x)))
+
+always :: a -> b -> a
+export always = (a, b) => (a)

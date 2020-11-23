@@ -27,9 +27,11 @@ import           Explain.Meta
   'ret'    { Token _ TokenReturn }
   '='      { Token _ TokenEq }
   '+'      { Token _ TokenPlus }
+  '++'     { Token _ TokenDoublePlus }
   '-'      { Token _ TokenDash }
   '*'      { Token _ TokenStar }
   '/'      { Token _ TokenSlash }
+  '%'      { Token _ TokenPercent }
   '::'     { Token _ TokenDoubleColon }
   ':'      { Token _ TokenColon }
   '?'      { Token _ TokenQuestionMark }
@@ -61,21 +63,23 @@ import           Explain.Meta
   '||'     { Token _ TokenDoublePipe }
   '>'      { Token _ TokenRightChevron }
   '<'      { Token _ TokenLeftChevron }
+  'tuple>' { Token _ TokenTupleEnd }
   '>='     { Token _ TokenRightChevronEq }
   '<='     { Token _ TokenLeftChevronEq }
   '!'      { Token _ TokenExclamationMark }
 
 
-%left '?' '->' '|' where is 'if'
+%nonassoc LOWEST
+%left '?' '->' '|' where is 'if' '='
 %left ':' 'else'
 %left '|>'
 %left '>' '<' '>=' '<=' '=='
 %left '+' '-' '||'
-%left '*' '/' '&&'
+%left '*' '/' '%' '&&'
 %left ','
-%nonassoc '(' ')' '=' '=>' '::' where is 'ret' '{' '}' '[' ']'
+%nonassoc '(' ')' 'tuple>' '=>' '::' where is 'ret' '{' '}' '[' ']'
 %right '!'
-%left HIGHEST
+%nonassoc HIGHEST
 %%
 
 ast :: { Src.AST }
@@ -90,8 +94,8 @@ ast :: { Src.AST }
       { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
-  : importDecl importDecls { $1:$2 }
-  | importDecl             { [$1] }
+  : importDecl importDecls %shift { $1:$2 }
+  | importDecl             %shift { [$1] }
   
 importDecl :: { Src.Import }
   : 'import' '{' importNames '}' 'from' str 'ret' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6) (strV $6)) }
@@ -103,9 +107,9 @@ importNames :: { [Src.Name] }
 
 
 rets :: { [TokenClass] }
-  : 'ret'       { [] }
-  | rets 'ret'  { [] }
-  | {- empty -} { [] }
+  : 'ret'       %shift{ [] }
+  | rets 'ret'  %shift{ [] }
+  | {- empty -} %shift { [] }
 
 maybeRet :: { [TokenClass] }
   : 'ret'       { [] }
@@ -126,7 +130,7 @@ rComa :: { [TokenClass] }
 
 
 adt :: { Src.ADT }
-  : 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
+  : 'data' name adtParameters rEq adtConstructors          %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
   | 'export' 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
 
 adtParameters :: { [Src.Name] }
@@ -143,19 +147,24 @@ adtConstructor :: { Src.Constructor }
   | name                    %shift { Src.Constructor (strV $1) [] }
 
 adtConstructorArgs :: { [Src.Typing] }
-  : typing                    { [$1] }
-  | adtConstructorArgs typing { $1 <> [$2] }
+  : typing                     %shift { [$1] }
+  | name '.' name              %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $1)) (Src.TRComp (strV $1<>"."<>strV $3) [])] }
+  | '(' compositeTyping ')'    %shift { [$2] }
+  | '(' adtConstructorArgs ')' %shift { $2 }
+  | adtConstructorArgs typing  %shift { $1 <> [$2] }
 
 typings :: { Src.Typing }
-  : typing '->' typings          { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
-  | compositeTyping '->' typings { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
-  | compositeTyping              { $1 }
-  | typing                       { $1 }
+  : typing '->' typings          %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  | compositeTyping '->' typings %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  | compositeTyping              %shift { $1 }
+  | typing                       %shift { $1 }
 
 typing :: { Src.Typing }
-  : name                       { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
-  | '(' typing '->' typing ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
-  | '{' recordTypingArgs '}'   { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
+  : name                        %shift { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
+  | '(' typing '->' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
+  | typing '->' typings         %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  | '{' recordTypingArgs '}'    %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
+  | '<' tupleTypings 'tuple>'   %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }
   : name compositeTypingArgs          { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea (last $2))) (Src.TRComp (strV $1) $2) }
@@ -165,17 +174,28 @@ compositeTyping :: { Src.Typing }
 compositeTypingArgs :: { [Src.Typing] }
   : name                        { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
   | name compositeTypingArgs    { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
-  | typings { [$1] }
-  | '(' compositeTypingArgs ')' { $2 }
+  | typings                     { [$1] }
+  | '(' typings ')'             { [$2] }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
-  : name '::' typing                      { M.fromList [(strV $1, $3)] }
-  | recordTypingArgs ',' name '::' typing { M.insert (strV $3) $5 $1 }
+  : name '::' typing                               { M.fromList [(strV $1, $3)] }
+  | name '::' compositeTyping                      { M.fromList [(strV $1, $3)] }
+  | recordTypingArgs ',' name '::' typing          { M.insert (strV $3) $5 $1 }
+  | recordTypingArgs ',' name '::' compositeTyping { M.insert (strV $3) $5 $1 }
+
+tupleTypings :: { [Src.Typing] }
+  : typing ',' typing                   { [$1, $3] }
+  | typing ',' compositeTyping          { [$1, $3] }
+  | compositeTyping ',' typing          { [$1, $3] }
+  | compositeTyping ',' compositeTyping { [$1, $3] }
+  | tupleTypings ',' typing             { $1 <> [$3] }
+  | tupleTypings ',' compositeTyping    { $1 <> [$3] }
 
 exp :: { Src.Exp }
   : literal                          { $1 }
-  | record                           { $1 }
+  | record                    %shift { $1 }
   | where                     %shift { $1 }
+  | tupleConstructor          %shift { $1 }
   | operation                        { $1 }
   | listConstructor           %shift { $1 }
   | typedExp                  %shift { $1 }
@@ -188,7 +208,7 @@ exp :: { Src.Exp }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
   | '(' exp ')'               %shift { $2 }
-  | exp '.' name                     { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
+  | exp '.' name              %shift { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
@@ -205,7 +225,7 @@ typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
   | name '::' typings 'ret' name '=' exp 
-      { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
+      %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
@@ -219,8 +239,8 @@ iss :: { [Src.Is] }
   | iss maybeRet 'is' pattern ':' maybeRet exp 'ret' %shift { $1 <> [Meta emptyInfos (mergeAreas (tokenToArea $3) (getArea $7)) (Src.Is $4 $7)] }
 
 pattern :: { Src.Pattern }
-  : nonCompositePattern { $1 }
-  | compositePattern    { $1 }
+  : nonCompositePattern %shift { $1 }
+  | compositePattern    %shift { $1 }
 
 nonCompositePattern :: { Src.Pattern }
   : name             { nameToPattern (tokenToArea $1) (strV $1) }
@@ -230,6 +250,7 @@ nonCompositePattern :: { Src.Pattern }
   | false            { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
   | recordPattern    { $1 }
   | listPattern      { $1 }
+  | tuplePattern     { $1 }
   | '(' pattern ')'  { $2 }
 
 
@@ -243,7 +264,7 @@ patterns :: { [Src.Pattern] }
   | patterns nonCompositePattern { $1 <> [$2] }
 
 recordPattern :: { Src.Pattern }
-  : '{' recordFieldPatterns '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PRecord $2) }
+  : '{' recordFieldPatterns '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PRecord $2) }
 
 recordFieldPatterns :: { M.Map Src.Name Src.Pattern }
   : name ':' pattern                         { M.fromList [(strV $1, $3)] }
@@ -265,6 +286,14 @@ spreadPattern :: { Src.Pattern }
   : '...' name  { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.PSpread (nameToPattern (tokenToArea $2) (strV $2))) }
 
 
+tuplePattern :: { Src.Pattern }
+  : '<' tupleItemPatterns 'tuple>' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple $2) }
+
+tupleItemPatterns :: { [Src.Pattern] }
+  : pattern ',' pattern                %shift { [$1, $3] }
+  | listItemPatterns ',' pattern       %shift { $1 <> [$3] }
+
+
 record :: { Src.Exp }
   : '{' rets recordFields rets '}' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Record $3) }
 
@@ -284,6 +313,12 @@ operation :: { Src.Exp }
                          $1))) 
                       $3)
                  }
+  | exp '++' exp { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "++")) 
+                         $1))) 
+                      $3)
+                 }
   | exp '-' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "-")) 
@@ -300,6 +335,12 @@ operation :: { Src.Exp }
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "/")) 
                          $1))) 
+                      $3)
+                 }
+  | exp '%' exp  { Meta emptyInfos (getArea $1) (Src.App
+                      ((Meta emptyInfos (getArea $1) (Src.App
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "%"))
+                         $1)))
                       $3)
                  }
   | exp '==' exp  { Meta emptyInfos (getArea $1) (Src.App
@@ -363,6 +404,14 @@ listItems :: { [Src.ListItem] }
   | '...' exp                   { [Src.ListSpread $2] }
   | listItems ',' '...' exp     { $1 <> [Src.ListSpread $4] }
   | {- empty -}                 { [] }
+
+tupleConstructor :: { Src.Exp }
+  : '<' tupleItems 'tuple>'        { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TupleConstructor $2) }
+
+tupleItems :: { [Src.Exp] }
+  : exp ',' exp                  %shift { [$1, $3] }
+  | tupleItems ',' exp           %shift { $1 <> [$3] }
+
 
 literal :: { Src.Exp }
   : number                    { Meta emptyInfos (tokenToArea $1) (Src.LNum $ strV $1) }

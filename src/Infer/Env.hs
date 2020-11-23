@@ -12,7 +12,8 @@ import           Infer.ADT
 import           Infer.Infer
 import           Explain.Reason
 import           Error.Error
-import           Data.Maybe                     ( fromMaybe )
+import qualified Data.Set                      as S
+import           Infer.Substitute               ( Substitutable(ftv) )
 
 
 
@@ -22,7 +23,7 @@ lookupVar env x = do
     Nothing -> case M.lookup x $ envimports env of
       Nothing -> throwError $ InferError (UnboundVariable x) NoReason
       Just s  -> do
-        t <- instantiate $ Forall [] s
+        t <- instantiate $ Forall (S.toList $ ftv s) s
         return (M.empty, t)
 
     Just s -> do
@@ -62,10 +63,12 @@ initialEnv = Env
     , ( "<="
       , Forall [TV "a"] $ TVar (TV "a") `TArr` TVar (TV "a") `TArr` TCon CBool
       )
-    , ("+", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("-", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("*", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
-    , ("/", Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+    , ("++", Forall [] $ TCon CString `TArr` TCon CString `TArr` TCon CString)
+    , ("+" , Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+    , ("-" , Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+    , ("*" , Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+    , ("/" , Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
+    , ("%" , Forall [] $ TCon CNum `TArr` TCon CNum `TArr` TCon CNum)
     , ( "|>"
       , Forall [TV "a", TV "b"]
       $      TVar (TV "a")
@@ -90,21 +93,13 @@ initialEnv = Env
 
 
 -- TODO: Should we build imported names here ?
-buildInitialEnv :: AST -> Infer Env
-buildInitialEnv AST { aadts, apath = Just apath } = do
+buildInitialEnv :: Env -> AST -> Infer Env
+buildInitialEnv priorEnv AST { aadts, apath = Just apath } = do
   tadts <- buildADTTypes apath aadts
-  vars  <- resolveADTs apath tadts aadts
+  vars  <- resolveADTs priorEnv apath tadts aadts
   let allVars = M.union (envvars initialEnv) vars
   return Env { envvars        = allVars
              , envadts        = M.union (envadts initialEnv) tadts
              , envimports     = M.empty
              , envcurrentpath = apath
              }
-
-mergeEnvs :: Env -> Env -> Env
-mergeEnvs env env' = Env
-  { envvars        = M.union (envvars env) (envvars env')
-  , envadts        = M.union (envadts env) (envadts env')
-  , envimports     = M.union (envimports env) (envimports env')
-  , envcurrentpath = envcurrentpath env'
-  }

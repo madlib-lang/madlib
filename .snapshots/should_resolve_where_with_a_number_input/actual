@@ -1,1 +1,42 @@
-Left (InferError (UnboundVariable "") NoReason)
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TCon CString)
+            (Area (Loc 0 1 1) (Loc 77 6 1))
+            (Where
+               (Solved (TCon CNum) (Area (Loc 6 1 7) (Loc 8 1 9)) (LNum "42"))
+               [ Solved
+                   (TArr (TCon CNum) (TCon CString))
+                   (Area (Loc 14 2 3) (Loc 27 2 16))
+                   (Is
+                      (PNum "1")
+                      (Solved
+                         (TCon CString) (Area (Loc 21 2 10) (Loc 27 2 16)) (LStr "NOPE")))
+               , Solved
+                   (TArr (TCon CNum) (TCon CString))
+                   (Area (Loc 30 3 3) (Loc 43 3 16))
+                   (Is
+                      (PNum "3")
+                      (Solved
+                         (TCon CString) (Area (Loc 37 3 10) (Loc 43 3 16)) (LStr "NOPE")))
+               , Solved
+                   (TArr (TCon CNum) (TCon CString))
+                   (Area (Loc 46 4 3) (Loc 59 4 16))
+                   (Is
+                      (PNum "33")
+                      (Solved
+                         (TCon CString) (Area (Loc 53 4 10) (Loc 59 4 16)) (LStr "NOPE")))
+               , Solved
+                   (TArr (TCon CNum) (TCon CString))
+                   (Area (Loc 62 5 3) (Loc 75 5 16))
+                   (Is
+                      (PNum "42")
+                      (Solved
+                         (TCon CString) (Area (Loc 69 5 10) (Loc 75 5 16)) (LStr "YEAH")))
+               ])
+        ]
+    , aadts = []
+    , apath = Just "path"
+    }

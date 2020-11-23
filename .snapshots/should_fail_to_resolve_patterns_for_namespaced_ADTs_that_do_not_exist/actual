@@ -1,0 +1,44 @@
+Left
+  (InferError
+     (UnknownType "M.Maybe")
+     (Reason
+        (PatternConstructorDoesNotExist
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 16 1 17) (Loc 46 3 1))
+              (Where
+                 (Meta
+                    Infos { nthArg = Nothing , origin = Nothing }
+                    (Area (Loc 22 1 23) (Loc 23 1 24))
+                    (Var "x"))
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 29 2 3) (Loc 44 2 18))
+                     (Is
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 32 2 6) (Loc 41 2 15))
+                           (PCtor
+                              "M.Maybe"
+                              [ Meta
+                                  Infos { nthArg = Nothing , origin = Nothing }
+                                  (Area (Loc 40 2 14) (Loc 41 2 15))
+                                  (PVar "a")
+                              ]))
+                        (Meta
+                           Infos { nthArg = Nothing , origin = Nothing }
+                           (Area (Loc 43 2 17) (Loc 44 2 18))
+                           (Var "a")))
+                 ]))
+           (Meta
+              Infos { nthArg = Nothing , origin = Nothing }
+              (Area (Loc 32 2 6) (Loc 41 2 15))
+              (PCtor
+                 "M.Maybe"
+                 [ Meta
+                     Infos { nthArg = Nothing , origin = Nothing }
+                     (Area (Loc 40 2 14) (Loc 41 2 15))
+                     (PVar "a")
+                 ])))
+        "path"
+        (Area (Loc 32 2 6) (Loc 41 2 15))))

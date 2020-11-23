@@ -1,0 +1,20 @@
+import W from "Wish"
+
+
+export data CommandError = CommandError Number String
+
+#- import { exec as execJs } from "child_process" -#
+
+exec :: String -> W.Wish CommandError String
+export exec = (command) => (#-
+  W.Wish((bad, good) => {
+    execJs(command, (err, stdout, stderr) => {
+      if (err) {
+        bad(CommandError(err.code, err.message))
+      }
+      else {
+        good(stdout)
+      }
+    })
+  })
+-#)

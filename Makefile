@@ -17,7 +17,7 @@ test-watch:
 	stack test --file-watch --fast
 
 test-coverage:
-	stack test --coverage && stack hpc report .
+	stack test --coverage --fast && stack hpc report .
 
 coverage-lcov:
 	mkdir ./coverage;\
