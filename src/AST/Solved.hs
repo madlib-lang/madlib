@@ -76,7 +76,7 @@ data ListItem
 
 type Exp = Solved Exp_
 
-data Exp_ = LInt String
+data Exp_ = LNum String
           | LStr String
           | LBool String
           | JSExp String

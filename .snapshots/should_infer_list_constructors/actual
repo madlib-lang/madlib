@@ -11,11 +11,11 @@ Right
             (Area (Loc 3 2 1) (Loc 12 2 10))
             (ListConstructor
                [ ListItem
-                   (Solved (TCon CNum) (Area (Loc 4 2 2) (Loc 5 2 3)) (LInt "1"))
+                   (Solved (TCon CNum) (Area (Loc 4 2 2) (Loc 5 2 3)) (LNum "1"))
                , ListItem
-                   (Solved (TCon CNum) (Area (Loc 7 2 5) (Loc 8 2 6)) (LInt "2"))
+                   (Solved (TCon CNum) (Area (Loc 7 2 5) (Loc 8 2 6)) (LNum "2"))
                , ListItem
-                   (Solved (TCon CNum) (Area (Loc 10 2 8) (Loc 11 2 9)) (LInt "3"))
+                   (Solved (TCon CNum) (Area (Loc 10 2 8) (Loc 11 2 9)) (LNum "3"))
                ])
         , Solved
             (TComp "Prelude" "List" [ TCon CString ])

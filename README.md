@@ -192,7 +192,7 @@ language = { name: "Madlib", howIsIt: "cool" }
 
 It can be used as constructor arguments by using Record types:
 ```
-data User = LoggedIn { name :: String, age :: Num, address :: String }
+data User = LoggedIn { name :: String, age :: Number, address :: String }
 ```
 
 It can be used in patterns:

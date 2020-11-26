@@ -1,1 +1,75 @@
-InferError (UnknownType "Num") NoReason
+// file: ./ADTs
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ __buildCtorParam(a) ] }));
+export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
+export default { Just, Nothing };
+// file: ./Module
+import ADTs from "./ADTs.mjs";
+
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __buildCtorParam = n => {
+  if (typeof n === "string") {
+    return { type: "String", value: n };
+  } else {
+    return { type: "", value: n };
+  }
+};
+
+ADTs.Just(3);
+ADTs.Nothing;
+export const fn = curryPowder((m) => m);
+export const fn2 = curryPowder((m) => ((__x__) => {
+  if (__x__.__constructor === "ADTs.Just" && __x__.__args[0].value.__constructor === "ADTs.Just" && true) {
+    const n = __x__.__args[0].value.__args[0].value;
+    return n;
+  }
+})(m));
+export default { fn, fn2 };

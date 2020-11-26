@@ -33,13 +33,13 @@ Right
                                           (Area (Loc 38 2 15) (Loc 39 2 16))
                                           (Var "a"))))
                                  (Solved
-                                    (TCon CNum) (Area (Loc 42 2 19) (Loc 43 2 20)) (LInt "1"))))))))
+                                    (TCon CNum) (Area (Loc 42 2 19) (Loc 43 2 20)) (LNum "1"))))))))
                (TRArr (TRSingle "Number") (TRSingle "Number")))
         , Solved
             (TCon CNum)
             (Area (Loc 46 3 2) (Loc 57 3 13))
             (TypedExp
-               (Solved (TCon CNum) (Area (Loc 46 3 2) (Loc 47 3 3)) (LInt "3"))
+               (Solved (TCon CNum) (Area (Loc 46 3 2) (Loc 47 3 3)) (LNum "3"))
                (TRSingle "Number"))
         , Solved
             (TComp "path" "Maybe" [ TVar (TV "a") ])
@@ -63,7 +63,7 @@ Right
                         (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
                      (Solved
-                        (TCon CNum) (Area (Loc 118 6 7) (Loc 119 6 8)) (LInt "3"))))
+                        (TCon CNum) (Area (Loc 118 6 7) (Loc 119 6 8)) (LNum "3"))))
                (TRComp "Maybe" [ TRSingle "Number" ]))
         ]
     , aadts =

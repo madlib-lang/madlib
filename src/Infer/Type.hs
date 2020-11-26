@@ -40,8 +40,8 @@ data TCon
   | CUserDef String -- Is this one an Alias ? Or should it just go ?
   deriving (Show, Eq, Ord)
 
-num :: Type
-num = TCon CNum
+number :: Type
+number = TCon CNum
 
 bool :: Type
 bool = TCon CBool

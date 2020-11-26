@@ -184,12 +184,11 @@ spec = do
       snapshotTest "should infer params for adts" actual
 
     it "should fail if it uses an ADT not defined" $ do
-      let code =
-            unlines
-              [ "inc :: Maybe Num -> Num"
-              , "export inc = (a) => (a + 1)"
-              , "inc(3)"
-              ]
+      let code = unlines
+            [ "addNegativeTen :: Maybe Number -> Number"
+            , "export addNegativeTen = (a) => (a + -10)"
+            , "addNegativeTen(3)"
+            ]
           actual = tester code
       snapshotTest "should fail if it uses an ADT not defined" actual
 
@@ -198,11 +197,11 @@ spec = do
           astA  = buildAST "./ModuleA" codeA
           codeB = unlines
             [ "import M from \"./ModuleA\""
-            , "fn :: M.Maybe Num -> Num"
+            , "fn :: M.Maybe Number -> Number"
             , "export fn = (x) => ("
             , "  where(x) {"
             , "    is M.Just a : a"
-            , "    is M.Nothing: 3"
+            , "    is M.Nothing: -3"
             , "  }"
             , ")"
             ]
@@ -221,7 +220,7 @@ spec = do
     -- Records:
 
     it "should infer a record field access" $ do
-      let code   = unlines ["a = { x: 3, y: 5 }", "a.x"]
+      let code   = unlines ["a = { x: 3.1415, y: -500 }", "a.x"]
           actual = tester code
       snapshotTest "should infer a record field access" actual
 

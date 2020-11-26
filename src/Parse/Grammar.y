@@ -20,7 +20,7 @@ import           Explain.Meta
 %lexer { lexerWrap } { Token _ TokenEOF }
 
 %token
-  int      { Token _ (TokenInt _) }
+  number   { Token _ (TokenNumber _) }
   str      { Token _ (TokenStr _) }
   name     { Token _ (TokenName _) }
   js       { Token _ (TokenJSBlock _) }
@@ -224,7 +224,7 @@ pattern :: { Src.Pattern }
 
 nonCompositePattern :: { Src.Pattern }
   : name             { nameToPattern (tokenToArea $1) (strV $1) }
-  | int              { Meta emptyInfos (tokenToArea $1) (Src.PNum $ strV $1) }
+  | number           { Meta emptyInfos (tokenToArea $1) (Src.PNum $ strV $1) }
   | str              { Meta emptyInfos (tokenToArea $1) (Src.PStr $ strV $1) }
   | true             { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
   | false            { Meta emptyInfos (tokenToArea $1) (Src.PBool $ strV $1) }
@@ -365,7 +365,7 @@ listItems :: { [Src.ListItem] }
   | {- empty -}                 { [] }
 
 literal :: { Src.Exp }
-  : int                       { Meta emptyInfos (tokenToArea $1) (Src.LInt $ strV $1) }
+  : number                    { Meta emptyInfos (tokenToArea $1) (Src.LNum $ strV $1) }
   | str                       { Meta emptyInfos (tokenToArea $1) (Src.LStr $ strV $1) }
   | true                      { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
   | false                     { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }

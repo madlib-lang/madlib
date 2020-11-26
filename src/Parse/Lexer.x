@@ -33,11 +33,16 @@ import           Explain.Location
 
 %wrapper "monad"
 
-$digit = 0-9                    -- digits
-$alpha = [a-zA-Z]               -- alphabetic characters
-$empty =  [\ \t\f\v\r]          -- equivalent to $white but without line return
-$head = [\n \ ]                 -- leading whitespace and / or newline
-$tail = [\n]                    -- trailing newline
+$alpha    = [a-zA-Z]                        -- alphabetic characters
+$empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
+$head     = [\n \ ]                         -- leading whitespace and / or newline
+$tail     = [\n]                            -- trailing newline
+
+$digit    = 0-9                             -- digits
+@decimal  = $digit($digit)*                 -- decimal
+@negative = \-
+@signed = @negative ?
+@floating = @decimal \. @decimal | @decimal -- floating point
 
 tokens :-
   import                                { mapToken (\_ -> TokenImport) }
@@ -50,7 +55,7 @@ tokens :-
   where                                 { mapToken (\_ -> TokenWhere) }
   is                                    { mapToken (\_ -> TokenIs) }
   \=                                    { mapToken (\_ -> TokenEq) }
-  $digit+                               { mapToken (\s -> TokenInt s) }
+  @signed @floating                     { mapToken (\s -> TokenNumber s) }
   "true"                                { mapToken (\_ -> (TokenBool "true")) }
   "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
@@ -127,7 +132,7 @@ data Token = Token Area TokenClass deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
- | TokenInt  String
+ | TokenNumber String
  | TokenStr  String
  | TokenName String
  | TokenDottedName String
@@ -178,7 +183,7 @@ data TokenClass
 
 strV :: Token -> String
 strV (Token _ (TokenStr x))  = x
-strV (Token _ (TokenInt x)) = x
+strV (Token _ (TokenNumber x)) = x
 strV (Token _ (TokenBool x)) = x
 strV (Token _ (TokenName x)) = x
 strV (Token _ (TokenJSBlock x)) = x

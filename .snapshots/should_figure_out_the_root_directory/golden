@@ -11,45 +11,45 @@ Right
            , aexps =
                [ Meta
                    Infos { nthArg = Nothing , origin = Nothing }
-                   (Area (Loc 32 2 1) (Loc 86 3 31))
+                   (Area (Loc 32 2 1) (Loc 95 3 31))
                    (TypedExp
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
-                         (Area (Loc 56 3 1) (Loc 86 3 31))
+                         (Area (Loc 65 3 1) (Loc 95 3 31))
                          (Assignment
                             "fn"
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 61 3 6) (Loc 86 3 31))
+                               (Area (Loc 70 3 6) (Loc 95 3 31))
                                (Abs
                                   "a"
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 61 3 6) (Loc 86 3 31))
+                                     (Area (Loc 70 3 6) (Loc 95 3 31))
                                      (Abs
                                         "b"
                                         (Meta
                                            Infos { nthArg = Nothing , origin = Nothing }
-                                           (Area (Loc 79 3 24) (Loc 80 3 25))
+                                           (Area (Loc 88 3 24) (Loc 89 3 25))
                                            (App
                                               (Meta
                                                  Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 79 3 24) (Loc 80 3 25))
+                                                 (Area (Loc 88 3 24) (Loc 89 3 25))
                                                  (App
                                                     (Meta
                                                        Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 81 3 26) (Loc 83 3 28))
+                                                       (Area (Loc 90 3 26) (Loc 92 3 28))
                                                        (Var "+"))
                                                     (Meta
                                                        Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 79 3 24) (Loc 80 3 25))
+                                                       (Area (Loc 88 3 24) (Loc 89 3 25))
                                                        (App
                                                           (Meta
                                                              Infos
                                                                { nthArg = Nothing
                                                                , origin = Nothing
                                                                }
-                                                             (Area (Loc 79 3 24) (Loc 80 3 25))
+                                                             (Area (Loc 88 3 24) (Loc 89 3 25))
                                                              (App
                                                                 (Meta
                                                                    Infos
@@ -57,7 +57,7 @@ Right
                                                                      , origin = Nothing
                                                                      }
                                                                    (Area
-                                                                      (Loc 72 3 17) (Loc 75 3 20))
+                                                                      (Loc 81 3 17) (Loc 84 3 20))
                                                                    (Var "fn2"))
                                                                 (Meta
                                                                    Infos
@@ -65,39 +65,39 @@ Right
                                                                      , origin = Just (Var "fn2")
                                                                      }
                                                                    (Area
-                                                                      (Loc 76 3 21) (Loc 77 3 22))
+                                                                      (Loc 85 3 21) (Loc 86 3 22))
                                                                    (Var "a"))))
                                                           (Meta
                                                              Infos
                                                                { nthArg = Just 2
                                                                , origin = Just (Var "fn2")
                                                                }
-                                                             (Area (Loc 79 3 24) (Loc 80 3 25))
+                                                             (Area (Loc 88 3 24) (Loc 89 3 25))
                                                              (Var "b"))))))
                                               (Meta
                                                  Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 84 3 29) (Loc 85 3 30))
+                                                 (Area (Loc 93 3 29) (Loc 94 3 30))
                                                  (Var "a"))))))))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
-                         (Area (Loc 38 2 7) (Loc 55 2 24))
+                         (Area (Loc 38 2 7) (Loc 64 2 33))
                          (TRArr
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 38 2 7) (Loc 41 2 10))
-                               (TRSingle "Num"))
+                               (Area (Loc 38 2 7) (Loc 44 2 13))
+                               (TRSingle "Number"))
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 45 2 14) (Loc 55 2 24))
+                               (Area (Loc 48 2 17) (Loc 64 2 33))
                                (TRArr
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 45 2 14) (Loc 48 2 17))
-                                     (TRSingle "Num"))
+                                     (Area (Loc 48 2 17) (Loc 54 2 23))
+                                     (TRSingle "Number"))
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 52 2 21) (Loc 55 2 24))
-                                     (TRSingle "Num")))))))
+                                     (Area (Loc 58 2 27) (Loc 64 2 33))
+                                     (TRSingle "Number")))))))
                ]
            , aadts = []
            , apath = Just "/src/sourceA.mad"
@@ -109,7 +109,7 @@ Right
            , aexps =
                [ Meta
                    Infos { nthArg = Nothing , origin = Nothing }
-                   (Area (Loc 0 1 1) (Loc 55 2 31))
+                   (Area (Loc 0 1 1) (Loc 64 2 31))
                    (TypedExp
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
@@ -122,60 +122,60 @@ Right
                                   "fn2"
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 38 2 14) (Loc 55 2 31))
+                                     (Area (Loc 47 2 14) (Loc 64 2 31))
                                      (Abs
                                         "a"
                                         (Meta
                                            Infos { nthArg = Nothing , origin = Nothing }
-                                           (Area (Loc 38 2 14) (Loc 55 2 31))
+                                           (Area (Loc 47 2 14) (Loc 64 2 31))
                                            (Abs
                                               "b"
                                               (Meta
                                                  Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 49 2 25) (Loc 50 2 26))
+                                                 (Area (Loc 58 2 25) (Loc 59 2 26))
                                                  (App
                                                     (Meta
                                                        Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 49 2 25) (Loc 50 2 26))
+                                                       (Area (Loc 58 2 25) (Loc 59 2 26))
                                                        (App
                                                           (Meta
                                                              Infos
                                                                { nthArg = Nothing
                                                                , origin = Nothing
                                                                }
-                                                             (Area (Loc 50 2 26) (Loc 52 2 28))
+                                                             (Area (Loc 59 2 26) (Loc 61 2 28))
                                                              (Var "+"))
                                                           (Meta
                                                              Infos
                                                                { nthArg = Nothing
                                                                , origin = Nothing
                                                                }
-                                                             (Area (Loc 49 2 25) (Loc 50 2 26))
+                                                             (Area (Loc 58 2 25) (Loc 59 2 26))
                                                              (Var "a"))))
                                                     (Meta
                                                        Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 53 2 29) (Loc 54 2 30))
+                                                       (Area (Loc 62 2 29) (Loc 63 2 30))
                                                        (Var "b"))))))))))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
-                         (Area (Loc 7 1 8) (Loc 24 1 25))
+                         (Area (Loc 7 1 8) (Loc 33 1 34))
                          (TRArr
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 7 1 8) (Loc 10 1 11))
-                               (TRSingle "Num"))
+                               (Area (Loc 7 1 8) (Loc 13 1 14))
+                               (TRSingle "Number"))
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 14 1 15) (Loc 24 1 25))
+                               (Area (Loc 17 1 18) (Loc 33 1 34))
                                (TRArr
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 14 1 15) (Loc 17 1 18))
-                                     (TRSingle "Num"))
+                                     (Area (Loc 17 1 18) (Loc 23 1 24))
+                                     (TRSingle "Number"))
                                   (Meta
                                      Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 21 1 22) (Loc 24 1 25))
-                                     (TRSingle "Num")))))))
+                                     (Area (Loc 27 1 28) (Loc 33 1 34))
+                                     (TRSingle "Number")))))))
                ]
            , aadts = []
            , apath = Just "/src/sourceB.mad"

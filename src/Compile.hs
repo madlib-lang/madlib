@@ -29,9 +29,9 @@ class Compilable a where
 
 instance Compilable Exp where
   compile astPath outputPath (Solved _ _ exp) = case exp of
-    LInt  v     -> v
-    LStr  v     -> "\"" <> v <> "\""
-    LBool v     -> v
+    LNum v   -> v
+    LStr    v   -> "\"" <> v <> "\""
+    LBool   v   -> v
 
     App abs arg -> case abs of
       Solved _ _ (Var "+") -> "(" <> compile astPath outputPath arg <> ") + "
@@ -125,11 +125,11 @@ instance Compilable Exp where
         <> ")"
      where
       compilePattern :: String -> Pattern -> String
-      compilePattern _     (PVar _)  = "true"
-      compilePattern _     PAny      = "true"
-      compilePattern scope (PNum  n) = scope <> " === " <> n
-      compilePattern scope (PStr  n) = scope <> " === \"" <> n <> "\""
-      compilePattern scope (PBool n) = scope <> " === " <> n
+      compilePattern _     (PVar _)    = "true"
+      compilePattern _     PAny        = "true"
+      compilePattern scope (PNum n) = scope <> " === " <> n
+      compilePattern scope (PStr    n) = scope <> " === \"" <> n <> "\""
+      compilePattern scope (PBool   n) = scope <> " === " <> n
       compilePattern scope (PCon n)
         | n == "String"  = "typeof " <> scope <> " === \"string\""
         | n == "Boolean" = "typeof " <> scope <> " === \"boolean\""

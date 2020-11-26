@@ -37,7 +37,7 @@ Right
                                         (Solved
                                            (TCon CNum)
                                            (Area (Loc 25 1 26) (Loc 26 1 27))
-                                           (LInt "1")))))))))
+                                           (LNum "1")))))))))
                ]
            , aadts = []
            , apath = Just "./ModuleA"
@@ -55,7 +55,7 @@ Right
                          (TArr (TCon CNum) (TCon CNum))
                          (Area (Loc 32 2 1) (Loc 35 2 4))
                          (Var "inc"))
-                      (Solved (TCon CNum) (Area (Loc 36 2 5) (Loc 37 2 6)) (LInt "3")))
+                      (Solved (TCon CNum) (Area (Loc 36 2 5) (Loc 37 2 6)) (LNum "3")))
                ]
            , aadts = []
            , apath = Just "./ModuleB"

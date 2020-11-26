@@ -31,11 +31,11 @@ infer :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 infer env lexp =
   let (Meta _ area exp) = lexp
   in  case exp of
-        Src.LInt  _           -> return (M.empty, num, applyLitSolve lexp num)
-        Src.LStr  _           -> return (M.empty, str, applyLitSolve lexp str)
-        Src.LBool _           -> return (M.empty, bool, applyLitSolve lexp bool)
+        Src.LNum _ -> return (M.empty, number, applyLitSolve lexp number)
+        Src.LStr    _         -> return (M.empty, str, applyLitSolve lexp str)
+        Src.LBool   _         -> return (M.empty, bool, applyLitSolve lexp bool)
 
-        Src.Var   _           -> inferVar env lexp
+        Src.Var     _         -> inferVar env lexp
         Src.Abs        _ _    -> inferAbs env lexp
         Src.App        _ _    -> inferApp env lexp
         Src.Assignment _ _    -> inferAssignment env lexp
@@ -54,9 +54,9 @@ infer env lexp =
 -- TODO: Should probably just take a Loc instead of the old Expression !
 applyLitSolve :: Src.Exp -> Type -> Slv.Exp
 applyLitSolve (Meta _ area exp) t = case exp of
-  Src.LInt  v -> Slv.Solved t area $ Slv.LInt v
-  Src.LStr  v -> Slv.Solved t area $ Slv.LStr v
-  Src.LBool v -> Slv.Solved t area $ Slv.LBool v
+  Src.LNum v -> Slv.Solved t area $ Slv.LNum v
+  Src.LStr    v -> Slv.Solved t area $ Slv.LStr v
+  Src.LBool   v -> Slv.Solved t area $ Slv.LBool v
 
 applyAbsSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
 applyAbsSolve (Meta _ loc _) param body t =
@@ -79,7 +79,7 @@ updatePattern (Meta _ _ p) = case p of
 
   Src.PCtor name patterns -> Slv.PCtor name (updatePattern <$> patterns)
 
-  Src.PNum    n           -> Slv.PNum n
+  Src.PNum n           -> Slv.PNum n
   Src.PStr    n           -> Slv.PStr n
   Src.PBool   n           -> Slv.PBool n
 
@@ -127,7 +127,7 @@ enhanceVarError env exp area (InferError e _) = throwError
 
 
 
--- INFER ABS
+-- INFER ABSTRACTIONS
 
 inferAbs :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
@@ -431,17 +431,17 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
   buildPatternType :: Env -> Src.Pattern -> Infer Type
   buildPatternType e@Env { envvars } pattern@(Meta _ area pat) = case pat of
-    Src.PVar  _         -> newTVar
+    Src.PVar    _         -> newTVar
 
-    Src.PCon  "String"  -> return $ TCon CString
-    Src.PCon  "Boolean" -> return $ TCon CBool
-    Src.PCon  "Number"  -> return $ TCon CNum
+    Src.PCon    "String"  -> return $ TCon CString
+    Src.PCon    "Boolean" -> return $ TCon CBool
+    Src.PCon    "Number"  -> return $ TCon CNum
 
-    Src.PStr  _         -> return $ TCon CString
-    Src.PBool _         -> return $ TCon CBool
-    Src.PNum  _         -> return $ TCon CNum
+    Src.PStr    _         -> return $ TCon CString
+    Src.PBool   _         -> return $ TCon CBool
+    Src.PNum _         -> return $ TCon CNum
 
-    Src.PAny            -> newTVar
+    Src.PAny              -> newTVar
 
     Src.PRecord fields ->
       let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields

@@ -213,11 +213,11 @@ spec = do
 
         codeB = unlines
           [ "import ADTs from \"./ADTs\""
-          , "(ADTs.Just(3) :: ADTs.Maybe Num)"
+          , "(ADTs.Just(3) :: ADTs.Maybe Number)"
           , "ADTs.Nothing"
-          , "fn :: ADTs.Maybe (ADTs.Maybe Num) -> ADTs.Maybe (ADTs.Maybe Num)"
+          , "fn :: ADTs.Maybe (ADTs.Maybe Number) -> ADTs.Maybe (ADTs.Maybe Number)"
           , "export fn = (m) => (m)"
-          , "fn2 :: ADTs.Maybe (ADTs.Maybe Num) -> Num"
+          , "fn2 :: ADTs.Maybe (ADTs.Maybe Number) -> Number"
           , "export fn2 = (m) => ("
           , "  where(m) {"
           , "    is ADTs.Just (ADTs.Just n): n"

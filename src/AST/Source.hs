@@ -79,7 +79,7 @@ data ListItem
 
 type Exp = Meta Exp_
 
-data Exp_ = LInt String
+data Exp_ = LNum String
           | LStr String
           | LBool String
           | Var Name

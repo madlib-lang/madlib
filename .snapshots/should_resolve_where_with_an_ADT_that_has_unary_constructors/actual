@@ -16,7 +16,7 @@ Right
                         (Area (Loc 42 2 11) (Loc 46 2 15))
                         (Var "Just"))
                      (Solved
-                        (TCon CNum) (Area (Loc 47 2 16) (Loc 48 2 17)) (LInt "4")))))
+                        (TCon CNum) (Area (Loc 47 2 16) (Loc 48 2 17)) (LNum "4")))))
         , Solved
             (TCon CNum)
             (Area (Loc 50 3 1) (Loc 99 6 1))
@@ -36,7 +36,7 @@ Right
                    (Area (Loc 84 5 3) (Loc 97 5 16))
                    (Is
                       (PCtor "Nothing" [])
-                      (Solved (TCon CNum) (Area (Loc 96 5 15) (Loc 97 5 16)) (LInt "0")))
+                      (Solved (TCon CNum) (Area (Loc 96 5 15) (Loc 97 5 16)) (LNum "0")))
                ])
         ]
     , aadts =
