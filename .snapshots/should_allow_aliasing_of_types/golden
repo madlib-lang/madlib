@@ -1,0 +1,2415 @@
+Right
+  (fromList
+     [ ( "./ModuleA"
+       , AST
+           { aimports = []
+           , aexps =
+               [ Solved
+                   (TArr
+                      (TVar (TV "a"))
+                      (TArr
+                         (TArr (TVar (TV "b")) (TVar (TV "c")))
+                         (TArr (TArr (TVar (TV "a")) (TVar (TV "d"))) (TVar (TV "e")))))
+                   (Area (Loc 51 3 1) (Loc 116 4 46))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TVar (TV "a"))
+                            (TArr
+                               (TArr (TVar (TV "b")) (TVar (TV "c")))
+                               (TArr (TArr (TVar (TV "a")) (TVar (TV "d"))) (TVar (TV "e")))))
+                         (Area (Loc 51 3 1) (Loc 53 3 3))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TVar (TV "f"))
+                                  (TArr
+                                     (TVar (TV "g"))
+                                     (TArr (TArr (TVar (TV "f")) (TVar (TV "i"))) (TVar (TV "i")))))
+                               (Area (Loc 53 3 3) (Loc 56 3 6))
+                               (Assignment
+                                  "of"
+                                  (Solved
+                                     (TArr
+                                        (TVar (TV "f"))
+                                        (TArr
+                                           (TVar (TV "g"))
+                                           (TArr
+                                              (TArr (TVar (TV "f")) (TVar (TV "i")))
+                                              (TVar (TV "i")))))
+                                     (Area (Loc 83 4 13) (Loc 116 4 46))
+                                     (Abs
+                                        "a"
+                                        (Solved
+                                           (TArr
+                                              (TVar (TV "g"))
+                                              (TArr
+                                                 (TArr (TVar (TV "f")) (TVar (TV "i")))
+                                                 (TVar (TV "i"))))
+                                           (Area (Loc 91 4 21) (Loc 115 4 45))
+                                           (Abs
+                                              "bad"
+                                              (Solved
+                                                 (TArr
+                                                    (TArr (TVar (TV "f")) (TVar (TV "i")))
+                                                    (TVar (TV "i")))
+                                                 (Area (Loc 91 4 21) (Loc 115 4 45))
+                                                 (Abs
+                                                    "good"
+                                                    (Solved
+                                                       (TVar (TV "i"))
+                                                       (Area (Loc 107 4 37) (Loc 114 4 44))
+                                                       (App
+                                                          (Solved
+                                                             (TVar (TV "h"))
+                                                             (Area (Loc 107 4 37) (Loc 111 4 41))
+                                                             (Var "good"))
+                                                          (Solved
+                                                             (TVar (TV "f"))
+                                                             (Area (Loc 112 4 42) (Loc 113 4 43))
+                                                             (Var "a"))
+                                                          True))))))))))))
+                      (TRArr
+                         (TRSingle "a") (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])))
+               , Solved
+                   (TArr
+                      (TVar (TV "k"))
+                      (TArr
+                         (TArr (TVar (TV "k")) (TVar (TV "l")))
+                         (TArr (TArr (TVar (TV "j")) (TVar (TV "m"))) (TVar (TV "n")))))
+                   (Area (Loc 118 6 1) (Loc 184 7 46))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TVar (TV "k"))
+                            (TArr
+                               (TArr (TVar (TV "k")) (TVar (TV "l")))
+                               (TArr (TArr (TVar (TV "j")) (TVar (TV "m"))) (TVar (TV "n")))))
+                         (Area (Loc 118 6 1) (Loc 121 6 4))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TVar (TV "o"))
+                                  (TArr
+                                     (TArr (TVar (TV "o")) (TVar (TV "r")))
+                                     (TArr (TVar (TV "q")) (TVar (TV "r")))))
+                               (Area (Loc 121 6 4) (Loc 124 6 7))
+                               (Assignment
+                                  "bad"
+                                  (Solved
+                                     (TArr
+                                        (TVar (TV "o"))
+                                        (TArr
+                                           (TArr (TVar (TV "o")) (TVar (TV "r")))
+                                           (TArr (TVar (TV "q")) (TVar (TV "r")))))
+                                     (Area (Loc 152 7 14) (Loc 184 7 46))
+                                     (Abs
+                                        "e"
+                                        (Solved
+                                           (TArr
+                                              (TArr (TVar (TV "o")) (TVar (TV "r")))
+                                              (TArr (TVar (TV "q")) (TVar (TV "r"))))
+                                           (Area (Loc 160 7 22) (Loc 183 7 45))
+                                           (Abs
+                                              "bad"
+                                              (Solved
+                                                 (TArr (TVar (TV "q")) (TVar (TV "r")))
+                                                 (Area (Loc 160 7 22) (Loc 183 7 45))
+                                                 (Abs
+                                                    "good"
+                                                    (Solved
+                                                       (TVar (TV "r"))
+                                                       (Area (Loc 176 7 38) (Loc 182 7 44))
+                                                       (App
+                                                          (Solved
+                                                             (TVar (TV "p"))
+                                                             (Area (Loc 176 7 38) (Loc 179 7 41))
+                                                             (Var "bad"))
+                                                          (Solved
+                                                             (TVar (TV "o"))
+                                                             (Area (Loc 180 7 42) (Loc 181 7 43))
+                                                             (Var "e"))
+                                                          True))))))))))))
+                      (TRArr
+                         (TRSingle "e") (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])))
+               , Solved
+                   (TArr
+                      (TArr (TVar (TV "s")) (TVar (TV "t")))
+                      (TArr
+                         (TArr
+                            (TArr (TVar (TV "u")) (TVar (TV "v")))
+                            (TArr (TArr (TVar (TV "s")) (TVar (TV "w"))) (TVar (TV "x"))))
+                         (TArr
+                            (TArr (TVar (TV "u")) (TVar (TV "v")))
+                            (TArr (TArr (TVar (TV "t")) (TVar (TV "w"))) (TVar (TV "x"))))))
+                   (Area (Loc 187 10 1) (Loc 304 13 1))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TArr (TVar (TV "s")) (TVar (TV "t")))
+                            (TArr
+                               (TArr
+                                  (TArr (TVar (TV "u")) (TVar (TV "v")))
+                                  (TArr (TArr (TVar (TV "s")) (TVar (TV "w"))) (TVar (TV "x"))))
+                               (TArr
+                                  (TArr (TVar (TV "u")) (TVar (TV "v")))
+                                  (TArr (TArr (TVar (TV "t")) (TVar (TV "w"))) (TVar (TV "x"))))))
+                         (Area (Loc 187 10 1) (Loc 190 10 4))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TArr (TVar (TV "ae")) (TVar (TV "ag")))
+                                  (TArr
+                                     (TArr
+                                        (TVar (TV "aa"))
+                                        (TArr
+                                           (TArr (TVar (TV "ae")) (TVar (TV "af")))
+                                           (TVar (TV "ac"))))
+                                     (TArr
+                                        (TVar (TV "aa"))
+                                        (TArr
+                                           (TArr (TVar (TV "ag")) (TVar (TV "af")))
+                                           (TVar (TV "ac"))))))
+                               (Area (Loc 190 10 4) (Loc 193 10 7))
+                               (Assignment
+                                  "map"
+                                  (Solved
+                                     (TArr
+                                        (TArr (TVar (TV "ae")) (TVar (TV "ag")))
+                                        (TArr
+                                           (TArr
+                                              (TVar (TV "aa"))
+                                              (TArr
+                                                 (TArr (TVar (TV "ae")) (TVar (TV "af")))
+                                                 (TVar (TV "ac"))))
+                                           (TArr
+                                              (TVar (TV "aa"))
+                                              (TArr
+                                                 (TArr (TVar (TV "ag")) (TVar (TV "af")))
+                                                 (TVar (TV "ac"))))))
+                                     (Area (Loc 240 11 14) (Loc 304 13 1))
+                                     (Abs
+                                        "f"
+                                        (Solved
+                                           (TArr
+                                              (TArr
+                                                 (TVar (TV "aa"))
+                                                 (TArr
+                                                    (TArr (TVar (TV "ae")) (TVar (TV "af")))
+                                                    (TVar (TV "ac"))))
+                                              (TArr
+                                                 (TVar (TV "aa"))
+                                                 (TArr
+                                                    (TArr (TVar (TV "ag")) (TVar (TV "af")))
+                                                    (TVar (TV "ac")))))
+                                           (Area (Loc 240 11 14) (Loc 304 13 1))
+                                           (Abs
+                                              "run"
+                                              (Solved
+                                                 (TArr
+                                                    (TVar (TV "aa"))
+                                                    (TArr
+                                                       (TArr (TVar (TV "ag")) (TVar (TV "af")))
+                                                       (TVar (TV "ac"))))
+                                                 (Area (Loc 256 12 3) (Loc 302 12 49))
+                                                 (Abs
+                                                    "bad"
+                                                    (Solved
+                                                       (TArr
+                                                          (TArr (TVar (TV "ag")) (TVar (TV "af")))
+                                                          (TVar (TV "ac")))
+                                                       (Area (Loc 256 12 3) (Loc 302 12 49))
+                                                       (Abs
+                                                          "good"
+                                                          (Solved
+                                                             (TVar (TV "ac"))
+                                                             (Area (Loc 281 12 28) (Loc 300 12 47))
+                                                             (App
+                                                                (Solved
+                                                                   (TVar (TV "ad"))
+                                                                   (Area
+                                                                      (Loc 281 12 28)
+                                                                      (Loc 300 12 47))
+                                                                   (App
+                                                                      (Solved
+                                                                         (TVar (TV "z"))
+                                                                         (Area
+                                                                            (Loc 272 12 19)
+                                                                            (Loc 275 12 22))
+                                                                         (Var "run"))
+                                                                      (Solved
+                                                                         (TVar (TV "aa"))
+                                                                         (Area
+                                                                            (Loc 276 12 23)
+                                                                            (Loc 279 12 26))
+                                                                         (Var "bad"))
+                                                                      False))
+                                                                (Solved
+                                                                   (TArr
+                                                                      (TVar (TV "ae"))
+                                                                      (TVar (TV "af")))
+                                                                   (Area
+                                                                      (Loc 281 12 28)
+                                                                      (Loc 300 12 47))
+                                                                   (Abs
+                                                                      "x"
+                                                                      (Solved
+                                                                         (TVar (TV "af"))
+                                                                         (Area
+                                                                            (Loc 289 12 36)
+                                                                            (Loc 299 12 46))
+                                                                         (App
+                                                                            (Solved
+                                                                               (TVar (TV "ab"))
+                                                                               (Area
+                                                                                  (Loc 289 12 36)
+                                                                                  (Loc 293 12 40))
+                                                                               (Var "good"))
+                                                                            (Solved
+                                                                               (TVar (TV "ag"))
+                                                                               (Area
+                                                                                  (Loc 294 12 41)
+                                                                                  (Loc 298 12 45))
+                                                                               (App
+                                                                                  (Solved
+                                                                                     (TVar (TV "y"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           294
+                                                                                           12
+                                                                                           41)
+                                                                                        (Loc
+                                                                                           295
+                                                                                           12
+                                                                                           42))
+                                                                                     (Var "f"))
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "ae"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           296
+                                                                                           12
+                                                                                           43)
+                                                                                        (Loc
+                                                                                           297
+                                                                                           12
+                                                                                           44))
+                                                                                     (Var "x"))
+                                                                                  True))
+                                                                            True))))
+                                                                True))))))))))))))
+                      (TRArr
+                         (TRArr (TRSingle "a") (TRSingle "b"))
+                         (TRArr
+                            (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])
+                            (TRComp "Wish" [ TRSingle "e" , TRSingle "b" ]))))
+               , Solved
+                   (TArr
+                      (TArr (TVar (TV "ai")) (TVar (TV "aj")))
+                      (TArr
+                         (TArr
+                            (TArr (TVar (TV "ai")) (TVar (TV "ak")))
+                            (TArr (TArr (TVar (TV "ah")) (TVar (TV "al"))) (TVar (TV "am"))))
+                         (TArr
+                            (TArr (TVar (TV "aj")) (TVar (TV "ak")))
+                            (TArr (TArr (TVar (TV "ah")) (TVar (TV "al"))) (TVar (TV "am"))))))
+                   (Area (Loc 306 15 1) (Loc 437 20 1))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TArr (TVar (TV "ai")) (TVar (TV "aj")))
+                            (TArr
+                               (TArr
+                                  (TArr (TVar (TV "ai")) (TVar (TV "ak")))
+                                  (TArr (TArr (TVar (TV "ah")) (TVar (TV "al"))) (TVar (TV "am"))))
+                               (TArr
+                                  (TArr (TVar (TV "aj")) (TVar (TV "ak")))
+                                  (TArr
+                                     (TArr (TVar (TV "ah")) (TVar (TV "al"))) (TVar (TV "am"))))))
+                         (Area (Loc 306 15 1) (Loc 312 15 7))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TArr (TVar (TV "at")) (TVar (TV "av")))
+                                  (TArr
+                                     (TArr
+                                        (TArr (TVar (TV "at")) (TVar (TV "au")))
+                                        (TArr (TVar (TV "aq")) (TVar (TV "ar"))))
+                                     (TArr
+                                        (TArr (TVar (TV "av")) (TVar (TV "au")))
+                                        (TArr (TVar (TV "aq")) (TVar (TV "ar"))))))
+                               (Area (Loc 312 15 7) (Loc 315 15 10))
+                               (Assignment
+                                  "mapRej"
+                                  (Solved
+                                     (TArr
+                                        (TArr (TVar (TV "at")) (TVar (TV "av")))
+                                        (TArr
+                                           (TArr
+                                              (TArr (TVar (TV "at")) (TVar (TV "au")))
+                                              (TArr (TVar (TV "aq")) (TVar (TV "ar"))))
+                                           (TArr
+                                              (TArr (TVar (TV "av")) (TVar (TV "au")))
+                                              (TArr (TVar (TV "aq")) (TVar (TV "ar"))))))
+                                     (Area (Loc 365 16 17) (Loc 437 20 1))
+                                     (Abs
+                                        "f"
+                                        (Solved
+                                           (TArr
+                                              (TArr
+                                                 (TArr (TVar (TV "at")) (TVar (TV "au")))
+                                                 (TArr (TVar (TV "aq")) (TVar (TV "ar"))))
+                                              (TArr
+                                                 (TArr (TVar (TV "av")) (TVar (TV "au")))
+                                                 (TArr (TVar (TV "aq")) (TVar (TV "ar")))))
+                                           (Area (Loc 365 16 17) (Loc 437 20 1))
+                                           (Abs
+                                              "run"
+                                              (Solved
+                                                 (TArr
+                                                    (TArr (TVar (TV "av")) (TVar (TV "au")))
+                                                    (TArr (TVar (TV "aq")) (TVar (TV "ar"))))
+                                                 (Area (Loc 381 17 3) (Loc 435 19 3))
+                                                 (Abs
+                                                    "bad"
+                                                    (Solved
+                                                       (TArr (TVar (TV "aq")) (TVar (TV "ar")))
+                                                       (Area (Loc 381 17 3) (Loc 435 19 3))
+                                                       (Abs
+                                                          "good"
+                                                          (Solved
+                                                             (TVar (TV "ar"))
+                                                             (Area (Loc 426 18 29) (Loc 430 18 33))
+                                                             (App
+                                                                (Solved
+                                                                   (TVar (TV "as"))
+                                                                   (Area
+                                                                      (Loc 426 18 29)
+                                                                      (Loc 430 18 33))
+                                                                   (App
+                                                                      (Solved
+                                                                         (TVar (TV "ao"))
+                                                                         (Area
+                                                                            (Loc 402 18 5)
+                                                                            (Loc 405 18 8))
+                                                                         (Var "run"))
+                                                                      (Solved
+                                                                         (TArr
+                                                                            (TVar (TV "at"))
+                                                                            (TVar (TV "au")))
+                                                                         (Area
+                                                                            (Loc 406 18 9)
+                                                                            (Loc 424 18 27))
+                                                                         (Abs
+                                                                            "x"
+                                                                            (Solved
+                                                                               (TVar (TV "au"))
+                                                                               (Area
+                                                                                  (Loc 414 18 17)
+                                                                                  (Loc 423 18 26))
+                                                                               (App
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "ap"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           414
+                                                                                           18
+                                                                                           17)
+                                                                                        (Loc
+                                                                                           417
+                                                                                           18
+                                                                                           20))
+                                                                                     (Var "bad"))
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "av"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           418
+                                                                                           18
+                                                                                           21)
+                                                                                        (Loc
+                                                                                           422
+                                                                                           18
+                                                                                           25))
+                                                                                     (App
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "an"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 418
+                                                                                                 18
+                                                                                                 21)
+                                                                                              (Loc
+                                                                                                 419
+                                                                                                 18
+                                                                                                 22))
+                                                                                           (Var
+                                                                                              "f"))
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "at"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 420
+                                                                                                 18
+                                                                                                 23)
+                                                                                              (Loc
+                                                                                                 421
+                                                                                                 18
+                                                                                                 24))
+                                                                                           (Var
+                                                                                              "x"))
+                                                                                        True))
+                                                                                  True))))
+                                                                      False))
+                                                                (Solved
+                                                                   (TVar (TV "aq"))
+                                                                   (Area
+                                                                      (Loc 426 18 29)
+                                                                      (Loc 430 18 33))
+                                                                   (Var "good"))
+                                                                True))))))))))))))
+                      (TRArr
+                         (TRArr (TRSingle "e") (TRSingle "f"))
+                         (TRArr
+                            (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])
+                            (TRComp "Wish" [ TRSingle "f" , TRSingle "a" ]))))
+               , Solved
+                   (TArr
+                      (TArr
+                         (TVar (TV "aw"))
+                         (TArr
+                            (TArr (TVar (TV "az")) (TVar (TV "ba")))
+                            (TArr (TArr (TVar (TV "ax")) (TVar (TV "bb"))) (TVar (TV "bc")))))
+                      (TArr
+                         (TArr
+                            (TArr (TVar (TV "ay")) (TVar (TV "ba")))
+                            (TArr (TArr (TVar (TV "aw")) (TVar (TV "bb"))) (TVar (TV "bc"))))
+                         (TArr
+                            (TArr (TVar (TV "az")) (TVar (TV "ba")))
+                            (TArr (TArr (TVar (TV "ax")) (TVar (TV "bb"))) (TVar (TV "bc"))))))
+                   (Area (Loc 439 22 1) (Loc 580 27 1))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TArr
+                               (TVar (TV "aw"))
+                               (TArr
+                                  (TArr (TVar (TV "az")) (TVar (TV "ba")))
+                                  (TArr (TArr (TVar (TV "ax")) (TVar (TV "bb"))) (TVar (TV "bc")))))
+                            (TArr
+                               (TArr
+                                  (TArr (TVar (TV "ay")) (TVar (TV "ba")))
+                                  (TArr (TArr (TVar (TV "aw")) (TVar (TV "bb"))) (TVar (TV "bc"))))
+                               (TArr
+                                  (TArr (TVar (TV "az")) (TVar (TV "ba")))
+                                  (TArr
+                                     (TArr (TVar (TV "ax")) (TVar (TV "bb"))) (TVar (TV "bc"))))))
+                         (Area (Loc 439 22 1) (Loc 444 22 6))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TArr
+                                     (TVar (TV "bj"))
+                                     (TArr
+                                        (TVar (TV "bf")) (TArr (TVar (TV "bg")) (TVar (TV "bk")))))
+                                  (TArr
+                                     (TArr
+                                        (TVar (TV "bf"))
+                                        (TArr
+                                           (TArr (TVar (TV "bj")) (TVar (TV "bk")))
+                                           (TVar (TV "bh"))))
+                                     (TArr
+                                        (TVar (TV "bf")) (TArr (TVar (TV "bg")) (TVar (TV "bh"))))))
+                               (Area (Loc 444 22 6) (Loc 447 22 9))
+                               (Assignment
+                                  "chain"
+                                  (Solved
+                                     (TArr
+                                        (TArr
+                                           (TVar (TV "bj"))
+                                           (TArr
+                                              (TVar (TV "bf"))
+                                              (TArr (TVar (TV "bg")) (TVar (TV "bk")))))
+                                        (TArr
+                                           (TArr
+                                              (TVar (TV "bf"))
+                                              (TArr
+                                                 (TArr (TVar (TV "bj")) (TVar (TV "bk")))
+                                                 (TVar (TV "bh"))))
+                                           (TArr
+                                              (TVar (TV "bf"))
+                                              (TArr (TVar (TV "bg")) (TVar (TV "bh"))))))
+                                     (Area (Loc 503 23 16) (Loc 580 27 1))
+                                     (Abs
+                                        "f"
+                                        (Solved
+                                           (TArr
+                                              (TArr
+                                                 (TVar (TV "bf"))
+                                                 (TArr
+                                                    (TArr (TVar (TV "bj")) (TVar (TV "bk")))
+                                                    (TVar (TV "bh"))))
+                                              (TArr
+                                                 (TVar (TV "bf"))
+                                                 (TArr (TVar (TV "bg")) (TVar (TV "bh")))))
+                                           (Area (Loc 503 23 16) (Loc 580 27 1))
+                                           (Abs
+                                              "run"
+                                              (Solved
+                                                 (TArr
+                                                    (TVar (TV "bf"))
+                                                    (TArr (TVar (TV "bg")) (TVar (TV "bh"))))
+                                                 (Area (Loc 519 24 3) (Loc 578 26 3))
+                                                 (Abs
+                                                    "bad"
+                                                    (Solved
+                                                       (TArr (TVar (TV "bg")) (TVar (TV "bh")))
+                                                       (Area (Loc 519 24 3) (Loc 578 26 3))
+                                                       (Abs
+                                                          "good"
+                                                          (Solved
+                                                             (TVar (TV "bh"))
+                                                             (Area (Loc 549 25 14) (Loc 573 25 38))
+                                                             (App
+                                                                (Solved
+                                                                   (TVar (TV "bi"))
+                                                                   (Area
+                                                                      (Loc 549 25 14)
+                                                                      (Loc 573 25 38))
+                                                                   (App
+                                                                      (Solved
+                                                                         (TVar (TV "be"))
+                                                                         (Area
+                                                                            (Loc 540 25 5)
+                                                                            (Loc 543 25 8))
+                                                                         (Var "run"))
+                                                                      (Solved
+                                                                         (TVar (TV "bf"))
+                                                                         (Area
+                                                                            (Loc 544 25 9)
+                                                                            (Loc 547 25 12))
+                                                                         (Var "bad"))
+                                                                      False))
+                                                                (Solved
+                                                                   (TArr
+                                                                      (TVar (TV "bj"))
+                                                                      (TVar (TV "bk")))
+                                                                   (Area
+                                                                      (Loc 549 25 14)
+                                                                      (Loc 573 25 38))
+                                                                   (Abs
+                                                                      "x"
+                                                                      (Solved
+                                                                         (TVar (TV "bk"))
+                                                                         (Area
+                                                                            (Loc 567 25 32)
+                                                                            (Loc 571 25 36))
+                                                                         (App
+                                                                            (Solved
+                                                                               (TVar (TV "bl"))
+                                                                               (Area
+                                                                                  (Loc 567 25 32)
+                                                                                  (Loc 571 25 36))
+                                                                               (App
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "bm"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           557
+                                                                                           25
+                                                                                           22)
+                                                                                        (Loc
+                                                                                           561
+                                                                                           25
+                                                                                           26))
+                                                                                     (App
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bd"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 557
+                                                                                                 25
+                                                                                                 22)
+                                                                                              (Loc
+                                                                                                 558
+                                                                                                 25
+                                                                                                 23))
+                                                                                           (Var
+                                                                                              "f"))
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bj"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 559
+                                                                                                 25
+                                                                                                 24)
+                                                                                              (Loc
+                                                                                                 560
+                                                                                                 25
+                                                                                                 25))
+                                                                                           (Var
+                                                                                              "x"))
+                                                                                        True))
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "bf"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           562
+                                                                                           25
+                                                                                           27)
+                                                                                        (Loc
+                                                                                           565
+                                                                                           25
+                                                                                           30))
+                                                                                     (Var "bad"))
+                                                                                  False))
+                                                                            (Solved
+                                                                               (TVar (TV "bg"))
+                                                                               (Area
+                                                                                  (Loc 567 25 32)
+                                                                                  (Loc 571 25 36))
+                                                                               (Var "good"))
+                                                                            True))))
+                                                                True))))))))))))))
+                      (TRArr
+                         (TRArr
+                            (TRSingle "a") (TRComp "Wish" [ TRSingle "f" , TRSingle "b" ]))
+                         (TRArr
+                            (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])
+                            (TRComp "Wish" [ TRSingle "f" , TRSingle "b" ]))))
+               , Solved
+                   (TArr
+                      (TArr
+                         (TVar (TV "bp"))
+                         (TArr
+                            (TArr (TVar (TV "bq")) (TVar (TV "br")))
+                            (TArr (TArr (TVar (TV "bo")) (TVar (TV "bs"))) (TVar (TV "bt")))))
+                      (TArr
+                         (TArr
+                            (TArr (TVar (TV "bp")) (TVar (TV "br")))
+                            (TArr (TArr (TVar (TV "bn")) (TVar (TV "bs"))) (TVar (TV "bt"))))
+                         (TArr
+                            (TArr (TVar (TV "bq")) (TVar (TV "br")))
+                            (TArr (TArr (TVar (TV "bo")) (TVar (TV "bs"))) (TVar (TV "bt"))))))
+                   (Area (Loc 582 29 1) (Loc 730 34 1))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TArr
+                               (TVar (TV "bp"))
+                               (TArr
+                                  (TArr (TVar (TV "bq")) (TVar (TV "br")))
+                                  (TArr (TArr (TVar (TV "bo")) (TVar (TV "bs"))) (TVar (TV "bt")))))
+                            (TArr
+                               (TArr
+                                  (TArr (TVar (TV "bp")) (TVar (TV "br")))
+                                  (TArr (TArr (TVar (TV "bn")) (TVar (TV "bs"))) (TVar (TV "bt"))))
+                               (TArr
+                                  (TArr (TVar (TV "bq")) (TVar (TV "br")))
+                                  (TArr
+                                     (TArr (TVar (TV "bo")) (TVar (TV "bs"))) (TVar (TV "bt"))))))
+                         (Area (Loc 582 29 1) (Loc 590 29 9))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TArr
+                                     (TVar (TV "ca"))
+                                     (TArr
+                                        (TVar (TV "bw")) (TArr (TVar (TV "bx")) (TVar (TV "cb")))))
+                                  (TArr
+                                     (TArr
+                                        (TArr (TVar (TV "ca")) (TVar (TV "cb")))
+                                        (TArr (TVar (TV "bx")) (TVar (TV "by"))))
+                                     (TArr
+                                        (TVar (TV "bw")) (TArr (TVar (TV "bx")) (TVar (TV "by"))))))
+                               (Area (Loc 590 29 9) (Loc 593 29 12))
+                               (Assignment
+                                  "chainRej"
+                                  (Solved
+                                     (TArr
+                                        (TArr
+                                           (TVar (TV "ca"))
+                                           (TArr
+                                              (TVar (TV "bw"))
+                                              (TArr (TVar (TV "bx")) (TVar (TV "cb")))))
+                                        (TArr
+                                           (TArr
+                                              (TArr (TVar (TV "ca")) (TVar (TV "cb")))
+                                              (TArr (TVar (TV "bx")) (TVar (TV "by"))))
+                                           (TArr
+                                              (TVar (TV "bw"))
+                                              (TArr (TVar (TV "bx")) (TVar (TV "by"))))))
+                                     (Area (Loc 652 30 19) (Loc 730 34 1))
+                                     (Abs
+                                        "f"
+                                        (Solved
+                                           (TArr
+                                              (TArr
+                                                 (TArr (TVar (TV "ca")) (TVar (TV "cb")))
+                                                 (TArr (TVar (TV "bx")) (TVar (TV "by"))))
+                                              (TArr
+                                                 (TVar (TV "bw"))
+                                                 (TArr (TVar (TV "bx")) (TVar (TV "by")))))
+                                           (Area (Loc 652 30 19) (Loc 730 34 1))
+                                           (Abs
+                                              "run"
+                                              (Solved
+                                                 (TArr
+                                                    (TVar (TV "bw"))
+                                                    (TArr (TVar (TV "bx")) (TVar (TV "by"))))
+                                                 (Area (Loc 668 31 3) (Loc 728 33 3))
+                                                 (Abs
+                                                    "bad"
+                                                    (Solved
+                                                       (TArr (TVar (TV "bx")) (TVar (TV "by")))
+                                                       (Area (Loc 668 31 3) (Loc 728 33 3))
+                                                       (Abs
+                                                          "good"
+                                                          (Solved
+                                                             (TVar (TV "by"))
+                                                             (Area (Loc 719 32 35) (Loc 723 32 39))
+                                                             (App
+                                                                (Solved
+                                                                   (TVar (TV "bz"))
+                                                                   (Area
+                                                                      (Loc 719 32 35)
+                                                                      (Loc 723 32 39))
+                                                                   (App
+                                                                      (Solved
+                                                                         (TVar (TV "bv"))
+                                                                         (Area
+                                                                            (Loc 689 32 5)
+                                                                            (Loc 692 32 8))
+                                                                         (Var "run"))
+                                                                      (Solved
+                                                                         (TArr
+                                                                            (TVar (TV "ca"))
+                                                                            (TVar (TV "cb")))
+                                                                         (Area
+                                                                            (Loc 693 32 9)
+                                                                            (Loc 717 32 33))
+                                                                         (Abs
+                                                                            "x"
+                                                                            (Solved
+                                                                               (TVar (TV "cb"))
+                                                                               (Area
+                                                                                  (Loc 711 32 27)
+                                                                                  (Loc 715 32 31))
+                                                                               (App
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "cc"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           711
+                                                                                           32
+                                                                                           27)
+                                                                                        (Loc
+                                                                                           715
+                                                                                           32
+                                                                                           31))
+                                                                                     (App
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "cd"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 701
+                                                                                                 32
+                                                                                                 17)
+                                                                                              (Loc
+                                                                                                 705
+                                                                                                 32
+                                                                                                 21))
+                                                                                           (App
+                                                                                              (Solved
+                                                                                                 (TVar
+                                                                                                    (TV
+                                                                                                       "bu"))
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       701
+                                                                                                       32
+                                                                                                       17)
+                                                                                                    (Loc
+                                                                                                       702
+                                                                                                       32
+                                                                                                       18))
+                                                                                                 (Var
+                                                                                                    "f"))
+                                                                                              (Solved
+                                                                                                 (TVar
+                                                                                                    (TV
+                                                                                                       "ca"))
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       703
+                                                                                                       32
+                                                                                                       19)
+                                                                                                    (Loc
+                                                                                                       704
+                                                                                                       32
+                                                                                                       20))
+                                                                                                 (Var
+                                                                                                    "x"))
+                                                                                              True))
+                                                                                        (Solved
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bw"))
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 706
+                                                                                                 32
+                                                                                                 22)
+                                                                                              (Loc
+                                                                                                 709
+                                                                                                 32
+                                                                                                 25))
+                                                                                           (Var
+                                                                                              "bad"))
+                                                                                        False))
+                                                                                  (Solved
+                                                                                     (TVar
+                                                                                        (TV "bx"))
+                                                                                     (Area
+                                                                                        (Loc
+                                                                                           711
+                                                                                           32
+                                                                                           27)
+                                                                                        (Loc
+                                                                                           715
+                                                                                           32
+                                                                                           31))
+                                                                                     (Var "good"))
+                                                                                  True))))
+                                                                      False))
+                                                                (Solved
+                                                                   (TVar (TV "bx"))
+                                                                   (Area
+                                                                      (Loc 719 32 35)
+                                                                      (Loc 723 32 39))
+                                                                   (Var "good"))
+                                                                True))))))))))))))
+                      (TRArr
+                         (TRArr
+                            (TRSingle "e") (TRComp "Wish" [ TRSingle "f" , TRSingle "b" ]))
+                         (TRArr
+                            (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ])
+                            (TRComp "Wish" [ TRSingle "f" , TRSingle "b" ]))))
+               , Solved
+                   (TArr
+                      (TArr (TVar (TV "cf")) (TVar (TV "cg")))
+                      (TArr
+                         (TArr (TVar (TV "ce")) (TVar (TV "ch")))
+                         (TArr
+                            (TArr
+                               (TArr (TVar (TV "cf")) (TVar (TV "cg")))
+                               (TArr (TArr (TVar (TV "ce")) (TVar (TV "ch"))) (TVar (TV "ci"))))
+                            (TVar (TV "ci")))))
+                   (Area (Loc 732 36 1) (Loc 838 39 1))
+                   (TypedExp
+                      (Solved
+                         (TArr
+                            (TArr (TVar (TV "cf")) (TVar (TV "cg")))
+                            (TArr
+                               (TArr (TVar (TV "ce")) (TVar (TV "ch")))
+                               (TArr
+                                  (TArr
+                                     (TArr (TVar (TV "cf")) (TVar (TV "cg")))
+                                     (TArr
+                                        (TArr (TVar (TV "ce")) (TVar (TV "ch"))) (TVar (TV "ci"))))
+                                  (TVar (TV "ci")))))
+                         (Area (Loc 732 36 1) (Loc 739 36 8))
+                         (Export
+                            (Solved
+                               (TArr
+                                  (TVar (TV "cj"))
+                                  (TArr
+                                     (TVar (TV "ck"))
+                                     (TArr
+                                        (TArr
+                                           (TVar (TV "cj"))
+                                           (TArr (TVar (TV "ck")) (TVar (TV "cm"))))
+                                        (TVar (TV "cm")))))
+                               (Area (Loc 739 36 8) (Loc 742 36 11))
+                               (Assignment
+                                  "fulfill"
+                                  (Solved
+                                     (TArr
+                                        (TVar (TV "cj"))
+                                        (TArr
+                                           (TVar (TV "ck"))
+                                           (TArr
+                                              (TArr
+                                                 (TVar (TV "cj"))
+                                                 (TArr (TVar (TV "ck")) (TVar (TV "cm"))))
+                                              (TVar (TV "cm")))))
+                                     (Area (Loc 798 37 18) (Loc 838 39 1))
+                                     (Abs
+                                        "bad"
+                                        (Solved
+                                           (TArr
+                                              (TVar (TV "ck"))
+                                              (TArr
+                                                 (TArr
+                                                    (TVar (TV "cj"))
+                                                    (TArr (TVar (TV "ck")) (TVar (TV "cm"))))
+                                                 (TVar (TV "cm"))))
+                                           (Area (Loc 798 37 18) (Loc 838 39 1))
+                                           (Abs
+                                              "good"
+                                              (Solved
+                                                 (TArr
+                                                    (TArr
+                                                       (TVar (TV "cj"))
+                                                       (TArr (TVar (TV "ck")) (TVar (TV "cm"))))
+                                                    (TVar (TV "cm")))
+                                                 (Area (Loc 798 37 18) (Loc 838 39 1))
+                                                 (Abs
+                                                    "run"
+                                                    (Solved
+                                                       (TVar (TV "cm"))
+                                                       (Area (Loc 831 38 12) (Loc 835 38 16))
+                                                       (App
+                                                          (Solved
+                                                             (TVar (TV "cn"))
+                                                             (Area (Loc 831 38 12) (Loc 835 38 16))
+                                                             (App
+                                                                (Solved
+                                                                   (TVar (TV "cl"))
+                                                                   (Area
+                                                                      (Loc 822 38 3) (Loc 825 38 6))
+                                                                   (Var "run"))
+                                                                (Solved
+                                                                   (TVar (TV "cj"))
+                                                                   (Area
+                                                                      (Loc 826 38 7)
+                                                                      (Loc 829 38 10))
+                                                                   (Var "bad"))
+                                                                False))
+                                                          (Solved
+                                                             (TVar (TV "ck"))
+                                                             (Area (Loc 831 38 12) (Loc 835 38 16))
+                                                             (Var "good"))
+                                                          True))))))))))))
+                      (TRArr
+                         (TRArr (TRSingle "e") (TRSingle "m"))
+                         (TRArr
+                            (TRArr (TRSingle "a") (TRSingle "n"))
+                            (TRArr
+                               (TRComp "Wish" [ TRSingle "e" , TRSingle "a" ]) (TRSingle "o")))))
+               ]
+           , atypedecls =
+               [ Alias
+                   { aliasname = "Wish"
+                   , aliasparams = [ "e" , "a" ]
+                   , aliastype =
+                       TRArr
+                         (TRArr (TRSingle "e") (TRSingle "m"))
+                         (TRArr (TRArr (TRSingle "a") (TRSingle "n")) (TRSingle "o"))
+                   , aliasexported = True
+                   }
+               ]
+           , apath = Just "./ModuleA"
+           }
+       )
+     , ( "./ModuleB"
+       , AST
+           { aimports = [ DefaultImport "W" "./ModuleA" "./ModuleA" ]
+           , aexps =
+               [ Solved
+                   (TVar (TV "co"))
+                   (Area (Loc 26 2 1) (Loc 27 2 2))
+                   (App
+                      (Solved
+                         (TArr
+                            (TArr
+                               (TArr
+                                  (TArr (TVar (TV "ef")) (TVar (TV "eg")))
+                                  (TArr (TArr (TCon CNum) (TVar (TV "eh"))) (TVar (TV "ei"))))
+                               (TVar (TV "cr")))
+                            (TVar (TV "cr")))
+                         (Area (Loc 26 2 1) (Loc 27 2 2))
+                         (App
+                            (Solved
+                               (TArr
+                                  (TVar (TV "cq"))
+                                  (TArr (TArr (TVar (TV "cq")) (TVar (TV "cr"))) (TVar (TV "cr"))))
+                               (Area (Loc 95 4 35) (Loc 100 5 4))
+                               (Var "|>"))
+                            (Solved
+                               (TArr
+                                  (TArr (TVar (TV "ef")) (TVar (TV "eg")))
+                                  (TArr (TArr (TCon CNum) (TVar (TV "eh"))) (TVar (TV "ei"))))
+                               (Area (Loc 26 2 1) (Loc 27 2 2))
+                               (App
+                                  (Solved
+                                     (TArr
+                                        (TArr
+                                           (TArr
+                                              (TArr (TVar (TV "dl")) (TVar (TV "dm")))
+                                              (TArr
+                                                 (TArr (TCon CNum) (TVar (TV "dn")))
+                                                 (TVar (TV "do"))))
+                                           (TVar (TV "cv")))
+                                        (TVar (TV "cv")))
+                                     (Area (Loc 26 2 1) (Loc 27 2 2))
+                                     (App
+                                        (Solved
+                                           (TArr
+                                              (TVar (TV "cu"))
+                                              (TArr
+                                                 (TArr (TVar (TV "cu")) (TVar (TV "cv")))
+                                                 (TVar (TV "cv"))))
+                                           (Area (Loc 60 3 27) (Loc 65 4 4))
+                                           (Var "|>"))
+                                        (Solved
+                                           (TArr
+                                              (TArr (TVar (TV "dl")) (TVar (TV "dm")))
+                                              (TArr
+                                                 (TArr (TCon CNum) (TVar (TV "dn")))
+                                                 (TVar (TV "do"))))
+                                           (Area (Loc 26 2 1) (Loc 27 2 2))
+                                           (App
+                                              (Solved
+                                                 (TArr
+                                                    (TArr
+                                                       (TArr
+                                                          (TArr (TVar (TV "dd")) (TVar (TV "de")))
+                                                          (TArr
+                                                             (TArr (TCon CNum) (TVar (TV "df")))
+                                                             (TVar (TV "dg"))))
+                                                       (TVar (TV "cz")))
+                                                    (TVar (TV "cz")))
+                                                 (Area (Loc 26 2 1) (Loc 27 2 2))
+                                                 (App
+                                                    (Solved
+                                                       (TArr
+                                                          (TVar (TV "cy"))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "cy")) (TVar (TV "cz")))
+                                                             (TVar (TV "cz"))))
+                                                       (Area (Loc 33 2 8) (Loc 38 3 4))
+                                                       (Var "|>"))
+                                                    (Solved
+                                                       (TArr
+                                                          (TArr (TVar (TV "dd")) (TVar (TV "de")))
+                                                          (TArr
+                                                             (TArr (TCon CNum) (TVar (TV "df")))
+                                                             (TVar (TV "dg"))))
+                                                       (Area (Loc 26 2 1) (Loc 27 2 2))
+                                                       (App
+                                                          (Solved
+                                                             (TArr
+                                                                (TVar (TV "dc"))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "dd"))
+                                                                      (TVar (TV "de")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "dc"))
+                                                                         (TVar (TV "df")))
+                                                                      (TVar (TV "dg")))))
+                                                             (Area (Loc 26 2 1) (Loc 27 2 2))
+                                                             (FieldAccess
+                                                                (Solved
+                                                                   (TRecord
+                                                                      (fromList
+                                                                         [ ( "bad"
+                                                                           , TArr
+                                                                               (TVar (TV "k"))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "k"))
+                                                                                     (TVar
+                                                                                        (TV "l")))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV "j"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "m")))
+                                                                                     (TVar
+                                                                                        (TV "n"))))
+                                                                           )
+                                                                         , ( "chain"
+                                                                           , TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "aw"))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "az"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ba")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "ax"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bb")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bc")))))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ay"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ba")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "aw"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bb")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bc"))))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "az"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ba")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "ax"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bb")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bc")))))
+                                                                           )
+                                                                         , ( "chainRej"
+                                                                           , TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bp"))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bq"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "br")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bo"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bs")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bt")))))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bp"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "br")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bn"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bs")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bt"))))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bq"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "br")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bo"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "bs")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "bt")))))
+                                                                           )
+                                                                         , ( "fulfill"
+                                                                           , TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "cf"))
+                                                                                  (TVar (TV "cg")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ce"))
+                                                                                     (TVar
+                                                                                        (TV "ch")))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "cf"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "cg")))
+                                                                                        (TArr
+                                                                                           (TArr
+                                                                                              (TVar
+                                                                                                 (TV
+                                                                                                    "ce"))
+                                                                                              (TVar
+                                                                                                 (TV
+                                                                                                    "ch")))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "ci"))))
+                                                                                     (TVar
+                                                                                        (TV "ci"))))
+                                                                           )
+                                                                         , ( "map"
+                                                                           , TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "s"))
+                                                                                  (TVar (TV "t")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV "u"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "v")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "s"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "w")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "x"))))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV "u"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "v")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "t"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "w")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "x")))))
+                                                                           )
+                                                                         , ( "mapRej"
+                                                                           , TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "ai"))
+                                                                                  (TVar (TV "aj")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ai"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ak")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "ah"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "al")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "am"))))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "aj"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ak")))
+                                                                                     (TArr
+                                                                                        (TArr
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "ah"))
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "al")))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "am")))))
+                                                                           )
+                                                                         , ( "of"
+                                                                           , TArr
+                                                                               (TVar (TV "a"))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "b"))
+                                                                                     (TVar
+                                                                                        (TV "c")))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV "a"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "d")))
+                                                                                     (TVar
+                                                                                        (TV "e"))))
+                                                                           )
+                                                                         ])
+                                                                      False)
+                                                                   (Area (Loc 26 2 1) (Loc 27 2 2))
+                                                                   (Var "W"))
+                                                                (Solved
+                                                                   (TArr
+                                                                      (TRecord
+                                                                         (fromList
+                                                                            [ ( "of"
+                                                                              , TVar (TV "db")
+                                                                              )
+                                                                            ])
+                                                                         True)
+                                                                      (TVar (TV "db")))
+                                                                   (Area (Loc 28 2 3) (Loc 30 2 5))
+                                                                   (Var ".of"))))
+                                                          (Solved
+                                                             (TCon CNum)
+                                                             (Area (Loc 31 2 6) (Loc 32 2 7))
+                                                             (LNum "3"))
+                                                          True))
+                                                    False))
+                                              (Solved
+                                                 (TArr
+                                                    (TArr
+                                                       (TArr (TVar (TV "dl")) (TVar (TV "dm")))
+                                                       (TArr
+                                                          (TArr (TCon CNum) (TVar (TV "dn")))
+                                                          (TVar (TV "do"))))
+                                                    (TArr
+                                                       (TArr (TVar (TV "dl")) (TVar (TV "dm")))
+                                                       (TArr
+                                                          (TArr (TCon CNum) (TVar (TV "dn")))
+                                                          (TVar (TV "do")))))
+                                                 (Area (Loc 39 3 6) (Loc 40 3 7))
+                                                 (App
+                                                    (Solved
+                                                       (TArr
+                                                          (TArr (TVar (TV "dj")) (TVar (TV "dk")))
+                                                          (TArr
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "dl"))
+                                                                   (TVar (TV "dm")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "dj"))
+                                                                      (TVar (TV "dn")))
+                                                                   (TVar (TV "do"))))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "dl"))
+                                                                   (TVar (TV "dm")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "dk"))
+                                                                      (TVar (TV "dn")))
+                                                                   (TVar (TV "do"))))))
+                                                       (Area (Loc 39 3 6) (Loc 40 3 7))
+                                                       (FieldAccess
+                                                          (Solved
+                                                             (TRecord
+                                                                (fromList
+                                                                   [ ( "bad"
+                                                                     , TArr
+                                                                         (TVar (TV "k"))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "k"))
+                                                                               (TVar (TV "l")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "j"))
+                                                                                  (TVar (TV "m")))
+                                                                               (TVar (TV "n"))))
+                                                                     )
+                                                                   , ( "chain"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "aw"))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "az"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ax"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar
+                                                                                     (TV "bc")))))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "ay"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "aw"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar (TV "bc"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "az"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ax"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar
+                                                                                     (TV "bc")))))
+                                                                     )
+                                                                   , ( "chainRej"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "bp"))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bq"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bo"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar
+                                                                                     (TV "bt")))))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bp"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bn"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar (TV "bt"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bq"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bo"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar
+                                                                                     (TV "bt")))))
+                                                                     )
+                                                                   , ( "fulfill"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "cf"))
+                                                                            (TVar (TV "cg")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "ce"))
+                                                                               (TVar (TV "ch")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "cf"))
+                                                                                     (TVar
+                                                                                        (TV "cg")))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ce"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ch")))
+                                                                                     (TVar
+                                                                                        (TV "ci"))))
+                                                                               (TVar (TV "ci"))))
+                                                                     )
+                                                                   , ( "map"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "s"))
+                                                                            (TVar (TV "t")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "u"))
+                                                                                  (TVar (TV "v")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "s"))
+                                                                                     (TVar
+                                                                                        (TV "w")))
+                                                                                  (TVar (TV "x"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "u"))
+                                                                                  (TVar (TV "v")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "t"))
+                                                                                     (TVar
+                                                                                        (TV "w")))
+                                                                                  (TVar (TV "x")))))
+                                                                     )
+                                                                   , ( "mapRej"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "ai"))
+                                                                            (TVar (TV "aj")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "ai"))
+                                                                                  (TVar (TV "ak")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ah"))
+                                                                                     (TVar
+                                                                                        (TV "al")))
+                                                                                  (TVar (TV "am"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "aj"))
+                                                                                  (TVar (TV "ak")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ah"))
+                                                                                     (TVar
+                                                                                        (TV "al")))
+                                                                                  (TVar
+                                                                                     (TV "am")))))
+                                                                     )
+                                                                   , ( "of"
+                                                                     , TArr
+                                                                         (TVar (TV "a"))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "b"))
+                                                                               (TVar (TV "c")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "a"))
+                                                                                  (TVar (TV "d")))
+                                                                               (TVar (TV "e"))))
+                                                                     )
+                                                                   ])
+                                                                False)
+                                                             (Area (Loc 39 3 6) (Loc 40 3 7))
+                                                             (Var "W"))
+                                                          (Solved
+                                                             (TArr
+                                                                (TRecord
+                                                                   (fromList
+                                                                      [ ( "map" , TVar (TV "di") )
+                                                                      ])
+                                                                   True)
+                                                                (TVar (TV "di")))
+                                                             (Area (Loc 41 3 8) (Loc 44 3 11))
+                                                             (Var ".map"))))
+                                                    (Solved
+                                                       (TArr (TCon CNum) (TCon CNum))
+                                                       (Area (Loc 45 3 12) (Loc 59 3 26))
+                                                       (Abs
+                                                          "x"
+                                                          (Solved
+                                                             (TCon CNum)
+                                                             (Area (Loc 53 3 20) (Loc 54 3 21))
+                                                             (App
+                                                                (Solved
+                                                                   (TArr (TCon CNum) (TCon CNum))
+                                                                   (Area
+                                                                      (Loc 53 3 20) (Loc 54 3 21))
+                                                                   (App
+                                                                      (Solved
+                                                                         (TArr
+                                                                            (TCon CNum)
+                                                                            (TArr
+                                                                               (TCon CNum)
+                                                                               (TCon CNum)))
+                                                                         (Area
+                                                                            (Loc 54 3 21)
+                                                                            (Loc 56 3 23))
+                                                                         (Var "+"))
+                                                                      (Solved
+                                                                         (TCon CNum)
+                                                                         (Area
+                                                                            (Loc 53 3 20)
+                                                                            (Loc 54 3 21))
+                                                                         (Var "x"))
+                                                                      False))
+                                                                (Solved
+                                                                   (TCon CNum)
+                                                                   (Area
+                                                                      (Loc 57 3 24) (Loc 58 3 25))
+                                                                   (LNum "3"))
+                                                                True))))
+                                                    True))
+                                              True))
+                                        False))
+                                  (Solved
+                                     (TArr
+                                        (TArr
+                                           (TArr (TVar (TV "dw")) (TVar (TV "eg")))
+                                           (TArr
+                                              (TArr (TCon CNum) (TVar (TV "eh"))) (TVar (TV "ei"))))
+                                        (TArr
+                                           (TArr (TVar (TV "ef")) (TVar (TV "eg")))
+                                           (TArr
+                                              (TArr (TCon CNum) (TVar (TV "eh")))
+                                              (TVar (TV "ei")))))
+                                     (Area (Loc 66 4 6) (Loc 67 4 7))
+                                     (App
+                                        (Solved
+                                           (TArr
+                                              (TArr
+                                                 (TVar (TV "du"))
+                                                 (TArr
+                                                    (TArr (TVar (TV "dx")) (TVar (TV "dy")))
+                                                    (TArr
+                                                       (TArr (TVar (TV "dv")) (TVar (TV "dz")))
+                                                       (TVar (TV "ea")))))
+                                              (TArr
+                                                 (TArr
+                                                    (TArr (TVar (TV "dw")) (TVar (TV "dy")))
+                                                    (TArr
+                                                       (TArr (TVar (TV "du")) (TVar (TV "dz")))
+                                                       (TVar (TV "ea"))))
+                                                 (TArr
+                                                    (TArr (TVar (TV "dx")) (TVar (TV "dy")))
+                                                    (TArr
+                                                       (TArr (TVar (TV "dv")) (TVar (TV "dz")))
+                                                       (TVar (TV "ea"))))))
+                                           (Area (Loc 66 4 6) (Loc 67 4 7))
+                                           (FieldAccess
+                                              (Solved
+                                                 (TRecord
+                                                    (fromList
+                                                       [ ( "bad"
+                                                         , TArr
+                                                             (TVar (TV "k"))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "k")) (TVar (TV "l")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "j"))
+                                                                      (TVar (TV "m")))
+                                                                   (TVar (TV "n"))))
+                                                         )
+                                                       , ( "chain"
+                                                         , TArr
+                                                             (TArr
+                                                                (TVar (TV "aw"))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "az"))
+                                                                      (TVar (TV "ba")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "ax"))
+                                                                         (TVar (TV "bb")))
+                                                                      (TVar (TV "bc")))))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "ay"))
+                                                                      (TVar (TV "ba")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "aw"))
+                                                                         (TVar (TV "bb")))
+                                                                      (TVar (TV "bc"))))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "az"))
+                                                                      (TVar (TV "ba")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "ax"))
+                                                                         (TVar (TV "bb")))
+                                                                      (TVar (TV "bc")))))
+                                                         )
+                                                       , ( "chainRej"
+                                                         , TArr
+                                                             (TArr
+                                                                (TVar (TV "bp"))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "bq"))
+                                                                      (TVar (TV "br")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "bo"))
+                                                                         (TVar (TV "bs")))
+                                                                      (TVar (TV "bt")))))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "bp"))
+                                                                      (TVar (TV "br")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "bn"))
+                                                                         (TVar (TV "bs")))
+                                                                      (TVar (TV "bt"))))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "bq"))
+                                                                      (TVar (TV "br")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "bo"))
+                                                                         (TVar (TV "bs")))
+                                                                      (TVar (TV "bt")))))
+                                                         )
+                                                       , ( "fulfill"
+                                                         , TArr
+                                                             (TArr
+                                                                (TVar (TV "cf")) (TVar (TV "cg")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ce"))
+                                                                   (TVar (TV "ch")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "cf"))
+                                                                         (TVar (TV "cg")))
+                                                                      (TArr
+                                                                         (TArr
+                                                                            (TVar (TV "ce"))
+                                                                            (TVar (TV "ch")))
+                                                                         (TVar (TV "ci"))))
+                                                                   (TVar (TV "ci"))))
+                                                         )
+                                                       , ( "map"
+                                                         , TArr
+                                                             (TArr (TVar (TV "s")) (TVar (TV "t")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "u"))
+                                                                      (TVar (TV "v")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "s"))
+                                                                         (TVar (TV "w")))
+                                                                      (TVar (TV "x"))))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "u"))
+                                                                      (TVar (TV "v")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "t"))
+                                                                         (TVar (TV "w")))
+                                                                      (TVar (TV "x")))))
+                                                         )
+                                                       , ( "mapRej"
+                                                         , TArr
+                                                             (TArr
+                                                                (TVar (TV "ai")) (TVar (TV "aj")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "ai"))
+                                                                      (TVar (TV "ak")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "ah"))
+                                                                         (TVar (TV "al")))
+                                                                      (TVar (TV "am"))))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "aj"))
+                                                                      (TVar (TV "ak")))
+                                                                   (TArr
+                                                                      (TArr
+                                                                         (TVar (TV "ah"))
+                                                                         (TVar (TV "al")))
+                                                                      (TVar (TV "am")))))
+                                                         )
+                                                       , ( "of"
+                                                         , TArr
+                                                             (TVar (TV "a"))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "b")) (TVar (TV "c")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "a"))
+                                                                      (TVar (TV "d")))
+                                                                   (TVar (TV "e"))))
+                                                         )
+                                                       ])
+                                                    False)
+                                                 (Area (Loc 66 4 6) (Loc 67 4 7))
+                                                 (Var "W"))
+                                              (Solved
+                                                 (TArr
+                                                    (TRecord
+                                                       (fromList [ ( "chain" , TVar (TV "dt") ) ])
+                                                       True)
+                                                    (TVar (TV "dt")))
+                                                 (Area (Loc 68 4 8) (Loc 73 4 13))
+                                                 (Var ".chain"))))
+                                        (Solved
+                                           (TArr
+                                              (TCon CNum)
+                                              (TArr
+                                                 (TArr (TVar (TV "ef")) (TVar (TV "eg")))
+                                                 (TArr
+                                                    (TArr (TCon CNum) (TVar (TV "eh")))
+                                                    (TVar (TV "ei")))))
+                                           (Area (Loc 74 4 14) (Loc 94 4 34))
+                                           (Abs
+                                              "x"
+                                              (Solved
+                                                 (TArr
+                                                    (TArr (TVar (TV "ef")) (TVar (TV "eg")))
+                                                    (TArr
+                                                       (TArr (TCon CNum) (TVar (TV "eh")))
+                                                       (TVar (TV "ei"))))
+                                                 (Area (Loc 82 4 22) (Loc 83 4 23))
+                                                 (App
+                                                    (Solved
+                                                       (TArr
+                                                          (TVar (TV "ee"))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "ef")) (TVar (TV "eg")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ee"))
+                                                                   (TVar (TV "eh")))
+                                                                (TVar (TV "ei")))))
+                                                       (Area (Loc 82 4 22) (Loc 83 4 23))
+                                                       (FieldAccess
+                                                          (Solved
+                                                             (TRecord
+                                                                (fromList
+                                                                   [ ( "bad"
+                                                                     , TArr
+                                                                         (TVar (TV "k"))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "k"))
+                                                                               (TVar (TV "l")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "j"))
+                                                                                  (TVar (TV "m")))
+                                                                               (TVar (TV "n"))))
+                                                                     )
+                                                                   , ( "chain"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "aw"))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "az"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ax"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar
+                                                                                     (TV "bc")))))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "ay"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "aw"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar (TV "bc"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "az"))
+                                                                                  (TVar (TV "ba")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ax"))
+                                                                                     (TVar
+                                                                                        (TV "bb")))
+                                                                                  (TVar
+                                                                                     (TV "bc")))))
+                                                                     )
+                                                                   , ( "chainRej"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "bp"))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bq"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bo"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar
+                                                                                     (TV "bt")))))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bp"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bn"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar (TV "bt"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "bq"))
+                                                                                  (TVar (TV "br")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "bo"))
+                                                                                     (TVar
+                                                                                        (TV "bs")))
+                                                                                  (TVar
+                                                                                     (TV "bt")))))
+                                                                     )
+                                                                   , ( "fulfill"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "cf"))
+                                                                            (TVar (TV "cg")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "ce"))
+                                                                               (TVar (TV "ch")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "cf"))
+                                                                                     (TVar
+                                                                                        (TV "cg")))
+                                                                                  (TArr
+                                                                                     (TArr
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ce"))
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "ch")))
+                                                                                     (TVar
+                                                                                        (TV "ci"))))
+                                                                               (TVar (TV "ci"))))
+                                                                     )
+                                                                   , ( "map"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "s"))
+                                                                            (TVar (TV "t")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "u"))
+                                                                                  (TVar (TV "v")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "s"))
+                                                                                     (TVar
+                                                                                        (TV "w")))
+                                                                                  (TVar (TV "x"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "u"))
+                                                                                  (TVar (TV "v")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar (TV "t"))
+                                                                                     (TVar
+                                                                                        (TV "w")))
+                                                                                  (TVar (TV "x")))))
+                                                                     )
+                                                                   , ( "mapRej"
+                                                                     , TArr
+                                                                         (TArr
+                                                                            (TVar (TV "ai"))
+                                                                            (TVar (TV "aj")))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "ai"))
+                                                                                  (TVar (TV "ak")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ah"))
+                                                                                     (TVar
+                                                                                        (TV "al")))
+                                                                                  (TVar (TV "am"))))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "aj"))
+                                                                                  (TVar (TV "ak")))
+                                                                               (TArr
+                                                                                  (TArr
+                                                                                     (TVar
+                                                                                        (TV "ah"))
+                                                                                     (TVar
+                                                                                        (TV "al")))
+                                                                                  (TVar
+                                                                                     (TV "am")))))
+                                                                     )
+                                                                   , ( "of"
+                                                                     , TArr
+                                                                         (TVar (TV "a"))
+                                                                         (TArr
+                                                                            (TArr
+                                                                               (TVar (TV "b"))
+                                                                               (TVar (TV "c")))
+                                                                            (TArr
+                                                                               (TArr
+                                                                                  (TVar (TV "a"))
+                                                                                  (TVar (TV "d")))
+                                                                               (TVar (TV "e"))))
+                                                                     )
+                                                                   ])
+                                                                False)
+                                                             (Area (Loc 82 4 22) (Loc 83 4 23))
+                                                             (Var "W"))
+                                                          (Solved
+                                                             (TArr
+                                                                (TRecord
+                                                                   (fromList
+                                                                      [ ( "of" , TVar (TV "ed") ) ])
+                                                                   True)
+                                                                (TVar (TV "ed")))
+                                                             (Area (Loc 84 4 24) (Loc 86 4 26))
+                                                             (Var ".of"))))
+                                                    (Solved
+                                                       (TCon CNum)
+                                                       (Area (Loc 87 4 27) (Loc 88 4 28))
+                                                       (App
+                                                          (Solved
+                                                             (TArr (TCon CNum) (TCon CNum))
+                                                             (Area (Loc 87 4 27) (Loc 88 4 28))
+                                                             (App
+                                                                (Solved
+                                                                   (TArr
+                                                                      (TCon CNum)
+                                                                      (TArr
+                                                                         (TCon CNum) (TCon CNum)))
+                                                                   (Area
+                                                                      (Loc 88 4 28) (Loc 90 4 30))
+                                                                   (Var "*"))
+                                                                (Solved
+                                                                   (TCon CNum)
+                                                                   (Area
+                                                                      (Loc 87 4 27) (Loc 88 4 28))
+                                                                   (Var "x"))
+                                                                False))
+                                                          (Solved
+                                                             (TCon CNum)
+                                                             (Area (Loc 91 4 31) (Loc 92 4 32))
+                                                             (LNum "3"))
+                                                          True))
+                                                    True))))
+                                        True))
+                                  True))
+                            False))
+                      (Solved
+                         (TArr
+                            (TArr
+                               (TArr (TVar (TV "et")) (TVar (TV "et")))
+                               (TArr (TArr (TCon CNum) (TCon CNum)) (TVar (TV "co"))))
+                            (TVar (TV "co")))
+                         (Area (Loc 123 5 28) (Loc 133 5 38))
+                         (App
+                            (Solved
+                               (TArr
+                                  (TArr (TVar (TV "eo")) (TVar (TV "er")))
+                                  (TArr
+                                     (TArr
+                                        (TArr (TVar (TV "et")) (TVar (TV "et")))
+                                        (TArr
+                                           (TArr (TVar (TV "eo")) (TVar (TV "er")))
+                                           (TVar (TV "es"))))
+                                     (TVar (TV "es"))))
+                               (Area (Loc 123 5 28) (Loc 133 5 38))
+                               (App
+                                  (Solved
+                                     (TArr
+                                        (TArr (TVar (TV "ep")) (TVar (TV "eq")))
+                                        (TArr
+                                           (TArr (TVar (TV "eo")) (TVar (TV "er")))
+                                           (TArr
+                                              (TArr
+                                                 (TArr (TVar (TV "ep")) (TVar (TV "eq")))
+                                                 (TArr
+                                                    (TArr (TVar (TV "eo")) (TVar (TV "er")))
+                                                    (TVar (TV "es"))))
+                                              (TVar (TV "es")))))
+                                     (Area (Loc 101 5 6) (Loc 102 5 7))
+                                     (FieldAccess
+                                        (Solved
+                                           (TRecord
+                                              (fromList
+                                                 [ ( "bad"
+                                                   , TArr
+                                                       (TVar (TV "k"))
+                                                       (TArr
+                                                          (TArr (TVar (TV "k")) (TVar (TV "l")))
+                                                          (TArr
+                                                             (TArr (TVar (TV "j")) (TVar (TV "m")))
+                                                             (TVar (TV "n"))))
+                                                   )
+                                                 , ( "chain"
+                                                   , TArr
+                                                       (TArr
+                                                          (TVar (TV "aw"))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "az")) (TVar (TV "ba")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ax"))
+                                                                   (TVar (TV "bb")))
+                                                                (TVar (TV "bc")))))
+                                                       (TArr
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "ay")) (TVar (TV "ba")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "aw"))
+                                                                   (TVar (TV "bb")))
+                                                                (TVar (TV "bc"))))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "az")) (TVar (TV "ba")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ax"))
+                                                                   (TVar (TV "bb")))
+                                                                (TVar (TV "bc")))))
+                                                   )
+                                                 , ( "chainRej"
+                                                   , TArr
+                                                       (TArr
+                                                          (TVar (TV "bp"))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "bq")) (TVar (TV "br")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "bo"))
+                                                                   (TVar (TV "bs")))
+                                                                (TVar (TV "bt")))))
+                                                       (TArr
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "bp")) (TVar (TV "br")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "bn"))
+                                                                   (TVar (TV "bs")))
+                                                                (TVar (TV "bt"))))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "bq")) (TVar (TV "br")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "bo"))
+                                                                   (TVar (TV "bs")))
+                                                                (TVar (TV "bt")))))
+                                                   )
+                                                 , ( "fulfill"
+                                                   , TArr
+                                                       (TArr (TVar (TV "cf")) (TVar (TV "cg")))
+                                                       (TArr
+                                                          (TArr (TVar (TV "ce")) (TVar (TV "ch")))
+                                                          (TArr
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "cf"))
+                                                                   (TVar (TV "cg")))
+                                                                (TArr
+                                                                   (TArr
+                                                                      (TVar (TV "ce"))
+                                                                      (TVar (TV "ch")))
+                                                                   (TVar (TV "ci"))))
+                                                             (TVar (TV "ci"))))
+                                                   )
+                                                 , ( "map"
+                                                   , TArr
+                                                       (TArr (TVar (TV "s")) (TVar (TV "t")))
+                                                       (TArr
+                                                          (TArr
+                                                             (TArr (TVar (TV "u")) (TVar (TV "v")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "s")) (TVar (TV "w")))
+                                                                (TVar (TV "x"))))
+                                                          (TArr
+                                                             (TArr (TVar (TV "u")) (TVar (TV "v")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "t")) (TVar (TV "w")))
+                                                                (TVar (TV "x")))))
+                                                   )
+                                                 , ( "mapRej"
+                                                   , TArr
+                                                       (TArr (TVar (TV "ai")) (TVar (TV "aj")))
+                                                       (TArr
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "ai")) (TVar (TV "ak")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ah"))
+                                                                   (TVar (TV "al")))
+                                                                (TVar (TV "am"))))
+                                                          (TArr
+                                                             (TArr
+                                                                (TVar (TV "aj")) (TVar (TV "ak")))
+                                                             (TArr
+                                                                (TArr
+                                                                   (TVar (TV "ah"))
+                                                                   (TVar (TV "al")))
+                                                                (TVar (TV "am")))))
+                                                   )
+                                                 , ( "of"
+                                                   , TArr
+                                                       (TVar (TV "a"))
+                                                       (TArr
+                                                          (TArr (TVar (TV "b")) (TVar (TV "c")))
+                                                          (TArr
+                                                             (TArr (TVar (TV "a")) (TVar (TV "d")))
+                                                             (TVar (TV "e"))))
+                                                   )
+                                                 ])
+                                              False)
+                                           (Area (Loc 101 5 6) (Loc 102 5 7))
+                                           (Var "W"))
+                                        (Solved
+                                           (TArr
+                                              (TRecord
+                                                 (fromList [ ( "fulfill" , TVar (TV "en") ) ]) True)
+                                              (TVar (TV "en")))
+                                           (Area (Loc 103 5 8) (Loc 110 5 15))
+                                           (Var ".fulfill"))))
+                                  (Solved
+                                     (TArr (TVar (TV "et")) (TVar (TV "et")))
+                                     (Area (Loc 111 5 16) (Loc 121 5 26))
+                                     (Abs
+                                        "a"
+                                        (Solved
+                                           (TVar (TV "et"))
+                                           (Area (Loc 119 5 24) (Loc 120 5 25))
+                                           (Var "a"))))
+                                  False))
+                            (Solved
+                               (TArr (TVar (TV "eu")) (TVar (TV "eu")))
+                               (Area (Loc 123 5 28) (Loc 133 5 38))
+                               (Abs
+                                  "a"
+                                  (Solved
+                                     (TVar (TV "eu"))
+                                     (Area (Loc 131 5 36) (Loc 132 5 37))
+                                     (Var "a"))))
+                            True))
+                      True)
+               ]
+           , atypedecls = []
+           , apath = Just "./ModuleB"
+           }
+       )
+     ])

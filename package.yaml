@@ -1,5 +1,5 @@
 name:                madlib
-version:             0.0.4
+version:             0.0.5
 github:              "open-sorcerers/madlib"
 license:             BSD3
 author:              "Arnaud Boeglin, Brekk Bockrath"
@@ -31,7 +31,6 @@ dependencies:
 - exceptions
 - either
 - filepath
-- monad-validate == 1.2.0.0
 - hspec
 - hspec-golden
 - text
@@ -42,6 +41,8 @@ dependencies:
 - MissingH
 - executable-path == 0.0.3.1
 - regex-tdfa
+- process == 1.6.8.0
+- ansi-wl-pprint == 0.6.9
 
 library:
   source-dirs: src

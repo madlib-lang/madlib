@@ -29,7 +29,7 @@ Right
                                                (Var "a"))
                                         ])))))))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleA"
            }
        )
@@ -63,9 +63,10 @@ Right
                                   (TVar (TV "c")))
                                (Area (Loc 28 2 3) (Loc 37 2 12))
                                (Var ".singleton"))))
-                      (Solved (TCon CNum) (Area (Loc 38 2 13) (Loc 39 2 14)) (LNum "3")))
+                      (Solved (TCon CNum) (Area (Loc 38 2 13) (Loc 39 2 14)) (LNum "3"))
+                      True)
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleB"
            }
        )

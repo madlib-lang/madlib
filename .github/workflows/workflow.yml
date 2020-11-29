@@ -11,10 +11,12 @@ jobs:
           cabal-version: "latest"
           enable-stack: true
           stack-version: "latest"
+      - run: sudo apt-get update -y
+      - run: sudo apt-get install -y lcov
       - run: stack install alex happy
       - run: stack install
-      - run: make test-coverage
-      - run: make coverage-lcov
+      - run: ./scripts/test coverage
+      - run: ./scripts/coverage
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:

@@ -35,11 +35,11 @@ Right
                                              (Solved
                                                 (TCon CNum)
                                                 (Area (Loc 45 2 22) (Loc 46 2 23))
-                                                (Var "a"))))
+                                                (Var "a"))
+                                             False))
                                        (Solved
-                                          (TCon CNum)
-                                          (Area (Loc 49 2 26) (Loc 50 2 27))
-                                          (LNum "1"))))))))))
+                                          (TCon CNum) (Area (Loc 49 2 26) (Loc 50 2 27)) (LNum "1"))
+                                       True))))))))
                (TRArr (TRSingle "Number") (TRSingle "Number")))
         , Solved
             (TCon CNum)
@@ -49,8 +49,9 @@ Right
                   (TArr (TCon CNum) (TCon CNum))
                   (Area (Loc 52 3 1) (Loc 55 3 4))
                   (Var "inc"))
-               (Solved (TCon CNum) (Area (Loc 56 3 5) (Loc 57 3 6)) (LNum "3")))
+               (Solved (TCon CNum) (Area (Loc 56 3 5) (Loc 57 3 6)) (LNum "3"))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

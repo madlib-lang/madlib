@@ -1,0 +1,9 @@
+#!/bin/bash
+
+stack run -- compile -i tools/test-runner/src/Main.mad -o ./tools/test-runner/dist/test-runner.js --bundle\
+&& stack run -- compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle;
+
+if [ $? -eq 0 ]
+then
+  echo "Compiler built!"
+fi

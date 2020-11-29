@@ -6,6 +6,9 @@ PATH_TARGETS="./pkg/targets"
 DARWIN_NAME="madlib-macos"
 LINUX_NAME="madlib-linux"
 
+TEST_RUNNER_TARGET="./tools/test-runner/dist/test-runner.js"
+PKG_INSTALLER_TARGET="./tools/package-installer/dist/package-installer.js"
+
 DARWIN_TAR_FILENAME="$DARWIN_NAME.tar.gz"
 LINUX_TAR_FILENAME="$LINUX_NAME.tar.gz"
 
@@ -19,18 +22,35 @@ mkdir $PATH_DARWIN_TARGET
 mkdir $PATH_LINUX_TARGET
 
 
-# build linux x64
-DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile.ubuntu" -o $PATH_LINUX_TARGET .
-tar -C $PATH_TARGETS -czvf $LINUX_TAR_FILENAME $LINUX_NAME
-mv $LINUX_TAR_FILENAME $PATH_TARGETS
-rm -r $PATH_LINUX_TARGET
 
-
+# --------------------------------------------------------------------------- #
 # build osx
+
 PATH_OSX_EXE="$(stack path --dist-dir)/build/madlib/madlib"
 
 stack build --jobs 1
+
+# build test-runner
+stack run -- compile -i tools/test-runner/src/Main.mad -o $TEST_RUNNER_TARGET -b
+# build package-installer
+stack run -- compile -i tools/package-installer/src/Main.mad -o $PKG_INSTALLER_TARGET -b
+
+cp $TEST_RUNNER_TARGET "$PATH_DARWIN_TARGET/"
+cp $PKG_INSTALLER_TARGET "$PATH_DARWIN_TARGET/"
 cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
 tar -C $PATH_TARGETS -czvf $DARWIN_TAR_FILENAME $DARWIN_NAME
 mv $DARWIN_TAR_FILENAME $PATH_TARGETS
 rm -r $PATH_DARWIN_TARGET
+
+
+
+
+# --------------------------------------------------------------------------- #
+# build linux x64
+
+DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile.ubuntu" -o $PATH_LINUX_TARGET .
+cp $TEST_RUNNER_TARGET "$PATH_LINUX_TARGET/"
+cp $PKG_INSTALLER_TARGET "$PATH_LINUX_TARGET/"
+tar -C $PATH_TARGETS -czvf $LINUX_TAR_FILENAME $LINUX_NAME
+mv $LINUX_TAR_FILENAME $PATH_TARGETS
+rm -r $PATH_LINUX_TARGET

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module AST.Source where
 
 import qualified Data.Map                      as M
@@ -9,7 +10,7 @@ data AST =
   AST
     { aimports   :: [Import]
     , aexps      :: [Exp]
-    , aadts      :: [ADT]
+    , atypedecls :: [TypeDecl]
     , apath      :: Maybe FilePath
     }
     deriving(Eq, Show)
@@ -22,13 +23,20 @@ data Import_
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data ADT =
-  ADT
-    { adtname :: Name
-    , adtparams :: [Name]
-    , adtconstructors :: [Constructor]
-    , adtexported :: Bool
-    }
+-- TODO: Rename TypeDecl
+data TypeDecl
+  = ADT
+      { adtname :: Name
+      , adtparams :: [Name]
+      , adtconstructors :: [Constructor]
+      , adtexported :: Bool
+      }
+  | Alias
+      { aliasname :: Name
+      , aliasparams :: [Name]
+      , aliastype :: Typing
+      , aliasexported :: Bool
+      }
     deriving(Eq, Show)
 
 data Constructor
@@ -85,7 +93,7 @@ data Exp_ = LNum String
           | LStr String
           | LBool String
           | Var Name
-          | App Exp Exp
+          | App Exp Exp Bool
           | Abs Name Exp
           | FieldAccess Exp Exp
           | Assignment Name Exp
@@ -114,4 +122,3 @@ getImportAbsolutePath imp = case imp of
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Meta _ _ (NamedImport   _ p _)) = (imp, p)
 getImportPath imp@(Meta _ _ (DefaultImport _ p _)) = (imp, p)
-

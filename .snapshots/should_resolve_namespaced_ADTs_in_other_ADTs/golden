@@ -4,7 +4,7 @@ Right
        , AST
            { aimports = []
            , aexps = []
-           , aadts =
+           , atypedecls =
                [ ADT
                    { adtname = "Maybe"
                    , adtparams = [ "a" ]
@@ -68,11 +68,11 @@ Right
                                            (Area (Loc 77 3 14) (Loc 81 3 18))
                                            (Var ".Just"))))
                                   (Solved
-                                     (TCon CString)
-                                     (Area (Loc 82 3 19) (Loc 85 3 22))
-                                     (LStr "3")))))))
+                                     (TCon CString) (Area (Loc 82 3 19) (Loc 85 3 22)) (LStr "3"))
+                                  True))
+                            True)))
                ]
-           , aadts =
+           , atypedecls =
                [ ADT
                    { adtname = "MyType"
                    , adtparams = []

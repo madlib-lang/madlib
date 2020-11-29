@@ -88,7 +88,8 @@ Right
                                             (Area (Loc 82 3 14) (Loc 83 3 15))
                                             (LNum "4"))
                                      ]))
-                           ]))))
+                           ]))
+                     False))
                (Solved
                   (TArr
                      (TComp "Prelude" "List" [ TComp "Prelude" "List" [ TCon CNum ] ])
@@ -137,12 +138,17 @@ Right
                                              (Solved
                                                 (TCon CNum)
                                                 (Area (Loc 107 4 22) (Loc 108 4 23))
-                                                (Var "x"))))
+                                                (Var "x"))
+                                             False))
                                        (Solved
                                           (TCon CNum)
                                           (Area (Loc 111 4 26) (Loc 112 4 27))
-                                          (LNum "2")))))))))))
+                                          (LNum "2"))
+                                       True))))
+                           True))
+                     True))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

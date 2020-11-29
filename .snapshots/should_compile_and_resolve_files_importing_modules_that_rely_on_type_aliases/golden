@@ -1,0 +1,89 @@
+// file: /root/project/prelude/__internal__/Wish.mad
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
+export const of = curryPowder((a, bad, good) => good(a));
+export const bad = curryPowder((e, bad, good) => bad(e));
+export const map = curryPowder((f, run, bad, good) => run(bad, curryPowder((x) => good(f(x)))));
+export const mapRej = curryPowder((f, run, bad, good) => run(curryPowder((x) => bad(f(x))), good));
+export const chain = curryPowder((f, run, bad, good) => run(bad, curryPowder((x) => f(x)(bad, good))));
+export const chainRej = curryPowder((f, run, bad, good) => run(curryPowder((x) => f(x)(bad, good)), good));
+export const fulfill = curryPowder((bad, good, run) => run(bad, good));
+export default { of, bad, map, mapRej, chain, chainRej, fulfill };
+// file: /root/project/src/Main.mad
+import W from "./.prelude/Wish.mjs";
+
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
+W.fulfill(curryPowder((a) => a), curryPowder((a) => a))(W.map(curryPowder((x) => x + `!`))(W.chain(curryPowder((x) => W.of(`finally a string`)))(W.chain(curryPowder((x) => W.of(x * 3)))(W.map(curryPowder((x) => x % 2))(W.of(3))))));

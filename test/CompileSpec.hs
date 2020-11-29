@@ -503,6 +503,87 @@ spec = do
         "should compile and resolve files importing prelude modules"
         actual
 
+    it
+        "should compile and resolve files importing modules that rely on type aliases"
+      $ do
+          let wishModule = unlines
+                [ "export alias Wish e a = (e -> m) -> (a -> n) -> o"
+                , ""
+                , "of :: a -> Wish e a"
+                , "export of = (a) => ((bad, good) => (good(a)))"
+                , ""
+                , "bad :: e -> Wish e a"
+                , "export bad = (e) => ((bad, good) => (bad(e)))"
+                , ""
+                , ""
+                , "map :: (a -> b) -> Wish e a -> Wish e b"
+                , "export map = (f, run) => ("
+                , "  (bad, good) => (run(bad, (x) => (good(f(x)))))"
+                , ")"
+                , ""
+                , "mapRej :: (e -> f) -> Wish e a -> Wish f a"
+                , "export mapRej = (f, run) => ("
+                , "  (bad, good) => ("
+                , "    run((x) => (bad(f(x))), good)"
+                , "  )"
+                , ")"
+                , ""
+                , "chain :: (a -> Wish f b) -> Wish e a -> Wish f b"
+                , "export chain = (f, run) => ("
+                , "  (bad, good) => ("
+                , "    run(bad, (x) => (f(x)(bad, good)))"
+                , "  )"
+                , ")"
+                , ""
+                , "chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b"
+                , "export chainRej = (f, run) => ("
+                , "  (bad, good) => ("
+                , "    run((x) => (f(x)(bad, good)), good)"
+                , "  )"
+                , ")"
+                , ""
+                , "fulfill :: (e -> m) -> (a -> n) -> Wish e a -> o"
+                , "export fulfill = (bad, good, run) => ("
+                , "  run(bad, good)"
+                , ")"
+                ]
+
+              main = unlines
+                [ "import W from \"Wish\""
+                , "W.of(3)"
+                , "  |> W.map((x) => (x % 2))"
+                , "  |> W.chain((x) => (W.of(x * 3)))"
+                , "  |> W.chain((x) => (W.of(`finally a string`)))"
+                , "  |> W.map((x) => (x ++ '!'))"
+                , "  |> W.fulfill((a) => (a), (a) => (a))"
+                ]
+
+              files = M.fromList
+                [ ("/root/project/prelude/__internal__/Wish.mad", wishModule)
+                , ("/root/project/src/Main.mad"                 , main)
+                ]
+
+              pathUtils = defaultPathUtils
+                { readFile           = makeReadFile files
+                , byteStringReadFile = makeByteStringReadFile files
+                , getExecutablePath  = return "/root/project/madlib"
+                }
+
+          let r = unsafePerformIO $ buildASTTable'
+                pathUtils
+                "/root/project/src/Main.mad"
+                Nothing
+                "/root/project/src/Main.mad"
+          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+          let actual = case (ast, r) of
+                (Right a, Right t) -> tableTester "/root/project/src" t a
+                (Left  e, _      ) -> ppShow e
+                (_      , Left e ) -> ppShow e
+
+          snapshotTest
+            "should compile and resolve files importing modules that rely on type aliases"
+            actual
+
 
     it "should compile and resolve imported packages that also rely on packages"
       $ do

@@ -10,29 +10,8 @@ import Maybe from "Maybe"
 import J from "Json"
 import E from "Either"
 import S from "System"
-import F from "Function"
+import String from "String"
 
-
-// W.of(3)
-//   |> W.chain((x) => (W.of(x - 1)))
-//   |> W.chain((x) => (W.bad("BAD")))
-//   |> W.map((x) => (x * 2))
-//   |> W.map(IO.log)
-//   |> W.mapRej((x) => (x == "OK"))
-//   |> W.fulfill(IO.log, IO.log)
-
-
-// L.filter((x) => (x == 2), [1, 2, 3, 4]) |> IO.log
-// L.reject((x) => (x == 2), [1, 2, 3, 4]) |> IO.log
-
-// Math.mod(3, 7) |> IO.log
-
-
-// FS.readFile("README.md")
-//   |> W.fulfill(IO.log, IO.log)
-
-
-// W.of(`{"dependencies": { "fluture": "https://github.com/fluture-js/Fluture/archive/master.zip" }}`)
 
 FS.readFile("madlib.json")
   |> W.map(J.parse(J.field("dependencies", J.map(J.string))))
@@ -59,5 +38,4 @@ FS.readFile("madlib.json")
           ))
         |> W.parallel
      ))
-  |> W.fulfill(IO.log, IO.log)
-
+  |> W.fulfill(IO.err, IO.log)

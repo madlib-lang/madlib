@@ -33,11 +33,13 @@ Right
                                               (Solved
                                                  (TCon CNum)
                                                  (Area (Loc 21 1 22) (Loc 22 1 23))
-                                                 (Var "a"))))
+                                                 (Var "a"))
+                                              False))
                                         (Solved
                                            (TCon CNum)
                                            (Area (Loc 25 1 26) (Loc 26 1 27))
-                                           (LNum "1")))))))))
+                                           (LNum "1"))
+                                        True)))))))
                , Solved
                    (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                    (Area (Loc 29 3 1) (Loc 32 3 4))
@@ -68,11 +70,11 @@ Right
                                               (Solved
                                                  (TCon CNum)
                                                  (Area (Loc 46 3 18) (Loc 47 3 19))
-                                                 (Var "a"))))
+                                                 (Var "a"))
+                                              False))
                                         (Solved
-                                           (TCon CNum)
-                                           (Area (Loc 50 3 22) (Loc 51 3 23))
-                                           (Var "b")))))))))
+                                           (TCon CNum) (Area (Loc 50 3 22) (Loc 51 3 23)) (Var "b"))
+                                        True)))))))
                , Solved
                    (TArr (TCon CNum) (TCon CNum))
                    (Area (Loc 53 4 1) (Loc 61 4 9))
@@ -86,10 +88,10 @@ Right
                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                                (Area (Loc 64 4 12) (Loc 67 4 15))
                                (Var "add"))
-                            (Solved
-                               (TCon CNum) (Area (Loc 68 4 16) (Loc 69 4 17)) (LNum "3")))))
+                            (Solved (TCon CNum) (Area (Loc 68 4 16) (Loc 69 4 17)) (LNum "3"))
+                            True)))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleA"
            }
        )
@@ -105,9 +107,10 @@ Right
                          (TArr (TCon CNum) (TCon CNum))
                          (Area (Loc 32 2 1) (Loc 35 2 4))
                          (Var "inc"))
-                      (Solved (TCon CNum) (Area (Loc 36 2 5) (Loc 37 2 6)) (LNum "3")))
+                      (Solved (TCon CNum) (Area (Loc 36 2 5) (Loc 37 2 6)) (LNum "3"))
+                      True)
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleB"
            }
        )

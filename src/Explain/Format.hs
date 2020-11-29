@@ -8,11 +8,13 @@ import qualified AST.Source                    as Src
 import           Infer.Type
 import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
+import           Text.Show.Pretty               ( ppShow )
 
 
 
 getModuleContent :: (FilePath -> IO String) -> Reason -> IO String
 getModuleContent rf (Reason _ modulePath _) = rf modulePath
+getModuleContent _  _                       = return ""
 
 
 format :: (FilePath -> IO String) -> InferError -> IO String
@@ -23,7 +25,7 @@ format rf (InferError err reason) = do
       -> do
         let beginning = case abs of
               -- TODO: Extend to other operators
-              Src.App (Meta _ _ (Src.Var "+")) _ ->
+              Src.App (Meta _ _ (Src.Var "+")) _ _ ->
                 "Error applying the operator +"
               Src.Var "+" -> "Error applying the operator +"
               _           -> "Error in function call"
@@ -262,6 +264,7 @@ format rf (InferError err reason) = do
         <> formatHighlightArea expArea
         <> "\n"
         <> message
+    _ -> return $ ppShow err
 
 
 -- computeLinesToShow : returns the first line and the last line to show

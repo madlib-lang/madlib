@@ -1,2 +1,8 @@
 log :: a -> a
 export log = (a) => (#- { console.log(a); return a; } -#)
+
+trace :: String -> a -> a
+export trace = (v, a) => (#- { console.log(v); return a; } -#)
+
+err :: a -> a
+export err = (e) => (#- { console.log(e); return e; } -#)

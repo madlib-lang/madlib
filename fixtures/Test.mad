@@ -1,0 +1,23 @@
+import T from "TestTools"
+import W from "Wish"
+
+add = (a, b) => (a + b)
+
+t1 = T.test("It should fail", (x) => (
+  T.assertEquals(add(1, 2), 4)
+))
+
+t2 = T.test("It should work", (x) => (
+  T.assertEquals(add(1, 2), 3)
+))
+
+t3 = T.test("It should also work", (x) => (
+  W.after(2000, <1, 3>)
+    |> W.chain((res) => (T.assertEquals(res, <1, 3>)))
+))
+
+t4 = T.test("It should also work for records", (x) => (
+  T.assertEquals({ x: 3, y: { z: 3 } }, { x: 2, y: { z: 2 } })
+))
+
+T.runTests([t1, t2, t3, t4])

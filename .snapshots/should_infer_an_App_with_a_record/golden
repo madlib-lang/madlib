@@ -63,7 +63,8 @@ Right
                                              (TRecord (fromList [ ( "x" , TVar (TV "d") ) ]) True)
                                              (TVar (TV "d")))
                                           (Area (Loc 38 2 20) (Loc 39 2 21))
-                                          (Var ".x"))))))
+                                          (Var ".x"))))
+                                 False))
                            (Solved
                               (TCon CNum)
                               (Area (Loc 42 2 24) (Loc 45 2 27))
@@ -77,7 +78,8 @@ Right
                                        (TRecord (fromList [ ( "y" , TVar (TV "f") ) ]) True)
                                        (TVar (TV "f")))
                                     (Area (Loc 44 2 26) (Loc 45 2 27))
-                                    (Var ".y")))))))))
+                                    (Var ".y"))))
+                           True)))))
         , Solved
             (TCon CNum)
             (Area (Loc 47 3 1) (Loc 56 3 10))
@@ -93,8 +95,9 @@ Right
                   (TRecord
                      (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
                   (Area (Loc 54 3 8) (Loc 55 3 9))
-                  (Var "a")))
+                  (Var "a"))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

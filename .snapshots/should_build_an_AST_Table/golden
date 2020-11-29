@@ -66,18 +66,22 @@ Right
                                                                      }
                                                                    (Area
                                                                       (Loc 85 3 21) (Loc 86 3 22))
-                                                                   (Var "a"))))
+                                                                   (Var "a"))
+                                                                False))
                                                           (Meta
                                                              Infos
                                                                { nthArg = Just 2
                                                                , origin = Just (Var "fn2")
                                                                }
                                                              (Area (Loc 88 3 24) (Loc 89 3 25))
-                                                             (Var "b"))))))
+                                                             (Var "b"))
+                                                          True))
+                                                    False))
                                               (Meta
                                                  Infos { nthArg = Nothing , origin = Nothing }
                                                  (Area (Loc 93 3 29) (Loc 94 3 30))
-                                                 (Var "a"))))))))))
+                                                 (Var "a"))
+                                              True))))))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
                          (Area (Loc 38 2 7) (Loc 64 2 33))
@@ -99,7 +103,7 @@ Right
                                      (Area (Loc 58 2 27) (Loc 64 2 33))
                                      (TRSingle "Number")))))))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "/fixtures/sourceA.mad"
            }
        )
@@ -151,11 +155,13 @@ Right
                                                                , origin = Nothing
                                                                }
                                                              (Area (Loc 58 2 25) (Loc 59 2 26))
-                                                             (Var "a"))))
+                                                             (Var "a"))
+                                                          False))
                                                     (Meta
                                                        Infos { nthArg = Nothing , origin = Nothing }
                                                        (Area (Loc 62 2 29) (Loc 63 2 30))
-                                                       (Var "b"))))))))))))
+                                                       (Var "b"))
+                                                    True))))))))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
                          (Area (Loc 7 1 8) (Loc 33 1 34))
@@ -177,7 +183,7 @@ Right
                                      (Area (Loc 27 1 28) (Loc 33 1 34))
                                      (TRSingle "Number")))))))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "/fixtures/sourceB.mad"
            }
        )

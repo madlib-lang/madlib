@@ -10,13 +10,12 @@ export data Body = TextBody String
 
 get :: String -> W.Wish e Response
 export get = (url) => (#- {
-  return W.Wish((reject, grant) => {
+  return (bad, good) => {
     const req = https.request(url, (response) => {
       if (response.statusCode === 302) {
-        W.fulfill(reject, grant, get(response.headers.location))
+        W.fulfill(bad, good, get(response.headers.location))
       }
       else {
-        console.log(response.headers)
         const contentType = response.headers["content-type"];
         const isBinary = contentType === "application/zip"
         let chunks = isBinary ? [] : "";
@@ -34,16 +33,16 @@ export get = (url) => (#- {
           if (isBinary) {
             const buffer = Buffer.concat(chunks);
             const ui8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-            grant(Response({ body: BinaryBody(B.ByteArray(ui8)) }));
+            good(Response({ body: BinaryBody(B.ByteArray(ui8)) }));
           }
           else {
-            grant(Response({ body: TextBody(chunks) }));
+            good(Response({ body: TextBody(chunks) }));
           }
         });
       }
 
     });
-    req.on('error', reject)
+    req.on('error', bad)
     req.end();
-  });
+  };
 } -#)

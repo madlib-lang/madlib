@@ -29,11 +29,10 @@ Right
                                           (Area (Loc 39 2 16) (Loc 41 2 18))
                                           (Var "+"))
                                        (Solved
-                                          (TCon CNum)
-                                          (Area (Loc 38 2 15) (Loc 39 2 16))
-                                          (Var "a"))))
-                                 (Solved
-                                    (TCon CNum) (Area (Loc 42 2 19) (Loc 43 2 20)) (LNum "1"))))))))
+                                          (TCon CNum) (Area (Loc 38 2 15) (Loc 39 2 16)) (Var "a"))
+                                       False))
+                                 (Solved (TCon CNum) (Area (Loc 42 2 19) (Loc 43 2 20)) (LNum "1"))
+                                 True))))))
                (TRArr (TRSingle "Number") (TRSingle "Number")))
         , Solved
             (TCon CNum)
@@ -42,7 +41,7 @@ Right
                (Solved (TCon CNum) (Area (Loc 46 3 2) (Loc 47 3 3)) (LNum "3"))
                (TRSingle "Number"))
         , Solved
-            (TComp "path" "Maybe" [ TVar (TV "e") ])
+            (TComp "path" "Maybe" [ TVar (TV "d") ])
             (Area (Loc 92 5 2) (Loc 110 5 20))
             (TypedExp
                (Solved
@@ -62,11 +61,11 @@ Right
                         (TArr (TVar (TV "g")) (TComp "path" "Maybe" [ TVar (TV "g") ]))
                         (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
-                     (Solved
-                        (TCon CNum) (Area (Loc 118 6 7) (Loc 119 6 8)) (LNum "3"))))
+                     (Solved (TCon CNum) (Area (Loc 118 6 7) (Loc 119 6 8)) (LNum "3"))
+                     True))
                (TRComp "Maybe" [ TRSingle "Number" ]))
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Maybe"
             , adtparams = [ "a" ]

@@ -71,15 +71,18 @@ Right
                                               (Solved
                                                  (TCon CNum)
                                                  (Area (Loc 95 5 17) (Loc 96 5 18))
-                                                 (Var "x"))))
+                                                 (Var "x"))
+                                              False))
                                         (Solved
                                            (TCon CNum)
                                            (Area (Loc 99 5 21) (Loc 100 5 22))
-                                           (Var "y"))))))
-                            (Solved
-                               (TCon CNum) (Area (Loc 103 5 25) (Loc 104 5 26)) (Var "z")))))
+                                           (Var "y"))
+                                        True))
+                                  False))
+                            (Solved (TCon CNum) (Area (Loc 103 5 25) (Loc 104 5 26)) (Var "z"))
+                            True)))
                ])
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

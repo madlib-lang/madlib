@@ -30,11 +30,10 @@ Right
                                           (Area (Loc 17 1 18) (Loc 19 1 20))
                                           (Var "+"))
                                        (Solved
-                                          (TCon CNum)
-                                          (Area (Loc 16 1 17) (Loc 17 1 18))
-                                          (Var "b"))))
-                                 (Solved
-                                    (TCon CNum) (Area (Loc 20 1 21) (Loc 21 1 22)) (Var "c")))))))))
+                                          (TCon CNum) (Area (Loc 16 1 17) (Loc 17 1 18)) (Var "b"))
+                                       False))
+                                 (Solved (TCon CNum) (Area (Loc 20 1 21) (Loc 21 1 22)) (Var "c"))
+                                 True)))))))
         , Solved
             (TCon CNum)
             (Area (Loc 29 2 7) (Loc 30 2 8))
@@ -47,9 +46,11 @@ Right
                         (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
                         (Area (Loc 23 2 1) (Loc 25 2 3))
                         (Var "fn"))
-                     (Solved (TCon CNum) (Area (Loc 26 2 4) (Loc 27 2 5)) (LNum "2"))))
-               (Solved (TCon CNum) (Area (Loc 29 2 7) (Loc 30 2 8)) (LNum "3")))
+                     (Solved (TCon CNum) (Area (Loc 26 2 4) (Loc 27 2 5)) (LNum "2"))
+                     False))
+               (Solved (TCon CNum) (Area (Loc 29 2 7) (Loc 30 2 8)) (LNum "3"))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

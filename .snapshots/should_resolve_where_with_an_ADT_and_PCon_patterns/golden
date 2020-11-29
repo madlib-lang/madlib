@@ -15,8 +15,8 @@ Right
                         (TArr (TVar (TV "b")) (TComp "path" "Maybe" [ TVar (TV "b") ]))
                         (Area (Loc 42 2 11) (Loc 46 2 15))
                         (Var "Just"))
-                     (Solved
-                        (TCon CNum) (Area (Loc 47 2 16) (Loc 48 2 17)) (LNum "4")))))
+                     (Solved (TCon CNum) (Area (Loc 47 2 16) (Loc 48 2 17)) (LNum "4"))
+                     True)))
         , Solved
             (TCon CNum)
             (Area (Loc 50 3 1) (Loc 131 7 1))
@@ -47,7 +47,7 @@ Right
                          (TCon CNum) (Area (Loc 128 6 19) (Loc 129 6 20)) (LNum "1")))
                ])
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Maybe"
             , adtparams = [ "a" ]

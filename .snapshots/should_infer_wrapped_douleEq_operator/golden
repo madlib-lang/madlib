@@ -37,15 +37,18 @@ Right
                                              (Solved
                                                 (TVar (TV "c"))
                                                 (Area (Loc 12 1 13) (Loc 13 1 14))
-                                                (Var "a"))))
+                                                (Var "a"))
+                                             False))
                                        (Solved
                                           (TVar (TV "d"))
                                           (Area (Loc 17 1 18) (Loc 18 1 19))
-                                          (Var "b"))))))))
-                     (Solved
-                        (TCon CNum) (Area (Loc 21 1 22) (Loc 22 1 23)) (LNum "1"))))
-               (Solved (TCon CNum) (Area (Loc 24 1 25) (Loc 25 1 26)) (LNum "3")))
+                                          (Var "b"))
+                                       True))))))
+                     (Solved (TCon CNum) (Area (Loc 21 1 22) (Loc 22 1 23)) (LNum "1"))
+                     False))
+               (Solved (TCon CNum) (Area (Loc 24 1 25) (Loc 25 1 26)) (LNum "3"))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

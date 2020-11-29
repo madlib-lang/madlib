@@ -6,13 +6,13 @@ import qualified Data.Map                      as M
 
 
 type Vars = M.Map String Scheme
-type ADTs = M.Map String Type
+type TypeDecls = M.Map String Type
 type Imports = M.Map String Type
 
 data Env
   = Env
     { envvars :: Vars
-    , envadts :: ADTs
+    , envtypes :: TypeDecls
     , envimports :: Imports
     , envcurrentpath :: FilePath
     }
@@ -29,6 +29,7 @@ data Type
   | TArr Type Type              -- Arrow type
   | TComp FilePath String [Type]         -- Composite type
   | TRecord (M.Map String Type) Bool -- Record type: Bool means open or closed
+  | TAlias FilePath String [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   | TTuple [Type]
   deriving (Show, Eq, Ord)
 

@@ -16,6 +16,7 @@ import qualified AST.Solved                    as Slv
 import           Infer.Infer
 import           Infer.Type
 import           Infer.Env
+import           Infer.Typing
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
@@ -24,7 +25,6 @@ import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import           Utils.Tuple
-import           Data.Char                      ( isLower )
 import           Data.List                      ( find )
 import           Data.Maybe                     ( fromMaybe )
 
@@ -38,8 +38,8 @@ infer env lexp =
         Src.LBool _ -> return (M.empty, bool, applyLitSolve lexp bool)
 
         Src.Var   _            -> inferVar env lexp
-        Src.Abs        _ _     -> inferAbs env lexp
-        Src.App        _ _     -> inferApp env lexp
+        Src.Abs _ _            -> inferAbs env lexp
+        Src.App _ _ _          -> inferApp env lexp
         Src.Assignment _ _     -> inferAssignment env lexp
         Src.Where      _ _     -> inferWhere env lexp
         Src.Record _           -> inferRecord env lexp
@@ -142,7 +142,7 @@ inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
 -- INFER APP
 
 inferApp :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
-inferApp env (Meta _ area (Src.App abs arg)) = do
+inferApp env (Meta _ area (Src.App abs arg final)) = do
   tv             <- newTVar
   (s1, t1, eabs) <- infer env abs
   (s2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
@@ -152,8 +152,9 @@ inferApp env (Meta _ area (Src.App abs arg)) = do
     Left  e -> throwError $ InferError e $ Reason (WrongTypeApplied abs arg)
                                                   (envcurrentpath env)
                                                   (getArea arg)
-  let t      = apply s3 tv
-  let solved = Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2)
+  let t = apply s3 tv
+  let solved =
+        Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2) final
 
   return (s3 `compose` s2 `compose` s1, t, solved)
 
@@ -209,7 +210,7 @@ inferListItem env li = case li of
 
       TVar _ -> return (s, t, Slv.ListSpread e)
 
-      _ -> throwError $ InferError (UnknownType $ show t) NoReason
+      _ -> throwError $ InferError (WrongSpreadType $ show t) NoReason
 
 
 
@@ -254,10 +255,10 @@ inferRecordField env field = case field of
     case t of
       TRecord tfields _ -> return (s, M.toList tfields, Slv.FieldSpread e)
 
-      TVar _            -> return (s, [], Slv.FieldSpread e)
+      TVar _ -> return (s, [], Slv.FieldSpread e)
 
       -- TODO: This needs to be a new error type maybe ?
-      _                 -> throwError $ InferError FatalError NoReason
+      _ -> throwError $ InferError (WrongSpreadType $ show t) NoReason
 
 
 
@@ -439,9 +440,13 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
           Just (TRecord spreadFields _) ->
             let withoutSpread = M.filterWithKey (\k v -> k /= "...") fields
             in  TRecord (M.union withoutSpread spreadFields) open
+
           Just _  -> TRecord fields open
+
           Nothing -> TRecord fields open
+
     in  TRecord (M.map updateSubRecord spreadFields) open
+
   spreadSpreads t = t
 
   updateSubRecord field = case field of
@@ -474,14 +479,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
         then do
           t <- findNamespacedConstructorInIs e pattern whereExp n
           return $ Forall (S.toList $ ftv t) t
-        else case M.lookup n envvars of
-          Just x  -> return x
-          Nothing -> throwError $ InferError
-            (UnknownType n)
-            (Reason (PatternConstructorDoesNotExist whereExp pattern)
-                    (envcurrentpath e)
-                    area
-            )
+        else findConstructor e pattern whereExp n
 
       let rt = arrowReturnType ctor
       ctor'  <- argPatternsToArrowType rt as
@@ -511,7 +509,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
 
   generateIsEnv :: Type -> Env -> Src.Pattern -> Infer Env
-  generateIsEnv t e@Env { envvars = vars } pattern@(Meta _ area pat) =
+  generateIsEnv t e pattern@(Meta _ area pat) =
     case (pat, t) of
       (Src.PVar    v     , t') -> return $ extendVars e (v, Forall [] t')
 
@@ -526,6 +524,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
         declaredFields <- mapM (\(k, pat) -> (pat, ) <$> lookupType k fields')
                                (M.toList fieldsWithoutSpread)
+
         let fieldsEnv =
               foldrM (\(p, t') e' -> generateIsEnv t' e' p) e declaredFields
 
@@ -545,7 +544,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
           <$> fieldsEnv
        where
         lookupType fieldName fields = case M.lookup fieldName fields of
-          Just x  -> return x
+          Just x -> return x
 
       (Src.PSpread pattern, t) -> generateIsEnv t e pattern
 
@@ -558,7 +557,7 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
       (Src.PCtor cname as, t) -> do
         ctor <- if elem '.' cname
           then findNamespacedConstructorInIs e pattern whereExp cname
-          else findConstructor cname
+          else instantiate =<< findConstructor e pattern whereExp cname
 
         let adtT = arrowReturnType ctor
         s <- case unify adtT t of
@@ -587,17 +586,18 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
       _ -> return e
 
-   where
-    findConstructor :: String -> Infer Type
-    findConstructor cname = case M.lookup cname vars of
-      Just s  -> instantiate s
 
-      Nothing -> throwError $ InferError
-        (UnknownType cname)
-        (Reason (PatternConstructorDoesNotExist whereExp pattern)
-                (envcurrentpath e)
-                area
-        )
+findConstructor :: Env -> Src.Pattern -> Src.Exp -> String -> Infer Scheme
+findConstructor env pattern@(Meta _ area _) whereExp cname =
+  case M.lookup cname (envvars env) of
+    Just s  -> return s
+
+    Nothing -> throwError $ InferError
+      (UnknownType cname)
+      (Reason (PatternConstructorDoesNotExist whereExp pattern)
+              (envcurrentpath env)
+              area
+      )
 
 findNamespacedConstructorInIs
   :: Env -> Src.Pattern -> Src.Exp -> String -> Infer Type
@@ -655,43 +655,11 @@ inferTypedExp env (Meta _ area (Src.TypedExp exp typing)) = do
 
   return
     ( s1 `compose` s2
-    , apply (s1 `compose` s2) t'
-    , Slv.Solved (apply (s1 `compose` s2) t')
-                 area
-                 (Slv.TypedExp (updateType e1 t') (updateTyping typing))
+    , t'
+    , Slv.Solved t' area (Slv.TypedExp (updateType e1 t') (updateTyping typing))
     )
 
 
-typingToType :: Env -> Src.Typing -> Infer Type
-typingToType env (Meta _ _ (Src.TRSingle t))
-  | t == "Number" = return $ TCon CNum
-  | t == "Boolean" = return $ TCon CBool
-  | t == "String" = return $ TCon CString
-  | isLower $ head t = return $ TVar $ TV t
-  | otherwise = do
-    h <- lookupADT env t
-    let (TComp astPath realName _) = h
-    return $ TComp astPath realName []
-
-typingToType env (Meta _ _ (Src.TRComp t ts)) = do
-  -- fetch ADT from env, and verify that the args applied match it or ERR
-  h <- lookupADT env t
-  let (TComp astPath realName _) = h
-  params <- mapM (typingToType env) ts
-  return $ TComp astPath realName params
-
-typingToType env (Meta _ _ (Src.TRArr l r)) = do
-  l' <- typingToType env l
-  r' <- typingToType env r
-  return $ TArr l' r'
-
-typingToType env (Meta _ _ (Src.TRRecord fields)) = do
-  fields' <- mapM (typingToType env) fields
-  return $ TRecord fields' False
-
-typingToType env (Meta _ _ (Src.TRTuple elems)) = do
-  elems' <- mapM (typingToType env) elems
-  return $ TTuple elems'
 
 
 
@@ -734,14 +702,14 @@ solveTable' table ast@Src.AST { Src.aimports } = do
   (inferredASTs, imports, adts, vars) <- solveImports table aimports
 
   let importEnv = Env { envimports     = imports
-                      , envadts        = adts
+                      , envtypes       = adts
                       , envvars        = vars
                       , envcurrentpath = fromMaybe "" (Src.apath ast)
                       }
   -- Then we infer the ast
   env <- buildInitialEnv importEnv ast
   let envWithImports = env { envimports = imports
-                           , envadts    = M.union (envadts env) adts
+                           , envtypes   = M.union (envtypes env) adts
                            , envvars    = M.union (envvars env) vars
                            }
 
@@ -754,7 +722,7 @@ solveTable' table ast@Src.AST { Src.aimports } = do
 
 exportedExps :: Slv.AST -> Infer [(Slv.Name, Slv.Exp)]
 exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
-  Just p  -> mapM (bundleExports p) $ filter isExport aexps
+  Just p -> mapM (bundleExports p) $ filter isExport aexps
 
  where
   bundleExports _ exp = return $ case exp of
@@ -772,12 +740,12 @@ exportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
 
 
 exportedADTs :: Slv.AST -> [Slv.Name]
-exportedADTs Slv.AST { Slv.aadts } =
-  Slv.adtname <$> filter Slv.adtexported aadts
+exportedADTs Slv.AST { Slv.atypedecls } =
+  Slv.adtName <$> filter Slv.adtExported atypedecls
 
 
 solveImports
-  :: Src.Table -> [Src.Import] -> Infer (Slv.Table, Imports, ADTs, Vars)
+  :: Src.Table -> [Src.Import] -> Infer (Slv.Table, Imports, TypeDecls, Vars)
 solveImports table (imp : is) = do
   let modulePath = Src.getImportAbsolutePath imp
 
@@ -790,7 +758,7 @@ solveImports table (imp : is) = do
           Just a -> return a
           Nothing ->
             throwError $ InferError (ImportNotFound modulePath) NoReason
-        return (solvedAST, solvedTable, envadts env, env)
+        return (solvedAST, solvedTable, envtypes env, env)
 
       Left e -> throwError e
 
@@ -800,24 +768,24 @@ solveImports table (imp : is) = do
   let exportedADTNames = exportedADTs solvedAST
   let adtExports = M.filterWithKey (\k _ -> elem k exportedADTNames) envADTs
 
-  let exportedConstructorNames =
-        Slv.getConstructorName
-          <$> concat
-                (   Slv.adtconstructors
-                <$> filter Slv.adtexported (Slv.aadts solvedAST)
-                )
+  let exportedConstructorNames = Slv.getConstructorName <$> concat
+        (Slv.adtconstructors <$> filter (\x -> isADT x && Slv.adtExported x)
+                                        (Slv.atypedecls solvedAST)
+        )
   let buildConstructorVars = M.filterWithKey
         (\k v -> k `elem` exportedConstructorNames)
         (envvars envSolved)
 
   (exports, vars) <- case (exportedTypes, imp) of
-    (Just exports, Meta _ _ (Src.DefaultImport alias _ _)) -> do
-      -- let constructorVars = (\(Forall _ x) -> x) <$> buildConstructorVars
+    (Just exports, Meta _ _ (Src.DefaultImport namespace _ _)) -> do
       constructorVars <- mapM instantiate buildConstructorVars
       return
-        ( M.fromList [(alias, TRecord exports False)]
+        ( M.fromList [(namespace, TRecord exports False)]
         , M.fromList
-          [(alias, Forall [] $ TRecord (M.union exports constructorVars) False)]
+          [ ( namespace
+            , Forall [] $ TRecord (M.union exports constructorVars) False
+            )
+          ]
         )
 
     (Just exports, _) -> return (exports, buildConstructorVars)
@@ -833,8 +801,8 @@ solveImports table (imp : is) = do
       then return $ M.union adtExports nextADTs
       else throwError $ InferError FatalError NoReason
     case imp of
-      Meta _ _ (Src.DefaultImport alias _ absPath) ->
-        return $ M.mapKeys (mergeADT alias absPath adtExports) adtExports
+      Meta _ _ (Src.DefaultImport namespace _ absPath) -> return
+        $ M.mapKeys (mergeTypeDecl namespace absPath adtExports) adtExports
 
       _ -> return adtExports
 
@@ -847,23 +815,30 @@ solveImports table (imp : is) = do
     )
 
 solveImports _ [] = return
-  (M.empty, envimports initialEnv, envadts initialEnv, envvars initialEnv)
+  (M.empty, envimports initialEnv, envtypes initialEnv, envvars initialEnv)
 
+isADT :: Slv.TypeDecl -> Bool
+isADT Slv.ADT{} = True
+isADT _         = False
 
-mergeADT :: String -> FilePath -> M.Map String Type -> String -> String
-mergeADT alias absPath adts key = case M.lookup key adts of
-  Just (TComp path _ _) -> if path == absPath then alias <> "." <> key else key
-  _                     -> key
+mergeTypeDecl :: String -> FilePath -> M.Map String Type -> String -> String
+mergeTypeDecl namespace absPath adts key = case M.lookup key adts of
+  Just (TComp path _ _) ->
+    if path == absPath then namespace <> "." <> key else key
+  Just (TAlias path _ _ _) ->
+    if path == absPath then namespace <> "." <> key else key
+  _ -> key
 
 
 inferAST :: Env -> Src.AST -> Infer Slv.AST
-inferAST env Src.AST { Src.aexps, Src.apath, Src.aimports, Src.aadts } = do
-  inferredExps <- inferExps env aexps
-  return Slv.AST { Slv.aexps    = inferredExps
-                 , Slv.apath    = apath
-                 , Slv.aadts    = updateADT <$> aadts
-                 , Slv.aimports = updateImport <$> aimports
-                 }
+inferAST env Src.AST { Src.aexps, Src.apath, Src.aimports, Src.atypedecls } =
+  do
+    inferredExps <- inferExps env aexps
+    return Slv.AST { Slv.aexps      = inferredExps
+                   , Slv.apath      = apath
+                   , Slv.atypedecls = updateADT <$> atypedecls
+                   , Slv.aimports   = updateImport <$> aimports
+                   }
 
 updateImport :: Src.Import -> Slv.Import
 updateImport i = case i of
@@ -872,8 +847,8 @@ updateImport i = case i of
   Meta _ _ (Src.DefaultImport n  p fp) -> Slv.DefaultImport n p fp
 
 
-updateADT :: Src.ADT -> Slv.ADT
-updateADT adt =
+updateADT :: Src.TypeDecl -> Slv.TypeDecl
+updateADT adt@Src.ADT{} =
   let name     = Src.adtname adt
       params   = Src.adtparams adt
       ctors    = Src.adtconstructors adt
@@ -883,6 +858,16 @@ updateADT adt =
               , Slv.adtconstructors = updateADTConstructor <$> ctors
               , Slv.adtexported     = exported
               }
+updateADT alias@Src.Alias{} =
+  let name     = Src.aliasname alias
+      params   = Src.aliasparams alias
+      t        = Src.aliastype alias
+      exported = Src.aliasexported alias
+  in  Slv.Alias { Slv.aliasname     = name
+                , Slv.aliasparams   = params
+                , Slv.aliastype     = updateTyping t
+                , Slv.aliasexported = exported
+                }
 
 updateADTConstructor :: Src.Constructor -> Slv.Constructor
 updateADTConstructor (Src.Constructor cname cparams) =

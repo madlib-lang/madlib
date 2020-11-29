@@ -149,7 +149,8 @@ Right
                                                                          (Area
                                                                             (Loc 70 3 44)
                                                                             (Loc 71 3 45))
-                                                                         (Var "y"))))
+                                                                         (Var "y"))
+                                                                      False))
                                                                 (Solved
                                                                    (TCon CNum)
                                                                    (Area
@@ -175,7 +176,9 @@ Right
                                                                          (Area
                                                                             (Loc 76 3 50)
                                                                             (Loc 77 3 51))
-                                                                         (Var ".z"))))))))
+                                                                         (Var ".z"))))
+                                                                True))
+                                                          False))
                                                     (Solved
                                                        (TCon CNum)
                                                        (Area (Loc 80 3 54) (Loc 83 3 57))
@@ -192,7 +195,9 @@ Right
                                                                    True)
                                                                 (TVar (TV "k")))
                                                              (Area (Loc 82 3 56) (Loc 83 3 57))
-                                                             (Var ".o"))))))))
+                                                             (Var ".o"))))
+                                                    True))
+                                              False))
                                         (Solved
                                            (TCon CNum)
                                            (Area (Loc 86 3 60) (Loc 89 3 63))
@@ -207,9 +212,10 @@ Right
                                                        (fromList [ ( "i" , TVar (TV "m") ) ]) True)
                                                     (TVar (TV "m")))
                                                  (Area (Loc 88 3 62) (Loc 89 3 63))
-                                                 (Var ".i")))))))
+                                                 (Var ".i"))))
+                                        True)))
                            ])))))
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

@@ -3,11 +3,11 @@ import W from "Wish"
 
 export data CommandError = CommandError Number String
 
-#- import { exec as execJs } from "child_process" -#
+#- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
 exec :: String -> W.Wish CommandError String
 export exec = (command) => (#-
-  W.Wish((bad, good) => {
+  (bad, good) => {
     execJs(command, (err, stdout, stderr) => {
       if (err) {
         bad(CommandError(err.code, err.message))
@@ -16,5 +16,40 @@ export exec = (command) => (#-
         good(stdout)
       }
     })
-  })
+  }
 -#)
+
+spawn :: String -> W.Wish CommandError Number
+export spawn = (command) => (#-
+  (bad, good) => {
+    const split = command.split(" ")
+    const spawned = spawnJs(split[0], split.slice(1));
+
+    spawned.stdout.on('data', (data) => {
+      process.stdout.write(data.toString());
+    });
+
+    spawned.stderr.on('data', (data) => {
+      process.stderr.write(data.toString());
+    });
+
+    spawned.on('close', (code) => {
+      if (code === 0) {
+        good(0);
+      }
+      else {
+        bad(code)
+      }
+    });
+  }
+-#)
+
+
+getArgs :: W.Wish String (List String)
+export getArgs = (#- W.of(process.argv.slice(2)) -#)
+
+getEnv :: String -> W.Wish String String
+export getEnv = (name) => (#- {
+  const envVar = process.env[name];
+  return !!envVar ? W.bad("Not found") : W.of(envVar)
+} -#)

@@ -3,22 +3,23 @@ module Tools.CommandLine where
 import           Options.Applicative
 
 import           Tools.CommandLineFlags
+import           Data.Version                   ( showVersion )
+import           Paths_madlib                   ( version )
+import           Text.PrettyPrint.ANSI.Leijen   ( string )
 
 hashBar = "################################################"
 h1 = " ____    __  ____   _____   ____    ____  ______"
 h2 = "|    \\  /  ||    \\  |    \\ |    |  |    ||      )"
 h3 = "|     \\/   ||     \\ |     \\|    |_ |    ||     <"
 h4 = "|__/\\__/|__||__|\\__\\|_____/|______||____||______)"
-madlibAscii = h1 ++ "\n" ++ h2 ++ "\n" ++ h3 ++ "\n" ++ h4
+madlibAscii = unlines [h1, h2, h3, h4]
 
-data TransformFlags = TransformFlags
-  { input      :: FlagInput
-  , output     :: FlagOutput
-  , config     :: FlagConfig
-  }
 
-parseConfig :: Parser FlagConfig
-parseConfig = FileConfig <$> strOption
+withInfo :: Parser a -> String -> ParserInfo a
+withInfo opts desc = info (helper <*> opts) $ progDesc desc
+
+parseConfig :: Parser FilePath
+parseConfig = strOption
   (  long "config"
   <> short 'c'
   <> metavar "CONFIG"
@@ -27,27 +28,78 @@ parseConfig = FileConfig <$> strOption
   <> value "madlib.json"
   )
 
-fileInput :: Parser FlagInput
-fileInput = FileInput <$> strOption
+parseInput :: Parser FilePath
+parseInput = strOption
   (long "input" <> short 'i' <> metavar "INPUT" <> help "What source to compile"
   )
 
-stdInput :: Parser FlagInput
-stdInput = flag' StdInput (long "stdin" <> short 's' <> help "Read from stdin")
-
-parseInput :: Parser FlagInput
-parseInput = fileInput <|> stdInput
-
-parseOutput :: Parser FlagOutput
-parseOutput = FileOutput <$> strOption
+parseOutput :: Parser FilePath
+parseOutput = strOption
   (  long "output"
   <> short 'o'
   <> metavar "OUTPUT"
   <> help "What path to compile to"
   <> showDefault
-  <> value "./build"
+  <> value "./build/"
   )
 
-parseTransform :: Parser TransformFlags
-parseTransform = TransformFlags <$> parseInput <*> parseOutput <*> parseConfig
+parseVerbose :: Parser Bool
+parseVerbose =
+  switch (long "verbose" <> short 'v' <> help "Verbose output" <> showDefault)
 
+parseDebug :: Parser Bool
+parseDebug =
+  switch (long "debug" <> short 'd' <> help "Print AST info" <> showDefault)
+
+
+parseBundle :: Parser Bool
+parseBundle = switch
+  (  long "bundle"
+  <> short 'b'
+  <> help "Bundle the compile js in one file"
+  <> showDefault
+  )
+
+
+parseInstall :: Parser Command
+parseInstall = pure Install
+
+
+parseCompile :: Parser Command
+parseCompile =
+  Compile
+    <$> parseInput
+    <*> parseOutput
+    <*> parseConfig
+    <*> parseVerbose
+    <*> parseDebug
+    <*> parseBundle
+
+parseTest :: Parser Command
+parseTest = Test <$> parseInput
+
+
+parseCommand :: Parser Command
+parseCommand =
+  subparser
+    $  command "compile" (parseCompile `withInfo` "compile madlib code to js")
+    <> command "test"    (parseTest `withInfo` "test tools")
+    <> command "install" (parseInstall `withInfo` "install madlib packages")
+
+parseTransform :: Parser Command
+parseTransform = parseCommand
+
+parseVersion :: Parser (a -> a)
+parseVersion = infoOption
+  formattedVersion
+  (long "version" <> short 'v' <> help "Show version" <> hidden)
+
+formattedVersion :: String
+formattedVersion = "madlib@" <> showVersion version
+
+opts = info
+  (parseTransform <**> helper <**> parseVersion)
+  (  fullDesc
+  <> headerDoc (Just $ string (unlines [hashBar, madlibAscii]))
+  <> progDesc formattedVersion
+  )

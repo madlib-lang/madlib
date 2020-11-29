@@ -19,6 +19,24 @@ const curryPowder = (fn) => {
   return curried
 };
 
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
 const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
 export const fn = curryPowder((b, c) => b + c);
@@ -27,7 +45,7 @@ const dec = curryPowder((x) => x - 1);
 const double = curryPowder((x) => x * 2);
 const half = curryPowder((x) => x / 2);
 double(half(3));
-3 === 5;
+__eq(3, 5);
 const response = ({ users: ([]) });
 const users = response.users;
 const carResponse = ({ cars: ([]) });
@@ -148,8 +166,8 @@ export const map = curryPowder((f, xs) => ((__x__) => {
   }
 })(xs));
 (true ? `ok` : `not ok`);
-curryPowder((x) => x)(curryPowder((x) => (x === `ok` ? 1 : 10))(curryPowder((x) => x)((1 === 2 ? `ok` : `not ok`))));
-(1 === 2 ? `ok` : `not ok`);
+curryPowder((x) => x)(curryPowder((x) => (__eq(x, `ok`) ? 1 : 10))(curryPowder((x) => x)((__eq(1, 2) ? `ok` : `not ok`))));
+(__eq(1, 2) ? `ok` : `not ok`);
 ((__x__) => {
   if (__x__ === 3) {
     return 48;
@@ -202,7 +220,7 @@ const crazyRecordPattern = curryPowder((r) => ((__x__) => {
   }
 })(r));
 const tup = ([1, 2, 3]);
-([1, 2, 3]) === ([1, 2, 3]);
+__eq(([1, 2, 3]), ([1, 2, 3]));
 ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,b] = __x__;

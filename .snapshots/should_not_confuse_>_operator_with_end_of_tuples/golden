@@ -40,9 +40,10 @@ Right
                                (TArr (TVar (TV "c")) (TArr (TVar (TV "c")) (TCon CBool)))
                                (Area (Loc 46 3 18) (Loc 47 3 19))
                                (Var ">"))
-                            (Solved
-                               (TCon CNum) (Area (Loc 44 3 16) (Loc 46 3 18)) (LNum "33"))))
-                      (Solved (TCon CNum) (Area (Loc 48 3 20) (Loc 49 3 21)) (LNum "3")))
+                            (Solved (TCon CNum) (Area (Loc 44 3 16) (Loc 46 3 18)) (LNum "33"))
+                            False))
+                      (Solved (TCon CNum) (Area (Loc 48 3 20) (Loc 49 3 21)) (LNum "3"))
+                      True)
                ])
         , Solved
             (TTuple [ TCon CBool , TCon CString , TCon CBool ])
@@ -65,11 +66,13 @@ Right
                                (Area (Loc 70 4 20) (Loc 71 4 21))
                                (Var ">"))
                             (Solved
-                               (TCon CString) (Area (Loc 66 4 16) (Loc 70 4 20)) (LStr "OK"))))
+                               (TCon CString) (Area (Loc 66 4 16) (Loc 70 4 20)) (LStr "OK"))
+                            False))
                       (Solved
-                         (TCon CString) (Area (Loc 72 4 22) (Loc 80 4 30)) (LStr "NOT OK")))
+                         (TCon CString) (Area (Loc 72 4 22) (Loc 80 4 30)) (LStr "NOT OK"))
+                      True)
                ])
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

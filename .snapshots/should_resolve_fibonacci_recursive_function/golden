@@ -31,9 +31,10 @@ Right
                                        (Solved
                                           (TVar (TV "a"))
                                           (Area (Loc 18 1 19) (Loc 19 1 20))
-                                          (Var "n"))))
-                                 (Solved
-                                    (TCon CNum) (Area (Loc 22 1 23) (Loc 23 1 24)) (LNum "2"))))
+                                          (Var "n"))
+                                       False))
+                                 (Solved (TCon CNum) (Area (Loc 22 1 23) (Loc 23 1 24)) (LNum "2"))
+                                 True))
                            (Solved
                               (TVar (TV "a")) (Area (Loc 27 1 28) (Loc 28 1 29)) (Var "n"))
                            (Solved
@@ -73,11 +74,15 @@ Right
                                                          (Solved
                                                             (TCon CNum)
                                                             (Area (Loc 42 1 43) (Loc 43 1 44))
-                                                            (Var "n"))))
+                                                            (Var "n"))
+                                                         False))
                                                    (Solved
                                                       (TCon CNum)
                                                       (Area (Loc 46 1 47) (Loc 47 1 48))
-                                                      (LNum "1"))))))))
+                                                      (LNum "1"))
+                                                   True))
+                                             True))
+                                       False))
                                  (Solved
                                     (TCon CNum)
                                     (Area (Loc 51 1 52) (Loc 61 1 62))
@@ -102,12 +107,16 @@ Right
                                                    (Solved
                                                       (TCon CNum)
                                                       (Area (Loc 55 1 56) (Loc 56 1 57))
-                                                      (Var "n"))))
+                                                      (Var "n"))
+                                                   False))
                                              (Solved
                                                 (TCon CNum)
                                                 (Area (Loc 59 1 60) (Loc 60 1 61))
-                                                (LNum "2")))))))))))))
+                                                (LNum "2"))
+                                             True))
+                                       True))
+                                 True)))))))
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

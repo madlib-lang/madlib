@@ -4,7 +4,7 @@ Right
        , AST
            { aimports = []
            , aexps = []
-           , aadts =
+           , atypedecls =
                [ ADT
                    { adtname = "Something"
                    , adtparams = []
@@ -47,7 +47,7 @@ Right
                                            (Var "x"))))))))
                       (TRArr (TRComp "S.Something" []) (TRComp "S.Something" [])))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleB"
            }
        )

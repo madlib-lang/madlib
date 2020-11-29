@@ -32,12 +32,11 @@ Right
                               (App
                                  (Solved
                                     (TVar (TV "e")) (Area (Loc 77 2 22) (Loc 81 2 26)) (Var "good"))
-                                 (Solved
-                                    (TCon CNum)
-                                    (Area (Loc 82 2 27) (Loc 83 2 28))
-                                    (LNum "3")))))))))
+                                 (Solved (TCon CNum) (Area (Loc 82 2 27) (Loc 83 2 28)) (LNum "3"))
+                                 True))))))
+               True)
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Wish"
             , adtparams = [ "e" , "a" ]

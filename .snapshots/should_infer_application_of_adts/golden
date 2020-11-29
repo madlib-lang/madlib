@@ -18,7 +18,8 @@ Right
                      (Solved
                         (TCon CString)
                         (Area (Loc 55 2 19) (Loc 65 2 29))
-                        (LStr "response")))))
+                        (LStr "response"))
+                     True)))
         , Solved
             (TComp "path" "Result" [])
             (Area (Loc 67 3 1) (Loc 74 3 8))
@@ -63,21 +64,25 @@ Right
                                              (Solved
                                                 (TVar (TV "d"))
                                                 (Area (Loc 95 4 13) (Loc 96 4 14))
-                                                (Var "a"))))
+                                                (Var "a"))
+                                             False))
                                        (Solved
                                           (TVar (TV "e"))
                                           (Area (Loc 100 4 18) (Loc 101 4 19))
-                                          (Var "b"))))))))
+                                          (Var "b"))
+                                       True))))))
                      (Solved
                         (TComp "path" "Result" [])
                         (Area (Loc 104 4 22) (Loc 111 4 29))
-                        (Var "result1"))))
+                        (Var "result1"))
+                     False))
                (Solved
                   (TComp "path" "Result" [])
                   (Area (Loc 113 4 31) (Loc 120 4 38))
-                  (Var "result2")))
+                  (Var "result2"))
+               True)
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Result"
             , adtparams = []

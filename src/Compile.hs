@@ -28,85 +28,94 @@ class Compilable a where
 
 instance Compilable Exp where
   compile astPath outputPath (Solved _ _ exp) = case exp of
-    LNum  v     -> v
-    LStr  v     -> "`" <> v <> "`"
-    LBool v     -> v
+    LNum  v           -> v
+    LStr  v           -> "`" <> v <> "`"
+    LBool v           -> v
 
-    App abs arg -> case abs of
-      Solved _ _ (App (Solved _ _ (Var "++")) arg') ->
+    App abs arg final -> case abs of
+      Solved _ _ (App (Solved _ _ (Var "++")) arg' _) ->
         compile astPath outputPath arg'
           <> " + "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "+")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "+")) arg' _) ->
         compile astPath outputPath arg'
           <> " + "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "-")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "-")) arg' _) ->
         compile astPath outputPath arg'
           <> " - "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "*")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "*")) arg' _) ->
         compile astPath outputPath arg'
           <> " * "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "/")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "/")) arg' _) ->
         compile astPath outputPath arg'
           <> " / "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "%")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "%")) arg' _) ->
         compile astPath outputPath arg'
           <> " % "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "==")) arg') ->
-        compile astPath outputPath arg'
-          <> " === "
+      Solved _ _ (App (Solved _ _ (Var "==")) arg' _) ->
+        "__eq("
+          <> compile astPath outputPath arg'
+          <> ", "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "&&")) arg') ->
+          <> ")"
+      Solved _ _ (App (Solved _ _ (Var "&&")) arg' _) ->
         compile astPath outputPath arg'
           <> " && "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "||")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "||")) arg' _) ->
         compile astPath outputPath arg'
           <> " || "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var ">")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var ">")) arg' _) ->
         compile astPath outputPath arg'
           <> " > "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "<")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "<")) arg' _) ->
         compile astPath outputPath arg'
           <> " < "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var ">=")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var ">=")) arg' _) ->
         compile astPath outputPath arg'
           <> " >= "
           <> compile astPath outputPath arg
-      Solved _ _ (App (Solved _ _ (Var "<=")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "<=")) arg' _) ->
         compile astPath outputPath arg'
           <> " <= "
           <> compile astPath outputPath arg
 
-      Solved _ _ (App (Solved _ _ (Var "|>")) arg') ->
+      Solved _ _ (App (Solved _ _ (Var "|>")) arg' _) ->
         compile astPath outputPath arg
           <> "("
           <> compile astPath outputPath arg'
           <> ")"
 
-      _ -> compileApp [] abs arg
+      _ -> compileApp [] [] abs arg final
      where
-      compileApp :: [String] -> Exp -> Exp -> String
-      compileApp prevArgs abs arg =
-        let
-          args = [compile astPath outputPath arg] <> prevArgs
-          next = case abs of
-            (Solved _ _ (App abs' arg')) -> compileApp args abs' arg'
-            _ ->
-              compile astPath outputPath abs
-                <> "("
-                <> intercalate ", " args
-                <> ")"
-        in
-          next
+      compileApp :: [Bool] -> [String] -> Exp -> Exp -> Bool -> String
+      compileApp prevFinals prevArgs abs arg final =
+        let args   = [compile astPath outputPath arg] <> prevArgs
+            finals = [final] <> prevFinals
+            next   = case abs of
+              (Solved _ _ (App abs' arg' final')) ->
+                compileApp finals args abs' arg' final'
+              _ ->
+                let finalized = zip args finals
+                in  compile astPath outputPath abs
+                      <> "("
+                      <> buildParams finalized
+                      <> ")"
+        in  next
+
+      buildParams :: [(String, Bool)] -> String
+      buildParams []                    = ""
+      buildParams ((arg, final) : args) = if final
+        then if null args then arg else arg <> ")(" <> buildParams args
+        else arg <> ", " <> buildParams args
 
     If cond truthy falsy ->
       "("
@@ -320,7 +329,8 @@ removeNamespace :: String -> String
 removeNamespace = reverse . takeWhile (/= '.') . reverse
 
 
-instance Compilable ADT where
+instance Compilable TypeDecl where
+  compile _ _ Alias{}                      = ""
   compile _ _ ADT { adtconstructors = [] } = ""
   compile astPath outputPath adt =
     let ctors    = adtconstructors adt
@@ -375,20 +385,20 @@ buildImportPath outputPath rootPath astPath absPath =
 
 
 instance Compilable AST where
-  compile rootPath outputPath adt =
+  compile rootPath outputPath ast =
     let
-      exps         = aexps adt
-      adts         = aadts adt
-      path         = apath adt
-      imports      = aimports adt
+      exps         = aexps ast
+      typeDecls    = atypedecls ast
+      path         = apath ast
+      imports      = aimports ast
 
 
       path'        = fromMaybe "Unknown" path
 
       infoComment  = "// file: " <> path' <> "\n"
-      helpers      = curryPowder
+      helpers      = curryPowder <> "\n" <> eq
 
-      compiledAdts = case adts of
+      compiledAdts = case typeDecls of
         [] -> ""
         x  -> foldr1 (<>) (compile rootPath outputPath <$> x)
       compiledExps = case exps of
@@ -400,7 +410,7 @@ instance Compilable AST where
           foldr1 (<>)
                  (terminate . compileImport rootPath outputPath path' <$> x)
             <> "\n"
-      defaultExport = buildDefaultExport adts exps
+      defaultExport = buildDefaultExport typeDecls exps
     in
       infoComment
       <> compiledImports
@@ -414,17 +424,21 @@ instance Compilable AST where
                 | otherwise = a <> ";\n"
 
 
-buildDefaultExport :: [ADT] -> [Exp] -> String
+buildDefaultExport :: [TypeDecl] -> [Exp] -> String
 buildDefaultExport as es =
   let expExportNames = getExportName <$> filter isExport es
       adtExportNames = getConstructorName
-        <$> concat (adtconstructors <$> filter adtexported as)
+        <$> concat (adtconstructors <$> filter isADTExport as)
       allDefaultExports = expExportNames <> adtExportNames
   in  case allDefaultExports of
         []      -> ""
         exports -> "export default { " <> intercalate ", " exports <> " };\n"
 
  where
+  isADTExport :: TypeDecl -> Bool
+  isADTExport ADT { adtexported } = adtexported
+  isADTExport _                   = False
+
   isExport :: Exp -> Bool
   isExport a = case a of
     (Solved _ _ (Export _)) -> True
@@ -463,4 +477,25 @@ curryPowder = unlines
   , "  return curried"
   , "};"
   , ""
+  ]
+
+eq :: String
+eq = unlines
+  [ "const __eq = (l, r) => {"
+  , "  if (l === r) {"
+  , "    return true;"
+  , "  }"
+  , "  if (typeof l !== typeof r) {"
+  , "    return false;"
+  , "  }"
+  , "  if (typeof l === `object`) {"
+  , "    if (Array.isArray(l)) {"
+  , "      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);"
+  , "    }"
+  , "    const keysL = Object.keys(l);"
+  , "    const keysR = Object.keys(r);"
+  , "    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);"
+  , "  }"
+  , "  return l === r;"
+  , "}"
   ]

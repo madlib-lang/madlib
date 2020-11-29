@@ -14,6 +14,7 @@ data TypeError
   | UnificationError Type Type
   | ADTAlreadyDefined Type
   | UnknownType String
+  | WrongSpreadType String
   | FieldNotExisting String
   | ImportNotFound String
   | GrammarError FilePath String

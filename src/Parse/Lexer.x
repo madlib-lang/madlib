@@ -49,6 +49,7 @@ tokens :-
   export                                { mapToken (\_ -> TokenExport) }
   from                                  { mapToken (\_ -> TokenFrom) }
   data                                  { mapToken (\_ -> TokenData) }
+  alias                                 { mapToken (\_ -> TokenAlias) }
   const                                 { mapToken (\_ -> TokenConst) }
   if                                    { mapToken (\_ -> TokenIf) }
   else                                  { mapToken (\_ -> TokenElse) }
@@ -94,9 +95,9 @@ tokens :-
   \>\=                                  { mapToken (\_ -> TokenRightChevronEq) }
   \<\=                                  { mapToken (\_ -> TokenLeftChevronEq) }
   \!                                    { mapToken (\_ -> TokenExclamationMark) }
-  \"($printable # \")+\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  '($printable # ')+'                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  `($printable # `)+`                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  \"($printable # \")*\"                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  '($printable # ')*'                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  `($printable # `)*`                   { mapToken (\s -> TokenStr (sanitizeStr s)) }
   \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   [\ \n]*"//".*                         ; -- Comments
@@ -196,6 +197,7 @@ data TokenClass
  | TokenPipeOperator
  | TokenSpreadOperator
  | TokenData
+ | TokenAlias
  | TokenSemiColon
  | TokenReturn
  | TokenDoubleAmpersand

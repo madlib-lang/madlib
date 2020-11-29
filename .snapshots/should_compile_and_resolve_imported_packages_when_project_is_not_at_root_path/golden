@@ -21,6 +21,24 @@ const curryPowder = (fn) => {
   return curried
 };
 
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
 export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
 export const random = curryPowder((seed) => R.random(seed));
@@ -46,6 +64,24 @@ const curryPowder = (fn) => {
   return curried
 };
 
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
 export const random = curryPowder((seed) => seed / 2);
 export default { random };
 // file: /root/project/src/Main.mad
@@ -71,4 +107,22 @@ const curryPowder = (fn) => {
   return curried
 };
 
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
 R.random(3);

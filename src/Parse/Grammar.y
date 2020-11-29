@@ -59,6 +59,7 @@ import           Explain.Meta
   '|>'     { Token _ TokenPipeOperator }
   '...'    { Token _ TokenSpreadOperator }
   'data'   { Token _ TokenData }
+  'alias'  { Token _ TokenAlias }
   '&&'     { Token _ TokenDoubleAmpersand }
   '||'     { Token _ TokenDoublePipe }
   '>'      { Token _ TokenRightChevron }
@@ -83,11 +84,11 @@ import           Explain.Meta
 %%
 
 ast :: { Src.AST }
-  : adt ast          %shift { $2 { Src.aadts =  [$1] <> Src.aadts $2 } }
+  : typedecl ast     %shift { $2 { Src.atypedecls =  [$1] <> Src.atypedecls $2 } }
   | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
-  | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
-  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.aadts = [], Src.apath = Nothing } }
+  | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.apath = Nothing } }
+  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' typings maybeRet 'export' name '=' exp ast
@@ -98,8 +99,8 @@ importDecls :: { [Src.Import] }
   | importDecl             %shift { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str 'ret' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6) (strV $6)) }
-  | 'import' name 'from' str 'ret'                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4) (strV $4)) }
+  : 'import' '{' importNames '}' 'from' str rets { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6) (strV $6)) }
+  | 'import' name 'from' str rets                { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4) (strV $4)) }
 
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
@@ -129,12 +130,14 @@ rComa :: { [TokenClass] }
   | 'ret' ',' { [] }
 
 
-adt :: { Src.ADT }
-  : 'data' name adtParameters rEq adtConstructors          %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
-  | 'export' 'data' name adtParameters rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
+typedecl :: { Src.TypeDecl }
+  : 'data' name typeParams rEq adtConstructors          %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
+  | 'export' 'data' name typeParams rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
+  | 'alias' name typeParams rEq typings                 %shift { Src.Alias { Src.aliasname = strV $2, Src.aliasparams = $3, Src.aliastype = $5, Src.aliasexported = False } }
+  | 'export' 'alias' name typeParams rEq typings        %shift { Src.Alias { Src.aliasname = strV $3, Src.aliasparams = $4, Src.aliastype = $6, Src.aliasexported = True } }
 
-adtParameters :: { [Src.Name] }
-  : name adtParameters %shift { strV $1 : $2 }
+typeParams :: { [Src.Name] }
+  : name typeParams %shift { strV $1 : $2 }
   | {- empty -}               { [] }
 
 adtConstructors :: { [Src.Constructor] }
@@ -290,8 +293,8 @@ tuplePattern :: { Src.Pattern }
   : '<' tupleItemPatterns 'tuple>' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple $2) }
 
 tupleItemPatterns :: { [Src.Pattern] }
-  : pattern ',' pattern                %shift { [$1, $3] }
-  | listItemPatterns ',' pattern       %shift { $1 <> [$3] }
+  : pattern                       %shift { [$1] }
+  | tupleItemPatterns ',' pattern %shift { $1 <> [$3] }
 
 
 record :: { Src.Exp }
@@ -310,87 +313,87 @@ operation :: { Src.Exp }
   : exp '+' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "+")) 
-                         $1))) 
-                      $3)
+                         $1 False)))
+                      $3 True)
                  }
   | exp '++' exp { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "++")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                  }
   | exp '-' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "-")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                  }
   | exp '*' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "*")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                  }
   | exp '/' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "/")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                  }
   | exp '%' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "%"))
-                         $1)))
-                      $3)
+                         $1 False)))
+                      $3 True)
                  }
   | exp '==' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "==")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '&&' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "&&")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '||' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "||")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '>' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var ">")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '<' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "<")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '>=' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var ">=")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                    }
   | exp '<=' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
-                         (Meta emptyInfos (tokenToArea $2) (Src.Var "<=")) 
-                         $1))) 
-                      $3)
+                         (Meta emptyInfos (tokenToArea $2) (Src.Var "<="))
+                         $1 False))) 
+                      $3 True)
                    }
-  | '!' exp  { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $2)) (Src.App (Meta emptyInfos (tokenToArea $1) (Src.Var "!")) $2) }
+  | '!' exp  { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $2)) (Src.App (Meta emptyInfos (tokenToArea $1) (Src.Var "!")) $2 True) }
   | exp '|>' exp  { Meta emptyInfos (getArea $1) (Src.App
                       ((Meta emptyInfos (getArea $1) (Src.App
                          (Meta emptyInfos (tokenToArea $2) (Src.Var "|>")) 
-                         $1))) 
-                      $3)
+                         $1 False))) 
+                      $3 True)
                   
                   }
 
@@ -406,11 +409,11 @@ listItems :: { [Src.ListItem] }
   | {- empty -}                 { [] }
 
 tupleConstructor :: { Src.Exp }
-  : '<' tupleItems 'tuple>'        { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TupleConstructor $2) }
+  : '<' maybeRet tupleItems maybeRet 'tuple>' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TupleConstructor $3) }
 
 tupleItems :: { [Src.Exp] }
-  : exp ',' exp                  %shift { [$1, $3] }
-  | tupleItems ',' exp           %shift { $1 <> [$3] }
+  : exp maybeRet ',' maybeRet exp        %shift { [$1, $5] }
+  | tupleItems maybeRet ',' maybeRet exp %shift { $1 <> [$5] }
 
 
 literal :: { Src.Exp }
@@ -441,15 +444,15 @@ buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x (buildAbs' (nt
 
 
 buildApp :: Area -> Src.Exp -> [Src.Exp] -> Src.Exp
-buildApp area f args = buildApp' (length args) area f args
+buildApp area f args = buildApp' (length args) (length args) area f args
 
 -- TODO: use that nth to add context to args
-buildApp' :: Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
-buildApp' nth area f@(Meta _ _ f') [(Meta emptyInfos area' arg)]  = Meta emptyInfos area (Src.App f (Meta Infos { origin = Just f', nthArg = Just nth } area' arg))
-buildApp' nth area f@(Meta _ _ f') xs     = 
+buildApp' :: Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
+buildApp' total nth area f@(Meta _ _ f') [(Meta emptyInfos area' arg)]  = Meta emptyInfos area (Src.App f (Meta Infos { origin = Just f', nthArg = Just nth } area' arg) (total == nth))
+buildApp' total nth area f@(Meta _ _ f') xs     = 
   let (Meta emptyInfos area arg) = last xs
       argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area arg
-  in  Meta emptyInfos area (Src.App (buildApp' (nth - 1) area f (init xs)) argWithMeta)
+  in  Meta emptyInfos area (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))
 
 
 

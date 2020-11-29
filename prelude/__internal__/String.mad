@@ -1,0 +1,9 @@
+
+show :: a -> String
+export show = (something) => (#- JSON.stringify(something) -#)
+
+
+replace :: String -> String -> String -> String
+export replace = (regex, replacing, input) => (#-
+  input.replace(new RegExp(regex), replacing)
+-#)

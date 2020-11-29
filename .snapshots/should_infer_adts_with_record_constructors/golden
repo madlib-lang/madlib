@@ -26,7 +26,8 @@ Right
                                , Solved
                                    (TCon CString) (Area (Loc 99 2 28) (Loc 103 2 32)) (LStr "42")
                                )
-                           ])))))
+                           ]))
+                     True)))
         , Solved
             (TComp "path" "Result" [])
             (Area (Loc 107 3 1) (Loc 114 3 8))
@@ -51,7 +52,8 @@ Right
                                , Solved
                                    (TCon CString) (Area (Loc 134 3 28) (Loc 139 3 33)) (LStr "Err")
                                )
-                           ])))))
+                           ]))
+                     True)))
         , Solved
             (TCon CBool)
             (Area (Loc 173 4 31) (Loc 180 4 38))
@@ -87,21 +89,25 @@ Right
                                              (Solved
                                                 (TVar (TV "e"))
                                                 (Area (Loc 155 4 13) (Loc 156 4 14))
-                                                (Var "a"))))
+                                                (Var "a"))
+                                             False))
                                        (Solved
                                           (TVar (TV "f"))
                                           (Area (Loc 160 4 18) (Loc 161 4 19))
-                                          (Var "b"))))))))
+                                          (Var "b"))
+                                       True))))))
                      (Solved
                         (TComp "path" "Result" [])
                         (Area (Loc 164 4 22) (Loc 171 4 29))
-                        (Var "result1"))))
+                        (Var "result1"))
+                     False))
                (Solved
                   (TComp "path" "Result" [])
                   (Area (Loc 173 4 31) (Loc 180 4 38))
-                  (Var "result2")))
+                  (Var "result2"))
+               True)
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Result"
             , adtparams = []

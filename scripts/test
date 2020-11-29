@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ "$1" == "watch" ]
+then
+  stack test --file-watch --fast;
+elif [ "$1" == "coverage" ]
+then
+  stack test --coverage --fast && stack hpc report .;
+elif [ -z "$1" ]
+then
+  stack test;
+else
+  echo "'$1' is not a valid option.\nvalid options:\n  * watch\n  * coverage"
+fi

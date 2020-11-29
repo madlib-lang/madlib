@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3e4ac3a54d2e529ac4807961d899177447bd0438061931f8180059ea248e63a6
+-- hash: e91a2388cb3220c97aaa8e4b380b2ec5ea8a9eef9dda76a054b730fa9678d924
 
 name:           madlib
-version:        0.0.3
+version:        0.0.5
 description:    Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
 homepage:       https://github.com/open-sorcerers/madlib#readme
 bug-reports:    https://github.com/open-sorcerers/madlib/issues
@@ -43,6 +43,7 @@ library
       Infer.Solve
       Infer.Substitute
       Infer.Type
+      Infer.Typing
       Infer.Unify
       MadlibDotJSON
       Main
@@ -61,6 +62,7 @@ library
   build-depends:
       MissingH
     , aeson
+    , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
@@ -74,10 +76,10 @@ library
     , hpc-lcov
     , hspec
     , hspec-golden
-    , monad-validate ==1.2.0.0
     , mtl
     , optparse-applicative
     , pretty-show
+    , process ==1.6.8.0
     , regex-tdfa
     , text
     , transformers
@@ -102,6 +104,7 @@ executable madlib
       Infer.Solve
       Infer.Substitute
       Infer.Type
+      Infer.Typing
       Infer.Unify
       MadlibDotJSON
       Parse.AST
@@ -119,6 +122,7 @@ executable madlib
   build-depends:
       MissingH
     , aeson
+    , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
@@ -132,10 +136,10 @@ executable madlib
     , hpc-lcov
     , hspec
     , hspec-golden
-    , monad-validate ==1.2.0.0
     , mtl
     , optparse-applicative
     , pretty-show
+    , process ==1.6.8.0
     , regex-tdfa
     , text
     , transformers
@@ -157,6 +161,7 @@ test-suite madlib-test
   build-depends:
       MissingH
     , aeson
+    , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
@@ -171,10 +176,10 @@ test-suite madlib-test
     , hspec ==2.7.2
     , hspec-golden
     , madlib
-    , monad-validate ==1.2.0.0
     , mtl
     , optparse-applicative
     , pretty-show
+    , process ==1.6.8.0
     , regex-tdfa
     , text
     , transformers

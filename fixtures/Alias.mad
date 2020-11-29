@@ -1,0 +1,9 @@
+alias T = (a -> b)
+
+fn :: T -> a -> b
+fn = (cb, a) => (cb(a))
+
+export alias TT a = (a -> b)
+
+fn :: TT String -> a -> b
+fn = (cb, a) => (cb(a))

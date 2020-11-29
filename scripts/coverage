@@ -1,0 +1,8 @@
+#!/bin/bash
+
+TIX_FILE="$(stack path --local-hpc-root)/combined/custom/custom.tix"
+LCOV_FILE="./coverage/lcov.info"
+
+mkdir ./coverage 2> /dev/null;
+stack exec -- hpc-lcov --file $TIX_FILE -o $LCOV_FILE --main-package madlib;
+lcov -r coverage/lcov.info '.stack-work/*' -o coverage/lcov.info;

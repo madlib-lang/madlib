@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module AST.Solved where
 
 import qualified Data.Map                      as M
@@ -17,7 +18,7 @@ data AST =
   AST
     { aimports   :: [Import]
     , aexps      :: [Exp]
-    , aadts      :: [ADT]
+    , atypedecls :: [TypeDecl]
     , apath      :: Maybe FilePath
     }
     deriving(Eq, Show)
@@ -27,13 +28,19 @@ data Import
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data ADT =
-  ADT
-    { adtname :: Name
-    , adtparams :: [Name]
-    , adtconstructors :: [Constructor]
-    , adtexported :: Bool
-    }
+data TypeDecl
+  = ADT
+      { adtname :: Name
+      , adtparams :: [Name]
+      , adtconstructors :: [Constructor]
+      , adtexported :: Bool
+      }
+  | Alias
+      { aliasname :: Name
+      , aliasparams :: [Name]
+      , aliastype :: Typing
+      , aliasexported :: Bool
+      }
     deriving(Eq, Show)
 
 data Constructor
@@ -82,7 +89,7 @@ data Exp_ = LNum String
           | LStr String
           | LBool String
           | JSExp String
-          | App Exp Exp
+          | App Exp Exp Bool
           | FieldAccess Exp Exp
           | Abs Name Exp
           | Assignment Name Exp
@@ -105,3 +112,11 @@ type Table = M.Map FilePath AST
 
 getConstructorName :: Constructor -> String
 getConstructorName (Constructor name _) = name
+
+adtExported :: TypeDecl -> Bool
+adtExported ADT { adtexported }     = adtexported
+adtExported Alias { aliasexported } = aliasexported
+
+adtName :: TypeDecl -> Name
+adtName ADT { adtname }     = adtname
+adtName Alias { aliasname } = aliasname

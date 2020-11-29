@@ -259,9 +259,76 @@ spec = do
               in  tableTester astTable b
             (Left e, _     ) -> Left e
             (_     , Left e) -> Left e
-      snapshotTest "should allow ADT constructors to have record parameters" actual
+      snapshotTest "should allow ADT constructors to have record parameters"
+                   actual
 
     ---------------------------------------------------------------------------
+
+
+
+    -- Type Aliases:
+
+    it "should allow aliasing of types" $ do
+      let codeA = unlines
+            [ "export alias Wish e a = (e -> m) -> (a -> n) -> o"
+            , ""
+            , "of :: a -> Wish e a"
+            , "export of = (a) => ((bad, good) => (good(a)))"
+            , ""
+            , "bad :: e -> Wish e a"
+            , "export bad = (e) => ((bad, good) => (bad(e)))"
+            , ""
+            , ""
+            , "map :: (a -> b) -> Wish e a -> Wish e b"
+            , "export map = (f, run) => ("
+            , "  (bad, good) => (run(bad, (x) => (good(f(x)))))"
+            , ")"
+            , ""
+            , "mapRej :: (e -> f) -> Wish e a -> Wish f a"
+            , "export mapRej = (f, run) => ("
+            , "  (bad, good) => ("
+            , "    run((x) => (bad(f(x))), good)"
+            , "  )"
+            , ")"
+            , ""
+            , "chain :: (a -> Wish f b) -> Wish e a -> Wish f b"
+            , "export chain = (f, run) => ("
+            , "  (bad, good) => ("
+            , "    run(bad, (x) => (f(x)(bad, good)))"
+            , "  )"
+            , ")"
+            , ""
+            , "chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b"
+            , "export chainRej = (f, run) => ("
+            , "  (bad, good) => ("
+            , "    run((x) => (f(x)(bad, good)), good)"
+            , "  )"
+            , ")"
+            , ""
+            , "fulfill :: (e -> m) -> (a -> n) -> Wish e a -> o"
+            , "export fulfill = (bad, good, run) => ("
+            , "  run(bad, good)"
+            , ")"
+            ]
+          astA  = buildAST "./ModuleA" codeA
+          codeB = unlines
+            [ "import W from \"./ModuleA\""
+            , "W.of(3)"
+            , "  |> W.map((x) => (x + 3))"
+            , "  |> W.chain((x) => (W.of(x * 3)))"
+            , "  |> W.fulfill((a) => (a), (a) => (a))"
+            ]
+          astB   = buildAST "./ModuleB" codeB
+          actual = case (astA, astB) of
+            (Right a, Right b) ->
+              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+              in  tableTester astTable b
+            (Left e, _     ) -> Left e
+            (_     , Left e) -> Left e
+      snapshotTest "should allow aliasing of types" actual
+
+    ---------------------------------------------------------------------------
+
 
 
     -- Records:
@@ -300,6 +367,13 @@ spec = do
         "should infer abstraction param that having a record exp as body"
         actual
 
+    it "should fail when spreading a non spreadable type into a record" $ do
+      let code   = unlines ["{ x: 1, ...3 }"]
+          actual = tester code
+      snapshotTest
+        "should fail when spreading a non spreadable type into a record"
+        actual
+
     ---------------------------------------------------------------------------
 
 
@@ -315,11 +389,17 @@ spec = do
           actual = tester code
       snapshotTest "should infer list spread" actual
 
-    it "should infer fail when spreading an array of a different type" $ do
+    it "should fail when spreading an array of a different type" $ do
       let code   = unlines ["[ 1, ...[\"1\", \"2\"]]"]
           actual = tester code
+      snapshotTest "should fail when spreading an array of a different type"
+                   actual
+
+    it "should fail when spreading a non spreadable type into an array" $ do
+      let code   = unlines ["[1, ...3]"]
+          actual = tester code
       snapshotTest
-        "should infer fail when spreading an array of a different type"
+        "should fail when spreading a non spreadable type into an array"
         actual
 
     -- Tuples
@@ -684,31 +764,37 @@ spec = do
           actual = tester code
       snapshotTest "should resolve ADTs with 3 parameters in is" actual
 
-    it "should fail to resolve patterns for namespaced ADTs that do not exist" $ do
-      let code = unlines
-            [ "might = (x) => (where(x) {"
-            , "  is M.Maybe a: a"
-            , "})"
-            ]
-          actual = tester code
-      snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist" actual
+    it "should fail to resolve patterns for namespaced ADTs that do not exist"
+      $ do
+          let
+            code =
+              unlines ["might = (x) => (where(x) {", "  is M.Maybe a: a", "})"]
+            actual = tester code
+          snapshotTest
+            "should fail to resolve patterns for namespaced ADTs that do not exist"
+            actual
 
-    it "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" $ do
-      let codeA  = ""
-          astA   = buildAST "./ModuleA" codeA
-          codeB  = unlines 
-            [ "import M from \"./ModuleA\""
-            , ""
-            , "might = (x) => (where(x) {"
-            , "  is M.Maybe a: a"
-            , "})"
-            ]
-          astB   = buildAST "./ModuleB" codeB
-          actual = case (astA, astB) of
-            (Right a, Right b) ->
-              let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)]
-              in  tableTester astTable b
-      snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" actual
+    it
+        "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists"
+      $ do
+          let codeA = ""
+              astA  = buildAST "./ModuleA" codeA
+              codeB = unlines
+                [ "import M from \"./ModuleA\""
+                , ""
+                , "might = (x) => (where(x) {"
+                , "  is M.Maybe a: a"
+                , "})"
+                ]
+              astB   = buildAST "./ModuleB" codeB
+              actual = case (astA, astB) of
+                (Right a, Right b) ->
+                  let astTable =
+                          M.fromList [("./ModuleA", a), ("./ModuleB", b)]
+                  in  tableTester astTable b
+          snapshotTest
+            "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists"
+            actual
 
     ---------------------------------------------------------------------------
 
@@ -716,7 +802,7 @@ spec = do
     -- Imports:
 
     it "should resolve names from imported modules" $ do
-      let codeA  = unlines 
+      let codeA = unlines
             [ "export inc = (a) => (a + 1)"
             , ""
             , "add = (a, b) => (a + b)"

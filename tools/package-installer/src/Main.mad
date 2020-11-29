@@ -1,0 +1,50 @@
+import L from "List"
+import W from "Wish"
+import Math from "Math"
+import IO from "IO"
+import Http from "Http"
+import B from "Binary"
+import FS from "FileSystem"
+import M from "Map"
+import Maybe from "Maybe"
+import J from "Json"
+import E from "Either"
+import S from "System"
+import String from "String"
+
+
+IO.log("Installing dependencies ...")
+
+installPackages = (config) => (
+  FS.readFile(config)
+    |> W.mapRej((a) => ("The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."))
+    |> W.map(J.parse(J.field("dependencies", J.map(J.string))))
+    |> W.chain((dm) => (where(dm) {
+        is E.Left e: W.bad(e)
+        is E.Right depMap:
+          M.keys(depMap)
+            |> (keys) => (IO.trace("Packages to install:" ++ L.reduceR((ptis, k) => (ptis ++ "\n" ++ "  - " ++ k), "", keys) ++ "\n", keys))
+            |> L.map((key) => (
+                 M.get(key, depMap)
+                   |> (path) => (where(path)
+                        is Maybe.Just p : Http.get(p)
+                        is Maybe.Nothing: W.bad("ERR")
+                      )
+                   |> W.map((res) => (where(res)
+                        is Http.Response { body: Http.BinaryBody d }: d
+                      ))
+                   |> W.map(FS.BinaryData)
+                   |> W.chain(FS.writeFile(key ++ ".zip"))
+                   |> W.chain((a) => (S.exec("mv " ++ a ++ " ./madlib_modules/")))
+                   |> W.chain((a) => (S.exec("unzip -d ./madlib_modules/" ++ key ++ "-tmp ./madlib_modules/" ++ key ++ ".zip")))
+                   |> W.chain((a) => (S.exec("mv ./madlib_modules/" ++ key ++ "-tmp/* ./madlib_modules/" ++ key ++ "-tmp/" ++ key)))
+                   |> W.chain((a) => (S.exec("cp -R ./madlib_modules/" ++ key++"-tmp/"++key++" ./madlib_modules/")))
+                   |> W.chain((a) => (S.exec("rm -r ./madlib_modules/" ++ key ++ ".zip ./madlib_modules/" ++ key ++ "-tmp")))
+                   |> W.map((a) => ("package " ++ key ++ " installed"))
+               ))
+            |> W.parallel
+        }))
+    |> W.fulfill(IO.log, L.map(IO.log))
+)
+
+installPackages("madlib.json")

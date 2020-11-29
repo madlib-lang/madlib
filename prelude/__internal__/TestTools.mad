@@ -1,0 +1,54 @@
+import W from "Wish"
+import IO from "IO"
+import S from "String"
+import L from "List"
+import F from "Function"
+
+
+data AssertionError = AssertionError a a
+
+
+colorString :: String -> String -> String
+colorString = (color, v) => (color ++ v ++"\x1b[0m")
+
+red = colorString("\x1b[31m")
+green = colorString("\x1b[32m")
+
+formatSuccessOutput = (description, result) => (
+  green("\u2713 " ++ description)
+)
+
+formatFailureOutput = (description, result) => (
+  where(result) {
+    is AssertionError expected actual:
+      W.of(
+        red("\u00d7 " ++ description)
+        ++ "\n    expected:\n      "
+        ++ S.show(expected)
+        ++ "\n    actual:\n      "
+        ++ S.show(actual)
+      )
+  }
+)
+
+test :: String -> (x -> W.Wish AssertionError String) -> W.Wish String String
+export test = (description, run) => (
+  run(description)
+    |> W.map(formatSuccessOutput(description))
+    |> W.chainRej(formatFailureOutput(description))
+)
+
+assertEquals :: a -> a -> W.Wish AssertionError String
+export assertEquals = (actual, expected) => (
+  actual == expected
+    ? W.of("")
+    : W.bad(AssertionError(expected, actual))
+)
+
+runTests :: List (W.Wish String String) -> a
+export runTests = (tests) => (
+  IO.log("Running tests ...")
+    |> F.always(tests)
+    |> W.parallel
+    |> W.fulfill(F.identity, L.map(IO.log))
+)

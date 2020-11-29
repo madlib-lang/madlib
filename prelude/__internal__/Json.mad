@@ -47,13 +47,3 @@ export field = (fieldName, parser, input) => ( #- parser(input[fieldName]) -#)
 
 parse :: (a -> E.Either String b) -> String -> E.Either String b
 export parse = (parser, input) => (#- parser(JSON.parse(input)) -#)
-
-
-
-// (parse(field("name", string), `{ "name": "Jesus", "age": 33 }`)) |> IO.log
-
-// (parse(field("age", number), `{ "name": "Jesus", "age": 33 }`)) |> IO.log
-
-
-// (parse(field("dependencies", map(string)), `{ "dependencies": { "jesus": "https://github.com" } }`)) |> IO.log
-

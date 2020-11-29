@@ -14,11 +14,12 @@ Right
                         (TArr (TCon CBool) (TArr (TCon CBool) (TCon CBool)))
                         (Area (Loc 5 1 6) (Loc 7 1 8))
                         (Var "&&"))
-                     (Solved
-                        (TCon CBool) (Area (Loc 0 1 1) (Loc 4 1 5)) (LBool "true"))))
+                     (Solved (TCon CBool) (Area (Loc 0 1 1) (Loc 4 1 5)) (LBool "true"))
+                     False))
                (Solved
-                  (TCon CBool) (Area (Loc 8 1 9) (Loc 13 1 14)) (LBool "false")))
+                  (TCon CBool) (Area (Loc 8 1 9) (Loc 13 1 14)) (LBool "false"))
+               True)
         ]
-    , aadts = []
+    , atypedecls = []
     , apath = Just "path"
     }

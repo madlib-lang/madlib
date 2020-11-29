@@ -1,25 +1,14 @@
 module Tools.CommandLineFlags where
 
-import           Options.Applicative -- provided by optparse-applicative
-
-data FlagInput   = FileInput FilePath
-                  | StdInput
-                  deriving (Show)
-
-data FlagOutput   = FileOutput FilePath
-                  | StdOutput
-                  deriving (Show)
-
-newtype FlagConfig   = FileConfig FilePath
-                  deriving (Show)
-
-
-data FlagLiterate = LiterateAll
-                  | LiterateCode
-                  | LiterateNoCode
-                  deriving (Bounded, Enum, Show)
-
-data Severity     = Info
-                  | Warning
-                  | Error
-                  deriving (Bounded, Enum, Show)
+data Command
+  = Compile
+      { compileInput :: FilePath
+      , compileOutput :: FilePath
+      , compileConfig :: FilePath
+      , compileVerbose :: Bool
+      , compileDebug :: Bool
+      , compileBundle :: Bool
+      }
+  | Test { testInput :: FilePath }
+  | Install
+  deriving (Eq, Show)

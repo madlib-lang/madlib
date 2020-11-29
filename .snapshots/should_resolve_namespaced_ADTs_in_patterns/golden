@@ -4,7 +4,7 @@ Right
        , AST
            { aimports = []
            , aexps = []
-           , aadts =
+           , atypedecls =
                [ ADT
                    { adtname = "Maybe"
                    , adtparams = [ "a" ]
@@ -73,7 +73,7 @@ Right
                       (TRArr
                          (TRComp "M.Maybe" [ TRSingle "Number" ]) (TRSingle "Number")))
                ]
-           , aadts = []
+           , atypedecls = []
            , apath = Just "./ModuleB"
            }
        )

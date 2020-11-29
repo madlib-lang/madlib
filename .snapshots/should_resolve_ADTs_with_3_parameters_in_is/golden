@@ -43,12 +43,12 @@ Right
                                                 ]))))
                                     (Area (Loc 42 2 7) (Loc 46 2 11))
                                     (Var "Wish"))
-                                 (Solved
-                                    (TCon CNum) (Area (Loc 47 2 12) (Loc 48 2 13)) (LNum "1"))))
-                           (Solved
-                              (TCon CNum) (Area (Loc 50 2 15) (Loc 51 2 16)) (LNum "2"))))
-                     (Solved
-                        (TCon CNum) (Area (Loc 53 2 18) (Loc 54 2 19)) (LNum "3"))))
+                                 (Solved (TCon CNum) (Area (Loc 47 2 12) (Loc 48 2 13)) (LNum "1"))
+                                 False))
+                           (Solved (TCon CNum) (Area (Loc 50 2 15) (Loc 51 2 16)) (LNum "2"))
+                           False))
+                     (Solved (TCon CNum) (Area (Loc 53 2 18) (Loc 54 2 19)) (LNum "3"))
+                     True))
                [ Solved
                    (TArr
                       (TComp "path" "Wish" [ TCon CNum , TCon CNum , TCon CNum ])
@@ -59,7 +59,7 @@ Right
                       (Solved (TCon CNum) (Area (Loc 76 3 18) (Loc 77 3 19)) (Var "c")))
                ])
         ]
-    , aadts =
+    , atypedecls =
         [ ADT
             { adtname = "Wish"
             , adtparams = [ "e" , "a" , "c" ]

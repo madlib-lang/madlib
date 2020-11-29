@@ -31,13 +31,6 @@ lookupVar env x = do
       return (M.empty, t)
 
 
-lookupADT :: Env -> String -> Infer Type
-lookupADT env x = do
-  case M.lookup x $ envadts env of
-    Nothing -> throwError $ InferError (UnknownType x) NoReason
-    Just x  -> return x
-
-
 extendVars :: Env -> (String, Scheme) -> Env
 extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
 
@@ -86,7 +79,7 @@ initialEnv = Env
                                                        [TVar $ TV "a"]
       )
     ]
-  , envadts = M.fromList [("List", TComp "Prelude" "List" [TVar $ TV "a"])]
+  , envtypes = M.fromList [("List", TComp "Prelude" "List" [TVar $ TV "a"])]
   , envimports     = M.empty
   , envcurrentpath = ""
   }
@@ -94,12 +87,12 @@ initialEnv = Env
 
 -- TODO: Should we build imported names here ?
 buildInitialEnv :: Env -> AST -> Infer Env
-buildInitialEnv priorEnv AST { aadts, apath = Just apath } = do
-  tadts <- buildADTTypes apath aadts
-  vars  <- resolveADTs priorEnv apath tadts aadts
+buildInitialEnv priorEnv AST { atypedecls, apath = Just apath } = do
+  tadts <- buildTypeDecls priorEnv apath atypedecls
+  vars  <- resolveTypeDecls priorEnv apath tadts atypedecls
   let allVars = M.union (envvars initialEnv) vars
   return Env { envvars        = allVars
-             , envadts        = M.union (envadts initialEnv) tadts
+             , envtypes       = M.union (envtypes initialEnv) tadts
              , envimports     = M.empty
              , envcurrentpath = apath
              }
