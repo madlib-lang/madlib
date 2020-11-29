@@ -29,7 +29,7 @@ rm -r $PATH_LINUX_TARGET
 # build osx
 PATH_OSX_EXE="$(stack path --dist-dir)/build/madlib/madlib"
 
-stack build
+stack build --jobs 1
 cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
 tar -C $PATH_TARGETS -czvf $DARWIN_TAR_FILENAME $DARWIN_NAME
 mv $DARWIN_TAR_FILENAME $PATH_TARGETS
