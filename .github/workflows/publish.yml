@@ -39,8 +39,14 @@ jobs:
           enable-stack: true
           stack-version: "latest"
 
+      - name: Use Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.node-version }}
+
       - uses: docker-practice/actions-setup-docker@master
 
+      - run: npm i -g rollup
       - run: stack install alex happy
 
       - run: ./pkg/build-targets
