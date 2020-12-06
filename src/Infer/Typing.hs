@@ -21,6 +21,7 @@ typingToType env (Meta _ _ (Src.TRSingle t))
   | t == "Number" = return $ TCon CNum
   | t == "Boolean" = return $ TCon CBool
   | t == "String" = return $ TCon CString
+  | t == "()" = return $ TCon CUnit
   | isLower $ head t = return $ TVar $ TV t
   | otherwise = do
     h <- lookupADT env t

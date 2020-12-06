@@ -7,3 +7,9 @@ replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex), replacing)
 -#)
+
+split :: String -> String -> List String
+export split = (separator, str) => (#- str.split(separator) -#)
+
+lines :: String -> List String
+export lines = split("\n")

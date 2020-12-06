@@ -38,6 +38,7 @@ data TCon
   = CString
   | CNum
   | CBool
+  | CUnit
   deriving (Show, Eq, Ord)
 
 number :: Type
@@ -48,6 +49,9 @@ bool = TCon CBool
 
 str :: Type
 str = TCon CString
+
+unit :: Type
+unit = TCon CUnit
 
 infixr `TArr`
 

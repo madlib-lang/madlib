@@ -1,0 +1,211 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+            (Area (Loc 0 1 1) (Loc 163 7 1))
+            (TypedExp
+               (Solved
+                  (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                  (Area (Loc 34 2 1) (Loc 163 7 1))
+                  (Assignment
+                     "fn"
+                     (Solved
+                        (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                        (Area (Loc 39 2 6) (Loc 163 7 1))
+                        (Abs
+                           "a"
+                           [ Solved
+                               (TArr (TCon CNum) (TCon CBool))
+                               (Area (Loc 39 2 6) (Loc 163 7 1))
+                               (Abs
+                                  "b"
+                                  [ Solved
+                                      (TCon CNum)
+                                      (Area (Loc 53 3 3) (Loc 56 3 6))
+                                      (Assignment
+                                         "sum"
+                                         (Solved
+                                            (TCon CNum)
+                                            (Area (Loc 59 3 9) (Loc 60 3 10))
+                                            (App
+                                               (Solved
+                                                  (TArr (TCon CNum) (TCon CNum))
+                                                  (Area (Loc 59 3 9) (Loc 60 3 10))
+                                                  (App
+                                                     (Solved
+                                                        (TArr
+                                                           (TCon CNum)
+                                                           (TArr (TCon CNum) (TCon CNum)))
+                                                        (Area (Loc 60 3 10) (Loc 62 3 12))
+                                                        (Var "+"))
+                                                     (Solved
+                                                        (TCon CNum)
+                                                        (Area (Loc 59 3 9) (Loc 60 3 10))
+                                                        (Var "a"))
+                                                     False))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 63 3 13) (Loc 64 3 14))
+                                                  (Var "b"))
+                                               True)))
+                                  , Solved
+                                      (TCon CBool)
+                                      (Area (Loc 67 4 3) (Loc 78 4 14))
+                                      (Assignment
+                                         "moreThanTen"
+                                         (Solved
+                                            (TCon CBool)
+                                            (Area (Loc 81 4 17) (Loc 84 4 20))
+                                            (App
+                                               (Solved
+                                                  (TArr (TCon CNum) (TCon CBool))
+                                                  (Area (Loc 81 4 17) (Loc 84 4 20))
+                                                  (App
+                                                     (Solved
+                                                        (TArr
+                                                           (TVar (TV "g"))
+                                                           (TArr (TVar (TV "g")) (TCon CBool)))
+                                                        (Area (Loc 85 4 21) (Loc 86 4 22))
+                                                        (Var ">"))
+                                                     (Solved
+                                                        (TCon CNum)
+                                                        (Area (Loc 81 4 17) (Loc 84 4 20))
+                                                        (Var "sum"))
+                                                     False))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 87 4 23) (Loc 89 4 25))
+                                                  (LNum "10"))
+                                               True)))
+                                  , Solved
+                                      (TCon CNum)
+                                      (Area (Loc 92 5 3) (Loc 100 5 11))
+                                      (Assignment
+                                         "computed"
+                                         (Solved
+                                            (TCon CNum)
+                                            (Area (Loc 103 5 14) (Loc 130 5 41))
+                                            (If
+                                               (Solved
+                                                  (TCon CBool)
+                                                  (Area (Loc 103 5 14) (Loc 114 5 25))
+                                                  (Var "moreThanTen"))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 117 5 28) (Loc 120 5 31))
+                                                  (App
+                                                     (Solved
+                                                        (TArr (TCon CNum) (TCon CNum))
+                                                        (Area (Loc 117 5 28) (Loc 120 5 31))
+                                                        (App
+                                                           (Solved
+                                                              (TArr
+                                                                 (TCon CNum)
+                                                                 (TArr (TCon CNum) (TCon CNum)))
+                                                              (Area (Loc 120 5 31) (Loc 122 5 33))
+                                                              (Var "*"))
+                                                           (Solved
+                                                              (TCon CNum)
+                                                              (Area (Loc 117 5 28) (Loc 120 5 31))
+                                                              (Var "sum"))
+                                                           False))
+                                                     (Solved
+                                                        (TCon CNum)
+                                                        (Area (Loc 123 5 34) (Loc 124 5 35))
+                                                        (LNum "2"))
+                                                     True))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 127 5 38) (Loc 130 5 41))
+                                                  (App
+                                                     (Solved
+                                                        (TArr (TCon CNum) (TCon CNum))
+                                                        (Area (Loc 127 5 38) (Loc 130 5 41))
+                                                        (App
+                                                           (Solved
+                                                              (TArr
+                                                                 (TCon CNum)
+                                                                 (TArr (TCon CNum) (TCon CNum)))
+                                                              (Area (Loc 130 5 41) (Loc 132 5 43))
+                                                              (Var "/"))
+                                                           (Solved
+                                                              (TCon CNum)
+                                                              (Area (Loc 127 5 38) (Loc 130 5 41))
+                                                              (Var "sum"))
+                                                           False))
+                                                     (Solved
+                                                        (TCon CNum)
+                                                        (Area (Loc 133 5 44) (Loc 134 5 45))
+                                                        (LNum "2"))
+                                                     True)))))
+                                  , Solved
+                                      (TCon CBool)
+                                      (Area (Loc 144 6 10) (Loc 152 6 18))
+                                      (App
+                                         (Solved
+                                            (TArr (TCon CNum) (TCon CBool))
+                                            (Area (Loc 144 6 10) (Loc 152 6 18))
+                                            (App
+                                               (Solved
+                                                  (TArr
+                                                     (TVar (TV "n"))
+                                                     (TArr (TVar (TV "n")) (TCon CBool)))
+                                                  (Area (Loc 157 6 23) (Loc 159 6 25))
+                                                  (Var "=="))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 144 6 10) (Loc 152 6 18))
+                                                  (App
+                                                     (Solved
+                                                        (TArr (TCon CNum) (TCon CNum))
+                                                        (Area (Loc 144 6 10) (Loc 152 6 18))
+                                                        (App
+                                                           (Solved
+                                                              (TArr
+                                                                 (TCon CNum)
+                                                                 (TArr (TCon CNum) (TCon CNum)))
+                                                              (Area (Loc 152 6 18) (Loc 154 6 20))
+                                                              (Var "%"))
+                                                           (Solved
+                                                              (TCon CNum)
+                                                              (Area (Loc 144 6 10) (Loc 152 6 18))
+                                                              (Var "computed"))
+                                                           False))
+                                                     (Solved
+                                                        (TCon CNum)
+                                                        (Area (Loc 155 6 21) (Loc 156 6 22))
+                                                        (LNum "2"))
+                                                     True))
+                                               False))
+                                         (Solved
+                                            (TCon CNum)
+                                            (Area (Loc 160 6 26) (Loc 161 6 27))
+                                            (LNum "0"))
+                                         True)
+                                  ])
+                           ]))))
+               (TRArr
+                  (TRSingle "Number")
+                  (TRArr (TRSingle "Number") (TRSingle "Boolean"))))
+        , Solved
+            (TCon CBool)
+            (Area (Loc 170 8 7) (Loc 171 8 8))
+            (App
+               (Solved
+                  (TArr (TCon CNum) (TCon CBool))
+                  (Area (Loc 164 8 1) (Loc 172 8 9))
+                  (App
+                     (Solved
+                        (TArr (TCon CNum) (TArr (TCon CNum) (TCon CBool)))
+                        (Area (Loc 164 8 1) (Loc 166 8 3))
+                        (Var "fn"))
+                     (Solved (TCon CNum) (Area (Loc 167 8 4) (Loc 168 8 5)) (LNum "3"))
+                     False))
+               (Solved (TCon CNum) (Area (Loc 170 8 7) (Loc 171 8 8)) (LNum "4"))
+               True)
+        ]
+    , atypedecls = []
+    , apath = Just "path"
+    }

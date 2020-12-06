@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e91a2388cb3220c97aaa8e4b380b2ec5ea8a9eef9dda76a054b730fa9678d924
+-- hash: f803a22fc4fe396b39906bef23ab4f6d58ed9bc5b3cd2fd171a51a6756854f89
 
 name:           madlib
 version:        0.0.5
@@ -31,6 +31,7 @@ library
       AST.Solved
       AST.Source
       Compile
+      Coverage.Coverable
       Error.Error
       Explain.Format
       Explain.Location
@@ -92,6 +93,7 @@ executable madlib
       AST.Solved
       AST.Source
       Compile
+      Coverage.Coverable
       Error.Error
       Explain.Format
       Explain.Location

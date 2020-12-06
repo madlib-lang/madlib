@@ -88,10 +88,11 @@ type Exp = Solved Exp_
 data Exp_ = LNum String
           | LStr String
           | LBool String
+          | LUnit
           | JSExp String
           | App Exp Exp Bool
           | FieldAccess Exp Exp
-          | Abs Name Exp
+          | Abs Name [Exp]
           | Assignment Name Exp
           | Export Exp
           | Var Name
@@ -120,3 +121,6 @@ adtExported Alias { aliasexported } = aliasexported
 adtName :: TypeDecl -> Name
 adtName ADT { adtname }     = adtname
 adtName Alias { aliasname } = aliasname
+
+getStartLine :: Exp -> Int
+getStartLine (Solved _ (Area (Loc _ line _) _) _) = line

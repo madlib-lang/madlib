@@ -32,7 +32,8 @@ buildTypeDecls' priorEnv astPath typeDecls (typeDecl : xs) = do
   return $ M.union a next
 
 
-buildTypeDecl :: Env -> FilePath -> TypeDecls -> TypeDecl -> Infer (String, Type)
+buildTypeDecl
+  :: Env -> FilePath -> TypeDecls -> TypeDecl -> Infer (String, Type)
 buildTypeDecl _ astPath typeDecls adt@ADT{} =
   case M.lookup (adtname adt) typeDecls of
     Just t  -> throwError $ InferError (ADTAlreadyDefined t) NoReason

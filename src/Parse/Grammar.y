@@ -49,6 +49,7 @@ import           Explain.Meta
   'else'   { Token _ TokenElse }
   'where'  { Token _ TokenWhere }
   'is'     { Token _ TokenIs }
+  'return'  { Token _ TokenReturnKeyword }
   '=='     { Token _ TokenDoubleEq }
   false    { Token _ (TokenBool _) }
   true     { Token _ (TokenBool _) }
@@ -93,7 +94,7 @@ ast :: { Src.AST }
   | 'ret' ast        %shift { $2 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' typings maybeRet 'export' name '=' exp ast
-      { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
+      { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $5) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }
@@ -165,6 +166,7 @@ typings :: { Src.Typing }
 
 typing :: { Src.Typing }
   : name                        %shift { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
+  | '(' ')'                     %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRSingle "()") }
   | '(' typing '->' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
   | typing '->' typings         %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | '{' recordTypingArgs '}'    %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
@@ -179,6 +181,8 @@ compositeTypingArgs :: { [Src.Typing] }
   : name                        { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
   | name compositeTypingArgs    { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
   | typings                     { [$1] }
+  | '(' typing '->' typings ')' %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4)] }
+  | compositeTypingArgs '(' typing '->' typings ')' %shift { $1 <> [Meta emptyInfos (mergeAreas (getArea $ head $1) (tokenToArea $6)) (Src.TRArr $3 $5)] }
   | '(' typings ')'             { [$2] }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
@@ -206,16 +210,14 @@ exp :: { Src.Exp }
   | js                        %shift { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
   | name '=' exp              %shift { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
   | name                      %shift { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
-  | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
-  | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
-  | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
-  | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
   | 'pipe' '(' args ')' '(' args ')'       %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
   | 'pipe' '(' args ')'       %shift { buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
+  | app                       %shift { $1 }
+  | '(' params ')' '=>' rets exp  %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 [$6] }
+  | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 [$7] }
+  | '(' params ')' '=>' '{' rets multiExpBody rets '}'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
   | '(' exp ')'               %shift { $2 }
   | exp '.' name              %shift { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
-  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
@@ -227,6 +229,18 @@ exp :: { Src.Exp }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
       { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
 
+app :: { Src.Exp }
+  : app '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
+  | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
+  | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
+  | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
+  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
+
+multiExpBody :: { [Src.Exp] }
+  : 'return' exp          { [$2] }
+  | exp rets multiExpBody { $1:$3 }
+
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
@@ -237,8 +251,8 @@ where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
   | 'where' '(' exp ')' maybeRet iss                  %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
-  | 'where' '{' rets iss rets '}' %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["x"] (Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "x")) $4)) }
-  | 'where' rets iss rets %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $ last $3)) ["x"] (Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $3)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "x")) $3)) }
+  | 'where' '{' rets iss rets '}' %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $4)] }
+  | 'where' rets iss rets %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $ last $3)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $3)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $3)] }
 
 iss :: { [Src.Is] }
   : 'is' pattern ':' maybeRet exp                    %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }
@@ -422,33 +436,35 @@ tupleItems :: { [Src.Exp] }
 
 
 literal :: { Src.Exp }
-  : number                    { Meta emptyInfos (tokenToArea $1) (Src.LNum $ strV $1) }
-  | str                       { Meta emptyInfos (tokenToArea $1) (Src.LStr $ strV $1) }
-  | true                      { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
-  | false                     { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
+  : number  %shift { Meta emptyInfos (tokenToArea $1) (Src.LNum $ strV $1) }
+  | str     %shift { Meta emptyInfos (tokenToArea $1) (Src.LStr $ strV $1) }
+  | true    %shift { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
+  | false   %shift { Meta emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
+  | '(' ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) Src.LUnit }
 
 args :: { [Src.Exp] }
-  : exp rComa args %shift { $1:$3 }
-  | exp            %shift { [$1] }
-  | exp 'ret'      %shift { [$1] }
+  : exp ',' args             %shift { $1:$3 }
+  | exp 'ret' ',' args       %shift { $1:$4 }
+  | exp ',' 'ret' args       %shift { $1:$4 }
+  | exp 'ret' ',' 'ret' args %shift { $1:$5 }
+  | exp                      %shift { [$1] }
+  | exp 'ret'                %shift { [$1] }
 
 params :: { [Src.Name] }
   : name ',' params %shift { strV $1 : $3 }
-  | name                   { [strV $1] }
+  | name            %shift { [strV $1] }
 
 {
-buildAbs :: Area -> [Src.Name] -> Src.Exp -> Src.Exp
+buildAbs :: Area -> [Src.Name] -> [Src.Exp] -> Src.Exp
 buildAbs area params body = buildAbs' (length params) area params body
 
 
--- TODO: use that nth to add context to params
--- To do this we need to somehow extend the Name with a version that is in a Meta
-buildAbs' :: Int -> Area -> [Src.Name] -> Src.Exp -> Src.Exp
+buildAbs' :: Int -> Area -> [Src.Name] -> [Src.Exp] -> Src.Exp
 buildAbs' nth area [param] body = Meta emptyInfos area (Src.Abs param body)
-buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x (buildAbs' (nth + 1) area xs body))
+buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x [(buildAbs' (nth + 1) area xs body)])
 
 buildPipeAbs :: Area -> [Src.Exp] -> Src.Exp
-buildPipeAbs area exps = Meta emptyInfos area (Src.Abs "x" $ buildPipeAbs' (Meta emptyInfos area (Src.Var "x")) exps)
+buildPipeAbs area exps = Meta emptyInfos area (Src.Abs "__x__" $ [buildPipeAbs' (Meta emptyInfos area (Src.Var "__x__")) exps])
 
 buildPipeAbs' :: Src.Exp -> [Src.Exp] -> Src.Exp
 buildPipeAbs' prev [] = prev
@@ -465,10 +481,10 @@ buildApp area f args = buildApp' (length args) (length args) area f args
 
 buildApp' :: Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
 buildApp' total nth area f@(Meta _ _ f') [(Meta emptyInfos area' arg)]  = Meta emptyInfos area (Src.App f (Meta Infos { origin = Just f', nthArg = Just nth } area' arg) (total == nth))
-buildApp' total nth area f@(Meta _ _ f') xs     =
-  let (Meta emptyInfos area arg) = last xs
-      argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area arg
-  in  Meta emptyInfos area (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))
+buildApp' total nth area f@(Meta _ _ f') xs     = 
+  let (Meta emptyInfos area' arg) = last xs
+      argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area' arg
+  in  Meta emptyInfos area' (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))
 
 
 

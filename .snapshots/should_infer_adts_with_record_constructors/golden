@@ -60,42 +60,44 @@ Right
             (App
                (Solved
                   (TArr (TComp "path" "Result" []) (TCon CBool))
-                  (Area (Loc 173 4 31) (Loc 180 4 38))
+                  (Area (Loc 143 4 1) (Loc 181 4 39))
                   (App
                      (Solved
                         (TArr (TVar (TV "f")) (TArr (TVar (TV "f")) (TCon CBool)))
                         (Area (Loc 144 4 2) (Loc 162 4 20))
                         (Abs
                            "a"
-                           (Solved
-                              (TArr (TVar (TV "f")) (TCon CBool))
-                              (Area (Loc 144 4 2) (Loc 162 4 20))
-                              (Abs
-                                 "b"
-                                 (Solved
-                                    (TCon CBool)
-                                    (Area (Loc 155 4 13) (Loc 156 4 14))
-                                    (App
-                                       (Solved
-                                          (TArr (TVar (TV "e")) (TCon CBool))
-                                          (Area (Loc 155 4 13) (Loc 156 4 14))
-                                          (App
-                                             (Solved
-                                                (TArr
-                                                   (TVar (TV "i"))
-                                                   (TArr (TVar (TV "i")) (TCon CBool)))
-                                                (Area (Loc 157 4 15) (Loc 159 4 17))
-                                                (Var "=="))
-                                             (Solved
-                                                (TVar (TV "e"))
-                                                (Area (Loc 155 4 13) (Loc 156 4 14))
-                                                (Var "a"))
-                                             False))
-                                       (Solved
-                                          (TVar (TV "f"))
-                                          (Area (Loc 160 4 18) (Loc 161 4 19))
-                                          (Var "b"))
-                                       True))))))
+                           [ Solved
+                               (TArr (TVar (TV "f")) (TCon CBool))
+                               (Area (Loc 144 4 2) (Loc 162 4 20))
+                               (Abs
+                                  "b"
+                                  [ Solved
+                                      (TCon CBool)
+                                      (Area (Loc 155 4 13) (Loc 156 4 14))
+                                      (App
+                                         (Solved
+                                            (TArr (TVar (TV "e")) (TCon CBool))
+                                            (Area (Loc 155 4 13) (Loc 156 4 14))
+                                            (App
+                                               (Solved
+                                                  (TArr
+                                                     (TVar (TV "i"))
+                                                     (TArr (TVar (TV "i")) (TCon CBool)))
+                                                  (Area (Loc 157 4 15) (Loc 159 4 17))
+                                                  (Var "=="))
+                                               (Solved
+                                                  (TVar (TV "e"))
+                                                  (Area (Loc 155 4 13) (Loc 156 4 14))
+                                                  (Var "a"))
+                                               False))
+                                         (Solved
+                                            (TVar (TV "f"))
+                                            (Area (Loc 160 4 18) (Loc 161 4 19))
+                                            (Var "b"))
+                                         True)
+                                  ])
+                           ]))
                      (Solved
                         (TComp "path" "Result" [])
                         (Area (Loc 164 4 22) (Loc 171 4 29))

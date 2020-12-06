@@ -51,5 +51,5 @@ export getArgs = (#- W.of(process.argv.slice(2)) -#)
 getEnv :: String -> W.Wish String String
 export getEnv = (name) => (#- {
   const envVar = process.env[name];
-  return !!envVar ? W.bad("Not found") : W.of(envVar)
+  return envVar === undefined ? W.bad("Not found") : W.of(envVar)
 } -#)

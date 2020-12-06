@@ -51,7 +51,6 @@ parseDebug :: Parser Bool
 parseDebug =
   switch (long "debug" <> short 'd' <> help "Print AST info" <> showDefault)
 
-
 parseBundle :: Parser Bool
 parseBundle = switch
   (  long "bundle"
@@ -75,8 +74,17 @@ parseCompile =
     <*> parseDebug
     <*> parseBundle
 
+parseCoverage :: Parser Bool
+parseCoverage = switch
+  (  long "coverage"
+  <> short 'c'
+  <> help
+       "Runs tests with coverage report and saves the report in .coverage/lcov.info"
+  <> showDefault
+  )
+
 parseTest :: Parser Command
-parseTest = Test <$> parseInput
+parseTest = Test <$> parseInput <*> parseCoverage
 
 
 parseCommand :: Parser Command

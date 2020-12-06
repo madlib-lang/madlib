@@ -12,22 +12,23 @@ Right
                   (Area (Loc 37 2 6) (Loc 81 6 1))
                   (Abs
                      "b"
-                     (Solved
-                        (TVar (TV "c"))
-                        (Area (Loc 48 3 3) (Loc 79 5 3))
-                        (Where
-                           (Solved
-                              (TComp "path" "Maybe" [ TVar (TV "c") ])
-                              (Area (Loc 54 3 9) (Loc 55 3 10))
-                              (Var "b"))
-                           [ Solved
-                               (TArr (TComp "path" "Maybe" [ TVar (TV "c") ]) (TVar (TV "c")))
-                               (Area (Loc 63 4 5) (Loc 75 4 17))
-                               (Is
-                                  (PCtor "Just" [ PVar "x" ])
-                                  (Solved
-                                     (TVar (TV "c")) (Area (Loc 74 4 16) (Loc 75 4 17)) (Var "x")))
-                           ])))))
+                     [ Solved
+                         (TVar (TV "c"))
+                         (Area (Loc 48 3 3) (Loc 79 5 3))
+                         (Where
+                            (Solved
+                               (TComp "path" "Maybe" [ TVar (TV "c") ])
+                               (Area (Loc 54 3 9) (Loc 55 3 10))
+                               (Var "b"))
+                            [ Solved
+                                (TArr (TComp "path" "Maybe" [ TVar (TV "c") ]) (TVar (TV "c")))
+                                (Area (Loc 63 4 5) (Loc 75 4 17))
+                                (Is
+                                   (PCtor "Just" [ PVar "x" ])
+                                   (Solved
+                                      (TVar (TV "c")) (Area (Loc 74 4 16) (Loc 75 4 17)) (Var "x")))
+                            ])
+                     ])))
         , Solved
             (TCon CNum)
             (Area (Loc 82 7 1) (Loc 93 7 12))

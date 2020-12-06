@@ -8,7 +8,7 @@ mapWithIndex :: (a -> Number -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
 
 concat :: List a -> List a -> List a
-export concat = (v, xs) => (#- xs.concat(v) -#)
+export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
 
 append :: a -> List a -> List a
 export append = (v, xs) => (#- [...xs, v] -#)
@@ -23,7 +23,7 @@ nth :: Number -> List a -> Maybe.Maybe a
 export nth = (i, xs) => (#- {
   const x = xs[i];
   return x === undefined
-    ? Maybe.Nothing()
+    ? Maybe.Nothing
     : Maybe.Just(x);
 } -#)
 
@@ -40,7 +40,7 @@ find :: (a -> Boolean) -> List a -> Maybe.Maybe a
 export find = (predicate, xs) => (#- {
   const found = xs.find(predicate);
   if (found === undefined) {
-    return Maybe.Nothing()
+    return Maybe.Nothing
   }
   else {
     return Maybe.Just(found)
@@ -56,4 +56,14 @@ export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
 slice :: Number -> Number -> List a -> List a
 export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
 
+isEmpty :: List a -> Boolean
+export isEmpty = (xs) => len(xs) == 0
 
+uniqueBy :: (a -> a -> Boolean) -> List a -> List a
+export uniqueBy = (f, xs) => where(xs)
+  is [curr, ...tail]:
+    where(find(f(curr), tail)) {
+      is Maybe.Just _ : uniqueBy(f, tail)
+      is Maybe.Nothing: [curr, ...uniqueBy(f, tail)]
+    }
+  is [last]: [last]

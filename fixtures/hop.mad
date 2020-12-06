@@ -1,6 +1,5 @@
 data Response = Success Number { body :: Number }
 
-r = Success(3, { body: 3 })
--- r = Success({ body: 3 })
-
--- r.body
+where(Success(1, { body: 3 }))
+  Success 1 _ -> 3
+  Success 2 _ -> 3

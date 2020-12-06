@@ -7,27 +7,29 @@ Right
             (Area (Loc 0 1 1) (Loc 17 1 18))
             (Abs
                "b"
-               (Solved
-                  (TArr (TCon CNum) (TCon CNum))
-                  (Area (Loc 0 1 1) (Loc 17 1 18))
-                  (Abs
-                     "c"
-                     (Solved
-                        (TCon CNum)
-                        (Area (Loc 11 1 12) (Loc 12 1 13))
-                        (App
-                           (Solved
-                              (TArr (TCon CNum) (TCon CNum))
-                              (Area (Loc 11 1 12) (Loc 12 1 13))
-                              (App
-                                 (Solved
-                                    (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                    (Area (Loc 12 1 13) (Loc 14 1 15))
-                                    (Var "/"))
-                                 (Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (Var "b"))
-                                 False))
-                           (Solved (TCon CNum) (Area (Loc 15 1 16) (Loc 16 1 17)) (Var "c"))
-                           True)))))
+               [ Solved
+                   (TArr (TCon CNum) (TCon CNum))
+                   (Area (Loc 0 1 1) (Loc 17 1 18))
+                   (Abs
+                      "c"
+                      [ Solved
+                          (TCon CNum)
+                          (Area (Loc 11 1 12) (Loc 12 1 13))
+                          (App
+                             (Solved
+                                (TArr (TCon CNum) (TCon CNum))
+                                (Area (Loc 11 1 12) (Loc 12 1 13))
+                                (App
+                                   (Solved
+                                      (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                      (Area (Loc 12 1 13) (Loc 14 1 15))
+                                      (Var "/"))
+                                   (Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (Var "b"))
+                                   False))
+                             (Solved (TCon CNum) (Area (Loc 15 1 16) (Loc 16 1 17)) (Var "c"))
+                             True)
+                      ])
+               ])
         ]
     , atypedecls = []
     , apath = Just "path"

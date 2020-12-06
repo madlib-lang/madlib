@@ -18,16 +18,17 @@ Right
                                (Area (Loc 19 1 20) (Loc 31 1 32))
                                (Abs
                                   "a"
-                                  (Solved
-                                     (TComp "Prelude" "List" [ TVar (TV "a") ])
-                                     (Area (Loc 27 1 28) (Loc 30 1 31))
-                                     (ListConstructor
-                                        [ ListItem
-                                            (Solved
-                                               (TVar (TV "a"))
-                                               (Area (Loc 28 1 29) (Loc 29 1 30))
-                                               (Var "a"))
-                                        ])))))))
+                                  [ Solved
+                                      (TComp "Prelude" "List" [ TVar (TV "a") ])
+                                      (Area (Loc 27 1 28) (Loc 30 1 31))
+                                      (ListConstructor
+                                         [ ListItem
+                                             (Solved
+                                                (TVar (TV "a"))
+                                                (Area (Loc 28 1 29) (Loc 29 1 30))
+                                                (Var "a"))
+                                         ])
+                                  ])))))
                ]
            , atypedecls = []
            , apath = Just "./ModuleA"

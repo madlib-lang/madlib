@@ -1,0 +1,55 @@
+import L from "List"
+import Maybe from "Maybe"
+import T from "Tuple"
+
+export data Map k v = Map_ (List <k, v>)
+
+
+fromList :: List (<k, v>) -> Map k v
+export fromList = (list) => (Map_(list))
+
+
+empty :: Map k v
+export empty = fromList([])
+
+
+insert :: k -> v -> Map k v -> Map k v
+export insert = (k, v, m) => (where(m)
+  is Map_ items:
+    L.reject(
+      (item) => (where(item)
+        is <kk, _>: kk == k
+      )
+      , items
+    )
+    |> L.append(<k, v>)
+    |> Map_
+)
+
+
+get :: k -> Map k v -> Maybe.Maybe v
+export get = (k, m) => (where(m)
+  is Map_ items:
+    L.find(
+      (item) => (where(item)
+        is <kk, v>: k == kk
+      ),
+      items
+    )
+    |> Maybe.map(T.snd)
+)
+
+
+keys :: Map k v -> List k
+export keys = (m) => (where(m)
+  is Map_ items: L.map(T.fst, items)
+)
+
+
+values :: Map k v -> List v
+export values = (m) => (where(m)
+  is Map_ items: L.map(T.snd, items)
+)
+
+len :: Map k v -> Number
+export len = (m) => (m |> keys |> L.len)

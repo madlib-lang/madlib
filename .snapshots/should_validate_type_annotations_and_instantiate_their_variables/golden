@@ -24,15 +24,17 @@ Right
                         (Area (Loc 42 2 7) (Loc 68 2 33))
                         (Abs
                            "f"
-                           (Solved
-                              (TArr (TVar (TV "d")) (TVar (TV "e")))
-                              (Area (Loc 42 2 7) (Loc 68 2 33))
-                              (Abs
-                                 "xs"
-                                 (Solved
-                                    (TVar (TV "e"))
-                                    (Area (Loc 54 2 19) (Loc 67 2 32))
-                                    (JSExp "some JS"))))))))
+                           [ Solved
+                               (TArr (TVar (TV "d")) (TVar (TV "e")))
+                               (Area (Loc 42 2 7) (Loc 68 2 33))
+                               (Abs
+                                  "xs"
+                                  [ Solved
+                                      (TVar (TV "e"))
+                                      (Area (Loc 54 2 19) (Loc 67 2 32))
+                                      (JSExp "some JS")
+                                  ])
+                           ]))))
                (TRArr
                   (TRArr (TRSingle "a") (TRSingle "b"))
                   (TRArr
@@ -123,28 +125,29 @@ Right
                               (Area (Loc 99 4 14) (Loc 113 4 28))
                               (Abs
                                  "x"
-                                 (Solved
-                                    (TCon CNum)
-                                    (Area (Loc 107 4 22) (Loc 108 4 23))
-                                    (App
-                                       (Solved
-                                          (TArr (TCon CNum) (TCon CNum))
-                                          (Area (Loc 107 4 22) (Loc 108 4 23))
-                                          (App
-                                             (Solved
-                                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                                (Area (Loc 108 4 23) (Loc 110 4 25))
-                                                (Var "*"))
-                                             (Solved
-                                                (TCon CNum)
-                                                (Area (Loc 107 4 22) (Loc 108 4 23))
-                                                (Var "x"))
-                                             False))
-                                       (Solved
-                                          (TCon CNum)
-                                          (Area (Loc 111 4 26) (Loc 112 4 27))
-                                          (LNum "2"))
-                                       True))))
+                                 [ Solved
+                                     (TCon CNum)
+                                     (Area (Loc 107 4 22) (Loc 108 4 23))
+                                     (App
+                                        (Solved
+                                           (TArr (TCon CNum) (TCon CNum))
+                                           (Area (Loc 107 4 22) (Loc 108 4 23))
+                                           (App
+                                              (Solved
+                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                 (Area (Loc 108 4 23) (Loc 110 4 25))
+                                                 (Var "*"))
+                                              (Solved
+                                                 (TCon CNum)
+                                                 (Area (Loc 107 4 22) (Loc 108 4 23))
+                                                 (Var "x"))
+                                              False))
+                                        (Solved
+                                           (TCon CNum)
+                                           (Area (Loc 111 4 26) (Loc 112 4 27))
+                                           (LNum "2"))
+                                        True)
+                                 ]))
                            True))
                      True))
                True)

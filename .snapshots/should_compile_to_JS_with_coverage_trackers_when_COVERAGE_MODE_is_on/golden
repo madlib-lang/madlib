@@ -1,0 +1,267 @@
+// file: path
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+const curryPowder = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+const __eq = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
+  }
+  return l === r;
+}
+
+const __hpFnWrap = (astPath, line, name) => (fn) => {
+  function wrapped(...args) {
+    __hp(astPath, 'function', line, name)
+    __hp(astPath, 'line', line, line)
+    return fn.apply(this, args)
+  }
+  return wrapped
+}
+
+const __hpLineWrap = (astPath, line, x) => {
+  __hp(astPath, 'line', line, line)
+  return x
+}
+const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
+const Nothing = ({ __constructor: "Nothing", __args: [  ] });
+export const fn = __hpFnWrap('path', 1, 'fn')(curryPowder((b, c) => __hpLineWrap('path', 1, __hpLineWrap('path', 1, b)) + __hpLineWrap('path', 1, __hpLineWrap('path', 1, c))));
+const inc = __hpFnWrap('path', 3, 'inc')(curryPowder((x) => __hpLineWrap('path', 3, __hpLineWrap('path', 3, x)) + __hpLineWrap('path', 3, __hpLineWrap('path', 3, 1))));
+const dec = __hpFnWrap('path', 5, 'dec')(curryPowder((x) => __hpLineWrap('path', 5, __hpLineWrap('path', 5, x)) - __hpLineWrap('path', 5, __hpLineWrap('path', 5, 1))));
+const double = __hpFnWrap('path', 7, 'double')(curryPowder((x) => __hpLineWrap('path', 7, __hpLineWrap('path', 7, x)) * __hpLineWrap('path', 7, __hpLineWrap('path', 7, 2))));
+const half = __hpFnWrap('path', 9, 'half')(curryPowder((x) => __hpLineWrap('path', 9, __hpLineWrap('path', 9, x)) / __hpLineWrap('path', 9, __hpLineWrap('path', 9, 2))));
+__hpLineWrap('path', 10, __hpLineWrap('path', 10, double))(__hpLineWrap('path', 10, __hpLineWrap('path', 10, __hpLineWrap('path', 10, half))(__hpLineWrap('path', 10, __hpLineWrap('path', 10, 3)))));
+__eq(__hpLineWrap('path', 11, __hpLineWrap('path', 11, 3)), __hpLineWrap('path', 11, __hpLineWrap('path', 11, 5)));
+const response = ({ users: __hpLineWrap('path', 12, ([])) });
+const users = __hpLineWrap('path', 13, __hpLineWrap('path', 13, response).users);
+const carResponse = ({ cars: __hpLineWrap('path', 14, ([])) });
+const allResponses = ({ ...__hpLineWrap('path', 15, __hpLineWrap('path', 15, response)), ...__hpLineWrap('path', 15, __hpLineWrap('path', 15, carResponse)) });
+((__x__) => {
+  if (__hp('path', 'line', 17, 17) || true && __x__.users.__constructor === "List" && true) {
+    const { users: { __args: [a] }, cars: cs } = __x__;
+    return __hpLineWrap('path', 17, cs);
+  }
+  else if (__hp('path', 'line', 18, 18) || true) {
+    return ([]);
+  }
+})(__hpLineWrap('path', 16, allResponses));
+((__x__) => {
+  if (__hp('path', 'line', 21, 21) || typeof __x__ === "number") {
+    return __hpLineWrap('path', 21, 3);
+  }
+})(__hpLineWrap('path', 20, 3));
+((__x__) => {
+  if (__hp('path', 'line', 24, 24) || typeof __x__ === "string") {
+    return __hpLineWrap('path', 24, 3);
+  }
+})(__hpLineWrap('path', 23, `3`));
+((__x__) => {
+  if (__hp('path', 'line', 27, 27) || typeof __x__ === "boolean") {
+    return __hpLineWrap('path', 27, 3);
+  }
+})(__hpLineWrap('path', 26, true));
+((__x__) => {
+  if (__hp('path', 'line', 30, 30) || __x__ === 3) {
+    return __hpLineWrap('path', 30, 3);
+  }
+})(__hpLineWrap('path', 29, 3));
+((__x__) => {
+  if (__hp('path', 'line', 33, 33) || __x__ === "3") {
+    return __hpLineWrap('path', 33, 3);
+  }
+})(__hpLineWrap('path', 32, `3`));
+((__x__) => {
+  if (__hp('path', 'line', 36, 36) || __x__ === true) {
+    return __hpLineWrap('path', 36, 3);
+  }
+})(__hpLineWrap('path', 35, true));
+const log = __hpFnWrap('path', 39, 'log')(curryPowder((a) => { console.log(a); return a; }));
+(__hpLineWrap('path', 40, true) ? __hpLineWrap('path', 40, `OK`) : __hpLineWrap('path', 40, `NOT OK`));
+const mapMaybe = __hpFnWrap('path', 43, 'mapMaybe')(curryPowder((f, m) => ((__x__) => {
+  if (__hp('path', 'line', 44, 44) || __x__.__constructor === "Just" && true) {
+    const x = __x__.__args[0];
+    return __hpLineWrap('path', 44, __hpLineWrap('path', 44, Just)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, __hpLineWrap('path', 44, f)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, x)))))));
+  }
+  else if (__hp('path', 'line', 45, 45) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('path', 45, Nothing);
+  }
+})(__hpLineWrap('path', 43, m))));
+const might = __hpLineWrap('path', 47, __hpLineWrap('path', 47, Just)(__hpLineWrap('path', 47, __hpLineWrap('path', 47, 3))));
+const x = ((__x__) => {
+  if (__hp('path', 'line', 49, 49) || __x__.__constructor === "Just" && true) {
+    const x = __x__.__args[0];
+    return __hpLineWrap('path', 49, x);
+  }
+  else if (__hp('path', 'line', 50, 50) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('path', 50, 1);
+  }
+})(__hpLineWrap('path', 48, might));
+__hpLineWrap('path', 52, __hpLineWrap('path', 52, true)) && __hpLineWrap('path', 52, __hpLineWrap('path', 52, false));
+__hpLineWrap('path', 53, __hpLineWrap('path', 53, false)) || __hpLineWrap('path', 53, __hpLineWrap('path', 53, true));
+__hpLineWrap('path', 54, __hpLineWrap('path', 54, false)) || __hpLineWrap('path', 54, __hpLineWrap('path', 54, __hpLineWrap('path', 54, true)) && __hpLineWrap('path', 54, __hpLineWrap('path', 54, false)));
+__hpLineWrap('path', 55, __hpLineWrap('path', 55, 1)) > __hpLineWrap('path', 55, __hpLineWrap('path', 55, 3));
+__hpLineWrap('path', 56, __hpLineWrap('path', 56, 1)) < __hpLineWrap('path', 56, __hpLineWrap('path', 56, 3));
+__hpLineWrap('path', 57, __hpLineWrap('path', 57, __hpLineWrap('path', 57, __hpLineWrap('path', 57, 1)) > __hpLineWrap('path', 57, __hpLineWrap('path', 57, 3))) && __hpLineWrap('path', 57, __hpLineWrap('path', 57, __hpLineWrap('path', 57, 3)) < __hpLineWrap('path', 57, __hpLineWrap('path', 57, 1)))) || __hpLineWrap('path', 57, __hpLineWrap('path', 57, true));
+__hpLineWrap('path', 58, __hpLineWrap('path', 58, 1)) >= __hpLineWrap('path', 58, __hpLineWrap('path', 58, 3));
+__hpLineWrap('path', 59, __hpLineWrap('path', 59, 1)) <= __hpLineWrap('path', 59, __hpLineWrap('path', 59, 3));
+__hpLineWrap('path', 60, __hpLineWrap('path', 60, __hpLineWrap('path', 60, __hpLineWrap('path', 60, 1)) >= __hpLineWrap('path', 60, __hpLineWrap('path', 60, 3))) && __hpLineWrap('path', 60, __hpLineWrap('path', 60, __hpLineWrap('path', 60, 3)) <= __hpLineWrap('path', 60, __hpLineWrap('path', 60, 1)))) || __hpLineWrap('path', 60, __hpLineWrap('path', 60, true));
+__hpLineWrap('path', 61, !(__hpLineWrap('path', 61, __hpLineWrap('path', 61, false))));
+__hpLineWrap('path', 62, !(__hpLineWrap('path', 62, __hpLineWrap('path', 62, true))));
+__hpLineWrap('path', 63, __hpLineWrap('path', 63, !(__hpLineWrap('path', 63, __hpLineWrap('path', 63, false))))) && __hpLineWrap('path', 63, __hpLineWrap('path', 63, !(__hpLineWrap('path', 63, __hpLineWrap('path', 63, true)))));
+__hpLineWrap('path', 64, __hpLineWrap('path', 64, !(__hpLineWrap('path', 64, __hpLineWrap('path', 64, false))))) || __hpLineWrap('path', 64, __hpLineWrap('path', 64, !(__hpLineWrap('path', 64, __hpLineWrap('path', 64, true)))));
+const arr = ([__hpLineWrap('path', 65, 1), __hpLineWrap('path', 65, 2), __hpLineWrap('path', 65, 3)]);
+const all = ([ ...__hpLineWrap('path', 66, arr), __hpLineWrap('path', 66, 4), __hpLineWrap('path', 66, 5), __hpLineWrap('path', 66, 6)]);
+((__x__) => {
+  if (__hp('path', 'line', 68, 68) || __x__.length === 3 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3) {
+    const [,,] = __x__;
+    return __hpLineWrap('path', 68, 1);
+  }
+  else if (__hp('path', 'line', 69, 69) || __x__.length === 3 && __x__[0] === 1 && __x__[1] === 2 && true) {
+    const [,,n] = __x__;
+    return __hpLineWrap('path', 69, n);
+  }
+  else if (__hp('path', 'line', 70, 70) || __x__.length === 2 && true && __x__[1] === 3) {
+    const [n,] = __x__;
+    return __hpLineWrap('path', 70, n);
+  }
+  else if (__hp('path', 'line', 71, 71) || __x__.length === 3 && true && true && true) {
+    const [x,y,z] = __x__;
+    return __hpLineWrap('path', 71, __hpLineWrap('path', 71, __hpLineWrap('path', 71, x)) + __hpLineWrap('path', 71, __hpLineWrap('path', 71, y))) + __hpLineWrap('path', 71, __hpLineWrap('path', 71, z));
+  }
+  else if (__hp('path', 'line', 72, 72) || __x__.length === 0) {
+    const [] = __x__;
+    return __hpLineWrap('path', 72, 0);
+  }
+})(([__hpLineWrap('path', 67, 1), __hpLineWrap('path', 67, 2), __hpLineWrap('path', 67, 3), __hpLineWrap('path', 67, 5), __hpLineWrap('path', 67, 8)]));
+export const map = __hpFnWrap('path', 75, 'map')(curryPowder((f, xs) => ((__x__) => {
+  if (__hp('path', 'line', 76, 76) || __x__.length === 3 && true && true && true) {
+    const [a,b,c] = __x__;
+    return ([__hpLineWrap('path', 76, __hpLineWrap('path', 76, f)(__hpLineWrap('path', 76, __hpLineWrap('path', 76, a)))),  ...__hpLineWrap('path', 76, __hpLineWrap('path', 76, __hpLineWrap('path', 76, map)(__hpLineWrap('path', 76, __hpLineWrap('path', 76, f)), __hpLineWrap('path', 76, ([__hpLineWrap('path', 76, b), __hpLineWrap('path', 76, c)])))))]);
+  }
+  else if (__hp('path', 'line', 77, 77) || __x__.length === 2 && true && true) {
+    const [a,b] = __x__;
+    return ([__hpLineWrap('path', 77, __hpLineWrap('path', 77, f)(__hpLineWrap('path', 77, __hpLineWrap('path', 77, a)))),  ...__hpLineWrap('path', 77, __hpLineWrap('path', 77, __hpLineWrap('path', 77, map)(__hpLineWrap('path', 77, __hpLineWrap('path', 77, f)), __hpLineWrap('path', 77, ([__hpLineWrap('path', 77, b)])))))]);
+  }
+  else if (__hp('path', 'line', 78, 78) || __x__.length === 1 && true) {
+    const [a] = __x__;
+    return ([__hpLineWrap('path', 78, __hpLineWrap('path', 78, f)(__hpLineWrap('path', 78, __hpLineWrap('path', 78, a))))]);
+  }
+  else if (__hp('path', 'line', 79, 79) || __x__.length === 0) {
+    const [] = __x__;
+    return ([]);
+  }
+})(__hpLineWrap('path', 75, xs))));
+(__hpLineWrap('path', 81, true) ? __hpLineWrap('path', 82, `ok`) : __hpLineWrap('path', 83, `not ok`));
+__hpLineWrap('path', 84, curryPowder((x) => __hpLineWrap('path', 87, x)))(__hpLineWrap('path', 87, __hpLineWrap('path', 84, curryPowder((x) => (__eq(__hpLineWrap('path', 86, __hpLineWrap('path', 86, x)), __hpLineWrap('path', 86, __hpLineWrap('path', 86, `ok`))) ? __hpLineWrap('path', 86, 1) : __hpLineWrap('path', 86, 10))))(__hpLineWrap('path', 86, __hpLineWrap('path', 84, curryPowder((x) => __hpLineWrap('path', 85, x)))(__hpLineWrap('path', 85, (__eq(__hpLineWrap('path', 84, __hpLineWrap('path', 84, 1)), __hpLineWrap('path', 84, __hpLineWrap('path', 84, 2))) ? __hpLineWrap('path', 84, `ok`) : __hpLineWrap('path', 84, `not ok`))))))));
+(__eq(__hpLineWrap('path', 88, __hpLineWrap('path', 88, 1)), __hpLineWrap('path', 88, __hpLineWrap('path', 88, 2))) ? __hpLineWrap('path', 88, `ok`) : __hpLineWrap('path', 88, `not ok`));
+((__x__) => {
+  if (__hp('path', 'line', 90, 90) || __x__ === 3) {
+    return __hpLineWrap('path', 90, 48);
+  }
+  else if (__hp('path', 'line', 91, 91) || true) {
+    const n = __x__;
+    return __hpLineWrap('path', 91, curryPowder((x) => __hpLineWrap('path', 91, __hpLineWrap('path', 91, x)) + __hpLineWrap('path', 91, __hpLineWrap('path', 91, 1))))(__hpLineWrap('path', 91, __hpLineWrap('path', 91, 1)));
+  }
+})(__hpLineWrap('path', 89, 3));
+__hpLineWrap('path', 92, curryPowder((x) => __hpLineWrap('path', 95, __hpLineWrap('path', 95, x)) + __hpLineWrap('path', 95, __hpLineWrap('path', 95, 1))))(__hpLineWrap('path', 95, ((__x__) => {
+  if (__hp('path', 'line', 93, 93) || __x__ === "3") {
+    return __hpLineWrap('path', 93, 48);
+  }
+  else if (__hp('path', 'line', 94, 94) || true) {
+    const n = __x__;
+    return __hpLineWrap('path', 94, 1);
+  }
+})(__hpLineWrap('path', 92, `3`))));
+__hpLineWrap('path', 96, curryPowder((x) => __hpLineWrap('path', 99, x)))(__hpLineWrap('path', 99, ((__x__) => {
+  if (__hp('path', 'line', 97, 97) || __x__.length >= 2 && __x__[0] === 2 && true) {
+    const [,...rest] = __x__;
+    return __hpLineWrap('path', 97, rest);
+  }
+  else if (__hp('path', 'line', 98, 98) || __x__.length >= 4 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3 && true) {
+    const [,,,...rest] = __x__;
+    return __hpLineWrap('path', 98, rest);
+  }
+})(([__hpLineWrap('path', 96, 1), __hpLineWrap('path', 96, 2), __hpLineWrap('path', 96, 3), __hpLineWrap('path', 96, 4), __hpLineWrap('path', 96, 5)]))));
+((__x__) => {
+  if (__hp('path', 'line', 101, 101) || __x__.name === "Bob") {
+    const {  } = __x__;
+    return __hpLineWrap('path', 101, `Bob`);
+  }
+  else if (__hp('path', 'line', 102, 102) || true && true) {
+    const { x: x, ...b } = __x__;
+    return __hpLineWrap('path', 102, __hpLineWrap('path', 102, b).name);
+  }
+})(({ x: __hpLineWrap('path', 100, __hpLineWrap('path', 100, 4)), name: __hpLineWrap('path', 100, __hpLineWrap('path', 100, `John`)) }));
+const addXAndY = __hpFnWrap('path', 104, 'addXAndY')(curryPowder((r) => ((__x__) => {
+  if (__hp('path', 'line', 106, 106) || true && true) {
+    const { y: y, x: x } = __x__;
+    return __hpLineWrap('path', 106, __hpLineWrap('path', 106, x)) + __hpLineWrap('path', 106, __hpLineWrap('path', 106, y));
+  }
+})(__hpLineWrap('path', 105, r))));
+const fnTCHOU = __hpFnWrap('path', 109, 'fnTCHOU')(curryPowder((x) => __hpLineWrap('path', 109, __hpLineWrap('path', 109, __hpLineWrap('path', 109, __hpLineWrap('path', 109, __hpLineWrap('path', 109, __hpLineWrap('path', 109, x).a).b).c).d).e)));
+const crazyRecordPattern = __hpFnWrap('path', 110, 'crazyRecordPattern')(curryPowder((r) => ((__x__) => {
+  if (__hp('path', 'line', 112, 112) || true && true && true) {
+    const { x: { y: { y: y }, ...k }, ...c } = __x__;
+    return __hpLineWrap('path', 112, __hpLineWrap('path', 112, __hpLineWrap('path', 112, __hpLineWrap('path', 112, y)) + __hpLineWrap('path', 112, __hpLineWrap('path', 112, __hpLineWrap('path', 112, k).z))) + __hpLineWrap('path', 112, __hpLineWrap('path', 112, __hpLineWrap('path', 112, c).o))) + __hpLineWrap('path', 112, __hpLineWrap('path', 112, __hpLineWrap('path', 112, c).i));
+  }
+})(__hpLineWrap('path', 111, r))));
+const tup = ([__hpLineWrap('path', 116, 1), __hpLineWrap('path', 116, 2), __hpLineWrap('path', 116, 3)]);
+__eq(__hpLineWrap('path', 118, ([__hpLineWrap('path', 118, 1), __hpLineWrap('path', 118, 2), __hpLineWrap('path', 118, 3)])), __hpLineWrap('path', 118, ([__hpLineWrap('path', 118, 1), __hpLineWrap('path', 118, 2), __hpLineWrap('path', 118, 3)])));
+((__x__) => {
+  if (__hp('path', 'line', 121, 121) || __x__.length === 2 && true && true) {
+    const [a,b] = __x__;
+    return __hpLineWrap('path', 121, __hpLineWrap('path', 121, a)) + __hpLineWrap('path', 121, __hpLineWrap('path', 121, b));
+  }
+})(([__hpLineWrap('path', 120, 1), __hpLineWrap('path', 120, 2)]));
+const fn = __hpFnWrap('path', 125, 'fn')(curryPowder((a) => ([__hpLineWrap('path', 125, a), __hpLineWrap('path', 125, a)])));
+const fst = __hpFnWrap('path', 128, 'fst')(curryPowder((tuple) => ((__x__) => {
+  if (__hp('path', 'line', 129, 129) || __x__.length === 2 && true && true) {
+    const [a,] = __x__;
+    return __hpLineWrap('path', 129, a);
+  }
+})(__hpLineWrap('path', 128, tuple))));
+const snd = __hpFnWrap('path', 132, 'snd')(curryPowder((tuple) => {const b = ((__x__) => {
+  if (__hp('path', 'line', 134, 134) || __x__.length === 2 && true && true) {
+    const [,b] = __x__;
+    return __hpLineWrap('path', 134, b);
+  }
+})(__hpLineWrap('path', 133, tuple));
+return __hpLineWrap('path', 135, b);
+}));
+__hpLineWrap('path', 138, __hpLineWrap('path', 138, fst)(__hpLineWrap('path', 138, ([__hpLineWrap('path', 138, 1), __hpLineWrap('path', 138, 2)]))));
+__hpLineWrap('path', 139, __hpLineWrap('path', 139, snd)(__hpLineWrap('path', 139, ([__hpLineWrap('path', 139, 1), __hpLineWrap('path', 139, 2)]))));
+((__x__) => {
+  if (__hp('path', 'line', 142, 142) || __x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
+    const [{ __args: [n]},{ __args: [m]}] = __x__;
+    return __hpLineWrap('path', 142, __hpLineWrap('path', 142, n)) + __hpLineWrap('path', 142, __hpLineWrap('path', 142, m));
+  }
+})(([__hpLineWrap('path', 141, __hpLineWrap('path', 141, Just)(__hpLineWrap('path', 141, __hpLineWrap('path', 141, 3)))), __hpLineWrap('path', 141, __hpLineWrap('path', 141, Just)(__hpLineWrap('path', 141, __hpLineWrap('path', 141, 4))))]));
+export default { fn, map };

@@ -23,65 +23,69 @@ Right
                                (Area (Loc 70 3 6) (Loc 95 3 31))
                                (Abs
                                   "a"
-                                  (Meta
-                                     Infos { nthArg = Nothing , origin = Nothing }
-                                     (Area (Loc 70 3 6) (Loc 95 3 31))
-                                     (Abs
-                                        "b"
-                                        (Meta
-                                           Infos { nthArg = Nothing , origin = Nothing }
-                                           (Area (Loc 88 3 24) (Loc 89 3 25))
-                                           (App
-                                              (Meta
-                                                 Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 88 3 24) (Loc 89 3 25))
-                                                 (App
-                                                    (Meta
-                                                       Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 90 3 26) (Loc 92 3 28))
-                                                       (Var "+"))
-                                                    (Meta
-                                                       Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 88 3 24) (Loc 89 3 25))
-                                                       (App
-                                                          (Meta
-                                                             Infos
-                                                               { nthArg = Nothing
-                                                               , origin = Nothing
-                                                               }
-                                                             (Area (Loc 88 3 24) (Loc 89 3 25))
-                                                             (App
-                                                                (Meta
-                                                                   Infos
-                                                                     { nthArg = Nothing
-                                                                     , origin = Nothing
-                                                                     }
-                                                                   (Area
-                                                                      (Loc 81 3 17) (Loc 84 3 20))
-                                                                   (Var "fn2"))
-                                                                (Meta
-                                                                   Infos
-                                                                     { nthArg = Just 1
-                                                                     , origin = Just (Var "fn2")
-                                                                     }
-                                                                   (Area
-                                                                      (Loc 85 3 21) (Loc 86 3 22))
-                                                                   (Var "a"))
-                                                                False))
-                                                          (Meta
-                                                             Infos
-                                                               { nthArg = Just 2
-                                                               , origin = Just (Var "fn2")
-                                                               }
-                                                             (Area (Loc 88 3 24) (Loc 89 3 25))
-                                                             (Var "b"))
-                                                          True))
-                                                    False))
-                                              (Meta
-                                                 Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 93 3 29) (Loc 94 3 30))
-                                                 (Var "a"))
-                                              True))))))))
+                                  [ Meta
+                                      Infos { nthArg = Nothing , origin = Nothing }
+                                      (Area (Loc 70 3 6) (Loc 95 3 31))
+                                      (Abs
+                                         "b"
+                                         [ Meta
+                                             Infos { nthArg = Nothing , origin = Nothing }
+                                             (Area (Loc 88 3 24) (Loc 89 3 25))
+                                             (App
+                                                (Meta
+                                                   Infos { nthArg = Nothing , origin = Nothing }
+                                                   (Area (Loc 88 3 24) (Loc 89 3 25))
+                                                   (App
+                                                      (Meta
+                                                         Infos
+                                                           { nthArg = Nothing , origin = Nothing }
+                                                         (Area (Loc 90 3 26) (Loc 92 3 28))
+                                                         (Var "+"))
+                                                      (Meta
+                                                         Infos
+                                                           { nthArg = Nothing , origin = Nothing }
+                                                         (Area (Loc 88 3 24) (Loc 89 3 25))
+                                                         (App
+                                                            (Meta
+                                                               Infos
+                                                                 { nthArg = Nothing
+                                                                 , origin = Nothing
+                                                                 }
+                                                               (Area (Loc 81 3 17) (Loc 90 3 26))
+                                                               (App
+                                                                  (Meta
+                                                                     Infos
+                                                                       { nthArg = Nothing
+                                                                       , origin = Nothing
+                                                                       }
+                                                                     (Area
+                                                                        (Loc 81 3 17) (Loc 84 3 20))
+                                                                     (Var "fn2"))
+                                                                  (Meta
+                                                                     Infos
+                                                                       { nthArg = Just 1
+                                                                       , origin = Just (Var "fn2")
+                                                                       }
+                                                                     (Area
+                                                                        (Loc 85 3 21) (Loc 86 3 22))
+                                                                     (Var "a"))
+                                                                  False))
+                                                            (Meta
+                                                               Infos
+                                                                 { nthArg = Just 2
+                                                                 , origin = Just (Var "fn2")
+                                                                 }
+                                                               (Area (Loc 88 3 24) (Loc 89 3 25))
+                                                               (Var "b"))
+                                                            True))
+                                                      False))
+                                                (Meta
+                                                   Infos { nthArg = Nothing , origin = Nothing }
+                                                   (Area (Loc 93 3 29) (Loc 94 3 30))
+                                                   (Var "a"))
+                                                True)
+                                         ])
+                                  ]))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
                          (Area (Loc 38 2 7) (Loc 64 2 33))
@@ -121,7 +125,7 @@ Right
                          (Export
                             (Meta
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 3 1 4) (Loc 6 1 7))
+                               (Area (Loc 34 2 1) (Loc 40 2 7))
                                (Assignment
                                   "fn2"
                                   (Meta
@@ -129,39 +133,43 @@ Right
                                      (Area (Loc 47 2 14) (Loc 64 2 31))
                                      (Abs
                                         "a"
-                                        (Meta
-                                           Infos { nthArg = Nothing , origin = Nothing }
-                                           (Area (Loc 47 2 14) (Loc 64 2 31))
-                                           (Abs
-                                              "b"
-                                              (Meta
-                                                 Infos { nthArg = Nothing , origin = Nothing }
-                                                 (Area (Loc 58 2 25) (Loc 59 2 26))
-                                                 (App
-                                                    (Meta
-                                                       Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 58 2 25) (Loc 59 2 26))
-                                                       (App
-                                                          (Meta
-                                                             Infos
-                                                               { nthArg = Nothing
-                                                               , origin = Nothing
-                                                               }
-                                                             (Area (Loc 59 2 26) (Loc 61 2 28))
-                                                             (Var "+"))
-                                                          (Meta
-                                                             Infos
-                                                               { nthArg = Nothing
-                                                               , origin = Nothing
-                                                               }
-                                                             (Area (Loc 58 2 25) (Loc 59 2 26))
-                                                             (Var "a"))
-                                                          False))
-                                                    (Meta
-                                                       Infos { nthArg = Nothing , origin = Nothing }
-                                                       (Area (Loc 62 2 29) (Loc 63 2 30))
-                                                       (Var "b"))
-                                                    True))))))))))
+                                        [ Meta
+                                            Infos { nthArg = Nothing , origin = Nothing }
+                                            (Area (Loc 47 2 14) (Loc 64 2 31))
+                                            (Abs
+                                               "b"
+                                               [ Meta
+                                                   Infos { nthArg = Nothing , origin = Nothing }
+                                                   (Area (Loc 58 2 25) (Loc 59 2 26))
+                                                   (App
+                                                      (Meta
+                                                         Infos
+                                                           { nthArg = Nothing , origin = Nothing }
+                                                         (Area (Loc 58 2 25) (Loc 59 2 26))
+                                                         (App
+                                                            (Meta
+                                                               Infos
+                                                                 { nthArg = Nothing
+                                                                 , origin = Nothing
+                                                                 }
+                                                               (Area (Loc 59 2 26) (Loc 61 2 28))
+                                                               (Var "+"))
+                                                            (Meta
+                                                               Infos
+                                                                 { nthArg = Nothing
+                                                                 , origin = Nothing
+                                                                 }
+                                                               (Area (Loc 58 2 25) (Loc 59 2 26))
+                                                               (Var "a"))
+                                                            False))
+                                                      (Meta
+                                                         Infos
+                                                           { nthArg = Nothing , origin = Nothing }
+                                                         (Area (Loc 62 2 29) (Loc 63 2 30))
+                                                         (Var "b"))
+                                                      True)
+                                               ])
+                                        ]))))))
                       (Meta
                          Infos { nthArg = Nothing , origin = Nothing }
                          (Area (Loc 7 1 8) (Loc 33 1 34))

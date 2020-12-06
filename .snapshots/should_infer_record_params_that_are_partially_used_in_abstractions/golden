@@ -1,0 +1,904 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr
+               (TArr (TVar (TV "a")) (TCon CBool))
+               (TArr
+                  (TComp "Prelude" "List" [ TVar (TV "a") ])
+                  (TComp "path" "Maybe" [ TVar (TV "a") ])))
+            (Area (Loc 32 2 1) (Loc 246 11 6))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TArr (TVar (TV "a")) (TCon CBool))
+                     (TArr
+                        (TComp "Prelude" "List" [ TVar (TV "a") ])
+                        (TComp "path" "Maybe" [ TVar (TV "a") ])))
+                  (Area (Loc 32 2 1) (Loc 36 2 5))
+                  (Export
+                     (Solved
+                        (TArr (TVar (TV "b")) (TArr (TVar (TV "c")) (TVar (TV "d"))))
+                        (Area (Loc 76 3 1) (Loc 82 3 7))
+                        (Assignment
+                           "find"
+                           (Solved
+                              (TArr (TVar (TV "b")) (TArr (TVar (TV "c")) (TVar (TV "d"))))
+                              (Area (Loc 90 3 15) (Loc 246 11 6))
+                              (Abs
+                                 "predicate"
+                                 [ Solved
+                                     (TArr (TVar (TV "c")) (TVar (TV "d")))
+                                     (Area (Loc 90 3 15) (Loc 246 11 6))
+                                     (Abs
+                                        "xs"
+                                        [ Solved
+                                            (TVar (TV "d"))
+                                            (Area (Loc 110 3 35) (Loc 245 11 4))
+                                            (JSExp
+                                               "{\n  const found = xs.find(predicate);\n  if (found === undefined) {\n    return Nothing()\n  }\n  else {\n    return Just(found)\n  }\n}")
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRArr (TRSingle "a") (TRSingle "Boolean"))
+                  (TRArr
+                     (TRComp "List" [ TRSingle "a" ])
+                     (TRComp "Maybe" [ TRSingle "a" ]))))
+        , Solved
+            (TArr
+               (TArr (TVar (TV "e")) (TArr (TVar (TV "f")) (TVar (TV "g"))))
+               (TArr (TVar (TV "f")) (TArr (TVar (TV "e")) (TVar (TV "g")))))
+            (Area (Loc 247 12 1) (Loc 334 15 1))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TArr (TVar (TV "e")) (TArr (TVar (TV "f")) (TVar (TV "g"))))
+                     (TArr (TVar (TV "f")) (TArr (TVar (TV "e")) (TVar (TV "g")))))
+                  (Area (Loc 247 12 1) (Loc 251 12 5))
+                  (Export
+                     (Solved
+                        (TArr
+                           (TArr (TVar (TV "j")) (TArr (TVar (TV "i")) (TVar (TV "k"))))
+                           (TArr (TVar (TV "i")) (TArr (TVar (TV "j")) (TVar (TV "k")))))
+                        (Area (Loc 286 13 1) (Loc 292 13 7))
+                        (Assignment
+                           "flip"
+                           (Solved
+                              (TArr
+                                 (TArr (TVar (TV "j")) (TArr (TVar (TV "i")) (TVar (TV "k"))))
+                                 (TArr (TVar (TV "i")) (TArr (TVar (TV "j")) (TVar (TV "k")))))
+                              (Area (Loc 300 13 15) (Loc 334 15 1))
+                              (Abs
+                                 "fn"
+                                 [ Solved
+                                     (TArr (TVar (TV "i")) (TArr (TVar (TV "j")) (TVar (TV "k"))))
+                                     (Area (Loc 312 14 3) (Loc 332 14 23))
+                                     (Abs
+                                        "b"
+                                        [ Solved
+                                            (TArr (TVar (TV "j")) (TVar (TV "k")))
+                                            (Area (Loc 312 14 3) (Loc 332 14 23))
+                                            (Abs
+                                               "a"
+                                               [ Solved
+                                                   (TVar (TV "k"))
+                                                   (Area (Loc 329 14 20) (Loc 330 14 21))
+                                                   (App
+                                                      (Solved
+                                                         (TVar (TV "l"))
+                                                         (Area (Loc 323 14 14) (Loc 331 14 22))
+                                                         (App
+                                                            (Solved
+                                                               (TVar (TV "h"))
+                                                               (Area
+                                                                  (Loc 323 14 14) (Loc 325 14 16))
+                                                               (Var "fn"))
+                                                            (Solved
+                                                               (TVar (TV "j"))
+                                                               (Area
+                                                                  (Loc 326 14 17) (Loc 327 14 18))
+                                                               (Var "a"))
+                                                            False))
+                                                      (Solved
+                                                         (TVar (TV "i"))
+                                                         (Area (Loc 329 14 20) (Loc 330 14 21))
+                                                         (Var "b"))
+                                                      True)
+                                               ])
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRArr (TRSingle "a") (TRArr (TRSingle "b") (TRSingle "c")))
+                  (TRArr (TRSingle "b") (TRArr (TRSingle "a") (TRSingle "c")))))
+        , Solved
+            (TArr
+               (TVar (TV "m"))
+               (TArr
+                  (TVar (TV "p"))
+                  (TArr (TCon CString) (TArr (TVar (TV "n")) (TVar (TV "o"))))))
+            (Area (Loc 336 17 1) (Loc 516 24 7))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TVar (TV "m"))
+                     (TArr
+                        (TVar (TV "p"))
+                        (TArr (TCon CString) (TArr (TVar (TV "n")) (TVar (TV "o"))))))
+                  (Area (Loc 336 17 1) (Loc 356 17 21))
+                  (Export
+                     (Solved
+                        (TArr
+                           (TVar (TV "q"))
+                           (TArr
+                              (TVar (TV "r"))
+                              (TArr (TVar (TV "s")) (TArr (TVar (TV "t")) (TVar (TV "u"))))))
+                        (Area (Loc 387 18 1) (Loc 393 18 7))
+                        (Assignment
+                           "propOrWrappedDefault"
+                           (Solved
+                              (TArr
+                                 (TVar (TV "q"))
+                                 (TArr
+                                    (TVar (TV "r"))
+                                    (TArr (TVar (TV "s")) (TArr (TVar (TV "t")) (TVar (TV "u"))))))
+                              (Area (Loc 417 18 31) (Loc 516 24 7))
+                              (Abs
+                                 "Wrap"
+                                 [ Solved
+                                     (TArr
+                                        (TVar (TV "r"))
+                                        (TArr
+                                           (TVar (TV "s")) (TArr (TVar (TV "t")) (TVar (TV "u")))))
+                                     (Area (Loc 417 18 31) (Loc 516 24 7))
+                                     (Abs
+                                        "def"
+                                        [ Solved
+                                            (TArr
+                                               (TVar (TV "s"))
+                                               (TArr (TVar (TV "t")) (TVar (TV "u"))))
+                                            (Area (Loc 417 18 31) (Loc 516 24 7))
+                                            (Abs
+                                               "px"
+                                               [ Solved
+                                                   (TArr (TVar (TV "t")) (TVar (TV "u")))
+                                                   (Area (Loc 417 18 31) (Loc 516 24 7))
+                                                   (Abs
+                                                      "ob"
+                                                      [ Solved
+                                                          (TVar (TV "u"))
+                                                          (Area (Loc 442 18 56) (Loc 514 24 4))
+                                                          (JSExp
+                                                             "{\n  return (\n    !!ob[px] ?\n    Just(ob[px]) :\n    Wrap(def)\n  )\n}")
+                                                      ])
+                                               ])
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRSingle "w")
+                  (TRArr
+                     (TRSingle "z")
+                     (TRArr
+                        (TRSingle "String") (TRArr (TRSingle "x") (TRSingle "y"))))))
+        , Solved
+            (TArr (TCon CString) (TArr (TVar (TV "y")) (TVar (TV "z"))))
+            (Area (Loc 517 25 1) (Loc 523 25 7))
+            (Export
+               (Solved
+                  (TArr (TCon CString) (TArr (TVar (TV "y")) (TVar (TV "z"))))
+                  (Area (Loc 524 25 8) (Loc 528 25 12))
+                  (Assignment
+                     "prop"
+                     (Solved
+                        (TArr (TCon CString) (TArr (TVar (TV "y")) (TVar (TV "z"))))
+                        (Area (Loc 561 25 45) (Loc 563 25 47))
+                        (App
+                           (Solved
+                              (TArr
+                                 (TVar (TV "aa"))
+                                 (TArr (TCon CString) (TArr (TVar (TV "y")) (TVar (TV "z")))))
+                              (Area (Loc 531 25 15) (Loc 564 25 48))
+                              (App
+                                 (Solved
+                                    (TArr
+                                       (TVar (TV "x"))
+                                       (TArr
+                                          (TVar (TV "aa"))
+                                          (TArr
+                                             (TCon CString)
+                                             (TArr (TVar (TV "y")) (TVar (TV "z"))))))
+                                    (Area (Loc 531 25 15) (Loc 551 25 35))
+                                    (Var "propOrWrappedDefault"))
+                                 (Solved
+                                    (TComp "path" "Maybe" [ TVar (TV "ab") ])
+                                    (Area (Loc 552 25 36) (Loc 559 25 43))
+                                    (Var "Nothing"))
+                                 False))
+                           (Solved
+                              (TCon CString) (Area (Loc 561 25 45) (Loc 563 25 47)) (LStr ""))
+                           True)))))
+        , Solved
+            (TArr
+               (TVar (TV "ag"))
+               (TArr (TCon CString) (TArr (TVar (TV "ae")) (TVar (TV "af")))))
+            (Area (Loc 566 27 1) (Loc 572 27 7))
+            (Export
+               (Solved
+                  (TArr
+                     (TVar (TV "ag"))
+                     (TArr (TCon CString) (TArr (TVar (TV "ae")) (TVar (TV "af")))))
+                  (Area (Loc 573 27 8) (Loc 579 27 14))
+                  (Assignment
+                     "propOr"
+                     (Solved
+                        (TArr
+                           (TVar (TV "ag"))
+                           (TArr (TCon CString) (TArr (TVar (TV "ae")) (TVar (TV "af")))))
+                        (Area (Loc 582 27 17) (Loc 608 27 43))
+                        (App
+                           (Solved
+                              (TArr
+                                 (TVar (TV "ad"))
+                                 (TArr
+                                    (TVar (TV "ag"))
+                                    (TArr (TCon CString) (TArr (TVar (TV "ae")) (TVar (TV "af"))))))
+                              (Area (Loc 582 27 17) (Loc 602 27 37))
+                              (Var "propOrWrappedDefault"))
+                           (Solved
+                              (TArr (TVar (TV "ah")) (TComp "path" "Maybe" [ TVar (TV "ah") ]))
+                              (Area (Loc 603 27 38) (Loc 607 27 42))
+                              (Var "Just"))
+                           True)))))
+        , Solved
+            (TArr
+               (TVar (TV "ai"))
+               (TArr (TCon CString) (TArr (TVar (TV "aj")) (TCon CBool))))
+            (Area (Loc 609 28 1) (Loc 723 31 5))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TVar (TV "ai"))
+                     (TArr (TCon CString) (TArr (TVar (TV "aj")) (TCon CBool))))
+                  (Area (Loc 609 28 1) (Loc 615 28 7))
+                  (Export
+                     (Solved
+                        (TArr
+                           (TVar (TV "ak"))
+                           (TArr (TVar (TV "al")) (TArr (TVar (TV "am")) (TVar (TV "an")))))
+                        (Area (Loc 647 29 1) (Loc 653 29 7))
+                        (Assignment
+                           "propEq"
+                           (Solved
+                              (TArr
+                                 (TVar (TV "ak"))
+                                 (TArr (TVar (TV "al")) (TArr (TVar (TV "am")) (TVar (TV "an")))))
+                              (Area (Loc 663 29 17) (Loc 723 31 5))
+                              (Abs
+                                 "xx"
+                                 [ Solved
+                                     (TArr
+                                        (TVar (TV "al")) (TArr (TVar (TV "am")) (TVar (TV "an"))))
+                                     (Area (Loc 663 29 17) (Loc 723 31 5))
+                                     (Abs
+                                        "px"
+                                        [ Solved
+                                            (TArr (TVar (TV "am")) (TVar (TV "an")))
+                                            (Area (Loc 663 29 17) (Loc 723 31 5))
+                                            (Abs
+                                               "ob"
+                                               [ Solved
+                                                   (TVar (TV "an"))
+                                                   (Area (Loc 680 29 34) (Loc 722 31 3))
+                                                   (JSExp
+                                                      "{\n  return !!ob[px] && ob[px] === xx\n}")
+                                               ])
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRSingle "e")
+                  (TRArr
+                     (TRSingle "String") (TRArr (TRSingle "o") (TRSingle "Boolean")))))
+        , Solved
+            (TArr (TCon CString) (TArr (TVar (TV "ao")) (TVar (TV "ap"))))
+            (Area (Loc 725 33 1) (Loc 805 34 55))
+            (TypedExp
+               (Solved
+                  (TArr (TCon CString) (TArr (TVar (TV "ao")) (TVar (TV "ap"))))
+                  (Area (Loc 725 33 1) (Loc 730 33 6))
+                  (Export
+                     (Solved
+                        (TArr (TVar (TV "aq")) (TArr (TVar (TV "ar")) (TVar (TV "as"))))
+                        (Area (Loc 751 34 1) (Loc 757 34 7))
+                        (Assignment
+                           "objOf"
+                           (Solved
+                              (TArr (TVar (TV "aq")) (TArr (TVar (TV "ar")) (TVar (TV "as"))))
+                              (Area (Loc 766 34 16) (Loc 805 34 55))
+                              (Abs
+                                 "px"
+                                 [ Solved
+                                     (TArr (TVar (TV "ar")) (TVar (TV "as")))
+                                     (Area (Loc 766 34 16) (Loc 805 34 55))
+                                     (Abs
+                                        "x"
+                                        [ Solved
+                                            (TVar (TV "as"))
+                                            (Area (Loc 778 34 28) (Loc 804 34 54))
+                                            (JSExp "{ return { [px]: x } }")
+                                        ])
+                                 ]))))))
+               (TRArr (TRSingle "String") (TRArr (TRSingle "x") (TRSingle "y"))))
+        , Solved
+            (TArr (TVar (TV "at")) (TArr (TVar (TV "au")) (TVar (TV "av"))))
+            (Area (Loc 807 36 1) (Loc 884 37 57))
+            (TypedExp
+               (Solved
+                  (TArr (TVar (TV "at")) (TArr (TVar (TV "au")) (TVar (TV "av"))))
+                  (Area (Loc 807 36 1) (Loc 812 36 6))
+                  (Export
+                     (Solved
+                        (TArr (TVar (TV "aw")) (TArr (TVar (TV "ax")) (TVar (TV "ay"))))
+                        (Area (Loc 828 37 1) (Loc 834 37 7))
+                        (Assignment
+                           "merge"
+                           (Solved
+                              (TArr (TVar (TV "aw")) (TArr (TVar (TV "ax")) (TVar (TV "ay"))))
+                              (Area (Loc 843 37 16) (Loc 884 37 57))
+                              (Abs
+                                 "a"
+                                 [ Solved
+                                     (TArr (TVar (TV "ax")) (TVar (TV "ay")))
+                                     (Area (Loc 843 37 16) (Loc 884 37 57))
+                                     (Abs
+                                        "b"
+                                        [ Solved
+                                            (TVar (TV "ay"))
+                                            (Area (Loc 854 37 27) (Loc 883 37 56))
+                                            (JSExp "Object.assign({}, a, b)")
+                                        ])
+                                 ]))))))
+               (TRArr (TRSingle "a") (TRArr (TRSingle "b") (TRSingle "c"))))
+        , Solved
+            (TArr (TVar (TV "ba")) (TArr (TVar (TV "az")) (TVar (TV "bb"))))
+            (Area (Loc 887 39 1) (Loc 935 40 24))
+            (TypedExp
+               (Solved
+                  (TArr (TVar (TV "ba")) (TArr (TVar (TV "az")) (TVar (TV "bb"))))
+                  (Area (Loc 912 40 1) (Loc 935 40 24))
+                  (Assignment
+                     "mergeLeft"
+                     (Solved
+                        (TArr (TVar (TV "bh")) (TArr (TVar (TV "bg")) (TVar (TV "bi"))))
+                        (Area (Loc 924 40 13) (Loc 935 40 24))
+                        (App
+                           (Solved
+                              (TArr
+                                 (TArr (TVar (TV "bd")) (TArr (TVar (TV "be")) (TVar (TV "bf"))))
+                                 (TArr (TVar (TV "be")) (TArr (TVar (TV "bd")) (TVar (TV "bf")))))
+                              (Area (Loc 924 40 13) (Loc 928 40 17))
+                              (Var "flip"))
+                           (Solved
+                              (TArr (TVar (TV "bg")) (TArr (TVar (TV "bh")) (TVar (TV "bi"))))
+                              (Area (Loc 929 40 18) (Loc 934 40 23))
+                              (Var "merge"))
+                           True))))
+               (TRArr (TRSingle "b") (TRArr (TRSingle "a") (TRSingle "c"))))
+        , Solved
+            (TArr
+               (TRecord
+                  (fromList
+                     [ ( "customers"
+                       , TComp
+                           "Prelude"
+                           "List"
+                           [ TRecord
+                               (fromList
+                                  [ ( "cart"
+                                    , TComp
+                                        "Prelude"
+                                        "List"
+                                        [ TRecord
+                                            (fromList
+                                               [ ( "cost" , TCon CNum )
+                                               , ( "description" , TCon CString )
+                                               , ( "discounts"
+                                                 , TComp
+                                                     "Prelude"
+                                                     "List"
+                                                     [ TRecord
+                                                         (fromList
+                                                            [ ( "id" , TCon CString )
+                                                            , ( "itemId" , TCon CNum )
+                                                            , ( "multiplier" , TCon CNum )
+                                                            ])
+                                                         False
+                                                     ]
+                                                 )
+                                               , ( "id" , TCon CNum )
+                                               ])
+                                            False
+                                        ]
+                                    )
+                                  , ( "id" , TCon CString )
+                                  , ( "money" , TCon CNum )
+                                  ])
+                               False
+                           ]
+                       )
+                     , ( "inventory"
+                       , TComp
+                           "Prelude"
+                           "List"
+                           [ TRecord
+                               (fromList
+                                  [ ( "cost" , TCon CNum )
+                                  , ( "description" , TCon CString )
+                                  , ( "discounts"
+                                    , TComp
+                                        "Prelude"
+                                        "List"
+                                        [ TRecord
+                                            (fromList
+                                               [ ( "id" , TCon CString )
+                                               , ( "itemId" , TCon CNum )
+                                               , ( "multiplier" , TCon CNum )
+                                               ])
+                                            False
+                                        ]
+                                    )
+                                  , ( "id" , TCon CNum )
+                                  ])
+                               False
+                           ]
+                       )
+                     , ( "sales"
+                       , TComp
+                           "Prelude"
+                           "List"
+                           [ TRecord
+                               (fromList
+                                  [ ( "id" , TCon CString )
+                                  , ( "itemId" , TCon CNum )
+                                  , ( "multiplier" , TCon CNum )
+                                  ])
+                               False
+                           ]
+                       )
+                     ])
+                  False)
+               (TArr
+                  (TCon CNum)
+                  (TArr
+                     (TCon CNum)
+                     (TComp
+                        "Prelude" "List" [ TComp "path" "Maybe" [ TCon CString ] ]))))
+            (Area (Loc 1336 64 1) (Loc 1606 69 1))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TRecord
+                        (fromList
+                           [ ( "customers"
+                             , TComp
+                                 "Prelude"
+                                 "List"
+                                 [ TRecord
+                                     (fromList
+                                        [ ( "cart"
+                                          , TComp
+                                              "Prelude"
+                                              "List"
+                                              [ TRecord
+                                                  (fromList
+                                                     [ ( "cost" , TCon CNum )
+                                                     , ( "description" , TCon CString )
+                                                     , ( "discounts"
+                                                       , TComp
+                                                           "Prelude"
+                                                           "List"
+                                                           [ TRecord
+                                                               (fromList
+                                                                  [ ( "id" , TCon CString )
+                                                                  , ( "itemId" , TCon CNum )
+                                                                  , ( "multiplier" , TCon CNum )
+                                                                  ])
+                                                               False
+                                                           ]
+                                                       )
+                                                     , ( "id" , TCon CNum )
+                                                     ])
+                                                  False
+                                              ]
+                                          )
+                                        , ( "id" , TCon CString )
+                                        , ( "money" , TCon CNum )
+                                        ])
+                                     False
+                                 ]
+                             )
+                           , ( "inventory"
+                             , TComp
+                                 "Prelude"
+                                 "List"
+                                 [ TRecord
+                                     (fromList
+                                        [ ( "cost" , TCon CNum )
+                                        , ( "description" , TCon CString )
+                                        , ( "discounts"
+                                          , TComp
+                                              "Prelude"
+                                              "List"
+                                              [ TRecord
+                                                  (fromList
+                                                     [ ( "id" , TCon CString )
+                                                     , ( "itemId" , TCon CNum )
+                                                     , ( "multiplier" , TCon CNum )
+                                                     ])
+                                                  False
+                                              ]
+                                          )
+                                        , ( "id" , TCon CNum )
+                                        ])
+                                     False
+                                 ]
+                             )
+                           , ( "sales"
+                             , TComp
+                                 "Prelude"
+                                 "List"
+                                 [ TRecord
+                                     (fromList
+                                        [ ( "id" , TCon CString )
+                                        , ( "itemId" , TCon CNum )
+                                        , ( "multiplier" , TCon CNum )
+                                        ])
+                                     False
+                                 ]
+                             )
+                           ])
+                        False)
+                     (TArr
+                        (TCon CNum)
+                        (TArr
+                           (TCon CNum)
+                           (TComp
+                              "Prelude" "List" [ TComp "path" "Maybe" [ TCon CString ] ]))))
+                  (Area (Loc 1415 65 1) (Loc 1606 69 1))
+                  (Assignment
+                     "buySomethingFromShop"
+                     (Solved
+                        (TArr
+                           (TRecord
+                              (fromList
+                                 [ ( "customers" , TComp "Prelude" "List" [ TVar (TV "cb") ] )
+                                 , ( "inventory" , TComp "Prelude" "List" [ TVar (TV "bs") ] )
+                                 ])
+                              True)
+                           (TArr
+                              (TVar (TV "bk"))
+                              (TArr
+                                 (TVar (TV "bl"))
+                                 (TComp
+                                    "Prelude" "List" [ TComp "path" "Maybe" [ TVar (TV "cf") ] ]))))
+                        (Area (Loc 1438 65 24) (Loc 1606 69 1))
+                        (Abs
+                           "ctx"
+                           [ Solved
+                               (TArr
+                                  (TVar (TV "bk"))
+                                  (TArr
+                                     (TVar (TV "bl"))
+                                     (TComp
+                                        "Prelude"
+                                        "List"
+                                        [ TComp "path" "Maybe" [ TVar (TV "cf") ] ])))
+                               (Area (Loc 1438 65 24) (Loc 1606 69 1))
+                               (Abs
+                                  "itemId"
+                                  [ Solved
+                                      (TArr
+                                         (TVar (TV "bl"))
+                                         (TComp
+                                            "Prelude"
+                                            "List"
+                                            [ TComp "path" "Maybe" [ TVar (TV "cf") ] ]))
+                                      (Area (Loc 1438 65 24) (Loc 1606 69 1))
+                                      (Abs
+                                         "customerId"
+                                         [ Solved
+                                             (TComp "path" "Maybe" [ TVar (TV "bs") ])
+                                             (Area (Loc 1471 66 3) (Loc 1475 66 7))
+                                             (Assignment
+                                                "item"
+                                                (Solved
+                                                   (TComp "path" "Maybe" [ TVar (TV "bs") ])
+                                                   (Area (Loc 1505 66 37) (Loc 1518 66 50))
+                                                   (App
+                                                      (Solved
+                                                         (TArr
+                                                            (TComp
+                                                               "Prelude" "List" [ TVar (TV "bs") ])
+                                                            (TComp
+                                                               "path" "Maybe" [ TVar (TV "bs") ]))
+                                                         (Area (Loc 1478 66 10) (Loc 1519 66 51))
+                                                         (App
+                                                            (Solved
+                                                               (TArr
+                                                                  (TArr
+                                                                     (TVar (TV "bo")) (TCon CBool))
+                                                                  (TArr
+                                                                     (TComp
+                                                                        "Prelude"
+                                                                        "List"
+                                                                        [ TVar (TV "bo") ])
+                                                                     (TComp
+                                                                        "path"
+                                                                        "Maybe"
+                                                                        [ TVar (TV "bo") ])))
+                                                               (Area
+                                                                  (Loc 1478 66 10) (Loc 1482 66 14))
+                                                               (Var "find"))
+                                                            (Solved
+                                                               (TArr (TVar (TV "bs")) (TCon CBool))
+                                                               (Area
+                                                                  (Loc 1498 66 30) (Loc 1502 66 34))
+                                                               (App
+                                                                  (Solved
+                                                                     (TArr
+                                                                        (TCon CString)
+                                                                        (TArr
+                                                                           (TVar (TV "bs"))
+                                                                           (TCon CBool)))
+                                                                     (Area
+                                                                        (Loc 1483 66 15)
+                                                                        (Loc 1503 66 35))
+                                                                     (App
+                                                                        (Solved
+                                                                           (TArr
+                                                                              (TVar (TV "br"))
+                                                                              (TArr
+                                                                                 (TCon CString)
+                                                                                 (TArr
+                                                                                    (TVar (TV "bs"))
+                                                                                    (TCon CBool))))
+                                                                           (Area
+                                                                              (Loc 1483 66 15)
+                                                                              (Loc 1489 66 21))
+                                                                           (Var "propEq"))
+                                                                        (Solved
+                                                                           (TVar (TV "bk"))
+                                                                           (Area
+                                                                              (Loc 1490 66 22)
+                                                                              (Loc 1496 66 28))
+                                                                           (Var "itemId"))
+                                                                        False))
+                                                                  (Solved
+                                                                     (TCon CString)
+                                                                     (Area
+                                                                        (Loc 1498 66 30)
+                                                                        (Loc 1502 66 34))
+                                                                     (LStr "id"))
+                                                                  True))
+                                                            False))
+                                                      (Solved
+                                                         (TComp "Prelude" "List" [ TVar (TV "bs") ])
+                                                         (Area (Loc 1505 66 37) (Loc 1518 66 50))
+                                                         (FieldAccess
+                                                            (Solved
+                                                               (TRecord
+                                                                  (fromList
+                                                                     [ ( "inventory"
+                                                                       , TVar (TV "bu")
+                                                                       )
+                                                                     ])
+                                                                  True)
+                                                               (Area
+                                                                  (Loc 1505 66 37) (Loc 1508 66 40))
+                                                               (Var "ctx"))
+                                                            (Solved
+                                                               (TArr
+                                                                  (TRecord
+                                                                     (fromList
+                                                                        [ ( "inventory"
+                                                                          , TVar (TV "bt")
+                                                                          )
+                                                                        ])
+                                                                     True)
+                                                                  (TVar (TV "bt")))
+                                                               (Area
+                                                                  (Loc 1509 66 41) (Loc 1518 66 50))
+                                                               (Var ".inventory"))))
+                                                      True)))
+                                         , Solved
+                                             (TComp "path" "Maybe" [ TVar (TV "cb") ])
+                                             (Area (Loc 1522 67 3) (Loc 1530 67 11))
+                                             (Assignment
+                                                "customer"
+                                                (Solved
+                                                   (TComp "path" "Maybe" [ TVar (TV "cb") ])
+                                                   (Area (Loc 1564 67 45) (Loc 1577 67 58))
+                                                   (App
+                                                      (Solved
+                                                         (TArr
+                                                            (TComp
+                                                               "Prelude" "List" [ TVar (TV "cb") ])
+                                                            (TComp
+                                                               "path" "Maybe" [ TVar (TV "cb") ]))
+                                                         (Area (Loc 1533 67 14) (Loc 1578 67 59))
+                                                         (App
+                                                            (Solved
+                                                               (TArr
+                                                                  (TArr
+                                                                     (TVar (TV "bx")) (TCon CBool))
+                                                                  (TArr
+                                                                     (TComp
+                                                                        "Prelude"
+                                                                        "List"
+                                                                        [ TVar (TV "bx") ])
+                                                                     (TComp
+                                                                        "path"
+                                                                        "Maybe"
+                                                                        [ TVar (TV "bx") ])))
+                                                               (Area
+                                                                  (Loc 1533 67 14) (Loc 1537 67 18))
+                                                               (Var "find"))
+                                                            (Solved
+                                                               (TArr (TVar (TV "cb")) (TCon CBool))
+                                                               (Area
+                                                                  (Loc 1557 67 38) (Loc 1561 67 42))
+                                                               (App
+                                                                  (Solved
+                                                                     (TArr
+                                                                        (TCon CString)
+                                                                        (TArr
+                                                                           (TVar (TV "cb"))
+                                                                           (TCon CBool)))
+                                                                     (Area
+                                                                        (Loc 1538 67 19)
+                                                                        (Loc 1562 67 43))
+                                                                     (App
+                                                                        (Solved
+                                                                           (TArr
+                                                                              (TVar (TV "ca"))
+                                                                              (TArr
+                                                                                 (TCon CString)
+                                                                                 (TArr
+                                                                                    (TVar (TV "cb"))
+                                                                                    (TCon CBool))))
+                                                                           (Area
+                                                                              (Loc 1538 67 19)
+                                                                              (Loc 1544 67 25))
+                                                                           (Var "propEq"))
+                                                                        (Solved
+                                                                           (TVar (TV "bl"))
+                                                                           (Area
+                                                                              (Loc 1545 67 26)
+                                                                              (Loc 1555 67 36))
+                                                                           (Var "customerId"))
+                                                                        False))
+                                                                  (Solved
+                                                                     (TCon CString)
+                                                                     (Area
+                                                                        (Loc 1557 67 38)
+                                                                        (Loc 1561 67 42))
+                                                                     (LStr "id"))
+                                                                  True))
+                                                            False))
+                                                      (Solved
+                                                         (TComp "Prelude" "List" [ TVar (TV "cb") ])
+                                                         (Area (Loc 1564 67 45) (Loc 1577 67 58))
+                                                         (FieldAccess
+                                                            (Solved
+                                                               (TRecord
+                                                                  (fromList
+                                                                     [ ( "customers"
+                                                                       , TVar (TV "cd")
+                                                                       )
+                                                                     ])
+                                                                  True)
+                                                               (Area
+                                                                  (Loc 1564 67 45) (Loc 1567 67 48))
+                                                               (Var "ctx"))
+                                                            (Solved
+                                                               (TArr
+                                                                  (TRecord
+                                                                     (fromList
+                                                                        [ ( "customers"
+                                                                          , TVar (TV "cc")
+                                                                          )
+                                                                        ])
+                                                                     True)
+                                                                  (TVar (TV "cc")))
+                                                               (Area
+                                                                  (Loc 1568 67 49) (Loc 1577 67 58))
+                                                               (Var ".customers"))))
+                                                      True)))
+                                         , Solved
+                                             (TComp
+                                                "Prelude"
+                                                "List"
+                                                [ TComp "path" "Maybe" [ TVar (TV "ce") ] ])
+                                             (Area (Loc 1588 68 10) (Loc 1604 68 26))
+                                             (ListConstructor
+                                                [ ListItem
+                                                    (Solved
+                                                       (TComp "path" "Maybe" [ TVar (TV "ce") ])
+                                                       (Area (Loc 1589 68 11) (Loc 1593 68 15))
+                                                       (Var "item"))
+                                                , ListItem
+                                                    (Solved
+                                                       (TComp "path" "Maybe" [ TVar (TV "cf") ])
+                                                       (Area (Loc 1595 68 17) (Loc 1603 68 25))
+                                                       (Var "customer"))
+                                                ])
+                                         ])
+                                  ])
+                           ]))))
+               (TRArr
+                  (TRSingle "ShopContext")
+                  (TRArr
+                     (TRSingle "Number")
+                     (TRArr
+                        (TRSingle "Number")
+                        (TRComp "List" [ TRComp "Maybe" [ TRSingle "String" ] ])))))
+        ]
+    , atypedecls =
+        [ ADT
+            { adtname = "Maybe"
+            , adtparams = [ "a" ]
+            , adtconstructors =
+                [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
+            , adtexported = False
+            }
+        , Alias
+            { aliasname = "ShopDiscount"
+            , aliasparams = []
+            , aliastype =
+                TRRecord
+                  (fromList
+                     [ ( "id" , TRSingle "String" )
+                     , ( "itemId" , TRSingle "Number" )
+                     , ( "multiplier" , TRSingle "Number" )
+                     ])
+            , aliasexported = False
+            }
+        , Alias
+            { aliasname = "ShopItem"
+            , aliasparams = []
+            , aliastype =
+                TRRecord
+                  (fromList
+                     [ ( "cost" , TRSingle "Number" )
+                     , ( "description" , TRSingle "String" )
+                     , ( "discounts" , TRComp "List" [ TRSingle "ShopDiscount" ] )
+                     , ( "id" , TRSingle "Number" )
+                     ])
+            , aliasexported = False
+            }
+        , Alias
+            { aliasname = "ShopCustomer"
+            , aliasparams = []
+            , aliastype =
+                TRRecord
+                  (fromList
+                     [ ( "cart" , TRComp "List" [ TRSingle "ShopItem" ] )
+                     , ( "id" , TRSingle "String" )
+                     , ( "money" , TRSingle "Number" )
+                     ])
+            , aliasexported = False
+            }
+        , Alias
+            { aliasname = "ShopContext"
+            , aliasparams = []
+            , aliastype =
+                TRRecord
+                  (fromList
+                     [ ( "customers" , TRComp "List" [ TRSingle "ShopCustomer" ] )
+                     , ( "inventory" , TRComp "List" [ TRSingle "ShopItem" ] )
+                     , ( "sales" , TRComp "List" [ TRSingle "ShopDiscount" ] )
+                     ])
+            , aliasexported = False
+            }
+        ]
+    , apath = Just "path"
+    }

@@ -307,6 +307,7 @@ typeToStr t = case t of
            ", "
            ((\(n, t) -> n <> ": " <> typeToStr t) <$> M.toList fields)
       <> "}"
+  _ -> ppShow t
 
 
 

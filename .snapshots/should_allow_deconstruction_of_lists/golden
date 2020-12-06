@@ -3,7 +3,7 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon CNum)
+            (TComp "Prelude" "List" [ TCon CNum ])
             (Area (Loc 0 1 1) (Loc 53 3 1))
             (Where
                (Solved
@@ -22,12 +22,16 @@ Right
                          (Solved (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (LNum "8"))
                      ]))
                [ Solved
-                   (TArr (TComp "Prelude" "List" [ TCon CNum ]) (TCon CNum))
+                   (TArr
+                      (TComp "Prelude" "List" [ TCon CNum ])
+                      (TComp "Prelude" "List" [ TCon CNum ]))
                    (Area (Loc 27 2 3) (Loc 51 2 27))
                    (Is
                       (PList [ PNum "1" , PNum "2" , PSpread (PVar "rest") ])
                       (Solved
-                         (TCon CNum) (Area (Loc 47 2 23) (Loc 51 2 27)) (Var "rest")))
+                         (TComp "Prelude" "List" [ TCon CNum ])
+                         (Area (Loc 47 2 23) (Loc 51 2 27))
+                         (Var "rest")))
                ])
         ]
     , atypedecls = []

@@ -1,0 +1,43 @@
+import L from "List"
+import T from "Tuple"
+
+// Writer Monad
+// Example usage:
+// double :: Number -> Writer String Number
+// double = (x) => tell("doubling " ++ S.show(x)) |> map((_) => x * 2)
+
+// w :: Writer String Number
+// w = of(3)
+//   |> chain(double)
+//   |> chain(double)
+
+// run(w) |> IO.log
+
+export data Writer w a = Writer <a, List w>
+
+run :: Writer w a -> <a, List w>
+export run = (m) => where(m)
+  is Writer d: d
+
+map :: (a -> b) -> Writer w a -> Writer w b
+export map = (f, m) => where(m)
+  is Writer <a, w>: Writer(<f(a), w>)
+
+chain :: (a -> Writer w b) -> Writer w a -> Writer w b
+export chain = (f, m) => {
+  unwrapped = run(m)
+  applied = f(T.fst(unwrapped))
+  appliedUnwrapped = run(applied)
+
+  return Writer(
+    < T.fst(appliedUnwrapped)
+    , L.concat(T.snd(unwrapped), T.snd(appliedUnwrapped))
+    >
+  )
+}
+
+tell :: w -> Writer w ()
+export tell = (v) => Writer(<(), [v]>)
+
+of :: a -> Writer w a
+export of = (a) => Writer(<a, []>)

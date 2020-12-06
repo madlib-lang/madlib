@@ -2,7 +2,29 @@ log :: a -> a
 export log = (a) => (#- { console.log(a); return a; } -#)
 
 trace :: String -> a -> a
-export trace = (v, a) => (#- { console.log(v); return a; } -#)
+export trace = (v, a) => (#- { console.log(v, a); return a; } -#)
 
 err :: a -> a
 export err = (e) => (#- { console.log(e); return e; } -#)
+
+warn :: a -> a
+export warn = (w) => (#- { console.warn(w); return w; } -#)
+
+export alias Row = { id :: String, cols :: List <String, String> }
+table :: List Row -> a -> a
+export table = (rows, a) => (#- {
+  const xSpaces = x => new Array(x).fill(' ').join('')
+
+  const longestId = rows.map(x => x.id.length).reduce((a, b) => Math.max(a, b), 0)
+
+  const readyRows = rows
+    .map(x => ({ ...x, id: x.id + xSpaces(longestId - x.id.length) }))
+    .reduce((rows, row) => {
+      return {
+        ...rows,
+        [row.id]: row.cols.reduce((o, [colName, colValue]) => { o[colName] = colValue; return o; }, {})
+      }
+    }, {})
+  console.table(readyRows)
+  return a
+} -#)

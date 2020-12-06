@@ -12,7 +12,7 @@ Right
                   (Export
                      (Solved
                         (TArr (TCon CNum) (TCon CNum))
-                        (Area (Loc 3 1 4) (Loc 6 1 7))
+                        (Area (Loc 24 2 1) (Loc 30 2 7))
                         (Assignment
                            "inc"
                            (Solved
@@ -20,26 +20,29 @@ Right
                               (Area (Loc 37 2 14) (Loc 51 2 28))
                               (Abs
                                  "a"
-                                 (Solved
-                                    (TCon CNum)
-                                    (Area (Loc 45 2 22) (Loc 46 2 23))
-                                    (App
-                                       (Solved
-                                          (TArr (TCon CNum) (TCon CNum))
-                                          (Area (Loc 45 2 22) (Loc 46 2 23))
-                                          (App
-                                             (Solved
-                                                (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                                (Area (Loc 46 2 23) (Loc 48 2 25))
-                                                (Var "+"))
-                                             (Solved
-                                                (TCon CNum)
-                                                (Area (Loc 45 2 22) (Loc 46 2 23))
-                                                (Var "a"))
-                                             False))
-                                       (Solved
-                                          (TCon CNum) (Area (Loc 49 2 26) (Loc 50 2 27)) (LNum "1"))
-                                       True))))))))
+                                 [ Solved
+                                     (TCon CNum)
+                                     (Area (Loc 45 2 22) (Loc 46 2 23))
+                                     (App
+                                        (Solved
+                                           (TArr (TCon CNum) (TCon CNum))
+                                           (Area (Loc 45 2 22) (Loc 46 2 23))
+                                           (App
+                                              (Solved
+                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                 (Area (Loc 46 2 23) (Loc 48 2 25))
+                                                 (Var "+"))
+                                              (Solved
+                                                 (TCon CNum)
+                                                 (Area (Loc 45 2 22) (Loc 46 2 23))
+                                                 (Var "a"))
+                                              False))
+                                        (Solved
+                                           (TCon CNum)
+                                           (Area (Loc 49 2 26) (Loc 50 2 27))
+                                           (LNum "1"))
+                                        True)
+                                 ]))))))
                (TRArr (TRSingle "Number") (TRSingle "Number")))
         , Solved
             (TCon CNum)

@@ -1,0 +1,21 @@
+export data HitPoint = FunctionHit String String
+                     | LineHit String Number
+
+#-
+const __HIT_POINTS = [];
+global.__hp = (astPath, type, line, id) => {
+  if (type === "function") {
+    __HIT_POINTS.push(FunctionHit(astPath, id))
+    __HIT_POINTS.push(LineHit(astPath, line))
+  }
+  else if (type === "line") {
+    __HIT_POINTS.push(LineHit(astPath, line))
+  }
+}
+-#
+
+
+
+hitPoints :: a -> List HitPoint
+export getHitPoints = (a) => (#- [...__HIT_POINTS] -#)
+

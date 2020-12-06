@@ -18,44 +18,47 @@ Right
                   (Area (Loc 5 1 6) (Loc 55 5 1))
                   (Abs
                      "r"
-                     (Solved
-                        (TCon CNum)
-                        (Area (Loc 16 2 3) (Loc 53 4 3))
-                        (Where
-                           (Solved
-                              (TRecord
-                                 (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
-                              (Area (Loc 22 2 9) (Loc 23 2 10))
-                              (Var "r"))
-                           [ Solved
-                               (TArr
-                                  (TRecord
-                                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
-                                  (TCon CNum))
-                               (Area (Loc 31 3 5) (Loc 45 3 19))
-                               (Is
-                                  (PRecord (fromList [ ( "x" , PVar "x" ) , ( "y" , PVar "y" ) ]))
-                                  (Solved
-                                     (TCon CNum)
-                                     (Area (Loc 44 3 18) (Loc 45 3 19))
-                                     (App
-                                        (Solved
-                                           (TArr (TCon CNum) (TCon CNum))
-                                           (Area (Loc 44 3 18) (Loc 45 3 19))
-                                           (App
-                                              (Solved
-                                                 (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                                 (Area (Loc 45 3 19) (Loc 47 3 21))
-                                                 (Var "+"))
-                                              (Solved
-                                                 (TCon CNum)
-                                                 (Area (Loc 44 3 18) (Loc 45 3 19))
-                                                 (Var "x"))
-                                              False))
-                                        (Solved
-                                           (TCon CNum) (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "y"))
-                                        True)))
-                           ])))))
+                     [ Solved
+                         (TCon CNum)
+                         (Area (Loc 16 2 3) (Loc 53 4 3))
+                         (Where
+                            (Solved
+                               (TRecord
+                                  (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
+                               (Area (Loc 22 2 9) (Loc 23 2 10))
+                               (Var "r"))
+                            [ Solved
+                                (TArr
+                                   (TRecord
+                                      (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
+                                   (TCon CNum))
+                                (Area (Loc 31 3 5) (Loc 45 3 19))
+                                (Is
+                                   (PRecord (fromList [ ( "x" , PVar "x" ) , ( "y" , PVar "y" ) ]))
+                                   (Solved
+                                      (TCon CNum)
+                                      (Area (Loc 44 3 18) (Loc 45 3 19))
+                                      (App
+                                         (Solved
+                                            (TArr (TCon CNum) (TCon CNum))
+                                            (Area (Loc 44 3 18) (Loc 45 3 19))
+                                            (App
+                                               (Solved
+                                                  (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                  (Area (Loc 45 3 19) (Loc 47 3 21))
+                                                  (Var "+"))
+                                               (Solved
+                                                  (TCon CNum)
+                                                  (Area (Loc 44 3 18) (Loc 45 3 19))
+                                                  (Var "x"))
+                                               False))
+                                         (Solved
+                                            (TCon CNum)
+                                            (Area (Loc 48 3 22) (Loc 49 3 23))
+                                            (Var "y"))
+                                         True)))
+                            ])
+                     ])))
         ]
     , atypedecls = []
     , apath = Just "path"

@@ -36,8 +36,9 @@ infer env lexp =
         Src.LNum _ -> return (M.empty, number, applyLitSolve lexp number)
         Src.LStr  _            -> return (M.empty, str, applyLitSolve lexp str)
         Src.LBool _ -> return (M.empty, bool, applyLitSolve lexp bool)
+        Src.LUnit -> return (M.empty, unit, applyLitSolve lexp unit)
 
-        Src.Var   _            -> inferVar env lexp
+        Src.Var _              -> inferVar env lexp
         Src.Abs _ _            -> inferAbs env lexp
         Src.App _ _ _          -> inferApp env lexp
         Src.Assignment _ _     -> inferAssignment env lexp
@@ -60,8 +61,9 @@ applyLitSolve (Meta _ area exp) t = case exp of
   Src.LNum  v -> Slv.Solved t area $ Slv.LNum v
   Src.LStr  v -> Slv.Solved t area $ Slv.LStr v
   Src.LBool v -> Slv.Solved t area $ Slv.LBool v
+  Src.LUnit   -> Slv.Solved t area $ Slv.LUnit
 
-applyAbsSolve :: Src.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
+applyAbsSolve :: Src.Exp -> Slv.Name -> [Slv.Exp] -> Type -> Slv.Exp
 applyAbsSolve (Meta _ loc _) param body t =
   Slv.Solved t loc $ Slv.Abs param body
 
@@ -85,7 +87,7 @@ updatePattern (Meta _ _ pat) = case pat of
   Src.PCon    n             -> Slv.PCon n
   Src.PRecord fieldPatterns -> Slv.PRecord (updatePattern <$> fieldPatterns)
   Src.PList   patterns      -> Slv.PList (updatePattern <$> patterns)
-  Src.PTuple  patterns      -> Slv.PList (updatePattern <$> patterns)
+  Src.PTuple  patterns      -> Slv.PTuple (updatePattern <$> patterns)
   Src.PSpread pat'          -> Slv.PSpread (updatePattern pat')
 
 
@@ -133,10 +135,27 @@ inferAbs :: Env -> Src.Exp -> Infer (Substitution, Type, Slv.Exp)
 inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
   tv <- newTVar
   let env' = extendVars env (param, Forall [] tv)
-  (s1, t1, e) <- infer env' body
+  (s1, t1, es) <- inferBody env' body
   let t = apply s1 (tv `TArr` t1)
-  return (s1, t, applyAbsSolve l param e t)
+  return (s1, t, applyAbsSolve l param es t)
 
+
+inferBody :: Env -> [Src.Exp] -> Infer (Substitution, Type, [Slv.Exp])
+inferBody env [exp   ] = (\(s, t, e) -> (s, t, [e])) <$> infer env exp
+
+inferBody env (e : xs) = do
+  (s, t, e') <- infer env e
+  let exp = Slv.extractExp e'
+  let env' = case exp of
+        Slv.Assignment name _ ->
+          extendVars env (name, Forall ((S.toList . ftv) t) t)
+
+        Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ ->
+          extendVars env (name, Forall ((S.toList . ftv) t) t)
+
+        _ -> env
+
+  (\(sb, tb, eb) -> (s `compose` sb, tb, e' : eb)) <$> inferBody env' xs
 
 
 -- INFER APP
@@ -237,9 +256,10 @@ inferRecord env exp = do
   let Meta _ area (Src.Record fields) = exp
 
   inferred <- mapM (inferRecordField env) fields
+  open     <- shouldBeOpen env fields
   let inferredFields = lst <$> inferred
       subst          = foldr compose M.empty (beg <$> inferred)
-      recordType     = TRecord (M.fromList $ concat $ mid <$> inferred) False
+      recordType     = TRecord (M.fromList $ concat $ mid <$> inferred) open
   return
     (subst, recordType, Slv.Solved recordType area (Slv.Record inferredFields))
 
@@ -255,11 +275,23 @@ inferRecordField env field = case field of
     case t of
       TRecord tfields _ -> return (s, M.toList tfields, Slv.FieldSpread e)
 
+      -- TODO: When we get here we should make it open !!
       TVar _ -> return (s, [], Slv.FieldSpread e)
 
       -- TODO: This needs to be a new error type maybe ?
       _ -> throwError $ InferError (WrongSpreadType $ show t) NoReason
 
+shouldBeOpen :: Env -> [Src.Field] -> Infer Bool
+shouldBeOpen env = foldrM
+  (\field r -> case field of
+    Src.Field       _ -> return $ False || r
+    Src.FieldSpread e -> do
+      (_, t, _) <- infer env e
+      case t of
+        TRecord _ _ -> return $ False || r
+        TVar _      -> return $ True || r
+  )
+  False
 
 
 -- INFER FIELD ACCESS
@@ -444,7 +476,6 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
           Just _  -> TRecord fields open
 
           Nothing -> TRecord fields open
-
     in  TRecord (M.map updateSubRecord spreadFields) open
 
   spreadSpreads t = t
@@ -509,82 +540,82 @@ inferWhere env whereExp@(Meta _ loc (Src.Where exp iss)) = do
 
 
   generateIsEnv :: Type -> Env -> Src.Pattern -> Infer Env
-  generateIsEnv t e pattern@(Meta _ area pat) =
-    case (pat, t) of
-      (Src.PVar    v     , t') -> return $ extendVars e (v, Forall [] t')
+  generateIsEnv t e pattern@(Meta _ area pat) = case (pat, t) of
+    (Src.PVar    v     , t') -> return $ extendVars e (v, Forall [] t')
 
-      (Src.PRecord fields, t') -> do
-        let (fields', open) = case t' of
-              TVar _                -> (M.empty, True)
-              TRecord fields' open' -> (fields', open')
+    (Src.PRecord fields, t') -> do
+      let (fields', open) = case t' of
+            TVar _                -> (M.empty, True)
+            TRecord fields' open' -> (fields', open')
 
-        let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields
-        let spreadField =
-              snd <$> find (\(k, v) -> k == "...") (M.toList fields)
+      let fieldsWithoutSpread = M.filterWithKey (\k v -> k /= "...") fields
+      let spreadField = snd <$> find (\(k, v) -> k == "...") (M.toList fields)
 
-        declaredFields <- mapM (\(k, pat) -> (pat, ) <$> lookupType k fields')
-                               (M.toList fieldsWithoutSpread)
+      declaredFields <- mapM (\(k, pat) -> (pat, ) <$> lookupType k fields')
+                             (M.toList fieldsWithoutSpread)
 
-        let fieldsEnv =
-              foldrM (\(p, t') e' -> generateIsEnv t' e' p) e declaredFields
+      let fieldsEnv =
+            foldrM (\(p, t') e' -> generateIsEnv t' e' p) e declaredFields
 
-        let
-          envForSpread = case spreadField of
-            Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
-              let
-                keysToRemove = M.keys fieldsWithoutSpread
-                -- TODO: It should likely not be opened and would cause weird issues like accessing non spread properties
-                spreadType   = TRecord
-                  (foldr (\k f -> M.delete k f) fields' keysToRemove)
-                  open
-              in
-                extendVars e (n, Forall [] spreadType)
-            Nothing -> e
-        (\e' -> e' { envvars = M.union (envvars e') (envvars envForSpread) })
-          <$> fieldsEnv
-       where
-        lookupType fieldName fields = case M.lookup fieldName fields of
-          Just x -> return x
+      let
+        envForSpread = case spreadField of
+          Just (Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar n)))) ->
+            let
+              keysToRemove = M.keys fieldsWithoutSpread
+              -- TODO: It should likely not be opened and would cause weird issues like accessing non spread properties
+              spreadType =
+                TRecord (foldr (\k f -> M.delete k f) fields' keysToRemove) open
+            in
+              extendVars e (n, Forall [] spreadType)
+          Nothing -> e
+      (\e' -> e' { envvars = M.union (envvars e') (envvars envForSpread) })
+        <$> fieldsEnv
+     where
+      lookupType fieldName fields = case M.lookup fieldName fields of
+        Just x -> return x
 
-      (Src.PSpread pattern, t) -> generateIsEnv t e pattern
+    (Src.PSpread pattern, t) -> generateIsEnv t e pattern
 
-      (Src.PList items, TComp "Prelude" "List" [t]) ->
-        foldrM (\p e' -> generateIsEnv t e' p) e items
+    (Src.PList items, TComp "Prelude" "List" [t]) -> foldrM
+      (\p e' -> case p of
+        Meta _ _ (Src.PSpread (Meta _ _ (Src.PVar v))) ->
+          return $ extendVars e' (v, Forall [] $ TComp "Prelude" "List" [t])
+        _ -> generateIsEnv t e' p
+      )
+      e
+      items
 
-      (Src.PTuple elems, TTuple t) ->
-        foldrM (\(el, t') e' -> generateIsEnv t' e' el) e (zip elems t)
+    (Src.PTuple elems, TTuple t) ->
+      foldrM (\(el, t') e' -> generateIsEnv t' e' el) e (zip elems t)
 
-      (Src.PCtor cname as, t) -> do
-        ctor <- if elem '.' cname
-          then findNamespacedConstructorInIs e pattern whereExp cname
-          else instantiate =<< findConstructor e pattern whereExp cname
+    (Src.PCtor cname as, t) -> do
+      ctor <- if elem '.' cname
+        then findNamespacedConstructorInIs e pattern whereExp cname
+        else instantiate =<< findConstructor e pattern whereExp cname
 
-        let adtT = arrowReturnType ctor
-        s <- case unify adtT t of
-          Right a -> return a
-          Left  e -> throwError $ InferError
-            e
-            (Reason (PatternTypeError whereExp pattern)
-                    (envcurrentpath env)
-                    area
-            )
+      let adtT = arrowReturnType ctor
+      s <- case unify adtT t of
+        Right a -> return a
+        Left  e -> throwError $ InferError
+          e
+          (Reason (PatternTypeError whereExp pattern) (envcurrentpath env) area)
 
-        case (apply s ctor, as) of
-          (TArr a _, [a']) -> do
-            generateIsEnv a e a'
+      case (apply s ctor, as) of
+        (TArr a _, [a']) -> do
+          generateIsEnv a e a'
 
-          (TArr a (TArr b _), [a', b']) -> do
-            e1 <- generateIsEnv a e a'
-            generateIsEnv b e1 b'
+        (TArr a (TArr b _), [a', b']) -> do
+          e1 <- generateIsEnv a e a'
+          generateIsEnv b e1 b'
 
-          (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
-            e1 <- generateIsEnv a e a'
-            e2 <- generateIsEnv b e1 b'
-            generateIsEnv c e2 c'
+        (TArr a (TArr b (TArr c _)), [a', b', c']) -> do
+          e1 <- generateIsEnv a e a'
+          e2 <- generateIsEnv b e1 b'
+          generateIsEnv c e2 c'
 
-          _ -> return e
+        _ -> return e
 
-      _ -> return e
+    _ -> return e
 
 
 findConstructor :: Env -> Src.Pattern -> Src.Exp -> String -> Infer Scheme

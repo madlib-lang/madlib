@@ -38,13 +38,12 @@ const __eq = (l, r) => {
   return l === r;
 }
 const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
-const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
+const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export const fn = curryPowder((b, c) => b + c);
 const inc = curryPowder((x) => x + 1);
 const dec = curryPowder((x) => x - 1);
 const double = curryPowder((x) => x * 2);
 const half = curryPowder((x) => x / 2);
-curryPowder((x) => double(half(x)))(3);
 double(half(3));
 __eq(3, 5);
 const response = ({ users: ([]) });
@@ -60,11 +59,11 @@ const allResponses = ({ ...response, ...carResponse });
     return ([]);
   }
 })(allResponses);
-curryPowder((x) => ((__x__) => {
+((__x__) => {
   if (typeof __x__ === "number") {
     return 3;
   }
-})(x));
+})(3);
 ((__x__) => {
   if (typeof __x__ === "string") {
     return 3;
@@ -235,12 +234,20 @@ const fst = curryPowder((tuple) => ((__x__) => {
     return a;
   }
 })(tuple));
-const snd = curryPowder((tuple) => ((__x__) => {
+const snd = curryPowder((tuple) => {const b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [,b] = __x__;
     return b;
   }
-})(tuple));
+})(tuple);
+return b;
+});
 fst(([1, 2]));
 snd(([1, 2]));
+((__x__) => {
+  if (__x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
+    const [{ __args: [n]},{ __args: [m]}] = __x__;
+    return n + m;
+  }
+})(([Just(3), Just(4)]));
 export default { fn, map };

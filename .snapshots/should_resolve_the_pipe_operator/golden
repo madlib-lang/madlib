@@ -12,22 +12,23 @@ Right
                   (Area (Loc 6 1 7) (Loc 20 1 21))
                   (Abs
                      "a"
-                     (Solved
-                        (TCon CNum)
-                        (Area (Loc 14 1 15) (Loc 15 1 16))
-                        (App
-                           (Solved
-                              (TArr (TCon CNum) (TCon CNum))
-                              (Area (Loc 14 1 15) (Loc 15 1 16))
-                              (App
-                                 (Solved
-                                    (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
-                                    (Area (Loc 15 1 16) (Loc 17 1 18))
-                                    (Var "+"))
-                                 (Solved (TCon CNum) (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "a"))
-                                 False))
-                           (Solved (TCon CNum) (Area (Loc 18 1 19) (Loc 19 1 20)) (LNum "1"))
-                           True)))))
+                     [ Solved
+                         (TCon CNum)
+                         (Area (Loc 14 1 15) (Loc 15 1 16))
+                         (App
+                            (Solved
+                               (TArr (TCon CNum) (TCon CNum))
+                               (Area (Loc 14 1 15) (Loc 15 1 16))
+                               (App
+                                  (Solved
+                                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                     (Area (Loc 15 1 16) (Loc 17 1 18))
+                                     (Var "+"))
+                                  (Solved (TCon CNum) (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "a"))
+                                  False))
+                            (Solved (TCon CNum) (Area (Loc 18 1 19) (Loc 19 1 20)) (LNum "1"))
+                            True)
+                     ])))
         , Solved
             (TCon CNum)
             (Area (Loc 21 2 1) (Loc 22 2 2))

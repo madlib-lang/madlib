@@ -21,19 +21,24 @@ Right
                   (Area (Loc 61 2 6) (Loc 85 2 30))
                   (Abs
                      "bad"
-                     (Solved
-                        (TArr (TArr (TCon CNum) (TVar (TV "f"))) (TVar (TV "f")))
-                        (Area (Loc 61 2 6) (Loc 85 2 30))
-                        (Abs
-                           "good"
-                           (Solved
-                              (TVar (TV "f"))
-                              (Area (Loc 77 2 22) (Loc 84 2 29))
-                              (App
-                                 (Solved
-                                    (TVar (TV "e")) (Area (Loc 77 2 22) (Loc 81 2 26)) (Var "good"))
-                                 (Solved (TCon CNum) (Area (Loc 82 2 27) (Loc 83 2 28)) (LNum "3"))
-                                 True))))))
+                     [ Solved
+                         (TArr (TArr (TCon CNum) (TVar (TV "f"))) (TVar (TV "f")))
+                         (Area (Loc 61 2 6) (Loc 85 2 30))
+                         (Abs
+                            "good"
+                            [ Solved
+                                (TVar (TV "f"))
+                                (Area (Loc 77 2 22) (Loc 84 2 29))
+                                (App
+                                   (Solved
+                                      (TVar (TV "e"))
+                                      (Area (Loc 77 2 22) (Loc 81 2 26))
+                                      (Var "good"))
+                                   (Solved
+                                      (TCon CNum) (Area (Loc 82 2 27) (Loc 83 2 28)) (LNum "3"))
+                                   True)
+                            ])
+                     ]))
                True)
         ]
     , atypedecls =

@@ -1,0 +1,10 @@
+import Maybe from "Maybe"
+
+fromString :: String -> Maybe.Maybe Number
+export fromString = (str) => (#- {
+  const n = parseFloat(str)
+  return isNaN(n) ? Maybe.Nothing : Maybe.Just(n)
+} -#)
+
+formatDecimal :: Number -> Number -> String
+export formatDecimal = (a, x) => (#- x.toFixed(a) -#)

@@ -92,9 +92,10 @@ type Exp = Meta Exp_
 data Exp_ = LNum String
           | LStr String
           | LBool String
+          | LUnit
           | Var Name
           | App Exp Exp Bool
-          | Abs Name Exp
+          | Abs Name [Exp]
           | FieldAccess Exp Exp
           | Assignment Name Exp
           | Record [Field]

@@ -1,25 +1,147 @@
+import HP from "HitPoint"
 import W from "Wish"
 import IO from "IO"
 import S from "String"
+import System from "System"
 import L from "List"
 import F from "Function"
+import FS from "FileSystem"
+import N from "Number"
+import Math from "Math"
+import Maybe from "Maybe"
+import T from "Tuple"
+import Lcov from "LcovDotInfo"
+
+
+colorString :: String -> String -> String
+colorString = (color, v) => color ++ v ++"\x1b[0m"
+
+red = colorString("\x1b[31m")
+green = colorString("\x1b[32m")
 
 
 data AssertionError = AssertionError a a
 
 
-colorString :: String -> String -> String
-colorString = (color, v) => (color ++ v ++"\x1b[0m")
+addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
+addFunctionHit = (astPath, name, lcov) =>
+  L.map((section) => Lcov.getPath(section) == astPath
+      ? L.map(where
+          is Lcov.FNDA count n: n == name ? Lcov.FNDA(count + 1, n) : Lcov.FNDA(count, n)
+          is x           : x
+          , section.fndas
+        ) |> (updatedFdnas) => ({ ...section, fndas: updatedFdnas })
+      : section
+    , lcov
+  )
 
-red = colorString("\x1b[31m")
-green = colorString("\x1b[32m")
+addLineHit :: String -> Number -> Lcov.LcovInfo -> Lcov.LcovInfo
+addLineHit = (astPath, line, lcov) =>
+  L.map(
+    (section) =>
+        Lcov.getPath(section) == astPath
+          ? L.map(where
+              is Lcov.DA l count: l == line ? Lcov.DA(l, count + 1) : Lcov.DA(l, count)
+              is x         : x
+              , section.das
+            ) |> (updatedDas) => ({ ...section, das: updatedDas })
+          : section
+    , lcov
+  )
 
-formatSuccessOutput = (description, result) => (
-  green("\u2713 " ++ description)
+updateLh :: Lcov.LcovSection -> Lcov.LcovSection
+updateLh = (section) => (
+  L.reduceR(
+    (total, da) =>
+      where(da)
+        is Lcov.DA _ count: count > 0 ? total + 1 : total
+    , 0
+    , section.das
+  ) |> (counted) => ({ ...section, lh: Lcov.LH(counted) })
 )
 
-formatFailureOutput = (description, result) => (
-  where(result) {
+collectLh :: Lcov.LcovInfo -> Lcov.LcovInfo
+collectLh = (lcov) => L.map(updateLh, lcov)
+
+updateFnh :: Lcov.LcovSection -> Lcov.LcovSection
+updateFnh = (section) => (
+  L.reduceR(
+    (total, da) =>
+      where(da)
+        is Lcov.FNDA count _: count > 0 ? total + 1 : total
+    , 0
+    , section.fndas
+  ) |> (counted) => ({ ...section, fnh: Lcov.FNH(counted) })
+)
+
+collectFnh :: Lcov.LcovInfo -> Lcov.LcovInfo
+collectFnh = (lcov) => L.map(updateFnh, lcov)
+
+collect :: List a -> Lcov.LcovInfo -> Lcov.LcovInfo
+collect = (hps, lcov) =>
+  L.reduceL(
+    (currLcov, hp) =>
+      where(hp)
+        is HP.FunctionHit astPath name: addFunctionHit(astPath, name, currLcov)
+        is HP.LineHit astPath line: addLineHit(astPath, line, currLcov),
+    lcov,
+    hps)
+  |> collectLh
+  |> collectFnh
+
+
+buildRow :: String -> Number -> Number -> IO.Row
+buildRow = (name, lines, functions) => {
+  formattedLines = N.formatDecimal(2, lines) ++ "%"
+  formattedFunctions = N.formatDecimal(2, functions) ++ "%"
+  coloredName = lines > 75 ? green(name) : red(name)
+
+  return { id: coloredName
+         , cols: [<"lines", formattedLines>, <"functions", formattedFunctions>]
+         }
+}
+
+allRow :: Lcov.LcovInfo -> IO.Row
+allRow = (lcov) =>
+  L.reduceR(
+    (total, section) =>
+        where(section)
+          is { lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
+            { lf: total.lf + found, lh: total.lh + hit, fnf: total.fnf + ffound, fnh: total.fnh + fhit }
+    , { lf: 0, lh: 0, fnf: 0, fnh: 0 }
+    , lcov
+  ) |> (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>
+    |> (total) => buildRow("All", T.fst(total), T.snd(total))
+
+generateTable :: Lcov.LcovInfo -> List IO.Row
+generateTable = (lcov) =>
+  L.map(where
+    is { sf: Lcov.SF path, lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
+      <100 * hit / found, 100 * fhit / ffound>
+        |> (t) => buildRow(path, T.fst(t), T.fst(t))
+    , lcov
+  ) |> (table) => L.concat([allRow(lcov)], table)
+
+stdoutReport :: Lcov.LcovInfo -> List IO.Row
+stdoutReport = (lcov) => generateTable(lcov)
+
+collectCoverage :: a -> W.Wish e <a, List IO.Row>
+collectCoverage = (received) =>
+  FS.readFile(".coverage/lcov.info")
+    |> W.map(Lcov.parseLcov)
+    |> W.map(collect(HP.getHitPoints("")))
+    |> W.chain((lcov) =>
+         W.of(lcov)
+           |> W.map(Lcov.stringify)
+           |> W.map(FS.TextData)
+           |> W.chain(FS.writeFile(".coverage/lcov.info"))
+           |> W.andDo(W.of(<received, stdoutReport(lcov)>))
+       )
+
+formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
+
+formatFailureOutput = (description, result) =>
+  where(result)
     is AssertionError expected actual:
       W.of(
         red("\u00d7 " ++ description)
@@ -28,27 +150,51 @@ formatFailureOutput = (description, result) => (
         ++ "\n    actual:\n      "
         ++ S.show(actual)
       )
-  }
-)
 
 test :: String -> (x -> W.Wish AssertionError String) -> W.Wish String String
-export test = (description, run) => (
-  run(description)
-    |> W.map(formatSuccessOutput(description))
-    |> W.chainRej(formatFailureOutput(description))
+export test = (description) => pipe(
+  (run) => run(description),
+  W.map(formatSuccessOutput(description)),
+  W.chainRej(formatFailureOutput(description))
 )
 
 assertEquals :: a -> a -> W.Wish AssertionError String
-export assertEquals = (actual, expected) => (
-  actual == expected
-    ? W.of("")
-    : W.bad(AssertionError(expected, actual))
-)
+export assertEquals = (actual, expected) => actual == expected
+  ? W.of("")
+  : W.bad(AssertionError(expected, actual))
 
-runTests :: List (W.Wish String String) -> a
-export runTests = (tests) => (
+isCoverageEnabled :: W.Wish String Boolean
+isCoverageEnabled = pipe(
+  System.getEnv,
+  W.map(F.equals("on")),
+  W.chainRej(F.always(W.of(false)))
+)("COVERAGE_MODE")
+
+displayResults :: <List String, List IO.Row> -> List IO.Row
+displayResults = (results) => {
+  L.map(IO.log, T.fst(results))
+  return F.when(
+    F.complement(L.isEmpty),
+    pipe(
+      IO.trace("\n--------------------------------------------------------------------------------"),
+      IO.trace("\nCOVERAGE REPORT:"),
+      IO.table(T.snd(results))
+    )
+  )(T.snd(results))
+}
+
+runTests :: List (W.Wish String String) -> ()
+export runTests = (tests) => {
   IO.log("Running tests ...")
-    |> F.always(tests)
-    |> W.parallel
-    |> W.fulfill(F.identity, L.map(IO.log))
-)
+
+  return pipe(
+    W.parallel,
+    W.fulfill(F.identity, (results) => pipe(
+      W.chain(where
+        is true : collectCoverage(results)
+        is false: W.of(<results, []>)
+      ),
+      W.fulfill(F.identity, displayResults)
+    )(isCoverageEnabled))
+  )(tests)
+}

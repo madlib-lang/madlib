@@ -6,7 +6,10 @@ export data Map k v = Map_ (List <k, v>)
 
 
 fromList :: List (<k, v>) -> Map k v
-export fromList = (list) => (Map_(list))
+export fromList = pipe(
+  L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
+  Map_
+)
 
 
 empty :: Map k v
@@ -51,5 +54,22 @@ export values = (m) => (where(m)
   is Map_ items: L.map(T.snd, items)
 )
 
+
 len :: Map k v -> Number
 export len = (m) => (m |> keys |> L.len)
+
+
+map :: (v -> w) -> Map k v -> Map k w
+export map = (fn, x) => where (x)
+  is Map_ items: L.map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+
+
+mapWithKey :: (k -> v -> w) -> Map k v -> Map k w
+export map = (fn, x) => where (x)
+  is Map_ items:
+    L.map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+
+
+merge :: Map k v -> Map k v -> Map k v
+export merge = (a, b) => where(<a, b>)
+  is <Map_ itemsA, Map_ itemsB>: L.concat(itemsA, itemsB) |> fromList

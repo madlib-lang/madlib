@@ -1,0 +1,645 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TArr
+               (TArr (TVar (TV "a")) (TVar (TV "b")))
+               (TArr
+                  (TComp "Prelude" "List" [ TVar (TV "a") ])
+                  (TComp "Prelude" "List" [ TVar (TV "b") ])))
+            (Area (Loc 0 1 1) (Loc 68 2 33))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TArr (TVar (TV "a")) (TVar (TV "b")))
+                     (TArr
+                        (TComp "Prelude" "List" [ TVar (TV "a") ])
+                        (TComp "Prelude" "List" [ TVar (TV "b") ])))
+                  (Area (Loc 36 2 1) (Loc 68 2 33))
+                  (Assignment
+                     "map"
+                     (Solved
+                        (TArr (TVar (TV "c")) (TArr (TVar (TV "d")) (TVar (TV "e"))))
+                        (Area (Loc 42 2 7) (Loc 68 2 33))
+                        (Abs
+                           "f"
+                           [ Solved
+                               (TArr (TVar (TV "d")) (TVar (TV "e")))
+                               (Area (Loc 42 2 7) (Loc 68 2 33))
+                               (Abs
+                                  "xs"
+                                  [ Solved
+                                      (TVar (TV "e"))
+                                      (Area (Loc 54 2 19) (Loc 67 2 32))
+                                      (JSExp "some JS")
+                                  ])
+                           ]))))
+               (TRArr
+                  (TRArr (TRSingle "a") (TRSingle "b"))
+                  (TRArr
+                     (TRComp "List" [ TRSingle "a" ])
+                     (TRComp "List" [ TRSingle "b" ]))))
+        , Solved
+            (TArr
+               (TComp "Prelude" "List" [ TVar (TV "f") ])
+               (TArr
+                  (TComp "Prelude" "List" [ TVar (TV "f") ])
+                  (TComp "Prelude" "List" [ TVar (TV "f") ])))
+            (Area (Loc 69 3 1) (Loc 159 4 54))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TComp "Prelude" "List" [ TVar (TV "f") ])
+                     (TArr
+                        (TComp "Prelude" "List" [ TVar (TV "f") ])
+                        (TComp "Prelude" "List" [ TVar (TV "f") ])))
+                  (Area (Loc 69 3 1) (Loc 75 3 7))
+                  (Export
+                     (Solved
+                        (TArr (TVar (TV "g")) (TArr (TVar (TV "h")) (TVar (TV "i"))))
+                        (Area (Loc 106 4 1) (Loc 112 4 7))
+                        (Assignment
+                           "concat"
+                           (Solved
+                              (TArr (TVar (TV "g")) (TArr (TVar (TV "h")) (TVar (TV "i"))))
+                              (Area (Loc 122 4 17) (Loc 159 4 54))
+                              (Abs
+                                 "xs1"
+                                 [ Solved
+                                     (TArr (TVar (TV "h")) (TVar (TV "i")))
+                                     (Area (Loc 122 4 17) (Loc 159 4 54))
+                                     (Abs
+                                        "xs2"
+                                        [ Solved
+                                            (TVar (TV "i"))
+                                            (Area (Loc 137 4 32) (Loc 158 4 53))
+                                            (JSExp "xs1.concat(xs2)")
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRComp "List" [ TRSingle "a" ])
+                  (TRArr
+                     (TRComp "List" [ TRSingle "a" ])
+                     (TRComp "List" [ TRSingle "a" ]))))
+        , Solved
+            (TArr
+               (TArr (TVar (TV "j")) (TArr (TVar (TV "k")) (TVar (TV "j"))))
+               (TArr
+                  (TVar (TV "j"))
+                  (TArr (TComp "Prelude" "List" [ TVar (TV "k") ]) (TVar (TV "j")))))
+            (Area (Loc 160 5 1) (Loc 269 6 66))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TArr (TVar (TV "j")) (TArr (TVar (TV "k")) (TVar (TV "j"))))
+                     (TArr
+                        (TVar (TV "j"))
+                        (TArr (TComp "Prelude" "List" [ TVar (TV "k") ]) (TVar (TV "j")))))
+                  (Area (Loc 160 5 1) (Loc 166 5 7))
+                  (Export
+                     (Solved
+                        (TArr
+                           (TVar (TV "l"))
+                           (TArr (TVar (TV "m")) (TArr (TVar (TV "n")) (TVar (TV "o")))))
+                        (Area (Loc 204 6 1) (Loc 210 6 7))
+                        (Assignment
+                           "reduce"
+                           (Solved
+                              (TArr
+                                 (TVar (TV "l"))
+                                 (TArr (TVar (TV "m")) (TArr (TVar (TV "n")) (TVar (TV "o")))))
+                              (Area (Loc 220 6 17) (Loc 269 6 66))
+                              (Abs
+                                 "f"
+                                 [ Solved
+                                     (TArr (TVar (TV "m")) (TArr (TVar (TV "n")) (TVar (TV "o"))))
+                                     (Area (Loc 220 6 17) (Loc 269 6 66))
+                                     (Abs
+                                        "initial"
+                                        [ Solved
+                                            (TArr (TVar (TV "n")) (TVar (TV "o")))
+                                            (Area (Loc 220 6 17) (Loc 269 6 66))
+                                            (Abs
+                                               "xs"
+                                               [ Solved
+                                                   (TVar (TV "o"))
+                                                   (Area (Loc 241 6 38) (Loc 268 6 65))
+                                                   (JSExp "xs.reduce(f, initial)")
+                                               ])
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRArr (TRSingle "a") (TRArr (TRSingle "b") (TRSingle "a")))
+                  (TRArr
+                     (TRSingle "a")
+                     (TRArr (TRComp "List" [ TRSingle "b" ]) (TRSingle "a")))))
+        , Solved
+            (TArr
+               (TComp "Prelude" "List" [ TArr (TVar (TV "p")) (TVar (TV "q")) ])
+               (TArr
+                  (TComp "Prelude" "List" [ TVar (TV "p") ])
+                  (TComp "Prelude" "List" [ TVar (TV "q") ])))
+            (Area (Loc 271 8 1) (Loc 414 15 6))
+            (TypedExp
+               (Solved
+                  (TArr
+                     (TComp "Prelude" "List" [ TArr (TVar (TV "p")) (TVar (TV "q")) ])
+                     (TArr
+                        (TComp "Prelude" "List" [ TVar (TV "p") ])
+                        (TComp "Prelude" "List" [ TVar (TV "q") ])))
+                  (Area (Loc 271 8 1) (Loc 273 8 3))
+                  (Export
+                     (Solved
+                        (TArr
+                           (TComp "Prelude" "List" [ TArr (TVar (TV "al")) (TVar (TV "a")) ])
+                           (TArr
+                              (TComp "Prelude" "List" [ TVar (TV "al") ])
+                              (TComp "Prelude" "List" [ TVar (TV "a") ])))
+                        (Area (Loc 311 9 1) (Loc 317 9 7))
+                        (Assignment
+                           "ap"
+                           (Solved
+                              (TArr
+                                 (TComp "Prelude" "List" [ TArr (TVar (TV "al")) (TVar (TV "a")) ])
+                                 (TArr
+                                    (TComp "Prelude" "List" [ TVar (TV "al") ])
+                                    (TComp "Prelude" "List" [ TVar (TV "a") ])))
+                              (Area (Loc 323 9 13) (Loc 414 15 6))
+                              (Abs
+                                 "fns"
+                                 [ Solved
+                                     (TArr
+                                        (TComp "Prelude" "List" [ TVar (TV "al") ])
+                                        (TComp "Prelude" "List" [ TVar (TV "a") ]))
+                                     (Area (Loc 323 9 13) (Loc 414 15 6))
+                                     (Abs
+                                        "xs"
+                                        [ Solved
+                                            (TComp "Prelude" "List" [ TVar (TV "a") ])
+                                            (Area (Loc 411 15 3) (Loc 414 15 6))
+                                            (App
+                                               (Solved
+                                                  (TArr
+                                                     (TComp
+                                                        "Prelude"
+                                                        "List"
+                                                        [ TArr (TVar (TV "al")) (TVar (TV "a")) ])
+                                                     (TComp "Prelude" "List" [ TVar (TV "a") ]))
+                                                  (Area (Loc 405 14 3) (Loc 407 14 5))
+                                                  (App
+                                                     (Solved
+                                                        (TArr
+                                                           (TComp
+                                                              "Prelude" "List" [ TVar (TV "ao") ])
+                                                           (TArr
+                                                              (TComp
+                                                                 "Prelude"
+                                                                 "List"
+                                                                 [ TArr
+                                                                     (TVar (TV "al"))
+                                                                     (TVar (TV "ao"))
+                                                                 ])
+                                                              (TComp
+                                                                 "Prelude"
+                                                                 "List"
+                                                                 [ TVar (TV "ao") ])))
+                                                        (Area (Loc 336 9 26) (Loc 416 16 1))
+                                                        (App
+                                                           (Solved
+                                                              (TArr
+                                                                 (TArr
+                                                                    (TVar (TV "w"))
+                                                                    (TArr
+                                                                       (TVar (TV "x"))
+                                                                       (TVar (TV "w"))))
+                                                                 (TArr
+                                                                    (TVar (TV "w"))
+                                                                    (TArr
+                                                                       (TComp
+                                                                          "Prelude"
+                                                                          "List"
+                                                                          [ TVar (TV "x") ])
+                                                                       (TVar (TV "w")))))
+                                                              (Area (Loc 336 9 26) (Loc 342 9 32))
+                                                              (Var "reduce"))
+                                                           (Solved
+                                                              (TArr
+                                                                 (TComp
+                                                                    "Prelude"
+                                                                    "List"
+                                                                    [ TVar (TV "ao") ])
+                                                                 (TArr
+                                                                    (TArr
+                                                                       (TVar (TV "al"))
+                                                                       (TVar (TV "ao")))
+                                                                    (TComp
+                                                                       "Prelude"
+                                                                       "List"
+                                                                       [ TVar (TV "ao") ])))
+                                                              (Area (Loc 346 10 3) (Loc 401 13 8))
+                                                              (Abs
+                                                                 "agg"
+                                                                 [ Solved
+                                                                     (TArr
+                                                                        (TArr
+                                                                           (TVar (TV "al"))
+                                                                           (TVar (TV "ao")))
+                                                                        (TComp
+                                                                           "Prelude"
+                                                                           "List"
+                                                                           [ TVar (TV "ao") ]))
+                                                                     (Area
+                                                                        (Loc 346 10 3)
+                                                                        (Loc 401 13 8))
+                                                                     (Abs
+                                                                        "fn"
+                                                                        [ Solved
+                                                                            (TComp
+                                                                               "Prelude"
+                                                                               "List"
+                                                                               [ TVar (TV "ao") ])
+                                                                            (Area
+                                                                               (Loc 359 10 16)
+                                                                               (Loc 401 13 8))
+                                                                            (App
+                                                                               (Solved
+                                                                                  (TArr
+                                                                                     (TComp
+                                                                                        "Prelude"
+                                                                                        "List"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "al")
+                                                                                        ])
+                                                                                     (TComp
+                                                                                        "Prelude"
+                                                                                        "List"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "ao")
+                                                                                        ]))
+                                                                                  (Area
+                                                                                     (Loc 359 10 16)
+                                                                                     (Loc 397 13 3))
+                                                                                  (Abs
+                                                                                     "__x__"
+                                                                                     [ Solved
+                                                                                         (TComp
+                                                                                            "Prelude"
+                                                                                            "List"
+                                                                                            [ TVar
+                                                                                                (TV
+                                                                                                   "ao")
+                                                                                            ])
+                                                                                         (Area
+                                                                                            (Loc
+                                                                                               359
+                                                                                               10
+                                                                                               16)
+                                                                                            (Loc
+                                                                                               393
+                                                                                               12
+                                                                                               16))
+                                                                                         (App
+                                                                                            (Solved
+                                                                                               (TArr
+                                                                                                  (TArr
+                                                                                                     (TComp
+                                                                                                        "Prelude"
+                                                                                                        "List"
+                                                                                                        [ TVar
+                                                                                                            (TV
+                                                                                                               "am")
+                                                                                                        ])
+                                                                                                     (TVar
+                                                                                                        (TV
+                                                                                                           "af")))
+                                                                                                  (TVar
+                                                                                                     (TV
+                                                                                                        "af")))
+                                                                                               (Area
+                                                                                                  (Loc
+                                                                                                     382
+                                                                                                     12
+                                                                                                     5)
+                                                                                                  (Loc
+                                                                                                     393
+                                                                                                     12
+                                                                                                     16))
+                                                                                               (App
+                                                                                                  (Solved
+                                                                                                     (TArr
+                                                                                                        (TVar
+                                                                                                           (TV
+                                                                                                              "ae"))
+                                                                                                        (TArr
+                                                                                                           (TArr
+                                                                                                              (TVar
+                                                                                                                 (TV
+                                                                                                                    "ae"))
+                                                                                                              (TVar
+                                                                                                                 (TV
+                                                                                                                    "af")))
+                                                                                                           (TVar
+                                                                                                              (TV
+                                                                                                                 "af"))))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           382
+                                                                                                           12
+                                                                                                           5)
+                                                                                                        (Loc
+                                                                                                           393
+                                                                                                           12
+                                                                                                           16))
+                                                                                                     (Var
+                                                                                                        "|>"))
+                                                                                                  (Solved
+                                                                                                     (TComp
+                                                                                                        "Prelude"
+                                                                                                        "List"
+                                                                                                        [ TVar
+                                                                                                            (TV
+                                                                                                               "am")
+                                                                                                        ])
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           359
+                                                                                                           10
+                                                                                                           16)
+                                                                                                        (Loc
+                                                                                                           376
+                                                                                                           11
+                                                                                                           12))
+                                                                                                     (App
+                                                                                                        (Solved
+                                                                                                           (TArr
+                                                                                                              (TArr
+                                                                                                                 (TVar
+                                                                                                                    (TV
+                                                                                                                       "ab"))
+                                                                                                                 (TVar
+                                                                                                                    (TV
+                                                                                                                       "aj")))
+                                                                                                              (TVar
+                                                                                                                 (TV
+                                                                                                                    "aj")))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 369
+                                                                                                                 11
+                                                                                                                 5)
+                                                                                                              (Loc
+                                                                                                                 376
+                                                                                                                 11
+                                                                                                                 12))
+                                                                                                           (App
+                                                                                                              (Solved
+                                                                                                                 (TArr
+                                                                                                                    (TVar
+                                                                                                                       (TV
+                                                                                                                          "ai"))
+                                                                                                                    (TArr
+                                                                                                                       (TArr
+                                                                                                                          (TVar
+                                                                                                                             (TV
+                                                                                                                                "ai"))
+                                                                                                                          (TVar
+                                                                                                                             (TV
+                                                                                                                                "aj")))
+                                                                                                                       (TVar
+                                                                                                                          (TV
+                                                                                                                             "aj"))))
+                                                                                                                 (Area
+                                                                                                                    (Loc
+                                                                                                                       369
+                                                                                                                       11
+                                                                                                                       5)
+                                                                                                                    (Loc
+                                                                                                                       376
+                                                                                                                       11
+                                                                                                                       12))
+                                                                                                                 (Var
+                                                                                                                    "|>"))
+                                                                                                              (Solved
+                                                                                                                 (TVar
+                                                                                                                    (TV
+                                                                                                                       "ab"))
+                                                                                                                 (Area
+                                                                                                                    (Loc
+                                                                                                                       359
+                                                                                                                       10
+                                                                                                                       16)
+                                                                                                                    (Loc
+                                                                                                                       397
+                                                                                                                       13
+                                                                                                                       3))
+                                                                                                                 (Var
+                                                                                                                    "__x__"))
+                                                                                                              False))
+                                                                                                        (Solved
+                                                                                                           (TArr
+                                                                                                              (TComp
+                                                                                                                 "Prelude"
+                                                                                                                 "List"
+                                                                                                                 [ TVar
+                                                                                                                     (TV
+                                                                                                                        "al")
+                                                                                                                 ])
+                                                                                                              (TComp
+                                                                                                                 "Prelude"
+                                                                                                                 "List"
+                                                                                                                 [ TVar
+                                                                                                                     (TV
+                                                                                                                        "am")
+                                                                                                                 ]))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 369
+                                                                                                                 11
+                                                                                                                 5)
+                                                                                                              (Loc
+                                                                                                                 376
+                                                                                                                 11
+                                                                                                                 12))
+                                                                                                           (App
+                                                                                                              (Solved
+                                                                                                                 (TArr
+                                                                                                                    (TArr
+                                                                                                                       (TVar
+                                                                                                                          (TV
+                                                                                                                             "al"))
+                                                                                                                       (TVar
+                                                                                                                          (TV
+                                                                                                                             "am")))
+                                                                                                                    (TArr
+                                                                                                                       (TComp
+                                                                                                                          "Prelude"
+                                                                                                                          "List"
+                                                                                                                          [ TVar
+                                                                                                                              (TV
+                                                                                                                                 "al")
+                                                                                                                          ])
+                                                                                                                       (TComp
+                                                                                                                          "Prelude"
+                                                                                                                          "List"
+                                                                                                                          [ TVar
+                                                                                                                              (TV
+                                                                                                                                 "am")
+                                                                                                                          ])))
+                                                                                                                 (Area
+                                                                                                                    (Loc
+                                                                                                                       369
+                                                                                                                       11
+                                                                                                                       5)
+                                                                                                                    (Loc
+                                                                                                                       372
+                                                                                                                       11
+                                                                                                                       8))
+                                                                                                                 (Var
+                                                                                                                    "map"))
+                                                                                                              (Solved
+                                                                                                                 (TArr
+                                                                                                                    (TVar
+                                                                                                                       (TV
+                                                                                                                          "al"))
+                                                                                                                    (TVar
+                                                                                                                       (TV
+                                                                                                                          "am")))
+                                                                                                                 (Area
+                                                                                                                    (Loc
+                                                                                                                       373
+                                                                                                                       11
+                                                                                                                       9)
+                                                                                                                    (Loc
+                                                                                                                       375
+                                                                                                                       11
+                                                                                                                       11))
+                                                                                                                 (Var
+                                                                                                                    "fn"))
+                                                                                                              True))
+                                                                                                        True))
+                                                                                                  False))
+                                                                                            (Solved
+                                                                                               (TArr
+                                                                                                  (TComp
+                                                                                                     "Prelude"
+                                                                                                     "List"
+                                                                                                     [ TVar
+                                                                                                         (TV
+                                                                                                            "ao")
+                                                                                                     ])
+                                                                                                  (TComp
+                                                                                                     "Prelude"
+                                                                                                     "List"
+                                                                                                     [ TVar
+                                                                                                         (TV
+                                                                                                            "ao")
+                                                                                                     ]))
+                                                                                               (Area
+                                                                                                  (Loc
+                                                                                                     382
+                                                                                                     12
+                                                                                                     5)
+                                                                                                  (Loc
+                                                                                                     393
+                                                                                                     12
+                                                                                                     16))
+                                                                                               (App
+                                                                                                  (Solved
+                                                                                                     (TArr
+                                                                                                        (TComp
+                                                                                                           "Prelude"
+                                                                                                           "List"
+                                                                                                           [ TVar
+                                                                                                               (TV
+                                                                                                                  "ao")
+                                                                                                           ])
+                                                                                                        (TArr
+                                                                                                           (TComp
+                                                                                                              "Prelude"
+                                                                                                              "List"
+                                                                                                              [ TVar
+                                                                                                                  (TV
+                                                                                                                     "ao")
+                                                                                                              ])
+                                                                                                           (TComp
+                                                                                                              "Prelude"
+                                                                                                              "List"
+                                                                                                              [ TVar
+                                                                                                                  (TV
+                                                                                                                     "ao")
+                                                                                                              ])))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           382
+                                                                                                           12
+                                                                                                           5)
+                                                                                                        (Loc
+                                                                                                           388
+                                                                                                           12
+                                                                                                           11))
+                                                                                                     (Var
+                                                                                                        "concat"))
+                                                                                                  (Solved
+                                                                                                     (TComp
+                                                                                                        "Prelude"
+                                                                                                        "List"
+                                                                                                        [ TVar
+                                                                                                            (TV
+                                                                                                               "ao")
+                                                                                                        ])
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           389
+                                                                                                           12
+                                                                                                           12)
+                                                                                                        (Loc
+                                                                                                           392
+                                                                                                           12
+                                                                                                           15))
+                                                                                                     (Var
+                                                                                                        "agg"))
+                                                                                                  True))
+                                                                                            True)
+                                                                                     ]))
+                                                                               (Solved
+                                                                                  (TComp
+                                                                                     "Prelude"
+                                                                                     "List"
+                                                                                     [ TVar
+                                                                                         (TV "al")
+                                                                                     ])
+                                                                                  (Area
+                                                                                     (Loc 398 13 5)
+                                                                                     (Loc 400 13 7))
+                                                                                  (Var "xs"))
+                                                                               True)
+                                                                        ])
+                                                                 ]))
+                                                           False))
+                                                     (Solved
+                                                        (TComp "Prelude" "List" [ TVar (TV "a") ])
+                                                        (Area (Loc 405 14 3) (Loc 407 14 5))
+                                                        (ListConstructor []))
+                                                     False))
+                                               (Solved
+                                                  (TComp
+                                                     "Prelude"
+                                                     "List"
+                                                     [ TArr (TVar (TV "al")) (TVar (TV "a")) ])
+                                                  (Area (Loc 411 15 3) (Loc 414 15 6))
+                                                  (Var "fns"))
+                                               True)
+                                        ])
+                                 ]))))))
+               (TRArr
+                  (TRComp "List" [ TRArr (TRSingle "a") (TRSingle "b") ])
+                  (TRArr
+                     (TRComp "List" [ TRSingle "a" ])
+                     (TRComp "List" [ TRSingle "b" ]))))
+        ]
+    , atypedecls = []
+    , apath = Just "path"
+    }

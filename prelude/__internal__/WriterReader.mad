@@ -1,0 +1,48 @@
+import T from "Tuple"
+import L from "List"
+import IO from "IO"
+
+// Monad combining Reader and Writer
+// Example usage:
+// addFromEnv :: Number -> WriterReader String Number Number
+// addFromEnv = (a) => 
+//   tell("Adding: " ++ S.show(a))
+//     |> andDo(asks((x) => x) |> chain((env) => tell("Current env: " ++ S.show(env))))
+//     |> andDo(asks((fromEnv) => a + fromEnv))
+
+// r :: WriterReader String Number Number
+// r = of(3)
+//   |> chain(addFromEnv)
+//   |> chain(addFromEnv)
+
+// run(r, 47) |> IO.log
+
+export data WriterReader w r a = WriterReader (r -> <a, List w>)
+
+run :: WriterReader w r a -> r -> <a, List w>
+export run = (m, env) => where(m)
+  is WriterReader f: f(env)
+
+of :: a -> WriterReader w r a
+export of = (a) => WriterReader((b) => <a, []>)
+
+chain :: (a -> WriterReader w r b) -> WriterReader w r a -> WriterReader w r b
+export chain = (f, m) => WriterReader((r) => {
+  unwrapped = run(m, r)
+  currW = T.snd(unwrapped)
+  a = T.fst(unwrapped)
+  unwrappedApplied = run(f(a), r)
+
+  return <T.fst(unwrappedApplied), L.concat(currW, T.snd(unwrappedApplied))>
+})
+
+andDo :: WriterReader w r b -> WriterReader w r a -> WriterReader w r b
+export andDo = (wr1, wr2) => chain((a) => wr1, wr2)
+
+asks :: (r -> a) -> WriterReader w r a
+export asks = (f) => (
+  WriterReader((a) => <f(a), []>)
+)
+
+tell :: w -> WriterReader w r ()
+export tell = (v) => WriterReader((b) => <(), [v]>)

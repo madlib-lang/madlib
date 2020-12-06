@@ -55,12 +55,14 @@ tokens :-
   else                                  { mapToken (\_ -> TokenElse) }
   where                                 { mapToken (\_ -> TokenWhere) }
   pipe                                  { mapToken (\_ -> TokenPipeKeyword) }
+  return                                { mapToken (\_ -> TokenReturnKeyword) }
   is                                    { mapToken (\_ -> TokenIs) }
   \=                                    { mapToken (\_ -> TokenEq) }
   @signed @floating                     { mapToken (\s -> TokenNumber s) }
   "true"                                { mapToken (\_ -> (TokenBool "true")) }
   "false"                               { mapToken (\_ -> (TokenBool "false")) }
   "=="                                  { mapToken (\_ -> TokenDoubleEq) }
+  "!="                                  { mapToken (\_ -> TokenExclamationMarkEq) }
   \.                                    { mapToken (\_ -> TokenDot) }
   $head*\,$tail*                        { mapToken (\_ -> TokenComma) }
   \{$tail*                              { mapToken (\_ -> TokenLeftCurly) }
@@ -106,7 +108,7 @@ tokens :-
 
 {
 blackList :: String
-blackList = "\\`[\ \t \n]*(where|if|else|is|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
+blackList = "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
 
 
 whiteList :: String
@@ -169,6 +171,7 @@ data TokenClass
  | TokenElse
  | TokenWhere
  | TokenIs
+ | TokenReturnKeyword
  | TokenEq
  | TokenPlus
  | TokenDoublePlus
@@ -177,6 +180,7 @@ data TokenClass
  | TokenSlash
  | TokenPercent
  | TokenDoubleEq
+ | TokenExclamationMarkEq
  | TokenComma
  | TokenLeftCurly
  | TokenRightCurly

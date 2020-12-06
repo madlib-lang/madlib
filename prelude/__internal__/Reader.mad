@@ -1,0 +1,34 @@
+import IO from "IO"
+
+// Reader Monad
+// Example usage:
+// addFromEnv :: Number -> Reader Number Number
+// addFromEnv = (a) => asks((fromEnv) => a + fromEnv)
+
+// r :: Reader Number Number
+// r = of(3)
+//   |> chain(addFromEnv)
+//   |> chain(addFromEnv)
+
+// run(r, 15) |> IO.log
+
+export data Reader r a = Reader (r -> a)
+
+run :: Reader r a -> r -> a
+export run = (reader, env) => where(reader)
+  is Reader r: r(env)
+
+map :: (a -> b) -> Reader r a -> Reader r b
+export map = (f, m) => Reader((r) => f(run(m, r)))
+
+chain :: (a -> Reader r b) -> Reader r a -> Reader r b
+export chain = (f, m) => Reader((r) => run(f(run(m, r)), r))
+
+ask :: Reader r r
+export ask = Reader((x) => x)
+
+asks :: (r -> a) -> Reader r a
+export asks = Reader
+
+of :: a -> Reader r a
+export of = (a) => Reader((b) => a)

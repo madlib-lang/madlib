@@ -40,7 +40,7 @@ const __eq = (l, r) => {
   return l === r;
 }
 export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
-export const Nothing = curryPowder(() => ({ __constructor: "Nothing", __args: [  ] }));
+export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export const random = curryPowder((seed) => R.random(seed));
 export default { random, Just, Nothing };
 // file: /root/project/madlib_modules/random/src/Utils/Random.mad

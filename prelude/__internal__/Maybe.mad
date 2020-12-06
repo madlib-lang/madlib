@@ -8,8 +8,14 @@ export map = (f, m) => (where(m) {
   is Nothing: Nothing
 })
 
-bind :: (a -> Maybe b) -> Maybe a -> Maybe b
-export bind = (f, m) => (where(m) {
+chain :: (a -> Maybe b) -> Maybe a -> Maybe b
+export chain = (f, m) => (where(m) {
   is Just x : f(x)
   is Nothing: Nothing
 })
+
+fromMaybe :: a -> Maybe a -> a
+export fromMaybe = (def, mabe) => (where(mabe)
+  is Just a : a
+  is Nothing: def
+)

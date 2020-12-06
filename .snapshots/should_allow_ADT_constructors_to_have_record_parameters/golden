@@ -74,7 +74,7 @@ Right
                           (TArr (TComp "./ModuleA" "Point" []) (TCon CNum))
                           (Area (Loc 59 4 3) (Loc 79 4 23))
                           (Is
-                             (PCtor "P.Point" [ PList [ PVar "a" , PVar "b" ] ])
+                             (PCtor "P.Point" [ PTuple [ PVar "a" , PVar "b" ] ])
                              (Solved
                                 (TCon CNum)
                                 (Area (Loc 78 4 22) (Loc 79 4 23))

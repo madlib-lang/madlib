@@ -1,79 +1,32 @@
-import R from "mad-rand"
+// import L from "List"
+import IO from "IO"
 
-id :: a -> a
-id = (a) => (a)
-
-double :: Number -> Number
-double = (n) => (n * 2)
+// ap :: List (a -> b) -> a -> List b
+// export ap = (fns, a) => pipe(L.map((fn) => fn(a)))(fns)
 
 
-// get("http://www.google.com")
-//   |> run(id, IO.log)
+// data Maybe a = Just a | Nothing
 
-L.singleton(3) |> L.map((x) => (x + 1)) |> IO.log
+// (where(<Just(3), Just(4)>)
+//   is <Just n, Just m>: n + m) |> IO.log
 
-t = (x) => if (x) { false } else { true }
+data User = User String Number
 
-F.of(true)
-  |> F.map((x) => if (x) { 2 } else { 4 })
-  |> F.map((x) => x * 2)
-  |> F.run((x) => x, IO.log)
+alias Comparable a = { eq :: a -> a -> Boolean }
 
-a = { x: 3 }
-b = { y: 4 }
-c = { ...a, ...b }
+numberComparable :: Comparable Number
+numberComparable = { eq: (a, b) => a == b }
 
-c.x + c.y
-
-total = (a) => (a.x + a.y)
-
-// -- total(c) |> IO.log
-
-data A = A (Number -> Number)
-
-p = A((x) => (x + 1))
+userComparable :: Comparable User
+userComparable = {
+  eq: (a, b) => where(<a, b>)
+    is <User name1 age1, User name2 age2>:
+      (name1 == name2) && (age1 == age2)
+}
 
 
+eq :: Comparable a -> a -> a -> Boolean
+eq = (comp, a, b) => comp.eq(a, b)
 
-where(p) {
-  is A f: f(3)
-} |> IO.log
-
-
-data Maybe a = Just a | Nothing
-
-(Nothing :: Maybe a)
-(Just(3) :: Maybe Number)
-
-(1 + 1 :: Number) |> IO.log
-
-IO.log(!false)
-
-data User
-  = LoggedIn String
-  | Anonymous
-
-userDisplayName = (u) => (where(u) {
-  is LoggedIn name: name
-  is Anonymous    : "Anonymous"
-})
-
-
-fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2)})
-
-fib(8) |> IO.log
-
-
-if (1 < 2) { 1 } else { (1 - 1) + (1 - 2) }
-
-fn = (x) => (x + 1)
-
-fn(1)
-
-
-F.of([3, 4])
-  |> F.map(L.map(double))
-  |> F.run(IO.log, IO.log)
-
-
-L.map(L.map(double), [[1, 2], [3, 4]])
+eq(numberComparable, 3, 3) |> IO.log
+eq(userComparable, User("John", 3), User("John", 4)) |> IO.log

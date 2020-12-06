@@ -20,11 +20,7 @@ export mapRej = (f, run) => (
 )
 
 chain :: (a -> Wish f b) -> Wish e a -> Wish f b
-export chain = (f, run) => (
-  (bad, good) => (
-    run(bad, (x) => (f(x)(bad, good)))
-  )
-)
+export chain = (f, run) => ((bad, good) => run(bad, (x) => f(x)(bad, good)))
 
 chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b
 export chainRej = (f, run) => (
@@ -32,6 +28,9 @@ export chainRej = (f, run) => (
     run((x) => (f(x)(bad, good)), good)
   )
 )
+
+andDo :: Wish f b -> Wish e a -> Wish f b
+export andDo = (m, run) => chain((a) => m, run)
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => (
@@ -49,7 +48,7 @@ export parallel = (wishes) => (
   } -#)
 )
 
-fulfill :: (e -> m) -> (a -> n) -> Wish e a -> o
+fulfill :: (e -> m) -> (a -> n) -> Wish e a -> ()
 export fulfill = (bad, good, run) => (
   run(bad, good)
 )

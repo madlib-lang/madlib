@@ -6,7 +6,7 @@ Right
             (TArr
                (TRecord
                   (fromList [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
-                  False)
+                  True)
                (TVar (TV "c")))
             (Area (Loc 0 1 1) (Loc 3 1 4))
             (Assignment
@@ -15,46 +15,47 @@ Right
                   (TArr
                      (TRecord
                         (fromList [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
-                        False)
+                        True)
                      (TVar (TV "c")))
                   (Area (Loc 6 1 7) (Loc 61 4 3))
                   (Abs
                      "x"
-                     (Solved
-                        (TVar (TV "c"))
-                        (Area (Loc 14 1 15) (Loc 60 4 1))
-                        (Where
-                           (Solved
-                              (TRecord
-                                 (fromList [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
-                                 False)
-                              (Area (Loc 20 1 21) (Loc 21 1 22))
-                              (Var "x"))
-                           [ Solved
-                               (TArr
-                                  (TRecord
-                                     (fromList
-                                        [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
-                                     False)
-                                  (TVar (TV "c")))
-                               (Area (Loc 27 2 3) (Loc 41 2 17))
-                               (Is
-                                  (PRecord (fromList [ ( "z" , PVar "z" ) ]))
-                                  (Solved
-                                     (TVar (TV "b")) (Area (Loc 40 2 16) (Loc 41 2 17)) (Var "z")))
-                           , Solved
-                               (TArr
-                                  (TRecord
-                                     (fromList
-                                        [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
-                                     False)
-                                  (TVar (TV "c")))
-                               (Area (Loc 44 3 3) (Loc 58 3 17))
-                               (Is
-                                  (PRecord (fromList [ ( "x" , PVar "x" ) ]))
-                                  (Solved
-                                     (TVar (TV "c")) (Area (Loc 57 3 16) (Loc 58 3 17)) (Var "x")))
-                           ])))))
+                     [ Solved
+                         (TVar (TV "c"))
+                         (Area (Loc 14 1 15) (Loc 60 4 1))
+                         (Where
+                            (Solved
+                               (TRecord
+                                  (fromList [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
+                                  True)
+                               (Area (Loc 20 1 21) (Loc 21 1 22))
+                               (Var "x"))
+                            [ Solved
+                                (TArr
+                                   (TRecord
+                                      (fromList
+                                         [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
+                                      True)
+                                   (TVar (TV "c")))
+                                (Area (Loc 27 2 3) (Loc 41 2 17))
+                                (Is
+                                   (PRecord (fromList [ ( "z" , PVar "z" ) ]))
+                                   (Solved
+                                      (TVar (TV "b")) (Area (Loc 40 2 16) (Loc 41 2 17)) (Var "z")))
+                            , Solved
+                                (TArr
+                                   (TRecord
+                                      (fromList
+                                         [ ( "x" , TVar (TV "c") ) , ( "z" , TVar (TV "c") ) ])
+                                      True)
+                                   (TVar (TV "c")))
+                                (Area (Loc 44 3 3) (Loc 58 3 17))
+                                (Is
+                                   (PRecord (fromList [ ( "x" , PVar "x" ) ]))
+                                   (Solved
+                                      (TVar (TV "c")) (Area (Loc 57 3 16) (Loc 58 3 17)) (Var "x")))
+                            ])
+                     ])))
         ]
     , atypedecls = []
     , apath = Just "path"

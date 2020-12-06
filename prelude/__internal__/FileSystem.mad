@@ -23,6 +23,18 @@ export writeFile = (path, d) => (where(d) {
       });
     };
   -#)
+  is TextData content: (#- 
+    (bad, good) => {
+      fs.writeFile(path, content, (err) => {
+        if (err) {
+          bad(err);
+        }
+        else {
+          good(path)
+        }
+      })
+    }
+  -#)
 })
 
 readFile :: String -> W.Wish e String

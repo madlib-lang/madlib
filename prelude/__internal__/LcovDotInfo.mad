@@ -1,0 +1,115 @@
+import L from "List"
+import S from "String"
+import N from "Number"
+import Maybe from "Maybe"
+
+
+export data LcovLine
+  = TN String
+  | SF String
+  | FN Number String
+  | FNDA Number String
+  | FNF Number
+  | FNH Number
+  | DA Number Number
+  | LF Number
+  | LH Number
+
+export alias LcovSection
+  = { tn :: LcovLine
+    , sf :: LcovLine
+    , fns :: List LcovLine
+    , fndas :: List LcovLine
+    , fnf :: LcovLine
+    , fnh :: LcovLine
+    , das :: List LcovLine
+    , lf :: LcovLine
+    , lh :: LcovLine
+    }
+
+export alias LcovInfo = List LcovSection
+
+getPath :: LcovSection -> String
+export getPath = (section) =>
+  where(section.sf)
+    is SF p: p
+
+emptySection :: LcovSection
+emptySection = { tn: TN("")
+               , sf: SF("")
+               , fns: []
+               , fndas: []
+               , fnf: FNF(0)
+               , fnh: FNH(0)
+               , das: []
+               , lf: LF(0)
+               , lh: LH(0)
+               }
+
+parseNumberString :: (Number -> String -> LcovLine) -> String -> LcovLine
+parseNumberString = (ctor, args) => where(S.split(",", args))
+  is [line, name]: ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
+
+
+parseNumberNumber :: (Number -> Number -> LcovLine) -> String -> LcovLine
+parseNumberNumber = (ctor, args) => where(S.split(",", args))
+  is [line, count]:
+    ctor( Maybe.fromMaybe(0, N.fromString(line))
+        , Maybe.fromMaybe(0, N.fromString(count))
+        )
+
+
+parseLcovSection :: String -> LcovSection
+parseLcovSection = (content) =>
+  S.lines(content)
+    |> L.reject((s) => (s == ""))
+    |> L.reduceR(
+      (section, line) =>
+        S.split(":", line)
+          |> (namedLine) => where(namedLine)
+              is ["TN", arg]   : { ...section, tn: TN(arg) }
+              is ["SF", arg]   : { ...section, sf: SF(arg) }
+              is ["FN", args]  : { ...section, fns: L.append(parseNumberString(FN, args), section.fns) }
+              is ["FNDA", args]: { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
+              is ["FNF", arg]  : { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
+              is ["FNH", arg]  : { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
+              is ["DA", args]  : { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
+              is ["LF", arg]   : { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
+              is ["LH", arg]   : { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
+      , emptySection
+      )
+
+parseLcov :: String -> LcovInfo
+export parseLcov = (content) =>
+  S.split("end_of_record", content)
+    |> L.reject((s) => (s == ""))
+    |> L.map(parseLcovSection)
+
+stringifyLine :: LcovLine -> String
+stringifyLine = (line) =>
+  where(line)
+    is TN arg: "TN:" ++ arg ++ "\n"
+    is SF arg: "SF:" ++ arg ++ "\n"
+    is FN line name: "FN:" ++ S.show(line) ++ "," ++ name ++ "\n"
+    is FNDA count name: "FNDA:" ++ S.show(count) ++ "," ++ name ++ "\n"
+    is FNF count: "FNF:" ++ S.show(count) ++ "\n"
+    is FNH count: "FNH:" ++ S.show(count) ++ "\n"
+    is DA line count: "DA:" ++ S.show(line) ++ "," ++ S.show(count) ++ "\n"
+    is LF count: "LF:" ++ S.show(count) ++ "\n"
+    is LH count: "LH:" ++ S.show(count) ++ "\n"
+
+stringifySection :: LcovSection -> String
+stringifySection = (section) =>
+  stringifyLine(section.tn)
+  ++ stringifyLine(section.sf)
+  ++ L.reduceR((fns, line) => fns ++ stringifyLine(line), "", section.fns)
+  ++ L.reduceR((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
+  ++ stringifyLine(section.fnf)
+  ++ stringifyLine(section.fnh)
+  ++ L.reduceR((das, line) => das ++ stringifyLine(line), "", section.das)
+  ++ stringifyLine(section.lf)
+  ++ stringifyLine(section.lh)
+  ++ "end_of_record\n"
+
+stringify :: LcovInfo -> String
+export stringify = (lcov) => L.reduceL((r, section) => r ++ stringifySection(section), "", lcov)

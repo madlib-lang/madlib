@@ -36,8 +36,9 @@ Right
                   (Area (Loc 71 3 2) (Loc 81 3 12))
                   (Abs
                      "a"
-                     (Solved
-                        (TVar (TV "b")) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a"))))
+                     [ Solved
+                         (TVar (TV "b")) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a")
+                     ]))
                (Solved
                   (TArr
                      (TRecord (fromList [ ( "value" , TCon CString ) ]) False)

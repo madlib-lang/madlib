@@ -9,6 +9,6 @@ data Command
       , compileDebug :: Bool
       , compileBundle :: Bool
       }
-  | Test { testInput :: FilePath }
+  | Test { testInput :: FilePath, coverage :: Bool }
   | Install
   deriving (Eq, Show)

@@ -44,7 +44,7 @@ s1 `compose` s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
     (TRecord fields1 open1, TRecord fields2 open2) ->
-      TRecord (M.union fields1 fields2) False
+      TRecord (M.union fields1 fields2) (open1 || open2)
     (t, _) -> t
 
 

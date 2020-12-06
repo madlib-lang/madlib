@@ -360,11 +360,11 @@ spec = do
           actual = tester code
       snapshotTest "should infer abstraction param that is a deep record" actual
 
-    it "should infer abstraction param that having a record exp as body" $ do
+    it "should infer abstraction param that have a record exp as body" $ do
       let code   = "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
           actual = tester code
       snapshotTest
-        "should infer abstraction param that having a record exp as body"
+        "should infer abstraction param that have a record exp as body"
         actual
 
     it "should fail when spreading a non spreadable type into a record" $ do
@@ -372,6 +372,84 @@ spec = do
           actual = tester code
       snapshotTest
         "should fail when spreading a non spreadable type into a record"
+        actual
+
+    it "should infer record params that are partially used in abstractions" $ do
+      let
+        code = unlines
+          [ "data Maybe a = Just a | Nothing"
+          , "find :: (a -> Boolean) -> List a -> Maybe a"
+          , "export find = (predicate, xs) => (#- {"
+          , "  const found = xs.find(predicate);"
+          , "  if (found === undefined) {"
+          , "    return Nothing()"
+          , "  }"
+          , "  else {"
+          , "    return Just(found)"
+          , "  }"
+          , "} -#)"
+          , "flip :: (a -> b -> c) -> (b -> a -> c)"
+          , "export flip = (fn) => ("
+          , "  (b, a) => (fn(a, b))"
+          , ")"
+          , ""
+          , "propOrWrappedDefault :: w -> z -> String -> x -> y"
+          , "export propOrWrappedDefault = (Wrap, def, px, ob) => ( #- {"
+          , "  return ("
+          , "    !!ob[px] ?"
+          , "    Just(ob[px]) :"
+          , "    Wrap(def)"
+          , "  )"
+          , "} -# )"
+          , "export prop = propOrWrappedDefault(Nothing, '')"
+          , ""
+          , "export propOr = propOrWrappedDefault(Just)"
+          , "propEq :: e -> String -> o -> Boolean"
+          , "export propEq = (xx, px, ob) => (#-{"
+          , "  return !!ob[px] && ob[px] === xx"
+          , "}-#)"
+          , ""
+          , "objOf :: String -> x -> y"
+          , "export objOf = (px, x) => (#-{ return { [px]: x } }-#)"
+          , ""
+          , "merge :: a -> b -> c"
+          , "export merge = (a, b) => (#- Object.assign({}, a, b) -#) "
+          , ""
+          , "mergeLeft :: b -> a -> c"
+          , "mergeLeft = flip(merge)"
+          , ""
+          , "alias ShopDiscount = {"
+          , "  id :: String,"
+          , "  itemId :: Number,"
+          , "  multiplier :: Number"
+          , "}"
+          , "alias ShopItem = {"
+          , "  id :: Number,"
+          , "  description :: String,"
+          , "  cost :: Number,"
+          , "  discounts :: List ShopDiscount"
+          , "}"
+          , "alias ShopCustomer = {"
+          , "  id :: String,"
+          , "  cart :: List ShopItem,"
+          , "  money :: Number"
+          , "}"
+          , "alias ShopContext = {"
+          , "  customers :: List ShopCustomer,"
+          , "  inventory :: List ShopItem,"
+          , "  sales :: List ShopDiscount"
+          , "}"
+          , ""
+          , "buySomethingFromShop :: ShopContext -> Number -> Number -> List (Maybe String)"
+          , "buySomethingFromShop = (ctx, itemId, customerId) => {"
+          , "  item = find(propEq(itemId, 'id'), ctx.inventory)"
+          , "  customer = find(propEq(customerId, 'id'), ctx.customers)"
+          , "  return [item, customer]"
+          , "}"
+          ]
+        actual = tester code
+      snapshotTest
+        "should infer record params that are partially used in abstractions"
         actual
 
     ---------------------------------------------------------------------------
@@ -430,6 +508,43 @@ spec = do
       snapshotTest "should fail for applications with a wrong argument type"
                    actual
 
+    it
+        "should infer applications where the abstraction results from an application"
+      $ do
+          let
+            code = unlines
+              [ "data Maybe a = Just a | Nothing"
+              , "flip :: (a -> b -> c) -> (b -> a -> c)"
+              , "export flip = (fn) => ("
+              , "  (b, a) => (fn(a, b))"
+              , ")"
+              , ""
+              , "nth :: Number -> List a -> Maybe a"
+              , "export nth = (i, xs) => (#- {"
+              , "  const x = xs[i];"
+              , "  return x === undefined"
+              , "    ? Nothing()"
+              , "    : Just(x);"
+              , "} -#)"
+              , ""
+              , "names = ["
+              , "  'alice', 'bob', 'caroline', 'david', 'elizabeth', 'frances', 'georgina', 'harold'"
+              , "]"
+              , "log = (a) => (#- { console.log(a); return a; } -#)"
+              , "mash :: String -> String -> String"
+              , "mash = (a, b) => (a ++ b)"
+              , "mash('>>', 'shit') |> log"
+              , "nth(2, names) |> log"
+              , "flip(mash)('>>', 'shit') |> log"
+              , "thn = flip(nth)"
+              , "thn(names, 2) |> log"
+              , "flip(nth)(names, 2) |> log"
+              ]
+            actual = tester code
+          snapshotTest
+            "should infer applications where the abstraction results from an application"
+            actual
+
     ---------------------------------------------------------------------------
 
 
@@ -456,6 +571,20 @@ spec = do
           actual = tester code
       snapshotTest "should fail for abstractions with a wrong type definition"
                    actual
+
+    it "should resolve abstractions with many expressions" $ do
+      let code = unlines
+            [ "fn :: Number -> Number -> Boolean"
+            , "fn = (a, b) => {"
+            , "  sum = a + b"
+            , "  moreThanTen = sum > 10"
+            , "  computed = moreThanTen ? sum * 2 : sum / 2"
+            , "  return computed % 2 == 0"
+            , "}"
+            , "fn(3, 4)"
+            ]
+          actual = tester code
+      snapshotTest "should resolve abstractions with many expressions" actual
 
     ---------------------------------------------------------------------------
 
@@ -950,6 +1079,33 @@ spec = do
       snapshotTest
         "should validate type annotations for ADTs that have no param"
         actual
+
+    it "should parse functions as args for adts in typings correctly" $ do
+      let
+        code = unlines
+          [ "map :: (a -> b) -> List a -> List b"
+          , "map = (f, xs) => (#- some JS -#)"
+          , "concat :: List a -> List a -> List a"
+          , "export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
+          , "reduce :: (a -> b -> a) -> a -> List b -> a"
+          , "export reduce = (f, initial, xs) => (#- xs.reduce(f, initial) -#)"
+          , ""
+          , "ap :: List (a -> b) -> List a -> List b"
+          , "export ap = (fns, xs) => reduce("
+          , "  (agg, fn) => pipe("
+          , "    map(fn),"
+          , "    concat(agg)"
+          , "  )(xs),"
+          , "  [],"
+          , "  fns"
+          , ")"
+          ]
+        actual = tester code
+      snapshotTest
+        "should parse functions as args for adts in typings correctly"
+        actual
+
+
 
     ---------------------------------------------------------------------------
 

@@ -35,11 +35,7 @@ prepare
        is <entry, dest, madlib>:
          S.exec(madlib ++ " compile -i " ++ entry ++ " -o .tests/")
            |> W.chain((x) => (S.spawn("node " ++ dest)))
-           |> W.mapRej((rej) => (where(rej) {
-                is S.CommandError _ msg: msg
-              }))
-           |> W.chain((x) => (
-                S.exec("rm -r .tests") |> W.chain((a) => (W.of(x)))
-              ))
+           |> W.mapRej((rej) => where(rej) is S.CommandError _ msg: msg)
+           |> W.chain((x) => S.exec("rm -r .tests") |> W.andDo(W.of(x)))
      })
   |> W.fulfill(IO.err, F.identity)

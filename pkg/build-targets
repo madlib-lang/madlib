@@ -6,6 +6,8 @@ PATH_TARGETS="./pkg/targets"
 DARWIN_NAME="madlib-macos"
 LINUX_NAME="madlib-linux"
 
+PRELUDE_PATH="./prelude"
+
 TEST_RUNNER_TARGET="./tools/test-runner/dist/test-runner.js"
 PKG_INSTALLER_TARGET="./tools/package-installer/dist/package-installer.js"
 
@@ -35,6 +37,7 @@ stack run -- compile -i tools/test-runner/src/Main.mad -o $TEST_RUNNER_TARGET -b
 # build package-installer
 stack run -- compile -i tools/package-installer/src/Main.mad -o $PKG_INSTALLER_TARGET -b
 
+cp -R $PRELUDE_PATH "$PATH_DARWIN_TARGET/"
 cp $TEST_RUNNER_TARGET "$PATH_DARWIN_TARGET/"
 cp $PKG_INSTALLER_TARGET "$PATH_DARWIN_TARGET/"
 cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
@@ -49,6 +52,7 @@ rm -r $PATH_DARWIN_TARGET
 # build linux x64
 
 DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile.ubuntu" -o $PATH_LINUX_TARGET .
+cp -R $PRELUDE_PATH "$PATH_LINUX_TARGET/"
 cp $TEST_RUNNER_TARGET "$PATH_LINUX_TARGET/"
 cp $PKG_INSTALLER_TARGET "$PATH_LINUX_TARGET/"
 tar -C $PATH_TARGETS -czvf $LINUX_TAR_FILENAME $LINUX_NAME
