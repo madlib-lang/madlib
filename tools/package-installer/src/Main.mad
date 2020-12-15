@@ -17,7 +17,7 @@ IO.log("Installing dependencies ...")
 
 installPackages = (config) => (
   FS.readFile(config)
-    |> W.mapRej((a) => ("The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."))
+    |> W.mapRej((_) => ("The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."))
     |> W.map(J.parse(J.field("dependencies", J.map(J.string))))
     |> W.chain((dm) => (where(dm) {
         is E.Left e: W.bad(e)

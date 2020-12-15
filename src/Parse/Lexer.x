@@ -54,6 +54,7 @@ tokens :-
   if                                    { mapToken (\_ -> TokenIf) }
   else                                  { mapToken (\_ -> TokenElse) }
   where                                 { mapToken (\_ -> TokenWhere) }
+  pipe                                  { mapToken (\_ -> TokenPipeKeyword) }
   is                                    { mapToken (\_ -> TokenIs) }
   \=                                    { mapToken (\_ -> TokenEq) }
   @signed @floating                     { mapToken (\s -> TokenNumber s) }
@@ -208,6 +209,7 @@ data TokenClass
  | TokenRightChevronEq
  | TokenLeftChevronEq
  | TokenExclamationMark
+ | TokenPipeKeyword
  deriving (Eq, Show)
 
 

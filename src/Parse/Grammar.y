@@ -56,6 +56,7 @@ import           Explain.Meta
   'export' { Token _ TokenExport }
   'from'   { Token _ TokenFrom }
   '|'      { Token _ TokenPipe }
+  'pipe'   { Token _ TokenPipeKeyword }
   '|>'     { Token _ TokenPipeOperator }
   '...'    { Token _ TokenSpreadOperator }
   'data'   { Token _ TokenData }
@@ -210,6 +211,8 @@ exp :: { Src.Exp }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
   | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
+  | 'pipe' '(' args ')' '(' args ')'       %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
+  | 'pipe' '(' args ')'       %shift { buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
   | '(' exp ')'               %shift { $2 }
   | exp '.' name              %shift { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
   | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
@@ -234,6 +237,8 @@ where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
   | 'where' '(' exp ')' maybeRet iss                  %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
+  | 'where' '{' rets iss rets '}' %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["x"] (Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "x")) $4)) }
+  | 'where' rets iss rets %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $ last $3)) ["x"] (Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $3)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "x")) $3)) }
 
 iss :: { [Src.Is] }
   : 'is' pattern ':' maybeRet exp                    %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }
@@ -435,21 +440,32 @@ params :: { [Src.Name] }
 buildAbs :: Area -> [Src.Name] -> Src.Exp -> Src.Exp
 buildAbs area params body = buildAbs' (length params) area params body
 
+
 -- TODO: use that nth to add context to params
 -- To do this we need to somehow extend the Name with a version that is in a Meta
 buildAbs' :: Int -> Area -> [Src.Name] -> Src.Exp -> Src.Exp
 buildAbs' nth area [param] body = Meta emptyInfos area (Src.Abs param body)
 buildAbs' nth area (x:xs) body  = Meta emptyInfos area (Src.Abs x (buildAbs' (nth + 1) area xs body))
 
+buildPipeAbs :: Area -> [Src.Exp] -> Src.Exp
+buildPipeAbs area exps = Meta emptyInfos area (Src.Abs "x" $ buildPipeAbs' (Meta emptyInfos area (Src.Var "x")) exps)
+
+buildPipeAbs' :: Src.Exp -> [Src.Exp] -> Src.Exp
+buildPipeAbs' prev [] = prev
+buildPipeAbs' prev (abs:exps) =
+  let application = Meta emptyInfos (mergeAreas (getArea prev) (getArea abs)) (Src.App ((Meta emptyInfos (getArea abs)
+          (Src.App (Meta emptyInfos (getArea abs) (Src.Var "|>")) ( prev )  False)
+        )) abs True)
+  in
+    buildPipeAbs' application exps
 
 
 buildApp :: Area -> Src.Exp -> [Src.Exp] -> Src.Exp
 buildApp area f args = buildApp' (length args) (length args) area f args
 
--- TODO: use that nth to add context to args
 buildApp' :: Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> Src.Exp
 buildApp' total nth area f@(Meta _ _ f') [(Meta emptyInfos area' arg)]  = Meta emptyInfos area (Src.App f (Meta Infos { origin = Just f', nthArg = Just nth } area' arg) (total == nth))
-buildApp' total nth area f@(Meta _ _ f') xs     = 
+buildApp' total nth area f@(Meta _ _ f') xs     =
   let (Meta emptyInfos area arg) = last xs
       argWithMeta        = Meta Infos { origin = Just f', nthArg = Just nth } area arg
   in  Meta emptyInfos area (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))

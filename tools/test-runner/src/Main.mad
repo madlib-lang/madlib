@@ -7,28 +7,31 @@ import Maybe from "Maybe"
 import F from "Function"
 
 testFilePath :: W.Wish String String
-testFilePath = S.getArgs
-    |> W.chain((args) => (where(L.nth(0, args)) {
-        is Maybe.Just testPath: W.of(testPath)
-        is Maybe.Nothing      : W.bad("Test file not given !")
-    }))
+testFilePath = W.chain(
+  pipe(
+    L.nth(0),
+    where
+      is Maybe.Just path: W.of(path)
+      is Maybe.Nothing  : W.bad("Test file not given !")
+  )
+)(S.getArgs)
 
 madlibPath :: W.Wish String String
 madlibPath = S.getEnv("MADLIB_PATH") |> W.chainRej((x) => (W.of("madlib")))
 
 prepare :: W.Wish e <String, String, String>
-prepare = [testFilePath, madlibPath]
-  |> W.parallel
-  |> W.map((x) => (where(x) {
-      is [entry, madlib]:
-        < entry
-        , String.replace("(.*\/)(.*).mad$", ".tests/$2.mjs", entry)
-        , madlib
-        >
-  }))
+prepare = pipe(
+  W.parallel,
+  W.map(where
+    is [entry, madlib]: < entry
+                        , String.replace("(.*\/)(.*).mad$"
+                        , ".tests/$2.mjs", entry), madlib
+                        >
+  )
+)([testFilePath, madlibPath])
 
 prepare
-  |> W.chain((input) => (where(input) {
+  |> W.chain(where {
        is <entry, dest, madlib>:
          S.exec(madlib ++ " compile -i " ++ entry ++ " -o .tests/")
            |> W.chain((x) => (S.spawn("node " ++ dest)))
@@ -38,5 +41,5 @@ prepare
            |> W.chain((x) => (
                 S.exec("rm -r .tests") |> W.chain((a) => (W.of(x)))
               ))
-     }))
+     })
   |> W.fulfill(IO.err, F.identity)

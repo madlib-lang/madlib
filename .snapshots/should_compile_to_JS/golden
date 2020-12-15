@@ -44,6 +44,7 @@ const inc = curryPowder((x) => x + 1);
 const dec = curryPowder((x) => x - 1);
 const double = curryPowder((x) => x * 2);
 const half = curryPowder((x) => x / 2);
+curryPowder((x) => double(half(x)))(3);
 double(half(3));
 __eq(3, 5);
 const response = ({ users: ([]) });
@@ -59,11 +60,11 @@ const allResponses = ({ ...response, ...carResponse });
     return ([]);
   }
 })(allResponses);
-((__x__) => {
+curryPowder((x) => ((__x__) => {
   if (typeof __x__ === "number") {
     return 3;
   }
-})(3);
+})(x));
 ((__x__) => {
   if (typeof __x__ === "string") {
     return 3;
