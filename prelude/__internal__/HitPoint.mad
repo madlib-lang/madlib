@@ -16,6 +16,6 @@ global.__hp = (astPath, type, line, id) => {
 
 
 
-hitPoints :: a -> List HitPoint
+getHitPoints :: a -> List HitPoint
 export getHitPoints = (a) => (#- [...__HIT_POINTS] -#)
 

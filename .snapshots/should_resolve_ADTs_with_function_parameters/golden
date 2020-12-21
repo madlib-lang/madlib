@@ -3,39 +3,87 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "path" "Wish" [ TCon CNum , TCon CNum ])
+            (TApp
+               (TApp
+                  (TCon (TC "Wish" (Kfun Star (Kfun Star Star))))
+                  (TVar (TV "c" Star)))
+               (TCon (TC "Number" Star)))
             (Area (Loc 56 2 1) (Loc 86 2 31))
             (App
                (Solved
-                  (TArr
-                     (TArr
-                        (TArr (TVar (TV "b")) (TVar (TV "c")))
-                        (TArr (TArr (TVar (TV "c")) (TVar (TV "b"))) (TVar (TV "c"))))
-                     (TComp "path" "Wish" [ TVar (TV "b") , TVar (TV "c") ]))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                    (TVar (TV "c" Star)))
+                                 (TVar (TV "d" Star))))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                       (TVar (TV "e" Star)))
+                                    (TVar (TV "d" Star))))
+                              (TVar (TV "d" Star)))))
+                     (TApp
+                        (TApp
+                           (TCon (TC "Wish" (Kfun Star (Kfun Star Star))))
+                           (TVar (TV "c" Star)))
+                        (TVar (TV "e" Star))))
                   (Area (Loc 56 2 1) (Loc 60 2 5))
                   (Var "Wish"))
                (Solved
-                  (TArr
-                     (TArr (TCon CNum) (TCon CNum))
-                     (TArr (TArr (TCon CNum) (TCon CNum)) (TCon CNum)))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "c" Star)))
+                           (TVar (TV "h" Star))))
+                     (TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TCon (TC "Number" Star)))
+                              (TVar (TV "h" Star))))
+                        (TVar (TV "h" Star))))
                   (Area (Loc 61 2 6) (Loc 85 2 30))
                   (Abs
                      "bad"
                      [ Solved
-                         (TArr (TArr (TCon CNum) (TVar (TV "f"))) (TVar (TV "f")))
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TCon (TC "Number" Star)))
+                                  (TVar (TV "h" Star))))
+                            (TVar (TV "h" Star)))
                          (Area (Loc 61 2 6) (Loc 85 2 30))
                          (Abs
                             "good"
                             [ Solved
-                                (TVar (TV "f"))
+                                (TVar (TV "h" Star))
                                 (Area (Loc 77 2 22) (Loc 84 2 29))
                                 (App
                                    (Solved
-                                      (TVar (TV "e"))
+                                      (TVar (TV "g" Star))
                                       (Area (Loc 77 2 22) (Loc 81 2 26))
                                       (Var "good"))
                                    (Solved
-                                      (TCon CNum) (Area (Loc 82 2 27) (Loc 83 2 28)) (LNum "3"))
+                                      (TCon (TC "Number" Star))
+                                      (Area (Loc 82 2 27) (Loc 83 2 28))
+                                      (LNum "3"))
                                    True)
                             ])
                      ]))
@@ -56,5 +104,7 @@ Right
             , adtexported = True
             }
         ]
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

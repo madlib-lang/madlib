@@ -1,62 +1,110 @@
-export alias Wish e a = (e -> m) -> (a -> n) -> o
+import _ from "Monad"
 
-of :: a -> Wish e a
-export of = (a) => ((bad, good) => (good(a)))
-
-bad :: e -> Wish e a
-export bad = (e) => ((nope, yes) => (nope(e)))
+export data Wish e a = Wish ((e -> ()) -> (a -> ()) -> ())
 
 
-map :: (a -> b) -> Wish e a -> Wish e b
-export map = (f, run) => (
-  (bad, good) => (run(bad, (x) => (good(f(x)))))
-)
+instance Functor (Wish e) {
+  map = (f, m) => Wish((bad, good) =>
+    where(m)
+      is Wish run: run(bad, (x) => (good(f(x))))
+  )
+}
+
+instance Applicative (Wish e) {
+  pure = (a) => Wish((bad, good) => good(a))
+
+  ap = (mf, m) => Wish((bad, good) => where(<mf, m>)
+    is <Wish runMF, Wish runM>:
+      runM(
+        bad,
+        (x) => runMF(
+          bad,
+          (f) => good(f(x))
+        )
+      )
+  )
+}
+
+instance Monad (Wish e) {
+  of = pure
+
+  chain = (f, m) => Wish((bad, good) =>
+    where(m) 
+      is Wish run:
+        run(bad, (x) =>
+          where(f(x))
+            is Wish r: r(bad, good)
+        )
+  )
+}
+
 
 mapRej :: (e -> f) -> Wish e a -> Wish f a
-export mapRej = (f, run) => (
-  (bad, good) => (
-    run((x) => (bad(f(x))), good)
-  )
+export mapRej = (f, m) => (
+  Wish((bad, good) => (
+    where(m) {
+      is Wish run: run((x) => (bad(f(x))), good)
+    }
+  ))
 )
 
-chain :: (a -> Wish f b) -> Wish e a -> Wish f b
-export chain = (f, run) => ((bad, good) => run(bad, (x) => f(x)(bad, good)))
 
 chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b
-export chainRej = (f, run) => (
-  (bad, good) => (
-    run((x) => (f(x)(bad, good)), good)
-  )
+export chainRej = (f, m) => (
+  Wish((bad, good) => (
+    where(m) {
+      is Wish run: run((x) => (
+        where(f(x)) {
+          is Wish r: r(bad, good)
+        }
+      ), good)
+    }
+  ))
 )
 
-andDo :: Wish f b -> Wish e a -> Wish f b
-export andDo = (m, run) => chain((a) => m, run)
+
+good :: a -> Wish e a
+export good = (a) => Wish((bad, good) => good(a))
+
+bad :: e -> Wish e a
+export bad = (e) => (
+  Wish((bad, good) => (bad(e)))
+)
+
+
+getWishFn = (w) => (where(w)
+  is Wish fn: fn
+)
+
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => (
-  (bad, good) => (#- {
+  Wish((bad, good) => (#- {
     const l = wishes.length
     let ko = false;
     let ok = 0;
     const out = new Array(l);
     const next = j => (j === l && good(out));
-    const fork = (w, j) => (w(
+    const fork = (w, j) => (getWishFn(w)(
       e => ko || (bad(e), ko = true),
       x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
-  } -#)
+  } -#))
 )
 
-fulfill :: (e -> m) -> (a -> n) -> Wish e a -> ()
-export fulfill = (bad, good, run) => (
-  run(bad, good)
-)
+
+fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
+export fulfill = (bad, good, m) => {
+  where(m) {
+    is Wish run: run(bad, good)
+  }
+
+  return ()
+}
+
 
 after :: Number -> a -> Wish e a
-export after = (time, a) => (#- {
-  return (bad, good) => {
-    setTimeout(() => good(a), time);
-  }
+export after = (time, a) => Wish((bad, good) => #- {
+  setTimeout(() => good(a), time);
 } -#)
-

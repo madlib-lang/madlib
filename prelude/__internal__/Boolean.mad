@@ -1,0 +1,7 @@
+import _ from "Show"
+
+instance Show Boolean {
+  show = (x) => x
+    ? "true"
+    : "false"
+}

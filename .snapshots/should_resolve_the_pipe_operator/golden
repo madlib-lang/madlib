@@ -3,54 +3,107 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TArr (TCon CNum) (TCon CNum))
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "Number" Star)))
+               (TCon (TC "Number" Star)))
             (Area (Loc 0 1 1) (Loc 3 1 4))
             (Assignment
                "inc"
                (Solved
-                  (TArr (TCon CNum) (TCon CNum))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Number" Star)))
+                     (TCon (TC "Number" Star)))
                   (Area (Loc 6 1 7) (Loc 20 1 21))
                   (Abs
                      "a"
                      [ Solved
-                         (TCon CNum)
+                         (TCon (TC "Number" Star))
                          (Area (Loc 14 1 15) (Loc 15 1 16))
                          (App
                             (Solved
-                               (TArr (TCon CNum) (TCon CNum))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TCon (TC "Number" Star)))
+                                  (TCon (TC "Number" Star)))
                                (Area (Loc 14 1 15) (Loc 15 1 16))
                                (App
                                   (Solved
-                                     (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TCon (TC "Number" Star)))
+                                        (TApp
+                                           (TApp
+                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                              (TCon (TC "Number" Star)))
+                                           (TCon (TC "Number" Star))))
                                      (Area (Loc 15 1 16) (Loc 17 1 18))
                                      (Var "+"))
-                                  (Solved (TCon CNum) (Area (Loc 14 1 15) (Loc 15 1 16)) (Var "a"))
+                                  (Solved
+                                     (TCon (TC "Number" Star))
+                                     (Area (Loc 14 1 15) (Loc 15 1 16))
+                                     (Var "a"))
                                   False))
-                            (Solved (TCon CNum) (Area (Loc 18 1 19) (Loc 19 1 20)) (LNum "1"))
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 18 1 19) (Loc 19 1 20))
+                               (LNum "1"))
                             True)
                      ])))
         , Solved
-            (TCon CNum)
+            (TCon (TC "Number" Star))
             (Area (Loc 21 2 1) (Loc 22 2 2))
             (App
                (Solved
-                  (TArr (TArr (TCon CNum) (TVar (TV "g"))) (TVar (TV "g")))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "Number" Star)))
+                           (TVar (TV "j" Star))))
+                     (TVar (TV "j" Star)))
                   (Area (Loc 21 2 1) (Loc 22 2 2))
                   (App
                      (Solved
-                        (TArr
-                           (TVar (TV "f"))
-                           (TArr (TArr (TVar (TV "f")) (TVar (TV "g"))) (TVar (TV "g"))))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "i" Star)))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                       (TVar (TV "i" Star)))
+                                    (TVar (TV "j" Star))))
+                              (TVar (TV "j" Star))))
                         (Area (Loc 22 2 2) (Loc 25 2 5))
                         (Var "|>"))
-                     (Solved (TCon CNum) (Area (Loc 21 2 1) (Loc 22 2 2)) (LNum "3"))
+                     (Solved
+                        (TCon (TC "Number" Star))
+                        (Area (Loc 21 2 1) (Loc 22 2 2))
+                        (LNum "3"))
                      False))
                (Solved
-                  (TArr (TCon CNum) (TCon CNum))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Number" Star)))
+                     (TCon (TC "Number" Star)))
                   (Area (Loc 26 2 6) (Loc 29 2 9))
                   (Var "inc"))
                True)
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

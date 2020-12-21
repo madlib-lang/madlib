@@ -1,0 +1,40 @@
+import {} from "Monad"
+import {} from "Monoid"
+import {} from "MonadTrans"
+
+export data WriterT w m a = WriterT (m <a, w>)
+
+
+runWriterT :: WriterT w m a -> m <a, w>
+export runWriterT = where is WriterT m: m
+
+liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+liftA2 = (f, x1, x2) => ap(map(f, x1), x2)
+
+instance Functor m => Functor (WriterT w m) {
+  map = (f, m) => WriterT(map(where is <a, w>: <f(a), w>, runWriterT(m)))
+}
+
+instance (Applicative m, Monoid w) => Applicative (WriterT w m) {
+  pure = (x) => WriterT(pure(<x, mempty>))
+
+  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1)
+    is <a, w>: where(x2) is <b, ww>: <a(b), mappend(w, ww)>
+    , runWriterT(mf), runWriterT(mm)))
+}
+
+instance (Monoid w, Monad m) => Monad (WriterT w m) {
+  of = pure
+
+  chain = (f, m) => WriterT(
+    chain(
+      where is <a, w>: chain(
+        where is <b, ww>: of(<b, mappend(w, ww)>)
+        , runWriterT(f(a)))
+      , runWriterT(m))
+  )
+}
+
+instance (Monad m, Monoid w) => MonadTrans m (WriterT w) {
+  lift = (m) => WriterT(chain((a) => of(<a, mempty>), m))
+}

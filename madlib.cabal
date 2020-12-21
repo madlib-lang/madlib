@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bdb0a2cc7fa8e63469799c66c59122247770213128779b0a8bb7444acb7a9c6b
+-- hash: d0d1be87536ba3bd25c9712f18e27c0146e6faf11a32ae1ac1c9b9913455bb7a
 
 name:           madlib
 version:        0.0.6
@@ -41,6 +41,10 @@ library
       Infer.Env
       Infer.Infer
       Infer.Instantiate
+      Infer.Pattern
+      Infer.Placeholder
+      Infer.Pred
+      Infer.Scheme
       Infer.Solve
       Infer.Substitute
       Infer.Type
@@ -103,6 +107,10 @@ executable madlib
       Infer.Env
       Infer.Infer
       Infer.Instantiate
+      Infer.Pattern
+      Infer.Placeholder
+      Infer.Pred
+      Infer.Scheme
       Infer.Solve
       Infer.Substitute
       Infer.Type

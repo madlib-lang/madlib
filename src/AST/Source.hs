@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module AST.Source where
 
 import qualified Data.Map                      as M
@@ -8,10 +7,12 @@ import           Explain.Meta
 
 data AST =
   AST
-    { aimports   :: [Import]
-    , aexps      :: [Exp]
-    , atypedecls :: [TypeDecl]
-    , apath      :: Maybe FilePath
+    { aimports    :: [Import]
+    , aexps       :: [Exp]
+    , atypedecls  :: [TypeDecl]
+    , ainterfaces :: [Interface]
+    , ainstances  :: [Instance]
+    , apath       :: Maybe FilePath
     }
     deriving(Eq, Show)
 
@@ -39,6 +40,10 @@ data TypeDecl
       }
     deriving(Eq, Show)
 
+data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+
+data Instance = Instance Constraints Name [Typing] (M.Map Name Exp) deriving(Eq, Show)
+
 data Constructor
   = Constructor Name [Typing]
   deriving(Eq, Show)
@@ -46,12 +51,15 @@ data Constructor
 
 type Typing = Meta Typing_
 
+type Constraints = [Typing]
+
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
   | TRRecord (M.Map Name Typing)
   | TRTuple [Typing]
+  | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
   deriving(Eq, Show)
 
 
@@ -123,3 +131,11 @@ getImportAbsolutePath imp = case imp of
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Meta _ _ (NamedImport   _ p _)) = (imp, p)
 getImportPath imp@(Meta _ _ (DefaultImport _ p _)) = (imp, p)
+
+extractExp :: Exp -> Exp_
+extractExp (Meta _ _ e) = e
+
+isAssignment :: Exp -> Bool
+isAssignment exp = case exp of
+  Meta _ _ (Assignment _ _) -> True
+  _                         -> False

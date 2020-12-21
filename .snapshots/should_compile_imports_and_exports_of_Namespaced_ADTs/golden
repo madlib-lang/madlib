@@ -37,6 +37,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export default { Just, Nothing };
@@ -81,6 +89,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 ADTs.Just(3);
 ADTs.Nothing;
 export const fn = curryPowder((m) => m);
@@ -89,5 +105,7 @@ export const fn2 = curryPowder((m) => ((__x__) => {
     const n = __x__.__args[0].__args[0];
     return n;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(m));
 export default { fn, fn2 };

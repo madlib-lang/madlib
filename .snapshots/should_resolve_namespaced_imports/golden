@@ -5,32 +5,47 @@ Right
            { aimports = []
            , aexps =
                [ Solved
-                   (TArr (TVar (TV "a")) (TComp "Prelude" "List" [ TVar (TV "a") ]))
+                   (TApp
+                      (TApp
+                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                         (TVar (TV "c" Star)))
+                      (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
                    (Area (Loc 0 1 1) (Loc 6 1 7))
                    (Export
                       (Solved
-                         (TArr (TVar (TV "a")) (TComp "Prelude" "List" [ TVar (TV "a") ]))
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "c" Star)))
+                            (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
                          (Area (Loc 7 1 8) (Loc 16 1 17))
                          (Assignment
                             "singleton"
                             (Solved
-                               (TArr (TVar (TV "a")) (TComp "Prelude" "List" [ TVar (TV "a") ]))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TVar (TV "c" Star)))
+                                  (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
                                (Area (Loc 19 1 20) (Loc 31 1 32))
                                (Abs
                                   "a"
                                   [ Solved
-                                      (TComp "Prelude" "List" [ TVar (TV "a") ])
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star)))
                                       (Area (Loc 27 1 28) (Loc 30 1 31))
                                       (ListConstructor
                                          [ ListItem
                                              (Solved
-                                                (TVar (TV "a"))
+                                                (TVar (TV "c" Star))
                                                 (Area (Loc 28 1 29) (Loc 29 1 30))
                                                 (Var "a"))
                                          ])
                                   ])))))
                ]
            , atypedecls = []
+           , ainterfaces = []
+           , ainstances = []
            , apath = Just "./ModuleA"
            }
        )
@@ -39,35 +54,27 @@ Right
            { aimports = [ DefaultImport "L" "./ModuleA" "./ModuleA" ]
            , aexps =
                [ Solved
-                   (TComp "Prelude" "List" [ TCon CNum ])
+                   (TApp
+                      (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
                    (Area (Loc 26 2 1) (Loc 27 2 2))
                    (App
                       (Solved
-                         (TArr (TVar (TV "d")) (TComp "Prelude" "List" [ TVar (TV "d") ]))
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "c" Star)))
+                            (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
                          (Area (Loc 26 2 1) (Loc 27 2 2))
-                         (FieldAccess
-                            (Solved
-                               (TRecord
-                                  (fromList
-                                     [ ( "singleton"
-                                       , TArr
-                                           (TVar (TV "a"))
-                                           (TComp "Prelude" "List" [ TVar (TV "a") ])
-                                       )
-                                     ])
-                                  False)
-                               (Area (Loc 26 2 1) (Loc 27 2 2))
-                               (Var "L"))
-                            (Solved
-                               (TArr
-                                  (TRecord (fromList [ ( "singleton" , TVar (TV "c") ) ]) True)
-                                  (TVar (TV "c")))
-                               (Area (Loc 28 2 3) (Loc 37 2 12))
-                               (Var ".singleton"))))
-                      (Solved (TCon CNum) (Area (Loc 38 2 13) (Loc 39 2 14)) (LNum "3"))
+                         (Var "L.singleton"))
+                      (Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 38 2 13) (Loc 39 2 14))
+                         (LNum "3"))
                       True)
                ]
            , atypedecls = []
+           , ainterfaces = []
+           , ainstances = []
            , apath = Just "./ModuleB"
            }
        )

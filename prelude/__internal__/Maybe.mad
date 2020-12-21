@@ -1,12 +1,22 @@
+import _ from "Functor"
+import __ from "Show"
+
 export data Maybe a
   = Just a
   | Nothing
 
-map :: (a -> b) -> Maybe a -> Maybe b
-export map = (f, m) => (where(m) {
-  is Just x : Just(f(x))
-  is Nothing: Nothing
-})
+
+instance Functor Maybe {
+  map = (f) => where
+    is Just x : Just(f(x))
+    is Nothing: Nothing
+}
+
+instance Show a => Show (Maybe a) {
+  show = where
+    is Just a : "Just " ++ show(a)
+    is Nothing: "Nothing"
+}
 
 chain :: (a -> Maybe b) -> Maybe a -> Maybe b
 export chain = (f, m) => (where(m) {

@@ -3,57 +3,95 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TArr
-               (TRecord
-                  (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
-               (TCon CNum))
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TRecord
+                     (fromList
+                        [ ( "x" , TCon (TC "Number" Star) )
+                        , ( "y" , TCon (TC "Number" Star) )
+                        ])
+                     True))
+               (TCon (TC "Number" Star)))
             (Area (Loc 0 1 1) (Loc 2 1 3))
             (Assignment
                "fn"
                (Solved
-                  (TArr
-                     (TRecord
-                        (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
-                     (TCon CNum))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TRecord
+                           (fromList
+                              [ ( "x" , TCon (TC "Number" Star) )
+                              , ( "y" , TCon (TC "Number" Star) )
+                              ])
+                           True))
+                     (TCon (TC "Number" Star)))
                   (Area (Loc 5 1 6) (Loc 55 5 1))
                   (Abs
                      "r"
                      [ Solved
-                         (TCon CNum)
+                         (TCon (TC "Number" Star))
                          (Area (Loc 16 2 3) (Loc 53 4 3))
                          (Where
                             (Solved
                                (TRecord
-                                  (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
+                                  (fromList
+                                     [ ( "x" , TCon (TC "Number" Star) )
+                                     , ( "y" , TCon (TC "Number" Star) )
+                                     ])
+                                  True)
                                (Area (Loc 22 2 9) (Loc 23 2 10))
                                (Var "r"))
                             [ Solved
-                                (TArr
-                                   (TRecord
-                                      (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) True)
-                                   (TCon CNum))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TRecord
+                                         (fromList
+                                            [ ( "x" , TCon (TC "Number" Star) )
+                                            , ( "y" , TCon (TC "Number" Star) )
+                                            ])
+                                         True))
+                                   (TCon (TC "Number" Star)))
                                 (Area (Loc 31 3 5) (Loc 45 3 19))
                                 (Is
                                    (PRecord (fromList [ ( "x" , PVar "x" ) , ( "y" , PVar "y" ) ]))
                                    (Solved
-                                      (TCon CNum)
+                                      (TCon (TC "Number" Star))
                                       (Area (Loc 44 3 18) (Loc 45 3 19))
                                       (App
                                          (Solved
-                                            (TArr (TCon CNum) (TCon CNum))
+                                            (TApp
+                                               (TApp
+                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                  (TCon (TC "Number" Star)))
+                                               (TCon (TC "Number" Star)))
                                             (Area (Loc 44 3 18) (Loc 45 3 19))
                                             (App
                                                (Solved
-                                                  (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                                  (TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                        (TCon (TC "Number" Star)))
+                                                     (TApp
+                                                        (TApp
+                                                           (TCon
+                                                              (TC
+                                                                 "(->)"
+                                                                 (Kfun Star (Kfun Star Star))))
+                                                           (TCon (TC "Number" Star)))
+                                                        (TCon (TC "Number" Star))))
                                                   (Area (Loc 45 3 19) (Loc 47 3 21))
                                                   (Var "+"))
                                                (Solved
-                                                  (TCon CNum)
+                                                  (TCon (TC "Number" Star))
                                                   (Area (Loc 44 3 18) (Loc 45 3 19))
                                                   (Var "x"))
                                                False))
                                          (Solved
-                                            (TCon CNum)
+                                            (TCon (TC "Number" Star))
                                             (Area (Loc 48 3 22) (Loc 49 3 23))
                                             (Var "y"))
                                          True)))
@@ -61,5 +99,7 @@ Right
                      ])))
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

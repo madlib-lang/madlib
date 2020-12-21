@@ -1,3 +1,6 @@
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FunctionalDependencies   #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
@@ -47,7 +50,7 @@ import           Data.String.Utils
 
 
 main :: IO ()
-main = run =<< execParser opts
+main = execParser opts >>= run
 
 isCoverageEnabled :: IO Bool
 isCoverageEnabled = do
@@ -142,7 +145,7 @@ runTests entrypoint coverage = do
   testOutput <-
     try $ callCommand $ "node " <> testRunnerPathChecked <> " " <> entrypoint
   case (testOutput :: Either IOError ()) of
-    Left  e -> putStrLn $ ppShow e
+    Left  e -> return () --putStrLn $ ppShow e
     Right a -> return ()
 
 runCompilation :: String -> String -> Bool -> Bool -> Bool -> Bool -> IO ()
@@ -238,7 +241,7 @@ runBundle dest entrypointCompiledPath = do
     Right rollup -> do
       (_, stdout, _) <- readProcessWithExitCode
         rollup
-        [entrypointCompiledPath, "--format", "umd"]
+        [entrypointCompiledPath, "--format", "umd", "--name", "exe"]
         ""
       return $ Right stdout
     Left e -> return $ Left e

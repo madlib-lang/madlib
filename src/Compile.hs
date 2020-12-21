@@ -5,12 +5,13 @@ module Compile where
 
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Data.List                      ( sort
+import           Data.List                      ( isInfixOf
+                                                , sort
                                                 , find
                                                 , intercalate
                                                 )
 
-import           AST.Solved
+import           AST.Solved                    as Slv
 import           Utils.Path                     ( cleanRelativePath
                                                 , computeTargetPath
                                                 , makeRelativeEx
@@ -20,6 +21,9 @@ import           System.FilePath                ( replaceExtension
                                                 , joinPath
                                                 )
 import           Explain.Location
+import           Infer.Type
+import           Debug.Trace                    ( trace )
+import           Text.Show.Pretty               ( ppShow )
 
 
 hpWrapLine :: Bool -> FilePath -> Int -> String -> String
@@ -34,6 +38,7 @@ data CompilationConfig
       , ccastPath :: FilePath
       , ccoutputPath :: FilePath
       , cccoverage :: Bool
+      -- , ccinterfaces :: Interfaces
       }
 
 class Compilable a where
@@ -212,17 +217,23 @@ instance Compilable Exp where
                     compileApp finals args abs' arg' final'
                   _ ->
                     let finalized = zip args finals
-                    in  compile config abs
+                    in  buildAbs config abs arg
                           <> "("
                           <> buildParams finalized
                           <> ")"
             in  hpWrapLine coverage astPath (getStartLine abs) next
 
+          buildAbs :: CompilationConfig -> Exp -> Exp -> String
+          buildAbs config abs arg = compile config abs
+
           buildParams :: [(String, Bool)] -> String
           buildParams []                    = ""
           buildParams ((arg, final) : args) = if final
             then if null args then arg else arg <> ")(" <> buildParams args
-            else arg <> ", " <> buildParams args
+            else arg <> ")(" <> buildParams args
+          -- buildParams ((arg, final) : args) = if final
+          --   then if null args then arg else arg <> ")(" <> buildParams args
+          --   else arg <> ", " <> buildParams args
 
         If cond truthy falsy ->
           "("
@@ -248,23 +259,77 @@ instance Compilable Exp where
 
           compileBody :: [Exp] -> String
           compileBody [exp] = compile config exp
-          compileBody exps  = "{" <> compileBody' exps <> "}"
+          compileBody exps  = "{\n" <> compileBody' exps <> "}"
 
           compileBody' :: [Exp] -> String
           compileBody' [exp] = case exp of
             (Solved _ _ (JSExp _)) -> compile config exp
-            _                      -> "return " <> compile config exp <> ";\n"
+            _ -> "    return " <> compile config exp <> ";\n"
           compileBody' (exp : es) =
-            compile config exp <> ";\n" <> compileBody' es
+            "    " <> compile config exp <> ";\n" <> compileBody' es
 
         Var name -> if '.' `elem` name || name == "!" || not coverage
           then name
           else hpWrapLine coverage astPath l name
 
+
+        Placeholder (ClassRef cls _ call var, ts) exp' ->
+          insertPlaceholderArgs "" e
+
+         where
+          insertPlaceholderArgs :: String -> Exp -> String
+          insertPlaceholderArgs prev exp'' = case exp'' of
+            Slv.Solved _ _ (Placeholder (ClassRef cls ps call var, ts) exp''')
+              -> let dict  = generateRecordName cls ts var
+                     dict' = partiallyApplySubDicts dict ps
+                 in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
+
+            _ -> compile config exp'' <> prev
+
+          partiallyApplySubDicts :: String -> [ClassRefPred] -> String
+          partiallyApplySubDicts dict ps = if not (null ps)
+            then
+              let dicts =
+                    concat
+                      $   (\(CRPNode cls' ts var subdicts) ->
+                            "("
+                              <> partiallyApplySubDicts
+                                  (generateRecordName cls' ts var)
+                                  subdicts
+                              <> ")"
+                          )
+                      <$> ps
+              in  "Object.keys("
+                  <> dict
+                  <> ").reduce((o, k) => ({...o, [k]: "
+                  <> dict
+                  <> "[k]"
+                  <> dicts
+                  <> "}), {})"
+            else dict
+
+          getTypeName :: Type -> String
+          getTypeName t = case t of
+            TCon (TC n _)          -> n
+            TApp (TCon (TC n _)) _ -> n
+            TApp (TApp (TCon (TC n _)) _) _ ->
+              if n == "(,)" then "Tuple_2" else n
+            TApp (TApp (TApp (TCon (TC n _)) _) _) _ ->
+              if n == "(,,)" then "Tuple_3" else n
+            _ -> ppShow t
+
+
+        Placeholder (MethodRef cls method var, ts) (Slv.Solved _ _ (Var name))
+          -> generateRecordName cls ts var <> "." <> method
+
         -- Build ABS for coverage
         Assignment name abs@(Solved _ _ (Abs param body)) -> if coverage
           then "const " <> name <> " = " <> compileAbs Nothing param body <> ""
-          else "const " <> name <> " = " <> compile config abs
+          else
+            "const "
+            <> name
+            <> " = "
+            <> compileAssignmentWithPlaceholder config abs
          where
           compileAbs :: Maybe [Exp] -> Name -> [Exp] -> String
           compileAbs parent param body =
@@ -300,13 +365,20 @@ instance Compilable Exp where
             compile config exp <> ";\n" <> compileBody' es
 
         Assignment name exp ->
-          "const " <> name <> " = " <> compile config exp <> ""
+          "const "
+            <> name
+            <> " = "
+            <> compileAssignmentWithPlaceholder config exp
 
         TypedExp exp _ -> compile config exp
 
         Export ass@(Solved _ _ (Assignment name exp)) -> case exp of
           Solved _ _ (Abs _ _) -> "export " <> compile config ass
-          _ -> "export const " <> name <> " = " <> compile config exp
+          _ ->
+            "export const "
+              <> name
+              <> " = "
+              <> compileAssignmentWithPlaceholder config exp
 
         Record fields ->
           let fs = intercalate "," $ compileField <$> fields
@@ -346,6 +418,7 @@ instance Compilable Exp where
           "((__x__) => {\n  "
             <> compileIs first
             <> concat (("  else " ++) . compileIs <$> cs)
+            <> "  else { console.log('non exhaustive patterns for value: ', __x__.toString()); \nthrow 'non exhaustive patterns!'; }\n"
             -- TODO: Add an else for undefined patterns error and make it throw.
             <> "})("
             <> compile config exp
@@ -511,6 +584,8 @@ instance Compilable Exp where
               PCtor _ args ->
                 let built = intercalate ", " $ buildListVar <$> args
                 in  "{ __args: [" <> built <> "]}"
+              PList pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              PTuple pats -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
               _ -> ""
 
           compileRecord :: String -> Name -> Pattern -> String
@@ -520,7 +595,7 @@ instance Compilable Exp where
           compileCtorArg scope _ (x, p) =
             compilePattern (scope <> ".__args[" <> show x <> "]") p
 
-        _ -> "// Not implemented\n"
+        _ -> "/* Not implemented: " <> ppShow exp <> "*/\n"
 
 
 removeNamespace :: String -> String
@@ -570,7 +645,10 @@ compileImport config imp = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import { " <> compileNames names <> " } from \"" <> importPath <> "\""
-    where compileNames names = (init . init . concat) $ (++ ", ") <$> names
+    where compileNames names =
+            if null names
+              then ""
+              else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import " <> alias <> " from \"" <> importPath <> "\""
@@ -591,6 +669,70 @@ buildImportPath config absPath =
 updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
+instance Compilable Slv.Interface where
+  compile _ interface = case interface of
+    Slv.Interface _ name _ _ -> "global." <> name <> " = {};\n"
+
+instance Compilable Slv.Instance where
+  compile config inst = case inst of
+    Slv.Instance _ interface tys dict ->
+      interface
+        <> "['"
+        <> intercalate "_" (typingToStr <$> tys)
+        <> "']"
+        <> " = {\n"
+        <> intercalate ",\n"
+                       (uncurry compileMethod <$> M.toList (M.map fst dict))
+        <> "\n};\n"
+   where
+    compileMethod :: Name -> Exp -> String
+    compileMethod n exp =
+      "  " <> n <> ": " <> compileAssignmentWithPlaceholder config exp
+
+
+compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
+compileAssignmentWithPlaceholder config fullExp@(Slv.Solved _ _ exp) =
+  case exp of
+    Placeholder (ClassRef cls _ call var, ts) e ->
+      if not call
+        then
+          let dict = generateRecordName cls ts var
+          in  "("
+              <> dict
+              <> ") => ("
+              <> compileAssignmentWithPlaceholder config e
+              <> ")"
+        else compile config fullExp
+
+    _ -> compile config fullExp
+
+typingToStr :: Typing -> String
+typingToStr t = case t of
+  TRSingle n -> n
+  TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
+  TRTuple ts -> "Tuple_" <> show (length ts)
+
+
+hasVar :: Type -> Bool
+hasVar t = case t of
+  TVar (TV n _) -> True
+  TCon (TC n _) -> False
+  TApp l _      -> hasVar l
+
+generateRecordName :: String -> [Type] -> Bool -> String
+generateRecordName cls ts var = if var
+  then "__" <> cls <> "_" <> intercalate "_" (getTypeHeadName <$> ts) <> "__"
+  else cls <> "." <> intercalate "_" (getTypeHeadName <$> ts)
+
+getTypeHeadName :: Type -> String
+getTypeHeadName t = case t of
+  TVar (TV n _) -> n
+  TCon (TC n _) -> case n of
+    "(,)"   -> "Tuple_2"
+    "(,,)"  -> "Tuple_3"
+    "(,,,)" -> "Tuple_4"
+    _       -> n
+  TApp l _ -> getTypeHeadName l
 
 instance Compilable AST where
   compile config ast =
@@ -600,6 +742,8 @@ instance Compilable AST where
       typeDecls         = atypedecls ast
       path              = apath ast
       imports           = aimports ast
+      interfaces        = ainterfaces ast
+      instances         = ainstances ast
 
 
       astPath           = fromMaybe "Unknown" path
@@ -607,10 +751,16 @@ instance Compilable AST where
       configWithASTPath = updateASTPath astPath config
 
       infoComment       = "// file: " <> astPath <> "\n"
-      helpers           = curryPowder <> "\n" <> eq <> if coverage
+      helpers = curryPowder <> "\n" <> eq <> getMadlibType <> if coverage
         then "\n" <> hpFnWrap <> "\n" <> hpLineWrap
         else ""
 
+      compiledInterfaces = case interfaces of
+        [] -> ""
+        x  -> foldr1 (<>) (compile configWithASTPath <$> x)
+      compiledInstances = case instances of
+        [] -> ""
+        x  -> foldr1 (<>) (compile configWithASTPath <$> x)
       compiledAdts = case typeDecls of
         [] -> ""
         x  -> foldr1 (<>) (compile configWithASTPath <$> x)
@@ -628,6 +778,8 @@ instance Compilable AST where
       <> compiledImports
       <> helpers
       <> compiledAdts
+      <> compiledInterfaces
+      <> compiledInstances
       <> compiledExps
       <> defaultExport
    where
@@ -643,7 +795,7 @@ buildDefaultExport as es =
         <$> concat (adtconstructors <$> filter isADTExport as)
       allDefaultExports = expExportNames <> adtExportNames
   in  case allDefaultExports of
-        []      -> ""
+        []      -> "export default {};\n"
         exports -> "export default { " <> intercalate ", " exports <> " };\n"
 
  where
@@ -731,4 +883,16 @@ eq = unlines
   , "  }"
   , "  return l === r;"
   , "}"
+  ]
+
+getMadlibType :: String
+getMadlibType = unlines
+  [ "const getMadlibType = (value) => {"
+  , "  if (typeof value === 'string') {"
+  , "    return 'String';"
+  , "  }"
+  , "  else {"
+  , "    return '__UNKNOWN__';"
+  , "  }"
+  , "};"
   ]

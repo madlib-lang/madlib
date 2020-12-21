@@ -1,0 +1,80 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TCon (TC "Number" Star))
+            (Area (Loc 113 9 2) (Loc 132 9 21))
+            (TypedExp
+               (Solved
+                  (TCon (TC "Number" Star))
+                  (Area (Loc 113 9 2) (Loc 122 9 11))
+                  (App
+                     (Solved
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "String" Star)))
+                           (TVar (TV "b" Star)))
+                        (Area (Loc 113 9 2) (Loc 117 9 6))
+                        (Placeholder
+                           ( MethodRef "Read" "read" False , [ TCon (TC "Number" Star) ] )
+                           (Solved
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                    (TCon (TC "String" Star)))
+                                 (TVar (TV "b" Star)))
+                              (Area (Loc 113 9 2) (Loc 117 9 6))
+                              (Var "read"))))
+                     (Solved
+                        (TCon (TC "String" Star))
+                        (Area (Loc 118 9 7) (Loc 121 9 10))
+                        (LStr "3"))
+                     True))
+               (TRSingle "Number"))
+        ]
+    , atypedecls = []
+    , ainterfaces =
+        [ Interface
+            []
+            "Read"
+            [ "a" ]
+            (fromList
+               [ ( "read" , TRArr (TRSingle "String") (TRSingle "a") ) ])
+        ]
+    , ainstances =
+        [ Instance
+            []
+            "Read"
+            [ TRSingle "Number" ]
+            (fromList
+               [ ( "read"
+                 , ( Solved
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TCon (TC "String" Star)))
+                          (TCon (TC "Number" Star)))
+                       (Area (Loc 76 6 10) (Loc 108 6 42))
+                       (Abs
+                          "s"
+                          [ Solved
+                              (TVar (TV "e" Star))
+                              (Area (Loc 84 6 18) (Loc 107 6 41))
+                              (JSExp "parseFloat(s, 10)")
+                          ])
+                   , Forall
+                       []
+                       ([] :=>
+                          TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "String" Star)))
+                            (TCon (TC "Number" Star)))
+                   )
+                 )
+               ])
+        ]
+    , apath = Just "path"
+    }

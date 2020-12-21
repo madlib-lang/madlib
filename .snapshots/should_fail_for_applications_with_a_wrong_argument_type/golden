@@ -1,6 +1,16 @@
 Left
   (InferError
-     (UnificationError (TCon CString) (TCon CNum))
+     (UnificationError
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+              (TCon (TC "String" Star)))
+           (TCon (TC "Boolean" Star)))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+              (TCon (TC "Number" Star)))
+           (TVar (TV "i" Star))))
      (Reason
         (WrongTypeApplied
            (Meta

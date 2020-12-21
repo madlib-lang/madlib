@@ -3,12 +3,12 @@ module AST.Solved where
 
 import qualified Data.Map                      as M
 
-import           Infer.Type
+import qualified Infer.Type                    as Ty
 import           Explain.Location
 
-data Solved a = Solved Type Area a deriving(Eq, Show)
+data Solved a = Solved Ty.Type Area a deriving(Eq, Show)
 
-getType :: Exp -> Type
+getType :: Solved a -> Ty.Type
 getType (Solved t _ _) = t
 
 extractExp :: Exp -> Exp_
@@ -16,10 +16,12 @@ extractExp (Solved _ (Area _ _) e) = e
 
 data AST =
   AST
-    { aimports   :: [Import]
-    , aexps      :: [Exp]
-    , atypedecls :: [TypeDecl]
-    , apath      :: Maybe FilePath
+    { aimports    :: [Import]
+    , aexps       :: [Exp]
+    , atypedecls  :: [TypeDecl]
+    , ainterfaces :: [Interface]
+    , ainstances  :: [Instance]
+    , apath       :: Maybe FilePath
     }
     deriving(Eq, Show)
 
@@ -27,6 +29,10 @@ data Import
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
+
+data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+
+data Instance = Instance Constraints Name [Typing] (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
 data TypeDecl
   = ADT
@@ -47,12 +53,15 @@ data Constructor
   = Constructor Name [Typing]
   deriving(Eq, Show)
 
+type Constraints = [Typing]
+
 data Typing
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
   | TRRecord (M.Map Name Typing)
   | TRTuple [Typing]
+  | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
   deriving(Eq, Show)
 
 
@@ -85,6 +94,16 @@ data ListItem
 
 type Exp = Solved Exp_
 
+
+data ClassRefPred
+  = CRPNode String [Ty.Type] Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
+  deriving(Eq, Show)
+
+data PlaceholderRef
+  = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
+  | MethodRef String String Bool
+  deriving(Eq, Show)
+
 data Exp_ = LNum String
           | LStr String
           | LBool String
@@ -102,6 +121,7 @@ data Exp_ = LNum String
           | Record [Field]
           | If Exp Exp Exp
           | Where Exp [Is]
+          | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           deriving(Eq, Show)
 
 type Name = String

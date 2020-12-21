@@ -12,3 +12,9 @@ export divide = (a, b) => (a / b)
 
 mod :: Number -> Number -> Number
 export mod = (a, b) => (a % b)
+
+sqrt :: Number -> Number
+sqrt = (n) => (#- Math.sqrt(n) -#)
+
+square :: Number -> Number
+square = (n) => n * n

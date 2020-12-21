@@ -3,17 +3,25 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon CBool)
+            (TCon (TC "Boolean" Star))
             (Area (Loc 0 1 1) (Loc 6 1 7))
             (App
                (Solved
-                  (TArr (TCon CBool) (TCon CBool))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Boolean" Star)))
+                     (TCon (TC "Boolean" Star)))
                   (Area (Loc 0 1 1) (Loc 1 1 2))
                   (Var "!"))
                (Solved
-                  (TCon CBool) (Area (Loc 1 1 2) (Loc 6 1 7)) (LBool "false"))
+                  (TCon (TC "Boolean" Star))
+                  (Area (Loc 1 1 2) (Loc 6 1 7))
+                  (LBool "false"))
                True)
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

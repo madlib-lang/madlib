@@ -3,20 +3,28 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "path" "Result" [ TCon CBool ])
+            (TApp
+               (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "Boolean" Star)))
             (Area (Loc 38 4 1) (Loc 44 4 7))
             (Assignment
                "result"
                (Solved
-                  (TComp "path" "Result" [ TCon CBool ])
+                  (TApp
+                     (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "Boolean" Star)))
                   (Area (Loc 47 4 10) (Loc 60 4 23))
                   (App
                      (Solved
-                        (TArr (TVar (TV "b")) (TComp "path" "Result" [ TVar (TV "b") ]))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "d" Star)))
+                           (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "d" Star))))
                         (Area (Loc 47 4 10) (Loc 54 4 17))
                         (Var "Success"))
                      (Solved
-                        (TCon CBool) (Area (Loc 55 4 18) (Loc 59 4 22)) (LBool "true"))
+                        (TCon (TC "Boolean" Star))
+                        (Area (Loc 55 4 18) (Loc 59 4 22))
+                        (LBool "true"))
                      True)))
         ]
     , atypedecls =
@@ -28,5 +36,7 @@ Right
             , adtexported = False
             }
         ]
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

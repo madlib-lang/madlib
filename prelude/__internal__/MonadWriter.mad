@@ -1,0 +1,16 @@
+import {} from "Monad"
+import {} from "Monoid"
+import { WriterT } from "WriterT"
+import { StateT } from "StateT"
+
+interface (Monoid w, Monad m) => MonadWriter w m {
+  tell :: w -> m ()
+}
+
+instance (Monoid w, Monad m) => MonadWriter w (WriterT w m) {
+  tell = (v) => WriterT(of(<(), v>))
+}
+
+instance (Monoid w, Monad m, MonadWriter w m) => MonadWriter w (StateT s m) {
+  tell = pipe(tell, lift)
+}

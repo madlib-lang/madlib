@@ -6,8 +6,7 @@ export data CommandError = CommandError Number String
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
 exec :: String -> W.Wish CommandError String
-export exec = (command) => (#-
-  (bad, good) => {
+export exec = (command) => W.Wish((bad, good) => #- {
     execJs(command, (err, stdout, stderr) => {
       if (err) {
         bad(CommandError(err.code, err.message))
@@ -20,8 +19,7 @@ export exec = (command) => (#-
 -#)
 
 spawn :: String -> W.Wish CommandError Number
-export spawn = (command) => (#-
-  (bad, good) => {
+export spawn = (command) => W.Wish((bad, good) => #- {
     const split = command.split(" ")
     const spawned = spawnJs(split[0], split.slice(1));
 
@@ -40,16 +38,16 @@ export spawn = (command) => (#-
       else {
         bad(code)
       }
-    });
+    })
   }
 -#)
 
 
 getArgs :: W.Wish String (List String)
-export getArgs = (#- W.of(process.argv.slice(2)) -#)
+export getArgs = (#- Monad.Wish.of(process.argv.slice(2)) -#)
 
 getEnv :: String -> W.Wish String String
 export getEnv = (name) => (#- {
   const envVar = process.env[name];
-  return envVar === undefined ? W.bad("Not found") : W.of(envVar)
+  return envVar === undefined ? W.bad("Not found") : Monad.Wish.of(envVar)
 } -#)

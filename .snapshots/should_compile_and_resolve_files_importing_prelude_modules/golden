@@ -37,6 +37,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const map = curryPowder((f, xs) => xs.map(f));
 export default { map };
 // file: /root/project/src/Main.mad
@@ -80,4 +88,13 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
-L.map(curryPowder((x) => x * 2), ([1, 2, 3]));
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
+L.map(curryPowder((x) => x * 2))(([1, 2, 3]));
+export default {};

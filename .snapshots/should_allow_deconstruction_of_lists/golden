@@ -3,37 +3,61 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "Prelude" "List" [ TCon CNum ])
+            (TApp
+               (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
             (Area (Loc 0 1 1) (Loc 53 3 1))
             (Where
                (Solved
-                  (TComp "Prelude" "List" [ TCon CNum ])
+                  (TApp
+                     (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
                   (Area (Loc 6 1 7) (Loc 21 1 22))
                   (ListConstructor
                      [ ListItem
-                         (Solved (TCon CNum) (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "1"))
+                         (Solved
+                            (TCon (TC "Number" Star))
+                            (Area (Loc 7 1 8) (Loc 8 1 9))
+                            (LNum "1"))
                      , ListItem
-                         (Solved (TCon CNum) (Area (Loc 10 1 11) (Loc 11 1 12)) (LNum "2"))
+                         (Solved
+                            (TCon (TC "Number" Star))
+                            (Area (Loc 10 1 11) (Loc 11 1 12))
+                            (LNum "2"))
                      , ListItem
-                         (Solved (TCon CNum) (Area (Loc 13 1 14) (Loc 14 1 15)) (LNum "3"))
+                         (Solved
+                            (TCon (TC "Number" Star))
+                            (Area (Loc 13 1 14) (Loc 14 1 15))
+                            (LNum "3"))
                      , ListItem
-                         (Solved (TCon CNum) (Area (Loc 16 1 17) (Loc 17 1 18)) (LNum "5"))
+                         (Solved
+                            (TCon (TC "Number" Star))
+                            (Area (Loc 16 1 17) (Loc 17 1 18))
+                            (LNum "5"))
                      , ListItem
-                         (Solved (TCon CNum) (Area (Loc 19 1 20) (Loc 20 1 21)) (LNum "8"))
+                         (Solved
+                            (TCon (TC "Number" Star))
+                            (Area (Loc 19 1 20) (Loc 20 1 21))
+                            (LNum "8"))
                      ]))
                [ Solved
-                   (TArr
-                      (TComp "Prelude" "List" [ TCon CNum ])
-                      (TComp "Prelude" "List" [ TCon CNum ]))
+                   (TApp
+                      (TApp
+                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star))))
+                      (TApp
+                         (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star))))
                    (Area (Loc 27 2 3) (Loc 51 2 27))
                    (Is
                       (PList [ PNum "1" , PNum "2" , PSpread (PVar "rest") ])
                       (Solved
-                         (TComp "Prelude" "List" [ TCon CNum ])
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
                          (Area (Loc 47 2 23) (Loc 51 2 27))
                          (Var "rest")))
                ])
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

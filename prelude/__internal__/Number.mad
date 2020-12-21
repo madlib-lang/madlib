@@ -1,9 +1,14 @@
-import Maybe from "Maybe"
+import _ from "Show"
+import { Maybe, Just, Nothing } from "Maybe"
 
-fromString :: String -> Maybe.Maybe Number
+instance Show Number {
+  show = (x) => #- new Number(x).toString() -#
+}
+
+fromString :: String -> Maybe Number
 export fromString = (str) => (#- {
   const n = parseFloat(str)
-  return isNaN(n) ? Maybe.Nothing : Maybe.Just(n)
+  return isNaN(n) ? Nothing : Just(n)
 } -#)
 
 formatDecimal :: Number -> Number -> String

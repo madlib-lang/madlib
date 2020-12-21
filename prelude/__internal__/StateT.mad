@@ -1,0 +1,45 @@
+import {} from "Monad"
+import {} from "MonadTrans"
+
+export data StateT s m a = StateT (s -> m <a, s>)
+
+runStateT :: StateT s m a -> s -> m <a, s>
+export runStateT = (m) => where(m) is StateT f: (a) => f(a)
+
+instance Functor m => Functor (StateT s m) {
+  map = (f, m) => StateT((s) =>
+    map(
+      where is <a, ss>: <f(a), ss>,
+      runStateT(m, s)
+    )
+  )
+}
+
+instance Monad m => Applicative (StateT s m) {
+  pure = (a) => StateT((s) => of(<a, s>))
+
+  ap = (mf, mm) => StateT(
+    (s) => chain(
+      where is <f, ss>: chain(
+        where is <m, sss>: of(<f(m), sss>),
+        runStateT(mm)(ss)
+      ),
+      runStateT(mf)(s)
+    )
+  )
+}
+
+instance Monad m => Monad (StateT s m) {
+  of = (a) => StateT((s) => of(<a, s>))
+
+  chain = (f, m) => StateT(
+    (s) => chain(
+      where is <a, ss>: runStateT(f(a), ss),
+      runStateT(m, s)
+    )
+  )
+}
+
+instance Monad m => MonadTrans m (StateT s) {
+  lift = (m) => StateT((s) => chain((a) => of(<a, s>), m))
+}

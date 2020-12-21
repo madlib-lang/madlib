@@ -3,116 +3,189 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TArr (TCon CNum) (TCon CNum))
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "Number" Star)))
+               (TCon (TC "Number" Star)))
             (Area (Loc 0 1 1) (Loc 3 1 4))
             (Assignment
                "fib"
                (Solved
-                  (TArr (TCon CNum) (TCon CNum))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Number" Star)))
+                     (TCon (TC "Number" Star)))
                   (Area (Loc 6 1 7) (Loc 64 1 65))
                   (Abs
                      "n"
                      [ Solved
-                         (TCon CNum)
+                         (TCon (TC "Number" Star))
                          (Area (Loc 14 1 15) (Loc 63 1 64))
                          (If
                             (Solved
-                               (TCon CBool)
+                               (TCon (TC "Boolean" Star))
                                (Area (Loc 18 1 19) (Loc 19 1 20))
                                (App
                                   (Solved
-                                     (TArr (TVar (TV "a")) (TCon CBool))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TVar (TV "c" Star)))
+                                        (TCon (TC "Boolean" Star)))
                                      (Area (Loc 18 1 19) (Loc 19 1 20))
                                      (App
                                         (Solved
-                                           (TArr
-                                              (TVar (TV "d")) (TArr (TVar (TV "d")) (TCon CBool)))
+                                           (TApp
+                                              (TApp
+                                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                 (TVar (TV "f" Star)))
+                                              (TApp
+                                                 (TApp
+                                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                    (TVar (TV "f" Star)))
+                                                 (TCon (TC "Boolean" Star))))
                                            (Area (Loc 20 1 21) (Loc 21 1 22))
                                            (Var "<"))
                                         (Solved
-                                           (TVar (TV "a"))
+                                           (TVar (TV "c" Star))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var "n"))
                                         False))
-                                  (Solved (TCon CNum) (Area (Loc 22 1 23) (Loc 23 1 24)) (LNum "2"))
+                                  (Solved
+                                     (TCon (TC "Number" Star))
+                                     (Area (Loc 22 1 23) (Loc 23 1 24))
+                                     (LNum "2"))
                                   True))
                             (Solved
-                               (TVar (TV "a")) (Area (Loc 27 1 28) (Loc 28 1 29)) (Var "n"))
+                               (TVar (TV "c" Star)) (Area (Loc 27 1 28) (Loc 28 1 29)) (Var "n"))
                             (Solved
-                               (TCon CNum)
+                               (TCon (TC "Number" Star))
                                (Area (Loc 38 1 39) (Loc 48 1 49))
                                (App
                                   (Solved
-                                     (TArr (TCon CNum) (TCon CNum))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TCon (TC "Number" Star)))
+                                        (TCon (TC "Number" Star)))
                                      (Area (Loc 38 1 39) (Loc 48 1 49))
                                      (App
                                         (Solved
-                                           (TArr (TCon CNum) (TArr (TCon CNum) (TCon CNum)))
+                                           (TApp
+                                              (TApp
+                                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                 (TCon (TC "Number" Star)))
+                                              (TApp
+                                                 (TApp
+                                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                    (TCon (TC "Number" Star)))
+                                                 (TCon (TC "Number" Star))))
                                            (Area (Loc 48 1 49) (Loc 50 1 51))
                                            (Var "+"))
                                         (Solved
-                                           (TCon CNum)
+                                           (TCon (TC "Number" Star))
                                            (Area (Loc 38 1 39) (Loc 48 1 49))
                                            (App
                                               (Solved
-                                                 (TVar (TV "h"))
+                                                 (TVar (TV "b" Star))
                                                  (Area (Loc 38 1 39) (Loc 41 1 42))
                                                  (Var "fib"))
                                               (Solved
-                                                 (TCon CNum)
+                                                 (TCon (TC "Number" Star))
                                                  (Area (Loc 42 1 43) (Loc 43 1 44))
                                                  (App
                                                     (Solved
-                                                       (TArr (TCon CNum) (TCon CNum))
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star))))
+                                                             (TCon (TC "Number" Star)))
+                                                          (TCon (TC "Number" Star)))
                                                        (Area (Loc 42 1 43) (Loc 43 1 44))
                                                        (App
                                                           (Solved
-                                                             (TArr
-                                                                (TCon CNum)
-                                                                (TArr (TCon CNum) (TCon CNum)))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star))))
+                                                                   (TCon (TC "Number" Star)))
+                                                                (TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star))))
+                                                                      (TCon (TC "Number" Star)))
+                                                                   (TCon (TC "Number" Star))))
                                                              (Area (Loc 44 1 45) (Loc 45 1 46))
                                                              (Var "-"))
                                                           (Solved
-                                                             (TCon CNum)
+                                                             (TCon (TC "Number" Star))
                                                              (Area (Loc 42 1 43) (Loc 43 1 44))
                                                              (Var "n"))
                                                           False))
                                                     (Solved
-                                                       (TCon CNum)
+                                                       (TCon (TC "Number" Star))
                                                        (Area (Loc 46 1 47) (Loc 47 1 48))
                                                        (LNum "1"))
                                                     True))
                                               True))
                                         False))
                                   (Solved
-                                     (TCon CNum)
+                                     (TCon (TC "Number" Star))
                                      (Area (Loc 51 1 52) (Loc 61 1 62))
                                      (App
                                         (Solved
-                                           (TVar (TV "l"))
+                                           (TVar (TV "b" Star))
                                            (Area (Loc 51 1 52) (Loc 54 1 55))
                                            (Var "fib"))
                                         (Solved
-                                           (TCon CNum)
+                                           (TCon (TC "Number" Star))
                                            (Area (Loc 55 1 56) (Loc 56 1 57))
                                            (App
                                               (Solved
-                                                 (TArr (TCon CNum) (TCon CNum))
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                       (TCon (TC "Number" Star)))
+                                                    (TCon (TC "Number" Star)))
                                                  (Area (Loc 55 1 56) (Loc 56 1 57))
                                                  (App
                                                     (Solved
-                                                       (TArr
-                                                          (TCon CNum)
-                                                          (TArr (TCon CNum) (TCon CNum)))
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star))))
+                                                             (TCon (TC "Number" Star)))
+                                                          (TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star))))
+                                                                (TCon (TC "Number" Star)))
+                                                             (TCon (TC "Number" Star))))
                                                        (Area (Loc 57 1 58) (Loc 58 1 59))
                                                        (Var "-"))
                                                     (Solved
-                                                       (TCon CNum)
+                                                       (TCon (TC "Number" Star))
                                                        (Area (Loc 55 1 56) (Loc 56 1 57))
                                                        (Var "n"))
                                                     False))
                                               (Solved
-                                                 (TCon CNum)
+                                                 (TCon (TC "Number" Star))
                                                  (Area (Loc 59 1 60) (Loc 60 1 61))
                                                  (LNum "2"))
                                               True))
@@ -121,5 +194,7 @@ Right
                      ])))
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

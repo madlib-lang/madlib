@@ -20,56 +20,58 @@ import           Explain.Meta
 %lexer { lexerWrap } { Token _ TokenEOF }
 
 %token
-  number   { Token _ (TokenNumber _) }
-  str      { Token _ (TokenStr _) }
-  name     { Token _ (TokenName _) }
-  js       { Token _ (TokenJSBlock _) }
-  'ret'    { Token _ TokenReturn }
-  '='      { Token _ TokenEq }
-  '+'      { Token _ TokenPlus }
-  '++'     { Token _ TokenDoublePlus }
-  '-'      { Token _ TokenDash }
-  '*'      { Token _ TokenStar }
-  '/'      { Token _ TokenSlash }
-  '%'      { Token _ TokenPercent }
-  '::'     { Token _ TokenDoubleColon }
-  ':'      { Token _ TokenColon }
-  '?'      { Token _ TokenQuestionMark }
-  '->'     { Token _ TokenArrow }
-  '=>'     { Token _ TokenFatArrow }
-  '.'      { Token _ TokenDot }
-  ','      { Token _ TokenComma }
-  '('      { Token _ TokenLeftParen }
-  ')'      { Token _ TokenRightParen }
-  '{'      { Token _ TokenLeftCurly }
-  '}'      { Token _ TokenRightCurly }
-  '['      { Token _ TokenLeftSquaredBracket }
-  ']'      { Token _ TokenRightSquaredBracket }
-  'if'     { Token _ TokenIf }
-  'else'   { Token _ TokenElse }
-  'where'  { Token _ TokenWhere }
-  'is'     { Token _ TokenIs }
-  'return'  { Token _ TokenReturnKeyword }
-  '=='     { Token _ TokenDoubleEq }
-  false    { Token _ (TokenBool _) }
-  true     { Token _ (TokenBool _) }
-  'import' { Token _ TokenImport }
-  'export' { Token _ TokenExport }
-  'from'   { Token _ TokenFrom }
-  '|'      { Token _ TokenPipe }
-  'pipe'   { Token _ TokenPipeKeyword }
-  '|>'     { Token _ TokenPipeOperator }
-  '...'    { Token _ TokenSpreadOperator }
-  'data'   { Token _ TokenData }
-  'alias'  { Token _ TokenAlias }
-  '&&'     { Token _ TokenDoubleAmpersand }
-  '||'     { Token _ TokenDoublePipe }
-  '>'      { Token _ TokenRightChevron }
-  '<'      { Token _ TokenLeftChevron }
-  'tuple>' { Token _ TokenTupleEnd }
-  '>='     { Token _ TokenRightChevronEq }
-  '<='     { Token _ TokenLeftChevronEq }
-  '!'      { Token _ TokenExclamationMark }
+  number      { Token _ (TokenNumber _) }
+  str         { Token _ (TokenStr _) }
+  name        { Token _ (TokenName _) }
+  js          { Token _ (TokenJSBlock _) }
+  'ret'       { Token _ TokenReturn }
+  '='         { Token _ TokenEq }
+  '+'         { Token _ TokenPlus }
+  '++'        { Token _ TokenDoublePlus }
+  '-'         { Token _ TokenDash }
+  '*'         { Token _ TokenStar }
+  '/'         { Token _ TokenSlash }
+  '%'         { Token _ TokenPercent }
+  '::'        { Token _ TokenDoubleColon }
+  ':'         { Token _ TokenColon }
+  '?'         { Token _ TokenQuestionMark }
+  '->'        { Token _ TokenArrow }
+  '=>'        { Token _ TokenFatArrow }
+  '.'         { Token _ TokenDot }
+  ','         { Token _ TokenComma }
+  '('         { Token _ TokenLeftParen }
+  ')'         { Token _ TokenRightParen }
+  '{'         { Token _ TokenLeftCurly }
+  '}'         { Token _ TokenRightCurly }
+  '['         { Token _ TokenLeftSquaredBracket }
+  ']'         { Token _ TokenRightSquaredBracket }
+  'if'        { Token _ TokenIf }
+  'else'      { Token _ TokenElse }
+  'interface' { Token _ TokenInterface }
+  'instance'  { Token _ TokenInstance }
+  'where'     { Token _ TokenWhere }
+  'is'        { Token _ TokenIs }
+  'return'    { Token _ TokenReturnKeyword }
+  '=='        { Token _ TokenDoubleEq }
+  false       { Token _ (TokenBool _) }
+  true        { Token _ (TokenBool _) }
+  'import'    { Token _ TokenImport }
+  'export'    { Token _ TokenExport }
+  'from'      { Token _ TokenFrom }
+  '|'         { Token _ TokenPipe }
+  'pipe'      { Token _ TokenPipeKeyword }
+  '|>'        { Token _ TokenPipeOperator }
+  '...'       { Token _ TokenSpreadOperator }
+  'data'      { Token _ TokenData }
+  'alias'     { Token _ TokenAlias }
+  '&&'        { Token _ TokenDoubleAmpersand }
+  '||'        { Token _ TokenDoublePipe }
+  '>'         { Token _ TokenRightChevron }
+  '<'         { Token _ TokenLeftChevron }
+  'tuple>'    { Token _ TokenTupleEnd }
+  '>='        { Token _ TokenRightChevronEq }
+  '<='        { Token _ TokenLeftChevronEq }
+  '!'         { Token _ TokenExclamationMark }
 
 
 %nonassoc LOWEST
@@ -89,11 +91,13 @@ ast :: { Src.AST }
   : typedecl ast     %shift { $2 { Src.atypedecls =  [$1] <> Src.atypedecls $2 } }
   | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
   | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
-  | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.apath = Nothing } }
-  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.apath = Nothing } }
+  | interface ast    %shift { $2 { Src.ainterfaces = [$1] <> (Src.ainterfaces $2), Src.apath = Nothing } }
+  | instance ast     %shift { $2 { Src.ainstances = [$1] <> (Src.ainstances $2), Src.apath = Nothing } }
+  | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
+  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
-  | name '::' typings maybeRet 'export' name '=' exp ast
+  | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $8)) (Src.TypedExp (Meta emptyInfos (tokenToArea $1) (Src.Export (Meta emptyInfos (tokenToArea $5) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
@@ -107,7 +111,45 @@ importDecl :: { Src.Import }
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
   | name                 %shift { [strV $1] }
+  | {- empty -}          %shift { [] }
 
+
+interface :: { Src.Interface }
+  : 'interface' name name '{' rets methodDefs rets '}'                           { Src.Interface [] (strV $2) [strV $3] $6 }
+  | 'interface' name name name '{' rets methodDefs rets '}'                      { Src.Interface [] (strV $2) ([strV $3]<>[strV $4]) $7 }
+  | 'interface' constraint '=>' name names '{' rets methodDefs rets '}'          { Src.Interface [$2] (strV $4) $5 $8 }
+  | 'interface' '(' constraints ')' '=>' name names '{' rets methodDefs rets '}' { Src.Interface $3 (strV $6) $7 $10 }
+
+
+names :: { [Src.Name] }
+  : name       { [strV $1] }
+  | names name { $1 <> [strV $2] }
+
+methodDefs :: { M.Map Src.Name Src.Typing }
+  : name '::' constrainedTyping                 { M.fromList [(strV $1, $3)] }
+  | methodDefs rets name '::' constrainedTyping { M.union (M.fromList [(strV $3, $5)]) $1 }
+
+instance :: { Src.Instance }
+  : 'instance' name simpleTypings '{' rets methodImpls rets '}'                                                            %shift { Src.Instance [] (strV $2) $3 $6 }
+  | 'instance' name typing '{' rets methodImpls rets '}'                                                                   %shift { Src.Instance [] (strV $2) [$3] $6 }
+  | 'instance' name name name '{' rets methodImpls rets '}'                                                                %shift { Src.Instance [] (strV $2) [Meta emptyInfos (tokenToArea $3) (Src.TRSingle $ strV $3), Meta emptyInfos (tokenToArea $4) (Src.TRSingle $ strV $4)] $7 }
+  | 'instance' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                                           %shift { Src.Instance [] (strV $2) [$3, $5] $9 }
+  | 'instance' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}'                          %shift { Src.Instance [] (strV $2) [$4, $7] $11 }
+  | 'instance' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                                  %shift { Src.Instance [] (strV $2) [$4] $8 }
+  | 'instance' constraint '=>' name simpleTypings '{' rets methodImpls rets '}'                                            %shift { Src.Instance [$2] (strV $4) $5 $8 }
+  | 'instance' constraint '=>' name typing '{' rets methodImpls rets '}'                                                   %shift { Src.Instance [$2] (strV $4) [$5] $8 }
+  | 'instance' constraint '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                  %shift { Src.Instance [$2] (strV $4) [$6] $10 }
+  | 'instance' constraint '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                           %shift { Src.Instance [$2] (strV $4) [$5, $7] $11 }
+  | 'instance' '(' constraints ')' '=>' name simpleTypings '{' rets methodImpls rets '}'                                   %shift { Src.Instance $3 (strV $6) $7 $10 }
+  | 'instance' '(' constraints ')' '=>' name typing '{' rets methodImpls rets '}'                                          %shift { Src.Instance $3 (strV $6) [$7] $10 }
+  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                         %shift { Src.Instance $3 (strV $6) [$8] $12 }
+  | 'instance' '(' constraints ')' '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                  %shift { Src.Instance $3 (strV $6) [$7, $9] $13 }
+  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}' %shift { Src.Instance $3 (strV $6) [$8, $11] $15 }
+  -- | 'instance' name name '.' name '{' rets methodImpls rets '}' { Src.Instance (strV $2) (Meta emptyInfos (tokenToArea $3) (Src.TRComp (strV $3<>"."<>strV $5) [])) $8 }
+
+methodImpls :: { M.Map Src.Name Src.Exp }
+  : name '=' exp { M.fromList [(strV $1, $3)] }
+  | methodImpls rets name '=' exp { M.union (M.fromList [(strV $3, $5)]) $1 }
 
 rets :: { [TokenClass] }
   : 'ret'       %shift{ [] }
@@ -158,8 +200,32 @@ adtConstructorArgs :: { [Src.Typing] }
   | '(' adtConstructorArgs ')' %shift { $2 }
   | adtConstructorArgs typing  %shift { $1 <> [$2] }
 
+
+constrainedTyping :: { Src.Typing }
+  : constraint '=>' typings      %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRConstrained [$1] $3) }
+  | '(' constraints ')' '=>' typings      %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.TRConstrained $2 $5) }
+  | typings  %shift { $1 }
+
+constraints :: { [Src.Typing] }
+  : constraint { [$1] }
+  | constraints ',' constraint { $1 <> [$3] }
+
+constraint :: { Src.Typing }
+  : name name                 { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRComp (strV $1) [Meta emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2))]) }
+  | name name name            { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1) [Meta emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), Meta emptyInfos (tokenToArea $3) (Src.TRSingle (strV $3))]) }
+  | name name '(' typings ')' { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [Meta emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), $4]) }
+  | name '(' typings ')' name { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [$3, Meta emptyInfos (tokenToArea $5) (Src.TRSingle (strV $5))]) }
+
+simpleTypings :: { [Src.Typing] }
+  : name               %shift { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
+  | simpleTypings name %shift { $1 <> [Meta emptyInfos (tokenToArea $2) (Src.TRSingle $ strV $2)] }
+
+manyTypings :: { [Src.Typing] }
+  : typing             %shift { [$1] }
+  | typing manyTypings %shift { $1:$2 }
+
 typings :: { Src.Typing }
-  : typing '->' typings          %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  : typings '->' typings         %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | compositeTyping '->' typings %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
   | compositeTyping              %shift { $1 }
   | typing                       %shift { $1 }
@@ -167,8 +233,7 @@ typings :: { Src.Typing }
 typing :: { Src.Typing }
   : name                        %shift { Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
   | '(' ')'                     %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRSingle "()") }
-  | '(' typing '->' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4) }
-  | typing '->' typings         %shift { Meta emptyInfos (mergeAreas (getArea $1) (getArea $3)) (Src.TRArr $1 $3) }
+  | '(' typings ')'             %shift { $2 }
   | '{' recordTypingArgs '}'    %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
   | '<' tupleTypings 'tuple>'   %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
 
@@ -178,12 +243,13 @@ compositeTyping :: { Src.Typing }
   | name '.' name                     { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $1)) (Src.TRComp (strV $1<>"."<>strV $3) []) }
 
 compositeTypingArgs :: { [Src.Typing] }
-  : name                        { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
-  | name compositeTypingArgs    { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
-  | typings                     { [$1] }
-  | '(' typing '->' typings ')' %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4)] }
+  : name                                                   { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
+  | name '.' name                                          { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRSingle $ (strV $1<>"."<>strV $3))] }
+  | name compositeTypingArgs                               { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
+  | '(' typings ')' compositeTypingArgs                    { $2:$4 }
+  | typing                                                 { [$1] }
+  | '(' typing '->' typings ')'                     %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4)] }
   | compositeTypingArgs '(' typing '->' typings ')' %shift { $1 <> [Meta emptyInfos (mergeAreas (getArea $ head $1) (tokenToArea $6)) (Src.TRArr $3 $5)] }
-  | '(' typings ')'             { [$2] }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
   : name '::' typing                               { M.fromList [(strV $1, $3)] }
@@ -242,17 +308,16 @@ multiExpBody :: { [Src.Exp] }
   | exp rets multiExpBody { $1:$3 }
 
 typedExp :: { Src.Exp }
-  : '(' exp '::' typings ')'  %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
-  | '(' name '::' typings ')' %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
-  | name '::' typings 'ret' name '=' exp 
-      %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
+  : '(' exp '::' typings ')'                       %shift { Meta emptyInfos (mergeAreas (getArea $2) (getArea $4)) (Src.TypedExp $2 $4) }
+  | '(' name '::' typings ')'                      %shift { Meta emptyInfos (mergeAreas (tokenToArea $2) (getArea $4)) (Src.TypedExp (Meta emptyInfos (tokenToArea $2) (Src.Var (strV $2))) $4) }
+  | name '::' constrainedTyping 'ret' name '=' exp %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $7)) (Src.TypedExp (Meta emptyInfos (mergeAreas (tokenToArea $5) (getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
   | 'where' '(' exp ')' maybeRet iss                  %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $6)) (Src.Where $3 $6) }
-  | 'where' '{' rets iss rets '}' %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $4)] }
-  | 'where' rets iss rets %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $ last $3)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $3)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $3)] }
+  | 'where' '{' rets iss rets '}'                     %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $4)] }
+  | 'where' rets iss rets                             %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $ last $3)) ["__x__"] [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $ last $3)) (Src.Where (Meta emptyInfos (tokenToArea $1) (Src.Var "__x__")) $3)] }
 
 iss :: { [Src.Is] }
   : 'is' pattern ':' maybeRet exp                    %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (getArea $5)) (Src.Is $2 $5)] }

@@ -9,12 +9,14 @@ import           Infer.Type
 import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
+import           Control.Monad                  ( replicateM )
 
 
 
 getModuleContent :: (FilePath -> IO String) -> Reason -> IO String
-getModuleContent rf (Reason _ modulePath _) = rf modulePath
-getModuleContent _  _                       = return ""
+getModuleContent rf (Reason _ modulePath _    ) = rf modulePath
+getModuleContent rf (SimpleReason modulePath _) = rf modulePath
+getModuleContent _  _                           = return ""
 
 
 format :: (FilePath -> IO String) -> InferError -> IO String
@@ -264,7 +266,97 @@ format rf (InferError err reason) = do
         <> formatHighlightArea expArea
         <> "\n"
         <> message
-    _ -> return $ ppShow err
+
+    SimpleReason fp area -> do
+      let (start, end)              = computeLinesToShow area area
+      let expContent                = slice start end moduleContent
+      let (Area (Loc x line col) _) = area
+      let highlightArea = Area (Loc x line col) (Loc x line (col + 1))
+
+      return
+        $  "An error occured in module '"
+        <> fp
+        <> "' at line "
+        <> show line
+        <> ":\n\n"
+        <> unlines expContent
+        <> formatHighlightArea highlightArea
+        <> "\n\n"
+        <> formatTypeError err
+        -- <> "\n"
+        -- <> "If I had more information I'd tell you more but right now I don't know"
+
+    _ -> return $ formatTypeError err
+
+
+-- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
+formatTypeError :: TypeError -> String
+formatTypeError err = case err of
+  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> typeToStr t
+
+  UnboundVariable n ->
+    "The variable '" <> n <> "' has not been declared, you might have a typo !"
+
+  SignatureTooGeneral scGiven scInferred ->
+    "The signature given is too general\n"
+      <> "Type signature given:\n"
+      <> "    "
+      <> schemeToStr scGiven
+      <> "\n\n"
+      <> "Type inferred:\n"
+      <> "    "
+      <> schemeToStr scInferred
+
+  UnificationError t t' ->
+    "Type error, you gave :\n"
+      <> "    "
+      <> typeToStr t
+      <> "\n"
+      <> "But this type was expected:\n"
+      <> "    "
+      <> typeToStr t'
+
+  NoInstanceFound cls t ->
+    "There is no instance of '"
+      <> cls
+      <> "' for the following type: "
+      <> typeToStr t
+
+  AmbiguousType (TV n _, [IsIn cls _]) ->
+    "An ambiguity for the type variable '"
+      <> n
+      <> "' could not be resolved! I am\n"
+      <> "looking for an instance of '"
+      <> cls
+      <> "' but could not resolve it. You\n"
+      <> "might want to add a type annotation to make it resolvable."
+
+  AmbiguousType (TV n _, []) ->
+    "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
+
+  InterfaceNotExisting cls ->
+    "The interface '"
+      <> cls
+      <> "' is not defined. Make sure you imported the module\n"
+      <> "defining it, or a module that imports it."
+
+  KindError (t, k) (t', k') ->
+    "The kind of types don't match, '"
+      <> typeToStr t
+      <> "has kind "
+      <> kindToStr k
+      <> " and "
+      <> typeToStr t'
+      <> " has kind "
+      <> kindToStr k'
+      <> "."
+
+  InstancePredicateError pInstance pWrong pCorrect ->
+    "A constraint in the instance declaration '"<>predToStr pInstance<>" is not correct.\n"
+    <> "You gave the constraint '"<>predToStr pWrong<>"' but a constraint of the form '"<>predToStr pCorrect
+    <> "'\nwas expected."
+
+  _ -> ppShow err
 
 
 -- computeLinesToShow : returns the first line and the last line to show
@@ -285,22 +377,41 @@ nthEnding n = case n of
   3 -> "rd"
   _ -> "th"
 
+
+letters :: [String]
+letters = [1 ..] >>= flip replicateM ['a' .. 'z']
+
+
+kindToStr :: Kind -> String
+kindToStr k = case k of
+  Star     -> "*"
+  Kfun l r -> kindToStr l <> " -> " <> kindToStr r
+
+schemeToStr :: Scheme -> String
+schemeToStr (Forall _ ([] :=> t)) = typeToStr t
+schemeToStr (Forall _ (ps :=> t)) = predsToStr ps <> " => " <> typeToStr t
+
+predsToStr :: [Pred] -> String
+predsToStr [p] = predToStr p
+predsToStr ps  = "(" <> intercalate ", " (predToStr <$> ps) <> ")"
+
+
+predToStr :: Pred -> String
+predToStr (IsIn cls ts) = cls <> " " <> unwords (typeToParenWrappedStr <$> ts)
+
+typeToParenWrappedStr :: Type -> String
+typeToParenWrappedStr t = case t of
+  TApp _ _ -> "(" <> typeToStr t <> ")"
+  _        -> typeToStr t
+
 typeToStr :: Type -> String
 typeToStr t = case t of
-  TCon CString -> "String"
-  TCon CNum    -> "Number"
-  TCon CBool   -> "Boolean"
-  TVar (TV a)  -> a
-  TArr (TArr t1 t2) t2' ->
-    "("
-      <> typeToStr t1
-      <> " -> "
-      <> typeToStr t2
-      <> ")"
-      <> " -> "
-      <> typeToStr t2'
-  TArr t1 t2     -> typeToStr t1 <> " -> " <> typeToStr t2
-  TComp _ n vars -> n <> " " <> unwords (typeToStr <$> vars)
+  TCon (TC a _) -> a
+  TVar (TV a _) -> a
+  TApp (TApp (TCon (TC "(->)" _)) t2) t2' ->
+    typeToStr t2 <> " -> " <> typeToStr t2'
+  TApp t1 t2 -> typeToStr t1 <> " " <> typeToStr t2
+  TGen x     -> letters !! x
   TRecord fields _ ->
     "{ "
       <> intercalate

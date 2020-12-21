@@ -1,0 +1,44 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TCon (TC "Boolean" Star))
+            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (App
+               (Solved
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Number" Star)))
+                     (TCon (TC "Boolean" Star)))
+                  (Area (Loc 0 1 1) (Loc 1 1 2))
+                  (App
+                     (Solved
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "d" Star)))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TVar (TV "d" Star)))
+                              (TCon (TC "Boolean" Star))))
+                        (Area (Loc 2 1 3) (Loc 4 1 5))
+                        (Var "=="))
+                     (Solved
+                        (TCon (TC "Number" Star))
+                        (Area (Loc 0 1 1) (Loc 1 1 2))
+                        (LNum "1"))
+                     False))
+               (Solved
+                  (TCon (TC "Number" Star))
+                  (Area (Loc 5 1 6) (Loc 6 1 7))
+                  (LNum "3"))
+               True)
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

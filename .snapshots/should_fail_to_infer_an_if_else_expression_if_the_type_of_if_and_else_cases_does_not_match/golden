@@ -1,6 +1,7 @@
 Left
   (InferError
-     (UnificationError (TCon CString) (TCon CNum))
+     (UnificationError
+        (TCon (TC "String" Star)) (TCon (TC "Number" Star)))
      (Reason
         (IfElseBranchTypesDontMatch
            (Meta

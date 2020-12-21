@@ -4,42 +4,62 @@ Right
     , aexps =
         [ Solved
             (TRecord
-               (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
+               (fromList
+                  [ ( "x" , TCon (TC "Number" Star) )
+                  , ( "y" , TCon (TC "Number" Star) )
+                  ])
+               False)
             (Area (Loc 0 1 1) (Loc 1 1 2))
             (Assignment
                "a"
                (Solved
                   (TRecord
-                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
+                     (fromList
+                        [ ( "x" , TCon (TC "Number" Star) )
+                        , ( "y" , TCon (TC "Number" Star) )
+                        ])
+                     False)
                   (Area (Loc 4 1 5) (Loc 26 1 27))
                   (Record
                      [ Field
                          ( "x"
                          , Solved
-                             (TCon CNum) (Area (Loc 9 1 10) (Loc 15 1 16)) (LNum "3.1415")
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 9 1 10) (Loc 15 1 16))
+                             (LNum "3.1415")
                          )
                      , Field
                          ( "y"
                          , Solved
-                             (TCon CNum) (Area (Loc 20 1 21) (Loc 24 1 25)) (LNum "-500")
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 20 1 21) (Loc 24 1 25))
+                             (LNum "-500")
                          )
                      ])))
         , Solved
-            (TCon CNum)
+            (TCon (TC "Number" Star))
             (Area (Loc 27 2 1) (Loc 30 2 4))
             (FieldAccess
                (Solved
                   (TRecord
-                     (fromList [ ( "x" , TCon CNum ) , ( "y" , TCon CNum ) ]) False)
+                     (fromList
+                        [ ( "x" , TCon (TC "Number" Star) )
+                        , ( "y" , TCon (TC "Number" Star) )
+                        ])
+                     False)
                   (Area (Loc 27 2 1) (Loc 28 2 2))
                   (Var "a"))
                (Solved
-                  (TArr
-                     (TRecord (fromList [ ( "x" , TVar (TV "a") ) ]) True)
-                     (TVar (TV "a")))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TRecord (fromList [ ( "x" , TVar (TV "d" Star) ) ]) True))
+                     (TVar (TV "d" Star)))
                   (Area (Loc 29 2 3) (Loc 30 2 4))
                   (Var ".x")))
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

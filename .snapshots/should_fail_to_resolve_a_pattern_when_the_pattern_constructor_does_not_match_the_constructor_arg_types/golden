@@ -1,2 +1,5 @@
 Left
-  (InferError (UnificationError (TCon CNum) (TCon CString)) NoReason)
+  (InferError
+     (UnificationError
+        (TCon (TC "String" Star)) (TCon (TC "Number" Star)))
+     (SimpleReason "path" (Area (Loc 60 3 1) (Loc 98 5 1))))

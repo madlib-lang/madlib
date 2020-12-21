@@ -10,9 +10,8 @@ export data Data
 
 
 writeFile :: String -> Data -> W.Wish e String
-export writeFile = (path, d) => (where(d) {
-  is BinaryData (B.ByteArray arr): (#- 
-    (bad, good) => {
+export writeFile = (path, d) => where(d) {
+  is BinaryData (B.ByteArray arr): W.Wish((bad, good) => #- {
       fs.writeFile(path, arr, (err) => {
         if (err) {
           bad(err);
@@ -20,11 +19,9 @@ export writeFile = (path, d) => (where(d) {
         else {
           good(path)
         }
-      });
-    };
-  -#)
-  is TextData content: (#- 
-    (bad, good) => {
+      })
+    } -#)
+  is TextData content: W.Wish((bad, good) => #- {
       fs.writeFile(path, content, (err) => {
         if (err) {
           bad(err);
@@ -35,11 +32,10 @@ export writeFile = (path, d) => (where(d) {
       })
     }
   -#)
-})
+}
 
 readFile :: String -> W.Wish e String
-export readFile = (path) => (#- 
-  (bad, good) => {
+export readFile = (path) => W.Wish((bad, good) => #- {
     fs.readFile(path, "utf8", (err, d) => {
       if (err) {
         bad(err);
@@ -47,6 +43,5 @@ export readFile = (path) => (#-
       else {
         good(d)
       }
-    });
-  }
--#)
+    })
+  }-#)

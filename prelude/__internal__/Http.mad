@@ -4,13 +4,12 @@ import B from "Binary"
 export data Response = Response { body :: Body }
 
 export data Body = TextBody String
-          | BinaryBody B.ByteArray
+                 | BinaryBody B.ByteArray
 
 #- import https from "https" -#
 
 get :: String -> W.Wish e Response
-export get = (url) => (#- {
-  return (bad, good) => {
+export get = (url) => W.Wish((bad, good) => (#- {
     const req = https.request(url, (response) => {
       if (response.statusCode === 302) {
         W.fulfill(bad, good, get(response.headers.location))
@@ -44,5 +43,5 @@ export get = (url) => (#- {
     });
     req.on('error', bad)
     req.end();
-  };
-} -#)
+  }
+-#))

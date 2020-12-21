@@ -83,18 +83,18 @@ parseLcov :: String -> LcovInfo
 export parseLcov = (content) =>
   S.split("end_of_record", content)
     |> L.reject((s) => (s == ""))
-    |> L.map(parseLcovSection)
+    |> map(parseLcovSection)
 
 stringifyLine :: LcovLine -> String
 stringifyLine = (line) =>
   where(line)
     is TN arg: "TN:" ++ arg ++ "\n"
     is SF arg: "SF:" ++ arg ++ "\n"
-    is FN line name: "FN:" ++ S.show(line) ++ "," ++ name ++ "\n"
+    is FN l name: "FN:" ++ S.show(l) ++ "," ++ name ++ "\n"
     is FNDA count name: "FNDA:" ++ S.show(count) ++ "," ++ name ++ "\n"
     is FNF count: "FNF:" ++ S.show(count) ++ "\n"
     is FNH count: "FNH:" ++ S.show(count) ++ "\n"
-    is DA line count: "DA:" ++ S.show(line) ++ "," ++ S.show(count) ++ "\n"
+    is DA l count: "DA:" ++ S.show(l) ++ "," ++ S.show(count) ++ "\n"
     is LF count: "LF:" ++ S.show(count) ++ "\n"
     is LH count: "LH:" ++ S.show(count) ++ "\n"
 

@@ -3,24 +3,48 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TTuple [ TCon CNum , TCon CNum , TCon CNum ])
+            (TApp
+               (TApp
+                  (TApp
+                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                     (TCon (TC "Number" Star)))
+                  (TCon (TC "Number" Star)))
+               (TCon (TC "Number" Star)))
             (Area (Loc 0 1 1) (Loc 9 1 10))
             (TupleConstructor
-               [ Solved (TCon CNum) (Area (Loc 1 1 2) (Loc 2 1 3)) (LNum "1")
-               , Solved (TCon CNum) (Area (Loc 4 1 5) (Loc 5 1 6)) (LNum "2")
-               , Solved (TCon CNum) (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "3")
+               [ Solved
+                   (TCon (TC "Number" Star)) (Area (Loc 1 1 2) (Loc 2 1 3)) (LNum "1")
+               , Solved
+                   (TCon (TC "Number" Star)) (Area (Loc 4 1 5) (Loc 5 1 6)) (LNum "2")
+               , Solved
+                   (TCon (TC "Number" Star)) (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "3")
                ])
         , Solved
-            (TTuple [ TCon CBool , TCon CString , TCon CNum ])
+            (TApp
+               (TApp
+                  (TApp
+                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                     (TCon (TC "Boolean" Star)))
+                  (TCon (TC "String" Star)))
+               (TCon (TC "Number" Star)))
             (Area (Loc 10 2 1) (Loc 28 2 19))
             (TupleConstructor
                [ Solved
-                   (TCon CBool) (Area (Loc 11 2 2) (Loc 15 2 6)) (LBool "true")
+                   (TCon (TC "Boolean" Star))
+                   (Area (Loc 11 2 2) (Loc 15 2 6))
+                   (LBool "true")
                , Solved
-                   (TCon CString) (Area (Loc 17 2 8) (Loc 23 2 14)) (LStr "John")
-               , Solved (TCon CNum) (Area (Loc 25 2 16) (Loc 27 2 18)) (LNum "33")
+                   (TCon (TC "String" Star))
+                   (Area (Loc 17 2 8) (Loc 23 2 14))
+                   (LStr "John")
+               , Solved
+                   (TCon (TC "Number" Star))
+                   (Area (Loc 25 2 16) (Loc 27 2 18))
+                   (LNum "33")
                ])
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

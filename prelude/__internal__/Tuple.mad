@@ -1,3 +1,22 @@
+import _ from "Show"
+
+instance (Show a, Show b) => Show <a, b> {
+  show = where
+    is <a, b>: "<" ++ show(a) ++ ", " ++ show(b) ++ ">"
+}
+
+instance (Show a, Show b, Show c) => Show <a, b, c> {
+  show = where
+    is <a, b, c>: "<" ++ show(a) ++ ", " ++ show(b) ++ ", " ++ show(c) ++ ">"
+}
+
+instance (Show a, Show b, Show c, Show d) => Show <a, b, c, d> {
+  show = where
+    is <a, b, c, d>:
+      "<" ++ show(a) ++ ", " ++ show(b) ++ ", " ++ show(c) ++ ", " ++ show(d) ++ ">"
+}
+
+
 fst :: <a, b> -> a
 export fst = (tuple) => (where(tuple)
   is <a, _>: a

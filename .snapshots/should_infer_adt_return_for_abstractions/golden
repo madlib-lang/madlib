@@ -3,83 +3,122 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TComp "path" "Result" [ TCon CString ])
+            (TApp
+               (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "String" Star)))
             (Area (Loc 34 2 1) (Loc 41 2 8))
             (Assignment
                "result1"
                (Solved
-                  (TComp "path" "Result" [ TCon CString ])
+                  (TApp
+                     (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "String" Star)))
                   (Area (Loc 44 2 11) (Loc 63 2 30))
                   (App
                      (Solved
-                        (TArr (TVar (TV "b")) (TComp "path" "Result" [ TVar (TV "b") ]))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "d" Star)))
+                           (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "d" Star))))
                         (Area (Loc 44 2 11) (Loc 51 2 18))
                         (Var "Success"))
                      (Solved
-                        (TCon CString)
+                        (TCon (TC "String" Star))
                         (Area (Loc 52 2 19) (Loc 62 2 29))
                         (LStr "response"))
                      True)))
         , Solved
-            (TComp "path" "Result" [ TVar (TV "c") ])
+            (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "g" Star)))
             (Area (Loc 64 3 1) (Loc 71 3 8))
             (Assignment
                "result2"
                (Solved
-                  (TComp "path" "Result" [ TVar (TV "c") ])
+                  (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "g" Star)))
                   (Area (Loc 74 3 11) (Loc 79 3 16))
                   (Var "Error")))
         , Solved
-            (TCon CBool)
+            (TCon (TC "Boolean" Star))
             (Area (Loc 110 4 31) (Loc 117 4 38))
             (App
                (Solved
-                  (TArr (TComp "path" "Result" [ TCon CString ]) (TCon CBool))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TApp
+                           (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "String" Star))))
+                     (TCon (TC "Boolean" Star)))
                   (Area (Loc 80 4 1) (Loc 118 4 39))
                   (App
                      (Solved
-                        (TArr (TVar (TV "g")) (TArr (TVar (TV "g")) (TCon CBool)))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TVar (TV "l" Star)))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TVar (TV "l" Star)))
+                              (TCon (TC "Boolean" Star))))
                         (Area (Loc 81 4 2) (Loc 99 4 20))
                         (Abs
                            "a"
                            [ Solved
-                               (TArr (TVar (TV "g")) (TCon CBool))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TVar (TV "l" Star)))
+                                  (TCon (TC "Boolean" Star)))
                                (Area (Loc 81 4 2) (Loc 99 4 20))
                                (Abs
                                   "b"
                                   [ Solved
-                                      (TCon CBool)
+                                      (TCon (TC "Boolean" Star))
                                       (Area (Loc 92 4 13) (Loc 93 4 14))
                                       (App
                                          (Solved
-                                            (TArr (TVar (TV "f")) (TCon CBool))
+                                            (TApp
+                                               (TApp
+                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                  (TVar (TV "k" Star)))
+                                               (TCon (TC "Boolean" Star)))
                                             (Area (Loc 92 4 13) (Loc 93 4 14))
                                             (App
                                                (Solved
-                                                  (TArr
-                                                     (TVar (TV "j"))
-                                                     (TArr (TVar (TV "j")) (TCon CBool)))
+                                                  (TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                        (TVar (TV "o" Star)))
+                                                     (TApp
+                                                        (TApp
+                                                           (TCon
+                                                              (TC
+                                                                 "(->)"
+                                                                 (Kfun Star (Kfun Star Star))))
+                                                           (TVar (TV "o" Star)))
+                                                        (TCon (TC "Boolean" Star))))
                                                   (Area (Loc 94 4 15) (Loc 96 4 17))
                                                   (Var "=="))
                                                (Solved
-                                                  (TVar (TV "f"))
+                                                  (TVar (TV "k" Star))
                                                   (Area (Loc 92 4 13) (Loc 93 4 14))
                                                   (Var "a"))
                                                False))
                                          (Solved
-                                            (TVar (TV "g"))
+                                            (TVar (TV "l" Star))
                                             (Area (Loc 97 4 18) (Loc 98 4 19))
                                             (Var "b"))
                                          True)
                                   ])
                            ]))
                      (Solved
-                        (TComp "path" "Result" [ TCon CString ])
+                        (TApp
+                           (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "String" Star)))
                         (Area (Loc 101 4 22) (Loc 108 4 29))
                         (Var "result1"))
                      False))
                (Solved
-                  (TComp "path" "Result" [ TCon CString ])
+                  (TApp
+                     (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "String" Star)))
                   (Area (Loc 110 4 31) (Loc 117 4 38))
                   (Var "result2"))
                True)
@@ -93,5 +132,7 @@ Right
             , adtexported = False
             }
         ]
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

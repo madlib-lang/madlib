@@ -1,0 +1,9 @@
+import _ from "Applicative"
+
+interface Applicative m => Monad m {
+  of :: a -> m a
+  chain :: (a -> m b) -> m a -> m b
+}
+
+andDo :: Monad m => m b -> m a -> m b
+export andDo = (b, a) => chain((_) => b, a)

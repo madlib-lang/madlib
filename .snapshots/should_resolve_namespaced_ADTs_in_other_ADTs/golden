@@ -13,6 +13,8 @@ Right
                    , adtexported = True
                    }
                ]
+           , ainterfaces = []
+           , ainstances = []
            , apath = Just "./ModuleA"
            }
        )
@@ -21,54 +23,43 @@ Right
            { aimports = [ DefaultImport "M" "./ModuleA" "./ModuleA" ]
            , aexps =
                [ Solved
-                   (TComp "./ModuleB" "MyType" [])
+                   (TCon (TC "MyType" Star))
                    (Area (Loc 64 3 1) (Loc 65 3 2))
                    (Assignment
                       "x"
                       (Solved
-                         (TComp "./ModuleB" "MyType" [])
+                         (TCon (TC "MyType" Star))
                          (Area (Loc 68 3 5) (Loc 87 3 24))
                          (App
                             (Solved
-                               (TArr
-                                  (TComp "./ModuleA" "Maybe" [ TCon CString ])
-                                  (TComp "./ModuleB" "MyType" []))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TApp
+                                        (TCon (TC "Maybe" (Kfun Star Star)))
+                                        (TCon (TC "String" Star))))
+                                  (TCon (TC "MyType" Star)))
                                (Area (Loc 68 3 5) (Loc 74 3 11))
                                (Var "MyType"))
                             (Solved
-                               (TComp "./ModuleA" "Maybe" [ TCon CString ])
+                               (TApp
+                                  (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "String" Star)))
                                (Area (Loc 75 3 12) (Loc 76 3 13))
                                (App
                                   (Solved
-                                     (TArr
-                                        (TVar (TV "f"))
-                                        (TComp "./ModuleA" "Maybe" [ TVar (TV "f") ]))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TVar (TV "e" Star)))
+                                        (TApp
+                                           (TCon (TC "Maybe" (Kfun Star Star)))
+                                           (TVar (TV "e" Star))))
                                      (Area (Loc 75 3 12) (Loc 76 3 13))
-                                     (FieldAccess
-                                        (Solved
-                                           (TRecord
-                                              (fromList
-                                                 [ ( "Just"
-                                                   , TArr
-                                                       (TVar (TV "a"))
-                                                       (TComp "./ModuleA" "Maybe" [ TVar (TV "a") ])
-                                                   )
-                                                 , ( "Nothing"
-                                                   , TComp "./ModuleA" "Maybe" [ TVar (TV "b") ]
-                                                   )
-                                                 ])
-                                              False)
-                                           (Area (Loc 75 3 12) (Loc 76 3 13))
-                                           (Var "M"))
-                                        (Solved
-                                           (TArr
-                                              (TRecord
-                                                 (fromList [ ( "Just" , TVar (TV "e") ) ]) True)
-                                              (TVar (TV "e")))
-                                           (Area (Loc 77 3 14) (Loc 81 3 18))
-                                           (Var ".Just"))))
+                                     (Var "M.Just"))
                                   (Solved
-                                     (TCon CString) (Area (Loc 82 3 19) (Loc 85 3 22)) (LStr "3"))
+                                     (TCon (TC "String" Star))
+                                     (Area (Loc 82 3 19) (Loc 85 3 22))
+                                     (LStr "3"))
                                   True))
                             True)))
                ]
@@ -81,6 +72,8 @@ Right
                    , adtexported = False
                    }
                ]
+           , ainterfaces = []
+           , ainstances = []
            , apath = Just "./ModuleB"
            }
        )

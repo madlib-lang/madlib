@@ -21,7 +21,7 @@ export insert = (k, v, m) => (where(m)
   is Map_ items:
     L.reject(
       (item) => (where(item)
-        is <kk, v>: kk == k
+        is <kk, _>: kk == k
       )
       , items
     )
@@ -31,27 +31,24 @@ export insert = (k, v, m) => (where(m)
 
 
 get :: k -> Map k v -> Maybe.Maybe v
-export get = (k, m) => (where(m)
-  is Map_ items:
-    L.find(
-      (item) => (where(item)
-        is <kk, v>: k == kk
-      ),
-      items
-    )
-    |> Maybe.map(T.snd)
-)
+export get = (k) => where
+  is Map_ items: pipe(
+    L.find((item) => (where(item)
+      is <kk, _>: k == kk
+    )),
+    map(T.snd)
+  )(items)
 
 
 keys :: Map k v -> List k
 export keys = (m) => (where(m)
-  is Map_ items: L.map(T.fst, items)
+  is Map_ items: map(T.fst, items)
 )
 
 
 values :: Map k v -> List v
 export values = (m) => (where(m)
-  is Map_ items: L.map(T.snd, items)
+  is Map_ items: map(T.snd, items)
 )
 
 
@@ -59,15 +56,14 @@ len :: Map k v -> Number
 export len = (m) => (m |> keys |> L.len)
 
 
-map :: (v -> w) -> Map k v -> Map k w
-export map = (fn, x) => where (x)
-  is Map_ items: L.map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
-
+instance Functor (Map k) {
+  map = (fn) => where
+    is Map_ items: map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+}
 
 mapWithKey :: (k -> v -> w) -> Map k v -> Map k w
-export map = (fn, x) => where (x)
-  is Map_ items:
-    L.map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+export mapWithKey = (fn) => where
+  is Map_ items: map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
 
 
 merge :: Map k v -> Map k v -> Map k v

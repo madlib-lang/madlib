@@ -1,0 +1,63 @@
+import {} from "Monad"
+import {} from "MonadTrans"
+
+
+// Identity
+
+export data Identity a = Identity a
+
+run :: Identity a -> a
+export runIdentity = where
+  is Identity a: a
+
+instance Functor Identity {
+  map = (f, m) => Identity(f(runIdentity(m)))
+}
+
+instance Applicative Identity {
+  pure = Identity
+
+  ap = (mf, mm) => Identity(runIdentity(mf)(runIdentity(mm)))
+}
+
+instance Monad Identity {
+  of = pure
+
+  chain = (f, mm) => f(runIdentity(mm))
+}
+
+
+
+// IdentityT
+
+export data IdentityT m a = IdentityT (m a)
+
+runIdentityT :: IdentityT m a -> m a
+export runIdentityT = where
+  is IdentityT x: x
+
+mapIdentityT :: (m a -> n b) -> IdentityT m a -> IdentityT n b
+mapIdentityT = (f) => pipe(runIdentityT, f, IdentityT)
+
+liftToIdentityT :: (m a -> n b -> p c) -> IdentityT m a -> IdentityT n b -> IdentityT p c
+liftToIdentityT = (f, a, b) => IdentityT(f(runIdentityT(a), runIdentityT(b)))
+
+instance (Functor m) => Functor (IdentityT m) {
+  map = (f) => mapIdentityT(map(f))
+}
+
+instance (Applicative m) => Applicative (IdentityT m) {
+  pure = (x) => IdentityT(pure(x))
+
+  ap = liftToIdentityT(ap)
+}
+
+instance (Monad m) => Monad (IdentityT m) {
+  of = pipe(of, IdentityT)
+
+  chain = (f, m) => IdentityT(chain(pipe(f, runIdentityT), runIdentityT(m)))
+}
+
+instance Monad m => MonadTrans m IdentityT {
+  lift = IdentityT
+}

@@ -39,6 +39,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export const random = curryPowder((seed) => R.random(seed));
@@ -82,6 +90,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const random = curryPowder((seed) => seed / 2);
 export default { random };
 // file: /root/project/src/Main.mad
@@ -125,4 +141,13 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 R.random(3);
+export default {};

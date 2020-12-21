@@ -11,6 +11,7 @@ warn :: a -> a
 export warn = (w) => (#- { console.warn(w); return w; } -#)
 
 export alias Row = { id :: String, cols :: List <String, String> }
+
 table :: List Row -> a -> a
 export table = (rows, a) => (#- {
   const xSpaces = x => new Array(x).fill(' ').join('')

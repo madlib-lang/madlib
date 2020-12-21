@@ -1,89 +1,13 @@
 Left
   (InferError
-     (UnificationError (TCon CNum) (TCon CString))
+     (UnificationError
+        (TCon (TC "Number" Star)) (TCon (TC "String" Star)))
      (Reason
         (PatternTypeError
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 0 1 1) (Loc 62 4 1))
-              (Where
-                 (Meta
-                    Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 6 1 7) (Loc 21 1 22))
-                    (ListConstructor
-                       [ ListItem
-                           (Meta
-                              Infos { nthArg = Nothing , origin = Nothing }
-                              (Area (Loc 7 1 8) (Loc 8 1 9))
-                              (LNum "1"))
-                       , ListItem
-                           (Meta
-                              Infos { nthArg = Nothing , origin = Nothing }
-                              (Area (Loc 10 1 11) (Loc 11 1 12))
-                              (LNum "2"))
-                       , ListItem
-                           (Meta
-                              Infos { nthArg = Nothing , origin = Nothing }
-                              (Area (Loc 13 1 14) (Loc 14 1 15))
-                              (LNum "3"))
-                       , ListItem
-                           (Meta
-                              Infos { nthArg = Nothing , origin = Nothing }
-                              (Area (Loc 16 1 17) (Loc 17 1 18))
-                              (LNum "5"))
-                       , ListItem
-                           (Meta
-                              Infos { nthArg = Nothing , origin = Nothing }
-                              (Area (Loc 19 1 20) (Loc 20 1 21))
-                              (LNum "8"))
-                       ]))
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 27 2 3) (Loc 43 2 19))
-                     (Is
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 30 2 6) (Loc 39 2 15))
-                           (PList
-                              [ Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 31 2 7) (Loc 32 2 8))
-                                  (PNum "1")
-                              , Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 34 2 10) (Loc 35 2 11))
-                                  (PNum "2")
-                              , Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 37 2 13) (Loc 38 2 14))
-                                  (PNum "3")
-                              ]))
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 42 2 18) (Loc 43 2 19))
-                           (LNum "1")))
-                 , Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 46 3 3) (Loc 60 3 17))
-                     (Is
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 49 3 6) (Loc 57 3 14))
-                           (PList
-                              [ Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 50 3 7) (Loc 53 3 10))
-                                  (PStr "1")
-                              , Meta
-                                  Infos { nthArg = Nothing , origin = Nothing }
-                                  (Area (Loc 55 3 12) (Loc 56 3 13))
-                                  (PVar "n")
-                              ]))
-                        (Meta
-                           Infos { nthArg = Nothing , origin = Nothing }
-                           (Area (Loc 59 3 16) (Loc 60 3 17))
-                           (Var "n")))
-                 ]))
+              (Area (Loc 59 3 16) (Loc 60 3 17))
+              (Var "n"))
            (Meta
               Infos { nthArg = Nothing , origin = Nothing }
               (Area (Loc 49 3 6) (Loc 57 3 14))

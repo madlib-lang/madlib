@@ -37,6 +37,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const avg = curryPowder((a, b) => a + b / 2);
 export default { avg };
 // file: /madlib_modules/random/src/Main.mad
@@ -81,7 +89,15 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
-export const random = curryPowder((seed) => R.random(seed) + M.avg(seed, seed));
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
+export const random = curryPowder((seed) => R.random(seed) + M.avg(seed)(seed));
 export default { random };
 // file: /madlib_modules/random/src/Utils/Random.mad
 const toString = (fn, args = []) => () => (
@@ -122,6 +138,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 export const random = curryPowder((seed) => seed / 2);
 export default { random };
 // file: /src/Main.mad
@@ -165,4 +189,13 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 R.random(3);
+export default {};

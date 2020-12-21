@@ -3,39 +3,72 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon CBool)
+            (TCon (TC "Boolean" Star))
             (Area (Loc 0 1 1) (Loc 4 1 5))
             (App
                (Solved
-                  (TArr (TCon CBool) (TCon CBool))
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "Boolean" Star)))
+                     (TCon (TC "Boolean" Star)))
                   (Area (Loc 0 1 1) (Loc 4 1 5))
                   (App
                      (Solved
-                        (TArr (TCon CBool) (TArr (TCon CBool) (TCon CBool)))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "Boolean" Star)))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TCon (TC "Boolean" Star)))
+                              (TCon (TC "Boolean" Star))))
                         (Area (Loc 5 1 6) (Loc 7 1 8))
                         (Var "||"))
-                     (Solved (TCon CBool) (Area (Loc 0 1 1) (Loc 4 1 5)) (LBool "true"))
+                     (Solved
+                        (TCon (TC "Boolean" Star))
+                        (Area (Loc 0 1 1) (Loc 4 1 5))
+                        (LBool "true"))
                      False))
                (Solved
-                  (TCon CBool)
+                  (TCon (TC "Boolean" Star))
                   (Area (Loc 8 1 9) (Loc 13 1 14))
                   (App
                      (Solved
-                        (TArr (TCon CBool) (TCon CBool))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "Boolean" Star)))
+                           (TCon (TC "Boolean" Star)))
                         (Area (Loc 8 1 9) (Loc 13 1 14))
                         (App
                            (Solved
-                              (TArr (TCon CBool) (TArr (TCon CBool) (TCon CBool)))
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                    (TCon (TC "Boolean" Star)))
+                                 (TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                       (TCon (TC "Boolean" Star)))
+                                    (TCon (TC "Boolean" Star))))
                               (Area (Loc 14 1 15) (Loc 16 1 17))
                               (Var "&&"))
                            (Solved
-                              (TCon CBool) (Area (Loc 8 1 9) (Loc 13 1 14)) (LBool "false"))
+                              (TCon (TC "Boolean" Star))
+                              (Area (Loc 8 1 9) (Loc 13 1 14))
+                              (LBool "false"))
                            False))
                      (Solved
-                        (TCon CBool) (Area (Loc 17 1 18) (Loc 21 1 22)) (LBool "true"))
+                        (TCon (TC "Boolean" Star))
+                        (Area (Loc 17 1 18) (Loc 21 1 22))
+                        (LBool "true"))
                      True))
                True)
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

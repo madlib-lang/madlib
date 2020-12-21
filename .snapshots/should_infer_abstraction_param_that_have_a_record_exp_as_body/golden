@@ -3,51 +3,72 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TArr
-               (TRecord (fromList [ ( "y" , TVar (TV "c") ) ]) True)
+            (TApp
+               (TApp
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
                (TRecord
-                  (fromList [ ( "x" , TCon CString ) , ( "y" , TVar (TV "c") ) ])
+                  (fromList
+                     [ ( "x" , TCon (TC "String" Star) )
+                     , ( "y" , TVar (TV "e" Star) )
+                     ])
                   True))
             (Area (Loc 0 1 1) (Loc 7 1 8))
             (Assignment
                "addTodo"
                (Solved
-                  (TArr
-                     (TRecord (fromList [ ( "y" , TVar (TV "c") ) ]) True)
+                  (TApp
+                     (TApp
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
                      (TRecord
-                        (fromList [ ( "x" , TCon CString ) , ( "y" , TVar (TV "c") ) ])
+                        (fromList
+                           [ ( "x" , TCon (TC "String" Star) )
+                           , ( "y" , TVar (TV "e" Star) )
+                           ])
                         True))
                   (Area (Loc 10 1 11) (Loc 55 1 56))
                   (Abs
                      "state"
                      [ Solved
                          (TRecord
-                            (fromList [ ( "x" , TCon CString ) , ( "y" , TVar (TV "c") ) ])
+                            (fromList
+                               [ ( "x" , TCon (TC "String" Star) )
+                               , ( "y" , TVar (TV "e" Star) )
+                               ])
                             True)
                          (Area (Loc 22 1 23) (Loc 54 1 55))
                          (Record
                             [ FieldSpread
                                 (Solved
-                                   (TVar (TV "a")) (Area (Loc 27 1 28) (Loc 32 1 33)) (Var "state"))
+                                   (TVar (TV "c" Star))
+                                   (Area (Loc 27 1 28) (Loc 32 1 33))
+                                   (Var "state"))
                             , Field
                                 ( "x"
                                 , Solved
-                                    (TCon CString) (Area (Loc 37 1 38) (Loc 40 1 41)) (LStr "3")
+                                    (TCon (TC "String" Star))
+                                    (Area (Loc 37 1 38) (Loc 40 1 41))
+                                    (LStr "3")
                                 )
                             , Field
                                 ( "y"
                                 , Solved
-                                    (TVar (TV "c"))
+                                    (TVar (TV "e" Star))
                                     (Area (Loc 45 1 46) (Loc 52 1 53))
                                     (FieldAccess
                                        (Solved
-                                          (TRecord (fromList [ ( "y" , TVar (TV "c") ) ]) True)
+                                          (TRecord (fromList [ ( "y" , TVar (TV "d" Star) ) ]) True)
                                           (Area (Loc 45 1 46) (Loc 50 1 51))
                                           (Var "state"))
                                        (Solved
-                                          (TArr
-                                             (TRecord (fromList [ ( "y" , TVar (TV "b") ) ]) True)
-                                             (TVar (TV "b")))
+                                          (TApp
+                                             (TApp
+                                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                (TRecord
+                                                   (fromList [ ( "y" , TVar (TV "d" Star) ) ])
+                                                   True))
+                                             (TVar (TV "d" Star)))
                                           (Area (Loc 51 1 52) (Loc 52 1 53))
                                           (Var ".y")))
                                 )
@@ -55,5 +76,7 @@ Right
                      ])))
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

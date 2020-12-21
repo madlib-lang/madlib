@@ -54,6 +54,8 @@ tokens :-
   if                                    { mapToken (\_ -> TokenIf) }
   else                                  { mapToken (\_ -> TokenElse) }
   where                                 { mapToken (\_ -> TokenWhere) }
+  interface                             { mapToken (\_ -> TokenInterface ) }
+  instance                              { mapToken (\_ -> TokenInstance ) }
   pipe                                  { mapToken (\_ -> TokenPipeKeyword) }
   return                                { mapToken (\_ -> TokenReturnKeyword) }
   is                                    { mapToken (\_ -> TokenIs) }
@@ -169,6 +171,8 @@ data TokenClass
  | TokenBool String
  | TokenIf
  | TokenElse
+ | TokenInterface
+ | TokenInstance
  | TokenWhere
  | TokenIs
  | TokenReturnKeyword

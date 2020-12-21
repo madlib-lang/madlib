@@ -37,6 +37,14 @@ const __eq = (l, r) => {
   }
   return l === r;
 }
+const getMadlibType = (value) => {
+  if (typeof value === 'string') {
+    return 'String';
+  }
+  else {
+    return '__UNKNOWN__';
+  }
+};
 const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
 const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export const fn = curryPowder((b, c) => b + c);
@@ -51,43 +59,57 @@ const users = response.users;
 const carResponse = ({ cars: ([]) });
 const allResponses = ({ ...response, ...carResponse });
 ((__x__) => {
-  if (true && __x__.users.__constructor === "List" && true) {
-    const { users: { __args: [a] }, cars: cs } = __x__;
+  if (true && true) {
+    const { users: a, cars: cs } = __x__;
     return cs;
   }
   else if (true) {
     return ([]);
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(allResponses);
 ((__x__) => {
   if (typeof __x__ === "number") {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(3);
 ((__x__) => {
   if (typeof __x__ === "string") {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(`3`);
 ((__x__) => {
   if (typeof __x__ === "boolean") {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(true);
 ((__x__) => {
   if (__x__ === 3) {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(3);
 ((__x__) => {
   if (__x__ === "3") {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(`3`);
 ((__x__) => {
   if (__x__ === true) {
     return 3;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(true);
 const log = curryPowder((a) => { console.log(a); return a; });
 (true ? `OK` : `NOT OK`);
@@ -99,16 +121,20 @@ const mapMaybe = curryPowder((f, m) => ((__x__) => {
   else if (__x__.__constructor === "Nothing") {
     return Nothing;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(m));
 const might = Just(3);
 const x = ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
-    const x = __x__.__args[0];
-    return x;
+    const a = __x__.__args[0];
+    return a;
   }
   else if (__x__.__constructor === "Nothing") {
     return 1;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(might);
 true && false;
 false || true;
@@ -139,22 +165,24 @@ const all = ([ ...arr, 4, 5, 6]);
     return n;
   }
   else if (__x__.length === 3 && true && true && true) {
-    const [x,y,z] = __x__;
-    return x + y + z;
+    const [x1,y1,z1] = __x__;
+    return x1 + y1 + z1;
   }
   else if (__x__.length === 0) {
     const [] = __x__;
     return 0;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(([1, 2, 3, 5, 8]));
 export const map = curryPowder((f, xs) => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     const [a,b,c] = __x__;
-    return ([f(a),  ...map(f, ([b, c]))]);
+    return ([f(a),  ...map(f)(([b, c]))]);
   }
   else if (__x__.length === 2 && true && true) {
     const [a,b] = __x__;
-    return ([f(a),  ...map(f, ([b]))]);
+    return ([f(a),  ...map(f)(([b]))]);
   }
   else if (__x__.length === 1 && true) {
     const [a] = __x__;
@@ -164,6 +192,8 @@ export const map = curryPowder((f, xs) => ((__x__) => {
     const [] = __x__;
     return ([]);
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(xs));
 (true ? `ok` : `not ok`);
 curryPowder((x) => x)(curryPowder((x) => (__eq(x, `ok`) ? 1 : 10))(curryPowder((x) => x)((__eq(1, 2) ? `ok` : `not ok`))));
@@ -176,6 +206,8 @@ curryPowder((x) => x)(curryPowder((x) => (__eq(x, `ok`) ? 1 : 10))(curryPowder((
     const n = __x__;
     return curryPowder((x) => x + 1)(1);
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(3);
 curryPowder((x) => x + 1)(((__x__) => {
   if (__x__ === "3") {
@@ -185,6 +217,8 @@ curryPowder((x) => x + 1)(((__x__) => {
     const n = __x__;
     return 1;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(`3`));
 curryPowder((x) => x)(((__x__) => {
   if (__x__.length >= 2 && __x__[0] === 2 && true) {
@@ -195,6 +229,8 @@ curryPowder((x) => x)(((__x__) => {
     const [,,,...rest] = __x__;
     return rest;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(([1, 2, 3, 4, 5])));
 ((__x__) => {
   if (__x__.name === "Bob") {
@@ -202,15 +238,19 @@ curryPowder((x) => x)(((__x__) => {
     return `Bob`;
   }
   else if (true && true) {
-    const { x: x, ...b } = __x__;
+    const { x: x1, ...b } = __x__;
     return b.name;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(({ x: 4, name: `John` }));
 const addXAndY = curryPowder((r) => ((__x__) => {
   if (true && true) {
-    const { y: y, x: x } = __x__;
-    return x + y;
+    const { y: y, x: x1 } = __x__;
+    return x1 + y;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(r));
 const fnTCHOU = curryPowder((x) => x.a.b.c.d.e);
 const crazyRecordPattern = curryPowder((r) => ((__x__) => {
@@ -218,6 +258,8 @@ const crazyRecordPattern = curryPowder((r) => ((__x__) => {
     const { x: { y: { y: y }, ...k }, ...c } = __x__;
     return y + k.z + c.o + c.i;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(r));
 const tup = ([1, 2, 3]);
 __eq(([1, 2, 3]), ([1, 2, 3]));
@@ -226,6 +268,8 @@ __eq(([1, 2, 3]), ([1, 2, 3]));
     const [a,b] = __x__;
     return a + b;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(([1, 2]));
 const fn = curryPowder((a) => ([a, a]));
 const fst = curryPowder((tuple) => ((__x__) => {
@@ -233,14 +277,19 @@ const fst = curryPowder((tuple) => ((__x__) => {
     const [a,] = __x__;
     return a;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(tuple));
-const snd = curryPowder((tuple) => {const b = ((__x__) => {
+const snd = curryPowder((tuple) => {
+    const b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
-    const [,b] = __x__;
-    return b;
+    const [,b1] = __x__;
+    return b1;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(tuple);
-return b;
+    return b;
 });
 fst(([1, 2]));
 snd(([1, 2]));
@@ -249,5 +298,7 @@ snd(([1, 2]));
     const [{ __args: [n]},{ __args: [m]}] = __x__;
     return n + m;
   }
+  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
+throw 'non exhaustive patterns!'; }
 })(([Just(3), Just(4)]));
 export default { fn, map };

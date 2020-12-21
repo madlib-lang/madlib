@@ -1,1 +1,4 @@
-Left (InferError (WrongSpreadType "TCon CNum") NoReason)
+Left
+  (InferError
+     (WrongSpreadType "TCon (TC \"Number\" Star)")
+     (SimpleReason "path" (Area (Loc 0 1 1) (Loc 14 1 15))))

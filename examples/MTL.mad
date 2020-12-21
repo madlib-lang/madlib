@@ -1,0 +1,41 @@
+import { andDo } from "Monad"
+import {} from "Number"
+import IO from "IO"
+import {} from "List"
+import { StateT, runStateT } from "StateT"
+import { WriterT, runWriterT } from "WriterT"
+import { Identity, runIdentity } from "Identity"
+import {} from "MonadWriter"
+import {} from "MonadState"
+
+
+alias Stack a = StateT Number (WriterT (List String) Identity) a
+
+hep :: MonadWriter w m => w -> m ()
+hep = tell
+
+sumAndLog :: MonadWriter (List String) m => Number -> m Number
+sumAndLog = pipe(
+  of,
+  chain((x) => of(x + 18)),
+  chain((x) => tell(["Summed 18"]) |> andDo(of(x)))
+)
+
+runStack :: Number -> Stack a -> <<a, Number>, List String>
+runStack = (x, m) => pipe(
+  (m) => runStateT(m, x),
+  runWriterT,
+  runIdentity
+)(m)
+
+of(3)
+  |> chain((x) => of(29 * x))
+  |> map((x) => x * 17)
+  |> chain((_) => hep(["HOP"]))
+  |> chain((_) => hep(["HIP"]))
+  |> chain((_) => put(157))
+  |> chain((_) => hep(["HAP"]))
+  |> andDo(of(5))
+  |> chain(sumAndLog)
+  |> runStack(37)
+  |> IO.log

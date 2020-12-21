@@ -3,64 +3,77 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon CNum)
+            (TCon (TC "Number" Star))
             (Area (Loc 0 1 1) (Loc 62 3 1))
             (Where
                (Solved
                   (TRecord
                      (fromList
-                        [ ( "x" , TCon CNum )
-                        , ( "y" , TCon CNum )
-                        , ( "z" , TCon CNum )
+                        [ ( "x" , TCon (TC "Number" Star) )
+                        , ( "y" , TCon (TC "Number" Star) )
+                        , ( "z" , TCon (TC "Number" Star) )
                         ])
                      False)
                   (Area (Loc 6 1 7) (Loc 26 1 27))
                   (Record
                      [ Field
                          ( "x"
-                         , Solved (TCon CNum) (Area (Loc 11 1 12) (Loc 12 1 13)) (LNum "1")
+                         , Solved
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 11 1 12) (Loc 12 1 13))
+                             (LNum "1")
                          )
                      , Field
                          ( "y"
-                         , Solved (TCon CNum) (Area (Loc 17 1 18) (Loc 18 1 19)) (LNum "2")
+                         , Solved
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 17 1 18) (Loc 18 1 19))
+                             (LNum "2")
                          )
                      , Field
                          ( "z"
-                         , Solved (TCon CNum) (Area (Loc 23 1 24) (Loc 24 1 25)) (LNum "3")
+                         , Solved
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 23 1 24) (Loc 24 1 25))
+                             (LNum "3")
                          )
                      ]))
                [ Solved
-                   (TArr
-                      (TRecord
-                         (fromList
-                            [ ( "x" , TCon CNum )
-                            , ( "y" , TCon CNum )
-                            , ( "z" , TCon CNum )
-                            ])
-                         False)
-                      (TCon CNum))
+                   (TApp
+                      (TApp
+                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                         (TRecord
+                            (fromList
+                               [ ( "x" , TCon (TC "Number" Star) )
+                               , ( "z" , TCon (TC "Number" Star) )
+                               ])
+                            True))
+                      (TCon (TC "Number" Star)))
                    (Area (Loc 32 2 3) (Loc 60 2 31))
                    (Is
                       (PRecord
                          (fromList
                             [ ( "..." , PSpread (PVar "rest") ) , ( "x" , PNum "1" ) ]))
                       (Solved
-                         (TCon CNum)
+                         (TCon (TC "Number" Star))
                          (Area (Loc 54 2 25) (Loc 60 2 31))
                          (FieldAccess
                             (Solved
-                               (TRecord
-                                  (fromList [ ( "y" , TCon CNum ) , ( "z" , TCon CNum ) ]) False)
+                               (TRecord (fromList [ ( "z" , TVar (TV "d" Star) ) ]) True)
                                (Area (Loc 54 2 25) (Loc 58 2 29))
                                (Var "rest"))
                             (Solved
-                               (TArr
-                                  (TRecord (fromList [ ( "z" , TVar (TV "a") ) ]) True)
-                                  (TVar (TV "a")))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TRecord (fromList [ ( "z" , TVar (TV "d" Star) ) ]) True))
+                                  (TVar (TV "d" Star)))
                                (Area (Loc 59 2 30) (Loc 60 2 31))
                                (Var ".z")))))
                ])
         ]
     , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
     , apath = Just "path"
     }

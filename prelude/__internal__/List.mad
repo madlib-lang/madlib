@@ -1,8 +1,55 @@
+import _ from "Show"
 import Fun from "Function"
-import Maybe from "Maybe"
+import __ from "Monad"
+import ___ from "Monoid"
+import { Maybe, Just, Nothing } from "Maybe"
 
-map :: (a -> b) -> List a -> List b
-export map = (f, xs) => (#- xs.map((x) => f(x)) -#)
+instance Functor List {
+  map = (f, xs) => (#- xs.map((x) => f(x)) -#)
+}
+
+instance Applicative List {
+  pure = (x) => [x]
+
+  ap = (mf, ma) => pipe(
+    map((f) => map(f, ma)),
+    flatten
+  )(mf)
+}
+
+instance Monad List {
+  of = pure
+
+  chain = (f, xs) => pipe(
+    map(f),
+    flatten
+  )(xs)
+}
+
+instance Semigroup (List a) {
+  assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)
+}
+
+instance Monoid (List a) {
+  mempty = []
+  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)//assoc
+}
+
+instance Show a => Show (List a) {
+  show = pipe(
+    map(show),
+    intercalate(", "),
+    reduceL((a, b) => a ++ b, ""),
+    (x) => "[" ++ x ++ "]"
+  )
+}
+
+intercalate :: a -> List a -> List a
+intercalate = (a, xs) => where(xs)
+  is []            : []
+  is [one]         : [one]
+  is [one, two]    : [one, a, two]
+  is [one, ...rest]: [one, a, ...intercalate(a, rest)]
 
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
@@ -19,12 +66,12 @@ export last = (xs) => (#- xs.slice(-1)[0] -#)
 init :: List a -> List a
 export init = (xs) => (#- xs.slice(0, -1) -#)
 
-nth :: Number -> List a -> Maybe.Maybe a
+nth :: Number -> List a -> Maybe a
 export nth = (i, xs) => (#- {
   const x = xs[i];
   return x === undefined
-    ? Maybe.Nothing
-    : Maybe.Just(x);
+    ? Nothing
+    : Just(x);
 } -#)
 
 reduceR :: (a -> b -> a) -> a -> List b -> a
@@ -36,14 +83,14 @@ export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
 filter :: (a -> Boolean) -> List a -> List a
 export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
-find :: (a -> Boolean) -> List a -> Maybe.Maybe a
+find :: (a -> Boolean) -> List a -> Maybe a
 export find = (predicate, xs) => (#- {
   const found = xs.find(predicate);
   if (found === undefined) {
-    return Maybe.Nothing
+    return Nothing
   }
   else {
-    return Maybe.Just(found)
+    return Just(found)
   }
 } -#)
 
@@ -63,7 +110,17 @@ uniqueBy :: (a -> a -> Boolean) -> List a -> List a
 export uniqueBy = (f, xs) => where(xs)
   is [curr, ...tail]:
     where(find(f(curr), tail)) {
-      is Maybe.Just _ : uniqueBy(f, tail)
-      is Maybe.Nothing: [curr, ...uniqueBy(f, tail)]
+      is Just _ : uniqueBy(f, tail)
+      is Nothing: [curr, ...uniqueBy(f, tail)]
     }
-  is [last]: [last]
+  is [l]: [l]
+  is _  : []
+
+flatten :: List (List a) -> List a
+export flatten = reduceL(concat, [])
+
+zip :: List a -> List b -> List <a, b>
+export zip = (as, bs) => where(<as, bs>)
+  is <[a, ...ass], [b, ...bss]>: mappend([<a, b>], zip(ass, bss))
+  is <[a], [b]>                : [<a, b>]
+  is <[], []>                  : []
