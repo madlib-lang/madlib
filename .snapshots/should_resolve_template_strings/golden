@@ -1,0 +1,141 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            (TCon (TC "String" Star))
+            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Assignment
+               "x"
+               (Solved
+                  (TCon (TC "String" Star))
+                  (Area (Loc 4 1 5) (Loc 52 1 53))
+                  (If
+                     (Solved
+                        (TCon (TC "Boolean" Star))
+                        (Area (Loc 7 1 8) (Loc 11 1 12))
+                        (LBool "true"))
+                     (Solved
+                        (TCon (TC "String" Star))
+                        (Area (Loc 15 1 16) (Loc 27 1 28))
+                        (LStr "it is true"))
+                     (Solved
+                        (TCon (TC "String" Star))
+                        (Area (Loc 37 1 38) (Loc 50 1 51))
+                        (LStr "it is false")))))
+        , Solved
+            (TCon (TC "String" Star))
+            (Area (Loc 53 2 1) (Loc 69 2 17))
+            (TemplateString
+               [ Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 63 2 11) (Loc 65 2 13))
+                   (LStr "probably ")
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 65 2 13) (Loc 66 2 14))
+                   (Var "x")
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 68 2 16) (Loc 69 2 17))
+                   (LStr "!")
+               ])
+        , Solved
+            (TCon (TC "String" Star))
+            (Area (Loc 71 4 1) (Loc 143 4 73))
+            (TemplateString
+               [ Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 81 4 11) (Loc 83 4 13))
+                   (LStr "3 + 7 is ")
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 83 4 13) (Loc 140 4 70))
+                   (If
+                      (Solved
+                         (TCon (TC "Boolean" Star))
+                         (Area (Loc 86 4 16) (Loc 87 4 17))
+                         (App
+                            (Solved
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TCon (TC "Number" Star)))
+                                  (TCon (TC "Boolean" Star)))
+                               (Area (Loc 86 4 16) (Loc 87 4 17))
+                               (App
+                                  (Solved
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TVar (TV "g" Star)))
+                                        (TApp
+                                           (TApp
+                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                              (TVar (TV "g" Star)))
+                                           (TCon (TC "Boolean" Star))))
+                                     (Area (Loc 92 4 22) (Loc 93 4 23))
+                                     (Var ">"))
+                                  (Solved
+                                     (TCon (TC "Number" Star))
+                                     (Area (Loc 86 4 16) (Loc 87 4 17))
+                                     (App
+                                        (Solved
+                                           (TApp
+                                              (TApp
+                                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                 (TCon (TC "Number" Star)))
+                                              (TCon (TC "Number" Star)))
+                                           (Area (Loc 86 4 16) (Loc 87 4 17))
+                                           (App
+                                              (Solved
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                       (TCon (TC "Number" Star)))
+                                                    (TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)"
+                                                                (Kfun Star (Kfun Star Star))))
+                                                          (TCon (TC "Number" Star)))
+                                                       (TCon (TC "Number" Star))))
+                                                 (Area (Loc 87 4 17) (Loc 89 4 19))
+                                                 (Var "+"))
+                                              (Solved
+                                                 (TCon (TC "Number" Star))
+                                                 (Area (Loc 86 4 16) (Loc 87 4 17))
+                                                 (LNum "3"))
+                                              False))
+                                        (Solved
+                                           (TCon (TC "Number" Star))
+                                           (Area (Loc 90 4 20) (Loc 91 4 21))
+                                           (LNum "7"))
+                                        True))
+                                  False))
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 94 4 24) (Loc 96 4 26))
+                               (LNum "10"))
+                            True))
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 100 4 30) (Loc 114 4 44))
+                         (LStr "more than 10"))
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 124 4 54) (Loc 138 4 68))
+                         (LStr "less than 10")))
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 142 4 72) (Loc 143 4 73))
+                   (LStr "")
+               ])
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

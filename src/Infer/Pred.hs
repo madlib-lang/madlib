@@ -16,7 +16,7 @@ import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace                    ( trace )
 import           Data.Maybe
 import           Data.List
-import Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.Maybe
 
 
 -- defined :: Maybe a -> Bool
@@ -50,10 +50,12 @@ verifyInstancePredicates env p' p@(IsIn cls ts) = do
   case M.lookup cls (envinterfaces env) of
     Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
 
-    Just (Interface tvs ps' is) ->
-      catchError
-        (unify (TVar <$> tvs) ts >> return True)
-        (\_ -> throwError $ InferError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoReason)
+    Just (Interface tvs ps' is) -> catchError
+      (unify (TVar <$> tvs) ts >> return True)
+      (\_ -> throwError $ InferError
+        (InstancePredicateError p' p (IsIn cls (TVar <$> tvs)))
+        NoReason
+      )
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env
@@ -102,15 +104,16 @@ findM f = runMaybeT . msum . map (MaybeT . f)
 isInstanceDefined :: Env -> Substitution -> Pred -> Infer Bool
 isInstanceDefined env subst (IsIn id ts) = do
   let is = insts env id
-  found <- findM  (\(Instance (_ :=> (IsIn _ ts'))) ->
-                    catchError
-                      (match ts' (apply subst ts) >>= \_ -> return $ Just True)
-                      (const $ return Nothing)
-                  ) is
+  found <- findM
+    (\(Instance (_ :=> (IsIn _ ts'))) -> catchError
+      (match ts' (apply subst ts) >>= \_ -> return $ Just True)
+      (const $ return Nothing)
+    )
+    is
   case found of
-    Just _  -> return True
-    Nothing -> throwError
-      $ InferError (NoInstanceFound id (apply subst ts)) NoReason
+    Just _ -> return True
+    Nothing ->
+      throwError $ InferError (NoInstanceFound id (apply subst ts)) NoReason
 
 
 sig :: Env -> Id -> [TVar]
@@ -137,7 +140,6 @@ findInst env p@(IsIn interface t) = do
  where
   tryInst i@(Instance (ps :=> h)) = do
     u <- match h p
-    let ps' = apply u <$> ps
     return i
   tryInsts []          = throwError $ InferError FatalError NoReason
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
@@ -169,7 +171,7 @@ isConcrete :: Type -> Bool
 isConcrete t = case t of
   TVar _      -> False
   TCon _      -> True
-  TApp l r    -> isConcrete l
+  TApp    l r -> isConcrete l
   TRecord _ _ -> True
 
 
@@ -180,16 +182,11 @@ byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
     u <- match h p
     let ps' = apply u <$> ps
     return ps'
-  tryInsts []          = if all isConcrete $ predTypes p
+  tryInsts [] = if all isConcrete $ predTypes p
     then throwError $ InferError (NoInstanceFound interface ts) NoReason
     else throwError $ InferError FatalError NoReason
 
-  tryInsts (inst : is) = catchError 
-    (tryInst inst) 
-    (\case
-      e@(InferError (NoInstanceFound _ _) _) -> throwError e
-      _                                      -> tryInsts is
-    )
+  tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 
 
 allM :: (Monad m, Foldable t) => (a -> m Bool) -> t a -> m Bool

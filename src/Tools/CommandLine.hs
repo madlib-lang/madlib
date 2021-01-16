@@ -59,6 +59,13 @@ parseBundle = switch
   <> showDefault
   )
 
+parseOptimize :: Parser Bool
+parseOptimize = switch
+  (  long "optimize"
+  <> help "Optimize the output to generate smaller js files"
+  <> showDefault
+  )
+
 
 parseInstall :: Parser Command
 parseInstall = pure Install
@@ -73,6 +80,7 @@ parseCompile =
     <*> parseVerbose
     <*> parseDebug
     <*> parseBundle
+    <*> parseOptimize
 
 parseCoverage :: Parser Bool
 parseCoverage = switch

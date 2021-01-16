@@ -320,8 +320,10 @@ formatTypeError err = case err of
     "I could not find any instance for '"
       <> predToStr (IsIn cls ts)
       <> "'. Verify that you imported the module\nwhere the "
-      <> cls <> " instance for '"
-      <> unwords (typeToStr <$> ts) <> "' is defined."
+      <> cls
+      <> " instance for '"
+      <> unwords (typeToStr <$> ts)
+      <> "' is defined."
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
@@ -355,9 +357,14 @@ formatTypeError err = case err of
       <> "."
 
   InstancePredicateError pInstance pWrong pCorrect ->
-    "A constraint in the instance declaration '"<>predToStr pInstance<>" is not correct.\n"
-    <> "You gave the constraint '"<>predToStr pWrong<>"' but a constraint of the form '"<>predToStr pCorrect
-    <> "'\nwas expected."
+    "A constraint in the instance declaration '"
+      <> predToStr pInstance
+      <> " is not correct.\n"
+      <> "You gave the constraint '"
+      <> predToStr pWrong
+      <> "' but a constraint of the form '"
+      <> predToStr pCorrect
+      <> "'\nwas expected."
 
   _ -> ppShow err
 

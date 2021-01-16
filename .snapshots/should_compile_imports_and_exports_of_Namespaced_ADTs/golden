@@ -1,106 +1,15 @@
 // file: ./ADTs
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const Just = curryPowder((a) => ({ __constructor: "Just", __args: [ a ] }));
+export const Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
 export default { Just, Nothing };
 // file: ./Module
+import {} from "./__internals__.mjs"
 import ADTs from "./ADTs.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
 ADTs.Just(3);
 ADTs.Nothing;
-export const fn = curryPowder((m) => m);
-export const fn2 = curryPowder((m) => ((__x__) => {
+export const fn = __curry__((m) => m);
+export const fn2 = __curry__((m) => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0].__constructor === "Just" && true) {
     const n = __x__.__args[0].__args[0];
     return n;

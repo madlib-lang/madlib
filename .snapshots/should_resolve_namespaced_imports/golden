@@ -64,8 +64,8 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                (TVar (TV "c" Star)))
                             (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
-                         (Area (Loc 26 2 1) (Loc 27 2 2))
-                         (Var "L.singleton"))
+                         (Area (Loc 26 2 1) (Loc 37 2 12))
+                         (NamespaceAccess "L.singleton"))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 38 2 13) (Loc 39 2 14))

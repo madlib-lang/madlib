@@ -21,7 +21,7 @@ import qualified Data.Set                      as S
 import           Data.List                      ( nub
                                                 , union
                                                 )
-import qualified AST.Solved as Slv
+import qualified AST.Solved                    as Slv
 
 
 typingToScheme :: Env -> Src.Typing -> Infer Scheme
@@ -45,13 +45,14 @@ qualTypingToQualType env t@(Meta _ _ typing) = case typing of
 constraintToPredicate :: Env -> Type -> Src.Typing -> Infer Pred
 constraintToPredicate env t (Meta _ _ (Src.TRComp n typings)) = do
   let s = buildVarSubsts t
-  ts <- mapM  (\case
-                Meta _ _ (Src.TRSingle var) ->
-                  return $ apply s $ TVar $ TV var Star
+  ts <- mapM
+    (\case
+      Meta _ _ (Src.TRSingle var) -> return $ apply s $ TVar $ TV var Star
 
-                fullTyping@(Meta _ _ (Src.TRComp n typings')) -> do
-                  apply s <$> typingToType env fullTyping
-              ) typings
+      fullTyping@(Meta _ _ (Src.TRComp n typings')) -> do
+        apply s <$> typingToType env fullTyping
+    )
+    typings
 
   return $ IsIn n ts
 
@@ -79,10 +80,12 @@ typingToType env (Meta info area (Src.TRComp t ts))
 
     let (Forall ks (_ :=> rr)) = quantify (ftv h) ([] :=> h)
 
-    let kargs = (\case
-                  (TGen x) -> ks !! x
-                  _ -> Star
-                ) <$> getConstructorArgs rr
+    let kargs =
+          (\case
+              (TGen x) -> ks !! x
+              _        -> Star
+            )
+            <$> getConstructorArgs rr
 
     params <- mapM
       (\(typin, k) -> do
@@ -94,7 +97,7 @@ typingToType env (Meta info area (Src.TRComp t ts))
       (zip ts kargs)
     case h of
       (TAlias _ _ tvs t) -> updateAliasVars (getConstructorCon h) params
-      t                -> return $ foldl TApp (getConstructorCon t) params
+      t                  -> return $ foldl TApp (getConstructorCon t) params
 
 
 typingToType env (Meta _ _ (Src.TRArr l r)) = do

@@ -483,6 +483,26 @@ spec = do
         actual = tester code
       snapshotTest "should fail for instances missing constrains" actual
 
+    it "should fail when no instance is found" $ do
+      let
+        code = unlines
+          [ "interface Show a {"
+          , "  show :: a -> String"
+          , "}"
+          , ""
+          , "instance Show Boolean {"
+          , "  show = (b) => b ? 'True' : 'False'"
+          , "}"
+          , ""
+          , "instance Show <a, b> {"
+          , "  show = where is <a, b>: '<' ++ show(a) ++ ', ' ++ show(b) ++ '>'"
+          , "}"
+          , ""
+          , "show(3)"
+          ]
+        actual = tester code
+      snapshotTest "should fail when no instance is found" actual
+
 
 
     ---------------------------------------------------------------------------
@@ -1262,9 +1282,8 @@ spec = do
         "should parse functions as args for adts in typings correctly"
         actual
 
-
-
     ---------------------------------------------------------------------------
+
 
 
     -- Recursion:
@@ -1279,3 +1298,29 @@ spec = do
             "fib = (n) => (if (n < 2) { n } else { fib(n - 1) + fib(n - 2) })"
           actual = tester code
       snapshotTest "should resolve fibonacci recursive function" actual
+
+    ---------------------------------------------------------------------------
+
+
+
+    -- Template Strings:
+
+    it "should resolve template strings" $ do
+      let
+        code = unlines
+          [ "x = if(true) { 'it is true' } else { 'it is false' }"
+          , "`probably ${x}!`"
+          , ""
+          , "`3 + 7 is ${if(3 + 7 > 10) { 'more than 10' } else { 'less than 10' } }`" -- With some more complex interpolated things
+          ]
+        actual = tester code
+      snapshotTest "should resolve template strings" actual
+
+    it
+        "should fail to solve template strings when interpolated expressions are not strings"
+      $ do
+          let code   = "`${4 + 3}!`"
+              actual = tester code
+          snapshotTest
+            "should fail to solve template strings when interpolated expressions are not strings"
+            actual

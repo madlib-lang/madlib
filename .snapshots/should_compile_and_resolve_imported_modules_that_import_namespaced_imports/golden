@@ -1,267 +1,38 @@
 // file: /root/project/src/Binary.mad
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const Int8Bit = curryPowder((a) => ({ __constructor: "Int8Bit", __args: [ a ] }));
-export const Int16Bit = curryPowder((a) => ({ __constructor: "Int16Bit", __args: [ a ] }));
-export const Int32Bit = curryPowder((a) => ({ __constructor: "Int32Bit", __args: [ a ] }));
-export const ByteArray = curryPowder((a) => ({ __constructor: "ByteArray", __args: [ a ] }));
+export const Int8Bit = __curry__((a) => ({ __constructor: "Int8Bit", __args: [ a ] }));
+export const Int16Bit = __curry__((a) => ({ __constructor: "Int16Bit", __args: [ a ] }));
+export const Int32Bit = __curry__((a) => ({ __constructor: "Int32Bit", __args: [ a ] }));
+export const ByteArray = __curry__((a) => ({ __constructor: "ByteArray", __args: [ a ] }));
 export default { Int8Bit, Int16Bit, Int32Bit, ByteArray };
 // file: /root/project/src/FileSystem.mad
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const TextData = curryPowder((a) => ({ __constructor: "TextData", __args: [ a ] }));
-export const BinaryData = curryPowder((a) => ({ __constructor: "BinaryData", __args: [ a ] }));
-export const writeFile = curryPowder((path, d) => );
+export const TextData = __curry__((a) => ({ __constructor: "TextData", __args: [ a ] }));
+export const BinaryData = __curry__((a) => ({ __constructor: "BinaryData", __args: [ a ] }));
+export const writeFile = __curry__((path, d) => );
 export default { writeFile, TextData, BinaryData };
 // file: /root/project/src/Http.mad
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const Response = curryPowder((a) => ({ __constructor: "Response", __args: [ a ] }));
-export const TextBody = curryPowder((a) => ({ __constructor: "TextBody", __args: [ a ] }));
-export const BinaryBody = curryPowder((a) => ({ __constructor: "BinaryBody", __args: [ a ] }));
-export const get = curryPowder((url) => );
+export const Response = __curry__((a) => ({ __constructor: "Response", __args: [ a ] }));
+export const TextBody = __curry__((a) => ({ __constructor: "TextBody", __args: [ a ] }));
+export const BinaryBody = __curry__((a) => ({ __constructor: "BinaryBody", __args: [ a ] }));
+export const get = __curry__((url) => );
 export default { get, Response, TextBody, BinaryBody };
 // file: /root/project/src/IO.mad
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const log = curryPowder((a) => { console.log(a); return a; });
+export const log = __curry__((a) => { console.log(a); return a; });
 export default { log };
 // file: /root/project/src/Main.mad
+import {} from "./__internals__.mjs"
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 import FS from "./FileSystem.mjs";
 import Http from "./Http.mjs";
 import IO from "./IO.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile(`./f.zip`))(W.map(FS.BinaryData)(W.map(curryPowder((response) => ((__x__) => {
+W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile(`./f.zip`))(W.map(FS.BinaryData)(W.map(__curry__((response) => ((__x__) => {
   if (__x__.__constructor === "Response" && __x__.__args[0].body.__constructor === "BinaryBody" && true) {
     const { body: { __args: [d] } } = __x__.__args[0];
     return d;
@@ -271,66 +42,20 @@ throw 'non exhaustive patterns!'; }
 })(response)))(Http.get(`https://github.com/open-sorcerers/madlib/archive/master.zip`)))));
 export default {};
 // file: /root/project/src/Wish.mad
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const Wish = curryPowder((a) => ({ __constructor: "Wish", __args: [ a ] }));
-export const of = curryPowder((a) => Wish(curryPowder((bad, good) => good(a))));
-export const map = curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+export const Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }));
+export const of = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
+export const map = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(curryPowder((x) => good(f(x))));
+    return run(bad)(__curry__((x) => good(f(x))));
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(m))));
-export const chain = curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+export const chain = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run1 = __x__.__args[0];
-    return run1(bad)(curryPowder((x) => ((__x__) => {
+    return run1(bad)(__curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run2 = __x__.__args[0];
     return run2(bad)(good);
@@ -342,7 +67,7 @@ throw 'non exhaustive patterns!'; }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(m))));
-export const fulfill = curryPowder((bad, good, m) => ((__x__) => {
+export const fulfill = __curry__((bad, good, m) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
     return run(bad)(good);

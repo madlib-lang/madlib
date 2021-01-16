@@ -1,4 +1,4 @@
-module CompileSpec where
+module Compile.CompileSpec where
 
 import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
@@ -14,16 +14,17 @@ import           Data.Text                      ( Text
                                                 )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
-import           Control.Monad.State            ( StateT(runStateT) )
-
+import           Control.Monad.State
 import qualified AST.Source                    as Src
+import qualified AST.Optimized                 as Opt
 import           Infer.Solve
 import           Infer.Env
 import           Infer.Infer
+import           Optimize.Optimize
 import           Error.Error
 import           Explain.Reason
 import           Parse.AST
-import           Compile
+import           Compile.Compile
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
 import           Utils.PathUtils
@@ -43,14 +44,21 @@ snapshotTest name actualOutput = Golden
 
 
 -- TODO: Refactor in order to use the inferAST function instead that supports imports
-tester :: String -> String
-tester code =
+tester :: Bool -> String -> String
+tester optimized code =
   let inferred = case buildAST "path" code of
         (Right ast) -> runEnv ast >>= (`runInfer` ast)
         _           -> Left $ InferError (UnboundVariable "") NoReason
   in  case inferred of
-        Right x ->
-          compile (CompilationConfig "/" "/module.mad" "./build" False) x
+        Right x -> compile
+          (CompilationConfig "/"
+                             "/module.mad"
+                             "/module.mad"
+                             "./build"
+                             False
+                             optimized
+          )
+          (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept
@@ -62,8 +70,15 @@ coverageTester code =
         (Right ast) -> runEnv ast >>= (`runInfer` ast)
         _           -> Left $ InferError (UnboundVariable "") NoReason
   in  case inferred of
-        Right x ->
-          compile (CompilationConfig "/" "/module.mad" "./build" True) x
+        Right x -> compile
+          (CompilationConfig "/"
+                             "/module.mad"
+                             "/module.mad"
+                             "./build"
+                             True
+                             False
+          )
+          (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept
@@ -74,12 +89,16 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
   let resolved =
           fst <$> runExcept
             (runStateT (solveTable table ast) Unique { count = 0 })
-  in  case resolved of
-        Right x ->
-          concat
-            $   compile (CompilationConfig rootPath path "./build" False)
-            <$> M.elems x
-        Left e -> ppShow e
+  in
+    case resolved of
+      Right x ->
+        concat
+          $ compile (CompilationConfig rootPath path path "./build" False False)
+          . (\a ->
+              (evalState (optimize False a) initialOptimizationState :: Opt.AST)
+            )
+          <$> M.elems x
+      Left e -> ppShow e
 
 mainCompileFixture :: String
 mainCompileFixture = unlines
@@ -227,11 +246,223 @@ mainCompileFixture = unlines
   , "   is <Just n, Just m>: n + m"
   ]
 
+
+monadTransformersProgram :: String
+monadTransformersProgram = unlines
+  [ "interface Semigroup a {"
+  , "  assoc :: a -> a -> a"
+  , "}"
+  , ""
+  , "interface Semigroup w => Monoid w {"
+  , "  mempty :: w"
+  , "  mappend :: w -> w -> w"
+  , "}"
+  , ""
+  , "instance Semigroup (List a) {"
+  , "  assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
+  , "}"
+  , ""
+  , "instance Monoid (List a) {"
+  , "  mempty = []"
+  , "  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)//assoc"
+  , "}"
+  , ""
+  , "interface Functor m {"
+  , "  map :: (a -> b) -> m a -> m b"
+  , "}"
+  , ""
+  , "interface Functor m => Applicative m {"
+  , "  ap :: m (a -> b) -> m a -> m b"
+  , "  pure :: a -> m a"
+  , "}"
+  , ""
+  , "interface Applicative m => Monad m {"
+  , "  of :: a -> m a"
+  , "  chain :: (a -> m b) -> m a -> m b"
+  , "}"
+  , ""
+  , "interface Monad m => MonadTrans m t {"
+  , "  lift :: m a -> t m a"
+  , "}"
+  , ""
+  , ""
+  , "andDo :: Monad m => m b -> m a -> m b"
+  , "export andDo = (b, a) => chain((_) => b, a)"
+  , ""
+  , ""
+  , "export data WriterT w m a = WriterT (m <a, w>)"
+  , ""
+  , ""
+  , "runWriterT :: WriterT w m a -> m <a, w>"
+  , "export runWriterT = where is WriterT m: m"
+  , ""
+  , "liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c"
+  , "liftA2 = (f, x1, x2) => ap(map(f, x1), x2)"
+  , ""
+  , "instance Functor m => Functor (WriterT w m) {"
+  , "  map = (f, m) => WriterT(map(where is <a, w>: <f(a), w>, runWriterT(m)))"
+  , "}"
+  , ""
+  , "instance (Applicative m, Monoid w) => Applicative (WriterT w m) {"
+  , "  pure = (x) => WriterT(pure(<x, mempty>))"
+  , ""
+  , "  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1)"
+  , "    is <a, w>: where(x2) is <b, ww>: <a(b), mappend(w, ww)>"
+  , "    , runWriterT(mf), runWriterT(mm)))"
+  , "}"
+  , ""
+  , "instance (Monoid w, Monad m) => Monad (WriterT w m) {"
+  , "  of = pure"
+  , ""
+  , "  chain = (f, m) => WriterT("
+  , "    chain("
+  , "      where is <a, w>: chain("
+  , "        where is <b, ww>: of(<b, mappend(w, ww)>)"
+  , "        , runWriterT(f(a)))"
+  , "      , runWriterT(m))"
+  , "  )"
+  , "}"
+  , ""
+  , "instance (Monad m, Monoid w) => MonadTrans m (WriterT w) {"
+  , "  lift = (m) => WriterT(chain((a) => of(<a, mempty>), m))"
+  , "}"
+  , ""
+  , "export data Identity a = Identity a"
+  , ""
+  , "run :: Identity a -> a"
+  , "export runIdentity = where"
+  , "  is Identity a: a"
+  , ""
+  , "instance Functor Identity {"
+  , "  map = (f, m) => Identity(f(runIdentity(m)))"
+  , "}"
+  , ""
+  , "instance Applicative Identity {"
+  , "  pure = Identity"
+  , ""
+  , "  ap = (mf, mm) => Identity(runIdentity(mf)(runIdentity(mm)))"
+  , "}"
+  , ""
+  , "instance Monad Identity {"
+  , "  of = pure"
+  , ""
+  , "  chain = (f, mm) => f(runIdentity(mm))"
+  , "}"
+  , ""
+  , ""
+  , "export data StateT s m a = StateT (s -> m <a, s>)"
+  , ""
+  , "runStateT :: StateT s m a -> s -> m <a, s>"
+  , "export runStateT = (m) => where(m) is StateT f: (a) => f(a)"
+  , ""
+  , "instance Functor m => Functor (StateT s m) {"
+  , "  map = (f, m) => StateT((s) =>"
+  , "    map("
+  , "      where is <a, ss>: <f(a), ss>,"
+  , "      runStateT(m, s)"
+  , "    )"
+  , "  )"
+  , "}"
+  , ""
+  , "instance Monad m => Applicative (StateT s m) {"
+  , "  pure = (a) => StateT((s) => of(<a, s>))"
+  , ""
+  , "  ap = (mf, mm) => StateT("
+  , "    (s) => chain("
+  , "      where is <f, ss>: chain("
+  , "        where is <m, sss>: of(<f(m), sss>),"
+  , "        runStateT(mm)(ss)"
+  , "      ),"
+  , "      runStateT(mf)(s)"
+  , "    )"
+  , "  )"
+  , "}"
+  , ""
+  , "instance Monad m => Monad (StateT s m) {"
+  , "  of = (a) => StateT((s) => of(<a, s>))"
+  , ""
+  , "  chain = (f, m) => StateT("
+  , "    (s) => chain("
+  , "      where is <a, ss>: runStateT(f(a), ss),"
+  , "      runStateT(m, s)"
+  , "    )"
+  , "  )"
+  , "}"
+  , ""
+  , "instance Monad m => MonadTrans m (StateT s) {"
+  , "  lift = (m) => StateT((s) => chain((a) => of(<a, s>), m))"
+  , "}"
+  , ""
+  , "interface (Monoid w, Monad m) => MonadWriter w m {"
+  , "  tell :: w -> m ()"
+  , "}"
+  , ""
+  , "instance (Monoid w, Monad m) => MonadWriter w (WriterT w m) {"
+  , "  tell = (v) => WriterT(of(<(), v>))"
+  , "}"
+  , ""
+  , "instance (Monoid w, Monad m, MonadWriter w m) => MonadWriter w (StateT s m) {"
+  , "  tell = pipe(tell, lift)"
+  , "}"
+  , ""
+  , "interface Monad m => MonadState s m {"
+  , "  put :: s -> m ()"
+  , "  get :: m s"
+  , "  modify :: (s -> s) -> m ()"
+  , "}"
+  , ""
+  , "instance Monad m => MonadState s (StateT s m) {"
+  , "  put = (s) => StateT((_) => of(<(), s>))"
+  , ""
+  , "  get = StateT((s) => of(<s, s>))"
+  , ""
+  , "  modify = (f) => StateT((s) => of(<(), f(s)>))"
+  , "}"
+  , ""
+  , "instance (Monoid w, Monad m, MonadState s m) => MonadState s (WriterT w m) {"
+  , "  put = pipe(put, lift)"
+  , "  "
+  , "  get = lift(get)"
+  , "  "
+  , "  modify = pipe(modify, lift)"
+  , "}"
+  , ""
+  , "alias Stack a = StateT Number (WriterT (List String) Identity) a"
+  , ""
+  , "hep :: MonadWriter w m => w -> m ()"
+  , "hep = tell"
+  , ""
+  , "sumAndLog :: MonadWriter (List String) m => Number -> m Number"
+  , "sumAndLog = pipe("
+  , "  of,"
+  , "  chain((x) => of(x + 18)),"
+  , "  chain((x) => tell(['Summed 18']) |> andDo(of(x)))"
+  , ")"
+  , ""
+  , "runStack :: Number -> Stack a -> <<a, Number>, List String>"
+  , "runStack = (x, m) => pipe("
+  , "  (m) => runStateT(m, x),"
+  , "  runWriterT,"
+  , "  runIdentity"
+  , ")(m)"
+  , ""
+  , "of(3)"
+  , "  |> chain((x) => of(29 * x))"
+  , "  |> map((x) => x * 17)"
+  , "  |> chain((_) => hep(['HOP']))"
+  , "  |> chain((_) => hep(['HIP']))"
+  , "  |> chain((_) => put(157))"
+  , "  |> chain((_) => hep(['HAP']))"
+  , "  |> andDo(of(5))"
+  , "  |> chain(sumAndLog)"
+  , "  |> runStack(37)"
+  ]
+
 spec :: Spec
 spec = do
   describe "compile" $ do
     it "should compile to JS" $ do
-      let actual = tester mainCompileFixture
+      let actual = tester False mainCompileFixture
       snapshotTest "should compile to JS" actual
 
     it "should compile to JS with coverage trackers when COVERAGE_MODE is on"
@@ -308,7 +539,7 @@ spec = do
             , "  where(chain((a) => Just(a + 1), x))"
             , "    is Just 2: chain((a) => Right(a + 1), Right(2))"
             ]
-          actual = tester code
+          actual = tester False code
       snapshotTest "should compile interfaces and instances" actual
 
     it
@@ -352,228 +583,20 @@ spec = do
               , "show(<1, 1>)"
               , "show(<false, 42, true>)"
               ]
-            actual = tester code
+            actual = tester False code
           snapshotTest
             "should compile constrained instances and resolve their dictionary parameters"
             actual
-    
-    it
-        "should compile monad transformers"
-      $ do
-          let
-            code = unlines
-              [ "interface Semigroup a {"
-              , "  assoc :: a -> a -> a"
-              , "}"
-              , ""
-              , "interface Semigroup w => Monoid w {"
-              , "  mempty :: w"
-              , "  mappend :: w -> w -> w"
-              , "}"
-              , ""
-              , "instance Semigroup (List a) {"
-              , "  assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
-              , "}"
-              , ""
-              , "instance Monoid (List a) {"
-              , "  mempty = []"
-              , "  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)//assoc"
-              , "}"
-              , ""
-              , "interface Functor m {"
-              , "  map :: (a -> b) -> m a -> m b"
-              , "}"
-              , ""
-              , "interface Functor m => Applicative m {"
-              , "  ap :: m (a -> b) -> m a -> m b"
-              , "  pure :: a -> m a"
-              , "}"
-              , ""
-              , "interface Applicative m => Monad m {"
-              , "  of :: a -> m a"
-              , "  chain :: (a -> m b) -> m a -> m b"
-              , "}"
-              , ""
-              , "interface Monad m => MonadTrans m t {"
-              , "  lift :: m a -> t m a"
-              , "}"
-              , ""
-              , ""
-              , "andDo :: Monad m => m b -> m a -> m b"
-              , "export andDo = (b, a) => chain((_) => b, a)"
-              , ""
-              , ""
-              , "export data WriterT w m a = WriterT (m <a, w>)"
-              , ""
-              , ""
-              , "runWriterT :: WriterT w m a -> m <a, w>"
-              , "export runWriterT = where is WriterT m: m"
-              , ""
-              , "liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c"
-              , "liftA2 = (f, x1, x2) => ap(map(f, x1), x2)"
-              , ""
-              , "instance Functor m => Functor (WriterT w m) {"
-              , "  map = (f, m) => WriterT(map(where is <a, w>: <f(a), w>, runWriterT(m)))"
-              , "}"
-              , ""
-              , "instance (Applicative m, Monoid w) => Applicative (WriterT w m) {"
-              , "  pure = (x) => WriterT(pure(<x, mempty>))"
-              , ""
-              , "  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1)"
-              , "    is <a, w>: where(x2) is <b, ww>: <a(b), mappend(w, ww)>"
-              , "    , runWriterT(mf), runWriterT(mm)))"
-              , "}"
-              , ""
-              , "instance (Monoid w, Monad m) => Monad (WriterT w m) {"
-              , "  of = pure"
-              , ""
-              , "  chain = (f, m) => WriterT("
-              , "    chain("
-              , "      where is <a, w>: chain("
-              , "        where is <b, ww>: of(<b, mappend(w, ww)>)"
-              , "        , runWriterT(f(a)))"
-              , "      , runWriterT(m))"
-              , "  )"
-              , "}"
-              , ""
-              , "instance (Monad m, Monoid w) => MonadTrans m (WriterT w) {"
-              , "  lift = (m) => WriterT(chain((a) => of(<a, mempty>), m))"
-              , "}"
-              , ""
-              , "export data Identity a = Identity a"
-              , ""
-              , "run :: Identity a -> a"
-              , "export runIdentity = where"
-              , "  is Identity a: a"
-              , ""
-              , "instance Functor Identity {"
-              , "  map = (f, m) => Identity(f(runIdentity(m)))"
-              , "}"
-              , ""
-              , "instance Applicative Identity {"
-              , "  pure = Identity"
-              , ""
-              , "  ap = (mf, mm) => Identity(runIdentity(mf)(runIdentity(mm)))"
-              , "}"
-              , ""
-              , "instance Monad Identity {"
-              , "  of = pure"
-              , ""
-              , "  chain = (f, mm) => f(runIdentity(mm))"
-              , "}"
-              , ""
-              , ""
-              , "export data StateT s m a = StateT (s -> m <a, s>)"
-              , ""
-              , "runStateT :: StateT s m a -> s -> m <a, s>"
-              , "export runStateT = (m) => where(m) is StateT f: (a) => f(a)"
-              , ""
-              , "instance Functor m => Functor (StateT s m) {"
-              , "  map = (f, m) => StateT((s) =>"
-              , "    map("
-              , "      where is <a, ss>: <f(a), ss>,"
-              , "      runStateT(m, s)"
-              , "    )"
-              , "  )"
-              , "}"
-              , ""
-              , "instance Monad m => Applicative (StateT s m) {"
-              , "  pure = (a) => StateT((s) => of(<a, s>))"
-              , ""
-              , "  ap = (mf, mm) => StateT("
-              , "    (s) => chain("
-              , "      where is <f, ss>: chain("
-              , "        where is <m, sss>: of(<f(m), sss>),"
-              , "        runStateT(mm)(ss)"
-              , "      ),"
-              , "      runStateT(mf)(s)"
-              , "    )"
-              , "  )"
-              , "}"
-              , ""
-              , "instance Monad m => Monad (StateT s m) {"
-              , "  of = (a) => StateT((s) => of(<a, s>))"
-              , ""
-              , "  chain = (f, m) => StateT("
-              , "    (s) => chain("
-              , "      where is <a, ss>: runStateT(f(a), ss),"
-              , "      runStateT(m, s)"
-              , "    )"
-              , "  )"
-              , "}"
-              , ""
-              , "instance Monad m => MonadTrans m (StateT s) {"
-              , "  lift = (m) => StateT((s) => chain((a) => of(<a, s>), m))"
-              , "}"
-              , ""
-              , "interface (Monoid w, Monad m) => MonadWriter w m {"
-              , "  tell :: w -> m ()"
-              , "}"
-              , ""
-              , "instance (Monoid w, Monad m) => MonadWriter w (WriterT w m) {"
-              , "  tell = (v) => WriterT(of(<(), v>))"
-              , "}"
-              , ""
-              , "instance (Monoid w, Monad m, MonadWriter w m) => MonadWriter w (StateT s m) {"
-              , "  tell = pipe(tell, lift)"
-              , "}"
-              , ""
-              , "interface Monad m => MonadState s m {"
-              , "  put :: s -> m ()"
-              , "  get :: m s"
-              , "  modify :: (s -> s) -> m ()"
-              , "}"
-              , ""
-              , "instance Monad m => MonadState s (StateT s m) {"
-              , "  put = (s) => StateT((_) => of(<(), s>))"
-              , ""
-              , "  get = StateT((s) => of(<s, s>))"
-              , ""
-              , "  modify = (f) => StateT((s) => of(<(), f(s)>))"
-              , "}"
-              , ""
-              , "instance (Monoid w, Monad m, MonadState s m) => MonadState s (WriterT w m) {"
-              , "  put = pipe(put, lift)"
-              , "  "
-              , "  get = lift(get)"
-              , "  "
-              , "  modify = pipe(modify, lift)"
-              , "}"
-              , ""
-              , "alias Stack a = StateT Number (WriterT (List String) Identity) a"
-              , ""
-              , "hep :: MonadWriter w m => w -> m ()"
-              , "hep = tell"
-              , ""
-              , "sumAndLog :: MonadWriter (List String) m => Number -> m Number"
-              , "sumAndLog = pipe("
-              , "  of,"
-              , "  chain((x) => of(x + 18)),"
-              , "  chain((x) => tell(['Summed 18']) |> andDo(of(x)))"
-              , ")"
-              , ""
-              , "runStack :: Number -> Stack a -> <<a, Number>, List String>"
-              , "runStack = (x, m) => pipe("
-              , "  (m) => runStateT(m, x),"
-              , "  runWriterT,"
-              , "  runIdentity"
-              , ")(m)"
-              , ""
-              , "of(3)"
-              , "  |> chain((x) => of(29 * x))"
-              , "  |> map((x) => x * 17)"
-              , "  |> chain((_) => hep(['HOP']))"
-              , "  |> chain((_) => hep(['HIP']))"
-              , "  |> chain((_) => put(157))"
-              , "  |> chain((_) => hep(['HAP']))"
-              , "  |> andDo(of(5))"
-              , "  |> chain(sumAndLog)"
-              , "  |> runStack(37)"
-              ]
-            actual = tester code
-          snapshotTest
-            "should compile monad transformers"
-            actual
+
+    it "should compile monad transformers" $ do
+      let actual = tester False monadTransformersProgram
+      snapshotTest "should compile monad transformers" actual
+
+    it "should compile monad transformers with optimized dictionaries" $ do
+      let actual = tester True monadTransformersProgram
+      snapshotTest
+        "should compile monad transformers with optimized dictionaries"
+        actual
 
     it "should compile imports and exports" $ do
       let codeA = "export singleton = (a) => ([a])"

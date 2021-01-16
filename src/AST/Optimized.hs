@@ -1,9 +1,12 @@
-module AST.Source where
+{-# LANGUAGE NamedFieldPuns #-}
+module AST.Optimized where
 
 import qualified Data.Map                      as M
 
-import           Explain.Meta
+import qualified Infer.Type                    as Ty
+import           Explain.Location
 
+data Optimized a = Optimized Ty.Type Area a deriving(Eq, Show)
 
 data AST =
   AST
@@ -16,15 +19,15 @@ data AST =
     }
     deriving(Eq, Show)
 
-type Import = Meta Import_
-
--- The second FilePath parameter is the absolute path to that module
-data Import_
+data Import
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
--- TODO: Rename TypeDecl
+data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+
+data Instance = Instance Constraints Name String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+
 data TypeDecl
   = ADT
       { adtname :: Name
@@ -40,20 +43,13 @@ data TypeDecl
       }
     deriving(Eq, Show)
 
-data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
-
-data Instance = Instance Constraints Name [Typing] (M.Map Name Exp) deriving(Eq, Show)
-
 data Constructor
   = Constructor Name [Typing]
   deriving(Eq, Show)
 
-
-type Typing = Meta Typing_
-
 type Constraints = [Typing]
 
-data Typing_
+data Typing
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
@@ -63,12 +59,10 @@ data Typing_
   deriving(Eq, Show)
 
 
-type Is = Meta Is_
+type Is = Optimized Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
-
-type Pattern = Meta Pattern_
-data Pattern_
+data Pattern
   = PVar Name
   | PAny
   | PCtor Name [Pattern]
@@ -82,59 +76,55 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show)
 
-
 data Field
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
-
 
 data ListItem
   = ListItem Exp
   | ListSpread Exp
   deriving(Eq, Show)
 
+type Exp = Optimized Exp_
 
-type Exp = Meta Exp_
+
+data ClassRefPred
+  = CRPNode String String Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
+  deriving(Eq, Show)
+
+data PlaceholderRef
+  = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
+  | MethodRef String String Bool
+  deriving(Eq, Show)
 
 data Exp_ = LNum String
           | LStr String
           | LBool String
           | LUnit
           | TemplateString [Exp]
-          | Var Name
+          | JSExp String
           | App Exp Exp Bool
-          | Abs Name [Exp]
           | FieldAccess Exp Exp
           | NamespaceAccess Name
+          | Abs Name [Exp]
           | Assignment Name Exp
-          | Record [Field]
-          | If Exp Exp Exp
-          | Where Exp [Is]
           | Export Exp
+          | Var Name
           | TypedExp Exp Typing
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
-          | JSExp String
+          | Record [Field]
+          | If Exp Exp Exp
+          | Where Exp [Is]
+          | Placeholder (PlaceholderRef, String) Exp
           deriving(Eq, Show)
 
 type Name = String
 
 
 -- AST TABLE
-
 type Table = M.Map FilePath AST
 
-getImportAbsolutePath :: Import -> FilePath
-getImportAbsolutePath imp = case imp of
-  Meta _ _ (NamedImport   _ _ n) -> n
-  Meta _ _ (DefaultImport _ _ n) -> n
-
-getImportPath :: Import -> (Import, FilePath)
-getImportPath imp@(Meta _ _ (NamedImport   _ p _)) = (imp, p)
-getImportPath imp@(Meta _ _ (DefaultImport _ p _)) = (imp, p)
-
-isAssignment :: Exp -> Bool
-isAssignment exp = case exp of
-  Meta _ _ (Assignment _ _) -> True
-  _                         -> False
+getStartLine :: Exp -> Int
+getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line

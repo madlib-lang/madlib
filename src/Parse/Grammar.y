@@ -11,6 +11,8 @@ import           Infer.Type
 import qualified AST.Source           as Src
 import           Explain.Location
 import           Explain.Meta
+import Debug.Trace (trace)
+import           Text.Show.Pretty (ppShow)
 }
 
 %name parseMadlib ast
@@ -22,6 +24,8 @@ import           Explain.Meta
 %token
   number      { Token _ (TokenNumber _) }
   str         { Token _ (TokenStr _) }
+  strTplStart { Token _ (TokenTemplateStringStart) }
+  strTplEnd   { Token _ (TokenTemplateStringEnd _) }
   name        { Token _ (TokenName _) }
   js          { Token _ (TokenJSBlock _) }
   'ret'       { Token _ TokenReturn }
@@ -72,7 +76,6 @@ import           Explain.Meta
   '>='        { Token _ TokenRightChevronEq }
   '<='        { Token _ TokenLeftChevronEq }
   '!'         { Token _ TokenExclamationMark }
-
 
 %nonassoc LOWEST
 %left '?' '->' '|' where is 'if' '='
@@ -267,24 +270,25 @@ tupleTypings :: { [Src.Typing] }
   | tupleTypings ',' compositeTyping    { $1 <> [$3] }
 
 exp :: { Src.Exp }
-  : literal                          { $1 }
-  | record                    %shift { $1 }
-  | where                     %shift { $1 }
-  | tupleConstructor          %shift { $1 }
-  | operation                        { $1 }
-  | listConstructor           %shift { $1 }
-  | typedExp                  %shift { $1 }
-  | js                        %shift { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
-  | name '=' exp              %shift { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
-  | name                      %shift { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
-  | 'pipe' '(' args ')' '(' args ')'       %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
-  | 'pipe' '(' args ')'       %shift { buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
-  | app                       %shift { $1 }
-  | '(' params ')' '=>' rets exp  %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 [$6] }
-  | '(' params ')' '=>' '(' rets exp rets ')'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 [$7] }
+  : literal                                                    { $1 }
+  | record                                              %shift { $1 }
+  | where                                               %shift { $1 }
+  | tupleConstructor                                    %shift { $1 }
+  | operation                                                  { $1 }
+  | templateString                                      %shift { $1 }
+  | listConstructor                                     %shift { $1 }
+  | typedExp                                            %shift { $1 }
+  | js                                                  %shift { Meta emptyInfos (tokenToArea $1) (Src.JSExp $ strV $1) }
+  | name '=' exp                                        %shift { Meta emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
+  | name                                                %shift { Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
+  | 'pipe' '(' args ')' '(' args ')'                    %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
+  | 'pipe' '(' args ')'                                 %shift { buildPipeAbs (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
+  | app                                                 %shift { $1 }
+  | '(' params ')' '=>' rets exp                        %shift { buildAbs (mergeAreas (tokenToArea $1) (getArea $6)) $2 [$6] }
+  | '(' params ')' '=>' '(' rets exp rets ')'           %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 [$7] }
   | '(' params ')' '=>' '{' rets multiExpBody rets '}'  %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 $7 }
-  | '(' exp ')'               %shift { $2 }
-  | exp '.' name              %shift { Meta emptyInfos (mergeAreas (getArea $1) (tokenToArea $3)) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) }
+  | '(' exp ')'                                         %shift { $2 }
+  | exp '.' name                                        %shift { access $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
@@ -296,13 +300,22 @@ exp :: { Src.Exp }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
       { Meta emptyInfos (mergeAreas (getArea $1) (getArea $8)) (Src.If $1 $4 $8) }
 
+
+templateString :: { Src.Exp }
+  : strTplStart templateStringParts strTplEnd { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TemplateString ($2 <> [Meta emptyInfos (tokenToArea $3) (Src.LStr (strV $3))])) }
+  | strTplStart strTplEnd                     { Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TemplateString [Meta emptyInfos (tokenToArea $2) (Src.LStr (strV $2))]) }
+
+templateStringParts :: { [Src.Exp] }
+  : exp                      { [$1] }
+  | templateStringParts exp  { $1 <> [$2] }
+
 app :: { Src.Exp }
   : app '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
   | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Meta emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (Meta emptyInfos (getArea $1) (Src.FieldAccess $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)))) $5 }
+  | exp '.' name '(' args ')' %shift { buildApp (getArea $1) (access $1 (Meta emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) $5 }
 
 multiExpBody :: { [Src.Exp] }
   : 'return' exp          { [$2] }
@@ -565,6 +578,16 @@ nameToPattern area n | n == "_"      = Meta emptyInfos area Src.PAny
                 | n == "Number"      = Meta emptyInfos area (Src.PCon n)
                 | (isUpper . head) n = Meta emptyInfos area (Src.PCtor n [])
                 | otherwise          = Meta emptyInfos area (Src.PVar n)
+
+access :: Src.Exp -> Src.Exp -> Src.Exp
+access src field = case (src, field) of
+  (Meta _ _ (Src.Var ns@(h:n)), Meta _ _ (Src.Var f)) ->
+    if isUpper h then
+      Meta emptyInfos (mergeAreas (getArea src) (getArea field)) (Src.NamespaceAccess $ ns <> f)
+    else
+      Meta emptyInfos (mergeAreas (getArea src) (getArea field)) (Src.FieldAccess src field)
+  _ ->
+    Meta emptyInfos (mergeAreas (getArea src) (getArea field)) (Src.FieldAccess src field)
 
 
 lexerWrap :: (Token -> Alex a) -> Alex a

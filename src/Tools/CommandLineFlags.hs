@@ -8,6 +8,7 @@ data Command
       , compileVerbose :: Bool
       , compileDebug :: Bool
       , compileBundle :: Bool
+      , compileOptimize :: Bool
       }
   | Test { testInput :: FilePath, coverage :: Bool }
   | Install

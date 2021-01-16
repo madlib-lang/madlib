@@ -14,9 +14,6 @@ import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
 
 
-occursCheck :: Substitutable a => TVar -> a -> Bool
-occursCheck a t = a `elem` ftv t
-
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t
@@ -77,12 +74,10 @@ unifyVars s _ = return s
 
 unifyElems :: Env -> [Type] -> Infer Substitution
 unifyElems env []      = return M.empty
-unifyElems env [ts   ] = return M.empty
 unifyElems env (h : r) = unifyElems' h r
 
 unifyElems' :: Type -> [Type] -> Infer Substitution
 unifyElems' _ []        = return M.empty
-unifyElems' t [t'     ] = unify t t'
 unifyElems' t (t' : xs) = do
   s1 <- unify t t'
   s2 <- unifyElems' t xs

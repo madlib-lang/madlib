@@ -1,0 +1,7 @@
+import {} from "Number"
+import IO from "IO"
+
+value = 42
+result = `result: ${ if (true) {show(value)} else {"21"} }`
+
+IO.log(result)

@@ -15,13 +15,16 @@ import           Explain.Reason
 import           Error.Error
 import qualified Data.Set                      as S
 import           Infer.Substitute               ( Substitutable(ftv, apply)
-                                                , compose, buildVarSubsts
+                                                , compose
+                                                , buildVarSubsts
                                                 )
 import           Infer.Typing                   ( typingToScheme
-                                                , typingToType, qualTypingToQualType
+                                                , typingToType
+                                                , qualTypingToQualType
                                                 )
 import           Data.List                      ( isInfixOf
-                                                , find, union
+                                                , find
+                                                , union
                                                 )
 import           Data.Maybe                     ( catMaybes
                                                 , mapMaybe
@@ -39,20 +42,7 @@ import           Infer.Pred
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env x = case M.lookup x (envvars env <> envmethods env) of
   Just x  -> return x
-  Nothing -> if "." `isInfixOf` x
-    then do
-      let (namespace, name) = break (== '.') x
-      case M.lookup namespace (envvars env) of
-        Just s -> do
-          h <- instantiate s
-          let (TRecord fields _) = qualType h
-
-          case M.lookup (tail name) fields of
-            Just t  -> return (toScheme t)
-            Nothing -> throwError $ InferError (UnboundVariable x) NoReason
-
-        Nothing -> throwError $ InferError (UnboundVariable x) NoReason
-    else throwError $ InferError (UnboundVariable x) NoReason
+  Nothing -> throwError $ InferError (UnboundVariable x) NoReason
 
 
 extendVars :: Env -> (String, Scheme) -> Env
@@ -116,10 +106,11 @@ solveInterfaces = foldM solveInterface
 solveInterface :: Env -> Src.Interface -> Infer Env
 solveInterface env interface = case interface of
   Src.Interface constraints n vars ms -> do
-    ts <- mapM (typingToType  env) ms
+    ts <- mapM (typingToType env) ms
 
     let ts' = addConstraints n vars <$> ts
-    let tvs = rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
+    let tvs =
+          rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
 
     let supers = mapMaybe
           (\(Meta _ _ (Src.TRComp interface' [Meta _ _ (Src.TRSingle v)])) ->
@@ -128,11 +119,14 @@ solveInterface env interface = case interface of
           constraints
 
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> supers
-    let subst  = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+    let subst   = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
-    let
-      scs =
-        (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps <> supers) :=> apply subst t)) <$> ts'
+    let scs =
+          (\(ps :=> t) -> quantify
+              (collectVars (apply subst t))
+              (apply subst (ps <> supers) :=> apply subst t)
+            )
+            <$> ts'
 
     env' <- if null tvs
       then throwError $ InferError FatalError NoReason
@@ -142,9 +136,9 @@ solveInterface env interface = case interface of
 
 
 rmdups :: (Eq a) => [a] -> [a]
-rmdups [] = []
-rmdups [x] = [x]
-rmdups (x:xs) = x : [ k  | k <- rmdups xs, k /=x ]
+rmdups []       = []
+rmdups [x     ] = [x]
+rmdups (x : xs) = x : [ k | k <- rmdups xs, k /= x ]
 
 
 findTypeVar :: [Type] -> String -> Maybe Type
@@ -174,18 +168,25 @@ solveInstance env inst = case inst of
 
     let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty ts
 
-    ps <- apply subst <$> mapM
+    ps <-
+      apply subst
+        <$> mapM
               (\(Meta _ _ (Src.TRComp interface' args)) ->
                 case M.lookup interface' (envinterfaces env) of
                   Just (Ty.Interface tvs _ _) -> do
-                    vars <-  mapM (\case
-                                    (Meta _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
-                                    (typing, _) -> typingToType env typing
-                                  ) (zip args tvs)
+                    vars <- mapM
+                      (\case
+                        (Meta _ _ (Src.TRSingle v), TV _ k) ->
+                          return $ TVar $ TV v k
+                        (typing, _) -> typingToType env typing
+                      )
+                      (zip args tvs)
                     return $ IsIn interface' vars
 
-                  Nothing -> throwError $ InferError (InterfaceNotExisting interface') NoReason
-              ) constraints
+                  Nothing -> throwError
+                    $ InferError (InterfaceNotExisting interface') NoReason
+              )
+              constraints
 
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> ps
     let subst'  = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes

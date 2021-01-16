@@ -23,8 +23,10 @@ import           Infer.Infer
 import           Options.Applicative
 import           Tools.CommandLineFlags
 import           Tools.CommandLine
-import           Compile
+import           Compile.Compile
 import qualified AST.Solved                    as Slv
+import qualified AST.Optimized                 as Opt
+import           Optimize.Optimize
 import qualified Explain.Format                as Explain
 import           Control.Monad                  ( when )
 import           System.Process
@@ -47,6 +49,7 @@ import           Data.List                      ( isInfixOf
                                                 , isPrefixOf
                                                 )
 import           Data.String.Utils
+import           Compile.JSInternals
 
 
 main :: IO ()
@@ -64,8 +67,14 @@ run cmd = do
   coverage <- isCoverageEnabled
 
   case cmd of
-    Compile entrypoint outputPath _ verbose debug bundle ->
-      runCompilation entrypoint outputPath verbose debug bundle coverage
+    Compile entrypoint outputPath _ verbose debug bundle optimize ->
+      runCompilation entrypoint
+                     outputPath
+                     verbose
+                     debug
+                     bundle
+                     coverage
+                     optimize
 
     Test entrypoint coverage -> runTests entrypoint coverage
 
@@ -148,61 +157,77 @@ runTests entrypoint coverage = do
     Left  e -> return () --putStrLn $ ppShow e
     Right a -> return ()
 
-runCompilation :: String -> String -> Bool -> Bool -> Bool -> Bool -> IO ()
-runCompilation entrypoint outputPath verbose debug bundle coverage = do
-  canonicalEntrypoint <- canonicalizePath entrypoint
-  astTable            <- buildASTTable canonicalEntrypoint
+runCompilation
+  :: String -> String -> Bool -> Bool -> Bool -> Bool -> Bool -> IO ()
+runCompilation entrypoint outputPath verbose debug bundle coverage optimized =
+  do
+    canonicalEntrypoint <- canonicalizePath entrypoint
+    astTable            <- buildASTTable canonicalEntrypoint
 
-  rootPath            <- canonicalizePath $ computeRootPath entrypoint
+    rootPath            <- canonicalizePath $ computeRootPath entrypoint
 
-  let entryAST         = astTable >>= flip findAST canonicalEntrypoint
-      resolvedASTTable = case (entryAST, astTable) of
-        (Right ast, Right table) ->
-          runExcept (runStateT (solveTable table ast) Unique { count = 0 })
-        (_     , Left e) -> Left e
-        (Left e, _     ) -> Left e
+    let entryAST         = astTable >>= flip findAST canonicalEntrypoint
+        resolvedASTTable = case (entryAST, astTable) of
+          (Right ast, Right table) ->
+            runExcept (runStateT (solveTable table ast) Unique { count = 0 })
+          (_     , Left e) -> Left e
+          (Left e, _     ) -> Left e
 
-  when verbose $ do
-    putStrLn $ "OUTPUT: " ++ outputPath
-    putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
-    putStrLn $ "ROOT PATH: " ++ rootPath
-  when debug $ do
-    putStrLn $ "PARSED:\n" ++ ppShow astTable
-    putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
+    when verbose $ do
+      putStrLn $ "OUTPUT: " ++ outputPath
+      putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
+      putStrLn $ "ROOT PATH: " ++ rootPath
+    when debug $ do
+      putStrLn $ "PARSED:\n" ++ ppShow astTable
+      putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
 
-  case resolvedASTTable of
-    Left err -> do
-      hPutStrLn stderr $ ppShow err
-      Explain.format readFile err >>= putStrLn >> exitFailure
-    Right (table, _) -> do
-      when coverage $ do
-        runCoverageInitialization rootPath table
+    case resolvedASTTable of
+      Left err -> do
+        hPutStrLn stderr $ ppShow err
+        Explain.format readFile err >>= putStrLn >> exitFailure
+      Right (table, _) -> do
+        when coverage $ do
+          runCoverageInitialization rootPath table
 
-      generate rootPath outputPath bundle coverage table
+        let optimizedTable = optimizeTable optimized table
 
-      when bundle $ do
-        let entrypointOutputPath = computeTargetPath
-              (takeDirectory outputPath <> "/.bundle")
-              rootPath
-              canonicalEntrypoint
+        generate rootPath
+                 outputPath
+                 canonicalEntrypoint
+                 bundle
+                 coverage
+                 optimized
+                 optimizedTable
 
-        bundled <- runBundle outputPath entrypointOutputPath
-        case bundled of
-          Left  e             -> putStrLn e
-          Right bundleContent -> do
-            _ <- readProcessWithExitCode
-              "rm"
-              ["-r", takeDirectory outputPath <> "/.bundle"]
-              ""
-            writeFile outputPath bundleContent
+        when bundle $ do
+          let entrypointOutputPath = computeTargetPath
+                (takeDirectory outputPath <> "/.bundle")
+                rootPath
+                canonicalEntrypoint
 
-      when debug $ do
-        putStrLn "compiled JS:"
-        putStrLn
-          $   concat
-          $   compile
-                (CompilationConfig canonicalEntrypoint rootPath outputPath False)
-          <$> M.elems table
+          bundled <- runBundle outputPath entrypointOutputPath
+          case bundled of
+            Left  e             -> putStrLn e
+            Right bundleContent -> do
+              _ <- readProcessWithExitCode
+                "rm"
+                ["-r", takeDirectory outputPath <> "/.bundle"]
+                ""
+              writeFile outputPath bundleContent
+
+        when debug $ do
+          putStrLn "compiled JS:"
+          putStrLn
+            $   concat
+            $   compile
+                  (CompilationConfig rootPath
+                                     canonicalEntrypoint
+                                     canonicalEntrypoint
+                                     outputPath
+                                     False
+                                     False
+                  )
+            <$> M.elems optimizedTable
 
 
 rollupNotFoundMessage = unlines
@@ -247,15 +272,45 @@ runBundle dest entrypointCompiledPath = do
     Left e -> return $ Left e
 
 
-generate :: FilePath -> FilePath -> Bool -> Bool -> Slv.Table -> IO ()
-generate rootPath outputPath bundle coverage table =
-  (head <$>)
-    <$> mapM (generateAST rootPath outputPath bundle coverage)
-    $   M.elems table
+generate
+  :: FilePath
+  -> FilePath
+  -> FilePath
+  -> Bool
+  -> Bool
+  -> Bool
+  -> Opt.Table
+  -> IO ()
+generate rootPath outputPath entrypointPath bundle coverage optimized table =
+  do
+    (head <$>)
+      <$> mapM
+            (generateAST rootPath
+                         outputPath
+                         entrypointPath
+                         bundle
+                         coverage
+                         optimized
+            )
+      $   M.elems table
+    writeFile
+        (  takeDirectory outputPath
+        <> (if bundle then "/.bundle" else "")
+        <> "/__internals__.mjs"
+        )
+      $ generateInternalsModuleContent optimized coverage
 
 
-generateAST :: FilePath -> FilePath -> Bool -> Bool -> Slv.AST -> IO ()
-generateAST rootPath outputPath bundle coverage ast@Slv.AST { Slv.apath = Just path }
+generateAST
+  :: FilePath
+  -> FilePath
+  -> FilePath
+  -> Bool
+  -> Bool
+  -> Bool
+  -> Opt.AST
+  -> IO ()
+generateAST rootPath outputPath entrypointPath bundle coverage optimized ast@Opt.AST { Opt.apath = Just path }
   = do
     let computedOutputPath = if bundle
           then computeTargetPath (takeDirectory outputPath <> "/.bundle")
@@ -265,9 +320,11 @@ generateAST rootPath outputPath bundle coverage ast@Slv.AST { Slv.apath = Just p
 
     createDirectoryIfMissing True $ takeDirectory computedOutputPath
     writeFile computedOutputPath $ compile
-      (CompilationConfig rootPath path computedOutputPath coverage)
+      (CompilationConfig rootPath
+                         path
+                         entrypointPath
+                         computedOutputPath
+                         coverage
+                         optimized
+      )
       ast
-
-
-
-

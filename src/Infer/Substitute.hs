@@ -81,5 +81,5 @@ buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
   TVar (TV n k) -> M.singleton (TV n Star) t
   TCon _        -> mempty
-  TApp l r      -> M.union (buildVarSubsts l) (buildVarSubsts r)
+  TApp    l  r  -> M.union (buildVarSubsts l) (buildVarSubsts r)
   TRecord ts _  -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst ts

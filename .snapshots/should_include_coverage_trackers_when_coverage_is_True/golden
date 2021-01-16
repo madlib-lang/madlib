@@ -1,0 +1,56 @@
+const toString = (fn, args = []) => () => (
+  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
+)
+global.__curry__ = (fn) => {
+  function curried(...args) {
+    const length = args.length
+    function saucy(...args2) {
+      return curried.apply(this, args.concat(args2))
+    }
+    saucy.toString = toString(fn, args)
+    return (
+      length >= fn.length ?
+      fn.apply(this, args) :
+      saucy
+    )
+  }
+  curried.toString = toString(fn)
+  return curried
+};
+
+
+global.__eq__ = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq__(l[k], r[k]), true);
+  }
+  return l === r;
+}
+
+const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
+global.__apMtdDicts__ = (dict, dicts) =>
+  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});
+
+global.__hpFnWrap = (astPath, line, name) => (fn) => {
+  function wrapped(...args) {
+    __hp(astPath, 'function', line, name)
+    __hp(astPath, 'line', line, line)
+    return fn.apply(this, args)
+  }
+  return wrapped
+}
+
+global.__hpLineWrap = (astPath, line, x) => {
+  __hp(astPath, 'line', line, line)
+  return x
+}

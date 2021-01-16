@@ -1,101 +1,10 @@
 // file: ./ModuleA
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const singleton = curryPowder((a) => ([a]));
+export const singleton = __curry__((a) => ([a]));
 export default { singleton };
 // file: ./ModuleB
+import {} from "./__internals__.mjs"
 import L from "./ModuleA.mjs";
 import { singleton } from "./ModuleA.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
 L.singleton(3);
 export default {};

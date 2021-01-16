@@ -97,9 +97,6 @@ a `fn` b = TApp (TApp tArrow a) b
 predClass :: Pred -> Id
 predClass (IsIn i _) = i
 
-predType :: Pred -> Type
-predType (IsIn _ [t     ]) = t
-predType (IsIn _ (t : ts)) = t
 
 predTypes :: Pred -> [Type]
 predTypes (IsIn _ ts) = ts
@@ -124,10 +121,6 @@ type Substitution = M.Map TVar Type
 
 nullSubst :: Substitution
 nullSubst = M.empty
-
-
-qualType :: Qual t -> t
-qualType (_ :=> t) = t
 
 
 class HasKind t where
@@ -166,11 +159,6 @@ isTVar :: Type -> Bool
 isTVar t = case t of
   TVar _ -> True
   _      -> False
-
-
-collectQualTypeVars :: Qual Type -> [TVar]
-collectQualTypeVars (ps :=> t) =
-  S.toList $ S.fromList $ collectVars t ++ concat (collectPredVars <$> ps)
 
 
 collectVars :: Type -> [TVar]

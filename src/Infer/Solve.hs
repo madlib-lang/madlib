@@ -35,7 +35,8 @@ import           Data.List                      ( intersect
                                                 , find
                                                 )
 import           Data.Maybe                     ( mapMaybe
-                                                , fromMaybe, catMaybes
+                                                , fromMaybe
+                                                , catMaybes
                                                 )
 import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
@@ -46,7 +47,7 @@ import qualified Utils.Tuple                   as T
 import           Infer.Pattern
 import           Infer.Pred
 import           Data.Char                      ( isUpper )
-import Infer.Placeholder
+import           Infer.Placeholder
 
 
 infer :: Env -> Src.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -57,15 +58,17 @@ infer env lexp = do
     Src.LStr _ -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
     Src.LBool _ -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
     Src.LUnit -> return (M.empty, [], tUnit, applyLitSolve lexp tUnit)
+    Src.TemplateString _   -> inferTemplateString env lexp
 
-    Src.Var _              -> inferVar env lexp
+    Src.Var            _   -> inferVar env lexp
     Src.Abs _ _            -> inferAbs env lexp
     Src.App{}              -> inferApp env lexp
     Src.Assignment _ _     -> inferAssignment env lexp
     Src.Where      _ _     -> inferWhere env lexp
     Src.Record _           -> inferRecord env lexp
     Src.FieldAccess _ _    -> inferFieldAccess env lexp
-    Src.TypedExp    _ _    -> inferTypedExp env lexp
+    Src.NamespaceAccess _  -> inferNamespaceAccess env lexp
+    Src.TypedExp _ _       -> inferTypedExp env lexp
     Src.ListConstructor  _ -> inferListConstructor env lexp
     Src.TupleConstructor _ -> inferTupleConstructor env lexp
     Src.Export           _ -> inferExport env lexp
@@ -152,8 +155,7 @@ inferAbs env l@(Meta _ _ (Src.Abs param body)) = do
 
 
 inferBody :: Env -> [Src.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody env [e] =
-  (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
+inferBody env [e     ] = (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
 
 inferBody env (e : xs) = do
   (_, _ , t   , _ ) <- infer env e
@@ -206,6 +208,34 @@ inferApp env (Meta _ area (Src.App abs arg final)) = do
         Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2) final
 
   return (s3 `compose` s2 `compose` s1, ps1 ++ ps2, t, solved)
+
+
+-- INFER TEMPLATE STRINGS
+
+inferTemplateString
+  :: Env -> Src.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferTemplateString env e@(Meta _ area (Src.TemplateString exps)) = do
+  inferred <- mapM (infer env) exps
+
+  let elemSubsts = (\(s, _, _, _) -> s) <$> inferred
+  let elemTypes  = (\(_, _, t, _) -> t) <$> inferred
+  let elemExps   = (\(_, _, _, es) -> es) <$> inferred
+  let elemPS     = (\(_, ps, _, _) -> ps) <$> inferred
+
+  ss <- mapM (`unify` tStr) elemTypes
+
+  let fullSubst = foldl compose M.empty (elemSubsts <> ss)
+
+  let updatedExp = Slv.Solved
+        tStr
+        area
+        (Slv.TemplateString
+          (   (\(t, e) -> updateType e (apply fullSubst t))
+          <$> zip elemTypes elemExps
+          )
+        )
+
+  return (fullSubst, concat elemPS, tStr, updatedExp)
 
 
 -- INFER ASSIGNMENT
@@ -343,30 +373,27 @@ shouldBeOpen env = foldrM
   False
 
 
+
+-- INFER NAMESPACE ACCESS
+
+inferNamespaceAccess
+  :: Env -> Src.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferNamespaceAccess env e@(Meta t area (Src.NamespaceAccess var)) = do
+  sc         <- catchError (lookupVar env var) (enhanceVarError env e area)
+  (ps :=> t) <- instantiate sc
+
+  let e = Slv.Solved t area $ Slv.NamespaceAccess var
+  e' <- insertVarPlaceholders env e ps
+
+  return (M.empty, ps, t, e')
+
+
+
 -- INFER FIELD ACCESS
 
 inferFieldAccess
   :: Env -> Src.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess env e@(Meta t area (Src.FieldAccess rec@(Meta _ _ (Src.Var namespace)) abs@(Meta _ _ (Src.Var ('.' : name)))))
-  = do
-    if isUpper $ head namespace
-      then do
-        sc <- catchError (lookupVar env (namespace <> "." <> name))
-                         (enhanceVarError env e area)
-        (ps :=> t) <- instantiate sc
-
-        let e = Slv.Solved t area $ Slv.Var (namespace <> "." <> name)
-        e' <- insertVarPlaceholders env e ps
-
-        return (M.empty, ps, t, e')
-      else inferFieldAccess' env e
-inferFieldAccess env e = inferFieldAccess' env e
-
-
-
-inferFieldAccess'
-  :: Env -> Src.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess' env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _ _ (Src.Var ('.' : name)))))
+inferFieldAccess env (Meta _ area (Src.FieldAccess rec@(Meta _ _ re) abs@(Meta _ _ (Src.Var ('.' : name)))))
   = do
     (fieldSubst , fieldPs , fieldType , fieldExp ) <- infer env abs
     (recordSubst, recordPs, recordType, recordExp) <- infer env rec
@@ -827,7 +854,6 @@ solveImports _ [] = return
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
 
--- (k -> a -> b -> b)
 mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
 mergeInterface = M.insertWith
   (\(Interface tvs ps is) (Interface _ _ is') ->
@@ -879,25 +905,26 @@ inferAST env Src.AST { Src.aexps, Src.apath, Src.aimports, Src.atypedecls, Src.a
       )
 
 
-buildInstanceConstraint ::Env -> Src.Typing -> Infer Pred
+buildInstanceConstraint :: Env -> Src.Typing -> Infer Pred
 buildInstanceConstraint env typing = case typing of
   (Meta _ _ (Src.TRComp n [Meta _ _ (Src.TRSingle var)])) ->
-      case M.lookup n (envinterfaces env) of
-                Just (Interface ts _ _) ->
-                  let tvs = catMaybes $ searchVarInType var . TVar <$> ts--IsIn n [TVar $ TV var k]
-                  in  if not (null tvs) then
-                    return $ IsIn n [head tvs]
-                  else return $ IsIn n [TVar $ TV var Star]
-
-                x -> return $ IsIn n [TVar $ TV var Star]
-  (Meta _ _ (Src.TRComp n args)) ->
     case M.lookup n (envinterfaces env) of
-        Just (Interface tvs _ _) -> do
-          vars <- mapM  (\case
-                          (Meta _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
-                          (typing, _) -> typingToType env typing
-                        ) (zip args tvs)
-          return $ IsIn n vars
+      Just (Interface ts _ _) ->
+        let tvs = catMaybes $ searchVarInType var . TVar <$> ts--IsIn n [TVar $ TV var k]
+        in  if not (null tvs)
+              then return $ IsIn n [head tvs]
+              else return $ IsIn n [TVar $ TV var Star]
+
+      x -> return $ IsIn n [TVar $ TV var Star]
+  (Meta _ _ (Src.TRComp n args)) -> case M.lookup n (envinterfaces env) of
+    Just (Interface tvs _ _) -> do
+      vars <- mapM
+        (\case
+          (Meta _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
+          (typing                   , _     ) -> typingToType env typing
+        )
+        (zip args tvs)
+      return $ IsIn n vars
 
 
 resolveInstance :: Env -> Src.Instance -> Infer Slv.Instance
@@ -905,12 +932,15 @@ resolveInstance env (Src.Instance constraints instName tys dict) = do
   instanceTypes <- mapM (typingToType env) tys
   let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
   (Interface _ ps _) <- lookupInterface env instName
-  let instancePreds   = apply subst $ [IsIn instName instanceTypes] <> ps
-  constraintPreds <- apply subst <$> mapM (buildInstanceConstraint env) constraints
+  let instancePreds = apply subst $ [IsIn instName instanceTypes] <> ps
+  constraintPreds <-
+    apply subst <$> mapM (buildInstanceConstraint env) constraints
   let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> constraintPreds
   let subst'  = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
-  inferredMethods <- mapM (inferMethod env (apply subst' instancePreds) (apply subst' constraintPreds))
-                          (M.toList dict)
+  inferredMethods <- mapM
+    (inferMethod env (apply subst' instancePreds) (apply subst' constraintPreds)
+    )
+    (M.toList dict)
   let dict' = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
   return $ Slv.Instance (updateTyping <$> constraints)
                         instName

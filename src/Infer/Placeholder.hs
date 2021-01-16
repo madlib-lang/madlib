@@ -2,14 +2,14 @@
 {-# LANGUAGE RankNTypes #-}
 module Infer.Placeholder where
 
-import Infer.Type
-import Infer.Infer
-import qualified AST.Solved as Slv
-import qualified Data.Map as M
-import Infer.Pred
-import Infer.Unify
-import Control.Monad.Except
-import Infer.Substitute
+import           Infer.Type
+import           Infer.Infer
+import qualified AST.Solved                    as Slv
+import qualified Data.Map                      as M
+import           Infer.Pred
+import           Infer.Unify
+import           Control.Monad.Except
+import           Infer.Substitute
 
 
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -130,26 +130,25 @@ updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef
     types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes')
     var'  <- shouldInsert env $ IsIn cls instanceTypes' -- Reconsider if the instance is fully resolved
 
-    ps <- catchError (byInst env $ IsIn cls instanceTypes')
-                      (const $ return [])
-    ps' <- getAllParentInterfaces env ps
+    ps <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
+    ps'   <- getAllParentInterfaces env ps
     pushPlaceholders
       env
-      (Slv.Solved
-        t
-        a
-        (Slv.Placeholder (Slv.MethodRef cls method var', types) exp)
+      (Slv.Solved t
+                  a
+                  (Slv.Placeholder (Slv.MethodRef cls method var', types) exp)
       )
       ps'
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
-pushPlaceholders _   exp                    []                   = return exp
+pushPlaceholders _   exp                    []                     = return exp
 pushPlaceholders env exp@(Slv.Solved t a _) (p@(IsIn cls ts) : ps) = do
   var <- shouldInsert env $ IsIn cls ts
-  ps'  <- buildClassRefPreds env cls ts
+  ps' <- buildClassRefPreds env cls ts
   ts' <- getCanonicalPlaceholderTypes env p
-  let ph =
-        Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
+  let
+    ph =
+      Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
   pushPlaceholders env ph ps
 
 
@@ -159,8 +158,8 @@ updateClassPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.ClassRef c
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes'
     var   <- shouldInsert env $ IsIn cls instanceTypes'
-    exp' <- updatePlaceholders env s exp
-    ps'  <- buildClassRefPreds env cls instanceTypes'
+    exp'  <- updatePlaceholders env s exp
+    ps'   <- buildClassRefPreds env cls instanceTypes'
 
     return $ Slv.Solved
       t
@@ -173,17 +172,17 @@ buildClassRefPreds env cls ts = do
   maybeInst <- findInst env $ IsIn cls ts
   instTypes <- case maybeInst of
     Just (Instance (_ :=> (IsIn _ x))) -> return x
-    Nothing -> return ts
+    Nothing                            -> return ts
 
-  s <- unify instTypes ts
-  ps <- catchError (byInst env $ IsIn cls ts) (const $ return [])
+  s    <- unify instTypes ts
+  ps   <- catchError (byInst env $ IsIn cls ts) (const $ return [])
   pps' <- mapM (getParentInterfaces env) (reverse (apply s ps))
-  let ps'  = concat $ reverse <$> pps'
+  let ps' = concat $ reverse <$> pps'
   mapM
     (\(IsIn cls' ts') -> do
       next <- buildClassRefPreds env cls' ts'
       ts'' <- getCanonicalPlaceholderTypes env $ IsIn cls' ts'
-      var <- shouldInsert env (IsIn cls' ts')
+      var  <- shouldInsert env (IsIn cls' ts')
       return $ Slv.CRPNode cls' ts'' var next
     )
     ps'
@@ -234,6 +233,10 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
   Slv.TupleConstructor es -> do
     es' <- mapM (updatePlaceholders env s) es
     return $ Slv.Solved t a $ Slv.TupleConstructor es'
+
+  Slv.TemplateString es -> do
+    es' <- mapM (updatePlaceholders env s) es
+    return $ Slv.Solved t a $ Slv.TemplateString es'
 
   _ -> return $ Slv.Solved t a e
  where

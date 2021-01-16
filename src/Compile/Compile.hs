@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
-module Compile where
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
+module Compile.Compile where
 
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
@@ -11,7 +13,7 @@ import           Data.List                      ( isInfixOf
                                                 , intercalate
                                                 )
 
-import           AST.Solved                    as Slv
+import           AST.Optimized                 as Opt
 import           Utils.Path                     ( cleanRelativePath
                                                 , computeTargetPath
                                                 , makeRelativeEx
@@ -24,6 +26,8 @@ import           Explain.Location
 import           Infer.Type
 import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
+import           Compile.JSInternals
+
 
 
 hpWrapLine :: Bool -> FilePath -> Int -> String -> String
@@ -34,21 +38,23 @@ hpWrapLine coverage astPath line compiled = if coverage
 
 data CompilationConfig
   = CompilationConfig
-      { ccrootPath :: FilePath
-      , ccastPath :: FilePath
-      , ccoutputPath :: FilePath
-      , cccoverage :: Bool
-      -- , ccinterfaces :: Interfaces
+      { ccrootPath       :: FilePath
+      , ccastPath        :: FilePath
+      , ccentrypointPath :: FilePath
+      , ccoutputPath     :: FilePath
+      , cccoverage       :: Bool
+      , ccoptimize       :: Bool
       }
 
 class Compilable a where
   compile :: CompilationConfig -> a -> String
 
 instance Compilable Exp where
-  compile config e@(Solved _ area@(Area (Loc _ l _) _) exp) =
+  compile config e@(Optimized _ area@(Area (Loc _ l _) _) exp) =
     let
-      astPath  = ccastPath config
-      coverage = cccoverage config
+      astPath   = ccastPath config
+      coverage  = cccoverage config
+      optimized = ccoptimize config
     in
       case exp of
         LNum  v -> hpWrapLine coverage astPath l v
@@ -59,8 +65,19 @@ instance Compilable Exp where
                               l
                               "({ __constructor: \"Unit\", __args: [] })"
 
+        TemplateString exps ->
+          let parts = foldl
+                (\full e -> case e of
+                  Opt.Optimized _ _ (LStr v) -> full <> v
+
+                  _ -> full <> "${" <> compile config e <> "}"
+                )
+                ""
+                exps
+          in  "`" <> parts <> "`"
+
         App abs arg final -> case abs of
-          Solved _ _ (App (Solved _ _ (Var "++")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "++")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -70,7 +87,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg')
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "+")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "+")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -80,7 +97,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "-")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "-")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -90,7 +107,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "*")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "*")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -100,7 +117,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "/")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "/")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -110,7 +127,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "%")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "%")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -120,8 +137,9 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "==")) arg' _) ->
-            "__eq("
+          Optimized _ _ (App (Optimized _ _ (Var "==")) arg' _) ->
+            eqFnName optimized
+              <> "("
               <> hpWrapLine coverage
                             astPath
                             (getStartLine arg')
@@ -132,7 +150,7 @@ instance Compilable Exp where
                             (getStartLine arg)
                             (compile config arg)
               <> ")"
-          Solved _ _ (App (Solved _ _ (Var "&&")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "&&")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -142,7 +160,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "||")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "||")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -152,7 +170,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var ">")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var ">")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -162,7 +180,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "<")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "<")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -172,7 +190,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var ">=")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var ">=")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -182,7 +200,7 @@ instance Compilable Exp where
                             astPath
                             (getStartLine arg)
                             (compile config arg)
-          Solved _ _ (App (Solved _ _ (Var "<=")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "<=")) arg' _) ->
             hpWrapLine coverage
                        astPath
                        (getStartLine arg')
@@ -193,7 +211,7 @@ instance Compilable Exp where
                             (getStartLine arg)
                             (compile config arg)
 
-          Solved _ _ (App (Solved _ _ (Var "|>")) arg' _) ->
+          Optimized _ _ (App (Optimized _ _ (Var "|>")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile config arg)
               <> "("
               <> hpWrapLine coverage
@@ -213,7 +231,7 @@ instance Compilable Exp where
                       <> prevArgs
                 finals = [final] <> prevFinals
                 next   = case abs of
-                  (Solved _ _ (App abs' arg' final')) ->
+                  (Optimized _ _ (App abs' arg' final')) ->
                     compileApp finals args abs' arg' final'
                   _ ->
                     let finalized = zip args finals
@@ -227,13 +245,10 @@ instance Compilable Exp where
           buildAbs config abs arg = compile config abs
 
           buildParams :: [(String, Bool)] -> String
-          buildParams []                    = ""
-          buildParams ((arg, final) : args) = if final
-            then if null args then arg else arg <> ")(" <> buildParams args
-            else arg <> ")(" <> buildParams args
-          -- buildParams ((arg, final) : args) = if final
-          --   then if null args then arg else arg <> ")(" <> buildParams args
-          --   else arg <> ", " <> buildParams args
+          buildParams [] = ""
+          buildParams ((arg, final) : args) =
+            if final && null args then arg else arg <> ")(" <> buildParams args
+
 
         If cond truthy falsy ->
           "("
@@ -250,9 +265,9 @@ instance Compilable Exp where
           compileAbs parent param body =
             let start = case parent of
                   Just _  -> ", " <> param
-                  Nothing -> "curryPowder((" <> param
+                  Nothing -> curryFnName optimized <> "((" <> param
                 next = case head body of
-                  (Solved _ _ (Abs param' body')) ->
+                  (Optimized _ _ (Abs param' body')) ->
                     compileAbs (Just body) param' body'
                   _ -> ") => " <> compileBody body <> ")"
             in  start <> next
@@ -263,7 +278,7 @@ instance Compilable Exp where
 
           compileBody' :: [Exp] -> String
           compileBody' [exp] = case exp of
-            (Solved _ _ (JSExp _)) -> compile config exp
+            (Optimized _ _ (JSExp _)) -> compile config exp
             _ -> "    return " <> compile config exp <> ";\n"
           compileBody' (exp : es) =
             "    " <> compile config exp <> ";\n" <> compileBody' es
@@ -272,15 +287,21 @@ instance Compilable Exp where
           then name
           else hpWrapLine coverage astPath l name
 
+        NamespaceAccess name ->
+          if '.' `elem` name || name == "!" || not coverage
+            then name
+            else hpWrapLine coverage astPath l name
 
-        Placeholder (ClassRef cls _ call var, ts) exp' ->
-          insertPlaceholderArgs "" e
+
+        Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs
+          ""
+          e
 
          where
           insertPlaceholderArgs :: String -> Exp -> String
           insertPlaceholderArgs prev exp'' = case exp'' of
-            Slv.Solved _ _ (Placeholder (ClassRef cls ps call var, ts) exp''')
-              -> let dict  = generateRecordName cls ts var
+            Opt.Optimized _ _ (Placeholder (ClassRef cls ps call var, ts) exp''')
+              -> let dict  = generateRecordName optimized cls ts var
                      dict' = partiallyApplySubDicts dict ps
                  in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
 
@@ -290,22 +311,23 @@ instance Compilable Exp where
           partiallyApplySubDicts dict ps = if not (null ps)
             then
               let dicts =
-                    concat
-                      $   (\(CRPNode cls' ts var subdicts) ->
-                            "("
-                              <> partiallyApplySubDicts
-                                  (generateRecordName cls' ts var)
-                                  subdicts
-                              <> ")"
-                          )
-                      <$> ps
-              in  "Object.keys("
+                    "["
+                      <> intercalate
+                           ", "
+                           (   (\(CRPNode cls' ts var subdicts) ->
+                                 partiallyApplySubDicts
+                                   (generateRecordName optimized cls' ts var)
+                                   subdicts
+                               )
+                           <$> ps
+                           )
+                      <> "]"
+              in  applyDictsFnName optimized
+                  <> "("
                   <> dict
-                  <> ").reduce((o, k) => ({...o, [k]: "
-                  <> dict
-                  <> "[k]"
+                  <> ", "
                   <> dicts
-                  <> "}), {})"
+                  <> ")"
             else dict
 
           getTypeName :: Type -> String
@@ -319,11 +341,11 @@ instance Compilable Exp where
             _ -> ppShow t
 
 
-        Placeholder (MethodRef cls method var, ts) (Slv.Solved _ _ (Var name))
-          -> generateRecordName cls ts var <> "." <> method
+        Placeholder (MethodRef cls method var, ts) (Opt.Optimized _ _ (Var name))
+          -> generateRecordName optimized cls ts var <> "." <> method
 
         -- Build ABS for coverage
-        Assignment name abs@(Solved _ _ (Abs param body)) -> if coverage
+        Assignment name abs@(Optimized _ _ (Abs param body)) -> if coverage
           then "const " <> name <> " = " <> compileAbs Nothing param body <> ""
           else
             "const "
@@ -343,12 +365,14 @@ instance Compilable Exp where
                           <> show line
                           <> ", '"
                           <> name
-                          <> "')(curryPowder(("
+                          <> "')("
+                          <> curryFnName optimized
+                          <> "(("
                           <> param
                 next = case head body of
-                  (Solved _ _ (Abs param' body')) ->
+                  (Optimized _ _ (Abs param' body')) ->
                     compileAbs (Just body) param' body'
-                  Solved _ _ (JSExp _) ->
+                  Optimized _ _ (JSExp _) ->
                     ") => " <> compile config (head body) <> "))"
                   _ -> ") => " <> compileBody body <> "))"
             in  start <> next
@@ -359,8 +383,8 @@ instance Compilable Exp where
 
           compileBody' :: [Exp] -> String
           compileBody' [exp] = case exp of
-            (Solved _ _ (JSExp _)) -> compile config exp
-            _                      -> "return " <> compile config exp <> ";\n"
+            (Optimized _ _ (JSExp _)) -> compile config exp
+            _ -> "return " <> compile config exp <> ";\n"
           compileBody' (exp : es) =
             compile config exp <> ";\n" <> compileBody' es
 
@@ -372,8 +396,8 @@ instance Compilable Exp where
 
         TypedExp exp _ -> compile config exp
 
-        Export ass@(Solved _ _ (Assignment name exp)) -> case exp of
-          Solved _ _ (Abs _ _) -> "export " <> compile config ass
+        Export ass@(Optimized _ _ (Assignment name exp)) -> case exp of
+          Optimized _ _ (Abs _ _) -> "export " <> compile config ass
           _ ->
             "export const "
               <> name
@@ -493,7 +517,7 @@ instance Compilable Exp where
 
 
           compileIs :: Is -> String
-          compileIs (Solved _ (Area (Loc _ l _) _) (Is pat exp)) =
+          compileIs (Optimized _ (Area (Loc _ l _) _) (Is pat exp)) =
             "if ("
               <> (if coverage
                    then
@@ -584,8 +608,10 @@ instance Compilable Exp where
               PCtor _ args ->
                 let built = intercalate ", " $ buildListVar <$> args
                 in  "{ __args: [" <> built <> "]}"
-              PList pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-              PTuple pats -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              PList pats ->
+                "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              PTuple pats ->
+                "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
               _ -> ""
 
           compileRecord :: String -> Name -> Pattern -> String
@@ -616,14 +642,17 @@ instance Compilable TypeDecl where
 
 instance Compilable Constructor where
   compile config (Constructor cname cparams) =
-    let coverage = cccoverage config
+    let coverage  = cccoverage config
+        optimized = ccoptimize config
     in  case cparams of
           [] ->
             "const " <> cname <> " = " <> compileBody cname cparams <> ";\n"
           _ ->
             "const "
               <> cname
-              <> " = curryPowder("
+              <> " = "
+              <> curryFnName optimized
+              <> "("
               <> compileParams cparams
               <> " => "
               <> compileBody cname cparams
@@ -645,10 +674,9 @@ compileImport config imp = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import { " <> compileNames names <> " } from \"" <> importPath <> "\""
-    where compileNames names =
-            if null names
-              then ""
-              else (init . init . concat) $ (++ ", ") <$> names
+   where
+    compileNames names =
+      if null names then "" else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import " <> alias <> " from \"" <> importPath <> "\""
@@ -669,16 +697,16 @@ buildImportPath config absPath =
 updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
-instance Compilable Slv.Interface where
+instance Compilable Opt.Interface where
   compile _ interface = case interface of
-    Slv.Interface _ name _ _ -> "global." <> name <> " = {};\n"
+    Opt.Interface _ name _ _ -> "global." <> name <> " = {};\n"
 
-instance Compilable Slv.Instance where
+instance Compilable Opt.Instance where
   compile config inst = case inst of
-    Slv.Instance _ interface tys dict ->
+    Opt.Instance _ interface typings dict ->
       interface
         <> "['"
-        <> intercalate "_" (typingToStr <$> tys)
+        <> typings
         <> "']"
         <> " = {\n"
         <> intercalate ",\n"
@@ -691,69 +719,43 @@ instance Compilable Slv.Instance where
 
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
-compileAssignmentWithPlaceholder config fullExp@(Slv.Solved _ _ exp) =
+compileAssignmentWithPlaceholder config fullExp@(Opt.Optimized _ _ exp) =
   case exp of
-    Placeholder (ClassRef cls _ call var, ts) e ->
-      if not call
-        then
-          let dict = generateRecordName cls ts var
-          in  "("
-              <> dict
-              <> ") => ("
-              <> compileAssignmentWithPlaceholder config e
-              <> ")"
-        else compile config fullExp
+    Placeholder (ClassRef cls _ call var, ts) e -> if not call
+      then
+        let dict = generateRecordName (ccoptimize config) cls ts var
+        in  "("
+            <> dict
+            <> ") => ("
+            <> compileAssignmentWithPlaceholder config e
+            <> ")"
+      else compile config fullExp
 
     _ -> compile config fullExp
 
-typingToStr :: Typing -> String
-typingToStr t = case t of
-  TRSingle n -> n
-  TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
-  TRTuple ts -> "Tuple_" <> show (length ts)
-
-
-hasVar :: Type -> Bool
-hasVar t = case t of
-  TVar (TV n _) -> True
-  TCon (TC n _) -> False
-  TApp l _      -> hasVar l
-
-generateRecordName :: String -> [Type] -> Bool -> String
-generateRecordName cls ts var = if var
-  then "__" <> cls <> "_" <> intercalate "_" (getTypeHeadName <$> ts) <> "__"
-  else cls <> "." <> intercalate "_" (getTypeHeadName <$> ts)
-
-getTypeHeadName :: Type -> String
-getTypeHeadName t = case t of
-  TVar (TV n _) -> n
-  TCon (TC n _) -> case n of
-    "(,)"   -> "Tuple_2"
-    "(,,)"  -> "Tuple_3"
-    "(,,,)" -> "Tuple_4"
-    _       -> n
-  TApp l _ -> getTypeHeadName l
+generateRecordName :: Bool -> String -> String -> Bool -> String
+generateRecordName optimized cls ts var = if var
+  then if optimized then cls <> ts else cls <> "_" <> ts
+  else cls <> "." <> ts
 
 instance Compilable AST where
   compile config ast =
     let
-      coverage          = cccoverage config
-      exps              = aexps ast
-      typeDecls         = atypedecls ast
-      path              = apath ast
-      imports           = aimports ast
-      interfaces        = ainterfaces ast
-      instances         = ainstances ast
+      entrypointPath     = ccentrypointPath config
+      coverage           = cccoverage config
+      exps               = aexps ast
+      typeDecls          = atypedecls ast
+      path               = apath ast
+      imports            = aimports ast
+      interfaces         = ainterfaces ast
+      instances          = ainstances ast
 
 
-      astPath           = fromMaybe "Unknown" path
+      astPath            = fromMaybe "Unknown" path
 
-      configWithASTPath = updateASTPath astPath config
+      configWithASTPath  = updateASTPath astPath config
 
-      infoComment       = "// file: " <> astPath <> "\n"
-      helpers = curryPowder <> "\n" <> eq <> getMadlibType <> if coverage
-        then "\n" <> hpFnWrap <> "\n" <> hpLineWrap
-        else ""
+      infoComment        = "// file: " <> astPath <> "\n"
 
       compiledInterfaces = case interfaces of
         [] -> ""
@@ -775,8 +777,11 @@ instance Compilable AST where
       defaultExport = buildDefaultExport typeDecls exps
     in
       infoComment
+      <> (if entrypointPath == astPath
+           then "import {} from \"./__internals__.mjs\"\n"
+           else ""
+         )
       <> compiledImports
-      <> helpers
       <> compiledAdts
       <> compiledInterfaces
       <> compiledInstances
@@ -805,94 +810,16 @@ buildDefaultExport as es =
 
   isExport :: Exp -> Bool
   isExport a = case a of
-    (Solved _ _ (Export _)) -> True
-    (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+    (Optimized _ _ (Export _)) -> True
+    (Optimized _ _ (TypedExp (Optimized _ _ (Export _)) _)) -> True
 
     _ -> False
 
   getExportName :: Exp -> String
-  getExportName (Solved _ _ (Export (Solved _ _ (Assignment n _)))) = n
-  getExportName (Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _))
+  getExportName (Optimized _ _ (Export (Optimized _ _ (Assignment n _)))) = n
+  getExportName (Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment n _)))) _))
     = n
 
   getConstructorName :: Constructor -> String
   getConstructorName (Constructor cname _) = cname
 
-
-curryPowder :: String
-curryPowder = unlines
-  [ "const toString = (fn, args = []) => () => ("
-  , "  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`"
-  , ")"
-  , "const curryPowder = (fn) => {"
-  , "  function curried(...args) {"
-  , "    const length = args.length"
-  , "    function saucy(...args2) {"
-  , "      return curried.apply(this, args.concat(args2))"
-  , "    }"
-  , "    saucy.toString = toString(fn, args)"
-  , "    return ("
-  , "      length >= fn.length ?"
-  , "      fn.apply(this, args) :"
-  , "      saucy"
-  , "    )"
-  , "  }"
-  , "  curried.toString = toString(fn)"
-  , "  return curried"
-  , "};"
-  , ""
-  ]
-
-
-hpFnWrap :: String
-hpFnWrap = unlines
-  [ "const __hpFnWrap = (astPath, line, name) => (fn) => {"
-  , "  function wrapped(...args) {"
-  , "    __hp(astPath, 'function', line, name)"
-  , "    __hp(astPath, 'line', line, line)"
-  , "    return fn.apply(this, args)"
-  , "  }"
-  , "  return wrapped"
-  , "}"
-  ]
-
-hpLineWrap :: String
-hpLineWrap = unlines
-  [ "const __hpLineWrap = (astPath, line, x) => {"
-  , "  __hp(astPath, 'line', line, line)"
-  , "  return x"
-  , "}"
-  ]
-
-eq :: String
-eq = unlines
-  [ "const __eq = (l, r) => {"
-  , "  if (l === r) {"
-  , "    return true;"
-  , "  }"
-  , "  if (typeof l !== typeof r) {"
-  , "    return false;"
-  , "  }"
-  , "  if (typeof l === `object`) {"
-  , "    if (Array.isArray(l)) {"
-  , "      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);"
-  , "    }"
-  , "    const keysL = Object.keys(l);"
-  , "    const keysR = Object.keys(r);"
-  , "    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);"
-  , "  }"
-  , "  return l === r;"
-  , "}"
-  ]
-
-getMadlibType :: String
-getMadlibType = unlines
-  [ "const getMadlibType = (value) => {"
-  , "  if (typeof value === 'string') {"
-  , "    return 'String';"
-  , "  }"
-  , "  else {"
-  , "    return '__UNKNOWN__';"
-  , "  }"
-  , "};"
-  ]

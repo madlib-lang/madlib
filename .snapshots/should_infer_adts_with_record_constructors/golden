@@ -30,7 +30,12 @@ Right
                                , Solved
                                    (TCon (TC "String" Star))
                                    (Area (Loc 99 2 28) (Loc 103 2 32))
-                                   (LStr "42")
+                                   (TemplateString
+                                      [ Solved
+                                          (TCon (TC "String" Star))
+                                          (Area (Loc 102 2 31) (Loc 103 2 32))
+                                          (LStr "42")
+                                      ])
                                )
                            ]))
                      True)))

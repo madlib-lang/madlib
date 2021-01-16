@@ -1,80 +1,34 @@
 // file: /root/project/prelude/__internal__/Wish.mad
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-export const Wish = curryPowder((a) => ({ __constructor: "Wish", __args: [ a ] }));
+export const Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }));
 global.Functor = {};
 global.Applicative = {};
 global.Monad = {};
 Functor['Wish'] = {
-  map: curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+  map: __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(curryPowder((x) => good(f(x))));
+    return run(bad)(__curry__((x) => good(f(x))));
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(m))))
 };
 Applicative['Wish'] = {
-  ap: curryPowder((mf, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+  ap: __curry__((mf, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     const [{ __args: [runMF]},{ __args: [runM]}] = __x__;
-    return runM(bad)(curryPowder((x) => runMF(bad)(curryPowder((f) => good(f(x))))));
+    return runM(bad)(__curry__((x) => runMF(bad)(__curry__((f) => good(f(x))))));
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(([mf, m]))))),
-  pure: curryPowder((a) => Wish(curryPowder((bad, good) => good(a))))
+  pure: __curry__((a) => Wish(__curry__((bad, good) => good(a))))
 };
 Monad['Wish'] = {
-  chain: curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+  chain: __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(curryPowder((x) => ((__x__) => {
+    return run(bad)(__curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const r = __x__.__args[0];
     return r(bad)(good);
@@ -88,18 +42,18 @@ throw 'non exhaustive patterns!'; }
 })(m)))),
   of: Applicative.Wish.pure
 };
-export const mapRej = curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+export const mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(curryPowder((x) => bad(f(x))))(good);
+    return run(__curry__((x) => bad(f(x))))(good);
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(m))));
-export const chainRej = curryPowder((f, m) => Wish(curryPowder((bad, good) => ((__x__) => {
+export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(curryPowder((x) => ((__x__) => {
+    return run(__curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const r = __x__.__args[0];
     return r(bad)(good);
@@ -111,9 +65,9 @@ throw 'non exhaustive patterns!'; }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(m))));
-export const good = curryPowder((a) => Wish(curryPowder((bad, good) => good(a))));
-export const bad = curryPowder((e) => Wish(curryPowder((bad, good) => bad(e))));
-const getWishFn = curryPowder((w) => ((__x__) => {
+export const good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
+export const bad = __curry__((e) => Wish(__curry__((bad, good) => bad(e))));
+const getWishFn = __curry__((w) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const fn = __x__.__args[0];
     return fn;
@@ -121,7 +75,7 @@ const getWishFn = curryPowder((w) => ((__x__) => {
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(w));
-export const parallel = curryPowder((wishes) => Wish(curryPowder((bad, good) => {
+export const parallel = __curry__((wishes) => Wish(__curry__((bad, good) => {
     const l = wishes.length
     let ko = false;
     let ok = 0;
@@ -133,7 +87,7 @@ export const parallel = curryPowder((wishes) => Wish(curryPowder((bad, good) => 
     ));
     wishes.forEach(fork);
   })));
-export const fulfill = curryPowder((bad, good, m) => {
+export const fulfill = __curry__((bad, good, m) => {
     ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
@@ -146,53 +100,8 @@ throw 'non exhaustive patterns!'; }
 });
 export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 // file: /root/project/src/Main.mad
+import {} from "./__internals__.mjs"
 import W from "./.prelude/Wish.mjs";
 
-const toString = (fn, args = []) => () => (
-  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`
-)
-const curryPowder = (fn) => {
-  function curried(...args) {
-    const length = args.length
-    function saucy(...args2) {
-      return curried.apply(this, args.concat(args2))
-    }
-    saucy.toString = toString(fn, args)
-    return (
-      length >= fn.length ?
-      fn.apply(this, args) :
-      saucy
-    )
-  }
-  curried.toString = toString(fn)
-  return curried
-};
-
-
-const __eq = (l, r) => {
-  if (l === r) {
-    return true;
-  }
-  if (typeof l !== typeof r) {
-    return false;
-  }
-  if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq(l[i], r[i]), true);
-    }
-    const keysL = Object.keys(l);
-    const keysR = Object.keys(r);
-    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq(l[k], r[k]), true);
-  }
-  return l === r;
-}
-const getMadlibType = (value) => {
-  if (typeof value === 'string') {
-    return 'String';
-  }
-  else {
-    return '__UNKNOWN__';
-  }
-};
-W.fulfill(curryPowder((a) => ({ __constructor: "Unit", __args: [] })))(curryPowder((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(curryPowder((x) => x + `!`))(Monad.Wish.chain(curryPowder((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(curryPowder((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(curryPowder((x) => x % 2))(Monad.Wish.of(3))))));
+W.fulfill(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(__curry__((x) => x + `!`))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(__curry__((x) => x % 2))(Monad.Wish.of(3))))));
 export default {};

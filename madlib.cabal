@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9d3e9b2918673f6d7cfe83a80e58c5259e31b60f82a0847f91e722899c128bdd
+-- hash: 4abd9e5245a742c7cc837b08ff7042efbbee3f2f17acf2ba51cc72fae8209569
 
 name:           madlib
-version:        0.0.7-alpha1
+version:        0.0.8
 description:    Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
 homepage:       https://github.com/open-sorcerers/madlib#readme
 bug-reports:    https://github.com/open-sorcerers/madlib/issues
@@ -28,9 +28,11 @@ source-repository head
 library
   exposed-modules:
       AST.Canonical
+      AST.Optimized
       AST.Solved
       AST.Source
-      Compile
+      Compile.Compile
+      Compile.JSInternals
       Coverage.Coverable
       Error.Error
       Explain.Format
@@ -52,6 +54,7 @@ library
       Infer.Unify
       MadlibDotJSON
       Main
+      Optimize.Optimize
       Parse.AST
       Parse.Grammar
       Parse.Lexer
@@ -94,9 +97,11 @@ executable madlib
   main-is: Main.hs
   other-modules:
       AST.Canonical
+      AST.Optimized
       AST.Solved
       AST.Source
-      Compile
+      Compile.Compile
+      Compile.JSInternals
       Coverage.Coverable
       Error.Error
       Explain.Format
@@ -117,6 +122,7 @@ executable madlib
       Infer.Typing
       Infer.Unify
       MadlibDotJSON
+      Optimize.Optimize
       Parse.AST
       Parse.Grammar
       Parse.Lexer
@@ -159,7 +165,8 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      CompileSpec
+      Compile.CompileSpec
+      Compile.JSInternalsSpec
       Infer.SolveSpec
       Parse.ASTSpec
       TestUtils

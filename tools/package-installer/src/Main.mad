@@ -1,5 +1,5 @@
 import L from "List"
-import W from "Wish"
+import { Wish, mapRej, parallel, fulfill, bad } from "Wish"
 import Math from "Math"
 import IO from "IO"
 import Http from "Http"
@@ -17,29 +17,41 @@ import { andDo } from "Monad"
 MADLIB_NOT_FOUND = "The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."
 MADLIB_MODULES_PATH = "./madlib_modules/"
 
-dneppam = flip(mappend)
-
-buildUnzipCmd :: String -> String
-buildUnzipCmd = (pkg) => pipe(
-  always("unzip -d "),
-  dneppam(MADLIB_MODULES_PATH),
-  dneppam(pkg),
-  dneppam("-tmp ./madlib_modules/"),
-  dneppam(pkg),
-  dneppam(".zip")
-)(pkg)
-
-unzipPkg :: String -> W.Wish S.CommandError String
-unzipPkg = pipe(
-  buildUnzipCmd,
+moveToMadlibModules :: String -> Wish S.CommandError String
+moveToMadlibModules = pipe(
+  (archivePath) => `mv ${archivePath} ${MADLIB_MODULES_PATH}`,
   S.exec
 )
 
-getDependencies :: String -> W.Wish String (M.Map String String)
+unzipPkg :: String -> Wish S.CommandError String
+unzipPkg = pipe(
+  (pkg) => `unzip -d ${MADLIB_MODULES_PATH}${pkg}-tmp ${MADLIB_MODULES_PATH}${pkg}.zip`,
+  S.exec
+)
+
+renameInnerFolder :: String -> Wish S.CommandError String
+renameInnerFolder = pipe(
+  (pkg) => `mv ${MADLIB_MODULES_PATH}${pkg}-tmp/* ${MADLIB_MODULES_PATH}${pkg}-tmp/${pkg}`,
+  S.exec
+)
+
+copyPackage :: String -> Wish S.CommandError String
+copyPackage = pipe(
+  (pkg) => `cp -R ${MADLIB_MODULES_PATH}${pkg}-tmp/${pkg} ${MADLIB_MODULES_PATH}`,
+  S.exec
+)
+
+cleanUp :: String -> Wish S.CommandError String
+cleanUp = pipe(
+  (pkg) => `rm -r ${MADLIB_MODULES_PATH}${pkg}.zip ${MADLIB_MODULES_PATH}${pkg}-tmp`,
+  S.exec
+)
+
+getDependencies :: String -> Wish String (M.Map String String)
 getDependencies = pipe(
   J.parse(J.field("dependencies", J.map(J.string))),
   where
-    is E.Left e : W.bad(e)
+    is E.Left e : bad(e)
     is E.Right a: of(a)
 )
 
@@ -52,33 +64,36 @@ displayPackagesToInstall = (pkgs) => pipe(
   always(pkgs)
 )(pkgs)
 
+processArchive :: String -> Wish S.CommandError String
+processArchive = (pkgName) => pipe(
+  unzipPkg,
+  andDo(renameInnerFolder(pkgName)),
+  andDo(copyPackage(pkgName)),
+  andDo(cleanUp(pkgName))
+)(pkgName)
+
 installPackages :: String -> ()
 installPackages = pipe(
   readFile,
-  W.mapRej((_) => MADLIB_NOT_FOUND),
+  mapRej((_) => MADLIB_NOT_FOUND),
   chain(getDependencies),
   chain((depMap) => pipe(
       M.keys,
       displayPackagesToInstall,
       map((key) => pipe(
         (k) => M.get(k, depMap),
-        where
-          is Just p : Http.get(p),
+        where is Just p : Http.get(p),
         map(where is Http.Response { body: Http.BinaryBody d }: d),
         map(BinaryData),
-        chain(writeFile(key ++ ".zip")),
-        chain((a) => S.exec("mv " ++ a ++ " ./madlib_modules/")),
-        andDo(unzipPkg(key)),
-        andDo(S.exec("mv ./madlib_modules/" ++ key ++ "-tmp/* ./madlib_modules/" ++ key ++ "-tmp/" ++ key)),
-        andDo(S.exec("cp -R ./madlib_modules/" ++ key++"-tmp/"++key++" ./madlib_modules/")),
-        andDo(S.exec("rm -r ./madlib_modules/" ++ key ++ ".zip ./madlib_modules/" ++ key ++ "-tmp")),
-        map((a) => "package " ++ key ++ " installed"),
-        W.mapRej((_) => "Error installing package '" ++ key ++ "'")
+        chain(writeFile(`${MADLIB_MODULES_PATH}${key}.zip`)),
+        andDo(processArchive(key)),
+        map((_) => `package ${key} installed`),
+        mapRej((_) => `Error installing package '${key}'`)
       )(key)),
-      W.parallel
+      parallel
     )(depMap)
   ),
-  W.fulfill(IO.log, map(IO.log))
+  fulfill(IO.log, map(IO.log))
 )
 
 
