@@ -4,39 +4,71 @@ import Math from "Math"
 import IO from "IO"
 import Http from "Http"
 import B from "Binary"
-import FS from "FileSystem"
+import { readFile, writeFile, BinaryData } from "FileSystem"
 import M from "Map"
-import Maybe from "Maybe"
+import { Just } from "Maybe"
 import J from "Json"
 import E from "Either"
 import S from "System"
-import String from "String"
-import F from "Function"
+import { always, flip } from "Function"
 import { andDo } from "Monad"
 
 
-IO.log("Installing dependencies ...")
+MADLIB_NOT_FOUND = "The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."
+MADLIB_MODULES_PATH = "./madlib_modules/"
 
-// installPackages :: String -> ()
+dneppam = flip(mappend)
+
+buildUnzipCmd :: String -> String
+buildUnzipCmd = (pkg) => pipe(
+  always("unzip -d "),
+  dneppam(MADLIB_MODULES_PATH),
+  dneppam(pkg),
+  dneppam("-tmp ./madlib_modules/"),
+  dneppam(pkg),
+  dneppam(".zip")
+)(pkg)
+
+unzipPkg :: String -> W.Wish S.CommandError String
+unzipPkg = pipe(
+  buildUnzipCmd,
+  S.exec
+)
+
+getDependencies :: String -> W.Wish String (M.Map String String)
+getDependencies = pipe(
+  J.parse(J.field("dependencies", J.map(J.string))),
+  where
+    is E.Left e : W.bad(e)
+    is E.Right a: of(a)
+)
+
+displayPackagesToInstall :: List String -> List String
+displayPackagesToInstall = (pkgs) => pipe(
+  map(mappend("  - ")),
+  mappend(["Packages to install:"]),
+  L.unlines,
+  IO.log,
+  always(pkgs)
+)(pkgs)
+
+installPackages :: String -> ()
 installPackages = pipe(
-  FS.readFile,
-  W.mapRej((_) => ("The madlib.json file was not found, verify that you have created one or that you run the command from the right directory.")),
-  map(J.parse(J.field("dependencies", J.map(J.string)))),
-  chain(where
-    is E.Left e: W.bad(e)
-    is E.Right depMap: pipe(
+  readFile,
+  W.mapRej((_) => MADLIB_NOT_FOUND),
+  chain(getDependencies),
+  chain((depMap) => pipe(
       M.keys,
-      (keys) => IO.trace("Packages to install:" ++ L.reduceR((ptis, k) => (ptis ++ "\n" ++ "  - " ++ k), "", keys) ++ "\n", keys),
+      displayPackagesToInstall,
       map((key) => pipe(
         (k) => M.get(k, depMap),
         where
-          is Maybe.Just p : Http.get(p),
-          // is Maybe.Nothing: W.bad("ERR"),
+          is Just p : Http.get(p),
         map(where is Http.Response { body: Http.BinaryBody d }: d),
-        map(FS.BinaryData),
-        chain(FS.writeFile(key ++ ".zip")),
+        map(BinaryData),
+        chain(writeFile(key ++ ".zip")),
         chain((a) => S.exec("mv " ++ a ++ " ./madlib_modules/")),
-        andDo(S.exec("unzip -d ./madlib_modules/" ++ key ++ "-tmp ./madlib_modules/" ++ key ++ ".zip")),
+        andDo(unzipPkg(key)),
         andDo(S.exec("mv ./madlib_modules/" ++ key ++ "-tmp/* ./madlib_modules/" ++ key ++ "-tmp/" ++ key)),
         andDo(S.exec("cp -R ./madlib_modules/" ++ key++"-tmp/"++key++" ./madlib_modules/")),
         andDo(S.exec("rm -r ./madlib_modules/" ++ key ++ ".zip ./madlib_modules/" ++ key ++ "-tmp")),
@@ -46,9 +78,9 @@ installPackages = pipe(
       W.parallel
     )(depMap)
   ),
-  W.fulfill(pipe(IO.log, F.always(())), pipe(IO.log, F.always(())))
+  W.fulfill(IO.log, map(IO.log))
 )
 
 
-
+IO.log("Installing dependencies ...")
 installPackages("madlib.json")

@@ -316,11 +316,14 @@ formatTypeError err = case err of
       <> "    "
       <> typeToStr t'
 
-  NoInstanceFound cls t ->
-    "There is no instance of '"
-      <> cls
-      <> "' for the following type: "
-      <> typeToStr t
+  NoInstanceFound cls ts ->
+    "I could not find any instance for '"
+      <> predToStr (IsIn cls ts)
+      <> "'. Verify that you imported the module\nwhere the "
+      <> cls <> " instance for '"
+      <> unwords (typeToStr <$> ts) <> "' is defined."
+      <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
+      <> "is imported, directly, or indirectly."
 
   AmbiguousType (TV n _, [IsIn cls _]) ->
     "An ambiguity for the type variable '"

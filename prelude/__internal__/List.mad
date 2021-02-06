@@ -1,7 +1,8 @@
-import _ from "Show"
+import {} from "Show"
+import {} from "Monad"
+import {} from "Monoid"
+import {} from "String"
 import Fun from "Function"
-import __ from "Monad"
-import ___ from "Monoid"
 import { Maybe, Just, Nothing } from "Maybe"
 
 instance Functor List {
@@ -44,8 +45,14 @@ instance Show a => Show (List a) {
   )
 }
 
+unlines :: List String -> String
+export unlines = pipe(
+  intercalate("\n"),
+  reduce(mappend, "")
+)
+
 intercalate :: a -> List a -> List a
-intercalate = (a, xs) => where(xs)
+export intercalate = (a, xs) => where(xs)
   is []            : []
   is [one]         : [one]
   is [one, two]    : [one, a, two]
@@ -79,6 +86,9 @@ export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
 
 reduceL :: (a -> b -> a) -> a -> List b -> a
 export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
+
+reduce :: (a -> b -> a) -> a -> List b -> a
+export reduce = reduceL
 
 filter :: (a -> Boolean) -> List a -> List a
 export filter = (predicate, xs) => (#- xs.filter(predicate) -#)

@@ -17,7 +17,7 @@ data TypeError
   -- Pred: The predicate from the interface declaration
   | InstancePredicateError Pred Pred Pred
   | KindError (Type, Kind) (Type, Kind)
-  | NoInstanceFound String Type
+  | NoInstanceFound String [Type]
   | InterfaceAlreadyDefined String
   | InterfaceNotExisting String
   | MethodDoesNotMatchInterfaceType Type Type

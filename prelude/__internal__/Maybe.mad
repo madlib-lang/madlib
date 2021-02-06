@@ -25,7 +25,6 @@ export chain = (f, m) => (where(m) {
 })
 
 fromMaybe :: a -> Maybe a -> a
-export fromMaybe = (def, mabe) => (where(mabe)
+export fromMaybe = (or) => where
   is Just a : a
-  is Nothing: def
-)
+  is Nothing: or

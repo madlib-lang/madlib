@@ -68,8 +68,8 @@ addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envinterfaces env) of
     s <- match ts' ts
     catchError
       (mapM_ (isInstanceDefined env s) ps')
-      (\e@(InferError (NoInstanceFound _ t) _) ->
-        if isTVar t then return () else throwError e
+      (\e@(InferError (NoInstanceFound _ ts) _) ->
+        when (all isConcrete ts) (throwError e)
       )
     return env
       { envinterfaces = M.insert
@@ -102,13 +102,15 @@ findM f = runMaybeT . msum . map (MaybeT . f)
 isInstanceDefined :: Env -> Substitution -> Pred -> Infer Bool
 isInstanceDefined env subst (IsIn id ts) = do
   let is = insts env id
-  found <- findM (\(Instance (_ :=> (IsIn _ ts'))) ->
-                  catchError (match ts' (apply subst ts) >>= \_ -> return $ Just True) (const $ return Nothing)
-                ) is
+  found <- findM  (\(Instance (_ :=> (IsIn _ ts'))) ->
+                    catchError
+                      (match ts' (apply subst ts) >>= \_ -> return $ Just True)
+                      (const $ return Nothing)
+                  ) is
   case found of
     Just _  -> return True
     Nothing -> throwError
-      $ InferError (NoInstanceFound id (apply subst $ head ts)) NoReason
+      $ InferError (NoInstanceFound id (apply subst ts)) NoReason
 
 
 sig :: Env -> Id -> [TVar]
@@ -138,8 +140,6 @@ findInst env p@(IsIn interface t) = do
     let ps' = apply u <$> ps
     return i
   tryInsts []          = throwError $ InferError FatalError NoReason
-    -- TVar _ -> throwError $ InferError FatalError NoReason
-    -- _ -> throwError $ InferError (NoInstanceFound interface (head t)) NoReason
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
 
 
@@ -164,6 +164,15 @@ specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
 specialMatchMany ps ps' =
   foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
 
+
+isConcrete :: Type -> Bool
+isConcrete t = case t of
+  TVar _      -> False
+  TCon _      -> True
+  TApp l r    -> isConcrete l
+  TRecord _ _ -> True
+
+
 byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
  where
@@ -171,9 +180,16 @@ byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
     u <- match h p
     let ps' = apply u <$> ps
     return ps'
-  tryInsts []          = throwError $ InferError FatalError NoReason
+  tryInsts []          = if all isConcrete $ predTypes p
+    then throwError $ InferError (NoInstanceFound interface ts) NoReason
+    else throwError $ InferError FatalError NoReason
 
-  tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
+  tryInsts (inst : is) = catchError 
+    (tryInst inst) 
+    (\case
+      e@(InferError (NoInstanceFound _ _) _) -> throwError e
+      _                                      -> tryInsts is
+    )
 
 
 allM :: (Monad m, Foldable t) => (a -> m Bool) -> t a -> m Bool

@@ -244,8 +244,9 @@ compositeTyping :: { Src.Typing }
 
 compositeTypingArgs :: { [Src.Typing] }
   : name                                                   { [Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
-  | name '.' name                                          { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRSingle $ (strV $1<>"."<>strV $3))] }
   | name compositeTypingArgs                               { (Meta emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)) : $2 }
+  | name '.' name                                          { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRSingle $ (strV $1<>"."<>strV $3))] }
+  | name '.' name compositeTypingArgs                      { (Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRSingle $ (strV $1<>"."<>strV $3))) : $4 }
   | '(' typings ')' compositeTypingArgs                    { $2:$4 }
   | typing                                                 { [$1] }
   | '(' typing '->' typings ')'                     %shift { [Meta emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4)] }

@@ -1,0 +1,99 @@
+import TT from "TestTools"
+import W from "Wish"
+import L from "List"
+import Maybe from "Maybe"
+import T from "Tuple"
+
+
+// Code
+
+export data Map k v = Map_ (List <k, v>)
+
+
+fromList :: List (<k, v>) -> Map k v
+export fromList = (list) => (Map_(list))
+
+
+empty :: Map k v
+export empty = fromList([])
+
+
+insert :: k -> v -> Map k v -> Map k v
+export insert = (k, v, m) => (where(m)
+  is Map_ items:
+    L.reject(
+      (item) => (where(item)
+        is <kk, _>: kk == k
+      )
+      , items
+    )
+    |> L.append(<k, v>)
+    |> Map_
+)
+
+
+get :: k -> Map k v -> Maybe.Maybe v
+export get = (k, m) => (where(m)
+  is Map_ items:
+    L.find(
+      (item) => (where(item)
+        is <kk, v>: k == kk
+      ),
+      items
+    )
+    |> map(T.snd)
+)
+
+
+keys :: Map k v -> List k
+export keys = (m) => (where(m)
+  is Map_ items: map(T.fst, items)
+)
+
+
+values :: Map k v -> List v
+export values = (m) => (where(m)
+  is Map_ items: map(T.snd, items)
+)
+
+len :: Map k v -> Number
+export len = (m) => (m |> keys |> L.len)
+
+add :: Number -> Number -> Number
+export add = (a, b) => (
+  a + b
+)
+
+
+// Tests
+
+t1 = TT.test("It should fail", (x) => (
+  TT.assertEquals(add(1, 2), 4)
+))
+
+t2 = TT.test("It should work", (x) => (
+  TT.assertEquals(add(1, 2), 3)
+))
+
+t3 = TT.test("It should also work", (x) => (
+  W.after(2000, <1, 3>)
+    |> chain((res) => (TT.assertEquals(res, <1, 3>)))
+))
+
+t4 = TT.test("It should also work for records", (x) => (
+  TT.assertEquals({ x: 3, y: { z: 3 } }, { x: 2, y: { z: 2 } })
+))
+
+t5 = TT.test("It should build a map", (x) => (
+  TT.assertEquals(fromList([<1, 3>]), fromList([<1, 3>]))
+))
+
+t6 = TT.test("It should insert stuff in a map", (x) => (
+  TT.assertEquals(insert("stuff", 3, empty), fromList([<"stuff", 3>]))
+))
+
+t7 = TT.test("It should insert stuff in a non empty map", (x) => (
+  TT.assertEquals(insert("stuff", 3, fromList([<"stuff", 4>])), fromList([<"stuff", 3>]))
+))
+
+TT.runTests([t1, t2, t3, t4, t5, t6, t7])
