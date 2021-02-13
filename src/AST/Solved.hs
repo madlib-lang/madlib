@@ -8,12 +8,6 @@ import           Explain.Location
 
 data Solved a = Solved Ty.Type Area a deriving(Eq, Show)
 
-getType :: Solved a -> Ty.Type
-getType (Solved t _ _) = t
-
-extractExp :: Exp -> Exp_
-extractExp (Solved _ (Area _ _) e) = e
-
 data AST =
   AST
     { aimports    :: [Import]
@@ -30,9 +24,13 @@ data Import
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+-- data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
 
-data Instance = Instance Constraints Name [Typing] (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+-- data Instance = Instance Constraints Name [Typing] (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+
+data Interface = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+
+data Instance = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
 data TypeDecl
   = ADT
@@ -117,7 +115,7 @@ data Exp_ = LNum String
           | Assignment Name Exp
           | Export Exp
           | Var Name
-          | TypedExp Exp Typing
+          | TypedExp Exp Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | Record [Field]
@@ -133,13 +131,28 @@ type Name = String
 
 type Table = M.Map FilePath AST
 
+
+-- Functions
+
+getType :: Solved a -> Ty.Type
+getType (Solved t _ _) = t
+
+extractExp :: Exp -> Exp_
+extractExp (Solved _ (Area _ _) e) = e
+
 getConstructorName :: Constructor -> String
 getConstructorName (Constructor name _) = name
 
-adtExported :: TypeDecl -> Bool
-adtExported ADT { adtexported }     = adtexported
-adtExported Alias { aliasexported } = aliasexported
+isADTExported :: TypeDecl -> Bool
+isADTExported adt = case adt of
+  ADT { adtexported } -> adtexported
+  _                   -> False
 
-adtName :: TypeDecl -> Name
-adtName ADT { adtname }     = adtname
-adtName Alias { aliasname } = aliasname
+isExport :: Exp -> Bool
+isExport a = case a of
+  (Solved _ _ (Export _)) -> True
+
+  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+
+  _ -> False
+

@@ -33,9 +33,15 @@ Right
                              (LNum "7")
                          )
                      ]))
-               (TRRecord
-                  (fromList
-                     [ ( "x" , TRSingle "Number" ) , ( "y" , TRSingle "Number" ) ])))
+               (Forall
+                  []
+                  ([] :=>
+                     TRecord
+                       (fromList
+                          [ ( "x" , TCon (TC "Number" Star) )
+                          , ( "y" , TCon (TC "Number" Star) )
+                          ])
+                       False)))
         ]
     , atypedecls = []
     , ainterfaces = []

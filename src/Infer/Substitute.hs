@@ -3,16 +3,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Infer.Substitute where
 
-import qualified Data.Map                      as M
-import qualified Data.Set                      as S
-import           Data.Foldable                  ( Foldable(foldl') )
 import           Infer.Type
-import           Debug.Trace                    ( trace )
-import           Text.Show.Pretty               ( ppShow )
+import           Infer.Env
 import           Infer.Infer
-import           Control.Monad.Except
 import           Error.Error
 import           Explain.Reason
+import qualified Data.Map                      as M
+import           Data.Foldable                  ( Foldable(foldl') )
+import           Control.Monad.Except
 import           Data.List                      ( nub
                                                 , union
                                                 , intersect

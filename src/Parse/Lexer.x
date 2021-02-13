@@ -30,7 +30,7 @@ import           System.Exit
 import qualified Data.Text     as T
 import           Explain.Location
 import           Text.Regex.TDFA
-import Debug.Trace (trace)
+import           Debug.Trace (trace)
 import           Text.Show.Pretty (ppShow)
 }
 
@@ -368,12 +368,12 @@ data TokenClass
 
 
 strV :: Token -> String
-strV (Token _ (TokenStr x))  = x
-strV (Token _ (TokenTemplateStringEnd x))  = x
-strV (Token _ (TokenNumber x)) = x
-strV (Token _ (TokenBool x)) = x
-strV (Token _ (TokenName x)) = x
-strV (Token _ (TokenJSBlock x)) = x
+strV (Token _ (TokenStr x))               = x
+strV (Token _ (TokenTemplateStringEnd x)) = x
+strV (Token _ (TokenNumber x))            = x
+strV (Token _ (TokenBool x))              = x
+strV (Token _ (TokenName x))              = x
+strV (Token _ (TokenJSBlock x))           = x
 
 
 alexEOF :: Alex Token

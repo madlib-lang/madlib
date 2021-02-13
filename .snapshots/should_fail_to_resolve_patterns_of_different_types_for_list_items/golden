@@ -4,22 +4,12 @@ Left
         (TCon (TC "Number" Star)) (TCon (TC "String" Star)))
      (Reason
         (PatternTypeError
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 59 3 16) (Loc 60 3 17))
-              (Var "n"))
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
+           (Canonical (Area (Loc 59 3 16) (Loc 60 3 17)) (Var "n"))
+           (Canonical
               (Area (Loc 49 3 6) (Loc 57 3 14))
               (PList
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 50 3 7) (Loc 53 3 10))
-                     (PStr "1")
-                 , Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 55 3 12) (Loc 56 3 13))
-                     (PVar "n")
+                 [ Canonical (Area (Loc 50 3 7) (Loc 53 3 10)) (PStr "1")
+                 , Canonical (Area (Loc 55 3 12) (Loc 56 3 13)) (PVar "n")
                  ])))
         "path"
         (Area (Loc 46 3 3) (Loc 60 3 17))))

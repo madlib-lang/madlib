@@ -116,10 +116,9 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     Slv.Var name            -> return $ Opt.Optimized t area (Opt.Var name)
 
-    Slv.TypedExp exp typing -> do
-      exp'    <- optimize enabled exp
-      typing' <- optimize enabled typing
-      return $ Opt.Optimized t area (Opt.TypedExp exp' typing')
+    Slv.TypedExp exp scheme -> do
+      exp' <- optimize enabled exp
+      return $ Opt.Optimized t area (Opt.TypedExp exp' scheme)
 
     Slv.ListConstructor items -> do
       items' <- mapM (optimize enabled) items
@@ -285,21 +284,22 @@ instance Optimizable Slv.TypeDecl Opt.TypeDecl where
 
 
 instance Optimizable Slv.Interface Opt.Interface where
-  optimize enabled (Slv.Interface constraints name vars methods) = do
-    constraints' <- mapM (optimize enabled) constraints
-    methods'     <- mapM (optimize enabled) methods
-    name'        <- getClassShortname enabled name
-    return $ Opt.Interface constraints' name' vars methods'
+  optimize enabled (Slv.Interface name constraints vars methods) = do
+    -- constraints' <- mapM (optimize enabled) constraints
+    -- methods'     <- mapM (optimize enabled) methods
+    name' <- getClassShortname enabled name
+    return $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods
 
 instance Optimizable Slv.Instance Opt.Instance where
-  optimize enabled (Slv.Instance constraints interface typings methods) = do
-    interface'   <- getClassShortname enabled interface
-    constraints' <- mapM (optimize enabled) constraints
-    let typingStr = intercalate "_" (typingToStr <$> typings)
+  optimize enabled (Slv.Instance interface constraints pred methods) = do
+    interface' <- getClassShortname enabled interface
+    -- constraints' <- mapM (optimize enabled) constraints
+    let typingStr = intercalate "_" (getTypeHeadName <$> predTypes pred)
+    -- let typingStr = intercalate "_" (typingToStr <$> vars)
     typings' <- getTypeShortname enabled typingStr
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> optimize enabled exp)
                      methods
-    return $ Opt.Instance constraints' interface' typings' methods'
+    return $ Opt.Instance interface' constraints typings' methods'
 
 instance Optimizable Slv.Import Opt.Import where
   optimize _ imp = case imp of

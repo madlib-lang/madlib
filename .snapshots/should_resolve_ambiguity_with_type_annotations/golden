@@ -32,22 +32,32 @@ Right
                         (Area (Loc 118 9 7) (Loc 121 9 10))
                         (LStr "3"))
                      True))
-               (TRSingle "Number"))
+               (Forall [] ([] :=> TCon (TC "Number" Star))))
         ]
     , atypedecls = []
     , ainterfaces =
         [ Interface
-            []
             "Read"
-            [ "a" ]
+            []
+            [ TV "a" Star ]
             (fromList
-               [ ( "read" , TRArr (TRSingle "String") (TRSingle "a") ) ])
+               [ ( "read"
+                 , Forall
+                     [ Star ]
+                     ([ IsIn "Read" [ TGen 0 ] ] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TCon (TC "String" Star)))
+                          (TGen 0))
+                 )
+               ])
         ]
     , ainstances =
         [ Instance
-            []
             "Read"
-            [ TRSingle "Number" ]
+            []
+            (IsIn "Read" [ TCon (TC "Number" Star) ])
             (fromList
                [ ( "read"
                  , ( Solved

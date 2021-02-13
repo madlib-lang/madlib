@@ -75,7 +75,14 @@ Right
                                            (LNum "1"))
                                         True)
                                  ]))))))
-               (TRArr (TRSingle "Number") (TRSingle "Number")))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TCon (TC "Number" Star)))
+                       (TCon (TC "Number" Star)))))
         , Solved
             (TCon (TC "Number" Star))
             (Area (Loc 52 3 1) (Loc 58 3 7))

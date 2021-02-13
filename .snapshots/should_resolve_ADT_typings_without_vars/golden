@@ -60,7 +60,14 @@ Right
                                             (Area (Loc 79 3 21) (Loc 80 3 22))
                                             (Var "x")
                                         ]))))))
-                      (TRArr (TRComp "S.Something" []) (TRComp "S.Something" [])))
+                      (Forall
+                         []
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TCon (TC "Something" Star)))
+                              (TCon (TC "Something" Star)))))
                ]
            , atypedecls = []
            , ainterfaces = []

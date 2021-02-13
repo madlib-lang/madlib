@@ -147,9 +147,22 @@ Right
                                                ])
                                         ])
                                  ]))))))
-               (TRArr
-                  (TRArr (TRSingle "a") (TRArr (TRSingle "b") (TRSingle "c")))
-                  (TRArr (TRSingle "b") (TRArr (TRSingle "a") (TRSingle "c")))))
+               (Forall
+                  [ Star , Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TApp
+                                (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 1))
+                                (TGen 2))))
+                       (TApp
+                          (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 1))
+                          (TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TGen 2))))))
         , Solved
             (TApp
                (TApp
@@ -216,11 +229,18 @@ Right
                                                "{\n  const x = xs[i];\n  return x === undefined\n    ? Nothing()\n    : Just(x);\n}")
                                         ])
                                  ]))))))
-               (TRArr
-                  (TRSingle "Number")
-                  (TRArr
-                     (TRComp "List" [ TRSingle "a" ])
-                     (TRComp "Maybe" [ TRSingle "a" ]))))
+               (Forall
+                  [ Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TCon (TC "Number" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                          (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TGen 0))))))
         , Solved
             (TApp
                (TCon (TC "List" (Kfun Star Star))) (TCon (TC "String" Star)))
@@ -383,9 +403,18 @@ Right
                                          True)
                                   ])
                            ]))))
-               (TRArr
-                  (TRSingle "String")
-                  (TRArr (TRSingle "String") (TRSingle "String"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TCon (TC "String" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TCon (TC "String" Star)))
+                          (TCon (TC "String" Star))))))
         , Solved
             (TVar (TV "aa" Star))
             (Area (Loc 487 21 12) (Loc 493 21 18))

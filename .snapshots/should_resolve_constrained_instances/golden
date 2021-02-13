@@ -70,17 +70,25 @@ Right
     , atypedecls = []
     , ainterfaces =
         [ Interface
-            []
             "Show"
-            [ "a" ]
+            []
+            [ TV "a" Star ]
             (fromList
-               [ ( "show" , TRArr (TRSingle "a") (TRSingle "String") ) ])
+               [ ( "show"
+                 , Forall
+                     [ Star ]
+                     ([ IsIn "Show" [ TGen 0 ] ] :=>
+                        TApp
+                          (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                          (TCon (TC "String" Star)))
+                 )
+               ])
         ]
     , ainstances =
         [ Instance
-            []
             "Show"
-            [ TRSingle "Boolean" ]
+            []
+            (IsIn "Show" [ TCon (TC "Boolean" Star) ])
             (fromList
                [ ( "show"
                  , ( Solved
@@ -121,9 +129,9 @@ Right
                  )
                ])
         , Instance
-            []
             "Show"
-            [ TRSingle "Number" ]
+            []
+            (IsIn "Show" [ TCon (TC "Number" Star) ])
             (fromList
                [ ( "show"
                  , ( Solved
@@ -152,9 +160,18 @@ Right
                  )
                ])
         , Instance
-            [ TRComp "Show" [ TRSingle "a" ] , TRComp "Show" [ TRSingle "b" ] ]
             "Show"
-            [ TRTuple [ TRSingle "a" , TRSingle "b" ] ]
+            [ IsIn "Show" [ TVar (TV "a" Star) ]
+            , IsIn "Show" [ TVar (TV "b" Star) ]
+            ]
+            (IsIn
+               "Show"
+               [ TApp
+                   (TApp
+                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                      (TVar (TV "a" Star)))
+                   (TVar (TV "b" Star))
+               ])
             (fromList
                [ ( "show"
                  , ( Solved

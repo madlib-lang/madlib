@@ -18,7 +18,7 @@ Monoid['List'] = {
   mempty: ([])
 };
 Functor['WriterT'] = {
-  map: (Functor_jr) => (__curry__((f, m) => WriterT(Functor_jr.map(__curry__((__x__) => ((__x__) => {
+  map: (Functor_iz) => (__curry__((f, m) => WriterT(Functor_iz.map(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,w] = __x__;
     return ([f(a), w]);
@@ -28,13 +28,13 @@ throw 'non exhaustive patterns!'; }
 })(__x__)))(runWriterT(m)))))
 };
 Applicative['WriterT'] = {
-  ap: (Semigroup_le) => ((Monoid_le) => ((Functor_lf) => ((Applicative_lf) => (__curry__((mf, mm) => WriterT(liftA2(Functor_lf)(Applicative_lf)(__curry__((x1, x2) => ((__x__) => {
+  ap: (Semigroup_km) => ((Monoid_km) => ((Functor_kn) => ((Applicative_kn) => (__curry__((mf, mm) => WriterT(liftA2(Functor_kn)(Applicative_kn)(__curry__((x1, x2) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,w] = __x__;
     return ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [b,ww] = __x__;
-    return ([a(b), Monoid_le.mappend(w)(ww)]);
+    return ([a(b), Monoid_km.mappend(w)(ww)]);
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
@@ -43,16 +43,16 @@ throw 'non exhaustive patterns!'; }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(x1)))(runWriterT(mf))(runWriterT(mm)))))))),
-  pure: (Semigroup_lv) => ((Monoid_lv) => ((Functor_lt) => ((Applicative_lt) => (__curry__((x) => WriterT(Applicative_lt.pure(([x, Monoid_lv.mempty]))))))))
+  pure: (Semigroup_ld) => ((Monoid_ld) => ((Functor_lb) => ((Applicative_lb) => (__curry__((x) => WriterT(Applicative_lb.pure(([x, Monoid_ld.mempty]))))))))
 };
 Monad['WriterT'] = {
-  chain: (Functor_nn) => ((Applicative_nn) => ((Monad_nn) => ((Semigroup_nm) => ((Monoid_nm) => (__curry__((f, m) => WriterT(Monad_nn.chain(__curry__((__x__) => ((__x__) => {
+  chain: (Functor_mv) => ((Applicative_mv) => ((Monad_mv) => ((Semigroup_mu) => ((Monoid_mu) => (__curry__((f, m) => WriterT(Monad_mv.chain(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,w] = __x__;
-    return Monad_nn.chain(__curry__((__x__) => ((__x__) => {
+    return Monad_mv.chain(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [b,ww] = __x__;
-    return Monad_nn.of(([b, Monoid_nm.mappend(w)(ww)]));
+    return Monad_mv.of(([b, Monoid_mu.mappend(w)(ww)]));
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
@@ -61,10 +61,10 @@ throw 'non exhaustive patterns!'; }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(__x__)))(runWriterT(m))))))))),
-  of: (Functor_ny) => ((Applicative_ny) => ((Monad_ny) => ((Semigroup_nx) => ((Monoid_nx) => (Applicative.WriterT.pure(Semigroup_nx)(Monoid_nx)(Functor_ny)(Applicative_ny))))))
+  of: (Functor_ng) => ((Applicative_ng) => ((Monad_ng) => ((Semigroup_nf) => ((Monoid_nf) => (Applicative.WriterT.pure(Semigroup_nf)(Monoid_nf)(Functor_ng)(Applicative_ng))))))
 };
 MonadTrans['m_WriterT'] = {
-  lift: (Semigroup_or) => ((Monoid_or) => ((Functor_op) => ((Applicative_op) => ((Monad_op) => (__curry__((m) => WriterT(Monad_op.chain(__curry__((a) => Monad_op.of(([a, Monoid_or.mempty]))))(m))))))))
+  lift: (Semigroup_nz) => ((Monoid_nz) => ((Functor_nx) => ((Applicative_nx) => ((Monad_nx) => (__curry__((m) => WriterT(Monad_nx.chain(__curry__((a) => Monad_nx.of(([a, Monoid_nz.mempty]))))(m))))))))
 };
 Functor['Identity'] = {
   map: __curry__((f, m) => Identity(f(runIdentity(m))))
@@ -78,7 +78,7 @@ Monad['Identity'] = {
   of: Applicative.Identity.pure
 };
 Functor['StateT'] = {
-  map: (Functor_rl) => (__curry__((f, m) => StateT(__curry__((s) => Functor_rl.map(__curry__((__x__) => ((__x__) => {
+  map: (Functor_qt) => (__curry__((f, m) => StateT(__curry__((s) => Functor_qt.map(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,ss] = __x__;
     return ([f(a), ss]);
@@ -88,13 +88,13 @@ throw 'non exhaustive patterns!'; }
 })(__x__)))(runStateT(m)(s))))))
 };
 Applicative['StateT'] = {
-  ap: (Functor_tf) => ((Applicative_tf) => ((Monad_tf) => (__curry__((mf, mm) => StateT(__curry__((s) => Monad_tf.chain(__curry__((__x__) => ((__x__) => {
+  ap: (Functor_sn) => ((Applicative_sn) => ((Monad_sn) => (__curry__((mf, mm) => StateT(__curry__((s) => Monad_sn.chain(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [f,ss] = __x__;
-    return Monad_tf.chain(__curry__((__x__) => ((__x__) => {
+    return Monad_sn.chain(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [m,sss] = __x__;
-    return Monad_tf.of(([f(m), sss]));
+    return Monad_sn.of(([f(m), sss]));
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
@@ -103,10 +103,10 @@ throw 'non exhaustive patterns!'; }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(__x__)))(runStateT(mf)(s)))))))),
-  pure: (Functor_tu) => ((Applicative_tu) => ((Monad_tu) => (__curry__((a) => StateT(__curry__((s) => Monad_tu.of(([a, s]))))))))
+  pure: (Functor_tc) => ((Applicative_tc) => ((Monad_tc) => (__curry__((a) => StateT(__curry__((s) => Monad_tc.of(([a, s]))))))))
 };
 Monad['StateT'] = {
-  chain: (Functor_vb) => ((Applicative_vb) => ((Monad_vb) => (__curry__((f, m) => StateT(__curry__((s) => Monad_vb.chain(__curry__((__x__) => ((__x__) => {
+  chain: (Functor_uj) => ((Applicative_uj) => ((Monad_uj) => (__curry__((f, m) => StateT(__curry__((s) => Monad_uj.chain(__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,ss] = __x__;
     return runStateT(f(a))(ss);
@@ -114,26 +114,26 @@ Monad['StateT'] = {
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(__x__)))(runStateT(m)(s)))))))),
-  of: (Functor_vq) => ((Applicative_vq) => ((Monad_vq) => (__curry__((a) => StateT(__curry__((s) => Monad_vq.of(([a, s]))))))))
+  of: (Functor_uy) => ((Applicative_uy) => ((Monad_uy) => (__curry__((a) => StateT(__curry__((s) => Monad_uy.of(([a, s]))))))))
 };
 MonadTrans['m_StateT'] = {
-  lift: (Functor_wl) => ((Applicative_wl) => ((Monad_wl) => (__curry__((m) => StateT(__curry__((s) => Monad_wl.chain(__curry__((a) => Monad_wl.of(([a, s]))))(m)))))))
+  lift: (Functor_vt) => ((Applicative_vt) => ((Monad_vt) => (__curry__((m) => StateT(__curry__((s) => Monad_vt.chain(__curry__((a) => Monad_vt.of(([a, s]))))(m)))))))
 };
 MonadWriter['w_WriterT'] = {
-  tell: (Functor_wy) => ((Applicative_wy) => ((Monad_wy) => ((Semigroup_ws) => ((Monoid_ws) => (__curry__((v) => WriterT(Monad_wy.of(([({ __constructor: "Unit", __args: [] }), v])))))))))
+  tell: (Functor_wg) => ((Applicative_wg) => ((Monad_wg) => ((Semigroup_wa) => ((Monoid_wa) => (__curry__((v) => WriterT(Monad_wg.of(([({ __constructor: "Unit", __args: [] }), v])))))))))
 };
 MonadWriter['w_StateT'] = {
-  tell: (Functor_xp) => ((Applicative_xp) => ((Semigroup_xn) => ((Monad_xp) => ((Monoid_xn) => ((MonadWriter_xn_xp) => ((Functor_xp) => ((Applicative_xp) => ((Monad_xp) => ((Semigroup_xn) => ((Monoid_xn) => (__curry__((__x__) => MonadTrans.m_StateT.lift(Functor_xp)(Applicative_xp)(Monad_xp)(MonadWriter_xn_xp.tell(__x__))))))))))))))
+  tell: (Functor_wt) => ((Applicative_wt) => ((Semigroup_wm) => ((Monad_wt) => ((Monoid_wm) => ((MonadWriter_wm_wt) => ((Functor_wt) => ((Applicative_wt) => ((Monad_wt) => ((Semigroup_wm) => ((Monoid_wm) => (__curry__((_P_) => MonadTrans.m_StateT.lift(Functor_wt)(Applicative_wt)(Monad_wt)(MonadWriter_wm_wt.tell(_P_))))))))))))))
 };
 MonadState['s_StateT'] = {
-  get: (Functor_yd) => ((Applicative_yd) => ((Monad_yd) => (StateT(__curry__((s) => Monad_yd.of(([s, s]))))))),
-  modify: (Functor_yq) => ((Applicative_yq) => ((Monad_yq) => (__curry__((f) => StateT(__curry__((s) => Monad_yq.of(([({ __constructor: "Unit", __args: [] }), f(s)])))))))),
-  put: (Functor_ze) => ((Applicative_ze) => ((Monad_ze) => (__curry__((s) => StateT(__curry__((_) => Monad_ze.of(([({ __constructor: "Unit", __args: [] }), s]))))))))
+  get: (Functor_xf) => ((Applicative_xf) => ((Monad_xf) => (StateT(__curry__((s) => Monad_xf.of(([s, s]))))))),
+  modify: (Functor_xs) => ((Applicative_xs) => ((Monad_xs) => (__curry__((f) => StateT(__curry__((s) => Monad_xs.of(([({ __constructor: "Unit", __args: [] }), f(s)])))))))),
+  put: (Functor_yg) => ((Applicative_yg) => ((Monad_yg) => (__curry__((s) => StateT(__curry__((_) => Monad_yg.of(([({ __constructor: "Unit", __args: [] }), s]))))))))
 };
 MonadState['s_WriterT'] = {
-  get: (Functor_zp) => ((Applicative_zp) => ((Monad_zp) => ((MonadState_zo_zp) => ((Functor_zp) => ((Applicative_zp) => ((Monad_zp) => ((Semigroup_zq) => ((Monoid_zq) => (MonadTrans.m_WriterT.lift(Semigroup_zq)(Monoid_zq)(Functor_zp)(Applicative_zp)(Monad_zp)(MonadState_zo_zp.get)))))))))),
-  modify: (Functor_aag) => ((Applicative_aag) => ((Monad_aag) => ((MonadState_aae_aag) => ((Functor_aag) => ((Applicative_aag) => ((Monad_aag) => ((Semigroup_aaj) => ((Monoid_aaj) => (__curry__((__x__) => MonadTrans.m_WriterT.lift(Semigroup_aaj)(Monoid_aaj)(Functor_aag)(Applicative_aag)(Monad_aag)(MonadState_aae_aag.modify(__x__)))))))))))),
-  put: (Functor_aaz) => ((Applicative_aaz) => ((Monad_aaz) => ((MonadState_aax_aaz) => ((Functor_aaz) => ((Applicative_aaz) => ((Monad_aaz) => ((Semigroup_abc) => ((Monoid_abc) => (__curry__((__x__) => MonadTrans.m_WriterT.lift(Semigroup_abc)(Monoid_abc)(Functor_aaz)(Applicative_aaz)(Monad_aaz)(MonadState_aax_aaz.put(__x__))))))))))))
+  get: (Functor_yr) => ((Applicative_yr) => ((Monad_yr) => ((MonadState_yq_yr) => ((Functor_yr) => ((Applicative_yr) => ((Monad_yr) => ((Semigroup_ys) => ((Monoid_ys) => (MonadTrans.m_WriterT.lift(Semigroup_ys)(Monoid_ys)(Functor_yr)(Applicative_yr)(Monad_yr)(MonadState_yq_yr.get)))))))))),
+  modify: (Functor_ze) => ((Applicative_ze) => ((Monad_ze) => ((MonadState_zd_ze) => ((Functor_ze) => ((Applicative_ze) => ((Monad_ze) => ((Semigroup_zf) => ((Monoid_zf) => (__curry__((_P_) => MonadTrans.m_WriterT.lift(Semigroup_zf)(Monoid_zf)(Functor_ze)(Applicative_ze)(Monad_ze)(MonadState_zd_ze.modify(_P_)))))))))))),
+  put: (Functor_zr) => ((Applicative_zr) => ((Monad_zr) => ((MonadState_zk_zr) => ((Functor_zr) => ((Applicative_zr) => ((Monad_zr) => ((Semigroup_zs) => ((Monoid_zs) => (__curry__((_P_) => MonadTrans.m_WriterT.lift(Semigroup_zs)(Monoid_zs)(Functor_zr)(Applicative_zr)(Monad_zr)(MonadState_zk_zr.put(_P_))))))))))))
 };
 export const andDo = (Functor_i) => ((Applicative_i) => ((Monad_i) => (__curry__((b, a) => Monad_i.chain(__curry__((_) => b))(a)))));
 export const runWriterT = __curry__((__x__) => ((__x__) => {
@@ -162,7 +162,7 @@ export const runStateT = __curry__((m) => ((__x__) => {
 throw 'non exhaustive patterns!'; }
 })(m));
 const hep = (Functor_bn) => ((Applicative_bn) => ((Semigroup_bm) => ((Monad_bn) => ((Monoid_bm) => ((MonadWriter_bm_bn) => (MonadWriter_bm_bn.tell))))));
-const sumAndLog = (Functor_dg) => ((Applicative_dg) => ((Monad_dg) => ((MonadWriter_List_dg) => (__curry__((__x__) => Monad_dg.chain(__curry__((x) => andDo(Functor_dg)(Applicative_dg)(Monad_dg)(Monad_dg.of(x))(MonadWriter_List_dg.tell(([`Summed 18`])))))(Monad_dg.chain(__curry__((x) => Monad_dg.of(x + 18)))(Monad_dg.of(__x__))))))));
-const runStack = __curry__((x, m) => __curry__((__x__) => runIdentity(runWriterT(__curry__((m) => runStateT(m)(x))(__x__))))(m));
+const sumAndLog = (Functor_cx) => ((Applicative_cx) => ((Monad_cx) => ((MonadWriter_List_cx) => (__curry__((_P_) => Monad_cx.chain(__curry__((x) => andDo(Functor_cx)(Applicative_cx)(Monad_cx)(Monad_cx.of(x))(MonadWriter_List_cx.tell(([`Summed 18`])))))(Monad_cx.chain(__curry__((x) => Monad_cx.of(x + 18)))(Monad_cx.of(_P_))))))));
+const runStack = __curry__((x, m) => __curry__((_P_) => runIdentity(runWriterT(__curry__((m) => runStateT(m)(x))(_P_))))(m));
 runStack(37)(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(sumAndLog(__apMtdDicts__(Functor.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity])]))(__apMtdDicts__(Applicative.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(__apMtdDicts__(Monad.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(__apMtdDicts__(MonadWriter.w_StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), Semigroup.List, __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Monoid.List, __apMtdDicts__(MonadWriter.w_WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), __apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Semigroup.List, Monoid.List])))(andDo(__apMtdDicts__(Functor.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity])]))(__apMtdDicts__(Applicative.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(__apMtdDicts__(Monad.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Monad.StateT.of(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(5))(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(__curry__((_) => hep(__apMtdDicts__(Functor.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity])]))(__apMtdDicts__(Applicative.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Semigroup.List)(__apMtdDicts__(Monad.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Monoid.List)(__apMtdDicts__(MonadWriter.w_StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), Semigroup.List, __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Monoid.List, __apMtdDicts__(MonadWriter.w_WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), __apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Semigroup.List, Monoid.List]))(([`HAP`]))))(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(__curry__((_) => MonadState.s_StateT.put(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(157)))(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(__curry__((_) => hep(__apMtdDicts__(Functor.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity])]))(__apMtdDicts__(Applicative.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Semigroup.List)(__apMtdDicts__(Monad.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Monoid.List)(__apMtdDicts__(MonadWriter.w_StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), Semigroup.List, __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Monoid.List, __apMtdDicts__(MonadWriter.w_WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), __apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Semigroup.List, Monoid.List]))(([`HIP`]))))(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(__curry__((_) => hep(__apMtdDicts__(Functor.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity])]))(__apMtdDicts__(Applicative.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Semigroup.List)(__apMtdDicts__(Monad.StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List])]))(Monoid.List)(__apMtdDicts__(MonadWriter.w_StateT, [__apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), Semigroup.List, __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Monoid.List, __apMtdDicts__(MonadWriter.w_WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), __apMtdDicts__(Functor.WriterT, [Functor.Identity]), __apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]), __apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]), Semigroup.List, Monoid.List]))(([`HOP`]))))(Functor.StateT.map(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__curry__((x) => x * 17))(Monad.StateT.chain(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(__curry__((x) => Monad.StateT.of(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(29 * x)))(Monad.StateT.of(__apMtdDicts__(Functor.WriterT, [Functor.Identity]))(__apMtdDicts__(Applicative.WriterT, [Semigroup.List, Monoid.List, Functor.Identity, Applicative.Identity]))(__apMtdDicts__(Monad.WriterT, [Functor.Identity, Applicative.Identity, Monad.Identity, Semigroup.List, Monoid.List]))(3))))))))));
 export default { andDo, runWriterT, runIdentity, runStateT, WriterT, Identity, StateT };

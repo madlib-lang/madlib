@@ -2,16 +2,15 @@
 {-# LANGUAGE RankNTypes #-}
 module Infer.Unify where
 
-import           Control.Monad.Except
-import qualified Data.Map                      as M
 
 import           Infer.Type
 import           Infer.Substitute
 import           Error.Error
 import           Infer.Infer
+import           Infer.Env
 import           Explain.Reason
-import           Debug.Trace                    ( trace )
-import           Text.Show.Pretty               ( ppShow )
+import           Control.Monad.Except
+import qualified Data.Map                      as M
 
 
 

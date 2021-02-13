@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE FunctionalDependencies   #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE NamedFieldPuns #-}
 module Main where
@@ -18,12 +17,13 @@ import           System.Exit
 import           Utils.Path              hiding ( PathUtils(..) )
 import           Parse.AST
 
-import           Infer.Solve
+import           Infer.AST
 import           Infer.Infer
 import           Options.Applicative
 import           Tools.CommandLineFlags
 import           Tools.CommandLine
 import           Compile.Compile
+import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
@@ -50,6 +50,14 @@ import           Data.List                      ( isInfixOf
                                                 )
 import           Data.String.Utils
 import           Compile.JSInternals
+import           Error.Error
+import           Explain.Reason
+import qualified Canonicalize.Canonicalize     as Can
+import qualified Canonicalize.AST              as Can
+import qualified Canonicalize.Env              as Can
+import           Target
+import           Debug.Trace
+import           Text.Show.Pretty
 
 
 main :: IO ()
@@ -67,18 +75,12 @@ run cmd = do
   coverage <- isCoverageEnabled
 
   case cmd of
-    Compile entrypoint outputPath _ verbose debug bundle optimize ->
-      runCompilation entrypoint
-                     outputPath
-                     verbose
-                     debug
-                     bundle
-                     coverage
-                     optimize
+    Compile{}                -> runCompilation cmd coverage
 
     Test entrypoint coverage -> runTests entrypoint coverage
 
     Install                  -> runPackageInstaller
+
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
 shouldBeCovered rootPath path
@@ -103,7 +105,6 @@ generateLCovInfoForAST astPath coverables =
     lines     = filter isLine coverables
     tn        = "TN:"
     sf        = "SF:" <> astPath
-    -- sf          = "SF:" <> makeRelativeEx "/Users/a.boeglin/Code/madlib" astPath
     fns =
       rstrip
         $   unlines
@@ -154,24 +155,28 @@ runTests entrypoint coverage = do
   testOutput <-
     try $ callCommand $ "node " <> testRunnerPathChecked <> " " <> entrypoint
   case (testOutput :: Either IOError ()) of
-    Left  e -> return () --putStrLn $ ppShow e
+    Left  e -> return ()
     Right a -> return ()
 
-runCompilation
-  :: String -> String -> Bool -> Bool -> Bool -> Bool -> Bool -> IO ()
-runCompilation entrypoint outputPath verbose debug bundle coverage optimized =
-  do
+runCompilation :: Command -> Bool -> IO ()
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target) coverage
+  = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     astTable            <- buildASTTable canonicalEntrypoint
+    let canTable = astTable >>= \table -> Can.runCanonicalization
+          target
+          Can.initialEnv
+          table
+          canonicalEntrypoint
 
-    rootPath            <- canonicalizePath $ computeRootPath entrypoint
+    rootPath <- canonicalizePath $ computeRootPath entrypoint
 
-    let entryAST         = astTable >>= flip findAST canonicalEntrypoint
-        resolvedASTTable = case (entryAST, astTable) of
-          (Right ast, Right table) ->
+    let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
+        resolvedASTTable = case (entryAST, canTable) of
+          (Right ast, Right table) -> do
             runExcept (runStateT (solveTable table ast) Unique { count = 0 })
-          (_     , Left e) -> Left e
-          (Left e, _     ) -> Left e
+          (_, Left e) -> Left e
+          (Left e, _) -> Left $ InferError (ImportNotFound rootPath) NoReason
 
     when verbose $ do
       putStrLn $ "OUTPUT: " ++ outputPath
@@ -191,12 +196,9 @@ runCompilation entrypoint outputPath verbose debug bundle coverage optimized =
 
         let optimizedTable = optimizeTable optimized table
 
-        generate rootPath
-                 outputPath
-                 canonicalEntrypoint
-                 bundle
+        generate opts { compileInput = canonicalEntrypoint }
                  coverage
-                 optimized
+                 rootPath
                  optimizedTable
 
         when bundle $ do
@@ -214,20 +216,6 @@ runCompilation entrypoint outputPath verbose debug bundle coverage optimized =
                 ["-r", takeDirectory outputPath <> "/.bundle"]
                 ""
               writeFile outputPath bundleContent
-
-        when debug $ do
-          putStrLn "compiled JS:"
-          putStrLn
-            $   concat
-            $   compile
-                  (CompilationConfig rootPath
-                                     canonicalEntrypoint
-                                     canonicalEntrypoint
-                                     outputPath
-                                     False
-                                     False
-                  )
-            <$> M.elems optimizedTable
 
 
 rollupNotFoundMessage = unlines
@@ -272,47 +260,30 @@ runBundle dest entrypointCompiledPath = do
     Left e -> return $ Left e
 
 
-generate
-  :: FilePath
-  -> FilePath
-  -> FilePath
-  -> Bool
-  -> Bool
-  -> Bool
-  -> Opt.Table
-  -> IO ()
-generate rootPath outputPath entrypointPath bundle coverage optimized table =
+generate :: Command -> Bool -> FilePath -> Opt.Table -> IO ()
+generate options coverage rootPath table = do
+  let outputPath = compileOutput options
+      bundle     = compileBundle options
+      optimized  = compileOptimize options
+      target     = compileTarget options
+  (head <$>) <$> mapM (generateAST options coverage rootPath) $ M.elems table
+  writeFile
+      (  takeDirectory outputPath
+      <> (if bundle then "/.bundle" else "")
+      <> "/__internals__.mjs"
+      )
+    $ generateInternalsModuleContent target optimized coverage
+
+
+generateAST :: Command -> Bool -> FilePath -> Opt.AST -> IO ()
+generateAST options coverage rootPath ast@Opt.AST { Opt.apath = Just path } =
   do
-    (head <$>)
-      <$> mapM
-            (generateAST rootPath
-                         outputPath
-                         entrypointPath
-                         bundle
-                         coverage
-                         optimized
-            )
-      $   M.elems table
-    writeFile
-        (  takeDirectory outputPath
-        <> (if bundle then "/.bundle" else "")
-        <> "/__internals__.mjs"
-        )
-      $ generateInternalsModuleContent optimized coverage
-
-
-generateAST
-  :: FilePath
-  -> FilePath
-  -> FilePath
-  -> Bool
-  -> Bool
-  -> Bool
-  -> Opt.AST
-  -> IO ()
-generateAST rootPath outputPath entrypointPath bundle coverage optimized ast@Opt.AST { Opt.apath = Just path }
-  = do
-    let computedOutputPath = if bundle
+    let entrypointPath     = compileInput options
+        outputPath         = compileOutput options
+        bundle             = compileBundle options
+        optimized          = compileOptimize options
+        target             = compileTarget options
+        computedOutputPath = if bundle
           then computeTargetPath (takeDirectory outputPath <> "/.bundle")
                                  rootPath
                                  path
@@ -326,5 +297,6 @@ generateAST rootPath outputPath entrypointPath bundle coverage optimized ast@Opt
                          computedOutputPath
                          coverage
                          optimized
+                         target
       )
       ast

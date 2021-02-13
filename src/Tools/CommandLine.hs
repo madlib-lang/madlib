@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Tools.CommandLine where
 
 import           Options.Applicative
@@ -6,6 +7,7 @@ import           Tools.CommandLineFlags
 import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
+import           Target
 
 hashBar = "################################################"
 h1 = " ____    __  ____   _____   ____    ____  ______"
@@ -67,6 +69,29 @@ parseOptimize = switch
   )
 
 
+parseTargetOption :: ReadM Target
+parseTargetOption = eitherReader $ \case
+  "node"    -> Right TNode
+  "browser" -> Right TBrowser
+  s ->
+    Left
+      $ "'"
+      <> s
+      <> "' is not a valid target option, possible values are 'browser' or 'node'."
+
+parseTarget :: Parser Target
+parseTarget = option
+  parseTargetOption
+  (  long "target"
+  <> short 't'
+  <> metavar "TARGET"
+  <> help
+       "What target it should compile to, possible values are: browser or node"
+  <> showDefault
+  <> value TNode
+  )
+
+
 parseInstall :: Parser Command
 parseInstall = pure Install
 
@@ -81,6 +106,7 @@ parseCompile =
     <*> parseDebug
     <*> parseBundle
     <*> parseOptimize
+    <*> parseTarget
 
 parseCoverage :: Parser Bool
 parseCoverage = switch

@@ -9,34 +9,34 @@ Show['Number'] = {
   show: __curry__((n) => new Number(n).toString())
 };
 Show['Tuple_2'] = {
-  show: (Show_ab) => ((Show_aa) => (__curry__((__x__) => ((__x__) => {
+  show: (Show_ae) => ((Show_ad) => (__curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,b] = __x__;
-    return `<` + Show_aa.show(a) + `, ` + Show_ab.show(b) + `>`;
+    return `<` + Show_ad.show(a) + `, ` + Show_ae.show(b) + `>`;
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(__x__))))
 };
 Show['Tuple_3'] = {
-  show: (Show_av) => ((Show_au) => ((Show_at) => (__curry__((__x__) => ((__x__) => {
+  show: (Show_ay) => ((Show_ax) => ((Show_aw) => (__curry__((__x__) => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     const [a,b,c] = __x__;
-    return `<` + Show_at.show(a) + `, ` + Show_au.show(b) + `, ` + Show_av.show(c) + `>`;
+    return `<` + Show_aw.show(a) + `, ` + Show_ax.show(b) + `, ` + Show_ay.show(c) + `>`;
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(__x__)))))
 };
 Show['Either'] = {
-  show: (Show_cf) => ((Show_cc) => (__curry__((__x__) => ((__x__) => {
+  show: (Show_ci) => ((Show_cf) => (__curry__((__x__) => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     const a = __x__.__args[0];
-    return `Right ` + Show_cf.show(a);
+    return `Right ` + Show_ci.show(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     const e = __x__.__args[0];
-    return `Left ` + Show_cc.show(e);
+    return `Left ` + Show_cf.show(e);
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
@@ -44,6 +44,7 @@ throw 'non exhaustive patterns!'; }
 };
 Show.Tuple_2.show(Show.Boolean)(Show.Number)(([1, false]));
 Show.Either.show(Show.Number)(Show.Number)(Right(3));
+const fnWithConstraint = (Show_o) => (Show_o.show);
 Show.Tuple_2.show(Show.Number)(Show.Number)(([1, 1]));
 Show.Tuple_3.show(Show.Boolean)(Show.Number)(Show.Boolean)(([false, 42, true]));
 export default {};

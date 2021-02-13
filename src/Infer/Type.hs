@@ -4,42 +4,15 @@ module Infer.Type where
 
 import qualified Data.Map                      as M
 import           AST.Source                     ( Exp )
-import           Text.Show.Pretty               ( ppShow )
-import           Debug.Trace                    ( trace )
-import qualified Data.Set                      as S
 import           Data.List                      ( nub
                                                 , union
                                                 )
 
 
-type Vars = M.Map String Scheme
-type Interfaces = M.Map Id Interface
-type Methods = M.Map String Scheme
-type TypeDecls = M.Map String Type
-type Constructors = M.Map String (String, Scheme)
-
-
-
-data Interface = Interface [TVar] [Pred] [Instance] deriving(Eq, Show)
-
-newtype Instance = Instance (Qual Pred) deriving(Eq, Show)
-
-
-data Env
-  = Env
-    { envvars         :: Vars
-    , envtypes        :: TypeDecls
-    , envinterfaces   :: Interfaces
-    , envmethods      :: Methods
-    , envcurrentpath  :: FilePath
-    -- , envconstructors :: Constructors
-    }
-    deriving(Eq, Show)
-
-
 data TVar = TV Id Kind
   deriving (Show, Eq, Ord)
 
+-- TODO: Add FilePath from origin module
 data TCon = TC Id Kind
   deriving (Show, Eq, Ord)
 

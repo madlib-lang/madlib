@@ -1,10 +1,10 @@
-{-# LANGUAGE NamedFieldPuns #-}
 module AST.Optimized where
 
-import qualified Data.Map                      as M
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
+import qualified Data.Map                      as M
+
 
 data Optimized a = Optimized Ty.Type Area a deriving(Eq, Show)
 
@@ -24,9 +24,9 @@ data Import
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+data Interface = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) deriving(Eq, Show)
 
-data Instance = Instance Constraints Name String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+data Instance = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
 data TypeDecl
   = ADT
@@ -111,7 +111,7 @@ data Exp_ = LNum String
           | Assignment Name Exp
           | Export Exp
           | Var Name
-          | TypedExp Exp Typing
+          | TypedExp Exp Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | Record [Field]
@@ -125,6 +125,8 @@ type Name = String
 
 -- AST TABLE
 type Table = M.Map FilePath AST
+
+-- Functions
 
 getStartLine :: Exp -> Int
 getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line

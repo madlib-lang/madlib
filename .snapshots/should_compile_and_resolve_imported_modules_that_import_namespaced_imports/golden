@@ -16,11 +16,11 @@ export default { writeFile, TextData, BinaryData };
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";
 
-export const Response = __curry__((a) => ({ __constructor: "Response", __args: [ a ] }));
 export const TextBody = __curry__((a) => ({ __constructor: "TextBody", __args: [ a ] }));
 export const BinaryBody = __curry__((a) => ({ __constructor: "BinaryBody", __args: [ a ] }));
+export const Response = __curry__((a) => ({ __constructor: "Response", __args: [ a ] }));
 export const get = __curry__((url) => );
-export default { get, Response, TextBody, BinaryBody };
+export default { get, TextBody, BinaryBody, Response };
 // file: /root/project/src/IO.mad
 export const log = __curry__((a) => { console.log(a); return a; });
 export default { log };

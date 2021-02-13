@@ -5,19 +5,11 @@ Left
         (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star))))
      (Reason
         (PatternTypeError
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 97 5 14) (Loc 98 5 15))
-              (Var "a"))
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
+           (Canonical (Area (Loc 97 5 14) (Loc 98 5 15)) (Var "a"))
+           (Canonical
               (Area (Loc 89 5 6) (Loc 95 5 12))
               (PCtor
                  "Just"
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 94 5 11) (Loc 95 5 12))
-                     (PVar "a")
-                 ])))
+                 [ Canonical (Area (Loc 94 5 11) (Loc 95 5 12)) (PVar "a") ])))
         "path"
         (Area (Loc 86 5 3) (Loc 98 5 15))))

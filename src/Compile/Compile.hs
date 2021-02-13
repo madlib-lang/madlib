@@ -27,6 +27,8 @@ import           Infer.Type
 import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
 import           Compile.JSInternals
+import           Target
+import           Compile.Utils
 
 
 
@@ -44,6 +46,7 @@ data CompilationConfig
       , ccoutputPath     :: FilePath
       , cccoverage       :: Bool
       , ccoptimize       :: Bool
+      , cctarget         :: Target
       }
 
 class Compilable a where
@@ -698,12 +701,13 @@ updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
 instance Compilable Opt.Interface where
-  compile _ interface = case interface of
-    Opt.Interface _ name _ _ -> "global." <> name <> " = {};\n"
+  compile config interface = case interface of
+    Opt.Interface name _ _ _ ->
+      getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
 instance Compilable Opt.Instance where
   compile config inst = case inst of
-    Opt.Instance _ interface typings dict ->
+    Opt.Instance interface _ typings dict -> -- "INST" <> interface
       interface
         <> "['"
         <> typings
@@ -822,4 +826,3 @@ buildDefaultExport as es =
 
   getConstructorName :: Constructor -> String
   getConstructorName (Constructor cname _) = cname
-

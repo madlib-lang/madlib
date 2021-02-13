@@ -1,6 +1,8 @@
 // file: ./ADTs
 export const Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
 export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
+const NotExportedADT = __curry__((a) => ({ __constructor: "NotExportedADT", __args: [ a ] }));
+const StillNotExported = ({ __constructor: "StillNotExported", __args: [  ] });
 export default { Just, Nothing };
 // file: ./Module
 import {} from "./__internals__.mjs"

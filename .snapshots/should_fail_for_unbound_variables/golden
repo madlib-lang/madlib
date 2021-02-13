@@ -3,9 +3,6 @@ Left
      (UnboundVariable "x")
      (Reason
         (VariableNotDeclared
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 0 1 1) (Loc 1 1 2))
-              (Var "x")))
+           (Canonical (Area (Loc 0 1 1) (Loc 1 1 2)) (Var "x")))
         "path"
         (Area (Loc 0 1 1) (Loc 1 1 2))))

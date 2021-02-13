@@ -3,13 +3,14 @@
 module Infer.Placeholder where
 
 import           Infer.Type
+import           Infer.Env
 import           Infer.Infer
-import qualified AST.Solved                    as Slv
-import qualified Data.Map                      as M
 import           Infer.Pred
 import           Infer.Unify
-import           Control.Monad.Except
 import           Infer.Substitute
+import qualified AST.Solved                    as Slv
+import qualified Data.Map                      as M
+import           Control.Monad.Except
 
 
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -131,7 +132,7 @@ updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef
     var'  <- shouldInsert env $ IsIn cls instanceTypes' -- Reconsider if the instance is fully resolved
 
     ps <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
-    ps'   <- getAllParentInterfaces env ps
+    ps'   <- getAllParentPreds env ps
     pushPlaceholders
       env
       (Slv.Solved t
@@ -176,7 +177,7 @@ buildClassRefPreds env cls ts = do
 
   s    <- unify instTypes ts
   ps   <- catchError (byInst env $ IsIn cls ts) (const $ return [])
-  pps' <- mapM (getParentInterfaces env) (reverse (apply s ps))
+  pps' <- mapM (getParentPreds env) (reverse (apply s ps))
   let ps' = concat $ reverse <$> pps'
   mapM
     (\(IsIn cls' ts') -> do

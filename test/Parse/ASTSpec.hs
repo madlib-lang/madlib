@@ -51,7 +51,7 @@ spec = do
 
           pathUtils   = defaultPathUtils { readFile = rf }
 
-      r <- buildASTTable' pathUtils "" Nothing "fixtures/source.mad"
+      r <- buildASTTable' pathUtils "" Nothing [] "fixtures/source.mad"
       let actual = r >>= flip findAST "./fixtures/source.mad"
       actual `shouldBe` expected
 
@@ -75,7 +75,7 @@ spec = do
         rf        = makeReadFile files
         pathUtils = defaultPathUtils { readFile = rf }
 
-      r <- buildASTTable' pathUtils "" Nothing "fixtures/source.mad"
+      r <- buildASTTable' pathUtils "" Nothing [] "fixtures/source.mad"
       let actual = r >>= flip findAST "./fixtures/source-not-there.mad"
       actual `shouldBe` expected
 
@@ -105,26 +105,25 @@ spec = do
         pathUtils = defaultPathUtils { readFile = makeReadFile files }
 
         actual    = unsafePerformIO
-          $ buildASTTable' pathUtils "" Nothing "/fixtures/sourceA.mad"
+          $ buildASTTable' pathUtils "" Nothing [] "/fixtures/sourceA.mad"
       snapshotTest "should build an AST Table" actual
 
     it "should fail to build an ast table if the source file is not found" $ do
-      let
-        sourceA = unlines
-          [ "import { fn2 } from \"./sourceB\""
-          , "fn :: Number -> Number -> Number"
-          , "fn = (a, b) => (fn2(a, b) + a)"
-          ]
+      let sourceA = unlines
+            [ "import { fn2 } from \"./sourceB\""
+            , "fn :: Number -> Number -> Number"
+            , "fn = (a, b) => (fn2(a, b) + a)"
+            ]
 
-        (Right astA) = buildAST "/fixtures/sourceA.mad" sourceA
+          (Right astA) = buildAST "/fixtures/sourceA.mad" sourceA
 
-        files        = M.fromList [("/fixtures/sourceA.mad", sourceA)]
+          files        = M.fromList [("/fixtures/sourceA.mad", sourceA)]
 
-        rf           = makeReadFile files
-        pathUtils    = defaultPathUtils { readFile = rf }
+          rf           = makeReadFile files
+          pathUtils    = defaultPathUtils { readFile = rf }
 
-        actual       = unsafePerformIO
-          $ buildASTTable' pathUtils "" Nothing "/fixtures/sourceA.mad"
+          actual       = unsafePerformIO
+            $ buildASTTable' pathUtils "" Nothing [] "/fixtures/sourceA.mad"
       snapshotTest
         "should fail to build an ast table if the source file is not found"
         actual
@@ -155,7 +154,7 @@ spec = do
         pathUtils = defaultPathUtils { readFile = rf }
 
         actual    = unsafePerformIO
-          $ buildASTTable' pathUtils "" Nothing "/src/sourceA.mad"
+          $ buildASTTable' pathUtils "" Nothing [] "/src/sourceA.mad"
 
       snapshotTest "should figure out the root directory" actual
 

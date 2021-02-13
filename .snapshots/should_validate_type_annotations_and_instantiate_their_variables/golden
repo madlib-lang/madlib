@@ -63,11 +63,20 @@ Right
                                       (JSExp "some JS")
                                   ])
                            ]))))
-               (TRArr
-                  (TRArr (TRSingle "a") (TRSingle "b"))
-                  (TRArr
-                     (TRComp "List" [ TRSingle "a" ])
-                     (TRComp "List" [ TRSingle "b" ]))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TGen 1)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 1))))))
         , Solved
             (TApp
                (TCon (TC "List" (Kfun Star Star)))

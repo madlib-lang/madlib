@@ -4,23 +4,13 @@ Left
         (TCon (TC "String" Star)) (TCon (TC "Number" Star)))
      (Reason
         (PatternTypeError
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
-              (Area (Loc 95 4 28) (Loc 96 4 29))
-              (Var "x"))
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
+           (Canonical (Area (Loc 95 4 28) (Loc 96 4 29)) (Var "x"))
+           (Canonical
               (Area (Loc 73 4 6) (Loc 90 4 23))
               (PCtor
                  "LoggedIn"
-                 [ Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 82 4 15) (Loc 88 4 21))
-                     (PCon "Number")
-                 , Meta
-                     Infos { nthArg = Nothing , origin = Nothing }
-                     (Area (Loc 89 4 22) (Loc 90 4 23))
-                     (PVar "x")
+                 [ Canonical (Area (Loc 82 4 15) (Loc 88 4 21)) (PCon "Number")
+                 , Canonical (Area (Loc 89 4 22) (Loc 90 4 23)) (PVar "x")
                  ])))
         "path"
         (Area (Loc 70 4 3) (Loc 96 4 29))))

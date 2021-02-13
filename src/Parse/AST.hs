@@ -39,53 +39,59 @@ buildASTTable path = do
                             , byteStringReadFile = B.readFile
                             , getExecutablePath  = E.getExecutablePath
                             }
-  buildASTTable' pathUtils path Nothing path
+  buildASTTable' pathUtils path Nothing [] path
 
 
 buildASTTable'
   :: PathUtils
   -> FilePath
   -> Maybe Import
+  -> [FilePath]
   -> FilePath
   -> IO (Either InferError Table)
-buildASTTable' pathUtils parentPath imp srcPath = do
-  let parentDir = dropFileName parentPath
-  absoluteSrcPath <- resolveAbsoluteSrcPath pathUtils parentDir srcPath
+buildASTTable' pathUtils parentPath imp previousPaths srcPath
+  | srcPath `elem` previousPaths = return $ Left $ InferError
+    (ImportCycle (previousPaths ++ [srcPath]))
+    NoReason
+  | otherwise = do
+    let parentDir = dropFileName parentPath
+    absoluteSrcPath <- resolveAbsoluteSrcPath pathUtils parentDir srcPath
 
-  code            <-
-    try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
+    code            <-
+      try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
 
-  let reason = case imp of
-        Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
-        Nothing   -> NoReason
+    let reason = case imp of
+          Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
+          Nothing   -> NoReason
 
-  let source = case code of
-        Right a -> Right a
-        Left  _ -> Left $ InferError (ImportNotFound absoluteSrcPath) reason
+    let source = case code of
+          Right a -> Right a
+          Left  _ -> Left $ InferError (ImportNotFound absoluteSrcPath) reason
 
-  ast <- case source of
-    Left  e    -> return $ Left e
-    Right code -> return $ buildAST srcPath code
+    ast <- case source of
+      Left  e    -> return $ Left e
+      Right code -> return $ buildAST srcPath code
 
-  completeImports <- getImportsWithAbsolutePaths pathUtils
-                                                 (dropFileName srcPath)
-                                                 ast
+    completeImports <- getImportsWithAbsolutePaths pathUtils
+                                                   (dropFileName srcPath)
+                                                   ast
 
-  let generatedTable =
-        uncurry M.singleton
-          .   (absoluteSrcPath, )
-          .   (\ast' -> ast' { aimports = completeImports })
-          <$> ast
+    let generatedTable =
+          uncurry M.singleton
+            .   (absoluteSrcPath, )
+            .   (\ast' -> ast' { aimports = completeImports })
+            <$> ast
 
-  childTables <- mapM
-    (\imp' -> buildASTTable' pathUtils
-                             srcPath
-                             (Just imp')
-                             (getImportAbsolutePath imp')
-    )
-    completeImports
+    childTables <- mapM
+      (\imp' -> buildASTTable' pathUtils
+                               srcPath
+                               (Just imp')
+                               (previousPaths ++ [srcPath])
+                               (getImportAbsolutePath imp')
+      )
+      completeImports
 
-  return $ foldr (liftM2 M.union) generatedTable childTables
+    return $ foldr (liftM2 M.union) generatedTable childTables
 
 
 getImportsWithAbsolutePaths
@@ -103,8 +109,8 @@ getImportsWithAbsolutePaths pathUtils ctxPath ast = case ast of
 
 setImportAbsolutePath :: Import -> FilePath -> Import
 setImportAbsolutePath imp fp = case imp of
-  Meta i a (NamedImport   s p _) -> Meta i a (NamedImport s p fp)
-  Meta i a (DefaultImport s p _) -> Meta i a (DefaultImport s p fp)
+  Source i a (NamedImport   s p _) -> Source i a (NamedImport s p fp)
+  Source i a (DefaultImport s p _) -> Source i a (DefaultImport s p fp)
 
 
 findAST :: Table -> FilePath -> Either InferError AST

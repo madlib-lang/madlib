@@ -333,9 +333,18 @@ Right
                                          True)
                                   ])
                            ]))))
-               (TRArr
-                  (TRSingle "Number")
-                  (TRArr (TRSingle "Number") (TRSingle "Boolean"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TCon (TC "Number" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TCon (TC "Number" Star)))
+                          (TCon (TC "Boolean" Star))))))
         , Solved
             (TCon (TC "Boolean" Star))
             (Area (Loc 170 8 7) (Loc 171 8 8))

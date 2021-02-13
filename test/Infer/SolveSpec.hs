@@ -18,12 +18,17 @@ import           Control.Monad.State            ( StateT(runStateT) )
 
 import qualified AST.Source                    as Src
 import qualified AST.Solved                    as Slv
-import           Infer.Solve
+import           Infer.Exp
 import           Infer.Env
 import           Infer.Infer
+import           Infer.AST
 import           Error.Error
-import           Explain.Reason
 import           Parse.AST
+import           Canonicalize.Canonicalize
+import           Target
+import           Canonicalize.AST              as Can
+import qualified Canonicalize.Env              as Can
+import           Data.Maybe
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -37,16 +42,24 @@ snapshotTest name actualOutput = Golden
   }
 
 tester :: String -> Either InferError Slv.AST
-tester code = case buildAST "path" code of
-  (Right ast) -> runEnv ast >>= (`runInfer` ast)
-  (Left  e  ) -> Left e
+tester code = do
+  ast <- buildAST "path" code
+  let table = M.singleton "path" ast
+  (table, _) <- canonicalizeAST TNode Can.initialEnv table "path"
+  canAST     <- Can.findAST table "path"
+
+  runEnv canAST >>= (`runInfer` canAST)
  where
   runEnv x = fst <$> runExcept
     (runStateT (buildInitialEnv initialEnv x) Unique { count = 0 })
 
 tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
-tableTester table ast =
-  fst <$> runExcept (runStateT (solveTable table ast) Unique { count = 0 })
+tableTester table ast = do
+  let astPath = fromMaybe "" $ Src.apath ast
+  (canTable, _) <- canonicalizeAST TNode Can.initialEnv table astPath
+  canAST        <- Can.findAST canTable astPath
+  fst <$> runExcept
+    (runStateT (solveTable canTable canAST) Unique { count = 0 })
 
 spec :: Spec
 spec = do
@@ -385,6 +398,10 @@ spec = do
           astA  = buildAST "./ModuleA" codeA
           codeB = unlines
             [ "import W from \"./ModuleA\""
+            , ""
+            , "double :: Functor f => f Number -> f Number"
+            , "double = map((x) => x * 2)"
+            , ""
             , "of(3)"
             , "  |> map((x) => (x + 3))"
             , "  |> chain((x) => (of(x * 3)))"

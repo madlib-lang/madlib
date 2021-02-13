@@ -4,27 +4,36 @@
 module Infer.Pred where
 
 import           Infer.Type
+import           Infer.Env
 import           Infer.Substitute
-import qualified Data.Map                      as M
-import           Control.Monad                  ( msum )
 import           Infer.Unify
-import           Control.Monad.Except
 import           Infer.Infer
 import           Error.Error
 import           Explain.Reason
-import           Text.Show.Pretty               ( ppShow )
-import           Debug.Trace                    ( trace )
-import           Data.Maybe
+import           Control.Monad                  ( msum )
+import           Control.Monad.Except
 import           Data.List
-import           Control.Monad.Trans.Maybe
+import qualified Data.Map                      as M
 
 
--- defined :: Maybe a -> Bool
--- defined (Just x) = True
--- defined Nothing  = False
 
--- overlap       :: Env -> Pred -> Pred -> Bool
--- overlap env p q = defined (unify env p q)
+getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
+getAllParentPreds env ps = concat <$> mapM (getParentPreds env) ps
+
+getParentPreds :: Env -> Pred -> Infer [Pred]
+getParentPreds env p@(IsIn cls ts) = do
+  (Interface tvs ps _) <- case M.lookup cls (envinterfaces env) of
+    Just x  -> return x
+    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
+
+  s <- unify (TVar <$> tvs) ts
+
+  let ps' = (\(IsIn cls ts') -> IsIn cls (apply s ts')) <$> ps
+
+  nextPreds <- mapM (getParentPreds env) ps'
+
+  return $ [p] `union` ps' `union` concat nextPreds
+
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
 liftPred m (IsIn i ts) (IsIn i' ts')
@@ -36,85 +45,6 @@ instance Unify Pred where
 
 instance Match Pred where
   match = liftPred match
-
-addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
-addInterface env id tvs ps = case M.lookup id (envinterfaces env) of
-  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoReason
-  Nothing -> return env
-    { envinterfaces = M.insert id (Interface tvs ps []) (envinterfaces env)
-    }
-
-
-verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
-verifyInstancePredicates env p' p@(IsIn cls ts) = do
-  case M.lookup cls (envinterfaces env) of
-    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
-
-    Just (Interface tvs ps' is) -> catchError
-      (unify (TVar <$> tvs) ts >> return True)
-      (\_ -> throwError $ InferError
-        (InstancePredicateError p' p (IsIn cls (TVar <$> tvs)))
-        NoReason
-      )
-
--- Add test for overlap that should also test for kind of the given type !!
-addInstance :: Env -> [Pred] -> Pred -> Infer Env
-addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envinterfaces env) of
-  Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
-
-  Just (Interface tvs ps' is) -> do
-    mapM_ (verifyInstancePredicates env p) ps
-
-    let ts'    = TVar <$> tvs
-    let zipped = zip ts' ts
-    s <- match ts' ts
-    catchError
-      (mapM_ (isInstanceDefined env s) ps')
-      (\e@(InferError (NoInstanceFound _ ts) _) ->
-        when (all isConcrete ts) (throwError e)
-      )
-    return env
-      { envinterfaces = M.insert
-                          cls
-                          (Interface tvs ps' (Instance (ps :=> p) : is))
-                          (envinterfaces env)
-      }
-
-getAllParentInterfaces :: Env -> [Pred] -> Infer [Pred]
-getAllParentInterfaces env ps = concat <$> mapM (getParentInterfaces env) ps
-
-getParentInterfaces :: Env -> Pred -> Infer [Pred]
-getParentInterfaces env p@(IsIn cls ts) = do
-  (Interface tvs ps _) <- case M.lookup cls (envinterfaces env) of
-    Just x  -> return x
-    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
-
-  s <- unify (TVar <$> tvs) ts
-
-  let ps' = (\(IsIn cls ts') -> IsIn cls (apply s ts')) <$> ps
-
-  nextPreds <- mapM (getParentInterfaces env) ps'
-
-  return $ [p] `union` ps' `union` concat nextPreds
-
-
-findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)
-findM f = runMaybeT . msum . map (MaybeT . f)
-
-isInstanceDefined :: Env -> Substitution -> Pred -> Infer Bool
-isInstanceDefined env subst (IsIn id ts) = do
-  let is = insts env id
-  found <- findM
-    (\(Instance (_ :=> (IsIn _ ts'))) -> catchError
-      (match ts' (apply subst ts) >>= \_ -> return $ Just True)
-      (const $ return Nothing)
-    )
-    is
-  case found of
-    Just _ -> return True
-    Nothing ->
-      throwError $ InferError (NoInstanceFound id (apply subst ts)) NoReason
-
 
 sig :: Env -> Id -> [TVar]
 sig env i = case M.lookup i (envinterfaces env) of
@@ -201,8 +131,6 @@ entail env ps p = do
       e                       -> throwError e
     )
   return $ any ((p `elem`) . bySuper env) ps || tt
-
------------------------------------------------------------------------------
 
 simplify :: ([Pred] -> Pred -> Bool) -> [Pred] -> [Pred]
 simplify ent = loop []

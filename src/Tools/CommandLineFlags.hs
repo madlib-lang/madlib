@@ -1,5 +1,7 @@
 module Tools.CommandLineFlags where
 
+import           Target
+
 data Command
   = Compile
       { compileInput :: FilePath
@@ -9,6 +11,7 @@ data Command
       , compileDebug :: Bool
       , compileBundle :: Bool
       , compileOptimize :: Bool
+      , compileTarget :: Target
       }
   | Test { testInput :: FilePath, coverage :: Bool }
   | Install

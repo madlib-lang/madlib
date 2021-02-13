@@ -16,19 +16,26 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State
 import qualified AST.Source                    as Src
+import qualified AST.Canonical                 as Can
 import qualified AST.Optimized                 as Opt
-import           Infer.Solve
-import           Infer.Env
+import           Infer.Exp
+import           Infer.Env                     as Infer
 import           Infer.Infer
 import           Optimize.Optimize
 import           Error.Error
 import           Explain.Reason
-import           Parse.AST
+import           Parse.AST                     as Parse
 import           Compile.Compile
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
 import           Utils.PathUtils
 import           TestUtils
+import           Canonicalize.Canonicalize     as Can
+import           Canonicalize.AST              as Can
+import           Canonicalize.Env              as Can
+import           Target
+import           Infer.AST
+import           Debug.Trace
 
 
 snapshotTest :: String -> String -> Golden Text
@@ -46,9 +53,11 @@ snapshotTest name actualOutput = Golden
 -- TODO: Refactor in order to use the inferAST function instead that supports imports
 tester :: Bool -> String -> String
 tester optimized code =
-  let inferred = case buildAST "path" code of
-        (Right ast) -> runEnv ast >>= (`runInfer` ast)
-        _           -> Left $ InferError (UnboundVariable "") NoReason
+  let Right ast    = buildAST "path" code
+      table        = M.singleton "path" ast
+      Right table' = runCanonicalization TNode Can.initialEnv table "path"
+      Right canAST = Can.findAST table' "path"
+      inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
           (CompilationConfig "/"
@@ -57,18 +66,21 @@ tester optimized code =
                              "./build"
                              False
                              optimized
+                             TNode
           )
           (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept
-    (runStateT (buildInitialEnv initialEnv x) Unique { count = 0 })
+    (runStateT (buildInitialEnv Infer.initialEnv x) Unique { count = 0 })
 
 coverageTester :: String -> String
 coverageTester code =
-  let inferred = case buildAST "path" code of
-        (Right ast) -> runEnv ast >>= (`runInfer` ast)
-        _           -> Left $ InferError (UnboundVariable "") NoReason
+  let Right ast    = buildAST "path" code
+      table        = M.singleton "path" ast
+      Right table' = runCanonicalization TNode Can.initialEnv table "path"
+      Right canAST = Can.findAST table' "path"
+      inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
           (CompilationConfig "/"
@@ -77,26 +89,34 @@ coverageTester code =
                              "./build"
                              True
                              False
+                             TNode
           )
           (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept
-    (runStateT (buildInitialEnv initialEnv x) Unique { count = 0 })
+    (runStateT (buildInitialEnv Infer.initialEnv x) Unique { count = 0 })
 
 tableTester :: FilePath -> Src.Table -> Src.AST -> String
 tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
-  let resolved =
-          fst <$> runExcept
-            (runStateT (solveTable table ast) Unique { count = 0 })
+
+  let
+    canTable = case runCanonicalization TNode Can.initialEnv table path of
+      Right table -> table
+      Left  err   -> trace ("ERR: " <> ppShow err) mempty
+    Right canAST = Can.findAST canTable path
+    resolved =
+      fst <$> runExcept
+        (runStateT (solveTable canTable canAST) Unique { count = 0 })
   in
     case resolved of
       Right x ->
         concat
-          $ compile (CompilationConfig rootPath path path "./build" False False)
-          . (\a ->
-              (evalState (optimize False a) initialOptimizationState :: Opt.AST)
-            )
+          $   compile
+                (CompilationConfig rootPath path path "./build" False False TNode)
+          .   (\a ->
+                (evalState (optimize False a) initialOptimizationState :: Opt.AST)
+              )
           <$> M.elems x
       Left e -> ppShow e
 
@@ -579,6 +599,8 @@ spec = do
               , ""
               , "show((Right(3) :: Either Number Number))"
               , ""
+              , "fnWithConstraint :: Show a => a -> String"
+              , "fnWithConstraint = show"
               , ""
               , "show(<1, 1>)"
               , "show(<false, 42, true>)"
@@ -617,7 +639,10 @@ spec = do
 
     it "should compile imports and exports of Namespaced ADTs" $ do
       let
-        codeA = "export data Maybe a = Just a | Nothing"
+        codeA = unlines
+                  [ "export data Maybe a = Just a | Nothing"
+                  , "data NotExportedADT a = NotExportedADT a | StillNotExported"
+                  ]
         astA  = buildAST "./ADTs" codeA
 
         codeB = unlines
@@ -667,11 +692,11 @@ spec = do
               [ "import W from \"./Wish\""
               , "import B from \"./Binary\""
               , ""
-              , "export data Response = Response { body :: Body }"
-              , ""
               , "export data Body"
               , "  = TextBody String"
               , "  | BinaryBody B.ByteArray"
+              , ""
+              , "export data Response = Response { body :: Body }"
               , ""
               , "get :: String -> W.Wish e Response"
               , "export get = (url) => (#- -#)"
@@ -755,8 +780,9 @@ spec = do
                 pathUtils
                 "/root/project/src/Main.mad"
                 Nothing
+                []
                 "/root/project/src/Main.mad"
-          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+          let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
           let actual = case (ast, r) of
                 (Right a, Right t) -> tableTester "/root/project/src" t a
                 (Left  e, _      ) -> ppShow e
@@ -795,9 +821,13 @@ spec = do
                               else return False
           }
 
-      let r = unsafePerformIO
-            $ buildASTTable' pathUtils "/src/Main.mad" Nothing "/src/Main.mad"
-      let ast = r >>= flip findAST "/src/Main.mad"
+      let r = unsafePerformIO $ buildASTTable' pathUtils
+                                               "/src/Main.mad"
+                                               Nothing
+                                               []
+                                               "/src/Main.mad"
+
+      let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/src" t a
 
@@ -844,8 +874,10 @@ spec = do
                 pathUtils
                 "/root/project/src/Main.mad"
                 Nothing
+                []
                 "/root/project/src/Main.mad"
-          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+
+          let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
           let actual = case (ast, r) of
                 (Right a, Right t) -> tableTester "/root/project/src" t a
 
@@ -878,8 +910,10 @@ spec = do
       let r = unsafePerformIO $ buildASTTable' pathUtils
                                                "/root/project/src/Main.mad"
                                                Nothing
+                                               []
                                                "/root/project/src/Main.mad"
-      let ast = r >>= flip findAST "/root/project/src/Main.mad"
+
+      let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/root/project/src" t a
             (Left  e, _      ) -> ppShow e
@@ -1036,8 +1070,10 @@ spec = do
                 pathUtils
                 "/root/project/src/Main.mad"
                 Nothing
+                []
                 "/root/project/src/Main.mad"
-          let ast = r >>= flip findAST "/root/project/src/Main.mad"
+
+          let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
           let actual = case (ast, r) of
                 (Right a, Right t) -> tableTester "/root/project/src" t a
                 (Left  e, _      ) -> ppShow e
@@ -1098,8 +1134,10 @@ spec = do
           let r = unsafePerformIO $ buildASTTable' pathUtils
                                                    "/src/Main.mad"
                                                    Nothing
+                                                   []
                                                    "/src/Main.mad"
-          let ast = r >>= flip findAST "/src/Main.mad"
+
+          let ast = r >>= flip Parse.findAST "/src/Main.mad"
           let actual = case (ast, r) of
                 (Right a, Right t) -> tableTester "/src" t a
 

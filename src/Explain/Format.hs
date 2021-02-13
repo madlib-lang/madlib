@@ -5,6 +5,7 @@ import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
+import qualified AST.Canonical                 as Can
 import           Infer.Type
 import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
@@ -23,34 +24,34 @@ format :: (FilePath -> IO String) -> InferError -> IO String
 format rf (InferError err reason) = do
   moduleContent <- lines <$> getModuleContent rf reason
   case reason of
-    Reason (WrongTypeApplied (Meta _ _ abs) (Meta infos (Area (Loc a li c) _) e)) _ area
+    Reason (WrongTypeApplied (Can.Canonical _ abs) (Can.Canonical (Area (Loc a li c) _) e)) _ area
       -> do
         let beginning = case abs of
               -- TODO: Extend to other operators
-              Src.App (Meta _ _ (Src.Var "+")) _ _ ->
+              Can.App (Can.Canonical _ (Can.Var "+")) _ _ ->
                 "Error applying the operator +"
-              Src.Var "+" -> "Error applying the operator +"
+              Can.Var "+" -> "Error applying the operator +"
               _           -> "Error in function call"
 
         let l = moduleContent !! (li - 1)
         let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
         let (UnificationError expected actual) = err
 
-        let nthInfo = case nthArg infos of
-              Just nth -> "The " <> show nth <> nthEnding nth <> " "
-              Nothing  -> "The "
-        let fn = case origin infos of
-              Just origin -> case origin of
-                Src.Var n -> " of \"" <> n <> "\" "
-                _         -> " "
-              Nothing -> " "
+        -- let nthInfo = case nthArg infos of
+        --       Just nth -> "The " <> show nth <> nthEnding nth <> " "
+        --       Nothing  -> "The "
+        -- let fn = case origin infos of
+        --       Just origin -> case origin of
+        --         Src.Var n -> " of \"" <> n <> "\" "
+        --         _         -> " "
+        --       Nothing -> " "
 
 
         let message =
               "\n"
-                <> nthInfo
-                <> "argument"
-                <> fn
+                -- <> nthInfo
+                -- <> "argument"
+                -- <> fn
                 <> "has type\n\t"
                 <> typeToStr actual
                 <> "\nBut it was expected to be\n\t"
@@ -77,11 +78,11 @@ format rf (InferError err reason) = do
           <> "\n\n"
           <> hint
 
-    Reason (VariableNotDeclared (Meta _ (Area (Loc a li c) _) exp)) _ area ->
-      do
+    Reason (VariableNotDeclared (Can.Canonical (Area (Loc a li c) _) exp)) _ area
+      -> do
         let l           = moduleContent !! (li - 1)
 
-        let (Src.Var n) = exp
+        let (Can.Var n) = exp
 
         let
           hint = unlines
@@ -104,8 +105,8 @@ format rf (InferError err reason) = do
           <> hint
 
     Reason (IfElseBranchTypesDontMatch ifElse falsy) _ _ -> do
-      let ifElseArea                         = getArea ifElse
-      let falsyArea                          = getArea falsy
+      let ifElseArea                         = Can.getArea ifElse
+      let falsyArea                          = Can.getArea falsy
       let (Area (Loc _ falsyLine _) _)       = falsyArea
       let (showStart, showEnd) = computeLinesToShow ifElseArea falsyArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -133,8 +134,8 @@ format rf (InferError err reason) = do
         <> hint
 
     Reason (IfElseCondIsNotBool ifElse cond) _ _ -> do
-      let ifElseArea                         = getArea ifElse
-      let condArea                           = getArea cond
+      let ifElseArea                         = Can.getArea ifElse
+      let condArea                           = Can.getArea cond
       let (Area (Loc _ falsyLine _) _)       = condArea
       let (showStart, showEnd) = computeLinesToShow ifElseArea condArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -161,8 +162,8 @@ format rf (InferError err reason) = do
         <> hint
 
     Reason (PatternTypeError switch pat) _ _ -> do
-      let switchArea                         = getArea switch
-      let patternArea                        = getArea pat
+      let switchArea                         = Can.getArea switch
+      let patternArea                        = Can.getArea pat
       let (Area (Loc _ patternLine _) _)     = patternArea
       let (showStart, showEnd) = computeLinesToShow switchArea patternArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -190,8 +191,8 @@ format rf (InferError err reason) = do
         <> hint
 
     Reason (PatternConstructorDoesNotExist switch pat) _ _ -> do
-      let switchArea                     = getArea switch
-      let patternArea                    = getArea pat
+      let switchArea                     = Can.getArea switch
+      let patternArea                    = Can.getArea pat
       let (Area (Loc _ patternLine _) _) = patternArea
       let (showStart, showEnd) = computeLinesToShow switchArea patternArea
       let linesToShow = slice showStart showEnd moduleContent
@@ -213,8 +214,8 @@ format rf (InferError err reason) = do
         <> hint
 
     Reason (WrongImport imp) _ _ -> do
-      let importArea                    = getArea imp
-      let highlightArea                 = getArea imp
+      let importArea                    = Src.getArea imp
+      let highlightArea                 = Src.getArea imp
       let (Area (Loc _ importLine _) _) = highlightArea
       let (showStart, showEnd) = computeLinesToShow importArea highlightArea
       let linesToShow                   = slice showStart showEnd moduleContent
@@ -237,14 +238,14 @@ format rf (InferError err reason) = do
         <> hint
 
     Reason (TypeAndTypingMismatch exp typing expectedType actualType) _ _ -> do
-      let typingArea                 = getArea typing
-      let expArea                    = getArea exp
+      let typingArea                 = Can.getArea typing
+      let expArea                    = Can.getArea exp
       let (Area (Loc _ expLine _) _) = expArea
       let (typingStart, typingEnd) = computeLinesToShow typingArea typingArea
       let (expStart, expEnd)         = computeLinesToShow expArea expArea
       let typingContent = slice typingStart typingEnd moduleContent
       let expContent = case exp of
-            (Meta _ _ (Src.Assignment _ _)) ->
+            (Can.Canonical _ (Can.Assignment _ _)) ->
               slice expStart expEnd moduleContent
             _ -> []
 
@@ -365,6 +366,25 @@ formatTypeError err = case err of
       <> "' but a constraint of the form '"
       <> predToStr pCorrect
       <> "'\nwas expected."
+
+  ImportCycle paths ->
+    "I found an import cycle:\n\n"
+      <> buildCycleOutput (length paths) 0 paths
+      <> "\nHint: Import cycles are not allowed and usually show a design issue. Consider splitting things in more\n"
+      <> "modules in order to have both modules import a common dependency instead of having them being co-dependent.\n"
+      <> "Another solution would be to move things that depend on the other module from the cycle into the other in\n"
+      <> "order to collocate things that depend on each other."
+
+   where
+    buildCycleOutput :: Int -> Int -> [FilePath] -> String
+    buildCycleOutput total current paths =
+      let amountOfSpaces = current * 2
+          spaces         = concat $ replicate amountOfSpaces " "
+          prefix         = spaces <> if current /= 0 then "-> " else ""
+          next           = if current < (total - 1)
+            then buildCycleOutput total (current + 1) paths
+            else ""
+      in  prefix <> paths !! current <> "\n" <> next
 
   _ -> ppShow err
 

@@ -13,7 +13,7 @@ Right
                   (TypedExp
                      (Solved
                         (TCon (TC "X" Star)) (Area (Loc 16 2 6) (Loc 17 2 7)) (Var "X"))
-                     (TRSingle "X"))))
+                     (Forall [] ([] :=> TCon (TC "X" Star))))))
         ]
     , atypedecls =
         [ ADT

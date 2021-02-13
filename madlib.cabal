@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4abd9e5245a742c7cc837b08ff7042efbbee3f2f17acf2ba51cc72fae8209569
+-- hash: fa339540c2a840b4f972595f1e096a53514d2404312fb13393c15e33a7016821
 
 name:           madlib
 version:        0.0.8
@@ -31,23 +31,33 @@ library
       AST.Optimized
       AST.Solved
       AST.Source
+      Canonicalize.ADT
+      Canonicalize.AST
+      Canonicalize.Canonicalize
+      Canonicalize.CanonicalM
+      Canonicalize.Env
+      Canonicalize.Interface
+      Canonicalize.JSExp
+      Canonicalize.Typing
       Compile.Compile
       Compile.JSInternals
+      Compile.Utils
       Coverage.Coverable
       Error.Error
       Explain.Format
       Explain.Location
       Explain.Meta
       Explain.Reason
-      Infer.ADT
+      Infer.AST
       Infer.Env
+      Infer.Exp
       Infer.Infer
       Infer.Instantiate
+      Infer.Interface
       Infer.Pattern
       Infer.Placeholder
       Infer.Pred
       Infer.Scheme
-      Infer.Solve
       Infer.Substitute
       Infer.Type
       Infer.Typing
@@ -58,6 +68,7 @@ library
       Parse.AST
       Parse.Grammar
       Parse.Lexer
+      Target
       Tools.CommandLine
       Tools.CommandLineFlags
       Utils.Path
@@ -87,7 +98,7 @@ library
     , mtl
     , optparse-applicative
     , pretty-show
-    , process ==1.6.8.0
+    , process ==1.6.9.0
     , regex-tdfa
     , text
     , transformers
@@ -100,23 +111,33 @@ executable madlib
       AST.Optimized
       AST.Solved
       AST.Source
+      Canonicalize.ADT
+      Canonicalize.AST
+      Canonicalize.Canonicalize
+      Canonicalize.CanonicalM
+      Canonicalize.Env
+      Canonicalize.Interface
+      Canonicalize.JSExp
+      Canonicalize.Typing
       Compile.Compile
       Compile.JSInternals
+      Compile.Utils
       Coverage.Coverable
       Error.Error
       Explain.Format
       Explain.Location
       Explain.Meta
       Explain.Reason
-      Infer.ADT
+      Infer.AST
       Infer.Env
+      Infer.Exp
       Infer.Infer
       Infer.Instantiate
+      Infer.Interface
       Infer.Pattern
       Infer.Placeholder
       Infer.Pred
       Infer.Scheme
-      Infer.Solve
       Infer.Substitute
       Infer.Type
       Infer.Typing
@@ -126,6 +147,7 @@ executable madlib
       Parse.AST
       Parse.Grammar
       Parse.Lexer
+      Target
       Tools.CommandLine
       Tools.CommandLineFlags
       Utils.Path
@@ -155,7 +177,7 @@ executable madlib
     , mtl
     , optparse-applicative
     , pretty-show
-    , process ==1.6.8.0
+    , process ==1.6.9.0
     , regex-tdfa
     , text
     , transformers
@@ -196,7 +218,7 @@ test-suite madlib-test
     , mtl
     , optparse-applicative
     , pretty-show
-    , process ==1.6.8.0
+    , process ==1.6.9.0
     , regex-tdfa
     , text
     , transformers

@@ -108,8 +108,15 @@ Right
                                                          (LNum "-3")))
                                                ])
                                         ]))))))
-                      (TRArr
-                         (TRComp "M.Maybe" [ TRSingle "Number" ]) (TRSingle "Number")))
+                      (Forall
+                         []
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TApp
+                                    (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
+                              (TCon (TC "Number" Star)))))
                ]
            , atypedecls = []
            , ainterfaces = []

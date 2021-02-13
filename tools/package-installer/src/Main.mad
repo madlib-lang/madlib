@@ -1,10 +1,10 @@
 import L from "List"
-import { Wish, mapRej, parallel, fulfill, bad } from "Wish"
+import { Wish, chainRej, mapRej, parallel, fulfill, bad } from "Wish"
 import Math from "Math"
 import IO from "IO"
 import Http from "Http"
 import B from "Binary"
-import { readFile, writeFile, BinaryData } from "FileSystem"
+import { readFile, writeFile, BinaryData, exists } from "FileSystem"
 import M from "Map"
 import { Just } from "Maybe"
 import J from "Json"
@@ -72,10 +72,29 @@ processArchive = (pkgName) => pipe(
   andDo(cleanUp(pkgName))
 )(pkgName)
 
+installNodeModules :: String -> Wish S.CommandError String
+installNodeModules = (pkg) => pipe(
+  (pkg) => `${MADLIB_MODULES_PATH}${pkg}/`,
+  (path) => exists(`${path}package.json`) |> andDo(of(path)),
+  map(mappend("npm install ")),
+  chain(S.exec),
+  map((x) => IO.log(`nodejs modules installed for '${pkg}'`) |> always(x)),
+  chainRej((_) => of(IO.log(`No node modules to install for '${pkg}'`)))
+)(pkg)
+
+initMadlibModulesFolder :: String -> a -> Wish String a
+initMadlibModulesFolder = (path, a) => pipe(
+  (p) => S.exec(`mkdir -p ${p}`),
+  mapRej(where is S.CommandError _ msg: msg),
+  andDo(of(a))
+)(path)
+
+
 installPackages :: String -> ()
 installPackages = pipe(
   readFile,
   mapRej((_) => MADLIB_NOT_FOUND),
+  chain(initMadlibModulesFolder(MADLIB_MODULES_PATH)),
   chain(getDependencies),
   chain((depMap) => pipe(
       M.keys,
@@ -87,6 +106,7 @@ installPackages = pipe(
         map(BinaryData),
         chain(writeFile(`${MADLIB_MODULES_PATH}${key}.zip`)),
         andDo(processArchive(key)),
+        andDo(installNodeModules(key)),
         map((_) => `package ${key} installed`),
         mapRej((_) => `Error installing package '${key}'`)
       )(key)),

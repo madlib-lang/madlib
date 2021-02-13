@@ -13,22 +13,12 @@ Left
            (TVar (TV "i" Star))))
      (Reason
         (WrongTypeApplied
-           (Meta
-              Infos { nthArg = Nothing , origin = Nothing }
+           (Canonical
               (Area (Loc 24 2 1) (Loc 34 2 11))
               (App
-                 (Meta
-                    Infos { nthArg = Nothing , origin = Nothing }
-                    (Area (Loc 24 2 1) (Loc 26 2 3))
-                    (Var "fn"))
-                 (Meta
-                    Infos { nthArg = Just 1 , origin = Just (Var "fn") }
-                    (Area (Loc 27 2 4) (Loc 30 2 7))
-                    (LStr "3"))
+                 (Canonical (Area (Loc 24 2 1) (Loc 26 2 3)) (Var "fn"))
+                 (Canonical (Area (Loc 27 2 4) (Loc 30 2 7)) (LStr "3"))
                  False))
-           (Meta
-              Infos { nthArg = Just 2 , origin = Just (Var "fn") }
-              (Area (Loc 32 2 9) (Loc 33 2 10))
-              (LNum "4")))
+           (Canonical (Area (Loc 32 2 9) (Loc 33 2 10)) (LNum "4")))
         "path"
         (Area (Loc 32 2 9) (Loc 33 2 10))))

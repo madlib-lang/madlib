@@ -1,9 +1,11 @@
 module AST.Source where
 
-import qualified Data.Map                      as M
 
 import           Explain.Meta
+import           Explain.Location
+import qualified Data.Map                      as M
 
+data Source a = Source (Infos a) Area a deriving(Eq, Show)
 
 data AST =
   AST
@@ -16,7 +18,7 @@ data AST =
     }
     deriving(Eq, Show)
 
-type Import = Meta Import_
+type Import = Source Import_
 
 -- The second FilePath parameter is the absolute path to that module
 data Import_
@@ -24,7 +26,6 @@ data Import_
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
--- TODO: Rename TypeDecl
 data TypeDecl
   = ADT
       { adtname :: Name
@@ -49,7 +50,7 @@ data Constructor
   deriving(Eq, Show)
 
 
-type Typing = Meta Typing_
+type Typing = Source Typing_
 
 type Constraints = [Typing]
 
@@ -63,11 +64,11 @@ data Typing_
   deriving(Eq, Show)
 
 
-type Is = Meta Is_
+type Is = Source Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
 
-type Pattern = Meta Pattern_
+type Pattern = Source Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -95,7 +96,7 @@ data ListItem
   deriving(Eq, Show)
 
 
-type Exp = Meta Exp_
+type Exp = Source Exp_
 
 data Exp_ = LNum String
           | LStr String
@@ -115,6 +116,7 @@ data Exp_ = LNum String
           | TypedExp Exp Typing
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
+          | Pipe [Exp]
           | JSExp String
           deriving(Eq, Show)
 
@@ -125,16 +127,16 @@ type Name = String
 
 type Table = M.Map FilePath AST
 
+-- Functions
+
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
-  Meta _ _ (NamedImport   _ _ n) -> n
-  Meta _ _ (DefaultImport _ _ n) -> n
+  Source _ _ (NamedImport   _ _ n) -> n
+  Source _ _ (DefaultImport _ _ n) -> n
 
 getImportPath :: Import -> (Import, FilePath)
-getImportPath imp@(Meta _ _ (NamedImport   _ p _)) = (imp, p)
-getImportPath imp@(Meta _ _ (DefaultImport _ p _)) = (imp, p)
+getImportPath imp@(Source _ _ (NamedImport   _ p _)) = (imp, p)
+getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
 
-isAssignment :: Exp -> Bool
-isAssignment exp = case exp of
-  Meta _ _ (Assignment _ _) -> True
-  _                         -> False
+getArea :: Source a -> Area
+getArea (Source _ a _) = a

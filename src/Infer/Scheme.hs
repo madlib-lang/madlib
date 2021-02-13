@@ -4,9 +4,6 @@ module Infer.Scheme where
 import           Infer.Type
 import           Infer.Substitute
 import qualified Data.Map                      as M
-import qualified Data.Set                      as S
-import           Debug.Trace                    ( trace )
-import           Text.Show.Pretty               ( ppShow )
 
 
 quantify :: [TVar] -> Qual Type -> Scheme

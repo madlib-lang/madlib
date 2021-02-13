@@ -34,5 +34,6 @@ data TypeError
   | FatalError
   | ASTHasNoPath
   | Error
+  | ImportCycle [FilePath]
   deriving (Show, Eq, Ord)
 

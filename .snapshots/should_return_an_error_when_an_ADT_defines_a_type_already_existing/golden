@@ -1,3 +1,5 @@
 Left
   (InferError
-     (ADTAlreadyDefined (TCon (TC "Result" (Kfun Star Star)))) NoReason)
+     (ADTAlreadyDefined
+        (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "a" Star))))
+     NoReason)

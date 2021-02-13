@@ -12,6 +12,7 @@ import           Data.Text                      ( Text
                                                 , unpack
                                                 )
 import           Compile.JSInternals
+import           Target
 
 snapshotTest :: String -> String -> Golden Text
 snapshotTest name actualOutput = Golden
@@ -29,10 +30,10 @@ spec :: Spec
 spec = do
   describe "JS Internals" $ do
     it "should build all internal JS functions" $ do
-      let actual = generateInternalsModuleContent False False
+      let actual = generateInternalsModuleContent TNode False False
       snapshotTest "should build all internal JS functions" actual
 
     it "should include coverage trackers when coverage is True" $ do
-      let actual = generateInternalsModuleContent False True
+      let actual = generateInternalsModuleContent TNode False True
       snapshotTest "should include coverage trackers when coverage is True"
                    actual

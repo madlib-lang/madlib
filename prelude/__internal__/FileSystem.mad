@@ -36,12 +36,23 @@ export writeFile = (path, d) => where(d) {
 
 readFile :: String -> W.Wish e String
 export readFile = (path) => W.Wish((bad, good) => #- {
-    fs.readFile(path, "utf8", (err, d) => {
-      if (err) {
-        bad(err);
-      }
-      else {
-        good(d)
-      }
-    })
-  }-#)
+  fs.readFile(path, "utf8", (err, d) => {
+    if (err) {
+      bad(err);
+    }
+    else {
+      good(d)
+    }
+  })
+}-#)
+
+exists :: String -> W.Wish e String
+export exists = (path) => W.Wish((bad, good) => #- {
+  fs.access(path, fs.constants.F_OK, (err) => {
+    if (err) {
+      bad(err);
+    } else {
+      good(path);
+    }
+  });
+} -#)

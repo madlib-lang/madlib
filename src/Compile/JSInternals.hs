@@ -1,28 +1,30 @@
 module Compile.JSInternals where
 
+import           Target
+import           Compile.Utils
 
-generateInternalsModuleContent :: Bool -> Bool -> String
-generateInternalsModuleContent optimized coverage =
-  curryFn optimized
+generateInternalsModuleContent :: Target -> Bool -> Bool -> String
+generateInternalsModuleContent target optimized coverage =
+  curryFn target optimized
     <> "\n"
-    <> eqFn optimized
+    <> eqFn target optimized
     <> "\n"
-    <> applyDictsFn optimized
+    <> applyDictsFn target optimized
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
 
 curryFnName :: Bool -> String
 curryFnName optimized = if optimized then "λ1" else "__curry__"
 
-curryFn :: Bool -> String
-curryFn optimized =
+curryFn :: Target -> Bool -> String
+curryFn target optimized =
   let fnName = curryFnName optimized
   in
     unlines
       [ "const toString = (fn, args = []) => () => ("
       , "  `curry(${fn.toString()})${args.length > 0 ? `(${args.join(`,`)})` : ``}`"
       , ")"
-      , "global." <> fnName <> " = (fn) => {"
+      , getGlobalForTarget target <> "." <> fnName <> " = (fn) => {"
       , "  function curried(...args) {"
       , "    const length = args.length"
       , "    function saucy(...args2) {"
@@ -65,12 +67,12 @@ hpLineWrap = unlines
 eqFnName :: Bool -> String
 eqFnName optimized = if optimized then "λ2" else "__eq__"
 
-eqFn :: Bool -> String
-eqFn optimized =
+eqFn :: Target -> Bool -> String
+eqFn target optimized =
   let fnName = eqFnName optimized
   in
     unlines
-      [ "global." <> fnName <> " = (l, r) => {"
+      [ getGlobalForTarget target <> "." <> fnName <> " = (l, r) => {"
       , "  if (l === r) {"
       , "    return true;"
       , "  }"
@@ -96,12 +98,12 @@ eqFn optimized =
 applyDictsFnName :: Bool -> String
 applyDictsFnName optimized = if optimized then "λ3" else "__apMtdDicts__"
 
-applyDictsFn :: Bool -> String
-applyDictsFn optimized =
+applyDictsFn :: Target -> Bool -> String
+applyDictsFn target optimized =
   let fnName = applyDictsFnName optimized
   in
     unlines
       [ "const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);"
-      , "global." <> fnName <> " = (dict, dicts) =>"
+      , getGlobalForTarget target <> "." <> fnName <> " = (dict, dicts) =>"
       , "  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});"
       ]

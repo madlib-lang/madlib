@@ -63,11 +63,20 @@ Right
                                       (JSExp "some JS")
                                   ])
                            ]))))
-               (TRArr
-                  (TRArr (TRSingle "a") (TRSingle "b"))
-                  (TRArr
-                     (TRComp "List" [ TRSingle "a" ])
-                     (TRComp "List" [ TRSingle "b" ]))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TGen 1)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 1))))))
         , Solved
             (TApp
                (TApp
@@ -133,11 +142,18 @@ Right
                                             (JSExp "xs1.concat(xs2)")
                                         ])
                                  ]))))))
-               (TRArr
-                  (TRComp "List" [ TRSingle "a" ])
-                  (TRArr
-                     (TRComp "List" [ TRSingle "a" ])
-                     (TRComp "List" [ TRSingle "a" ]))))
+               (Forall
+                  [ Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0))))))
         , Solved
             (TApp
                (TApp
@@ -249,11 +265,24 @@ Right
                                                ])
                                         ])
                                  ]))))))
-               (TRArr
-                  (TRArr (TRSingle "a") (TRArr (TRSingle "b") (TRSingle "a")))
-                  (TRArr
-                     (TRSingle "a")
-                     (TRArr (TRComp "List" [ TRSingle "b" ]) (TRSingle "a")))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TApp
+                                (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 1))
+                                (TGen 0))))
+                       (TApp
+                          (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 1)))
+                             (TGen 0))))))
         , Solved
             (TApp
                (TApp
@@ -263,13 +292,13 @@ Right
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                           (TVar (TV "aq" Star)))
-                        (TVar (TV "au" Star)))))
+                           (TVar (TV "am" Star)))
+                        (TVar (TV "ao" Star)))))
                (TApp
                   (TApp
                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                     (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "aq" Star))))
-                  (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "au" Star)))))
+                     (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
+                  (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
             (Area (Loc 271 8 1) (Loc 414 15 6))
             (TypedExp
                (Solved
@@ -281,13 +310,13 @@ Right
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TVar (TV "aq" Star)))
-                              (TVar (TV "au" Star)))))
+                                 (TVar (TV "am" Star)))
+                              (TVar (TV "ao" Star)))))
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                           (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "aq" Star))))
-                        (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "au" Star)))))
+                           (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
+                        (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
                   (Area (Loc 271 8 1) (Loc 273 8 3))
                   (Export
                      (Solved
@@ -299,13 +328,13 @@ Right
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                       (TVar (TV "aq" Star)))
-                                    (TVar (TV "at" Star)))))
+                                       (TVar (TV "am" Star)))
+                                    (TVar (TV "an" Star)))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "aq" Star))))
-                              (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "au" Star)))))
+                                 (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
+                              (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
                         (Area (Loc 311 9 1) (Loc 317 9 7))
                         (Assignment
                            "ap"
@@ -318,16 +347,16 @@ Right
                                        (TApp
                                           (TApp
                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                             (TVar (TV "aq" Star)))
-                                          (TVar (TV "at" Star)))))
+                                             (TVar (TV "am" Star)))
+                                          (TVar (TV "an" Star)))))
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                        (TApp
                                           (TCon (TC "List" (Kfun Star Star)))
-                                          (TVar (TV "aq" Star))))
+                                          (TVar (TV "am" Star))))
                                     (TApp
-                                       (TCon (TC "List" (Kfun Star Star))) (TVar (TV "au" Star)))))
+                                       (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
                               (Area (Loc 323 9 13) (Loc 414 15 6))
                               (Abs
                                  "fns"
@@ -337,17 +366,17 @@ Right
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                            (TApp
                                               (TCon (TC "List" (Kfun Star Star)))
-                                              (TVar (TV "aq" Star))))
+                                              (TVar (TV "am" Star))))
                                         (TApp
                                            (TCon (TC "List" (Kfun Star Star)))
-                                           (TVar (TV "au" Star))))
+                                           (TVar (TV "ao" Star))))
                                      (Area (Loc 323 9 13) (Loc 414 15 6))
                                      (Abs
                                         "xs"
                                         [ Solved
                                             (TApp
                                                (TCon (TC "List" (Kfun Star Star)))
-                                               (TVar (TV "au" Star)))
+                                               (TVar (TV "ao" Star)))
                                             (Area (Loc 411 15 3) (Loc 414 15 6))
                                             (App
                                                (Solved
@@ -364,11 +393,11 @@ Right
                                                                        "(->)"
                                                                        (Kfun
                                                                           Star (Kfun Star Star))))
-                                                                 (TVar (TV "aq" Star)))
-                                                              (TVar (TV "at" Star)))))
+                                                                 (TVar (TV "am" Star)))
+                                                              (TVar (TV "an" Star)))))
                                                      (TApp
                                                         (TCon (TC "List" (Kfun Star Star)))
-                                                        (TVar (TV "au" Star))))
+                                                        (TVar (TV "ao" Star))))
                                                   (Area (Loc 405 14 3) (Loc 407 14 5))
                                                   (App
                                                      (Solved
@@ -398,8 +427,8 @@ Right
                                                                                    Star
                                                                                    (Kfun
                                                                                       Star Star))))
-                                                                          (TVar (TV "aq" Star)))
-                                                                       (TVar (TV "at" Star)))))
+                                                                          (TVar (TV "am" Star)))
+                                                                       (TVar (TV "an" Star)))))
                                                               (TVar (TV "ac" Star))))
                                                         (Area (Loc 336 9 26) (Loc 416 16 1))
                                                         (App
@@ -476,7 +505,7 @@ Right
                                                                           (TC
                                                                              "List"
                                                                              (Kfun Star Star)))
-                                                                       (TVar (TV "at" Star))))
+                                                                       (TVar (TV "an" Star))))
                                                                  (TApp
                                                                     (TApp
                                                                        (TCon
@@ -495,14 +524,14 @@ Right
                                                                                       (Kfun
                                                                                          Star
                                                                                          Star))))
-                                                                             (TVar (TV "aq" Star)))
-                                                                          (TVar (TV "at" Star))))
+                                                                             (TVar (TV "am" Star)))
+                                                                          (TVar (TV "an" Star))))
                                                                     (TApp
                                                                        (TCon
                                                                           (TC
                                                                              "List"
                                                                              (Kfun Star Star)))
-                                                                       (TVar (TV "at" Star)))))
+                                                                       (TVar (TV "an" Star)))))
                                                               (Area (Loc 346 10 3) (Loc 401 13 8))
                                                               (Abs
                                                                  "agg"
@@ -527,15 +556,15 @@ Right
                                                                                              Star
                                                                                              Star))))
                                                                                  (TVar
-                                                                                    (TV "aq" Star)))
+                                                                                    (TV "am" Star)))
                                                                               (TVar
-                                                                                 (TV "at" Star))))
+                                                                                 (TV "an" Star))))
                                                                         (TApp
                                                                            (TCon
                                                                               (TC
                                                                                  "List"
                                                                                  (Kfun Star Star)))
-                                                                           (TVar (TV "at" Star))))
+                                                                           (TVar (TV "an" Star))))
                                                                      (Area
                                                                         (Loc 346 10 3)
                                                                         (Loc 401 13 8))
@@ -549,7 +578,7 @@ Right
                                                                                      (Kfun
                                                                                         Star Star)))
                                                                                (TVar
-                                                                                  (TV "at" Star)))
+                                                                                  (TV "an" Star)))
                                                                             (Area
                                                                                (Loc 359 10 16)
                                                                                (Loc 401 13 8))
@@ -574,7 +603,7 @@ Right
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "aq"
+                                                                                                 "am"
                                                                                                  Star))))
                                                                                      (TApp
                                                                                         (TCon
@@ -585,13 +614,13 @@ Right
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "at"
+                                                                                              "an"
                                                                                               Star))))
                                                                                   (Area
                                                                                      (Loc 359 10 16)
                                                                                      (Loc 397 13 3))
                                                                                   (Abs
-                                                                                     "__x__"
+                                                                                     "_P_"
                                                                                      [ Solved
                                                                                          (TApp
                                                                                             (TCon
@@ -602,13 +631,13 @@ Right
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "at"
+                                                                                                  "an"
                                                                                                   Star)))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               359
-                                                                                               10
-                                                                                               16)
+                                                                                               382
+                                                                                               12
+                                                                                               5)
                                                                                             (Loc
                                                                                                393
                                                                                                12
@@ -626,104 +655,6 @@ Right
                                                                                                                  Star
                                                                                                                  Star))))
                                                                                                      (TApp
-                                                                                                        (TApp
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "(->)"
-                                                                                                                 (Kfun
-                                                                                                                    Star
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star))))
-                                                                                                           (TApp
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "List"
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star)))
-                                                                                                              (TVar
-                                                                                                                 (TV
-                                                                                                                    "ar"
-                                                                                                                    Star))))
-                                                                                                        (TVar
-                                                                                                           (TV
-                                                                                                              "ak"
-                                                                                                              Star))))
-                                                                                                  (TVar
-                                                                                                     (TV
-                                                                                                        "ak"
-                                                                                                        Star)))
-                                                                                               (Area
-                                                                                                  (Loc
-                                                                                                     382
-                                                                                                     12
-                                                                                                     5)
-                                                                                                  (Loc
-                                                                                                     393
-                                                                                                     12
-                                                                                                     16))
-                                                                                               (App
-                                                                                                  (Solved
-                                                                                                     (TApp
-                                                                                                        (TApp
-                                                                                                           (TCon
-                                                                                                              (TC
-                                                                                                                 "(->)"
-                                                                                                                 (Kfun
-                                                                                                                    Star
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       Star))))
-                                                                                                           (TVar
-                                                                                                              (TV
-                                                                                                                 "aj"
-                                                                                                                 Star)))
-                                                                                                        (TApp
-                                                                                                           (TApp
-                                                                                                              (TCon
-                                                                                                                 (TC
-                                                                                                                    "(->)"
-                                                                                                                    (Kfun
-                                                                                                                       Star
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          Star))))
-                                                                                                              (TApp
-                                                                                                                 (TApp
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "(->)"
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                Star))))
-                                                                                                                    (TVar
-                                                                                                                       (TV
-                                                                                                                          "aj"
-                                                                                                                          Star)))
-                                                                                                                 (TVar
-                                                                                                                    (TV
-                                                                                                                       "ak"
-                                                                                                                       Star))))
-                                                                                                           (TVar
-                                                                                                              (TV
-                                                                                                                 "ak"
-                                                                                                                 Star))))
-                                                                                                     (Area
-                                                                                                        (Loc
-                                                                                                           382
-                                                                                                           12
-                                                                                                           5)
-                                                                                                        (Loc
-                                                                                                           393
-                                                                                                           12
-                                                                                                           16))
-                                                                                                     (Var
-                                                                                                        "|>"))
-                                                                                                  (Solved
-                                                                                                     (TApp
                                                                                                         (TCon
                                                                                                            (TC
                                                                                                               "List"
@@ -732,305 +663,7 @@ Right
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "ar"
-                                                                                                              Star)))
-                                                                                                     (Area
-                                                                                                        (Loc
-                                                                                                           359
-                                                                                                           10
-                                                                                                           16)
-                                                                                                        (Loc
-                                                                                                           376
-                                                                                                           11
-                                                                                                           12))
-                                                                                                     (App
-                                                                                                        (Solved
-                                                                                                           (TApp
-                                                                                                              (TApp
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "(->)"
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star))))
-                                                                                                                 (TApp
-                                                                                                                    (TApp
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "(->)"
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star))))
-                                                                                                                       (TVar
-                                                                                                                          (TV
-                                                                                                                             "ag"
-                                                                                                                             Star)))
-                                                                                                                    (TVar
-                                                                                                                       (TV
-                                                                                                                          "ao"
-                                                                                                                          Star))))
-                                                                                                              (TVar
-                                                                                                                 (TV
-                                                                                                                    "ao"
-                                                                                                                    Star)))
-                                                                                                           (Area
-                                                                                                              (Loc
-                                                                                                                 369
-                                                                                                                 11
-                                                                                                                 5)
-                                                                                                              (Loc
-                                                                                                                 376
-                                                                                                                 11
-                                                                                                                 12))
-                                                                                                           (App
-                                                                                                              (Solved
-                                                                                                                 (TApp
-                                                                                                                    (TApp
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "(->)"
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star))))
-                                                                                                                       (TVar
-                                                                                                                          (TV
-                                                                                                                             "an"
-                                                                                                                             Star)))
-                                                                                                                    (TApp
-                                                                                                                       (TApp
-                                                                                                                          (TCon
-                                                                                                                             (TC
-                                                                                                                                "(->)"
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   (Kfun
-                                                                                                                                      Star
-                                                                                                                                      Star))))
-                                                                                                                          (TApp
-                                                                                                                             (TApp
-                                                                                                                                (TCon
-                                                                                                                                   (TC
-                                                                                                                                      "(->)"
-                                                                                                                                      (Kfun
-                                                                                                                                         Star
-                                                                                                                                         (Kfun
-                                                                                                                                            Star
-                                                                                                                                            Star))))
-                                                                                                                                (TVar
-                                                                                                                                   (TV
-                                                                                                                                      "an"
-                                                                                                                                      Star)))
-                                                                                                                             (TVar
-                                                                                                                                (TV
-                                                                                                                                   "ao"
-                                                                                                                                   Star))))
-                                                                                                                       (TVar
-                                                                                                                          (TV
-                                                                                                                             "ao"
-                                                                                                                             Star))))
-                                                                                                                 (Area
-                                                                                                                    (Loc
-                                                                                                                       369
-                                                                                                                       11
-                                                                                                                       5)
-                                                                                                                    (Loc
-                                                                                                                       376
-                                                                                                                       11
-                                                                                                                       12))
-                                                                                                                 (Var
-                                                                                                                    "|>"))
-                                                                                                              (Solved
-                                                                                                                 (TVar
-                                                                                                                    (TV
-                                                                                                                       "ag"
-                                                                                                                       Star))
-                                                                                                                 (Area
-                                                                                                                    (Loc
-                                                                                                                       359
-                                                                                                                       10
-                                                                                                                       16)
-                                                                                                                    (Loc
-                                                                                                                       397
-                                                                                                                       13
-                                                                                                                       3))
-                                                                                                                 (Var
-                                                                                                                    "__x__"))
-                                                                                                              False))
-                                                                                                        (Solved
-                                                                                                           (TApp
-                                                                                                              (TApp
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "(->)"
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star))))
-                                                                                                                 (TApp
-                                                                                                                    (TCon
-                                                                                                                       (TC
-                                                                                                                          "List"
-                                                                                                                          (Kfun
-                                                                                                                             Star
-                                                                                                                             Star)))
-                                                                                                                    (TVar
-                                                                                                                       (TV
-                                                                                                                          "aq"
-                                                                                                                          Star))))
-                                                                                                              (TApp
-                                                                                                                 (TCon
-                                                                                                                    (TC
-                                                                                                                       "List"
-                                                                                                                       (Kfun
-                                                                                                                          Star
-                                                                                                                          Star)))
-                                                                                                                 (TVar
-                                                                                                                    (TV
-                                                                                                                       "ar"
-                                                                                                                       Star))))
-                                                                                                           (Area
-                                                                                                              (Loc
-                                                                                                                 369
-                                                                                                                 11
-                                                                                                                 5)
-                                                                                                              (Loc
-                                                                                                                 376
-                                                                                                                 11
-                                                                                                                 12))
-                                                                                                           (App
-                                                                                                              (Solved
-                                                                                                                 (TApp
-                                                                                                                    (TApp
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "(->)"
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star))))
-                                                                                                                       (TApp
-                                                                                                                          (TApp
-                                                                                                                             (TCon
-                                                                                                                                (TC
-                                                                                                                                   "(->)"
-                                                                                                                                   (Kfun
-                                                                                                                                      Star
-                                                                                                                                      (Kfun
-                                                                                                                                         Star
-                                                                                                                                         Star))))
-                                                                                                                             (TVar
-                                                                                                                                (TV
-                                                                                                                                   "aq"
-                                                                                                                                   Star)))
-                                                                                                                          (TVar
-                                                                                                                             (TV
-                                                                                                                                "ar"
-                                                                                                                                Star))))
-                                                                                                                    (TApp
-                                                                                                                       (TApp
-                                                                                                                          (TCon
-                                                                                                                             (TC
-                                                                                                                                "(->)"
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   (Kfun
-                                                                                                                                      Star
-                                                                                                                                      Star))))
-                                                                                                                          (TApp
-                                                                                                                             (TCon
-                                                                                                                                (TC
-                                                                                                                                   "List"
-                                                                                                                                   (Kfun
-                                                                                                                                      Star
-                                                                                                                                      Star)))
-                                                                                                                             (TVar
-                                                                                                                                (TV
-                                                                                                                                   "aq"
-                                                                                                                                   Star))))
-                                                                                                                       (TApp
-                                                                                                                          (TCon
-                                                                                                                             (TC
-                                                                                                                                "List"
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star)))
-                                                                                                                          (TVar
-                                                                                                                             (TV
-                                                                                                                                "ar"
-                                                                                                                                Star)))))
-                                                                                                                 (Area
-                                                                                                                    (Loc
-                                                                                                                       369
-                                                                                                                       11
-                                                                                                                       5)
-                                                                                                                    (Loc
-                                                                                                                       372
-                                                                                                                       11
-                                                                                                                       8))
-                                                                                                                 (Var
-                                                                                                                    "map"))
-                                                                                                              (Solved
-                                                                                                                 (TApp
-                                                                                                                    (TApp
-                                                                                                                       (TCon
-                                                                                                                          (TC
-                                                                                                                             "(->)"
-                                                                                                                             (Kfun
-                                                                                                                                Star
-                                                                                                                                (Kfun
-                                                                                                                                   Star
-                                                                                                                                   Star))))
-                                                                                                                       (TVar
-                                                                                                                          (TV
-                                                                                                                             "aq"
-                                                                                                                             Star)))
-                                                                                                                    (TVar
-                                                                                                                       (TV
-                                                                                                                          "ar"
-                                                                                                                          Star)))
-                                                                                                                 (Area
-                                                                                                                    (Loc
-                                                                                                                       373
-                                                                                                                       11
-                                                                                                                       9)
-                                                                                                                    (Loc
-                                                                                                                       375
-                                                                                                                       11
-                                                                                                                       11))
-                                                                                                                 (Var
-                                                                                                                    "fn"))
-                                                                                                              True))
-                                                                                                        True))
-                                                                                                  False))
-                                                                                            (Solved
-                                                                                               (TApp
-                                                                                                  (TApp
-                                                                                                     (TCon
-                                                                                                        (TC
-                                                                                                           "(->)"
-                                                                                                           (Kfun
-                                                                                                              Star
-                                                                                                              (Kfun
-                                                                                                                 Star
-                                                                                                                 Star))))
-                                                                                                     (TApp
-                                                                                                        (TCon
-                                                                                                           (TC
-                                                                                                              "List"
-                                                                                                              (Kfun
-                                                                                                                 Star
-                                                                                                                 Star)))
-                                                                                                        (TVar
-                                                                                                           (TV
-                                                                                                              "at"
+                                                                                                              "aj"
                                                                                                               Star))))
                                                                                                   (TApp
                                                                                                      (TCon
@@ -1041,7 +674,7 @@ Right
                                                                                                               Star)))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "at"
+                                                                                                           "aj"
                                                                                                            Star))))
                                                                                                (Area
                                                                                                   (Loc
@@ -1073,7 +706,7 @@ Right
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "at"
+                                                                                                                    "aj"
                                                                                                                     Star))))
                                                                                                         (TApp
                                                                                                            (TApp
@@ -1094,7 +727,7 @@ Right
                                                                                                                           Star)))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "at"
+                                                                                                                       "aj"
                                                                                                                        Star))))
                                                                                                            (TApp
                                                                                                               (TCon
@@ -1105,7 +738,7 @@ Right
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "at"
+                                                                                                                    "aj"
                                                                                                                     Star)))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1128,7 +761,7 @@ Right
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "at"
+                                                                                                              "aj"
                                                                                                               Star)))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1142,6 +775,198 @@ Right
                                                                                                      (Var
                                                                                                         "agg"))
                                                                                                   True))
+                                                                                            (Solved
+                                                                                               (TApp
+                                                                                                  (TCon
+                                                                                                     (TC
+                                                                                                        "List"
+                                                                                                        (Kfun
+                                                                                                           Star
+                                                                                                           Star)))
+                                                                                                  (TVar
+                                                                                                     (TV
+                                                                                                        "an"
+                                                                                                        Star)))
+                                                                                               (Area
+                                                                                                  (Loc
+                                                                                                     369
+                                                                                                     11
+                                                                                                     5)
+                                                                                                  (Loc
+                                                                                                     376
+                                                                                                     11
+                                                                                                     12))
+                                                                                               (App
+                                                                                                  (Solved
+                                                                                                     (TApp
+                                                                                                        (TApp
+                                                                                                           (TCon
+                                                                                                              (TC
+                                                                                                                 "(->)"
+                                                                                                                 (Kfun
+                                                                                                                    Star
+                                                                                                                    (Kfun
+                                                                                                                       Star
+                                                                                                                       Star))))
+                                                                                                           (TApp
+                                                                                                              (TCon
+                                                                                                                 (TC
+                                                                                                                    "List"
+                                                                                                                    (Kfun
+                                                                                                                       Star
+                                                                                                                       Star)))
+                                                                                                              (TVar
+                                                                                                                 (TV
+                                                                                                                    "am"
+                                                                                                                    Star))))
+                                                                                                        (TApp
+                                                                                                           (TCon
+                                                                                                              (TC
+                                                                                                                 "List"
+                                                                                                                 (Kfun
+                                                                                                                    Star
+                                                                                                                    Star)))
+                                                                                                           (TVar
+                                                                                                              (TV
+                                                                                                                 "an"
+                                                                                                                 Star))))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           369
+                                                                                                           11
+                                                                                                           5)
+                                                                                                        (Loc
+                                                                                                           376
+                                                                                                           11
+                                                                                                           12))
+                                                                                                     (App
+                                                                                                        (Solved
+                                                                                                           (TApp
+                                                                                                              (TApp
+                                                                                                                 (TCon
+                                                                                                                    (TC
+                                                                                                                       "(->)"
+                                                                                                                       (Kfun
+                                                                                                                          Star
+                                                                                                                          (Kfun
+                                                                                                                             Star
+                                                                                                                             Star))))
+                                                                                                                 (TApp
+                                                                                                                    (TApp
+                                                                                                                       (TCon
+                                                                                                                          (TC
+                                                                                                                             "(->)"
+                                                                                                                             (Kfun
+                                                                                                                                Star
+                                                                                                                                (Kfun
+                                                                                                                                   Star
+                                                                                                                                   Star))))
+                                                                                                                       (TVar
+                                                                                                                          (TV
+                                                                                                                             "am"
+                                                                                                                             Star)))
+                                                                                                                    (TVar
+                                                                                                                       (TV
+                                                                                                                          "an"
+                                                                                                                          Star))))
+                                                                                                              (TApp
+                                                                                                                 (TApp
+                                                                                                                    (TCon
+                                                                                                                       (TC
+                                                                                                                          "(->)"
+                                                                                                                          (Kfun
+                                                                                                                             Star
+                                                                                                                             (Kfun
+                                                                                                                                Star
+                                                                                                                                Star))))
+                                                                                                                    (TApp
+                                                                                                                       (TCon
+                                                                                                                          (TC
+                                                                                                                             "List"
+                                                                                                                             (Kfun
+                                                                                                                                Star
+                                                                                                                                Star)))
+                                                                                                                       (TVar
+                                                                                                                          (TV
+                                                                                                                             "am"
+                                                                                                                             Star))))
+                                                                                                                 (TApp
+                                                                                                                    (TCon
+                                                                                                                       (TC
+                                                                                                                          "List"
+                                                                                                                          (Kfun
+                                                                                                                             Star
+                                                                                                                             Star)))
+                                                                                                                    (TVar
+                                                                                                                       (TV
+                                                                                                                          "an"
+                                                                                                                          Star)))))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 369
+                                                                                                                 11
+                                                                                                                 5)
+                                                                                                              (Loc
+                                                                                                                 372
+                                                                                                                 11
+                                                                                                                 8))
+                                                                                                           (Var
+                                                                                                              "map"))
+                                                                                                        (Solved
+                                                                                                           (TApp
+                                                                                                              (TApp
+                                                                                                                 (TCon
+                                                                                                                    (TC
+                                                                                                                       "(->)"
+                                                                                                                       (Kfun
+                                                                                                                          Star
+                                                                                                                          (Kfun
+                                                                                                                             Star
+                                                                                                                             Star))))
+                                                                                                                 (TVar
+                                                                                                                    (TV
+                                                                                                                       "am"
+                                                                                                                       Star)))
+                                                                                                              (TVar
+                                                                                                                 (TV
+                                                                                                                    "an"
+                                                                                                                    Star)))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 373
+                                                                                                                 11
+                                                                                                                 9)
+                                                                                                              (Loc
+                                                                                                                 375
+                                                                                                                 11
+                                                                                                                 11))
+                                                                                                           (Var
+                                                                                                              "fn"))
+                                                                                                        True))
+                                                                                                  (Solved
+                                                                                                     (TApp
+                                                                                                        (TCon
+                                                                                                           (TC
+                                                                                                              "List"
+                                                                                                              (Kfun
+                                                                                                                 Star
+                                                                                                                 Star)))
+                                                                                                        (TVar
+                                                                                                           (TV
+                                                                                                              "am"
+                                                                                                              Star)))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           359
+                                                                                                           10
+                                                                                                           16)
+                                                                                                        (Loc
+                                                                                                           397
+                                                                                                           13
+                                                                                                           3))
+                                                                                                     (Var
+                                                                                                        "_P_"))
+                                                                                                  True))
                                                                                             True)
                                                                                      ]))
                                                                                (Solved
@@ -1154,7 +979,7 @@ Right
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "aq"
+                                                                                           "am"
                                                                                            Star)))
                                                                                   (Area
                                                                                      (Loc 398 13 5)
@@ -1167,7 +992,7 @@ Right
                                                      (Solved
                                                         (TApp
                                                            (TCon (TC "List" (Kfun Star Star)))
-                                                           (TVar (TV "au" Star)))
+                                                           (TVar (TV "ao" Star)))
                                                         (Area (Loc 405 14 3) (Loc 407 14 5))
                                                         (ListConstructor []))
                                                      False))
@@ -1180,18 +1005,29 @@ Right
                                                               (TC
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star))))
-                                                           (TVar (TV "aq" Star)))
-                                                        (TVar (TV "at" Star))))
+                                                           (TVar (TV "am" Star)))
+                                                        (TVar (TV "an" Star))))
                                                   (Area (Loc 411 15 3) (Loc 414 15 6))
                                                   (Var "fns"))
                                                True)
                                         ])
                                  ]))))))
-               (TRArr
-                  (TRComp "List" [ TRArr (TRSingle "a") (TRSingle "b") ])
-                  (TRArr
-                     (TRComp "List" [ TRSingle "a" ])
-                     (TRComp "List" [ TRSingle "b" ]))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)))
+                             (TApp
+                                (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                                (TGen 1))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                             (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 1))))))
         ]
     , atypedecls = []
     , ainterfaces = []
