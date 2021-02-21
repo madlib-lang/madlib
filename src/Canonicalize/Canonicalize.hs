@@ -33,8 +33,7 @@ instance Canonicalizable Src.Exp Can.Exp where
       es' <- mapM (canonicalize env target) es
       return $ Can.Canonical area (Can.TemplateString es')
 
-    Src.JSExp js ->
-      return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
+    Src.JSExp js         -> return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
 
     Src.App fn arg close -> do
       fn'  <- canonicalize env target fn
@@ -46,10 +45,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       field' <- canonicalize env target field
       return $ Can.Canonical area (Can.FieldAccess rec' field')
 
-    Src.NamespaceAccess n ->
-      return $ Can.Canonical area (Can.NamespaceAccess n)
+    Src.NamespaceAccess n -> return $ Can.Canonical area (Can.NamespaceAccess n)
 
-    Src.Abs param body -> do
+    Src.Abs param body    -> do
       body' <- mapM (canonicalize env target) body
       return $ Can.Canonical area (Can.Abs param body')
 
@@ -174,8 +172,7 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
 instance Canonicalizable Src.Import Can.Import where
   canonicalize env target (Src.Source _ area imp) = case imp of
-    Src.NamedImport names relPath absPath ->
-      return $ Can.Canonical area (Can.NamedImport names relPath absPath)
+    Src.NamedImport names relPath absPath -> return $ Can.Canonical area (Can.NamedImport names relPath absPath)
 
     Src.DefaultImport namespace relPath absPath ->
       return $ Can.Canonical area (Can.DefaultImport namespace relPath absPath)

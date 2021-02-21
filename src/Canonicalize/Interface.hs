@@ -22,8 +22,7 @@ import           Data.Maybe
 
 
 
-canonicalizeInterfaces
-  :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
+canonicalizeInterfaces :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
 canonicalizeInterfaces env = foldM
   (\(env, interfaces) interface -> do
     (env'', interface') <- canonicalizeInterface env interface
@@ -38,33 +37,25 @@ canonicalizeInterface env interface = case interface of
     ts <- mapM (typingToType env) ms
 
     let ts' = addConstraints n vars <$> ts
-    let tvs =
-          rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
+    let tvs = rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
 
-    let
-      supers = mapMaybe
-        (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
-          (\tv -> IsIn interface' [tv]) <$> findTypeVar tvs v
-        )
-        constraints
+    let supers = mapMaybe
+          (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
+            (\tv -> IsIn interface' [tv]) <$> findTypeVar tvs v
+          )
+          constraints
 
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> supers
     let subst   = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
     let scs =
-          (\(ps :=> t) -> quantify
-              (collectVars (apply subst t))
-              (apply subst (ps <> supers) :=> apply subst t)
-            )
-            <$> ts'
+          (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps <> supers) :=> apply subst t)) <$> ts'
 
     let tvs' = (\(TVar tv) -> tv) <$> tvs
 
     env' <- if null tvs'
       then throwError $ InferError FatalError NoReason
-      else return $ env
-        { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env)
-        }
+      else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
 
     return (env', Can.Interface n supers tvs' scs)
 
@@ -91,8 +82,7 @@ addConstraints n tvs t =
   in  ps :=> t
 
 
-canonicalizeInstances
-  :: Env -> Target -> [Src.Instance] -> CanonicalM [Can.Instance]
+canonicalizeInstances :: Env -> Target -> [Src.Instance] -> CanonicalM [Can.Instance]
 canonicalizeInstances env target = mapM (canonicalizeInstance env target)
 
 
@@ -106,20 +96,17 @@ canonicalizeInstance env target inst = case inst of
     ps <-
       apply subst
         <$> mapM
-              (\(Src.Source _ _ (Src.TRComp interface' args)) ->
-                case M.lookup interface' (envInterfaces env) of
-                  Just (Interface tvs _) -> do
-                    vars <- mapM
-                      (\case
-                        (Src.Source _ _ (Src.TRSingle v), TV _ k) ->
-                          return $ TVar $ TV v k
-                        (typing, _) -> typingToType env typing
-                      )
-                      (zip args tvs)
-                    return $ IsIn interface' vars
+              (\(Src.Source _ _ (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
+                Just (Interface tvs _) -> do
+                  vars <- mapM
+                    (\case
+                      (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
+                      (typing                         , _     ) -> typingToType env typing
+                    )
+                    (zip args tvs)
+                  return $ IsIn interface' vars
 
-                  Nothing -> throwError
-                    $ InferError (InterfaceNotExisting interface') NoReason
+                Nothing -> throwError $ InferError (InterfaceNotExisting interface') NoReason
               )
               constraints
 

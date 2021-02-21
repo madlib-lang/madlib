@@ -60,26 +60,22 @@ mergeVars env vs = env { envvars = envvars env <> vs }
 initialEnv :: Env
 initialEnv = Env
   { envvars        = M.fromList
-    [ ("==", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-    , ("&&", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
-    , ("||", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
-    , ("!" , Forall [] $ [] :=> (tBool `fn` tBool))
-    , (">" , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-    , ("<" , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-    , (">=", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-    , ("<=", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-    , ("++", Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
-    , ("+" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-    , ("-" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-    , ("*" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-    , ("/" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-    , ("%" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-    , ( "|>"
-      , Forall [Star, Star]
-      $   []
-      :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1)
-      )
-    ]
+                       [ ("==", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , ("&&", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
+                       , ("||", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
+                       , ("!" , Forall [] $ [] :=> (tBool `fn` tBool))
+                       , (">" , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , ("<" , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , (">=", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , ("<=", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , ("++", Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
+                       , ("+" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("-" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("*" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("/" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("%" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("|>", Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
+                       ]
   , envinterfaces  = M.empty
   , envmethods     = M.empty
   , envcurrentpath = ""

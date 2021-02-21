@@ -1,0 +1,16 @@
+import { mapChars } from "String"
+
+replaceSpecialChar :: String -> String
+replaceSpecialChar = where
+  is ":" : "_"
+  is "/" : "_"
+  is "#" : "_"
+  is "." : "_"
+  is "?" : "_"
+  is "&" : "_"
+  is "=" : "_"
+  is "-" : "_"
+  is char: char
+
+sanitizeUrl :: String -> String
+export sanitizeUrl = mapChars(replaceSpecialChar)

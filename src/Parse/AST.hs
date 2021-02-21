@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE ConstrainedClassMethods   #-}
 {-# LANGUAGE FlexibleContexts   #-}
@@ -24,6 +25,7 @@ import qualified Prelude                       as P
 import           Prelude                 hiding ( readFile )
 import qualified Data.ByteString.Lazy          as B
 import qualified System.Environment.Executable as E
+import           Data.Maybe
 
 
 
@@ -42,69 +44,63 @@ buildASTTable path = do
   buildASTTable' pathUtils path Nothing [] path
 
 
-buildASTTable'
-  :: PathUtils
-  -> FilePath
-  -> Maybe Import
-  -> [FilePath]
-  -> FilePath
-  -> IO (Either InferError Table)
+buildASTTable' :: PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
 buildASTTable' pathUtils parentPath imp previousPaths srcPath
-  | srcPath `elem` previousPaths = return $ Left $ InferError
-    (ImportCycle (previousPaths ++ [srcPath]))
-    NoReason
+  | srcPath `elem` previousPaths = return $ Left $ InferError (ImportCycle (previousPaths ++ [srcPath])) NoReason
   | otherwise = do
     let parentDir = dropFileName parentPath
-    absoluteSrcPath <- resolveAbsoluteSrcPath pathUtils parentDir srcPath
+    resolveAbsoluteSrcPath pathUtils parentDir srcPath >>= \case
+      Nothing -> do
+        let reason = case imp of
+              Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
+              Nothing   -> NoReason
+        return $ Left $ InferError (ImportNotFound srcPath) reason
+      Just absoluteSrcPath -> do
+        code <- try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
 
-    code            <-
-      try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
+        let reason = case imp of
+              Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
+              Nothing   -> NoReason
 
-    let reason = case imp of
-          Just imp' -> Reason (WrongImport imp') parentPath (getArea imp')
-          Nothing   -> NoReason
+        let source = case code of
+              Right a -> Right a
+              Left  _ -> Left $ InferError (ImportNotFound absoluteSrcPath) reason
 
-    let source = case code of
-          Right a -> Right a
-          Left  _ -> Left $ InferError (ImportNotFound absoluteSrcPath) reason
+        ast <- case source of
+          Left  e    -> return $ Left $ InferError (ImportNotFound absoluteSrcPath) reason
+          Right code -> return $ buildAST srcPath code
 
-    ast <- case source of
-      Left  e    -> return $ Left e
-      Right code -> return $ buildAST srcPath code
+        getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
+          Left  x               -> return $ Left x
+          Right completeImports -> do
+            let generatedTable =
+                  uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = completeImports }) <$> ast
 
-    completeImports <- getImportsWithAbsolutePaths pathUtils
-                                                   (dropFileName srcPath)
-                                                   ast
+            childTables <- mapM
+              (\imp' ->
+                buildASTTable' pathUtils srcPath (Just imp') (previousPaths ++ [srcPath]) (getImportAbsolutePath imp')
+              )
+              completeImports
 
-    let generatedTable =
-          uncurry M.singleton
-            .   (absoluteSrcPath, )
-            .   (\ast' -> ast' { aimports = completeImports })
-            <$> ast
-
-    childTables <- mapM
-      (\imp' -> buildASTTable' pathUtils
-                               srcPath
-                               (Just imp')
-                               (previousPaths ++ [srcPath])
-                               (getImportAbsolutePath imp')
-      )
-      completeImports
-
-    return $ foldr (liftM2 M.union) generatedTable childTables
+            return $ foldr (liftM2 M.union) generatedTable childTables
 
 
-getImportsWithAbsolutePaths
-  :: PathUtils -> FilePath -> Either e AST -> IO [Import]
-getImportsWithAbsolutePaths pathUtils ctxPath ast = case ast of
-  Left  _    -> return []
-  Right ast' -> mapM updatePath (aimports ast')
+getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either InferError AST -> IO (Either InferError [Import])
+getImportsWithAbsolutePaths pathUtils ctxPath ast =
+  let astPath = case ast of
+        Right x -> fromMaybe "" $ apath x
+        Left  _ -> ""
+  in  case ast of
+        Left  x    -> return $ Left x
+        Right ast' -> sequence <$> mapM (updatePath astPath) (aimports ast')
  where
-  updatePath :: Import -> IO Import
-  updatePath imp = do
+  updatePath :: FilePath -> Import -> IO (Either InferError Import)
+  updatePath path imp = do
     let importPath = (snd . getImportPath) imp
     absolutePath <- resolveAbsoluteSrcPath pathUtils ctxPath importPath
-    return (setImportAbsolutePath imp absolutePath)
+    case absolutePath of
+      Nothing  -> return $ Left $ InferError (ImportNotFound importPath) (SimpleReason path (getArea imp))
+      Just abs -> return $ Right (setImportAbsolutePath imp abs)
 
 
 setImportAbsolutePath :: Import -> FilePath -> Import

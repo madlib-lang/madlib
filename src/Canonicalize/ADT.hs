@@ -18,8 +18,7 @@ import           Control.Monad.Except
 
 
 
-canonicalizeTypeDecls
-  :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
+canonicalizeTypeDecls :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
 canonicalizeTypeDecls env _       []         = return (env, [])
 canonicalizeTypeDecls env astPath [typeDecl] = do
   (env', tds') <- canonicalizeTypeDecl env astPath typeDecl
@@ -30,16 +29,14 @@ canonicalizeTypeDecls env astPath (typeDecl : tds) = do
   return (env'', tds' <> tds'')
 
 
-canonicalizeTypeDecl
-  :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
+canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
 canonicalizeTypeDecl env astPath typeDecl = case typeDecl of
   adt@Src.ADT{} -> case M.lookup (Src.adtname adt) (envTypeDecls env) of
     Just t  -> throwError $ InferError (ADTAlreadyDefined t) NoReason
     Nothing -> do
-      let t =
-            TCon $ TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))
+      let t    = TCon $ TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))
           env' = addADT env (Src.adtname adt) t
-      canonicalizeConstructors env astPath adt
+      canonicalizeConstructors env' astPath adt
 
   alias@Src.Alias{} -> do
     let name   = Src.aliasname alias
@@ -56,27 +53,15 @@ canonicalizeTypeDecl env astPath typeDecl = case typeDecl of
     return (env', alias')
 
 
-
-
--- From above, run the stuff below for constructors and make it return Env directly.
-
--- resolveTypeDecls :: Env -> FilePath -> TypeDecls -> [TypeDecl] -> Infer Env
--- resolveTypeDecls priorEnv astPath priorTypeDecls =
---   foldM (\env td -> resolveTypeDecl env astPath priorTypeDecls td) priorEnv
-
-
-canonicalizeConstructors
-  :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
+canonicalizeConstructors :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
 canonicalizeConstructors env astPath adt@Src.ADT{} = do
   let name   = Src.adtname adt
       ctors  = Src.adtconstructors adt
       params = Src.adtparams adt
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
-  let s = foldl (\s' -> compose s' . getSubstitution) mempty is
-  let rt = foldl TApp
-                 (TCon $ TC name (buildKind $ length params))
-                 ((\x -> apply s $ TVar (TV x Star)) <$> params)
+  let s  = foldl (\s' -> compose s' . getSubstitution) mempty is
+  let rt = foldl TApp (TCon $ TC name (buildKind $ length params)) ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
     (\(n, ts, _, Src.Constructor name typings) -> do
       let cf = foldr1 fn $ ts <> [rt]
@@ -95,12 +80,10 @@ canonicalizeConstructors env astPath adt@Src.ADT{} = do
   return (addADT env name rt, adt')
 
 
-getConstructor
-  :: (Src.Name, [Type], Substitution, Src.Constructor) -> Src.Constructor
+getConstructor :: (Src.Name, [Type], Substitution, Src.Constructor) -> Src.Constructor
 getConstructor (_, _, _, ctor) = ctor
 
-getSubstitution
-  :: (Src.Name, [Type], Substitution, Src.Constructor) -> Substitution
+getSubstitution :: (Src.Name, [Type], Substitution, Src.Constructor) -> Substitution
 getSubstitution (_, _, subst, _) = subst
 
 
@@ -111,13 +94,12 @@ resolveADTConstructorParams
   -> [Src.Name]
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
-resolveADTConstructorParams env astPath n params c@(Src.Constructor cname cparams)
-  = do
-    let gens = zip params (map TGen [0 ..])
-    ts <- mapM (argToType env gens n params) cparams
-    let s = foldl (\s t -> buildCtorSubst t <> s) M.empty ts
+resolveADTConstructorParams env astPath n params c@(Src.Constructor cname cparams) = do
+  let gens = zip params (map TGen [0 ..])
+  ts <- mapM (argToType env gens n params) cparams
+  let s = foldl (\s t -> buildCtorSubst t <> s) M.empty ts
 
-    return (cname, ts, s, c)
+  return (cname, ts, s, c)
 
 buildCtorSubst :: Type -> Substitution
 buildCtorSubst t = case t of
@@ -126,13 +108,7 @@ buildCtorSubst t = case t of
   _             -> M.empty
 
 
-argToType
-  :: Env
-  -> [(Src.Name, Type)]
-  -> Src.Name
-  -> [Src.Name]
-  -> Src.Typing
-  -> CanonicalM Type
+argToType :: Env -> [(Src.Name, Type)] -> Src.Name -> [Src.Name] -> Src.Typing -> CanonicalM Type
 argToType env gens _ params (Src.Source _ _ (Src.TRSingle n))
   | n == "Number" = return tNumber
   | n == "Boolean" = return tBool
@@ -143,26 +119,25 @@ argToType env gens _ params (Src.Source _ _ (Src.TRSingle n))
     Just a  -> return a
     Nothing -> throwError $ InferError (UnknownType n) NoReason
 
-argToType env gens name params (Src.Source _ _ (Src.TRComp tname targs)) =
-  case M.lookup tname (envTypeDecls env) of
-    Just t -> foldM
-      (\prev a -> do
-        arg <- argToType env gens name params a
-        return $ TApp prev arg
-      )
-      (getConstructorCon t)
-      targs
-    Nothing -> if isLower (head tname)
-      then do
-        let t = TVar (TV tname $ buildKind (length targs))
-        foldM
-          (\prev a -> do
-            arg <- argToType env gens name params a
-            return $ TApp prev arg
-          )
-          t
-          targs
-      else throwError $ InferError (UnknownType tname) NoReason
+argToType env gens name params (Src.Source _ _ (Src.TRComp tname targs)) = case M.lookup tname (envTypeDecls env) of
+  Just t -> foldM
+    (\prev a -> do
+      arg <- argToType env gens name params a
+      return $ TApp prev arg
+    )
+    (getConstructorCon t)
+    targs
+  Nothing -> if isLower (head tname)
+    then do
+      let t = TVar (TV tname $ buildKind (length targs))
+      foldM
+        (\prev a -> do
+          arg <- argToType env gens name params a
+          return $ TApp prev arg
+        )
+        t
+        targs
+    else throwError $ InferError (UnknownType tname) NoReason
 
 argToType env gens name params (Src.Source _ _ (Src.TRArr l r)) = do
   l' <- argToType env gens name params l

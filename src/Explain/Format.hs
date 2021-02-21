@@ -24,85 +24,80 @@ format :: (FilePath -> IO String) -> InferError -> IO String
 format rf (InferError err reason) = do
   moduleContent <- lines <$> getModuleContent rf reason
   case reason of
-    Reason (WrongTypeApplied (Can.Canonical _ abs) (Can.Canonical (Area (Loc a li c) _) e)) _ area
-      -> do
-        let beginning = case abs of
-              -- TODO: Extend to other operators
-              Can.App (Can.Canonical _ (Can.Var "+")) _ _ ->
-                "Error applying the operator +"
-              Can.Var "+" -> "Error applying the operator +"
-              _           -> "Error in function call"
+    Reason (WrongTypeApplied (Can.Canonical _ abs) (Can.Canonical (Area (Loc a li c) _) e)) _ area -> do
+      let beginning = case abs of
+            -- TODO: Extend to other operators
+            Can.App (Can.Canonical _ (Can.Var "+")) _ _ -> "Error applying the operator +"
+            Can.Var "+" -> "Error applying the operator +"
+            _           -> "Error in function call"
 
-        let l = moduleContent !! (li - 1)
-        let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
-        let (UnificationError expected actual) = err
+      let l = moduleContent !! (li - 1)
+      let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
+      let (UnificationError expected actual) = err
 
-        -- let nthInfo = case nthArg infos of
-        --       Just nth -> "The " <> show nth <> nthEnding nth <> " "
-        --       Nothing  -> "The "
-        -- let fn = case origin infos of
-        --       Just origin -> case origin of
-        --         Src.Var n -> " of \"" <> n <> "\" "
-        --         _         -> " "
-        --       Nothing -> " "
+      -- let nthInfo = case nthArg infos of
+      --       Just nth -> "The " <> show nth <> nthEnding nth <> " "
+      --       Nothing  -> "The "
+      -- let fn = case origin infos of
+      --       Just origin -> case origin of
+      --         Src.Var n -> " of \"" <> n <> "\" "
+      --         _         -> " "
+      --       Nothing -> " "
 
 
-        let message =
-              "\n"
-                -- <> nthInfo
-                -- <> "argument"
-                -- <> fn
-                <> "has type\n\t"
-                <> typeToStr actual
-                <> "\nBut it was expected to be\n\t"
-                <> typeToStr expected
+      let message =
+            "\n"
+              -- <> nthInfo
+              -- <> "argument"
+              -- <> fn
+              <> "has type\n\t"
+              <> typeToStr actual
+              <> "\nBut it was expected to be\n\t"
+              <> typeToStr expected
 
-        let
-          hint = unlines
+      let hint = unlines
             [ "Hint: if the function is polymorphic it is possible that the error comes from"
             , "the application of other arguments. Otherwise you might want to add a typing to"
             , "to the signature to improve documentation and make error messages more"
             , "precise !"
             ]
 
-        return
-          $  beginning
-          <> " at line "
-          <> show li
-          <> ":\n\n"
-          <> l
-          <> "\n"
-          <> concat [ " " | _ <- [1 .. (colStart - 1)] ]
-          <> concat [ "^" | _ <- [colStart .. (colEnd - 1)] ]
-          <> message
-          <> "\n\n"
-          <> hint
+      return
+        $  beginning
+        <> " at line "
+        <> show li
+        <> ":\n\n"
+        <> l
+        <> "\n"
+        <> concat [ " " | _ <- [1 .. (colStart - 1)] ]
+        <> concat [ "^" | _ <- [colStart .. (colEnd - 1)] ]
+        <> message
+        <> "\n\n"
+        <> hint
 
-    Reason (VariableNotDeclared (Can.Canonical (Area (Loc a li c) _) exp)) _ area
-      -> do
-        let l           = moduleContent !! (li - 1)
+    Reason (VariableNotDeclared (Can.Canonical (Area (Loc a li c) _) exp)) _ area -> do
+      let l           = moduleContent !! (li - 1)
 
-        let (Can.Var n) = exp
+      let (Can.Var n) = exp
 
-        let
-          hint = unlines
+      let hint = unlines
             [ "Hint: here are some possible solutions:"
             , "    * If it is defined in another module, make sure to import it"
             , "    * If you already import it, make sure that it is exported"
             ]
 
-        return
-          $  "Error at line "
-          <> show li
-          <> ":\n\n"
-          <> l
-          <> "\n"
-          <> formatHighlightArea area
-          <> "\n"
-          <> "The variable \""
-          <> n
-          <> "\" is not defined.\n\n"
-          <> hint
+      return
+        $  "Error at line "
+        <> show li
+        <> ":\n\n"
+        <> l
+        <> "\n"
+        <> formatHighlightArea area
+        <> "\n"
+        <> "The variable \""
+        <> n
+        <> "\" is not defined.\n\n"
+        <> hint
 
     Reason (IfElseBranchTypesDontMatch ifElse falsy) _ _ -> do
       let ifElseArea                         = Can.getArea ifElse
@@ -119,9 +114,7 @@ format rf (InferError err reason) = do
               <> "\nBut it was expected to be\n\t"
               <> typeToStr expected
 
-      let
-        hint
-          = "Hint: the if and else branch of an if else expression should return the same type."
+      let hint = "Hint: the if and else branch of an if else expression should return the same type."
 
       return
         $  "Error in if else expression at line "
@@ -148,8 +141,7 @@ format rf (InferError err reason) = do
               <> "\nBut it was expected to be\n\t"
               <> typeToStr expected
 
-      let hint =
-            "Hint: the condition of an if else expression should be a Bool."
+      let hint = "Hint: the condition of an if else expression should be a Bool."
 
       return
         $  "Error in if else expression at line "
@@ -198,8 +190,7 @@ format rf (InferError err reason) = do
       let linesToShow = slice showStart showEnd moduleContent
       let (UnknownType unknown)          = err
 
-      let message =
-            "\n" <> "Constructor used in pattern does not exist\n\t" <> unknown
+      let message = "\n" <> "Constructor used in pattern does not exist\n\t" <> unknown
 
       let hint = "Hint: make sure that you imported this type."
 
@@ -217,15 +208,12 @@ format rf (InferError err reason) = do
       let importArea                    = Src.getArea imp
       let highlightArea                 = Src.getArea imp
       let (Area (Loc _ importLine _) _) = highlightArea
-      let (showStart, showEnd) = computeLinesToShow importArea highlightArea
+      let (showStart, showEnd)          = computeLinesToShow importArea highlightArea
       let linesToShow                   = slice showStart showEnd moduleContent
 
-      let message =
-            "\n" <> "The module you want to import could not be found\n"
+      let message = "\n" <> "The module you want to import could not be found\n"
 
-      let
-        hint
-          = "Hint: make sure that the module exists and that it is in the right folder"
+      let hint = "Hint: make sure that the module exists and that it is in the right folder"
 
       return
         $  "Import not found at line "
@@ -245,18 +233,16 @@ format rf (InferError err reason) = do
       let (expStart, expEnd)         = computeLinesToShow expArea expArea
       let typingContent = slice typingStart typingEnd moduleContent
       let expContent = case exp of
-            (Can.Canonical _ (Can.Assignment _ _)) ->
-              slice expStart expEnd moduleContent
+            (Can.Canonical _ (Can.Assignment _ _)) -> slice expStart expEnd moduleContent
             _ -> []
 
-      let
-        message =
-          "\n"
-            <> "The type of the expression does not match its type definition.\n\n"
-            <> "The definition has type\n\t"
-            <> typeToStr expectedType
-            <> "\nBut the actual type is\n\t"
-            <> typeToStr actualType
+      let message =
+            "\n"
+              <> "The type of the expression does not match its type definition.\n\n"
+              <> "The definition has type\n\t"
+              <> typeToStr expectedType
+              <> "\nBut the actual type is\n\t"
+              <> typeToStr actualType
 
       return
         $  "Type error at line "
@@ -295,8 +281,7 @@ formatTypeError :: TypeError -> String
 formatTypeError err = case err of
   InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> typeToStr t
 
-  UnboundVariable n ->
-    "The variable '" <> n <> "' has not been declared, you might have a typo !"
+  UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo !"
 
   SignatureTooGeneral scGiven scInferred ->
     "The signature given is too general\n"
@@ -337,8 +322,7 @@ formatTypeError err = case err of
       <> "' but could not resolve it. You\n"
       <> "might want to add a type annotation to make it resolvable."
 
-  AmbiguousType (TV n _, []) ->
-    "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
+  AmbiguousType (TV n _, []) -> "An ambiguity for the type variable '" <> n <> "' could not be resolved!"
 
   InterfaceNotExisting cls ->
     "The interface '"
@@ -381,9 +365,7 @@ formatTypeError err = case err of
       let amountOfSpaces = current * 2
           spaces         = concat $ replicate amountOfSpaces " "
           prefix         = spaces <> if current /= 0 then "-> " else ""
-          next           = if current < (total - 1)
-            then buildCycleOutput total (current + 1) paths
-            else ""
+          next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
       in  prefix <> paths !! current <> "\n" <> next
 
   _ -> ppShow err
@@ -436,19 +418,13 @@ typeToParenWrappedStr t = case t of
 
 typeToStr :: Type -> String
 typeToStr t = case t of
-  TCon (TC a _) -> a
-  TVar (TV a _) -> a
-  TApp (TApp (TCon (TC "(->)" _)) t2) t2' ->
-    typeToStr t2 <> " -> " <> typeToStr t2'
-  TApp t1 t2 -> typeToStr t1 <> " " <> typeToStr t2
-  TGen x     -> letters !! x
-  TRecord fields _ ->
-    "{ "
-      <> intercalate
-           ", "
-           ((\(n, t) -> n <> ": " <> typeToStr t) <$> M.toList fields)
-      <> "}"
-  _ -> ppShow t
+  TCon (TC a _)    -> a
+  TVar (TV a _)    -> a
+  TApp (TApp (TCon (TC "(->)" _)) t2) t2' -> typeToStr t2 <> " -> " <> typeToStr t2'
+  TApp t1 t2       -> typeToStr t1 <> " " <> typeToStr t2
+  TGen x           -> letters !! x
+  TRecord fields _ -> "{ " <> intercalate ", " ((\(n, t) -> n <> ": " <> typeToStr t) <$> M.toList fields) <> "}"
+  _                -> ppShow t
 
 
 

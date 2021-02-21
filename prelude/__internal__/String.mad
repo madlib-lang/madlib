@@ -1,6 +1,5 @@
 import {} from "Monoid"
 
-
 instance Semigroup String {
   assoc = (a, b) => a ++ b
 }
@@ -25,3 +24,6 @@ export split = (separator, str) => (#- str.split(separator) -#)
 
 lines :: String -> List String
 export lines = split("\n")
+
+mapChars :: (String -> String) -> String -> String
+export mapChars = (f, s) => #- s.split("").map(f).join("") -#

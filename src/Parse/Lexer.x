@@ -109,13 +109,11 @@ tokens :-
   <0> \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0> [\ \n]*"//".*                               ; -- Comments
-  <0, stringTemplateMadlib> $empty+               ;
-  <0,comment> \/\*                                { beginComment }
+  <0,comment> $head*\/\*                          { beginComment }
   <comment>   [.\n]                               ;
   <comment>   \*\/                                { endComment }
-
+  <0, stringTemplateMadlib> $empty+               ;
   <0> `                                           { beginStringTemplate }
-
   <stringTemplate> \$\{                           { beginStringTemplateMadlib }
   <stringTemplateMadlib> \{                       { stringTemplateMadlibLeftCurly }
   <stringTemplateMadlib> \}                       { stringTemplateMadlibRightCurly }

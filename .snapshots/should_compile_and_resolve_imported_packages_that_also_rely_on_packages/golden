@@ -1,18 +1,18 @@
-// file: /madlib_modules/random/madlib_modules/math/src/Main.mad
+// file: /madlib_modules/urlmath/src/Main.mad
 export const avg = __curry__((a, b) => a + b / 2);
 export default { avg };
-// file: /madlib_modules/random/src/Main.mad
+// file: /madlib_modules/urlrandom/src/Main.mad
 import R from "./Utils/Random.mjs";
-import M from "./../.deps/math/src/Main.mjs";
+import M from "./../../urlmath/src/Main.mjs";
 
 export const random = __curry__((seed) => R.random(seed) + M.avg(seed)(seed));
 export default { random };
-// file: /madlib_modules/random/src/Utils/Random.mad
+// file: /madlib_modules/urlrandom/src/Utils/Random.mad
 export const random = __curry__((seed) => seed / 2);
 export default { random };
 // file: /src/Main.mad
 import {} from "./__internals__.mjs"
-import R from "./.deps/random/src/Main.mjs";
+import R from "./.deps/urlrandom/src/Main.mjs";
 
 R.random(3);
 export default {};

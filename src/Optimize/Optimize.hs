@@ -21,11 +21,7 @@ data OptimizationState
                      }
 
 initialOptimizationState :: OptimizationState
-initialOptimizationState = OptimizationState { typeCount  = 0
-                                             , classCount = 0
-                                             , typeMap    = mempty
-                                             , classMap   = mempty
-                                             }
+initialOptimizationState = OptimizationState { typeCount = 0, classCount = 0, typeMap = mempty, classMap = mempty }
 
 type Optimize a = forall m . MonadState OptimizationState m => m a
 
@@ -36,9 +32,7 @@ generateClassShortname :: String -> Optimize String
 generateClassShortname n = do
   s <- get
   let shortName = 'Ι' : numbers !! (1 + classCount s)
-  put s { classCount = classCount s + 1
-        , classMap   = M.insert n shortName (classMap s)
-        }
+  put s { classCount = classCount s + 1, classMap = M.insert n shortName (classMap s) }
   return shortName
 
 getClassShortname :: Bool -> String -> Optimize String
@@ -54,9 +48,7 @@ generateTypeShortname :: String -> Optimize String
 generateTypeShortname n = do
   s <- get
   let shortName = 'τ' : numbers !! (1 + typeCount s)
-  put s { typeCount = typeCount s + 1
-        , typeMap   = M.insert n shortName (typeMap s)
-        }
+  put s { typeCount = typeCount s + 1, typeMap = M.insert n shortName (typeMap s) }
   return shortName
 
 getTypeShortname :: Bool -> String -> Optimize String
@@ -99,10 +91,9 @@ instance Optimizable Slv.Exp Opt.Exp where
       field' <- optimize enabled field
       return $ Opt.Optimized t area (Opt.FieldAccess rec' field')
 
-    Slv.NamespaceAccess n ->
-      return $ Opt.Optimized t area (Opt.NamespaceAccess n)
+    Slv.NamespaceAccess n -> return $ Opt.Optimized t area (Opt.NamespaceAccess n)
 
-    Slv.Abs param body -> do
+    Slv.Abs param body    -> do
       body' <- mapM (optimize enabled) body
       return $ Opt.Optimized t area (Opt.Abs param body')
 
@@ -148,12 +139,10 @@ instance Optimizable Slv.Exp Opt.Exp where
       placeholderRef' <- optimizePlaceholderRef placeholderRef
       let tsStr = buildTypeStrForPlaceholder ts
       ts' <- getTypeShortname enabled tsStr
-      return
-        $ Opt.Optimized t area (Opt.Placeholder (placeholderRef', ts') exp')
+      return $ Opt.Optimized t area (Opt.Placeholder (placeholderRef', ts') exp')
 
      where
-      optimizePlaceholderRef
-        :: Slv.PlaceholderRef -> Optimize Opt.PlaceholderRef
+      optimizePlaceholderRef :: Slv.PlaceholderRef -> Optimize Opt.PlaceholderRef
       optimizePlaceholderRef phr = case phr of
         Slv.ClassRef cls ps call var -> do
           ps'  <- mapM optimizeClassRefPred ps
@@ -297,17 +286,14 @@ instance Optimizable Slv.Instance Opt.Instance where
     let typingStr = intercalate "_" (getTypeHeadName <$> predTypes pred)
     -- let typingStr = intercalate "_" (typingToStr <$> vars)
     typings' <- getTypeShortname enabled typingStr
-    methods' <- mapM (\(exp, scheme) -> (, scheme) <$> optimize enabled exp)
-                     methods
+    methods' <- mapM (\(exp, scheme) -> (, scheme) <$> optimize enabled exp) methods
     return $ Opt.Instance interface' constraints typings' methods'
 
 instance Optimizable Slv.Import Opt.Import where
   optimize _ imp = case imp of
-    Slv.NamedImport names relPath absPath ->
-      return $ Opt.NamedImport names relPath absPath
+    Slv.NamedImport   names     relPath absPath -> return $ Opt.NamedImport names relPath absPath
 
-    Slv.DefaultImport namespace relPath absPath ->
-      return $ Opt.DefaultImport namespace relPath absPath
+    Slv.DefaultImport namespace relPath absPath -> return $ Opt.DefaultImport namespace relPath absPath
 
 instance Optimizable Slv.AST Opt.AST where
   optimize enabled ast = do
@@ -329,8 +315,7 @@ instance Optimizable Slv.AST Opt.AST where
 typingToStr :: Slv.Typing -> String
 typingToStr t = case t of
   Slv.TRSingle n -> n
-  Slv.TRComp n _ ->
-    if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
+  Slv.TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
   Slv.TRTuple ts -> "Tuple_" <> show (length ts)
 
 buildTypeStrForPlaceholder :: [Type] -> String
@@ -352,5 +337,4 @@ getTypeHeadName t = case t of
 -- an env for optimization to keep track of what dictionaries have been removed.
 optimizeTable :: Bool -> Slv.Table -> Opt.Table
 optimizeTable enabled table =
-  let optimized = mapM (optimize enabled) table
-  in  evalState optimized initialOptimizationState
+  let optimized = mapM (optimize enabled) table in evalState optimized initialOptimizationState

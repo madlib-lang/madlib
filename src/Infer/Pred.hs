@@ -36,9 +36,8 @@ getParentPreds env p@(IsIn cls ts) = do
 
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
-liftPred m (IsIn i ts) (IsIn i' ts')
-  | i == i'   = m ts ts'
-  | otherwise = throwError $ InferError FatalError NoReason
+liftPred m (IsIn i ts) (IsIn i' ts') | i == i'   = m ts ts'
+                                     | otherwise = throwError $ InferError FatalError NoReason
 
 instance Unify Pred where
   unify = liftPred unify
@@ -87,14 +86,11 @@ specialMatch p@(IsIn cls ts) p'@(IsIn cls' ts') = do
   if cls == cls'
     then do
       let zipped = zip ts ts'
-      foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t'))
-            M.empty
-            zipped
+      foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
     else throwError $ InferError FatalError NoReason
 
 specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
-specialMatchMany ps ps' =
-  foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
+specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
 
 
 isConcrete :: Type -> Bool

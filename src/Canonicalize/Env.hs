@@ -39,16 +39,10 @@ lookupADT env name = case M.lookup name (envTypeDecls env) of
 
 
 initialEnv :: Env
-initialEnv = Env
-  { envTypeDecls   = M.fromList
-                       [ ("List" , tList)
-                       , ("(,)"  , tTuple2)
-                       , ("(,,)" , tTuple3)
-                       , ("(,,,)", tTuple4)
-                       ]
-  , envInterfaces  = mempty
-  , envCurrentPath = ""
-  }
+initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("(,)", tTuple2), ("(,,)", tTuple3), ("(,,,)", tTuple4)]
+                 , envInterfaces = mempty
+                 , envCurrentPath = ""
+                 }
 
 initialWithPath :: FilePath -> Env
 initialWithPath astPath = initialEnv { envCurrentPath = astPath }

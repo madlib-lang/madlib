@@ -39,11 +39,10 @@ populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                         = return env
 populateTopLevelTypings env ((Can.Canonical _ e) : es) = do
   nextEnv <- case e of
-    Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc ->
-      return $ extendVars env (name, sc)
+    Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> return $ extendVars env (name, sc)
 
-    Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc
-      -> return $ extendVars env (name, sc)
+    Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
+      return $ extendVars env (name, sc)
 
     _ -> return env
 
@@ -53,23 +52,13 @@ populateTopLevelTypings env ((Can.Canonical _ e) : es) = do
 buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
   = do
-    let methods = foldl (\mtds (Can.Interface _ _ _ mtds') -> mtds <> mtds')
-                        mempty
-                        ainterfaces
-    env' <- foldM
-      (\env (Can.Interface id preds vars _) -> addInterface env id vars preds)
-      priorEnv
-      ainterfaces
-    env'' <- foldM
-      (\env (Can.Instance id preds p _) -> addInstance env preds p)
-      env'
-      ainstances
+    let methods = foldl (\mtds (Can.Interface _ _ _ mtds') -> mtds <> mtds') mempty ainterfaces
+    env'  <- foldM (\env (Can.Interface id preds vars _) -> addInterface env id vars preds) priorEnv ainterfaces
+    env'' <- foldM (\env (Can.Instance id preds p _) -> addInstance env preds p) env' ainstances
     let constructors = M.fromList $ concat $ mapMaybe
           (\case
             adt@Can.ADT{} ->
-              Just
-                $   (\ctor -> (Can.getCtorName ctor, Can.getCtorScheme ctor))
-                <$> Can.adtconstructors adt
+              Just $ (\ctor -> (Can.getCtorName ctor, Can.getCtorScheme ctor)) <$> Can.adtconstructors adt
             _ -> Nothing
           )
           atypedecls
@@ -92,8 +81,7 @@ extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
   bundleExports e'@(Slv.Solved _ _ exp) = case exp of
     Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)) -> (n, e')
 
-    Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _
-      -> (n, e')
+    Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
 
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
@@ -104,11 +92,10 @@ findASTM table path = case M.lookup path table of
 
 extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Vars
 extractImportedConstructors env ast imp =
-  let exportedADTs      = filter Slv.isADTExported (Slv.atypedecls ast)
-      exportedCtors     = concat $ Slv.adtconstructors <$> exportedADTs
-      exportedCtorNames = Slv.getConstructorName <$> exportedCtors
-      exportedCtorSchemes =
-          M.restrictKeys (envvars env) $ S.fromList exportedCtorNames
+  let exportedADTs        = filter Slv.isADTExported (Slv.atypedecls ast)
+      exportedCtors       = concat $ Slv.adtconstructors <$> exportedADTs
+      exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
+      exportedCtorSchemes = M.restrictKeys (envvars env) $ S.fromList exportedCtorNames
   in  filterExportsByImport imp exportedCtorSchemes
 
 
@@ -122,15 +109,12 @@ extractImportedVars env ast imp = do
 
 filterExportsByImport :: Can.Import -> Vars -> Vars
 filterExportsByImport imp vars = case imp of
-  Can.Canonical _ (Can.DefaultImport namespace _ _) ->
-    M.mapKeys ((namespace <> ".") <>) vars
+  Can.Canonical _ (Can.DefaultImport namespace _ _) -> M.mapKeys ((namespace <> ".") <>) vars
 
-  Can.Canonical _ (Can.NamedImport names _ _) ->
-    M.restrictKeys vars $ S.fromList names
+  Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList names
 
 
-solveImports
-  :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
+solveImports :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
 solveImports table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
@@ -153,67 +137,55 @@ solveImports table (imp : is) = do
     , M.union (envmethods solvedEnv) nextMethods
     )
 
-solveImports _ [] = return
-  (M.empty, envvars initialEnv, envinterfaces initialEnv, envmethods initialEnv)
+solveImports _ [] = return (M.empty, envvars initialEnv, envinterfaces initialEnv, envmethods initialEnv)
 
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
 
 mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
-mergeInterface = M.insertWith
-  (\(Interface tvs ps is) (Interface _ _ is') ->
-    Interface tvs ps $ is `union` is'
-  )
+mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ is `union` is')
 
 updateInterface :: Can.Interface -> Slv.Interface
-updateInterface (Can.Interface name preds vars methods) =
-  Slv.Interface name preds vars methods
+updateInterface (Can.Interface name preds vars methods) = Slv.Interface name preds vars methods
 
 inferAST :: Env -> Can.AST -> Infer (Slv.AST, Env)
-inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces }
-  = do
-    (inferredExps, env') <- inferExps env aexps
-    inferredInstances    <- mapM (resolveInstance env') ainstances
-    let updatedInterfaces = updateInterface <$> ainterfaces
+inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
+  (inferredExps, env') <- inferExps env aexps
+  inferredInstances    <- mapM (resolveInstance env') ainstances
+  let updatedInterfaces = updateInterface <$> ainterfaces
 
-    return
-      ( Slv.AST
-        { Slv.aexps       = inferredExps
-        , Slv.apath       = apath
-        , Slv.atypedecls  = updateADT <$> atypedecls
-        , Slv.aimports    =
-          (\case
-            g@Slv.DefaultImport{}            -> g
-            i@(Slv.NamedImport names fp afp) -> Slv.NamedImport
-              (mapMaybe (\n -> M.lookup n (envvars env) >> Just n) names)
-              fp
-              afp
-          )
-          .   updateImport
-          <$> aimports
-        , Slv.ainterfaces = updatedInterfaces
-        , Slv.ainstances  = inferredInstances
-        }
-      , env'
-      )
+  return
+    ( Slv.AST
+      { Slv.aexps       = inferredExps
+      , Slv.apath       = apath
+      , Slv.atypedecls  = updateADT <$> atypedecls
+      , Slv.aimports    = (\case
+                            g@Slv.DefaultImport{} -> g
+                            i@(Slv.NamedImport names fp afp) ->
+                              Slv.NamedImport (mapMaybe (\n -> M.lookup n (envvars env) >> Just n) names) fp afp
+                          )
+                          .   updateImport
+                          <$> aimports
+      , Slv.ainterfaces = updatedInterfaces
+      , Slv.ainstances  = inferredInstances
+      }
+    , env'
+    )
 
 updateADT :: Can.TypeDecl -> Slv.TypeDecl
-updateADT adt@Can.ADT{} = Slv.ADT
-  { Slv.adtname         = Can.adtname adt
-  , Slv.adtparams       = Can.adtparams adt
-  , Slv.adtconstructors = updateADTConstructor <$> Can.adtconstructors adt
-  , Slv.adtexported     = Can.adtexported adt
-  }
-updateADT alias@Can.Alias{} = Slv.Alias
-  { Slv.aliasname     = Can.aliasname alias
-  , Slv.aliasparams   = Can.aliasparams alias
-  , Slv.aliastype     = updateTyping $ Can.aliastype alias
-  , Slv.aliasexported = Can.aliasexported alias
-  }
+updateADT adt@Can.ADT{} = Slv.ADT { Slv.adtname         = Can.adtname adt
+                                  , Slv.adtparams       = Can.adtparams adt
+                                  , Slv.adtconstructors = updateADTConstructor <$> Can.adtconstructors adt
+                                  , Slv.adtexported     = Can.adtexported adt
+                                  }
+updateADT alias@Can.Alias{} = Slv.Alias { Slv.aliasname     = Can.aliasname alias
+                                        , Slv.aliasparams   = Can.aliasparams alias
+                                        , Slv.aliastype     = updateTyping $ Can.aliastype alias
+                                        , Slv.aliasexported = Can.aliasexported alias
+                                        }
 
 updateADTConstructor :: Can.Constructor -> Slv.Constructor
-updateADTConstructor (Can.Constructor cname cparams _) =
-  Slv.Constructor cname $ updateTyping <$> cparams
+updateADTConstructor (Can.Constructor cname cparams _) = Slv.Constructor cname $ updateTyping <$> cparams
 
 updateImport :: Can.Import -> Slv.Import
 updateImport i = case i of
@@ -259,5 +231,4 @@ solveTable' table ast@Can.AST { Can.aimports } = do
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)
 -- -- Well, or just adapt it somehow
 runInfer :: Env -> Can.AST -> Either InferError Slv.AST
-runInfer env ast =
-  fst . fst <$> runExcept (runStateT (inferAST env ast) Unique { count = 0 })
+runInfer env ast = fst . fst <$> runExcept (runStateT (inferAST env ast) Unique { count = 0 })

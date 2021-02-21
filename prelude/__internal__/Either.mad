@@ -31,6 +31,9 @@ instance (Show e, Show a) => Show (Either e a) {
     is Left  e: "Left " ++ show(e)
 }
 
+mapRight :: (a -> b) -> Either e a -> Either e b
+export mapRight = map
+
 mapLeft :: (e -> f) -> Either e a -> Either f a
 export mapLeft = (f, m) => (where(m) {
   is Right a: Right(a)

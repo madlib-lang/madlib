@@ -35,10 +35,9 @@ makeByteStringReadFile files path = toByteString <$> makeReadFile files path
 
 fixPath p = unpack $ replace (pack "/./") (pack "/") (pack p)
 
-defaultPathUtils = PathUtils
-  { readFile           = makeReadFile M.empty
-  , canonicalizePath   = return . fixPath
-  , doesFileExist      = const $ return True
-  , byteStringReadFile = makeByteStringReadFile M.empty
-  , getExecutablePath  = return "/"
-  }
+defaultPathUtils = PathUtils { readFile           = makeReadFile M.empty
+                             , canonicalizePath   = return . fixPath
+                             , doesFileExist      = const $ return True
+                             , byteStringReadFile = makeByteStringReadFile M.empty
+                             , getExecutablePath  = return "/"
+                             }
