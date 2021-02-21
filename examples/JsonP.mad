@@ -1,0 +1,34 @@
+import J from "Json"
+import IO from "IO"
+import { Right } from "Either"
+import { Maybe, Just, Nothing, fromMaybe } from "Maybe"
+
+input :: String
+input = `
+{
+  "field1": {
+    "field1": {
+      "field1": {
+        "field2": true
+      },
+      "field2": false
+    },
+    "field2": true
+  },
+  "field2": false
+}
+`
+
+data Parsed = Parsed (Maybe Parsed) Boolean
+
+
+parser :: J.Parser Parsed
+parser = J.map2(
+  (field1, field2) => Parsed(field1, field2),
+  J.field("field1", J.maybe(J.lazy((_) => parser))),
+  J.field("field2", J.boolean)
+)
+
+
+where(J.parse(parser, input))
+  is Right (choco): IO.inspect(choco)

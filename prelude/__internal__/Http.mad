@@ -6,6 +6,7 @@ export data Body = TextBody String
 
 export data Response = Response { body :: Body }
 
+isBinary = (contentType) => contentType == "application/zip"
 
 #- import https from "https" -#
 
@@ -17,7 +18,6 @@ export get = (url) => W.Wish((bad, good) => (#- {
       }
       else {
         const contentType = response.headers["content-type"];
-        const isBinary = contentType === "application/zip"
         let chunks = isBinary ? [] : "";
 
         response.on('data', (chunk) => {

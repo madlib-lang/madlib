@@ -1,14 +1,14 @@
-// file: /madlib_modules/random/src/Main.mad
+// file: /madlib_modules/url/src/Main.mad
 import R from "./Utils/Random.mjs";
 
 export const random = __curry__((seed) => R.random(seed));
 export default { random };
-// file: /madlib_modules/random/src/Utils/Random.mad
+// file: /madlib_modules/url/src/Utils/Random.mad
 export const random = __curry__((seed) => seed / 2);
 export default { random };
 // file: /src/Main.mad
 import {} from "./__internals__.mjs"
-import R from "./.deps/random/src/Main.mjs";
+import R from "./.deps/url/src/Main.mjs";
 
 R.random(3);
 export default {};

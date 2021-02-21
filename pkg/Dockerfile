@@ -1,5 +1,5 @@
-# Should use alpine:3.12 to get ghc 8.8.3
-FROM alpine:3.12 as build-stage
+# Should use alpine:3.13 to get ghc 8.8.4
+FROM alpine:3.13 as build-stage
 
 # install dependencies
 RUN apk add --no-cache ghc cabal wget musl-dev zlib-dev zlib-static ncurses-dev ncurses-static curl
@@ -8,7 +8,7 @@ RUN apk add --no-cache ghc cabal wget musl-dev zlib-dev zlib-static ncurses-dev 
 RUN curl -sSL https://get.haskellstack.org/ | sh
 RUN PATH="/root/.local/bin:$PATH"
 # tell stack to use the global ghc, installing GHC with stack fails
-RUN stack config set system-ghc --global true 
+RUN stack config set system-ghc --global true
 
 
 
@@ -16,7 +16,7 @@ RUN stack config set system-ghc --global true
 COPY . .
 
 RUN stack install alex happy
-RUN stack build --jobs 1 --ghc-options='-optl-static -optl-pthread' --force-dirty
+RUN stack build --jobs 1 --flag madlib:static --ghc-options='-fPIC'
 
 RUN cp "$(stack path --dist-dir)/build/madlib/madlib" .
 

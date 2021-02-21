@@ -50,8 +50,7 @@ tTuple3 :: Type
 tTuple3 = TCon $ TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))
 
 tTuple4 :: Type
-tTuple4 =
-  TCon $ TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))
+tTuple4 = TCon $ TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))
 
 tArrow :: Type
 tArrow = TCon $ TC "(->)" (Kfun Star (Kfun Star Star))

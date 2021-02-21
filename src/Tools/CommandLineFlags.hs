@@ -12,7 +12,9 @@ data Command
       , compileBundle :: Bool
       , compileOptimize :: Bool
       , compileTarget :: Target
+      , compileJson :: Bool
       }
   | Test { testInput :: FilePath, coverage :: Bool }
   | Install
+  | New { newFolder :: FilePath }
   deriving (Eq, Show)

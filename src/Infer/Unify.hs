@@ -15,12 +15,10 @@ import qualified Data.Map                      as M
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t
-  | t == TVar tv = return M.empty
-  | tv `elem` ftv t = throwError $ InferError (InfiniteType tv t) NoReason
-  | kind tv /= kind t = throwError
-  $ InferError (KindError (TVar tv, kind tv) (t, kind t)) NoReason
-  | otherwise = return $ M.singleton tv t
+varBind tv t | t == TVar tv      = return M.empty
+             | tv `elem` ftv t   = throwError $ InferError (InfiniteType tv t) NoReason
+             | kind tv /= kind t = throwError $ InferError (KindError (TVar tv, kind tv) (t, kind t)) NoReason
+             | otherwise         = return $ M.singleton tv t
 
 class Unify t where
   unify :: t -> t -> Infer Substitution
@@ -41,8 +39,7 @@ instance Unify Type where
           types'         = M.elems updatedFields'
           z              = zip types types'
       unifyVars M.empty z
-    | M.difference fields fields' /= M.empty = throwError
-    $ InferError (UnificationError l r) NoReason
+    | M.difference fields fields' /= M.empty = throwError $ InferError (UnificationError l r) NoReason
     | otherwise = do
       let types  = M.elems fields
           types' = M.elems fields'
@@ -52,7 +49,7 @@ instance Unify Type where
   unify (TVar tv) t                = varBind tv t
   unify t         (TVar tv)        = varBind tv t
   unify (TCon a) (TCon b) | a == b = return M.empty
-  unify t1 t2 = throwError $ InferError (UnificationError t1 t2) NoReason
+  unify t1 t2                      = throwError $ InferError (UnificationError t1 t2) NoReason
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -78,7 +75,7 @@ unifyElems env (h : r) = unifyElems' h r
 unifyElems' :: Type -> [Type] -> Infer Substitution
 unifyElems' _ []        = return M.empty
 unifyElems' t (t' : xs) = do
-  s1 <- unify t t'
+  s1 <- unify t' t
   s2 <- unifyElems' t xs
   return $ compose s1 s2
 
@@ -92,9 +89,9 @@ instance Match Type where
     sl <- match l l'
     sr <- match r r'
     merge sl sr
-  match (TVar u) t | kind u == kind t = return $ M.singleton u t
+  match (TVar u) t | kind u == kind t      = return $ M.singleton u t
   match (TCon tc1) (TCon tc2) | tc1 == tc2 = return nullSubst
-  match t1 t2 = throwError $ InferError (UnificationError t1 t2) NoReason
+  match t1 t2                              = throwError $ InferError (UnificationError t1 t2) NoReason
 
 instance Match t => Match [t] where
   match ts ts' = do

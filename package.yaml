@@ -52,14 +52,16 @@ _exe-defs: &exe-defaults
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-  
 
 executables:
   madlib:
     <<: *exe-defaults
     main:                Main.hs
     source-dirs: src
-      
+    when:
+    - condition: flag(static)
+      ld-options: -static
+
 tests:
   madlib-test:
     main:                Spec.hs
@@ -72,3 +74,8 @@ tests:
       - hspec == 2.7.2
       - madlib
 
+flags:
+  static:
+    description: Pass -static to ghc.
+    manual: true
+    default: false

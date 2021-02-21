@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c76da47c8819c4b0fd22190ebe912af0b04a7c11f5af9de5ab6d1edffcc39aab
+-- hash: bab2483cf1efc602ea4a5c3e08566ee9e8c57bdef8f99e87afa306036f7e93a5
 
 name:           madlib
 version:        0.1.0
@@ -25,6 +25,11 @@ source-repository head
   type: git
   location: https://github.com/open-sorcerers/madlib
 
+flag static
+  description: Pass -static to ghc.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       AST.Canonical
@@ -39,8 +44,9 @@ library
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
-      Compile.Compile
+      Compile.Javascript
       Compile.JSInternals
+      Compile.Json
       Compile.Utils
       Coverage.Coverable
       Error.Error
@@ -65,6 +71,7 @@ library
       MadlibDotJSON
       Main
       Optimize.Optimize
+      PackageGenerator
       Parse.AST
       Parse.Grammar
       Parse.Lexer
@@ -74,6 +81,7 @@ library
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
+      Utils.URL
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -119,8 +127,9 @@ executable madlib
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
-      Compile.Compile
+      Compile.Javascript
       Compile.JSInternals
+      Compile.Json
       Compile.Utils
       Coverage.Coverable
       Error.Error
@@ -144,6 +153,7 @@ executable madlib
       Infer.Unify
       MadlibDotJSON
       Optimize.Optimize
+      PackageGenerator
       Parse.AST
       Parse.Grammar
       Parse.Lexer
@@ -153,6 +163,7 @@ executable madlib
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
+      Utils.URL
       Paths_madlib
   hs-source-dirs:
       src
@@ -181,13 +192,15 @@ executable madlib
     , regex-tdfa
     , text
     , transformers
+  if flag(static)
+    ld-options: -static
   default-language: Haskell2010
 
 test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Compile.CompileSpec
+      Compile.JavascriptSpec
       Compile.JSInternalsSpec
       Infer.SolveSpec
       Parse.ASTSpec

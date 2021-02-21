@@ -22,19 +22,13 @@ insertVarPlaceholders env exp@(Slv.Solved t a e) (p : ps) = do
     then case e of
       Slv.Var n -> do
         var <- shouldInsert env $ IsIn (predClass p) (predTypes p)
-        return $ Slv.Solved t a $ Slv.Placeholder
-          (Slv.MethodRef (predClass p) n var, ts)
-          exp
+        return $ Slv.Solved t a $ Slv.Placeholder (Slv.MethodRef (predClass p) n var, ts) exp
       _ -> return exp
     else do
       insert <- shouldInsert env p
 
-      let exp' = if insert
-            then Slv.Solved t a
-              $ Slv.Placeholder
-                  (Slv.ClassRef (predClass p) [] True insert, ts)
-                  exp
-            else exp
+      let exp' =
+            if insert then Slv.Solved t a $ Slv.Placeholder (Slv.ClassRef (predClass p) [] True insert, ts) exp else exp
       insertVarPlaceholders env exp' ps
 
 
@@ -47,24 +41,18 @@ insertClassPlaceholders env exp (p : ps) = do
     then insertClassPlaceholders env exp ps
     else case exp of
       Slv.Solved a t (Slv.Assignment n e) ->
-        let exp' = Slv.Solved a t $ Slv.Assignment
-              n
-              ( Slv.Solved a t
-              $ Slv.Placeholder
-                  (Slv.ClassRef (predClass p) [] False True, predTypes p)
-                  e
-              )
+        let exp' = Slv.Solved a t
+              $ Slv.Assignment
+                  n
+                  (Slv.Solved a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Assignment n e)) _)
-        -> let exp' = Slv.Solved a t $ Slv.Assignment
-                 n
-                 ( Slv.Solved a t
-                 $ Slv.Placeholder
-                     (Slv.ClassRef (predClass p) [] False True, predTypes p)
-                     e
-                 )
-           in  insertClassPlaceholders env exp' ps
+      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Assignment n e)) _) ->
+        let exp' = Slv.Solved a t
+              $ Slv.Assignment
+                  n
+                  (Slv.Solved a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
+        in  insertClassPlaceholders env exp' ps
 
       Slv.Solved a t (Slv.Export (Slv.Solved a' t' (Slv.Assignment n e))) ->
         let exp' = Slv.Solved a t $ Slv.Export
@@ -73,32 +61,23 @@ insertClassPlaceholders env exp (p : ps) = do
                 t'
                 (Slv.Assignment
                   n
-                  ( Slv.Solved a t
-                  $ Slv.Placeholder
-                      (Slv.ClassRef (predClass p) [] False True, predTypes p)
-                      e
-                  )
+                  (Slv.Solved a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
                 )
               )
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Export (Slv.Solved a'' t'' (Slv.Assignment n e)))) _)
-        -> let exp' = Slv.Solved
-                 a
-                 t
-                 (Slv.Export
-                   (Slv.Solved a t $ Slv.Assignment
-                     n
-                     ( Slv.Solved a t
-                     $ Slv.Placeholder
-                         ( Slv.ClassRef (predClass p) [] False True
-                         , predTypes p
-                         )
-                         e
-                     )
-                   )
-                 )
-           in  insertClassPlaceholders env exp' ps
+      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Export (Slv.Solved a'' t'' (Slv.Assignment n e)))) _) ->
+        let exp' = Slv.Solved
+              a
+              t
+              (Slv.Export
+                ( Slv.Solved a t
+                $ Slv.Assignment
+                    n
+                    (Slv.Solved a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
+                )
+              )
+        in  insertClassPlaceholders env exp' ps
 
       _ -> return exp
 
@@ -110,10 +89,8 @@ shouldInsert env p = do
   inst <- findInst env $ IsIn cls ts
 
   let insert = case inst of
-        Just (Instance (_ :=> p')) ->
-          let (_, IsIn _ withoutVars) = removeInstanceVars p' p
-          in  any isTVar withoutVars
-        Nothing -> True
+        Just (Instance (_ :=> p')) -> let (_, IsIn _ withoutVars) = removeInstanceVars p' p in any isTVar withoutVars
+        Nothing                    -> True
   return insert
 
 
@@ -125,21 +102,15 @@ getCanonicalPlaceholderTypes env p@(IsIn cls ts) = do
     Nothing                               -> ts
 
 updateMethodPlaceholder :: Env -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) exp))
-  = do
+updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) exp)) =
+  do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes')
     var'  <- shouldInsert env $ IsIn cls instanceTypes' -- Reconsider if the instance is fully resolved
 
-    ps <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
+    ps    <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
     ps'   <- getAllParentPreds env ps
-    pushPlaceholders
-      env
-      (Slv.Solved t
-                  a
-                  (Slv.Placeholder (Slv.MethodRef cls method var', types) exp)
-      )
-      ps'
+    pushPlaceholders env (Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var', types) exp)) ps'
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 pushPlaceholders _   exp                    []                     = return exp
@@ -147,25 +118,19 @@ pushPlaceholders env exp@(Slv.Solved t a _) (p@(IsIn cls ts) : ps) = do
   var <- shouldInsert env $ IsIn cls ts
   ps' <- buildClassRefPreds env cls ts
   ts' <- getCanonicalPlaceholderTypes env p
-  let
-    ph =
-      Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
+  let ph = Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
   pushPlaceholders env ph ps
 
 
 updateClassPlaceholder :: Env -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateClassPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls [] call _, instanceTypes) exp))
-  = do
-    let instanceTypes' = apply s instanceTypes
-    types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes'
-    var   <- shouldInsert env $ IsIn cls instanceTypes'
-    exp'  <- updatePlaceholders env s exp
-    ps'   <- buildClassRefPreds env cls instanceTypes'
+updateClassPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls [] call _, instanceTypes) exp)) = do
+  let instanceTypes' = apply s instanceTypes
+  types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes'
+  var   <- shouldInsert env $ IsIn cls instanceTypes'
+  exp'  <- updatePlaceholders env s exp
+  ps'   <- buildClassRefPreds env cls instanceTypes'
 
-    return $ Slv.Solved
-      t
-      a
-      (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+  return $ Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
 
 
 buildClassRefPreds :: Env -> String -> [Type] -> Infer [Slv.ClassRefPred]

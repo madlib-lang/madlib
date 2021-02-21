@@ -1,49 +1,93 @@
 import IO from "IO"
-import E from "Either"
-import M from "Map"
+import { Either, Right, Left, isLeft, fromRight, mapRight } from "Either"
+import D from "Dictionary"
+import { Maybe, Nothing, Just } from "Maybe"
 
 
-string :: a -> E.Either String String
+export alias Parser r = a -> Either String r
+
+
+string :: Parser String
 export string = (input) => (#-
   typeof input === "string"
-    ? E.Right(input)
-    : E.Left(`${input} is not a string`)
+    ? Right(input)
+    : Left(`${input} is not a string`)
 -#)
 
 
-number :: a -> E.Either String String
+number :: Parser Number
 export number = (input) => (#-
   typeof input === "number"
-    ? E.Right(input)
-    : E.Left(`${input} is not a number`)
+    ? Right(input)
+    : Left(`${input} is not a number`)
 -#)
 
 
-map :: (a -> E.Either String b) -> a -> E.Either String (M.Map String b)
-export map = (parser, input) => (#- {
-  const keys = Object.keys(input);
-  let result = M.empty;
+boolean :: Parser Boolean
+export boolean = (input) => (#-
+  typeof input === "boolean"
+    ? Right(input)
+    : Left(`${input} is not a boolean`)
+-#)
 
+
+dict :: Parser b -> Parser (D.Dictionary String b)
+export dict = (parser, input) => (#- {
   try {
+    const keys = Object.keys(input);
+    let result = D.empty;
     keys.forEach((k) => {
       const parsed = parser(input[k]);
-      if (E.isLeft(parsed)) {
+      if (isLeft(parsed)) {
         throw parsed;
       } else {
-        result = M.insert(k, E.fromRight("", parsed), result)
+        result = D.insert(k, fromRight("", parsed), result)
       }
     })
 
-    return E.Right(result);
+    return Right(result);
   } catch(e) {
-    return e;
+    return Left("Mapping failed!");
   }
 } -#)
 
 
-field :: String -> (a -> E.Either String b) -> d -> E.Either String b
+map1 :: (a -> b) -> Parser a -> Parser b
+export map1 = (fn, parser, input) =>
+  where(parser(input))
+    is Right a: Right(fn(a))
+    is Left e : Left(e)
+
+
+map2 :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
+export map2 = (fn, parserA, parserB, input) =>
+  where(<parserA(input), parserB(input)>)
+    is <Right a, Right b>: Right(fn(a, b))
+    is <Left e, _>: Left(e)
+    is <_, Left e>: Left(e)
+
+
+maybe :: Parser a -> Parser (Maybe a)
+export maybe = (parser, input) => (#-{
+  if (input) {
+    const parsed = parser(input);
+    if (isLeft(parsed)) {
+      return Right(Nothing);
+    }
+    return mapRight(Just, parsed);
+  } else {
+    return Right(Nothing)
+  }
+}-#)
+
+
+lazy :: (() -> Parser a) -> Parser a
+export lazy = (wrapped, input) => wrapped((), input)
+
+
+field :: String -> Parser b -> Parser b
 export field = (fieldName, parser, input) => ( #- parser(input[fieldName]) -#)
 
 
-parse :: (a -> E.Either String b) -> String -> E.Either String b
-export parse = (parser, input) => (#- parser(JSON.parse(input)) -#)
+parse :: Parser b -> String -> Either String b
+export parse = (parser, input) => parser(#- JSON.parse(input) -#)

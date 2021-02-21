@@ -12,6 +12,8 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
+import           Debug.Trace
+import           Text.Show.Pretty
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Pred], Vars, [Type])
@@ -59,11 +61,7 @@ inferPattern env (Can.Canonical _ pat) = case pat of
 
     s <- unifyElems (mergeVars env vars) ts
 
-    return
-      ( ps
-      , M.map (apply s) vars
-      , TApp (TCon (TC "List" $ Kfun Star Star)) (apply s (head ts))
-      )
+    return (ps, M.map (apply s) vars, TApp (TCon (TC "List" $ Kfun Star Star)) (apply s (head ts)))
 
    where
     inferPListItem :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)
@@ -98,4 +96,4 @@ inferPattern env (Can.Canonical _ pat) = case pat of
     (ps' :=> t)    <- instantiate sc
     s              <- unify t (foldr fn tv ts)
 
-    return (ps <> ps', vars, apply s tv)
+    return (ps <> ps', M.map (apply s) vars, apply s tv)

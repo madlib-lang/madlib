@@ -1,0 +1,71 @@
+import L from "List"
+import { Maybe } from "Maybe"
+import T from "Tuple"
+
+export data Dictionary k v = Dictionary (List <k, v>)
+
+
+fromList :: List (<k, v>) -> Dictionary k v
+export fromList = pipe(
+  L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
+  Dictionary
+)
+
+
+empty :: Dictionary k v
+export empty = fromList([])
+
+
+insert :: k -> v -> Dictionary k v -> Dictionary k v
+export insert = (k, v, m) => (where(m)
+  is Dictionary items:
+    L.reject(
+      (item) => (where(item)
+        is <kk, _>: kk == k
+      )
+      , items
+    )
+    |> L.append(<k, v>)
+    |> Dictionary
+)
+
+
+get :: k -> Dictionary k v -> Maybe v
+export get = (k) => where
+  is Dictionary items: pipe(
+    L.find((item) => (where(item)
+      is <kk, _>: k == kk
+    )),
+    map(T.snd)
+  )(items)
+
+
+keys :: Dictionary k v -> List k
+export keys = (m) => (where(m)
+  is Dictionary items: map(T.fst, items)
+)
+
+
+values :: Dictionary k v -> List v
+export values = (m) => (where(m)
+  is Dictionary items: map(T.snd, items)
+)
+
+
+len :: Dictionary k v -> Number
+export len = (m) => (m |> keys |> L.len)
+
+
+instance Functor (Dictionary k) {
+  map = (fn) => where
+    is Dictionary items: map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+}
+
+mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
+export mapWithKey = (fn) => where
+  is Dictionary items: map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+
+
+merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
+export merge = (a, b) => where(<a, b>)
+  is <Dictionary itemsA, Dictionary itemsB>: L.concat(itemsA, itemsB) |> fromList

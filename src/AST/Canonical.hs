@@ -163,13 +163,12 @@ getArea (Canonical a _) = a
 
 getExpName :: Exp -> Maybe String
 getExpName (Canonical _ exp) = case exp of
-  Assignment name                              _ -> return name
+  Assignment name _ -> return name
 
-  TypedExp   (Canonical _ (Assignment name _)) _ -> return name
+  TypedExp (Canonical _ (Assignment name _)) _ -> return name
 
-  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ ->
-    return name
+  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ -> return name
 
   Export (Canonical _ (Assignment name _)) -> return name
 
-  _ -> Nothing
+  _                 -> Nothing

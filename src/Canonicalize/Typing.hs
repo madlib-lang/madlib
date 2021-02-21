@@ -47,8 +47,7 @@ canonicalizeTyping (Src.Source _ area t) = case t of
 typingToScheme :: Env -> Src.Typing -> CanonicalM Scheme
 typingToScheme env typing = do
   (ps :=> t) <- qualTypingToQualType env typing
-  let vars =
-        S.toList $ S.fromList $ collectVars t <> concat (collectPredVars <$> ps)
+  let vars = S.toList $ S.fromList $ collectVars t <> concat (collectPredVars <$> ps)
   return $ quantify vars (ps :=> t)
 
 
@@ -67,8 +66,7 @@ constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
   let s = buildVarSubsts t
   ts <- mapM
     (\case
-      Src.Source _ _ (Src.TRSingle var) ->
-        return $ apply s $ TVar $ TV var Star
+      Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
 
       fullTyping@(Src.Source _ _ (Src.TRComp n typings')) -> do
         apply s <$> typingToType env fullTyping
@@ -153,7 +151,10 @@ updateAliasVars t args = do
           update ty = case ty of
             TVar tv -> case M.lookup tv instArgs of
               Just x  -> return x
-              Nothing -> return ty
+              Nothing -> --return ty -- HERE WE NEED A FRESH TVAR?
+                         case tv of
+                TV n k -> return $ TVar (TV "p" k)
+
             TApp l r -> do
               l' <- update l
               r' <- update r

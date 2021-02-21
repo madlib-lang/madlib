@@ -51,7 +51,7 @@ rm -r $PATH_DARWIN_TARGET
 # --------------------------------------------------------------------------- #
 # build linux x64
 
-DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile.ubuntu" -o $PATH_LINUX_TARGET .
+DOCKER_BUILDKIT=1 docker build -f "./pkg/Dockerfile" -o $PATH_LINUX_TARGET .
 cp -R $PRELUDE_PATH "$PATH_LINUX_TARGET/"
 cp $TEST_RUNNER_TARGET "$PATH_LINUX_TARGET/"
 cp $PKG_INSTALLER_TARGET "$PATH_LINUX_TARGET/"

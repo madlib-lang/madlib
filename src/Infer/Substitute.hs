@@ -35,8 +35,7 @@ instance Substitutable Type where
   apply s t@(TVar a      ) = M.findWithDefault t a s
   apply s (  t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields open) =
-    let applied = TRecord (apply s <$> fields) open
-    in  if rec == applied then applied else apply s applied
+    let applied = TRecord (apply s <$> fields) open in if rec == applied then applied else apply s applied
   apply s t = t
 
   ftv TCon{}              = []
@@ -62,18 +61,13 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 open1, TRecord fields2 open2) ->
-      TRecord (M.union fields1 fields2) (open1 || open2)
-    (t, _) -> t
+    (TRecord fields1 open1, TRecord fields2 open2) -> TRecord (M.union fields1 fields2) (open1 || open2)
+    (t                    , _                    ) -> t
 
 
 merge :: Substitution -> Substitution -> Infer Substitution
-merge s1 s2 = if agree
-  then return (s1 <> s2)
-  else throwError $ InferError FatalError NoReason
- where
-  agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v))
-              (M.keys s1 `intersect` M.keys s2)
+merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError FatalError NoReason
+  where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (M.keys s1 `intersect` M.keys s2)
 
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of

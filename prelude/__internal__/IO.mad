@@ -1,3 +1,5 @@
+#- import util from "util" -#
+
 log :: a -> a
 export log = (a) => (#- { console.log(a); return a; } -#)
 
@@ -9,6 +11,9 @@ export err = (e) => (#- { console.log(e); return e; } -#)
 
 warn :: a -> a
 export warn = (w) => (#- { console.warn(w); return w; } -#)
+
+inspect :: a -> a
+export inspect = (a) => (#- { console.log(util.inspect(a, {showHidden: false, depth: null})); return a; } -#)
 
 export alias Row = { id :: String, cols :: List <String, String> }
 
