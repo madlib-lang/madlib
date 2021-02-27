@@ -114,7 +114,7 @@ data Exp_ = LNum String
           | TemplateString [Exp]
           | Var Name
           | App Exp Exp Bool
-          | Abs Name [Exp]
+          | Abs (Canonical Name) [Exp]
           | FieldAccess Exp Exp
           | NamespaceAccess Name
           | Assignment Name Exp

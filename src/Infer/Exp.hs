@@ -72,7 +72,7 @@ applyLitSolve (Can.Canonical area exp) t = case exp of
   Can.LBool v -> Slv.Solved t area $ Slv.LBool v
   Can.LUnit   -> Slv.Solved t area Slv.LUnit
 
-applyAbsSolve :: Can.Exp -> Slv.Name -> [Slv.Exp] -> Type -> Slv.Exp
+applyAbsSolve :: Can.Exp -> Slv.Solved Slv.Name -> [Slv.Exp] -> Type -> Slv.Exp
 applyAbsSolve (Can.Canonical loc _) param body t = Slv.Solved t loc $ Slv.Abs param body
 
 applyAssignmentSolve :: Can.Exp -> Slv.Name -> Slv.Exp -> Type -> Slv.Exp
@@ -126,12 +126,13 @@ enhanceVarError env exp area (InferError e _) =
 -- INFER ABSTRACTIONS
 
 inferAbs :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAbs env l@(Can.Canonical _ (Can.Abs param body)) = do
+inferAbs env l@(Can.Canonical _ (Can.Abs (Can.Canonical area param) body)) = do
   tv <- newTVar Star
   let env' = extendVars env (param, Forall [] ([] :=> tv))
   (s, ps, t, es) <- inferBody env' body
-  let t' = apply s (tv `fn` t)
-  return (s, ps, t', applyAbsSolve l param es t')
+  let t'        = apply s (tv `fn` t)
+      paramType = apply s tv
+  return (s, ps, t', applyAbsSolve l (Slv.Solved paramType area param) es t')
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
@@ -178,10 +179,11 @@ inferApp env (Can.Canonical area (Can.App abs arg final)) = do
     )
 
   let t      = apply s3 tv
+  let s      = s3 `compose` s2 `compose` s1
 
-  let solved = Slv.Solved t area $ Slv.App eabs (updateType earg $ apply s3 t2) final
+  let solved = Slv.Solved (apply s t) area $ Slv.App eabs (updateType earg $ apply s t2) final
 
-  return (s3 `compose` s2 `compose` s1, ps1 ++ ps2, t, solved)
+  return (s, ps1 ++ ps2, t, solved)
 
 
 

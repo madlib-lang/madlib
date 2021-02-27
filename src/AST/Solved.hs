@@ -111,7 +111,7 @@ data Exp_ = LNum String
           | App Exp Exp Bool
           | FieldAccess Exp Exp
           | NamespaceAccess Name
-          | Abs Name [Exp]
+          | Abs (Solved Name) [Exp]
           | Assignment Name Exp
           | Export Exp
           | Var Name

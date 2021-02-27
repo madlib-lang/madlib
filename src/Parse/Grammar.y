@@ -100,9 +100,9 @@ ast :: { Src.AST }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (tokenToArea $1) (Src.Export (Src.Source emptyInfos (tokenToArea $2) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (tokenToArea $1) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
-      { $9 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.TypedExp (Src.Source emptyInfos (tokenToArea $1) (Src.Export (Src.Source emptyInfos (tokenToArea $5) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
+      { $9 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.TypedExp (Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }
@@ -278,7 +278,7 @@ exp :: { Src.Exp }
   | listConstructor                                     %shift { $1 }
   | typedExp                                            %shift { $1 }
   | js                                                  %shift { Src.Source emptyInfos (tokenToArea $1) (Src.JSExp (strV $1)) }
-  | name '=' exp                                        %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Assignment (strV $1) $3) }
+  | name '=' exp                                        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3) }
   | name                                                %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
   | 'pipe' '(' args ')' '(' args ')'                    %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
   | 'pipe' '(' args ')'                                 %shift { buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
@@ -314,7 +314,7 @@ app :: { Src.Exp }
   | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | exp '.' name '(' args ')' %shift { buildApp (Src.getArea $1) (access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) $5 }
+  | exp '.' name '(' args ')' %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $6)) (access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) $5 }
 
 multiExpBody :: { [Src.Exp] }
   : 'return' exp          { [$2] }
@@ -329,8 +329,8 @@ where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
   | 'where' '(' exp ')' maybeRet iss                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
-  | 'where' '{' rets iss rets '}'                     %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) ["__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Src.Source emptyInfos (tokenToArea $1) (Src.Var "__x__")) $4)] }
-  | 'where' rets iss rets                             %shift { buildAbs (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) ["__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) (Src.Where (Src.Source emptyInfos (tokenToArea $1) (Src.Var "__x__")) $3)] }
+  | 'where' '{' rets iss rets '}'                     %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $4)] }
+  | 'where' rets iss rets                             %shift { buildAbs (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $3)] }
 
 iss :: { [Src.Is] }
   : 'is' pattern ':' maybeRet exp                    %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.Is $2 $5)] }
@@ -486,8 +486,8 @@ operation :: { Src.Exp }
                       $3 True)
                    }
   | '!' exp  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App (Src.Source emptyInfos (tokenToArea $1) (Src.Var "!")) $2 True) }
-  | exp '|>' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '|>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "|>")) 
                          $1 False))) 
                       $3 True)
@@ -528,16 +528,16 @@ args :: { [Src.Exp] }
   | exp                      %shift { [$1] }
   | exp 'ret'                %shift { [$1] }
 
-params :: { [Src.Name] }
-  : name ',' params %shift { strV $1 : $3 }
-  | name            %shift { [strV $1] }
+params :: { [Src.Source Src.Name] }
+  : name ',' params %shift { (Src.Source emptyInfos (tokenToArea $1) (strV $1)) : $3 }
+  | name            %shift { [Src.Source emptyInfos (tokenToArea $1) (strV $1)] }
 
 {
-buildAbs :: Area -> [Src.Name] -> [Src.Exp] -> Src.Exp
+buildAbs :: Area -> [Src.Source Src.Name] -> [Src.Exp] -> Src.Exp
 buildAbs area params body = buildAbs' (length params) area params body
 
 
-buildAbs' :: Int -> Area -> [Src.Name] -> [Src.Exp] -> Src.Exp
+buildAbs' :: Int -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> Src.Exp
 buildAbs' nth area [param] body = Src.Source emptyInfos area (Src.Abs param body)
 buildAbs' nth area (x:xs) body  = Src.Source emptyInfos area (Src.Abs x [(buildAbs' (nth + 1) area xs body)])
 
@@ -552,7 +552,7 @@ buildApp' total nth area f@(Src.Source _ _ f') [(Src.Source emptyInfos area' arg
 buildApp' total nth area f@(Src.Source _ _ f') xs     = 
   let (Src.Source emptyInfos area' arg) = last xs
       argWithMeta        = Src.Source Infos { origin = Just f', nthArg = Just nth } area' arg
-  in  Src.Source emptyInfos area' (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))
+  in  Src.Source emptyInfos (mergeAreas area area') (Src.App (buildApp' total (nth - 1) area f (init xs)) argWithMeta (total == nth))
 
 
 
