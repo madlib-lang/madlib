@@ -27,7 +27,8 @@ Right
                            (TCon (TC "Number" Star)))
                         (Area (Loc 30 2 7) (Loc 44 2 21))
                         (Abs
-                           "a"
+                           (Solved
+                              (TCon (TC "Number" Star)) (Area (Loc 31 2 8) (Loc 32 2 9)) "a")
                            [ Solved
                                (TCon (TC "Number" Star))
                                (Area (Loc 38 2 15) (Loc 39 2 16))
@@ -105,8 +106,9 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "h" Star)))
-                           (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "h" Star))))
+                              (TCon (TC "Number" Star)))
+                           (TApp
+                              (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
                         (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
                      (Solved

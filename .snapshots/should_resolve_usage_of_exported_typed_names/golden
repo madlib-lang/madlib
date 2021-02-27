@@ -16,7 +16,7 @@ Right
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                         (TCon (TC "Number" Star)))
                      (TCon (TC "Number" Star)))
-                  (Area (Loc 0 1 1) (Loc 3 1 4))
+                  (Area (Loc 24 2 1) (Loc 51 2 28))
                   (Export
                      (Solved
                         (TApp
@@ -24,7 +24,7 @@ Right
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                               (TCon (TC "Number" Star)))
                            (TCon (TC "Number" Star)))
-                        (Area (Loc 24 2 1) (Loc 30 2 7))
+                        (Area (Loc 31 2 8) (Loc 51 2 28))
                         (Assignment
                            "inc"
                            (Solved
@@ -35,7 +35,10 @@ Right
                                  (TCon (TC "Number" Star)))
                               (Area (Loc 37 2 14) (Loc 51 2 28))
                               (Abs
-                                 "a"
+                                 (Solved
+                                    (TCon (TC "Number" Star))
+                                    (Area (Loc 38 2 15) (Loc 39 2 16))
+                                    "a")
                                  [ Solved
                                      (TCon (TC "Number" Star))
                                      (Area (Loc 45 2 22) (Loc 46 2 23))

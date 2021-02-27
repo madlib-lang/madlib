@@ -8,7 +8,7 @@ Right
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                   (TCon (TC "Number" Star)))
                (TCon (TC "Number" Star)))
-            (Area (Loc 0 1 1) (Loc 2 1 3))
+            (Area (Loc 0 1 1) (Loc 23 1 24))
             (Assignment
                "fn"
                (Solved
@@ -19,7 +19,8 @@ Right
                      (TCon (TC "Number" Star)))
                   (Area (Loc 5 1 6) (Loc 23 1 24))
                   (Abs
-                     "x"
+                     (Solved
+                        (TCon (TC "Number" Star)) (Area (Loc 6 1 7) (Loc 7 1 8)) "x")
                      [ Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 13 1 14) (Loc 14 1 15))
@@ -54,11 +55,15 @@ Right
                                (Area (Loc 17 1 18) (Loc 22 1 23))
                                (App
                                   (Solved
-                                     (TVar (TV "b" Star))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TCon (TC "Number" Star)))
+                                        (TCon (TC "Number" Star)))
                                      (Area (Loc 17 1 18) (Loc 19 1 20))
                                      (Var "fn"))
                                   (Solved
-                                     (TVar (TV "c" Star))
+                                     (TCon (TC "Number" Star))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var "x"))
                                   True))

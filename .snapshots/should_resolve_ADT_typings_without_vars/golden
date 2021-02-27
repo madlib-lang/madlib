@@ -35,28 +35,31 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                (TCon (TC "Something" Star)))
                             (TCon (TC "Something" Star)))
-                         (Area (Loc 26 2 1) (Loc 28 2 3))
+                         (Area (Loc 59 3 1) (Loc 81 3 23))
                          (Export
                             (Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TVar (TV "b" Star)))
-                                  (TVar (TV "b" Star)))
-                               (Area (Loc 59 3 1) (Loc 65 3 7))
+                                     (TCon (TC "Something" Star)))
+                                  (TCon (TC "Something" Star)))
+                               (Area (Loc 66 3 8) (Loc 81 3 23))
                                (Assignment
                                   "fn"
                                   (Solved
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                           (TVar (TV "b" Star)))
-                                        (TVar (TV "b" Star)))
+                                           (TCon (TC "Something" Star)))
+                                        (TCon (TC "Something" Star)))
                                      (Area (Loc 71 3 13) (Loc 81 3 23))
                                      (Abs
-                                        "x"
+                                        (Solved
+                                           (TCon (TC "Something" Star))
+                                           (Area (Loc 72 3 14) (Loc 73 3 15))
+                                           "x")
                                         [ Solved
-                                            (TVar (TV "b" Star))
+                                            (TCon (TC "Something" Star))
                                             (Area (Loc 79 3 21) (Loc 80 3 22))
                                             (Var "x")
                                         ]))))))

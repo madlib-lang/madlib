@@ -15,7 +15,7 @@ Right
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                               (TCon (TC "String" Star)))
-                           (TVar (TV "b" Star)))
+                           (TCon (TC "Number" Star)))
                         (Area (Loc 113 9 2) (Loc 117 9 6))
                         (Placeholder
                            ( MethodRef "Read" "read" False , [ TCon (TC "Number" Star) ] )
@@ -24,7 +24,7 @@ Right
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                     (TCon (TC "String" Star)))
-                                 (TVar (TV "b" Star)))
+                                 (TCon (TC "Number" Star)))
                               (Area (Loc 113 9 2) (Loc 117 9 6))
                               (Var "read"))))
                      (Solved
@@ -68,9 +68,10 @@ Right
                           (TCon (TC "Number" Star)))
                        (Area (Loc 76 6 10) (Loc 108 6 42))
                        (Abs
-                          "s"
+                          (Solved
+                             (TCon (TC "String" Star)) (Area (Loc 77 6 11) (Loc 78 6 12)) "s")
                           [ Solved
-                              (TVar (TV "e" Star))
+                              (TCon (TC "Number" Star))
                               (Area (Loc 84 6 18) (Loc 107 6 41))
                               (JSExp "parseFloat(s, 10)")
                           ])

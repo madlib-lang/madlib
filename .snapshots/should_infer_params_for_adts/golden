@@ -9,7 +9,7 @@ Right
                   (TRecord
                      (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
                (TCon (TC "Result" Star)))
-            (Area (Loc 42 2 1) (Loc 43 2 2))
+            (Area (Loc 42 2 1) (Loc 53 2 12))
             (Assignment
                "r"
                (Solved
@@ -47,13 +47,38 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TVar (TV "f" Star)))
-                     (TVar (TV "f" Star)))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TRecord
+                                 (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
+                           (TCon (TC "Result" Star))))
+                     (TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                           (TRecord
+                              (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
+                        (TCon (TC "Result" Star))))
                   (Area (Loc 71 3 2) (Loc 81 3 12))
                   (Abs
-                     "a"
+                     (Solved
+                        (TApp
+                           (TApp
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TRecord
+                                 (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
+                           (TCon (TC "Result" Star)))
+                        (Area (Loc 72 3 3) (Loc 73 3 4))
+                        "a")
                      [ Solved
-                         (TVar (TV "f" Star)) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a")
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TRecord
+                                  (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
+                            (TCon (TC "Result" Star)))
+                         (Area (Loc 79 3 10) (Loc 80 3 11))
+                         (Var "a")
                      ]))
                (Solved
                   (TApp
