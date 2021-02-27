@@ -171,9 +171,8 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     Left err -> do
       hPutStrLn stderr $ ppShow err
       Explain.format readFile err >>= putStrLn >> exitFailure
-    Right (table, _) ->
-      if json then
-        putStrLn $ CompileJson.compileASTTable table
+    Right (table, _) -> if json
+      then putStrLn $ CompileJson.compileASTTable table
       else do
         when coverage $ do
           runCoverageInitialization rootPath table

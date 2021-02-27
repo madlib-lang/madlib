@@ -102,15 +102,21 @@ getCanonicalPlaceholderTypes env p@(IsIn cls ts) = do
     Nothing                               -> ts
 
 updateMethodPlaceholder :: Env -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) exp)) =
-  do
+updateMethodPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Solved t' a' exp)))
+  = do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes')
     var'  <- shouldInsert env $ IsIn cls instanceTypes' -- Reconsider if the instance is fully resolved
 
     ps    <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
     ps'   <- getAllParentPreds env ps
-    pushPlaceholders env (Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var', types) exp)) ps'
+    pushPlaceholders
+      env
+      (Slv.Solved (apply s t)
+                  a
+                  (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved (apply s t') a' exp))
+      )
+      ps'
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 pushPlaceholders _   exp                    []                     = return exp
@@ -130,7 +136,7 @@ updateClassPlaceholder env s ph@(Slv.Solved t a (Slv.Placeholder (Slv.ClassRef c
   exp'  <- updatePlaceholders env s exp
   ps'   <- buildClassRefPreds env cls instanceTypes'
 
-  return $ Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+  return $ Slv.Solved (apply s t) a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
 
 
 buildClassRefPreds :: Env -> String -> [Type] -> Infer [Slv.ClassRefPred]
@@ -163,54 +169,55 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
   Slv.App abs arg final -> do
     abs' <- updatePlaceholders env s abs
     arg' <- updatePlaceholders env s arg
-    return $ Slv.Solved t a $ Slv.App abs' arg' final
+    return $ Slv.Solved (apply s t) a $ Slv.App abs' arg' final
 
-  Slv.Abs param es -> do
+  Slv.Abs (Slv.Solved paramType paramArea param) es -> do
     es' <- mapM (updatePlaceholders env s) es
-    return $ Slv.Solved t a $ Slv.Abs param es'
+    let param' = Slv.Solved (apply s paramType) paramArea param
+    return $ Slv.Solved (apply s t) a $ Slv.Abs param' es'
 
   Slv.Where exp iss -> do
     exp' <- updatePlaceholders env s exp
     iss' <- mapM (updateIs s) iss
-    return $ Slv.Solved t a $ Slv.Where exp' iss'
+    return $ Slv.Solved (apply s t) a $ Slv.Where exp' iss'
 
   Slv.Assignment n exp -> do
     exp' <- updatePlaceholders env s exp
-    return $ Slv.Solved t a $ Slv.Assignment n exp'
+    return $ Slv.Solved (apply s t) a $ Slv.Assignment n exp'
 
   Slv.ListConstructor li -> do
     li' <- mapM (updateListItem s) li
-    return $ Slv.Solved t a $ Slv.ListConstructor li'
+    return $ Slv.Solved (apply s t) a $ Slv.ListConstructor li'
 
   Slv.TypedExp exp typing -> do
     exp' <- updatePlaceholders env s exp
-    return $ Slv.Solved t a $ Slv.TypedExp exp' typing
+    return $ Slv.Solved (apply s t) a $ Slv.TypedExp exp' typing
 
   Slv.Export exp -> do
     exp' <- updatePlaceholders env s exp
-    return $ Slv.Solved t a $ Slv.Export exp'
+    return $ Slv.Solved (apply s t) a $ Slv.Export exp'
 
   Slv.If econd eif eelse -> do
     econd' <- updatePlaceholders env s econd
     eif'   <- updatePlaceholders env s eif
     eelse' <- updatePlaceholders env s eelse
-    return $ Slv.Solved t a $ Slv.If econd' eif' eelse'
+    return $ Slv.Solved (apply s t) a $ Slv.If econd' eif' eelse'
 
   Slv.TupleConstructor es -> do
     es' <- mapM (updatePlaceholders env s) es
-    return $ Slv.Solved t a $ Slv.TupleConstructor es'
+    return $ Slv.Solved (apply s t) a $ Slv.TupleConstructor es'
 
   Slv.TemplateString es -> do
     es' <- mapM (updatePlaceholders env s) es
-    return $ Slv.Solved t a $ Slv.TemplateString es'
+    return $ Slv.Solved (apply s t) a $ Slv.TemplateString es'
 
-  _ -> return $ Slv.Solved t a e
+  _ -> return $ Slv.Solved (apply s t) a e
  where
   updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
   updateIs s (Slv.Solved t a is) = case is of
     Slv.Is pat exp -> do
       exp' <- updatePlaceholders env s exp
-      return $ Slv.Solved t a $ Slv.Is pat exp'
+      return $ Slv.Solved (apply s t) a $ Slv.Is pat exp'
 
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
   updateListItem s li = case li of

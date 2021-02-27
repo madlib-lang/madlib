@@ -12,6 +12,9 @@ import           Canonicalize.CanonicalM
 import qualified Canonicalize.Env              as E
 import           Canonicalize.Typing
 import qualified Data.Map                      as M
+import           Parse.Grammar                  ( mergeAreas )
+import           AST.Canonical                  ( getArea )
+import           Explain.Location
 
 
 
@@ -45,11 +48,12 @@ instance Canonicalizable Src.Exp Can.Exp where
       field' <- canonicalize env target field
       return $ Can.Canonical area (Can.FieldAccess rec' field')
 
-    Src.NamespaceAccess n -> return $ Can.Canonical area (Can.NamespaceAccess n)
+    Src.NamespaceAccess n                       -> return $ Can.Canonical area (Can.NamespaceAccess n)
 
-    Src.Abs param body    -> do
+    Src.Abs (Src.Source _ paramArea param) body -> do
       body' <- mapM (canonicalize env target) body
-      return $ Can.Canonical area (Can.Abs param body')
+      let param' = Can.Canonical paramArea param
+      return $ Can.Canonical area (Can.Abs param' body')
 
     Src.Assignment name exp -> do
       exp' <- canonicalize env target exp
@@ -90,19 +94,19 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Where exp' iss')
 
     Src.Pipe exps -> do
-      app <- buildApplication (Can.Canonical area (Can.Var "_P_")) exps
-      return $ Can.Canonical area (Can.Abs "_P_" [app])
+      app <- buildApplication (Can.Canonical emptyArea (Can.Var "_P_")) exps
+      return $ Can.Canonical area (Can.Abs (Can.Canonical emptyArea "_P_") [app])
 
      where
       buildApplication :: Can.Exp -> [Src.Exp] -> CanonicalM Can.Exp
       buildApplication prev es = case es of
         [e] -> do
           e' <- canonicalize env target e
-          return $ Can.Canonical (Can.getArea e') (Can.App e' prev True)
+          return $ Can.Canonical (mergeAreas (getArea prev) (Can.getArea e')) (Can.App e' prev True)
 
         e : es -> do
           e' <- canonicalize env target e
-          let app = Can.Canonical (Can.getArea e') (Can.App e' prev True)
+          let app = Can.Canonical (mergeAreas (getArea prev) (Can.getArea e')) (Can.App e' prev True)
           buildApplication app es
 
 

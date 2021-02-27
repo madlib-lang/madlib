@@ -92,7 +92,6 @@ initMadlibModulesFolder = (path, a) => pipe(
   andDo(of(a))
 )(path)
 
-
 verifyPackageAndInstallSubDeps :: String -> String -> Wish String (List String)
 verifyPackageAndInstallSubDeps = (pkgName, madlibDotJsonPath) => pipe(
   exists,
