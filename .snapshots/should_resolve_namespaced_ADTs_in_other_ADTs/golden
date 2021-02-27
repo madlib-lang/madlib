@@ -24,7 +24,7 @@ Right
            , aexps =
                [ Solved
                    (TCon (TC "MyType" Star))
-                   (Area (Loc 64 3 1) (Loc 65 3 2))
+                   (Area (Loc 64 3 1) (Loc 87 3 24))
                    (Assignment
                       "x"
                       (Solved
@@ -44,16 +44,16 @@ Right
                             (Solved
                                (TApp
                                   (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "String" Star)))
-                               (Area (Loc 75 3 12) (Loc 76 3 13))
+                               (Area (Loc 75 3 12) (Loc 86 3 23))
                                (App
                                   (Solved
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                           (TVar (TV "e" Star)))
+                                           (TCon (TC "String" Star)))
                                         (TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)))
-                                           (TVar (TV "e" Star))))
+                                           (TCon (TC "String" Star))))
                                      (Area (Loc 75 3 12) (Loc 81 3 18))
                                      (NamespaceAccess "M.Just"))
                                   (Solved

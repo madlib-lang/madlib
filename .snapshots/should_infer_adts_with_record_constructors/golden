@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             (TCon (TC "Result" Star))
-            (Area (Loc 72 2 1) (Loc 79 2 8))
+            (Area (Loc 72 2 1) (Loc 106 2 35))
             (Assignment
                "result1"
                (Solved
@@ -41,7 +41,7 @@ Right
                      True)))
         , Solved
             (TCon (TC "Result" Star))
-            (Area (Loc 107 3 1) (Loc 114 3 8))
+            (Area (Loc 107 3 1) (Loc 142 3 36))
             (Assignment
                "result2"
                (Solved
@@ -73,7 +73,7 @@ Right
                      True)))
         , Solved
             (TCon (TC "Boolean" Star))
-            (Area (Loc 173 4 31) (Loc 180 4 38))
+            (Area (Loc 143 4 1) (Loc 180 4 38))
             (App
                (Solved
                   (TApp
@@ -87,24 +87,28 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "k" Star)))
+                              (TCon (TC "Result" Star)))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TVar (TV "k" Star)))
+                                 (TCon (TC "Result" Star)))
                               (TCon (TC "Boolean" Star))))
                         (Area (Loc 144 4 2) (Loc 162 4 20))
                         (Abs
-                           "a"
+                           (Solved
+                              (TCon (TC "Result" Star)) (Area (Loc 145 4 3) (Loc 146 4 4)) "a")
                            [ Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TVar (TV "k" Star)))
+                                     (TCon (TC "Result" Star)))
                                   (TCon (TC "Boolean" Star)))
                                (Area (Loc 144 4 2) (Loc 162 4 20))
                                (Abs
-                                  "b"
+                                  (Solved
+                                     (TCon (TC "Result" Star))
+                                     (Area (Loc 148 4 6) (Loc 149 4 7))
+                                     "b")
                                   [ Solved
                                       (TCon (TC "Boolean" Star))
                                       (Area (Loc 155 4 13) (Loc 156 4 14))
@@ -113,7 +117,7 @@ Right
                                             (TApp
                                                (TApp
                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                  (TVar (TV "j" Star)))
+                                                  (TCon (TC "Result" Star)))
                                                (TCon (TC "Boolean" Star)))
                                             (Area (Loc 155 4 13) (Loc 156 4 14))
                                             (App
@@ -122,24 +126,24 @@ Right
                                                      (TApp
                                                         (TCon
                                                            (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                        (TVar (TV "n" Star)))
+                                                        (TCon (TC "Result" Star)))
                                                      (TApp
                                                         (TApp
                                                            (TCon
                                                               (TC
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star))))
-                                                           (TVar (TV "n" Star)))
+                                                           (TCon (TC "Result" Star)))
                                                         (TCon (TC "Boolean" Star))))
                                                   (Area (Loc 157 4 15) (Loc 159 4 17))
                                                   (Var "=="))
                                                (Solved
-                                                  (TVar (TV "j" Star))
+                                                  (TCon (TC "Result" Star))
                                                   (Area (Loc 155 4 13) (Loc 156 4 14))
                                                   (Var "a"))
                                                False))
                                          (Solved
-                                            (TVar (TV "k" Star))
+                                            (TCon (TC "Result" Star))
                                             (Area (Loc 160 4 18) (Loc 161 4 19))
                                             (Var "b"))
                                          True)

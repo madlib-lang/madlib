@@ -38,7 +38,7 @@ Right
                                (TApp
                                   (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
                             (TCon (TC "Number" Star)))
-                         (Area (Loc 26 2 1) (Loc 28 2 3))
+                         (Area (Loc 57 3 1) (Loc 137 8 1))
                          (Export
                             (Solved
                                (TApp
@@ -48,7 +48,7 @@ Right
                                         (TCon (TC "Maybe" (Kfun Star Star)))
                                         (TCon (TC "Number" Star))))
                                   (TCon (TC "Number" Star)))
-                               (Area (Loc 57 3 1) (Loc 63 3 7))
+                               (Area (Loc 64 3 8) (Loc 137 8 1))
                                (Assignment
                                   "fn"
                                   (Solved
@@ -61,7 +61,12 @@ Right
                                         (TCon (TC "Number" Star)))
                                      (Area (Loc 69 3 13) (Loc 137 8 1))
                                      (Abs
-                                        "x"
+                                        (Solved
+                                           (TApp
+                                              (TCon (TC "Maybe" (Kfun Star Star)))
+                                              (TCon (TC "Number" Star)))
+                                           (Area (Loc 70 3 14) (Loc 71 3 15))
+                                           "x")
                                         [ Solved
                                             (TCon (TC "Number" Star))
                                             (Area (Loc 80 4 3) (Loc 135 7 3))
@@ -86,7 +91,7 @@ Right
                                                    (Is
                                                       (PCtor "M.Just" [ PVar "a" ])
                                                       (Solved
-                                                         (TVar (TV "d" Star))
+                                                         (TCon (TC "Number" Star))
                                                          (Area (Loc 109 5 19) (Loc 110 5 20))
                                                          (Var "a")))
                                                , Solved

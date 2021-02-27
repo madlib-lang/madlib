@@ -8,7 +8,7 @@ Right
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                   (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star))))
                (TVar (TV "e" Star)))
-            (Area (Loc 32 2 1) (Loc 34 2 3))
+            (Area (Loc 32 2 1) (Loc 81 6 1))
             (Assignment
                "fn"
                (Solved
@@ -19,7 +19,10 @@ Right
                      (TVar (TV "e" Star)))
                   (Area (Loc 37 2 6) (Loc 81 6 1))
                   (Abs
-                     "b"
+                     (Solved
+                        (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star)))
+                        (Area (Loc 38 2 7) (Loc 39 2 8))
+                        "b")
                      [ Solved
                          (TVar (TV "e" Star))
                          (Area (Loc 48 3 3) (Loc 79 5 3))
@@ -52,8 +55,9 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star))))
-                     (TVar (TV "e" Star)))
+                        (TApp
+                           (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
+                     (TCon (TC "Number" Star)))
                   (Area (Loc 82 7 1) (Loc 84 7 3))
                   (Var "fn"))
                (Solved
@@ -65,8 +69,9 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "k" Star)))
-                           (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "k" Star))))
+                              (TCon (TC "Number" Star)))
+                           (TApp
+                              (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
                         (Area (Loc 85 7 4) (Loc 89 7 8))
                         (Var "Just"))
                      (Solved

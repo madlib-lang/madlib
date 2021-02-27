@@ -34,7 +34,7 @@ Right
                         ])
                      True))
                (TVar (TV "m" Star)))
-            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
                (Solved
@@ -72,7 +72,37 @@ Right
                      (TVar (TV "m" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
-                     "x"
+                     (Solved
+                        (TRecord
+                           (fromList
+                              [ ( "a"
+                                , TRecord
+                                    (fromList
+                                       [ ( "b"
+                                         , TRecord
+                                             (fromList
+                                                [ ( "c"
+                                                  , TRecord
+                                                      (fromList
+                                                         [ ( "d"
+                                                           , TRecord
+                                                               (fromList
+                                                                  [ ( "e" , TVar (TV "m" Star) ) ])
+                                                               True
+                                                           )
+                                                         ])
+                                                      True
+                                                  )
+                                                ])
+                                             True
+                                         )
+                                       ])
+                                    True
+                                )
+                              ])
+                           True)
+                        (Area (Loc 5 1 6) (Loc 6 1 7))
+                        "x")
                      [ Solved
                          (TVar (TV "m" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))

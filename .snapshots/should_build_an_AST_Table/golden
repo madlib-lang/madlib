@@ -22,19 +22,25 @@ Right
                                Infos { nthArg = Nothing , origin = Nothing }
                                (Area (Loc 70 3 6) (Loc 95 3 31))
                                (Abs
-                                  "a"
+                                  (Source
+                                     Infos { nthArg = Nothing , origin = Nothing }
+                                     (Area (Loc 71 3 7) (Loc 72 3 8))
+                                     "a")
                                   [ Source
                                       Infos { nthArg = Nothing , origin = Nothing }
                                       (Area (Loc 70 3 6) (Loc 95 3 31))
                                       (Abs
-                                         "b"
+                                         (Source
+                                            Infos { nthArg = Nothing , origin = Nothing }
+                                            (Area (Loc 74 3 10) (Loc 75 3 11))
+                                            "b")
                                          [ Source
                                              Infos { nthArg = Nothing , origin = Nothing }
-                                             (Area (Loc 88 3 24) (Loc 89 3 25))
+                                             (Area (Loc 81 3 17) (Loc 89 3 25))
                                              (App
                                                 (Source
                                                    Infos { nthArg = Nothing , origin = Nothing }
-                                                   (Area (Loc 88 3 24) (Loc 89 3 25))
+                                                   (Area (Loc 81 3 17) (Loc 89 3 25))
                                                    (App
                                                       (Source
                                                          Infos
@@ -44,7 +50,7 @@ Right
                                                       (Source
                                                          Infos
                                                            { nthArg = Nothing , origin = Nothing }
-                                                         (Area (Loc 88 3 24) (Loc 89 3 25))
+                                                         (Area (Loc 81 3 17) (Loc 89 3 25))
                                                          (App
                                                             (Source
                                                                Infos
@@ -123,23 +129,29 @@ Right
                    (TypedExp
                       (Source
                          Infos { nthArg = Nothing , origin = Nothing }
-                         (Area (Loc 0 1 1) (Loc 3 1 4))
+                         (Area (Loc 34 2 1) (Loc 64 2 31))
                          (Export
                             (Source
                                Infos { nthArg = Nothing , origin = Nothing }
-                               (Area (Loc 34 2 1) (Loc 40 2 7))
+                               (Area (Loc 41 2 8) (Loc 64 2 31))
                                (Assignment
                                   "fn2"
                                   (Source
                                      Infos { nthArg = Nothing , origin = Nothing }
                                      (Area (Loc 47 2 14) (Loc 64 2 31))
                                      (Abs
-                                        "a"
+                                        (Source
+                                           Infos { nthArg = Nothing , origin = Nothing }
+                                           (Area (Loc 48 2 15) (Loc 49 2 16))
+                                           "a")
                                         [ Source
                                             Infos { nthArg = Nothing , origin = Nothing }
                                             (Area (Loc 47 2 14) (Loc 64 2 31))
                                             (Abs
-                                               "b"
+                                               (Source
+                                                  Infos { nthArg = Nothing , origin = Nothing }
+                                                  (Area (Loc 51 2 18) (Loc 52 2 19))
+                                                  "b")
                                                [ Source
                                                    Infos { nthArg = Nothing , origin = Nothing }
                                                    (Area (Loc 58 2 25) (Loc 59 2 26))

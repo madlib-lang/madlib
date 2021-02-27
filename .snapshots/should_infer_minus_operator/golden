@@ -14,7 +14,8 @@ Right
                   (TCon (TC "Number" Star))))
             (Area (Loc 0 1 1) (Loc 17 1 18))
             (Abs
-               "b"
+               (Solved
+                  (TCon (TC "Number" Star)) (Area (Loc 1 1 2) (Loc 2 1 3)) "b")
                [ Solved
                    (TApp
                       (TApp
@@ -23,7 +24,8 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 0 1 1) (Loc 17 1 18))
                    (Abs
-                      "c"
+                      (Solved
+                         (TCon (TC "Number" Star)) (Area (Loc 4 1 5) (Loc 5 1 6)) "c")
                       [ Solved
                           (TCon (TC "Number" Star))
                           (Area (Loc 11 1 12) (Loc 12 1 13))

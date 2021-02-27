@@ -10,7 +10,11 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TVar (TV "c" Star)))
+                        (TApp
+                           (TApp
+                              (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "Number" Star)))
+                           (TCon (TC "Boolean" Star))))
                      (TCon (TC "String" Star)))
                   (Area (Loc 296 17 1) (Loc 300 17 5))
                   (Placeholder
@@ -19,7 +23,11 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "c" Star)))
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                    (TCon (TC "Number" Star)))
+                                 (TCon (TC "Boolean" Star))))
                            (TCon (TC "String" Star)))
                         (Area (Loc 296 17 1) (Loc 300 17 5))
                         (Placeholder
@@ -28,7 +36,11 @@ Right
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                    (TVar (TV "c" Star)))
+                                    (TApp
+                                       (TApp
+                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                          (TCon (TC "Number" Star)))
+                                       (TCon (TC "Boolean" Star))))
                                  (TCon (TC "String" Star)))
                               (Area (Loc 296 17 1) (Loc 300 17 5))
                               (Placeholder
@@ -44,7 +56,11 @@ Right
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                          (TVar (TV "c" Star)))
+                                          (TApp
+                                             (TApp
+                                                (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                (TCon (TC "Number" Star)))
+                                             (TCon (TC "Boolean" Star))))
                                        (TCon (TC "String" Star)))
                                     (Area (Loc 296 17 1) (Loc 300 17 5))
                                     (Var "show"))))))))
@@ -99,13 +115,14 @@ Right
                           (TCon (TC "String" Star)))
                        (Area (Loc 77 6 10) (Loc 104 6 37))
                        (Abs
-                          "b"
+                          (Solved
+                             (TCon (TC "Boolean" Star)) (Area (Loc 78 6 11) (Loc 79 6 12)) "b")
                           [ Solved
                               (TCon (TC "String" Star))
                               (Area (Loc 84 6 17) (Loc 104 6 37))
                               (If
                                  (Solved
-                                    (TVar (TV "e" Star))
+                                    (TCon (TC "Boolean" Star))
                                     (Area (Loc 84 6 17) (Loc 85 6 18))
                                     (Var "b"))
                                  (Solved
@@ -142,9 +159,12 @@ Right
                           (TCon (TC "String" Star)))
                        (Area (Loc 140 10 10) (Loc 179 10 49))
                        (Abs
-                          "n"
+                          (Solved
+                             (TCon (TC "Number" Star))
+                             (Area (Loc 141 10 11) (Loc 142 10 12))
+                             "n")
                           [ Solved
-                              (TVar (TV "h" Star))
+                              (TCon (TC "String" Star))
                               (Area (Loc 148 10 18) (Loc 178 10 48))
                               (JSExp "new Number(n).toString()")
                           ])
@@ -212,7 +232,14 @@ Right
                                       (TCon (TC "String" Star)))
                                    (Area (Loc 235 14 10) (Loc 255 14 30))
                                    (Abs
-                                      "__x__"
+                                      (Solved
+                                         (TApp
+                                            (TApp
+                                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                               (TVar (TV "l" Star)))
+                                            (TVar (TV "m" Star)))
+                                         (Area (Loc 0 0 0) (Loc 0 0 0))
+                                         "__x__")
                                       [ Solved
                                           (TCon (TC "String" Star))
                                           (Area (Loc 235 14 10) (Loc 255 14 30))
@@ -223,7 +250,7 @@ Right
                                                       (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
                                                       (TVar (TV "l" Star)))
                                                    (TVar (TV "m" Star)))
-                                                (Area (Loc 235 14 10) (Loc 240 14 15))
+                                                (Area (Loc 0 0 0) (Loc 0 0 0))
                                                 (Var "__x__"))
                                              [ Solved
                                                  (TApp
@@ -369,7 +396,7 @@ Right
                                                                                                  Star))))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "s"
+                                                                                           "l"
                                                                                            Star)))
                                                                                   (TCon
                                                                                      (TC
@@ -401,7 +428,7 @@ Right
                                                                                                        Star))))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "s"
+                                                                                                 "l"
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
@@ -598,7 +625,7 @@ Right
                                                                                                              Star))))
                                                                                                  (TVar
                                                                                                     (TV
-                                                                                                       "y"
+                                                                                                       "m"
                                                                                                        Star)))
                                                                                               (TCon
                                                                                                  (TC
@@ -637,7 +664,7 @@ Right
                                                                                                                    Star))))
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "y"
+                                                                                                             "m"
                                                                                                              Star)))
                                                                                                     (TCon
                                                                                                        (TC

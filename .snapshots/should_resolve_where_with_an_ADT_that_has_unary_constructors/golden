@@ -5,7 +5,7 @@ Right
         [ Solved
             (TApp
                (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star)))
-            (Area (Loc 32 2 1) (Loc 39 2 8))
+            (Area (Loc 32 2 1) (Loc 49 2 18))
             (Assignment
                "perhaps"
                (Solved
@@ -17,8 +17,9 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "d" Star)))
-                           (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "d" Star))))
+                              (TCon (TC "Number" Star)))
+                           (TApp
+                              (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star))))
                         (Area (Loc 42 2 11) (Loc 46 2 15))
                         (Var "Just"))
                      (Solved

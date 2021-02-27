@@ -18,7 +18,7 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                (TVar (TV "c" Star)))
                             (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
-                         (Area (Loc 7 1 8) (Loc 16 1 17))
+                         (Area (Loc 0 1 1) (Loc 31 1 32))
                          (Assignment
                             "singleton"
                             (Solved
@@ -29,7 +29,8 @@ Right
                                   (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
                                (Area (Loc 19 1 20) (Loc 31 1 32))
                                (Abs
-                                  "a"
+                                  (Solved
+                                     (TVar (TV "c" Star)) (Area (Loc 20 1 21) (Loc 21 1 22)) "a")
                                   [ Solved
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star)))
@@ -56,14 +57,15 @@ Right
                [ Solved
                    (TApp
                       (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
-                   (Area (Loc 26 2 1) (Loc 27 2 2))
+                   (Area (Loc 26 2 1) (Loc 40 2 15))
                    (App
                       (Solved
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TVar (TV "c" Star)))
-                            (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
+                               (TCon (TC "Number" Star)))
+                            (TApp
+                               (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star))))
                          (Area (Loc 26 2 1) (Loc 37 2 12))
                          (NamespaceAccess "L.singleton"))
                       (Solved

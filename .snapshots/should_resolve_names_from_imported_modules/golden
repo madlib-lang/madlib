@@ -18,7 +18,7 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                (TCon (TC "Number" Star)))
                             (TCon (TC "Number" Star)))
-                         (Area (Loc 7 1 8) (Loc 10 1 11))
+                         (Area (Loc 0 1 1) (Loc 27 1 28))
                          (Assignment
                             "inc"
                             (Solved
@@ -29,7 +29,10 @@ Right
                                   (TCon (TC "Number" Star)))
                                (Area (Loc 13 1 14) (Loc 27 1 28))
                                (Abs
-                                  "a"
+                                  (Solved
+                                     (TCon (TC "Number" Star))
+                                     (Area (Loc 14 1 15) (Loc 15 1 16))
+                                     "a")
                                   [ Solved
                                       (TCon (TC "Number" Star))
                                       (Area (Loc 21 1 22) (Loc 22 1 23))
@@ -79,7 +82,7 @@ Right
                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                             (TCon (TC "Number" Star)))
                          (TCon (TC "Number" Star))))
-                   (Area (Loc 29 3 1) (Loc 32 3 4))
+                   (Area (Loc 29 3 1) (Loc 52 3 24))
                    (Assignment
                       "add"
                       (Solved
@@ -94,7 +97,8 @@ Right
                                (TCon (TC "Number" Star))))
                          (Area (Loc 35 3 7) (Loc 52 3 24))
                          (Abs
-                            "a"
+                            (Solved
+                               (TCon (TC "Number" Star)) (Area (Loc 36 3 8) (Loc 37 3 9)) "a")
                             [ Solved
                                 (TApp
                                    (TApp
@@ -103,7 +107,10 @@ Right
                                    (TCon (TC "Number" Star)))
                                 (Area (Loc 35 3 7) (Loc 52 3 24))
                                 (Abs
-                                   "b"
+                                   (Solved
+                                      (TCon (TC "Number" Star))
+                                      (Area (Loc 39 3 11) (Loc 40 3 12))
+                                      "b")
                                    [ Solved
                                        (TCon (TC "Number" Star))
                                        (Area (Loc 46 3 18) (Loc 47 3 19))
@@ -151,7 +158,7 @@ Right
                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                          (TCon (TC "Number" Star)))
                       (TCon (TC "Number" Star)))
-                   (Area (Loc 53 4 1) (Loc 61 4 9))
+                   (Area (Loc 53 4 1) (Loc 70 4 18))
                    (Assignment
                       "addThree"
                       (Solved

@@ -13,7 +13,7 @@ Right
                      , ( "y" , TVar (TV "e" Star) )
                      ])
                   True))
-            (Area (Loc 0 1 1) (Loc 7 1 8))
+            (Area (Loc 0 1 1) (Loc 55 1 56))
             (Assignment
                "addTodo"
                (Solved
@@ -29,7 +29,10 @@ Right
                         True))
                   (Area (Loc 10 1 11) (Loc 55 1 56))
                   (Abs
-                     "state"
+                     (Solved
+                        (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True)
+                        (Area (Loc 11 1 12) (Loc 16 1 17))
+                        "state")
                      [ Solved
                          (TRecord
                             (fromList
