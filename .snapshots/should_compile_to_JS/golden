@@ -69,8 +69,8 @@ const log = __curry__((a) => { console.log(a); return a; });
 (true ? `OK` : `NOT OK`);
 const mapMaybe = __curry__((f, m) => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
-    const x = __x__.__args[0];
-    return Just(f(x));
+    const a = __x__.__args[0];
+    return Just(f(a));
   }
   else if (__x__.__constructor === "Nothing") {
     return Nothing;
