@@ -69,8 +69,8 @@ const log = __hpFnWrap('path', 39, 'log')(__curry__((a) => { console.log(a); ret
 (__hpLineWrap('path', 40, true) ? __hpLineWrap('path', 40, `OK`) : __hpLineWrap('path', 40, `NOT OK`));
 const mapMaybe = __hpFnWrap('path', 43, 'mapMaybe')(__curry__((f, m) => ((__x__) => {
   if (__hp('path', 'line', 44, 44) || __x__.__constructor === "Just" && true) {
-    const x = __x__.__args[0];
-    return __hpLineWrap('path', 44, __hpLineWrap('path', 44, Just)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, __hpLineWrap('path', 44, f)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, x)))))));
+    const a = __x__.__args[0];
+    return __hpLineWrap('path', 44, __hpLineWrap('path', 44, Just)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, __hpLineWrap('path', 44, f)(__hpLineWrap('path', 44, __hpLineWrap('path', 44, a)))))));
   }
   else if (__hp('path', 'line', 45, 45) || __x__.__constructor === "Nothing") {
     return __hpLineWrap('path', 45, Nothing);

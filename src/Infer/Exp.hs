@@ -579,7 +579,7 @@ inferExps env []       = return ([], env)
 inferExps env (e : es) = do
   (s, ps, env', e') <- upgradeReason env (Can.getArea e) $ case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
-    _ -> inferImplicitlyTyped False env e
+    _                                  -> inferImplicitlyTyped False env e
 
   e''            <- insertClassPlaceholders env e' ps
   e'''           <- updatePlaceholders env s e''

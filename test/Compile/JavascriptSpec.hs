@@ -137,7 +137,7 @@ mainCompileFixture = unlines
   , "data Maybe a = Just a | Nothing"
   , "mapMaybe :: (a -> b) -> Maybe a -> Maybe b"
   , "mapMaybe = (f, m) => (where(m) {"
-  , "  is Just x : Just(f(x))"
+  , "  is Just a : Just(f(a))"
   , "  is Nothing: Nothing"
   , "})"
   , "might = Just(3)"
