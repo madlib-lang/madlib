@@ -6,7 +6,10 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data Optimized a = Optimized Ty.Type Area a deriving(Eq, Show)
+data Optimized a
+  = Optimized Ty.Type Area a 
+  | Untyped Area a
+  deriving(Eq, Show)
 
 data AST =
   AST
@@ -19,16 +22,20 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Import
+type Import = Optimized Import_
+data Import_
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data Interface = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+type Interface = Optimized Interface_
+data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) deriving(Eq, Show)
 
-data Instance = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+type Instance = Optimized Instance_
+data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
-data TypeDecl
+type TypeDecl = Optimized TypeDecl_
+data TypeDecl_
   = ADT
       { adtname :: Name
       , adtparams :: [Name]
@@ -43,13 +50,15 @@ data TypeDecl
       }
     deriving(Eq, Show)
 
-data Constructor
+type Constructor = Optimized Constructor_
+data Constructor_
   = Constructor Name [Typing]
   deriving(Eq, Show)
 
 type Constraints = [Typing]
 
-data Typing
+type Typing = Optimized Typing_
+data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
@@ -62,7 +71,8 @@ data Typing
 type Is = Optimized Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
-data Pattern
+type Pattern = Optimized Pattern_
+data Pattern_
   = PVar Name
   | PAny
   | PCtor Name [Pattern]
@@ -76,17 +86,17 @@ data Pattern
   | PSpread Pattern
   deriving(Eq, Show)
 
-data Field
+type Field = Optimized Field_
+data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
-data ListItem
+type ListItem = Optimized ListItem_
+data ListItem_
   = ListItem Exp
   | ListSpread Exp
   deriving(Eq, Show)
-
-type Exp = Optimized Exp_
 
 
 data ClassRefPred
@@ -98,6 +108,7 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show)
 
+type Exp = Optimized Exp_
 data Exp_ = LNum String
           | LStr String
           | LBool String
@@ -130,3 +141,8 @@ type Table = M.Map FilePath AST
 
 getStartLine :: Exp -> Int
 getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line
+getStartLine (Untyped (Area (Loc _ line _) _) _)     = line
+
+getValue :: Optimized a -> a
+getValue (Optimized _ _ a) = a
+getValue (Untyped _ a)     = a

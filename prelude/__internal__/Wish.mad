@@ -1,6 +1,6 @@
 import _ from "Monad"
 
-export data Wish e a = Wish ((e -> f) -> (a -> b) -> ())
+export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())
 
 
 instance Functor (Wish e) {

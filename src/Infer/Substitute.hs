@@ -7,7 +7,6 @@ import           Infer.Type
 import           Infer.Env
 import           Infer.Infer
 import           Error.Error
-import           Explain.Reason
 import qualified Data.Map                      as M
 import           Data.Foldable                  ( Foldable(foldl') )
 import           Control.Monad.Except
@@ -53,8 +52,8 @@ instance Substitutable a => Substitutable [a] where
   ftv   = nub . concatMap ftv
 
 instance Substitutable Env where
-  apply s env = env { envvars = M.map (apply s) $ envvars env }
-  ftv env = ftv $ M.elems $ envvars env
+  apply s env = env { envVars = M.map (apply s) $ envVars env }
+  ftv env = ftv $ M.elems $ envVars env
 
 compose :: Substitution -> Substitution -> Substitution
 compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
@@ -66,7 +65,7 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
 
 
 merge :: Substitution -> Substitution -> Infer Substitution
-merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError FatalError NoReason
+merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError FatalError NoContext
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (M.keys s1 `intersect` M.keys s2)
 
 buildVarSubsts :: Type -> Substitution

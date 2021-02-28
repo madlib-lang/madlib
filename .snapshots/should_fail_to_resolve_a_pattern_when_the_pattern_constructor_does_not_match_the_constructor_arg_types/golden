@@ -2,4 +2,42 @@ Left
   (InferError
      (UnificationError
         (TCon (TC "String" Star)) (TCon (TC "Number" Star)))
-     (SimpleReason "path" (Area (Loc 60 3 1) (Loc 98 5 1))))
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 60 3 1) (Loc 98 5 1)
+       , ctxBacktrace =
+           [ BTExp
+               (Canonical
+                  (Area (Loc 60 3 1) (Loc 98 5 1))
+                  (Where
+                     (Canonical (Area (Loc 66 3 7) (Loc 67 3 8)) (Var "u"))
+                     [ Canonical
+                         (Area (Loc 73 4 3) (Loc 96 4 26))
+                         (Is
+                            (Canonical
+                               (Area (Loc 76 4 6) (Loc 93 4 23))
+                               (PCtor
+                                  "LoggedIn"
+                                  [ Canonical (Area (Loc 85 4 15) (Loc 91 4 21)) (PCon "Number")
+                                  , Canonical (Area (Loc 92 4 22) (Loc 93 4 23)) (PVar "x")
+                                  ]))
+                            (Canonical (Area (Loc 95 4 25) (Loc 96 4 26)) (Var "x")))
+                     ]))
+           , BTExp
+               (Canonical
+                  (Area (Loc 35 2 1) (Loc 58 2 24))
+                  (Assignment
+                     "u"
+                     (Canonical
+                        (Area (Loc 39 2 5) (Loc 58 2 24))
+                        (App
+                           (Canonical
+                              (Area (Loc 39 2 5) (Loc 59 2 25))
+                              (App
+                                 (Canonical (Area (Loc 39 2 5) (Loc 47 2 13)) (Var "LoggedIn"))
+                                 (Canonical (Area (Loc 48 2 14) (Loc 54 2 20)) (LStr "John"))
+                                 False))
+                           (Canonical (Area (Loc 56 2 22) (Loc 58 2 24)) (LNum "33"))
+                           True))))
+           ]
+       })

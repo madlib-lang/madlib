@@ -5,12 +5,19 @@ Right
            { aimports = []
            , aexps = []
            , atypedecls =
-               [ ADT
-                   { adtname = "Something"
-                   , adtparams = []
-                   , adtconstructors = [ Constructor "Something" [] ]
-                   , adtexported = True
-                   }
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 33 1 34))
+                   ADT
+                     { adtname = "Something"
+                     , adtparams = []
+                     , adtconstructors =
+                         [ Untyped
+                             (Area (Loc 24 1 25) (Loc 33 1 34))
+                             (Constructor "Something" [] (TCon (TC "Something" Star)))
+                         ]
+                     , adtType = TCon (TC "Something" Star)
+                     , adtexported = True
+                     }
                ]
            , ainterfaces = []
            , ainstances = []
@@ -19,7 +26,11 @@ Right
        )
      , ( "./ModuleB"
        , AST
-           { aimports = [ DefaultImport "S" "./ModuleA" "./ModuleA" ]
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 25 1 26))
+                   (DefaultImport "S" "./ModuleA" "./ModuleA")
+               ]
            , aexps =
                [ Solved
                    (TApp

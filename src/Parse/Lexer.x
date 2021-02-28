@@ -52,7 +52,7 @@ tokens :-
   <0> import                                                   { mapToken (\_ -> TokenImport) }
   <0> export                                                   { mapToken (\_ -> TokenExport) }
   <0> from                                                     { mapToken (\_ -> TokenFrom) }
-  <0> data                                                     { mapToken (\_ -> TokenData) }
+  <0> type                                                     { mapToken (\_ -> TokenType) }
   <0> alias                                                    { mapToken (\_ -> TokenAlias) }
   <0> const                                                    { mapToken (\_ -> TokenConst) }
   <0, stringTemplateMadlib> if                                 { mapToken (\_ -> TokenIf) }
@@ -127,6 +127,13 @@ blackList = "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \
 
 whiteList :: String
 whiteList = "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
+
+toRegex :: String -> Regex
+toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
+
+jsxTag :: String
+jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[a-zA-Z0-9]+\"|{.*}))*[ ]*\\/?>"
+
 
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
@@ -262,7 +269,6 @@ pushStringToTemplate i@(posn, prevChar, pending, input) len = do
 
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
-  s <- getState
   return $ Token (makeArea posn (take len input)) token
   
   where
@@ -275,6 +281,15 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
           if ((not . null) matchWL) && null matchBL
           then TokenRightChevron
           else TokenTupleEnd
+      
+      TokenLeftChevron ->
+        let next    = take 1000 input
+            matched = match (toRegex jsxTag) next :: String
+        in
+          if not (null matched) then
+            TokenJsxTagOpen
+          else
+            TokenLeftChevron
       tok -> tok
 
 
@@ -347,7 +362,7 @@ data TokenClass
  | TokenPipe
  | TokenPipeOperator
  | TokenSpreadOperator
- | TokenData
+ | TokenType
  | TokenAlias
  | TokenSemiColon
  | TokenReturn
@@ -362,6 +377,7 @@ data TokenClass
  | TokenPipeKeyword
  | TokenTemplateStringStart
  | TokenTemplateStringEnd String
+ | TokenJsxTagOpen
  deriving (Eq, Show)
 
 

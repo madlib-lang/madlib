@@ -2,7 +2,7 @@ import L from "List"
 import { Maybe } from "Maybe"
 import T from "Tuple"
 
-export data Dictionary k v = Dictionary (List <k, v>)
+export type Dictionary k v = Dictionary (List <k, v>)
 
 
 fromList :: List (<k, v>) -> Dictionary k v

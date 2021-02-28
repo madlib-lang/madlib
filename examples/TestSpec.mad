@@ -7,7 +7,7 @@ import T from "Tuple"
 
 // Code
 
-export data Map k v = Map_ (List <k, v>)
+export type Map k v = Map_ (List <k, v>)
 
 
 fromList :: List (<k, v>) -> Map k v

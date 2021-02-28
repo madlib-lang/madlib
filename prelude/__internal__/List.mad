@@ -45,6 +45,9 @@ instance Show a => Show (List a) {
   )
 }
 
+singleton :: a -> List a
+export singleton = pure
+
 unlines :: List String -> String
 export unlines = pipe(
   intercalate("\n"),

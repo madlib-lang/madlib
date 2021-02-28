@@ -1,4 +1,16 @@
 Left
   (InferError
      (NoInstanceFound "Show" [ TCon (TC "Number" Star) ])
-     (SimpleReason "path" (Area (Loc 201 13 1) (Loc 208 13 8))))
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 221 13 1) (Loc 228 13 8)
+       , ctxBacktrace =
+           [ BTExp
+               (Canonical
+                  (Area (Loc 221 13 1) (Loc 228 13 8))
+                  (App
+                     (Canonical (Area (Loc 221 13 1) (Loc 225 13 5)) (Var "show"))
+                     (Canonical (Area (Loc 226 13 6) (Loc 227 13 7)) (LNum "3"))
+                     True))
+           ]
+       })

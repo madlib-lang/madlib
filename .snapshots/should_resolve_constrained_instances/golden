@@ -85,217 +85,294 @@ Right
         ]
     , atypedecls = []
     , ainterfaces =
-        [ Interface
-            "Show"
-            []
-            [ TV "a" Star ]
-            (fromList
-               [ ( "show"
-                 , Forall
-                     [ Star ]
-                     ([ IsIn "Show" [ TGen 0 ] ] :=>
-                        TApp
-                          (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
-                          (TCon (TC "String" Star)))
-                 )
-               ])
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 42 3 1))
+            (Interface
+               "Show"
+               []
+               [ TV "a" Star ]
+               (fromList
+                  [ ( "show"
+                    , Forall
+                        [ Star ]
+                        ([ IsIn "Show" [ TGen 0 ] ] :=>
+                           TApp
+                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                             (TCon (TC "String" Star)))
+                    )
+                  ]))
         ]
     , ainstances =
-        [ Instance
-            "Show"
-            []
-            (IsIn "Show" [ TCon (TC "Boolean" Star) ])
-            (fromList
-               [ ( "show"
-                 , ( Solved
-                       (TApp
-                          (TApp
-                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                             (TCon (TC "Boolean" Star)))
-                          (TCon (TC "String" Star)))
-                       (Area (Loc 77 6 10) (Loc 104 6 37))
-                       (Abs
-                          (Solved
-                             (TCon (TC "Boolean" Star)) (Area (Loc 78 6 11) (Loc 79 6 12)) "b")
-                          [ Solved
-                              (TCon (TC "String" Star))
-                              (Area (Loc 84 6 17) (Loc 104 6 37))
-                              (If
-                                 (Solved
-                                    (TCon (TC "Boolean" Star))
-                                    (Area (Loc 84 6 17) (Loc 85 6 18))
-                                    (Var "b"))
-                                 (Solved
-                                    (TCon (TC "String" Star))
-                                    (Area (Loc 88 6 21) (Loc 94 6 27))
-                                    (LStr "True"))
-                                 (Solved
-                                    (TCon (TC "String" Star))
-                                    (Area (Loc 97 6 30) (Loc 104 6 37))
-                                    (LStr "False")))
-                          ])
-                   , Forall
-                       []
-                       ([] :=>
-                          TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TCon (TC "Boolean" Star)))
-                            (TCon (TC "String" Star)))
-                   )
-                 )
-               ])
-        , Instance
-            "Show"
-            []
-            (IsIn "Show" [ TCon (TC "Number" Star) ])
-            (fromList
-               [ ( "show"
-                 , ( Solved
-                       (TApp
-                          (TApp
-                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                             (TCon (TC "Number" Star)))
-                          (TCon (TC "String" Star)))
-                       (Area (Loc 140 10 10) (Loc 179 10 49))
-                       (Abs
-                          (Solved
-                             (TCon (TC "Number" Star))
-                             (Area (Loc 141 10 11) (Loc 142 10 12))
-                             "n")
-                          [ Solved
-                              (TCon (TC "String" Star))
-                              (Area (Loc 148 10 18) (Loc 178 10 48))
-                              (JSExp "new Number(n).toString()")
-                          ])
-                   , Forall
-                       []
-                       ([] :=>
-                          TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TCon (TC "Number" Star)))
-                            (TCon (TC "String" Star)))
-                   )
-                 )
-               ])
-        , Instance
-            "Show"
-            [ IsIn "Show" [ TVar (TV "a" Star) ]
-            , IsIn "Show" [ TVar (TV "b" Star) ]
-            ]
-            (IsIn
+        [ Untyped
+            (Area (Loc 44 5 1) (Loc 106 7 1))
+            (Instance
                "Show"
-               [ TApp
-                   (TApp
-                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                      (TVar (TV "a" Star)))
-                   (TVar (TV "b" Star))
-               ])
-            (fromList
-               [ ( "show"
-                 , ( Solved
-                       (TApp
+               []
+               (IsIn "Show" [ TCon (TC "Boolean" Star) ])
+               (fromList
+                  [ ( "show"
+                    , ( Solved
                           (TApp
-                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                              (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                (TCon (TC "Boolean" Star)))
+                             (TCon (TC "String" Star)))
+                          (Area (Loc 70 6 3) (Loc 104 6 37))
+                          (Assignment
+                             "show"
+                             (Solved
                                 (TApp
-                                   (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                   (TVar (TV "l" Star)))
-                                (TVar (TV "m" Star))))
-                          (TCon (TC "String" Star)))
-                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                       (Placeholder
-                          ( ClassRef "Show" [] False True , [ TVar (TV "m" Star) ] )
-                          (Solved
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TCon (TC "Boolean" Star)))
+                                   (TCon (TC "String" Star)))
+                                (Area (Loc 77 6 10) (Loc 104 6 37))
+                                (Abs
+                                   (Solved
+                                      (TCon (TC "Boolean" Star))
+                                      (Area (Loc 78 6 11) (Loc 79 6 12))
+                                      "b")
+                                   [ Solved
+                                       (TCon (TC "String" Star))
+                                       (Area (Loc 84 6 17) (Loc 104 6 37))
+                                       (If
+                                          (Solved
+                                             (TCon (TC "Boolean" Star))
+                                             (Area (Loc 84 6 17) (Loc 85 6 18))
+                                             (Var "b"))
+                                          (Solved
+                                             (TCon (TC "String" Star))
+                                             (Area (Loc 88 6 21) (Loc 94 6 27))
+                                             (LStr "True"))
+                                          (Solved
+                                             (TCon (TC "String" Star))
+                                             (Area (Loc 97 6 30) (Loc 104 6 37))
+                                             (LStr "False")))
+                                   ])))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TCon (TC "Boolean" Star)))
+                               (TCon (TC "String" Star)))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 108 9 1) (Loc 181 11 1))
+            (Instance
+               "Show"
+               []
+               (IsIn "Show" [ TCon (TC "Number" Star) ])
+               (fromList
+                  [ ( "show"
+                    , ( Solved
+                          (TApp
                              (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                (TCon (TC "Number" Star)))
+                             (TCon (TC "String" Star)))
+                          (Area (Loc 133 10 3) (Loc 179 10 49))
+                          (Assignment
+                             "show"
+                             (Solved
                                 (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                    (TApp
-                                      (TApp
-                                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                         (TVar (TV "l" Star)))
-                                      (TVar (TV "m" Star))))
-                                (TCon (TC "String" Star)))
-                             (Area (Loc 0 0 0) (Loc 0 0 0))
-                             (Placeholder
-                                ( ClassRef "Show" [] False True , [ TVar (TV "l" Star) ] )
-                                (Solved
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TCon (TC "Number" Star)))
+                                   (TCon (TC "String" Star)))
+                                (Area (Loc 140 10 10) (Loc 179 10 49))
+                                (Abs
+                                   (Solved
+                                      (TCon (TC "Number" Star))
+                                      (Area (Loc 141 10 11) (Loc 142 10 12))
+                                      "n")
+                                   [ Solved
+                                       (TCon (TC "String" Star))
+                                       (Area (Loc 148 10 18) (Loc 178 10 48))
+                                       (JSExp "new Number(n).toString()")
+                                   ])))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TCon (TC "Number" Star)))
+                               (TCon (TC "String" Star)))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 183 13 1) (Loc 294 15 1))
+            (Instance
+               "Show"
+               [ IsIn "Show" [ TVar (TV "a" Star) ]
+               , IsIn "Show" [ TVar (TV "b" Star) ]
+               ]
+               (IsIn
+                  "Show"
+                  [ TApp
+                      (TApp
+                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                         (TVar (TV "a" Star)))
+                      (TVar (TV "b" Star))
+                  ])
+               (fromList
+                  [ ( "show"
+                    , ( Solved
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                (TApp
                                    (TApp
+                                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                      (TVar (TV "g" Star)))
+                                   (TVar (TV "h" Star))))
+                             (TCon (TC "String" Star)))
+                          (Area (Loc 228 14 3) (Loc 292 14 67))
+                          (Assignment
+                             "show"
+                             (Solved
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                       (TApp
-                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                          (TApp
-                                            (TApp
-                                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                               (TVar (TV "l" Star)))
-                                            (TVar (TV "m" Star))))
-                                      (TCon (TC "String" Star)))
-                                   (Area (Loc 235 14 10) (Loc 255 14 30))
-                                   (Abs
-                                      (Solved
+                                            (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                            (TVar (TV "g" Star)))
+                                         (TVar (TV "h" Star))))
+                                   (TCon (TC "String" Star)))
+                                (Area (Loc 228 14 3) (Loc 292 14 67))
+                                (Placeholder
+                                   ( ClassRef "Show" [] False True , [ TVar (TV "h" Star) ] )
+                                   (Solved
+                                      (TApp
                                          (TApp
+                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                             (TApp
-                                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                               (TVar (TV "l" Star)))
-                                            (TVar (TV "m" Star)))
-                                         (Area (Loc 0 0 0) (Loc 0 0 0))
-                                         "__x__")
-                                      [ Solved
-                                          (TCon (TC "String" Star))
-                                          (Area (Loc 235 14 10) (Loc 255 14 30))
-                                          (Where
-                                             (Solved
-                                                (TApp
-                                                   (TApp
-                                                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                                      (TVar (TV "l" Star)))
-                                                   (TVar (TV "m" Star)))
-                                                (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                (Var "__x__"))
-                                             [ Solved
-                                                 (TApp
-                                                    (TApp
-                                                       (TCon
-                                                          (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                       (TApp
+                                               (TApp
+                                                  (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                  (TVar (TV "g" Star)))
+                                               (TVar (TV "h" Star))))
+                                         (TCon (TC "String" Star)))
+                                      (Area (Loc 228 14 3) (Loc 292 14 67))
+                                      (Placeholder
+                                         ( ClassRef "Show" [] False True , [ TVar (TV "g" Star) ] )
+                                         (Solved
+                                            (TApp
+                                               (TApp
+                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                  (TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                        (TVar (TV "g" Star)))
+                                                     (TVar (TV "h" Star))))
+                                               (TCon (TC "String" Star)))
+                                            (Area (Loc 235 14 10) (Loc 292 14 67))
+                                            (Abs
+                                               (Solved
+                                                  (TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                        (TVar (TV "g" Star)))
+                                                     (TVar (TV "h" Star)))
+                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                  "__x__")
+                                               [ Solved
+                                                   (TCon (TC "String" Star))
+                                                   (Area (Loc 235 14 10) (Loc 292 14 67))
+                                                   (Where
+                                                      (Solved
+                                                         (TApp
+                                                            (TApp
+                                                               (TCon
+                                                                  (TC
+                                                                     "(,)"
+                                                                     (Kfun Star (Kfun Star Star))))
+                                                               (TVar (TV "g" Star)))
+                                                            (TVar (TV "h" Star)))
+                                                         (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                         (Var "__x__"))
+                                                      [ Solved
                                                           (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(,)"
-                                                                   (Kfun Star (Kfun Star Star))))
-                                                             (TVar (TV "l" Star)))
-                                                          (TVar (TV "m" Star))))
-                                                    (TCon (TC "String" Star)))
-                                                 (Area (Loc 241 14 16) (Loc 255 14 30))
-                                                 (Is
-                                                    (PTuple [ PVar "a" , PVar "b" ])
-                                                    (Solved
-                                                       (TCon (TC "String" Star))
-                                                       (Area (Loc 252 14 27) (Loc 255 14 30))
-                                                       (App
-                                                          (Solved
                                                              (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star))))
                                                                 (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star))))
-                                                                   (TCon (TC "String" Star)))
-                                                                (TCon (TC "String" Star)))
-                                                             (Area (Loc 252 14 27) (Loc 255 14 30))
-                                                             (App
-                                                                (Solved
                                                                    (TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "(->)"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun
-                                                                                     Star Star))))
-                                                                         (TCon (TC "String" Star)))
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(,)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star))))
+                                                                      (TVar (TV "g" Star)))
+                                                                   (TVar (TV "h" Star))))
+                                                             (TCon (TC "String" Star)))
+                                                          (Area (Loc 241 14 16) (Loc 292 14 67))
+                                                          (Is
+                                                             (Solved
+                                                                (TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(,)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star))))
+                                                                      (TVar (TV "g" Star)))
+                                                                   (TVar (TV "h" Star)))
+                                                                (Area
+                                                                   (Loc 244 14 19) (Loc 250 14 25))
+                                                                (PTuple
+                                                                   [ Solved
+                                                                       (TApp
+                                                                          (TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "(,)"
+                                                                                   (Kfun
+                                                                                      Star
+                                                                                      (Kfun
+                                                                                         Star
+                                                                                         Star))))
+                                                                             (TVar (TV "g" Star)))
+                                                                          (TVar (TV "h" Star)))
+                                                                       (Area
+                                                                          (Loc 245 14 20)
+                                                                          (Loc 246 14 21))
+                                                                       (PVar "a")
+                                                                   , Solved
+                                                                       (TApp
+                                                                          (TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "(,)"
+                                                                                   (Kfun
+                                                                                      Star
+                                                                                      (Kfun
+                                                                                         Star
+                                                                                         Star))))
+                                                                             (TVar (TV "g" Star)))
+                                                                          (TVar (TV "h" Star)))
+                                                                       (Area
+                                                                          (Loc 248 14 23)
+                                                                          (Loc 249 14 24))
+                                                                       (PVar "b")
+                                                                   ]))
+                                                             (Solved
+                                                                (TCon (TC "String" Star))
+                                                                (Area
+                                                                   (Loc 252 14 27) (Loc 292 14 67))
+                                                                (App
+                                                                   (Solved
                                                                       (TApp
                                                                          (TApp
                                                                             (TCon
@@ -308,53 +385,63 @@ Right
                                                                                         Star))))
                                                                             (TCon
                                                                                (TC "String" Star)))
-                                                                         (TCon (TC "String" Star))))
-                                                                   (Area
-                                                                      (Loc 255 14 30)
-                                                                      (Loc 258 14 33))
-                                                                   (Var "++"))
-                                                                (Solved
-                                                                   (TCon (TC "String" Star))
-                                                                   (Area
-                                                                      (Loc 252 14 27)
-                                                                      (Loc 255 14 30))
-                                                                   (LStr "<"))
-                                                                False))
-                                                          (Solved
-                                                             (TCon (TC "String" Star))
-                                                             (Area (Loc 259 14 34) (Loc 266 14 41))
-                                                             (App
-                                                                (Solved
-                                                                   (TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "(->)"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun
-                                                                                     Star Star))))
                                                                          (TCon (TC "String" Star)))
-                                                                      (TCon (TC "String" Star)))
-                                                                   (Area
-                                                                      (Loc 259 14 34)
-                                                                      (Loc 266 14 41))
-                                                                   (App
-                                                                      (Solved
-                                                                         (TApp
+                                                                      (Area
+                                                                         (Loc 252 14 27)
+                                                                         (Loc 292 14 67))
+                                                                      (App
+                                                                         (Solved
                                                                             (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
+                                                                               (TApp
+                                                                                  (TCon
+                                                                                     (TC
+                                                                                        "(->)"
                                                                                         (Kfun
                                                                                            Star
-                                                                                           Star))))
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "String"
-                                                                                     Star)))
+                                                                                           (Kfun
+                                                                                              Star
+                                                                                              Star))))
+                                                                                  (TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star)))
+                                                                               (TApp
+                                                                                  (TApp
+                                                                                     (TCon
+                                                                                        (TC
+                                                                                           "(->)"
+                                                                                           (Kfun
+                                                                                              Star
+                                                                                              (Kfun
+                                                                                                 Star
+                                                                                                 Star))))
+                                                                                     (TCon
+                                                                                        (TC
+                                                                                           "String"
+                                                                                           Star)))
+                                                                                  (TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star))))
+                                                                            (Area
+                                                                               (Loc 255 14 30)
+                                                                               (Loc 258 14 33))
+                                                                            (Var "++"))
+                                                                         (Solved
+                                                                            (TCon
+                                                                               (TC "String" Star))
+                                                                            (Area
+                                                                               (Loc 252 14 27)
+                                                                               (Loc 255 14 30))
+                                                                            (LStr "<"))
+                                                                         False))
+                                                                   (Solved
+                                                                      (TCon (TC "String" Star))
+                                                                      (Area
+                                                                         (Loc 259 14 34)
+                                                                         (Loc 292 14 67))
+                                                                      (App
+                                                                         (Solved
                                                                             (TApp
                                                                                (TApp
                                                                                   (TCon
@@ -372,50 +459,26 @@ Right
                                                                                (TCon
                                                                                   (TC
                                                                                      "String"
-                                                                                     Star))))
-                                                                         (Area
-                                                                            (Loc 266 14 41)
-                                                                            (Loc 269 14 44))
-                                                                         (Var "++"))
-                                                                      (Solved
-                                                                         (TCon (TC "String" Star))
-                                                                         (Area
-                                                                            (Loc 259 14 34)
-                                                                            (Loc 266 14 41))
-                                                                         (App
-                                                                            (Solved
-                                                                               (TApp
+                                                                                     Star)))
+                                                                            (Area
+                                                                               (Loc 259 14 34)
+                                                                               (Loc 292 14 67))
+                                                                            (App
+                                                                               (Solved
                                                                                   (TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "(->)"
-                                                                                           (Kfun
-                                                                                              Star
+                                                                                     (TApp
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "(->)"
                                                                                               (Kfun
                                                                                                  Star
-                                                                                                 Star))))
-                                                                                     (TVar
-                                                                                        (TV
-                                                                                           "l"
-                                                                                           Star)))
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)))
-                                                                               (Area
-                                                                                  (Loc 259 14 34)
-                                                                                  (Loc 263 14 38))
-                                                                               (Placeholder
-                                                                                  ( MethodRef
-                                                                                      "Show"
-                                                                                      "show"
-                                                                                      True
-                                                                                  , [ TVar
-                                                                                        (TV
-                                                                                           "l" Star)
-                                                                                    ]
-                                                                                  )
-                                                                                  (Solved
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    Star))))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)))
                                                                                      (TApp
                                                                                         (TApp
                                                                                            (TCon
@@ -426,74 +489,123 @@ Right
                                                                                                     (Kfun
                                                                                                        Star
                                                                                                        Star))))
-                                                                                           (TVar
-                                                                                              (TV
-                                                                                                 "l"
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "String"
                                                                                                  Star)))
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star)))
-                                                                                     (Area
-                                                                                        (Loc
-                                                                                           259
-                                                                                           14
-                                                                                           34)
-                                                                                        (Loc
-                                                                                           263
-                                                                                           14
-                                                                                           38))
-                                                                                     (Var "show"))))
-                                                                            (Solved
-                                                                               (TVar (TV "l" Star))
-                                                                               (Area
-                                                                                  (Loc 264 14 39)
-                                                                                  (Loc 265 14 40))
-                                                                               (Var "a"))
-                                                                            True))
-                                                                      False))
-                                                                (Solved
-                                                                   (TCon (TC "String" Star))
-                                                                   (Area
-                                                                      (Loc 270 14 45)
-                                                                      (Loc 274 14 49))
-                                                                   (App
-                                                                      (Solved
-                                                                         (TApp
-                                                                            (TApp
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "(->)"
-                                                                                     (Kfun
-                                                                                        Star
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           Star))))
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "String"
-                                                                                     Star)))
+                                                                                              Star))))
+                                                                                  (Area
+                                                                                     (Loc 266 14 41)
+                                                                                     (Loc
+                                                                                        269 14 44))
+                                                                                  (Var "++"))
+                                                                               (Solved
+                                                                                  (TCon
+                                                                                     (TC
+                                                                                        "String"
+                                                                                        Star))
+                                                                                  (Area
+                                                                                     (Loc 259 14 34)
+                                                                                     (Loc
+                                                                                        266 14 41))
+                                                                                  (App
+                                                                                     (Solved
+                                                                                        (TApp
+                                                                                           (TApp
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "(->)"
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          Star))))
+                                                                                              (TVar
+                                                                                                 (TV
+                                                                                                    "g"
+                                                                                                    Star)))
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "String"
+                                                                                                 Star)))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              259
+                                                                                              14
+                                                                                              34)
+                                                                                           (Loc
+                                                                                              263
+                                                                                              14
+                                                                                              38))
+                                                                                        (Placeholder
+                                                                                           ( MethodRef
+                                                                                               "Show"
+                                                                                               "show"
+                                                                                               True
+                                                                                           , [ TVar
+                                                                                                 (TV
+                                                                                                    "g"
+                                                                                                    Star)
+                                                                                             ]
+                                                                                           )
+                                                                                           (Solved
+                                                                                              (TApp
+                                                                                                 (TApp
+                                                                                                    (TCon
+                                                                                                       (TC
+                                                                                                          "(->)"
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             (Kfun
+                                                                                                                Star
+                                                                                                                Star))))
+                                                                                                    (TVar
+                                                                                                       (TV
+                                                                                                          "g"
+                                                                                                          Star)))
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "String"
+                                                                                                       Star)))
+                                                                                              (Area
+                                                                                                 (Loc
+                                                                                                    259
+                                                                                                    14
+                                                                                                    34)
+                                                                                                 (Loc
+                                                                                                    263
+                                                                                                    14
+                                                                                                    38))
+                                                                                              (Var
+                                                                                                 "show"))))
+                                                                                     (Solved
+                                                                                        (TVar
+                                                                                           (TV
+                                                                                              "g"
+                                                                                              Star))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              264
+                                                                                              14
+                                                                                              39)
+                                                                                           (Loc
+                                                                                              265
+                                                                                              14
+                                                                                              40))
+                                                                                        (Var "a"))
+                                                                                     True))
+                                                                               False))
+                                                                         (Solved
                                                                             (TCon
-                                                                               (TC "String" Star)))
-                                                                         (Area
-                                                                            (Loc 270 14 45)
-                                                                            (Loc 274 14 49))
-                                                                         (App
-                                                                            (Solved
-                                                                               (TApp
-                                                                                  (TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "(->)"
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))))
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "String"
-                                                                                           Star)))
+                                                                               (TC "String" Star))
+                                                                            (Area
+                                                                               (Loc 270 14 45)
+                                                                               (Loc 292 14 67))
+                                                                            (App
+                                                                               (Solved
                                                                                   (TApp
                                                                                      (TApp
                                                                                         (TCon
@@ -511,64 +623,82 @@ Right
                                                                                      (TCon
                                                                                         (TC
                                                                                            "String"
-                                                                                           Star))))
-                                                                               (Area
-                                                                                  (Loc 274 14 49)
-                                                                                  (Loc 277 14 52))
-                                                                               (Var "++"))
-                                                                            (Solved
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "String" Star))
-                                                                               (Area
-                                                                                  (Loc 270 14 45)
-                                                                                  (Loc 274 14 49))
-                                                                               (LStr ", "))
-                                                                            False))
-                                                                      (Solved
-                                                                         (TCon (TC "String" Star))
-                                                                         (Area
-                                                                            (Loc 278 14 53)
-                                                                            (Loc 285 14 60))
-                                                                         (App
-                                                                            (Solved
-                                                                               (TApp
-                                                                                  (TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "(->)"
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star))))
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "String"
                                                                                            Star)))
+                                                                                  (Area
+                                                                                     (Loc 270 14 45)
+                                                                                     (Loc
+                                                                                        292 14 67))
+                                                                                  (App
+                                                                                     (Solved
+                                                                                        (TApp
+                                                                                           (TApp
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "(->)"
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          Star))))
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star)))
+                                                                                           (TApp
+                                                                                              (TApp
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "(->)"
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             Star))))
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "String"
+                                                                                                       Star)))
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star))))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              274
+                                                                                              14
+                                                                                              49)
+                                                                                           (Loc
+                                                                                              277
+                                                                                              14
+                                                                                              52))
+                                                                                        (Var "++"))
+                                                                                     (Solved
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              270
+                                                                                              14
+                                                                                              45)
+                                                                                           (Loc
+                                                                                              274
+                                                                                              14
+                                                                                              49))
+                                                                                        (LStr ", "))
+                                                                                     False))
+                                                                               (Solved
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star)))
-                                                                               (Area
-                                                                                  (Loc 278 14 53)
-                                                                                  (Loc 285 14 60))
-                                                                               (App
-                                                                                  (Solved
-                                                                                     (TApp
-                                                                                        (TApp
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "(->)"
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       Star))))
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "String"
-                                                                                                 Star)))
+                                                                                        Star))
+                                                                                  (Area
+                                                                                     (Loc 278 14 53)
+                                                                                     (Loc
+                                                                                        292 14 67))
+                                                                                  (App
+                                                                                     (Solved
                                                                                         (TApp
                                                                                            (TApp
                                                                                               (TCon
@@ -586,72 +716,32 @@ Right
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "String"
-                                                                                                 Star))))
-                                                                                     (Area
-                                                                                        (Loc
-                                                                                           285
-                                                                                           14
-                                                                                           60)
-                                                                                        (Loc
-                                                                                           288
-                                                                                           14
-                                                                                           63))
-                                                                                     (Var "++"))
-                                                                                  (Solved
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "String"
-                                                                                           Star))
-                                                                                     (Area
-                                                                                        (Loc
-                                                                                           278
-                                                                                           14
-                                                                                           53)
-                                                                                        (Loc
-                                                                                           285
-                                                                                           14
-                                                                                           60))
-                                                                                     (App
-                                                                                        (Solved
-                                                                                           (TApp
+                                                                                                 Star)))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              278
+                                                                                              14
+                                                                                              53)
+                                                                                           (Loc
+                                                                                              292
+                                                                                              14
+                                                                                              67))
+                                                                                        (App
+                                                                                           (Solved
                                                                                               (TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "(->)"
-                                                                                                       (Kfun
-                                                                                                          Star
+                                                                                                 (TApp
+                                                                                                    (TCon
+                                                                                                       (TC
+                                                                                                          "(->)"
                                                                                                           (Kfun
                                                                                                              Star
-                                                                                                             Star))))
-                                                                                                 (TVar
-                                                                                                    (TV
-                                                                                                       "m"
-                                                                                                       Star)))
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)))
-                                                                                           (Area
-                                                                                              (Loc
-                                                                                                 278
-                                                                                                 14
-                                                                                                 53)
-                                                                                              (Loc
-                                                                                                 282
-                                                                                                 14
-                                                                                                 57))
-                                                                                           (Placeholder
-                                                                                              ( MethodRef
-                                                                                                  "Show"
-                                                                                                  "show"
-                                                                                                  True
-                                                                                              , [ TVar
-                                                                                                    (TV
-                                                                                                       "m"
-                                                                                                       Star)
-                                                                                                ]
-                                                                                              )
-                                                                                              (Solved
+                                                                                                             (Kfun
+                                                                                                                Star
+                                                                                                                Star))))
+                                                                                                    (TCon
+                                                                                                       (TC
+                                                                                                          "String"
+                                                                                                          Star)))
                                                                                                  (TApp
                                                                                                     (TApp
                                                                                                        (TCon
@@ -662,70 +752,161 @@ Right
                                                                                                                 (Kfun
                                                                                                                    Star
                                                                                                                    Star))))
-                                                                                                       (TVar
-                                                                                                          (TV
-                                                                                                             "m"
+                                                                                                       (TCon
+                                                                                                          (TC
+                                                                                                             "String"
                                                                                                              Star)))
                                                                                                     (TCon
                                                                                                        (TC
                                                                                                           "String"
-                                                                                                          Star)))
-                                                                                                 (Area
-                                                                                                    (Loc
-                                                                                                       278
-                                                                                                       14
-                                                                                                       53)
-                                                                                                    (Loc
-                                                                                                       282
-                                                                                                       14
-                                                                                                       57))
-                                                                                                 (Var
-                                                                                                    "show"))))
-                                                                                        (Solved
-                                                                                           (TVar
-                                                                                              (TV
-                                                                                                 "m"
-                                                                                                 Star))
-                                                                                           (Area
-                                                                                              (Loc
-                                                                                                 283
-                                                                                                 14
-                                                                                                 58)
-                                                                                              (Loc
-                                                                                                 284
-                                                                                                 14
-                                                                                                 59))
-                                                                                           (Var
-                                                                                              "b"))
-                                                                                        True))
-                                                                                  False))
-                                                                            (Solved
-                                                                               (TCon
-                                                                                  (TC
-                                                                                     "String" Star))
-                                                                               (Area
-                                                                                  (Loc 289 14 64)
-                                                                                  (Loc 292 14 67))
-                                                                               (LStr ">"))
-                                                                            True))
-                                                                      True))
-                                                                True))
-                                                          True)))
-                                             ])
-                                      ])))))
-                   , Forall
-                       [ Star , Star ]
-                       ([ IsIn "Show" [ TGen 0 ] , IsIn "Show" [ TGen 1 ] ] :=>
-                          TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                                                                          Star))))
+                                                                                              (Area
+                                                                                                 (Loc
+                                                                                                    285
+                                                                                                    14
+                                                                                                    60)
+                                                                                                 (Loc
+                                                                                                    288
+                                                                                                    14
+                                                                                                    63))
+                                                                                              (Var
+                                                                                                 "++"))
+                                                                                           (Solved
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star))
+                                                                                              (Area
+                                                                                                 (Loc
+                                                                                                    278
+                                                                                                    14
+                                                                                                    53)
+                                                                                                 (Loc
+                                                                                                    285
+                                                                                                    14
+                                                                                                    60))
+                                                                                              (App
+                                                                                                 (Solved
+                                                                                                    (TApp
+                                                                                                       (TApp
+                                                                                                          (TCon
+                                                                                                             (TC
+                                                                                                                "(->)"
+                                                                                                                (Kfun
+                                                                                                                   Star
+                                                                                                                   (Kfun
+                                                                                                                      Star
+                                                                                                                      Star))))
+                                                                                                          (TVar
+                                                                                                             (TV
+                                                                                                                "h"
+                                                                                                                Star)))
+                                                                                                       (TCon
+                                                                                                          (TC
+                                                                                                             "String"
+                                                                                                             Star)))
+                                                                                                    (Area
+                                                                                                       (Loc
+                                                                                                          278
+                                                                                                          14
+                                                                                                          53)
+                                                                                                       (Loc
+                                                                                                          282
+                                                                                                          14
+                                                                                                          57))
+                                                                                                    (Placeholder
+                                                                                                       ( MethodRef
+                                                                                                           "Show"
+                                                                                                           "show"
+                                                                                                           True
+                                                                                                       , [ TVar
+                                                                                                             (TV
+                                                                                                                "h"
+                                                                                                                Star)
+                                                                                                         ]
+                                                                                                       )
+                                                                                                       (Solved
+                                                                                                          (TApp
+                                                                                                             (TApp
+                                                                                                                (TCon
+                                                                                                                   (TC
+                                                                                                                      "(->)"
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         (Kfun
+                                                                                                                            Star
+                                                                                                                            Star))))
+                                                                                                                (TVar
+                                                                                                                   (TV
+                                                                                                                      "h"
+                                                                                                                      Star)))
+                                                                                                             (TCon
+                                                                                                                (TC
+                                                                                                                   "String"
+                                                                                                                   Star)))
+                                                                                                          (Area
+                                                                                                             (Loc
+                                                                                                                278
+                                                                                                                14
+                                                                                                                53)
+                                                                                                             (Loc
+                                                                                                                282
+                                                                                                                14
+                                                                                                                57))
+                                                                                                          (Var
+                                                                                                             "show"))))
+                                                                                                 (Solved
+                                                                                                    (TVar
+                                                                                                       (TV
+                                                                                                          "h"
+                                                                                                          Star))
+                                                                                                    (Area
+                                                                                                       (Loc
+                                                                                                          283
+                                                                                                          14
+                                                                                                          58)
+                                                                                                       (Loc
+                                                                                                          284
+                                                                                                          14
+                                                                                                          59))
+                                                                                                    (Var
+                                                                                                       "b"))
+                                                                                                 True))
+                                                                                           False))
+                                                                                     (Solved
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              289
+                                                                                              14
+                                                                                              64)
+                                                                                           (Loc
+                                                                                              292
+                                                                                              14
+                                                                                              67))
+                                                                                        (LStr ">"))
+                                                                                     True))
+                                                                               True))
+                                                                         True))
+                                                                   True)))
+                                                      ])
+                                               ])))))))
+                      , Forall
+                          [ Star , Star ]
+                          ([ IsIn "Show" [ TGen 0 ] , IsIn "Show" [ TGen 1 ] ] :=>
+                             TApp
                                (TApp
-                                  (TApp (TCon (TC "(,)" (Kfun Star (Kfun Star Star)))) (TGen 0))
-                                  (TGen 1)))
-                            (TCon (TC "String" Star)))
-                   )
-                 )
-               ])
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TApp
+                                     (TApp (TCon (TC "(,)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                                     (TGen 1)))
+                               (TCon (TC "String" Star)))
+                      )
+                    )
+                  ]))
         ]
     , apath = Just "path"
     }

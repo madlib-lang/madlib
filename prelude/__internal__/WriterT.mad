@@ -2,7 +2,7 @@ import {} from "Monad"
 import {} from "Monoid"
 import {} from "MonadTrans"
 
-export data WriterT w m a = WriterT (m <a, w>)
+export type WriterT w m a = WriterT (m <a, w>)
 
 
 runWriterT :: WriterT w m a -> m <a, w>

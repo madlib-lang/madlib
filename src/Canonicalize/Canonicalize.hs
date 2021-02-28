@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -93,6 +94,27 @@ instance Canonicalizable Src.Exp Can.Exp where
       iss' <- mapM (canonicalize env target) iss
       return $ Can.Canonical area (Can.Where exp' iss')
 
+    Src.JsxTag name props children -> do
+      let tagFnVar = Can.Canonical emptyArea (Can.Var name)
+      children' <- ((Can.Canonical emptyArea . Can.ListItem) <$>) <$> mapM canonicalizeJsxChild children
+      propFns <- mapM (\(Src.Source _ _ (Src.JsxProp name' exp)) -> do
+                        arg <- canonicalize env target exp
+                        return $ Can.Canonical emptyArea (Can.ListItem $ Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.Var name')) arg True))
+                      ) props
+      let props' = Can.Canonical emptyArea (Can.ListConstructor propFns)
+      let children'' = Can.Canonical emptyArea (Can.ListConstructor children')
+      return $ Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.App tagFnVar props' False)) children'' True)
+     where
+       canonicalizeJsxChild :: Src.Exp -> CanonicalM Can.Exp
+       canonicalizeJsxChild e@(Src.Source _ area exp) = case exp of
+          Src.TemplateString _ -> do
+            e' <- canonicalize env target e
+            return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+          Src.LStr _ -> do
+            e' <- canonicalize env target e
+            return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+          _ -> canonicalize env target e
+
     Src.Pipe exps -> do
       app <- buildApplication (Can.Canonical emptyArea (Can.Var "_P_")) exps
       return $ Can.Canonical area (Can.Abs (Can.Canonical emptyArea "_P_") [app])
@@ -111,25 +133,25 @@ instance Canonicalizable Src.Exp Can.Exp where
 
 
 instance Canonicalizable Src.ListItem Can.ListItem where
-  canonicalize env target item = case item of
+  canonicalize env target (Src.Source _ area item) = case item of
     Src.ListItem exp -> do
       exp' <- canonicalize env target exp
-      return $ Can.ListItem exp'
+      return $ Can.Canonical area $ Can.ListItem exp'
 
     Src.ListSpread exp -> do
       exp' <- canonicalize env target exp
-      return $ Can.ListSpread exp'
+      return $ Can.Canonical area $ Can.ListSpread exp'
 
 
 instance Canonicalizable Src.Field Can.Field where
-  canonicalize env target item = case item of
+  canonicalize env target (Src.Source _ area item) = case item of
     Src.Field (name, exp) -> do
       exp' <- canonicalize env target exp
-      return $ Can.Field (name, exp')
+      return $ Can.Canonical area $ Can.Field (name, exp')
 
     Src.FieldSpread exp -> do
       exp' <- canonicalize env target exp
-      return $ Can.FieldSpread exp'
+      return $ Can.Canonical area $ Can.FieldSpread exp'
 
 
 instance Canonicalizable Src.Is Can.Is where

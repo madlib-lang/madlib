@@ -105,7 +105,48 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 61 3 3) (Loc 77 3 19))
                    (Is
-                      (PCtor "Wish" [ PAny , PAny , PVar "c" ])
+                      (Solved
+                         (TApp
+                            (TApp
+                               (TApp
+                                  (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                  (TCon (TC "Number" Star)))
+                               (TCon (TC "Number" Star)))
+                            (TCon (TC "Number" Star)))
+                         (Area (Loc 64 3 6) (Loc 74 3 16))
+                         (PCtor
+                            "Wish"
+                            [ Solved
+                                (TApp
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                         (TCon (TC "Number" Star)))
+                                      (TCon (TC "Number" Star)))
+                                   (TCon (TC "Number" Star)))
+                                (Area (Loc 69 3 11) (Loc 70 3 12))
+                                PAny
+                            , Solved
+                                (TApp
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                         (TCon (TC "Number" Star)))
+                                      (TCon (TC "Number" Star)))
+                                   (TCon (TC "Number" Star)))
+                                (Area (Loc 71 3 13) (Loc 72 3 14))
+                                PAny
+                            , Solved
+                                (TApp
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                         (TCon (TC "Number" Star)))
+                                      (TCon (TC "Number" Star)))
+                                   (TCon (TC "Number" Star)))
+                                (Area (Loc 73 3 15) (Loc 74 3 16))
+                                (PVar "c")
+                            ]))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 76 3 18) (Loc 77 3 19))
@@ -113,14 +154,51 @@ Right
                ])
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "Wish"
-            , adtparams = [ "e" , "a" , "c" ]
-            , adtconstructors =
-                [ Constructor "Wish" [ TRSingle "e" , TRSingle "a" , TRSingle "c" ]
-                ]
-            , adtexported = True
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 35 1 36))
+            ADT
+              { adtname = "Wish"
+              , adtparams = [ "e" , "a" , "c" ]
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 25 1 26) (Loc 35 1 36))
+                      (Constructor
+                         "Wish"
+                         [ Untyped (Area (Loc 30 1 31) (Loc 31 1 32)) (TRSingle "e")
+                         , Untyped (Area (Loc 32 1 33) (Loc 33 1 34)) (TRSingle "a")
+                         , Untyped (Area (Loc 34 1 35) (Loc 35 1 36)) (TRSingle "c")
+                         ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "p" Star)))
+                            (TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TVar (TV "q" Star)))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TVar (TV "r" Star)))
+                                  (TApp
+                                     (TApp
+                                        (TApp
+                                           (TCon
+                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                           (TVar (TV "p" Star)))
+                                        (TVar (TV "q" Star)))
+                                     (TVar (TV "r" Star)))))))
+                  ]
+              , adtType =
+                  TApp
+                    (TApp
+                       (TApp
+                          (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                          (TVar (TV "e" Star)))
+                       (TVar (TV "a" Star)))
+                    (TVar (TV "c" Star))
+              , adtexported = True
+              }
         ]
     , ainterfaces = []
     , ainstances = []

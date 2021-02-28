@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 module Infer.Placeholder where
 
 import           Infer.Type
@@ -211,6 +212,15 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
     es' <- mapM (updatePlaceholders env s) es
     return $ Slv.Solved (apply s t) a $ Slv.TemplateString es'
 
+  Slv.FieldAccess rec field -> do
+    rec'   <- updatePlaceholders env s rec
+    field' <- updatePlaceholders env s field
+    return $ Slv.Solved (apply s t) a $ Slv.FieldAccess rec' field'
+
+  Slv.Record fields -> do
+    fields' <- mapM (updateField s) fields
+    return $ Slv.Solved (apply s t) a $ Slv.Record fields'
+
   _ -> return $ Slv.Solved (apply s t) a e
  where
   updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
@@ -220,11 +230,16 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
       return $ Slv.Solved (apply s t) a $ Slv.Is pat exp'
 
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
-  updateListItem s li = case li of
-    Slv.ListItem   e -> Slv.ListItem <$> updatePlaceholders env s e
-    Slv.ListSpread e -> Slv.ListSpread <$> updatePlaceholders env s e
+  updateListItem s (Slv.Solved t area li) = case li of
+    Slv.ListItem   e -> Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env s e
+    Slv.ListSpread e -> Slv.Solved t area . Slv.ListSpread <$> updatePlaceholders env s e
+
+  updateField :: Substitution -> Slv.Field -> Infer Slv.Field
+  updateField s (Slv.Solved t area field) = case field of
+    Slv.Field       (n, e) -> Slv.Solved (apply s t) area . Slv.Field . (n, ) <$> updatePlaceholders env s e
+    Slv.FieldSpread e      -> Slv.Solved (apply s t) area . Slv.FieldSpread <$> updatePlaceholders env s e
 
 isMethod :: Env -> Slv.Exp -> Bool
 isMethod env (Slv.Solved _ _ e) = case e of
-  Slv.Var n -> Just True == (M.lookup n (envmethods env) >> return True)
+  Slv.Var n -> Just True == (M.lookup n (envMethods env) >> return True)
   _         -> False

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections #-}
 module Main where
 
 import qualified Data.Map                      as M
@@ -48,11 +49,11 @@ import           Coverage.Coverable             ( collectFromAST
                                                 )
 import           Data.List                      ( isInfixOf
                                                 , isPrefixOf
+                                                , intercalate
                                                 )
 import           Data.String.Utils
 import           Compile.JSInternals
 import           Error.Error
-import           Explain.Reason
 import qualified Canonicalize.Canonicalize     as Can
 import qualified Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
@@ -155,9 +156,9 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
   let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
       resolvedASTTable = case (entryAST, canTable) of
         (Right ast, Right table) -> do
-          runExcept (runStateT (solveTable table ast) Unique { count = 0 })
+          runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
         (_     , Left e) -> Left e
-        (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoReason
+        (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoContext
 
   when verbose $ do
     putStrLn $ "OUTPUT: " ++ outputPath
@@ -169,28 +170,41 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
   case resolvedASTTable of
     Left err -> do
-      hPutStrLn stderr $ ppShow err
-      Explain.format readFile err >>= putStrLn >> exitFailure
-    Right (table, _) -> if json
-      then putStrLn $ CompileJson.compileASTTable table
-      else do
-        when coverage $ do
-          runCoverageInitialization rootPath table
+      if json
+        then do
+          formattedErr <- Explain.format readFile json err
+          putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] mempty
+        else Explain.format readFile json err >>= putStrLn >> exitFailure
+    Right (table, inferState) ->
+      let errs      = errors inferState
+          hasErrors = not (null errs)
+      in  if json
+            then do
+              withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+              putStrLn $ CompileJson.compileASTTable withFormattedErrors table
+            else if hasErrors
+              then do
+                formattedErrors <- mapM (Explain.format readFile json) errs
+                let fullError = intercalate "\n\n\n\n" formattedErrors
+                putStrLn fullError >> exitFailure
+              else do
+                when coverage $ do
+                  runCoverageInitialization rootPath table
 
-        let optimizedTable = optimizeTable optimized table
+                let optimizedTable = optimizeTable optimized table
 
-        generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable
+                generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable
 
-        when bundle $ do
-          let entrypointOutputPath =
-                computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+                when bundle $ do
+                  let entrypointOutputPath =
+                        computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
 
-          bundled <- runBundle outputPath entrypointOutputPath
-          case bundled of
-            Left  e             -> putStrLn e
-            Right bundleContent -> do
-              _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-              writeFile outputPath bundleContent
+                  bundled <- runBundle outputPath entrypointOutputPath
+                  case bundled of
+                    Left  e             -> putStrLn e
+                    Right bundleContent -> do
+                      _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+                      writeFile outputPath bundleContent
 
 
 rollupNotFoundMessage = unlines

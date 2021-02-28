@@ -21,28 +21,30 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Interface = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+type Interface = Canonical Interface_
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
 
-data Instance = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show)
+type Instance = Canonical Instance_
+data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show)
 
 type Import = Canonical Import_
-
 -- The second FilePath parameter is the absolute path to that module
 data Import_
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-
-data Constructor = Constructor Name [Typing] Ty.Scheme deriving(Eq, Show)
+type Constructor = Canonical Constructor_
+data Constructor_ = Constructor Name [Typing] Ty.Scheme deriving(Eq, Show)
 
 getCtorScheme :: Constructor -> Ty.Scheme
-getCtorScheme (Constructor _ _ sc) = sc
+getCtorScheme (Canonical _ (Constructor _ _ sc)) = sc
 
 getCtorName :: Constructor -> Name
-getCtorName (Constructor name _ _) = name
+getCtorName (Canonical _ (Constructor name _ _)) = name
 
-data TypeDecl
+type TypeDecl = Canonical TypeDecl_
+data TypeDecl_
   = ADT
       { adtname :: Name
       , adtparams :: [Name]
@@ -59,10 +61,10 @@ data TypeDecl
     deriving(Eq, Show)
 
 
-type Typing = Canonical Typing_
 
 type Constraints = [Typing]
 
+type Typing = Canonical Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -92,21 +94,21 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show)
 
-
-data Field
+type Field = Canonical Field_
+data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
 
-data ListItem
+type ListItem = Canonical ListItem_
+data ListItem_
   = ListItem Exp
   | ListSpread Exp
   deriving(Eq, Show)
 
 
 type Exp = Canonical Exp_
-
 data Exp_ = LNum String
           | LStr String
           | LBool String
@@ -140,13 +142,13 @@ type Table = M.Map FilePath AST
 
 isTypeDeclExported :: TypeDecl -> Bool
 isTypeDeclExported td = case td of
-  ADT { adtexported }     -> adtexported
-  Alias { aliasexported } -> aliasexported
+  Canonical _ ADT { adtexported }     -> adtexported
+  Canonical _ Alias { aliasexported } -> aliasexported
 
 getTypeDeclName :: TypeDecl -> String
 getTypeDeclName td = case td of
-  ADT { adtname }     -> adtname
-  Alias { aliasname } -> aliasname
+  Canonical _ ADT { adtname }     -> adtname
+  Canonical _ Alias { aliasname } -> aliasname
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
@@ -172,3 +174,12 @@ getExpName (Canonical _ exp) = case exp of
   Export (Canonical _ (Assignment name _)) -> return name
 
   _                 -> Nothing
+
+
+getExportNameAndScheme :: Exp -> (Maybe String, Maybe Ty.Scheme)
+getExportNameAndScheme (Canonical _ exp) = case exp of
+  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) sc -> (Just name, Just sc)
+
+  Export (Canonical _ (Assignment name _)) -> (Just name, Nothing)
+
+  _ -> (Nothing, Nothing)

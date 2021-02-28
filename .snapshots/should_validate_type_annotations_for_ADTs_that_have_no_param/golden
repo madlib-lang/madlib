@@ -16,12 +16,19 @@ Right
                      (Forall [] ([] :=> TCon (TC "X" Star))))))
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "X"
-            , adtparams = []
-            , adtconstructors = [ Constructor "X" [] ]
-            , adtexported = False
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 10 1 11))
+            ADT
+              { adtname = "X"
+              , adtparams = []
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 9 1 10) (Loc 10 1 11))
+                      (Constructor "X" [] (TCon (TC "X" Star)))
+                  ]
+              , adtType = TCon (TC "X" Star)
+              , adtexported = False
+              }
         ]
     , ainterfaces = []
     , ainstances = []

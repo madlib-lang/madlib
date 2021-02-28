@@ -23,7 +23,6 @@ import           Infer.Env                     as Infer
 import           Infer.Infer
 import           Optimize.Optimize
 import           Error.Error
-import           Explain.Reason
 import           Parse.AST                     as Parse
 import           Compile.Javascript
 import           Prelude                 hiding ( readFile )
@@ -61,7 +60,8 @@ tester optimized code =
         Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode)
                            (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
-  where runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) Unique { count = 0 })
+ where
+  runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
 
 coverageTester :: String -> String
 coverageTester code =
@@ -74,7 +74,8 @@ coverageTester code =
         Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode)
                            (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
-  where runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) Unique { count = 0 })
+ where
+  runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
 
 tableTester :: FilePath -> Src.Table -> Src.AST -> String
 tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
@@ -83,7 +84,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
         Right table -> table
         Left  err   -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
-      resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) Unique { count = 0 })
+      resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   in  case resolved of
         Right x ->
           concat
@@ -134,7 +135,7 @@ mainCompileFixture = unlines
   , "log :: a -> a"
   , "log = (a) => (#- { console.log(a); return a; } -#)"
   , "if (true) { \"OK\" } else { \"NOT OK\" }"
-  , "data Maybe a = Just a | Nothing"
+  , "type Maybe a = Just a | Nothing"
   , "mapMaybe :: (a -> b) -> Maybe a -> Maybe b"
   , "mapMaybe = (f, m) => (where(m) {"
   , "  is Just a : Just(f(a))"
@@ -282,7 +283,7 @@ monadTransformersProgram = unlines
   , "export andDo = (b, a) => chain((_) => b, a)"
   , ""
   , ""
-  , "export data WriterT w m a = WriterT (m <a, w>)"
+  , "export type WriterT w m a = WriterT (m <a, w>)"
   , ""
   , ""
   , "runWriterT :: WriterT w m a -> m <a, w>"
@@ -319,7 +320,7 @@ monadTransformersProgram = unlines
   , "  lift = (m) => WriterT(chain((a) => of(<a, mempty>), m))"
   , "}"
   , ""
-  , "export data Identity a = Identity a"
+  , "export type Identity a = Identity a"
   , ""
   , "run :: Identity a -> a"
   , "export runIdentity = where"
@@ -342,7 +343,7 @@ monadTransformersProgram = unlines
   , "}"
   , ""
   , ""
-  , "export data StateT s m a = StateT (s -> m <a, s>)"
+  , "export type StateT s m a = StateT (s -> m <a, s>)"
   , ""
   , "runStateT :: StateT s m a -> s -> m <a, s>"
   , "export runStateT = (m) => where(m) is StateT f: (a) => f(a)"
@@ -463,9 +464,9 @@ spec = do
 
     it "should compile interfaces and instances" $ do
       let code = unlines
-            [ "data Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just a | Nothing"
             , ""
-            , "data Either e a = Right a | Left e"
+            , "type Either e a = Right a | Left e"
             , ""
             , "interface Functor m {"
             , "  map :: (a -> b) -> m a -> m b"
@@ -533,7 +534,7 @@ spec = do
 
     it "should compile constrained instances and resolve their dictionary parameters" $ do
       let code = unlines
-            [ "data Either e a = Right a | Left e"
+            [ "type Either e a = Right a | Left e"
             , ""
             , "interface Show a {"
             , "  show :: a -> String"
@@ -596,7 +597,7 @@ spec = do
 
     it "should compile imports and exports of Namespaced ADTs" $ do
       let codeA = unlines
-            ["export data Maybe a = Just a | Nothing", "data NotExportedADT a = NotExportedADT a | StillNotExported"]
+            ["export type Maybe a = Just a | Nothing", "type NotExportedADT a = NotExportedADT a | StillNotExported"]
           astA  = buildAST "./ADTs" codeA
 
           codeB = unlines
@@ -642,11 +643,11 @@ spec = do
           [ "import W from \"./Wish\""
           , "import B from \"./Binary\""
           , ""
-          , "export data Body"
+          , "export type Body"
           , "  = TextBody String"
           , "  | BinaryBody B.ByteArray"
           , ""
-          , "export data Response = Response { body :: Body }"
+          , "export type Response = Response { body :: Body }"
           , ""
           , "get :: String -> W.Wish e Response"
           , "export get = (url) => (#- -#)"
@@ -656,7 +657,7 @@ spec = do
           [ "import W from \"./Wish\""
           , "import B from \"./Binary\""
           , ""
-          , "export data Data"
+          , "export type Data"
           , "  = TextData String"
           , "  | BinaryData B.ByteArray"
           , ""
@@ -665,15 +666,15 @@ spec = do
           ]
 
         binaryModule = unlines
-          [ "export data ByteWord"
+          [ "export type ByteWord"
           , "  = Int8Bit a"
           , "  | Int16Bit a"
           , "  | Int32Bit a"
-          , "export data ByteArray = ByteArray (List ByteWord)"
+          , "export type ByteArray = ByteArray (List ByteWord)"
           ]
 
         wishModule = unlines
-          [ "export data Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+          [ "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
           , ""
           , "of :: a -> Wish e a"
           , "export of = (a) => (Wish((bad, good) => (good(a))))"
@@ -778,7 +779,7 @@ spec = do
         libMain = unlines
           [ "import R from \"./Utils/Random\""
           , "export random = (seed) => (R.random(seed))"
-          , "export data Maybe a = Just a | Nothing"
+          , "export type Maybe a = Just a | Nothing"
           ]
 
         libRandom = "export random = (seed) => (seed / 2)"
@@ -856,7 +857,7 @@ spec = do
           , "  chain :: (a -> m b) -> m a -> m b"
           , "}"
           , ""
-          , "export data Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+          , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
           , ""
           , ""
           , "instance Functor (Wish e) {"

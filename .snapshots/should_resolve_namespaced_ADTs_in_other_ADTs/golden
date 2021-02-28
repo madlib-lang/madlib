@@ -5,13 +5,34 @@ Right
            { aimports = []
            , aexps = []
            , atypedecls =
-               [ ADT
-                   { adtname = "Maybe"
-                   , adtparams = [ "a" ]
-                   , adtconstructors =
-                       [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
-                   , adtexported = True
-                   }
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 38 1 39))
+                   ADT
+                     { adtname = "Maybe"
+                     , adtparams = [ "a" ]
+                     , adtconstructors =
+                         [ Untyped
+                             (Area (Loc 22 1 23) (Loc 28 1 29))
+                             (Constructor
+                                "Just"
+                                [ Untyped (Area (Loc 27 1 28) (Loc 28 1 29)) (TRSingle "a") ]
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TVar (TV "a" Star)))
+                                   (TApp
+                                      (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "a" Star)))))
+                         , Untyped
+                             (Area (Loc 31 1 32) (Loc 38 1 39))
+                             (Constructor
+                                "Nothing"
+                                []
+                                (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "b" Star))))
+                         ]
+                     , adtType =
+                         TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "a" Star))
+                     , adtexported = True
+                     }
                ]
            , ainterfaces = []
            , ainstances = []
@@ -20,7 +41,11 @@ Right
        )
      , ( "./ModuleB"
        , AST
-           { aimports = [ DefaultImport "M" "./ModuleA" "./ModuleA" ]
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 25 1 26))
+                   (DefaultImport "M" "./ModuleA" "./ModuleA")
+               ]
            , aexps =
                [ Solved
                    (TCon (TC "MyType" Star))
@@ -64,13 +89,35 @@ Right
                             True)))
                ]
            , atypedecls =
-               [ ADT
-                   { adtname = "MyType"
-                   , adtparams = []
-                   , adtconstructors =
-                       [ Constructor "MyType" [ TRComp "M.Maybe" [ TRSingle "String" ] ] ]
-                   , adtexported = False
-                   }
+               [ Untyped
+                   (Area (Loc 26 2 1) (Loc 62 2 37))
+                   ADT
+                     { adtname = "MyType"
+                     , adtparams = []
+                     , adtconstructors =
+                         [ Untyped
+                             (Area (Loc 40 2 15) (Loc 62 2 37))
+                             (Constructor
+                                "MyType"
+                                [ Untyped
+                                    (Area (Loc 48 2 23) (Loc 62 2 37))
+                                    (TRComp
+                                       "M.Maybe"
+                                       [ Untyped
+                                           (Area (Loc 56 2 31) (Loc 62 2 37)) (TRSingle "String")
+                                       ])
+                                ]
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TApp
+                                         (TCon (TC "Maybe" (Kfun Star Star)))
+                                         (TCon (TC "String" Star))))
+                                   (TCon (TC "MyType" Star))))
+                         ]
+                     , adtType = TCon (TC "MyType" Star)
+                     , adtexported = False
+                     }
                ]
            , ainterfaces = []
            , ainstances = []

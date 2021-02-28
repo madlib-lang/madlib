@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             (TCon (TC "Boolean" Star))
-            (Area (Loc 0 1 1) (Loc 1 1 2))
+            (Area (Loc 0 1 1) (Loc 6 1 7))
             (App
                (Solved
                   (TApp
@@ -12,7 +12,7 @@ Right
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                         (TCon (TC "Number" Star)))
                      (TCon (TC "Boolean" Star)))
-                  (Area (Loc 0 1 1) (Loc 1 1 2))
+                  (Area (Loc 0 1 1) (Loc 6 1 7))
                   (App
                      (Solved
                         (TApp

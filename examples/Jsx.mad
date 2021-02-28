@@ -1,0 +1,21 @@
+
+// <1, 2>
+
+<Tag></Tag>
+
+<Tag propName="propValue" otherProp="value">
+</Tag>
+
+<Tag propName="propValue" otherProp="value">
+  <Tag propName="propValue" otherProp="value"></Tag>
+  <SelfClosing prop={fn(1 + 3)} />
+  <SelfClosing className={state.active ? "self-closing--active" : "self-closing"} />
+</Tag>
+
+<SelfClosing prop="TCHOU" />
+
+<SelfClosing prop={fn(1 + 3)} />
+
+<Tag>
+  {callFn(3)}
+</Tag>

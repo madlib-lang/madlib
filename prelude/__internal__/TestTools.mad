@@ -21,7 +21,7 @@ red = colorString("\x1b[31m")
 green = colorString("\x1b[32m")
 
 
-data AssertionError = AssertionError a a
+type AssertionError = AssertionError a a
 
 
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo

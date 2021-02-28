@@ -7,8 +7,14 @@ import           Control.Monad.State
 import           Error.Error
 
 
-newtype Unique = Unique { count :: Int }
-  deriving (Show, Eq, Ord)
+data InferState = InferState { count :: Int, errors :: [InferError] }
+  deriving (Show, Eq)
 
 
-type Infer a = forall m . (MonadError InferError m, MonadState Unique m) => m a
+pushError :: InferError -> Infer ()
+pushError err = do
+  s <- get
+  put s { errors = errors s ++ [err] }
+
+
+type Infer a = forall m . (MonadError InferError m, MonadState InferState m) => m a

@@ -1,7 +1,6 @@
 module Explain.Format where
 
 import           Error.Error
-import           Explain.Reason
 import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
@@ -11,275 +10,73 @@ import           Data.List                      ( intercalate )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
+import           Utils.Tuple
+
+data Color = Green | Red | Grey | WhiteOnRed
+
+colorWhen :: Bool -> Color -> String -> String
+colorWhen when c s | when      = color c s
+                   | otherwise = s
+
+color :: Color -> String -> String
+color c s = case c of
+  Green      -> "\x1b[32m" <> s <> "\x1b[0m"
+  Red        -> "\x1b[31m" <> s <> "\x1b[0m"
+  Grey       -> "\x1b[90m" <> s <> "\x1b[0m"
+  WhiteOnRed -> "\x1b[41m" <> s <> "\x1b[0m"
+
+underlineWhen :: Bool -> String -> String
+underlineWhen when s | when      = "\x1b[4m" <> s <> "\x1b[0m"
+                     | otherwise = s
 
 
-
-getModuleContent :: (FilePath -> IO String) -> Reason -> IO String
-getModuleContent rf (Reason _ modulePath _    ) = rf modulePath
-getModuleContent rf (SimpleReason modulePath _) = rf modulePath
-getModuleContent _  _                           = return ""
+getModuleContent :: (FilePath -> IO String) -> Context -> IO String
+getModuleContent rf (Context modulePath _ _) = rf modulePath
+getModuleContent _  _                        = return ""
 
 
-format :: (FilePath -> IO String) -> InferError -> IO String
-format rf (InferError err reason) = do
-  moduleContent <- lines <$> getModuleContent rf reason
-  case reason of
-    Reason (WrongTypeApplied (Can.Canonical _ abs) (Can.Canonical (Area (Loc a li c) _) e)) _ area -> do
-      let beginning = case abs of
-            -- TODO: Extend to other operators
-            Can.App (Can.Canonical _ (Can.Var "+")) _ _ -> "Error applying the operator +"
-            Can.Var "+" -> "Error applying the operator +"
-            _           -> "Error in function call"
+format :: (FilePath -> IO String) -> Bool -> InferError -> IO String
+format rf json (InferError err ctx) = do
+  moduleContent <- lines <$> getModuleContent rf ctx
+  let formattedError = case ctx of
+        Context fp area bt ->
+          let (Area (Loc _ line _) _) = area
+          in  "in module '"
+                <> fp
+                <> "' at line "
+                <> show line
+                <> ":\n\n"
+                <> analyzeBacktrace json err bt
+                <> showAreaInSource json area area moduleContent
+                <> "\n"
+                <> formatTypeError json err
 
-      let l = moduleContent !! (li - 1)
-      let (Area (Loc _ lineStart colStart) (Loc _ lineEnd colEnd)) = area
-      let (UnificationError expected actual) = err
+        _ -> formatTypeError json err
 
-      -- let nthInfo = case nthArg infos of
-      --       Just nth -> "The " <> show nth <> nthEnding nth <> " "
-      --       Nothing  -> "The "
-      -- let fn = case origin infos of
-      --       Just origin -> case origin of
-      --         Src.Var n -> " of \"" <> n <> "\" "
-      --         _         -> " "
-      --       Nothing -> " "
+  return $ colorWhen (not json) WhiteOnRed "Error" <> " " <> formattedError
 
 
-      let message =
-            "\n"
-              -- <> nthInfo
-              -- <> "argument"
-              -- <> fn
-              <> "has type\n\t"
-              <> typeToStr actual
-              <> "\nBut it was expected to be\n\t"
-              <> typeToStr expected
+analyzeBacktrace :: Bool -> TypeError -> Backtrace -> String
+analyzeBacktrace json err exps = case exps of
+  ((BTExp e1) : BTExp (Can.Canonical _ (Can.If cond _ falsy)) : ex) -> if e1 == cond
+    then "The " <> underlineWhen (not json) "condition" <> " of the following if/else expression is not correct:\n"
+    else "\nThe error occured in the following if/else expression:\n"
 
-      let hint = unlines
-            [ "Hint: if the function is polymorphic it is possible that the error comes from"
-            , "the application of other arguments. Otherwise you might want to add a typing to"
-            , "to the signature to improve documentation and make error messages more"
-            , "precise !"
-            ]
+  (BTExp (Can.Canonical _ (Can.TypedExp _ _)) : ex) -> case err of
+    UnificationError _ _ ->
+      "The " <> underlineWhen (not json) "type declaration" <> " does not match the inferred type:\n"
+    _ -> ""
 
-      return
-        $  beginning
-        <> " at line "
-        <> show li
-        <> ":\n\n"
-        <> l
-        <> "\n"
-        <> concat [ " " | _ <- [1 .. (colStart - 1)] ]
-        <> concat [ "^" | _ <- [colStart .. (colEnd - 1)] ]
-        <> message
-        <> "\n\n"
-        <> hint
+  (BTExp (Can.Canonical _ (Can.Assignment n _)) : BTInstance inst : ex) ->
+    "The implementation of the following " <> underlineWhen (not json) "method" <> " is not correct:\n"
 
-    Reason (VariableNotDeclared (Can.Canonical (Area (Loc a li c) _) exp)) _ area -> do
-      let l           = moduleContent !! (li - 1)
-
-      let (Can.Var n) = exp
-
-      let hint = unlines
-            [ "Hint: here are some possible solutions:"
-            , "    * If it is defined in another module, make sure to import it"
-            , "    * If you already import it, make sure that it is exported"
-            ]
-
-      return
-        $  "Error at line "
-        <> show li
-        <> ":\n\n"
-        <> l
-        <> "\n"
-        <> formatHighlightArea area
-        <> "\n"
-        <> "The variable \""
-        <> n
-        <> "\" is not defined.\n\n"
-        <> hint
-
-    Reason (IfElseBranchTypesDontMatch ifElse falsy) _ _ -> do
-      let ifElseArea                         = Can.getArea ifElse
-      let falsyArea                          = Can.getArea falsy
-      let (Area (Loc _ falsyLine _) _)       = falsyArea
-      let (showStart, showEnd) = computeLinesToShow ifElseArea falsyArea
-      let linesToShow = slice showStart showEnd moduleContent
-      let (UnificationError expected actual) = err
-
-      let message =
-            "\n"
-              <> "The else branch has type\n\t"
-              <> typeToStr actual
-              <> "\nBut it was expected to be\n\t"
-              <> typeToStr expected
-
-      let hint = "Hint: the if and else branch of an if else expression should return the same type."
-
-      return
-        $  "Error in if else expression at line "
-        <> show falsyLine
-        <> ":\n\n"
-        <> unlines linesToShow
-        <> formatHighlightArea falsyArea
-        <> message
-        <> "\n\n"
-        <> hint
-
-    Reason (IfElseCondIsNotBool ifElse cond) _ _ -> do
-      let ifElseArea                         = Can.getArea ifElse
-      let condArea                           = Can.getArea cond
-      let (Area (Loc _ falsyLine _) _)       = condArea
-      let (showStart, showEnd) = computeLinesToShow ifElseArea condArea
-      let linesToShow = slice showStart showEnd moduleContent
-      let (UnificationError expected actual) = err
-
-      let message =
-            "\n"
-              <> "The condition has type\n\t"
-              <> typeToStr actual
-              <> "\nBut it was expected to be\n\t"
-              <> typeToStr expected
-
-      let hint = "Hint: the condition of an if else expression should be a Bool."
-
-      return
-        $  "Error in if else expression at line "
-        <> show falsyLine
-        <> ":\n\n"
-        <> unlines linesToShow
-        <> formatHighlightArea condArea
-        <> message
-        <> "\n\n"
-        <> hint
-
-    Reason (PatternTypeError switch pat) _ _ -> do
-      let switchArea                         = Can.getArea switch
-      let patternArea                        = Can.getArea pat
-      let (Area (Loc _ patternLine _) _)     = patternArea
-      let (showStart, showEnd) = computeLinesToShow switchArea patternArea
-      let linesToShow = slice showStart showEnd moduleContent
-      let (UnificationError expected actual) = err
-
-      let message =
-            "\n"
-              <> "The pattern has type\n\t"
-              <> typeToStr actual
-              <> "\nBut it was expected to be\n\t"
-              <> typeToStr expected
-
-      let
-        hint
-          = "Hint: the case patterns of a switch expression should match constructors of the type given to the switch. A common mistake is to mix up type constructor and type. For example, given:\ndata Maybe a = Just a | Nothing\nYou could have the following valid patterns when called with Just(True):\n\t* case Just False: ...\n\t* case Just _: ...\n\t* case Just a: a"
-
-      return
-        $  "Error in switch expression at line "
-        <> show patternLine
-        <> ":\n\n"
-        <> unlines linesToShow
-        <> formatHighlightArea patternArea
-        <> message
-        <> "\n\n"
-        <> hint
-
-    Reason (PatternConstructorDoesNotExist switch pat) _ _ -> do
-      let switchArea                     = Can.getArea switch
-      let patternArea                    = Can.getArea pat
-      let (Area (Loc _ patternLine _) _) = patternArea
-      let (showStart, showEnd) = computeLinesToShow switchArea patternArea
-      let linesToShow = slice showStart showEnd moduleContent
-      let (UnknownType unknown)          = err
-
-      let message = "\n" <> "Constructor used in pattern does not exist\n\t" <> unknown
-
-      let hint = "Hint: make sure that you imported this type."
-
-      return
-        $  "Error in switch expression at line "
-        <> show patternLine
-        <> ":\n\n"
-        <> unlines linesToShow
-        <> formatHighlightArea patternArea
-        <> message
-        <> "\n\n"
-        <> hint
-
-    Reason (WrongImport imp) _ _ -> do
-      let importArea                    = Src.getArea imp
-      let highlightArea                 = Src.getArea imp
-      let (Area (Loc _ importLine _) _) = highlightArea
-      let (showStart, showEnd)          = computeLinesToShow importArea highlightArea
-      let linesToShow                   = slice showStart showEnd moduleContent
-
-      let message = "\n" <> "The module you want to import could not be found\n"
-
-      let hint = "Hint: make sure that the module exists and that it is in the right folder"
-
-      return
-        $  "Import not found at line "
-        <> show importLine
-        <> ":\n\n"
-        <> unlines linesToShow
-        <> formatHighlightArea highlightArea
-        <> message
-        <> "\n\n"
-        <> hint
-
-    Reason (TypeAndTypingMismatch exp typing expectedType actualType) _ _ -> do
-      let typingArea                 = Can.getArea typing
-      let expArea                    = Can.getArea exp
-      let (Area (Loc _ expLine _) _) = expArea
-      let (typingStart, typingEnd) = computeLinesToShow typingArea typingArea
-      let (expStart, expEnd)         = computeLinesToShow expArea expArea
-      let typingContent = slice typingStart typingEnd moduleContent
-      let expContent = case exp of
-            (Can.Canonical _ (Can.Assignment _ _)) -> slice expStart expEnd moduleContent
-            _ -> []
-
-      let message =
-            "\n"
-              <> "The type of the expression does not match its type definition.\n\n"
-              <> "The definition has type\n\t"
-              <> typeToStr expectedType
-              <> "\nBut the actual type is\n\t"
-              <> typeToStr actualType
-
-      return
-        $  "Type error at line "
-        <> show expLine
-        <> ":\n\n"
-        <> unlines typingContent
-        <> unlines expContent
-        <> formatHighlightArea expArea
-        <> "\n"
-        <> message
-
-    SimpleReason fp area -> do
-      let (start, end)              = computeLinesToShow area area
-      let expContent                = slice start end moduleContent
-      let (Area (Loc x line col) _) = area
-      let highlightArea = Area (Loc x line col) (Loc x line (col + 1))
-
-      return
-        $  "An error occured in module '"
-        <> fp
-        <> "' at line "
-        <> show line
-        <> ":\n\n"
-        <> unlines expContent
-        <> formatHighlightArea highlightArea
-        <> "\n\n"
-        <> formatTypeError err
-        -- <> "\n"
-        -- <> "If I had more information I'd tell you more but right now I don't know"
-
-    _ -> return $ formatTypeError err
+  _ -> if length exps > 1 then analyzeBacktrace json err (tail exps) else ""
 
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
-formatTypeError :: TypeError -> String
-formatTypeError err = case err of
-  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> typeToStr t
+formatTypeError :: Bool -> TypeError -> String
+formatTypeError json err = case err of
+  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> prettyPrintType t
 
   UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo !"
 
@@ -296,11 +93,11 @@ formatTypeError err = case err of
   UnificationError t t' ->
     "Type error, you gave :\n"
       <> "    "
-      <> typeToStr t
+      <> colorWhen (not json) Red (prettyPrintType t)
       <> "\n"
       <> "But this type was expected:\n"
       <> "    "
-      <> typeToStr t'
+      <> colorWhen (not json) Green (prettyPrintType t')
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"
@@ -308,7 +105,7 @@ formatTypeError err = case err of
       <> "'. Verify that you imported the module\nwhere the "
       <> cls
       <> " instance for '"
-      <> unwords (typeToStr <$> ts)
+      <> unwords (prettyPrintType <$> ts)
       <> "' is defined."
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
@@ -332,11 +129,11 @@ formatTypeError err = case err of
 
   KindError (t, k) (t', k') ->
     "The kind of types don't match, '"
-      <> typeToStr t
+      <> prettyPrintType t
       <> "has kind "
       <> kindToStr k
       <> " and "
-      <> typeToStr t'
+      <> prettyPrintType t'
       <> " has kind "
       <> kindToStr k'
       <> "."
@@ -358,7 +155,6 @@ formatTypeError err = case err of
       <> "modules in order to have both modules import a common dependency instead of having them being co-dependent.\n"
       <> "Another solution would be to move things that depend on the other module from the cycle into the other in\n"
       <> "order to collocate things that depend on each other."
-
    where
     buildCycleOutput :: Int -> Int -> [FilePath] -> String
     buildCycleOutput total current paths =
@@ -367,6 +163,19 @@ formatTypeError err = case err of
           prefix         = spaces <> if current /= 0 then "-> " else ""
           next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
       in  prefix <> paths !! current <> "\n" <> next
+
+  GrammarError _ text -> text
+
+  UnknownType t       -> "Type Error, the type '" <> t <> "' is not found.\n\nHint: Verify that you imported it!"
+
+  NameAlreadyDefined name ->
+    "Type Error, the variable '"
+      <> name
+      <> "' is already used."
+      <> "\n\n"
+      <> "Hint: Change the name of the variable.\n"
+      <> "Also note that the variable might be defined further down. All top level assignments share the scope and using a local name\n"
+      <> "that is defined in the global scope of a module is not allowed."
 
   _ -> ppShow err
 
@@ -379,6 +188,33 @@ computeLinesToShow (Area (Loc _ l _) _) (Area (Loc _ l' _) _) = (l - 1, l' - 1)
 formatHighlightArea :: Area -> String
 formatHighlightArea (Area (Loc _ _ c) (Loc _ _ c')) =
   concat [ " " | _ <- [1 .. (c - 1)] ] <> concat [ "^" | _ <- [c .. (c' - 1)] ]
+
+
+showAreaInSource :: Bool -> Area -> Area -> [String] -> String
+showAreaInSource json start end code =
+  let lines                    = [1 ..]
+      (firstLine, lastLine)    = computeLinesToShow start end
+      firstLineToShow          = max 0 (firstLine - 2)
+      lastLineToShow           = lastLine + 3
+      amountCharsForLineNumber = length $ show lastLineToShow
+      prettyPrintedLineNumbers =
+          (\n ->
+              let asStr       = show n
+                  spacesToAdd = amountCharsForLineNumber - length asStr
+              in  replicate spacesToAdd ' ' <> asStr <> "|"
+            )
+            <$> lines
+      before = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
+        <$> slice firstLineToShow (firstLine - 1) (zip prettyPrintedLineNumbers code)
+      expContent = uncurry (<>) <$> slice firstLine lastLine (zip prettyPrintedLineNumbers code)
+      after      = (\(lNum, line) -> colorWhen (not json) Grey $ lNum <> line)
+        <$> slice (lastLine + 1) lastLineToShow (zip prettyPrintedLineNumbers code)
+      (Area (Loc x line col) (Loc _ line' col')) = end
+      endCol                = if line == line' then col' else col + 1
+      highlightArea         = Area (Loc x line col) (Loc x line endCol)
+      spacesBeforeHighlight = " " <> concat (" " <$ show lastLineToShow)
+      formattedArea         = spacesBeforeHighlight <> formatHighlightArea highlightArea
+  in  unlines $ before ++ expContent ++ [formattedArea] ++ after
 
 
 
@@ -400,8 +236,8 @@ kindToStr k = case k of
   Kfun l r -> kindToStr l <> " -> " <> kindToStr r
 
 schemeToStr :: Scheme -> String
-schemeToStr (Forall _ ([] :=> t)) = typeToStr t
-schemeToStr (Forall _ (ps :=> t)) = predsToStr ps <> " => " <> typeToStr t
+schemeToStr (Forall _ ([] :=> t)) = prettyPrintType t
+schemeToStr (Forall _ (ps :=> t)) = predsToStr ps <> " => " <> prettyPrintType t
 
 predsToStr :: [Pred] -> String
 predsToStr [p] = predToStr p
@@ -413,19 +249,103 @@ predToStr (IsIn cls ts) = cls <> " " <> unwords (typeToParenWrappedStr <$> ts)
 
 typeToParenWrappedStr :: Type -> String
 typeToParenWrappedStr t = case t of
-  TApp _ _ -> "(" <> typeToStr t <> ")"
-  _        -> typeToStr t
+  TApp _ _ -> "(" <> prettyPrintType t <> ")"
+  _        -> prettyPrintType t
 
-typeToStr :: Type -> String
-typeToStr t = case t of
-  TCon (TC a _)    -> a
-  TVar (TV a _)    -> a
-  TApp (TApp (TCon (TC "(->)" _)) t2) t2' -> typeToStr t2 <> " -> " <> typeToStr t2'
-  TApp t1 t2       -> typeToStr t1 <> " " <> typeToStr t2
-  TGen x           -> letters !! x
-  TRecord fields _ -> "{ " <> intercalate ", " ((\(n, t) -> n <> ": " <> typeToStr t) <$> M.toList fields) <> "}"
-  _                -> ppShow t
 
+
+prettyPrintType :: Type -> String
+prettyPrintType = lst . prettyPrintType' (mempty, mempty)
+
+hkLetters :: [Char]
+hkLetters = ['m' ..]
+
+
+prettyPrintType' :: (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
+prettyPrintType' (vars, hkVars) t = case t of
+  TCon (TC n _) -> (vars, hkVars, n)
+
+  TVar (TV n k) -> case k of
+    Star -> case M.lookup n vars of
+      Just x  -> (vars, hkVars, letters !! x)
+      Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, letters !! newIndex)
+
+    Kfun _ _ -> case M.lookup n hkVars of
+      Just x  -> (vars, hkVars, [hkLetters !! x])
+      Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
+
+  TApp (TApp (TCon (TC "(,)" _)) tl) tr ->
+    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
+        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+    in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
+
+  TApp (TApp (TApp (TCon (TC "(,,)" _)) tl) tr) trr ->
+    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
+        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' (varsRight, hkVarsRight) trr
+    in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
+
+  TApp (TApp (TCon (TC "(->)" _)) tl) tr ->
+    let (varsLeft, hkVarsLeft, left) = case tl of
+          TApp (TApp (TCon (TC "(->)" _)) tl') tr' ->
+            let (varsLeft', hkVarsLeft', left') = prettyPrintType' (vars, hkVars) tl'
+                (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft', varsLeft') tr'
+                leftParenthesis = case tl' of
+                  TApp (TApp (TCon (TC "(->)" _)) _) _ -> True
+                  _                                    -> False
+                left'' = if leftParenthesis then "(" <> left' <> ")" else left'
+            in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
+
+          _ -> prettyPrintType' (vars, hkVars) tl
+
+        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+
+    in  (varsRight, hkVarsRight, left <> " -> " <> right)
+
+  TApp tl tr ->
+    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
+        (varsRight, hkVarsRight, right) = case tr of
+          TApp _ _ ->
+            let (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft, hkVarsLeft) tr
+            in
+              if not (isTuple tr) then
+                (varsRight', hkVarsRight', "(" <> right' <> ")")
+              else
+                (varsRight', hkVarsRight', right')
+          _ -> prettyPrintType' (varsLeft, hkVarsLeft) tr
+    in  (varsRight, hkVarsRight, left <> " " <> right)
+
+  TRecord fields _ ->
+    let (finalVars, finalHkVars, compiledFields) =
+            foldl
+                (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
+                  let (vars'', hkVars'', compiledField) = prettyPrintType' (vars', hkVars') fieldType
+                  in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
+                )
+                (vars, hkVars, [])
+              $ M.toList fields
+        compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
+        compiled        = "{ " <> intercalate ", " compiledFields' <> " }"
+    in  (finalVars, finalHkVars, compiled)
+
+  TGen n -> (vars, hkVars, "TGen" <> show n)
+
+  _ -> (vars, hkVars, "")
+
+
+isTuple :: Type -> Bool
+isTuple t = case t of
+  TApp (TApp (TCon (TC "(,)" _)) _) _                               -> True
+  TApp (TApp (TApp (TCon (TC "(,,)" _)) _) _) _                     -> True
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _)) _) _) _) _           -> True
+  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _)) _) _) _) _) _ -> True
+  _                                                                 -> False
+
+
+prettyPrintKind :: Kind -> String
+prettyPrintKind k = case k of
+  Star       -> "*"
+  Kfun k1 k2 -> prettyPrintKind k1 <> " -> " <> prettyPrintKind k2
 
 
 slice :: Int -> Int -> [a] -> [a]

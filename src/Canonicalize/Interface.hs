@@ -14,7 +14,6 @@ import           Infer.Substitute
 import           Infer.Scheme
 import           Target
 import           Error.Error
-import           Explain.Reason
 import           Control.Monad
 import           Control.Monad.Except
 import qualified Data.Map                      as M
@@ -32,7 +31,7 @@ canonicalizeInterfaces env = foldM
 
 
 canonicalizeInterface :: Env -> Src.Interface -> CanonicalM (Env, Can.Interface)
-canonicalizeInterface env interface = case interface of
+canonicalizeInterface env (Src.Source _ area interface) = case interface of
   Src.Interface constraints n vars ms -> do
     ts <- mapM (typingToType env) ms
 
@@ -54,10 +53,10 @@ canonicalizeInterface env interface = case interface of
     let tvs' = (\(TVar tv) -> tv) <$> tvs
 
     env' <- if null tvs'
-      then throwError $ InferError FatalError NoReason
+      then throwError $ InferError FatalError NoContext
       else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
 
-    return (env', Can.Interface n supers tvs' scs)
+    return (env', Can.Canonical area $ Can.Interface n supers tvs' scs)
 
 
 rmdups :: (Eq a) => [a] -> [a]
@@ -83,11 +82,18 @@ addConstraints n tvs t =
 
 
 canonicalizeInstances :: Env -> Target -> [Src.Instance] -> CanonicalM [Can.Instance]
-canonicalizeInstances env target = mapM (canonicalizeInstance env target)
+canonicalizeInstances _ _ []            = return []
+canonicalizeInstances env target (i:is) = do
+  next <- canonicalizeInstances env target is
+  current <- catchError
+    (canonicalizeInstance env target i)
+    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) (Src.getArea i) []))
+
+  return $ current:next
 
 
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
-canonicalizeInstance env target inst = case inst of
+canonicalizeInstance env target (Src.Source _ area inst) = case inst of
   Src.Instance constraints n typing methods -> do
     ts <- mapM (typingToType env) typing
 
@@ -96,7 +102,7 @@ canonicalizeInstance env target inst = case inst of
     ps <-
       apply subst
         <$> mapM
-              (\(Src.Source _ _ (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
+              (\(Src.Source _ area (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
                 Just (Interface tvs _) -> do
                   vars <- mapM
                     (\case
@@ -106,7 +112,7 @@ canonicalizeInstance env target inst = case inst of
                     (zip args tvs)
                   return $ IsIn interface' vars
 
-                Nothing -> throwError $ InferError (InterfaceNotExisting interface') NoReason
+                Nothing -> throwError $ InferError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 
@@ -117,4 +123,4 @@ canonicalizeInstance env target inst = case inst of
     let p       = IsIn n (apply subst' ts)
     methods' <- mapM (canonicalize env target) methods
 
-    return $ Can.Instance n ps' p methods'
+    return $ Can.Canonical area $ Can.Instance n ps' p methods'
