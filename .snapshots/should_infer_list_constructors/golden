@@ -11,42 +11,60 @@ Right
                (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
             (Area (Loc 3 2 1) (Loc 12 2 10))
             (ListConstructor
-               [ ListItem
-                   (Solved
-                      (TCon (TC "Number" Star))
-                      (Area (Loc 4 2 2) (Loc 5 2 3))
-                      (LNum "1"))
-               , ListItem
-                   (Solved
-                      (TCon (TC "Number" Star))
-                      (Area (Loc 7 2 5) (Loc 8 2 6))
-                      (LNum "2"))
-               , ListItem
-                   (Solved
-                      (TCon (TC "Number" Star))
-                      (Area (Loc 10 2 8) (Loc 11 2 9))
-                      (LNum "3"))
+               [ Solved
+                   (TCon (TC "Number" Star))
+                   (Area (Loc 4 2 2) (Loc 5 2 3))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 4 2 2) (Loc 5 2 3))
+                         (LNum "1")))
+               , Solved
+                   (TCon (TC "Number" Star))
+                   (Area (Loc 7 2 5) (Loc 8 2 6))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 7 2 5) (Loc 8 2 6))
+                         (LNum "2")))
+               , Solved
+                   (TCon (TC "Number" Star))
+                   (Area (Loc 10 2 8) (Loc 11 2 9))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 10 2 8) (Loc 11 2 9))
+                         (LNum "3")))
                ])
         , Solved
             (TApp
                (TCon (TC "List" (Kfun Star Star))) (TCon (TC "String" Star)))
             (Area (Loc 13 3 1) (Loc 36 3 24))
             (ListConstructor
-               [ ListItem
-                   (Solved
-                      (TCon (TC "String" Star))
-                      (Area (Loc 14 3 2) (Loc 19 3 7))
-                      (LStr "one"))
-               , ListItem
-                   (Solved
-                      (TCon (TC "String" Star))
-                      (Area (Loc 21 3 9) (Loc 26 3 14))
-                      (LStr "two"))
-               , ListItem
-                   (Solved
-                      (TCon (TC "String" Star))
-                      (Area (Loc 28 3 16) (Loc 35 3 23))
-                      (LStr "three"))
+               [ Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 14 3 2) (Loc 19 3 7))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 14 3 2) (Loc 19 3 7))
+                         (LStr "one")))
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 21 3 9) (Loc 26 3 14))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 21 3 9) (Loc 26 3 14))
+                         (LStr "two")))
+               , Solved
+                   (TCon (TC "String" Star))
+                   (Area (Loc 28 3 16) (Loc 35 3 23))
+                   (ListItem
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 28 3 16) (Loc 35 3 23))
+                         (LStr "three")))
                ])
         ]
     , atypedecls = []

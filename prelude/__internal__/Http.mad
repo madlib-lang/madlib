@@ -1,10 +1,10 @@
 import W from "Wish"
 import B from "Binary"
 
-export data Body = TextBody String
+export type Body = TextBody String
                  | BinaryBody B.ByteArray
 
-export data Response = Response { body :: Body }
+export type Response = Response { body :: Body }
 
 isBinary = (contentType) => contentType == "application/zip"
 

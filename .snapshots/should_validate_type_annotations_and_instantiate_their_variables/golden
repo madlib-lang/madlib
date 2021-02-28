@@ -159,40 +159,62 @@ Right
                               (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star))))
                         (Area (Loc 69 3 1) (Loc 85 3 17))
                         (ListConstructor
-                           [ ListItem
-                               (Solved
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
-                                  (Area (Loc 70 3 2) (Loc 76 3 8))
-                                  (ListConstructor
-                                     [ ListItem
-                                         (Solved
+                           [ Solved
+                               (TApp
+                                  (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                               (Area (Loc 70 3 2) (Loc 76 3 8))
+                               (ListItem
+                                  (Solved
+                                     (TApp
+                                        (TCon (TC "List" (Kfun Star Star)))
+                                        (TCon (TC "Number" Star)))
+                                     (Area (Loc 70 3 2) (Loc 76 3 8))
+                                     (ListConstructor
+                                        [ Solved
                                             (TCon (TC "Number" Star))
                                             (Area (Loc 71 3 3) (Loc 72 3 4))
-                                            (LNum "1"))
-                                     , ListItem
-                                         (Solved
+                                            (ListItem
+                                               (Solved
+                                                  (TCon (TC "Number" Star))
+                                                  (Area (Loc 71 3 3) (Loc 72 3 4))
+                                                  (LNum "1")))
+                                        , Solved
                                             (TCon (TC "Number" Star))
                                             (Area (Loc 74 3 6) (Loc 75 3 7))
-                                            (LNum "2"))
-                                     ]))
-                           , ListItem
-                               (Solved
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
-                                  (Area (Loc 78 3 10) (Loc 84 3 16))
-                                  (ListConstructor
-                                     [ ListItem
-                                         (Solved
+                                            (ListItem
+                                               (Solved
+                                                  (TCon (TC "Number" Star))
+                                                  (Area (Loc 74 3 6) (Loc 75 3 7))
+                                                  (LNum "2")))
+                                        ])))
+                           , Solved
+                               (TApp
+                                  (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                               (Area (Loc 78 3 10) (Loc 84 3 16))
+                               (ListItem
+                                  (Solved
+                                     (TApp
+                                        (TCon (TC "List" (Kfun Star Star)))
+                                        (TCon (TC "Number" Star)))
+                                     (Area (Loc 78 3 10) (Loc 84 3 16))
+                                     (ListConstructor
+                                        [ Solved
                                             (TCon (TC "Number" Star))
                                             (Area (Loc 79 3 11) (Loc 80 3 12))
-                                            (LNum "3"))
-                                     , ListItem
-                                         (Solved
+                                            (ListItem
+                                               (Solved
+                                                  (TCon (TC "Number" Star))
+                                                  (Area (Loc 79 3 11) (Loc 80 3 12))
+                                                  (LNum "3")))
+                                        , Solved
                                             (TCon (TC "Number" Star))
                                             (Area (Loc 82 3 14) (Loc 83 3 15))
-                                            (LNum "4"))
-                                     ]))
+                                            (ListItem
+                                               (Solved
+                                                  (TCon (TC "Number" Star))
+                                                  (Area (Loc 82 3 14) (Loc 83 3 15))
+                                                  (LNum "4")))
+                                        ])))
                            ]))
                      False))
                (Solved
@@ -280,7 +302,7 @@ Right
                                     "x")
                                  [ Solved
                                      (TCon (TC "Number" Star))
-                                     (Area (Loc 107 4 22) (Loc 108 4 23))
+                                     (Area (Loc 107 4 22) (Loc 112 4 27))
                                      (App
                                         (Solved
                                            (TApp
@@ -288,7 +310,7 @@ Right
                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                  (TCon (TC "Number" Star)))
                                               (TCon (TC "Number" Star)))
-                                           (Area (Loc 107 4 22) (Loc 108 4 23))
+                                           (Area (Loc 107 4 22) (Loc 112 4 27))
                                            (App
                                               (Solved
                                                  (TApp

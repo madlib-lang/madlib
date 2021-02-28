@@ -5,13 +5,34 @@ Right
            { aimports = []
            , aexps = []
            , atypedecls =
-               [ ADT
-                   { adtname = "Maybe"
-                   , adtparams = [ "a" ]
-                   , adtconstructors =
-                       [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
-                   , adtexported = True
-                   }
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 38 1 39))
+                   ADT
+                     { adtname = "Maybe"
+                     , adtparams = [ "a" ]
+                     , adtconstructors =
+                         [ Untyped
+                             (Area (Loc 22 1 23) (Loc 28 1 29))
+                             (Constructor
+                                "Just"
+                                [ Untyped (Area (Loc 27 1 28) (Loc 28 1 29)) (TRSingle "a") ]
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TVar (TV "a" Star)))
+                                   (TApp
+                                      (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "a" Star)))))
+                         , Untyped
+                             (Area (Loc 31 1 32) (Loc 38 1 39))
+                             (Constructor
+                                "Nothing"
+                                []
+                                (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "b" Star))))
+                         ]
+                     , adtType =
+                         TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "a" Star))
+                     , adtexported = True
+                     }
                ]
            , ainterfaces = []
            , ainstances = []
@@ -20,7 +41,11 @@ Right
        )
      , ( "./ModuleB"
        , AST
-           { aimports = [ DefaultImport "M" "./ModuleA" "./ModuleA" ]
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 25 1 26))
+                   (DefaultImport "M" "./ModuleA" "./ModuleA")
+               ]
            , aexps =
                [ Solved
                    (TApp
@@ -89,7 +114,21 @@ Right
                                                       (TCon (TC "Number" Star)))
                                                    (Area (Loc 95 5 5) (Loc 110 5 20))
                                                    (Is
-                                                      (PCtor "M.Just" [ PVar "a" ])
+                                                      (Solved
+                                                         (TApp
+                                                            (TCon (TC "Maybe" (Kfun Star Star)))
+                                                            (TVar (TV "f" Star)))
+                                                         (Area (Loc 98 5 8) (Loc 106 5 16))
+                                                         (PCtor
+                                                            "M.Just"
+                                                            [ Solved
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC "Maybe" (Kfun Star Star)))
+                                                                   (TVar (TV "f" Star)))
+                                                                (Area (Loc 105 5 15) (Loc 106 5 16))
+                                                                (PVar "a")
+                                                            ]))
                                                       (Solved
                                                          (TCon (TC "Number" Star))
                                                          (Area (Loc 109 5 19) (Loc 110 5 20))
@@ -106,7 +145,12 @@ Right
                                                       (TCon (TC "Number" Star)))
                                                    (Area (Loc 115 6 5) (Loc 131 6 21))
                                                    (Is
-                                                      (PCtor "M.Nothing" [])
+                                                      (Solved
+                                                         (TApp
+                                                            (TCon (TC "Maybe" (Kfun Star Star)))
+                                                            (TVar (TV "j" Star)))
+                                                         (Area (Loc 118 6 8) (Loc 127 6 17))
+                                                         (PCtor "M.Nothing" []))
                                                       (Solved
                                                          (TCon (TC "Number" Star))
                                                          (Area (Loc 129 6 19) (Loc 131 6 21))

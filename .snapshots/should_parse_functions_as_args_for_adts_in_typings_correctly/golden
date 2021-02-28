@@ -193,21 +193,21 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TVar (TV "r" Star)))
+                        (TVar (TV "l" Star)))
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                            (TVar (TV "m" Star)))
-                        (TVar (TV "r" Star)))))
+                        (TVar (TV "l" Star)))))
                (TApp
                   (TApp
                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                     (TVar (TV "r" Star)))
+                     (TVar (TV "l" Star)))
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                         (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "m" Star))))
-                     (TVar (TV "r" Star)))))
+                     (TVar (TV "l" Star)))))
             (Area (Loc 160 5 1) (Loc 269 6 66))
             (TypedExp
                (Solved
@@ -217,21 +217,21 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TVar (TV "r" Star)))
+                              (TVar (TV "l" Star)))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                  (TVar (TV "m" Star)))
-                              (TVar (TV "r" Star)))))
+                              (TVar (TV "l" Star)))))
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                           (TVar (TV "r" Star)))
+                           (TVar (TV "l" Star)))
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                               (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "m" Star))))
-                           (TVar (TV "r" Star)))))
+                           (TVar (TV "l" Star)))))
                   (Area (Loc 204 6 1) (Loc 269 6 66))
                   (Export
                      (Solved
@@ -241,21 +241,21 @@ Right
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                    (TVar (TV "p" Star)))
+                                    (TVar (TV "l" Star)))
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                        (TVar (TV "m" Star)))
-                                    (TVar (TV "p" Star)))))
+                                    (TVar (TV "l" Star)))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TVar (TV "r" Star)))
+                                 (TVar (TV "l" Star)))
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                     (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "m" Star))))
-                                 (TVar (TV "r" Star)))))
+                                 (TVar (TV "l" Star)))))
                         (Area (Loc 211 6 8) (Loc 269 6 66))
                         (Assignment
                            "reduce"
@@ -266,53 +266,53 @@ Right
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                          (TVar (TV "p" Star)))
+                                          (TVar (TV "l" Star)))
                                        (TApp
                                           (TApp
                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                              (TVar (TV "m" Star)))
-                                          (TVar (TV "p" Star)))))
+                                          (TVar (TV "l" Star)))))
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                       (TVar (TV "r" Star)))
+                                       (TVar (TV "l" Star)))
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)))
                                              (TVar (TV "m" Star))))
-                                       (TVar (TV "r" Star)))))
+                                       (TVar (TV "l" Star)))))
                               (Area (Loc 220 6 17) (Loc 269 6 66))
                               (Abs
                                  (Solved
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                          (TVar (TV "p" Star)))
+                                          (TVar (TV "l" Star)))
                                        (TApp
                                           (TApp
                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                              (TVar (TV "m" Star)))
-                                          (TVar (TV "p" Star))))
+                                          (TVar (TV "l" Star))))
                                     (Area (Loc 221 6 18) (Loc 222 6 19))
                                     "f")
                                  [ Solved
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                           (TVar (TV "r" Star)))
+                                           (TVar (TV "l" Star)))
                                         (TApp
                                            (TApp
                                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                               (TApp
                                                  (TCon (TC "List" (Kfun Star Star)))
                                                  (TVar (TV "m" Star))))
-                                           (TVar (TV "r" Star))))
+                                           (TVar (TV "l" Star))))
                                      (Area (Loc 220 6 17) (Loc 269 6 66))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "r" Star))
+                                           (TVar (TV "l" Star))
                                            (Area (Loc 224 6 21) (Loc 231 6 28))
                                            "initial")
                                         [ Solved
@@ -322,7 +322,7 @@ Right
                                                   (TApp
                                                      (TCon (TC "List" (Kfun Star Star)))
                                                      (TVar (TV "m" Star))))
-                                               (TVar (TV "r" Star)))
+                                               (TVar (TV "l" Star)))
                                             (Area (Loc 220 6 17) (Loc 269 6 66))
                                             (Abs
                                                (Solved
@@ -332,7 +332,7 @@ Right
                                                   (Area (Loc 233 6 30) (Loc 235 6 32))
                                                   "xs")
                                                [ Solved
-                                                   (TVar (TV "r" Star))
+                                                   (TVar (TV "l" Star))
                                                    (Area (Loc 241 6 38) (Loc 268 6 65))
                                                    (JSExp "xs.reduce(f, initial)")
                                                ])
@@ -365,13 +365,13 @@ Right
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                           (TVar (TV "am" Star)))
-                        (TVar (TV "ao" Star)))))
+                           (TVar (TV "s" Star)))
+                        (TVar (TV "t" Star)))))
                (TApp
                   (TApp
                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                     (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
-                  (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
+                     (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "s" Star))))
+                  (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "t" Star)))))
             (Area (Loc 271 8 1) (Loc 414 15 6))
             (TypedExp
                (Solved
@@ -383,13 +383,13 @@ Right
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TVar (TV "am" Star)))
-                              (TVar (TV "ao" Star)))))
+                                 (TVar (TV "s" Star)))
+                              (TVar (TV "t" Star)))))
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                           (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
-                        (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
+                           (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "s" Star))))
+                        (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "t" Star)))))
                   (Area (Loc 311 9 1) (Loc 414 15 6))
                   (Export
                      (Solved
@@ -401,13 +401,13 @@ Right
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                       (TVar (TV "am" Star)))
-                                    (TVar (TV "ao" Star)))))
+                                       (TVar (TV "s" Star)))
+                                    (TVar (TV "t" Star)))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "am" Star))))
-                              (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
+                                 (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "s" Star))))
+                              (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "t" Star)))))
                         (Area (Loc 318 9 8) (Loc 414 15 6))
                         (Assignment
                            "ap"
@@ -420,16 +420,15 @@ Right
                                        (TApp
                                           (TApp
                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                             (TVar (TV "am" Star)))
-                                          (TVar (TV "ao" Star)))))
+                                             (TVar (TV "s" Star)))
+                                          (TVar (TV "t" Star)))))
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                        (TApp
-                                          (TCon (TC "List" (Kfun Star Star)))
-                                          (TVar (TV "am" Star))))
+                                          (TCon (TC "List" (Kfun Star Star))) (TVar (TV "s" Star))))
                                     (TApp
-                                       (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ao" Star)))))
+                                       (TCon (TC "List" (Kfun Star Star))) (TVar (TV "t" Star)))))
                               (Area (Loc 323 9 13) (Loc 414 15 6))
                               (Abs
                                  (Solved
@@ -438,8 +437,8 @@ Right
                                        (TApp
                                           (TApp
                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                             (TVar (TV "am" Star)))
-                                          (TVar (TV "ao" Star))))
+                                             (TVar (TV "s" Star)))
+                                          (TVar (TV "t" Star))))
                                     (Area (Loc 324 9 14) (Loc 327 9 17))
                                     "fns")
                                  [ Solved
@@ -448,22 +447,22 @@ Right
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                            (TApp
                                               (TCon (TC "List" (Kfun Star Star)))
-                                              (TVar (TV "am" Star))))
+                                              (TVar (TV "s" Star))))
                                         (TApp
                                            (TCon (TC "List" (Kfun Star Star)))
-                                           (TVar (TV "ao" Star))))
+                                           (TVar (TV "t" Star))))
                                      (Area (Loc 323 9 13) (Loc 414 15 6))
                                      (Abs
                                         (Solved
                                            (TApp
                                               (TCon (TC "List" (Kfun Star Star)))
-                                              (TVar (TV "am" Star)))
+                                              (TVar (TV "s" Star)))
                                            (Area (Loc 329 9 19) (Loc 331 9 21))
                                            "xs")
                                         [ Solved
                                             (TApp
                                                (TCon (TC "List" (Kfun Star Star)))
-                                               (TVar (TV "ao" Star)))
+                                               (TVar (TV "t" Star)))
                                             (Area (Loc 336 9 26) (Loc 414 15 6))
                                             (App
                                                (Solved
@@ -480,11 +479,11 @@ Right
                                                                        "(->)"
                                                                        (Kfun
                                                                           Star (Kfun Star Star))))
-                                                                 (TVar (TV "am" Star)))
-                                                              (TVar (TV "ao" Star)))))
+                                                                 (TVar (TV "s" Star)))
+                                                              (TVar (TV "t" Star)))))
                                                      (TApp
                                                         (TCon (TC "List" (Kfun Star Star)))
-                                                        (TVar (TV "ao" Star))))
+                                                        (TVar (TV "t" Star))))
                                                   (Area (Loc 336 9 26) (Loc 407 14 5))
                                                   (App
                                                      (Solved
@@ -496,7 +495,7 @@ Right
                                                                     (Kfun Star (Kfun Star Star))))
                                                               (TApp
                                                                  (TCon (TC "List" (Kfun Star Star)))
-                                                                 (TVar (TV "ao" Star))))
+                                                                 (TVar (TV "t" Star))))
                                                            (TApp
                                                               (TApp
                                                                  (TCon
@@ -516,11 +515,11 @@ Right
                                                                                    Star
                                                                                    (Kfun
                                                                                       Star Star))))
-                                                                          (TVar (TV "am" Star)))
-                                                                       (TVar (TV "ao" Star)))))
+                                                                          (TVar (TV "s" Star)))
+                                                                       (TVar (TV "t" Star)))))
                                                               (TApp
                                                                  (TCon (TC "List" (Kfun Star Star)))
-                                                                 (TVar (TV "ao" Star)))))
+                                                                 (TVar (TV "t" Star)))))
                                                         (Area (Loc 336 9 26) (Loc 416 16 1))
                                                         (App
                                                            (Solved
@@ -547,7 +546,7 @@ Right
                                                                                    "List"
                                                                                    (Kfun
                                                                                       Star Star)))
-                                                                             (TVar (TV "ao" Star))))
+                                                                             (TVar (TV "t" Star))))
                                                                        (TApp
                                                                           (TApp
                                                                              (TCon
@@ -570,10 +569,9 @@ Right
                                                                                                Star))))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "am"
-                                                                                         Star)))
+                                                                                         "s" Star)))
                                                                                 (TVar
-                                                                                   (TV "ao" Star))))
+                                                                                   (TV "t" Star))))
                                                                           (TApp
                                                                              (TCon
                                                                                 (TC
@@ -581,7 +579,7 @@ Right
                                                                                    (Kfun
                                                                                       Star Star)))
                                                                              (TVar
-                                                                                (TV "ao" Star))))))
+                                                                                (TV "t" Star))))))
                                                                  (TApp
                                                                     (TApp
                                                                        (TCon
@@ -595,7 +593,7 @@ Right
                                                                              (TC
                                                                                 "List"
                                                                                 (Kfun Star Star)))
-                                                                          (TVar (TV "ao" Star))))
+                                                                          (TVar (TV "t" Star))))
                                                                     (TApp
                                                                        (TApp
                                                                           (TCon
@@ -623,17 +621,15 @@ Right
                                                                                                Star))))
                                                                                    (TVar
                                                                                       (TV
-                                                                                         "am"
-                                                                                         Star)))
+                                                                                         "s" Star)))
                                                                                 (TVar
-                                                                                   (TV
-                                                                                      "ao" Star)))))
+                                                                                   (TV "t" Star)))))
                                                                        (TApp
                                                                           (TCon
                                                                              (TC
                                                                                 "List"
                                                                                 (Kfun Star Star)))
-                                                                          (TVar (TV "ao" Star))))))
+                                                                          (TVar (TV "t" Star))))))
                                                               (Area (Loc 336 9 26) (Loc 342 9 32))
                                                               (Var "reduce"))
                                                            (Solved
@@ -650,7 +646,7 @@ Right
                                                                           (TC
                                                                              "List"
                                                                              (Kfun Star Star)))
-                                                                       (TVar (TV "ao" Star))))
+                                                                       (TVar (TV "t" Star))))
                                                                  (TApp
                                                                     (TApp
                                                                        (TCon
@@ -669,14 +665,14 @@ Right
                                                                                       (Kfun
                                                                                          Star
                                                                                          Star))))
-                                                                             (TVar (TV "am" Star)))
-                                                                          (TVar (TV "ao" Star))))
+                                                                             (TVar (TV "s" Star)))
+                                                                          (TVar (TV "t" Star))))
                                                                     (TApp
                                                                        (TCon
                                                                           (TC
                                                                              "List"
                                                                              (Kfun Star Star)))
-                                                                       (TVar (TV "ao" Star)))))
+                                                                       (TVar (TV "t" Star)))))
                                                               (Area (Loc 346 10 3) (Loc 401 13 8))
                                                               (Abs
                                                                  (Solved
@@ -685,7 +681,7 @@ Right
                                                                           (TC
                                                                              "List"
                                                                              (Kfun Star Star)))
-                                                                       (TVar (TV "ao" Star)))
+                                                                       (TVar (TV "t" Star)))
                                                                     (Area
                                                                        (Loc 347 10 4)
                                                                        (Loc 350 10 7))
@@ -711,15 +707,14 @@ Right
                                                                                              Star
                                                                                              Star))))
                                                                                  (TVar
-                                                                                    (TV "am" Star)))
-                                                                              (TVar
-                                                                                 (TV "ao" Star))))
+                                                                                    (TV "s" Star)))
+                                                                              (TVar (TV "t" Star))))
                                                                         (TApp
                                                                            (TCon
                                                                               (TC
                                                                                  "List"
                                                                                  (Kfun Star Star)))
-                                                                           (TVar (TV "ao" Star))))
+                                                                           (TVar (TV "t" Star))))
                                                                      (Area
                                                                         (Loc 346 10 3)
                                                                         (Loc 401 13 8))
@@ -736,8 +731,8 @@ Right
                                                                                              Star
                                                                                              Star))))
                                                                                  (TVar
-                                                                                    (TV "am" Star)))
-                                                                              (TVar (TV "ao" Star)))
+                                                                                    (TV "s" Star)))
+                                                                              (TVar (TV "t" Star)))
                                                                            (Area
                                                                               (Loc 352 10 9)
                                                                               (Loc 354 10 11))
@@ -749,8 +744,7 @@ Right
                                                                                      "List"
                                                                                      (Kfun
                                                                                         Star Star)))
-                                                                               (TVar
-                                                                                  (TV "ao" Star)))
+                                                                               (TVar (TV "t" Star)))
                                                                             (Area
                                                                                (Loc 359 10 16)
                                                                                (Loc 401 13 8))
@@ -775,7 +769,7 @@ Right
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "am"
+                                                                                                 "s"
                                                                                                  Star))))
                                                                                      (TApp
                                                                                         (TCon
@@ -786,7 +780,7 @@ Right
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "ao"
+                                                                                              "t"
                                                                                               Star))))
                                                                                   (Area
                                                                                      (Loc 359 10 16)
@@ -802,7 +796,7 @@ Right
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "am"
+                                                                                                 "s"
                                                                                                  Star)))
                                                                                         (Area
                                                                                            (Loc
@@ -822,7 +816,7 @@ Right
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "ao"
+                                                                                                  "t"
                                                                                                   Star)))
                                                                                          (Area
                                                                                             (Loc
@@ -854,7 +848,7 @@ Right
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "ao"
+                                                                                                              "t"
                                                                                                               Star))))
                                                                                                   (TApp
                                                                                                      (TCon
@@ -865,7 +859,7 @@ Right
                                                                                                               Star)))
                                                                                                      (TVar
                                                                                                         (TV
-                                                                                                           "ao"
+                                                                                                           "t"
                                                                                                            Star))))
                                                                                                (Area
                                                                                                   (Loc
@@ -897,7 +891,7 @@ Right
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "ao"
+                                                                                                                    "t"
                                                                                                                     Star))))
                                                                                                         (TApp
                                                                                                            (TApp
@@ -918,7 +912,7 @@ Right
                                                                                                                           Star)))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "ao"
+                                                                                                                       "t"
                                                                                                                        Star))))
                                                                                                            (TApp
                                                                                                               (TCon
@@ -929,7 +923,7 @@ Right
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "ao"
+                                                                                                                    "t"
                                                                                                                     Star)))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -952,7 +946,7 @@ Right
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "ao"
+                                                                                                              "t"
                                                                                                               Star)))
                                                                                                      (Area
                                                                                                         (Loc
@@ -976,7 +970,7 @@ Right
                                                                                                            Star)))
                                                                                                   (TVar
                                                                                                      (TV
-                                                                                                        "ao"
+                                                                                                        "t"
                                                                                                         Star)))
                                                                                                (Area
                                                                                                   (Loc
@@ -1008,7 +1002,7 @@ Right
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "am"
+                                                                                                                    "s"
                                                                                                                     Star))))
                                                                                                         (TApp
                                                                                                            (TCon
@@ -1019,7 +1013,7 @@ Right
                                                                                                                     Star)))
                                                                                                            (TVar
                                                                                                               (TV
-                                                                                                                 "ao"
+                                                                                                                 "t"
                                                                                                                  Star))))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1054,11 +1048,11 @@ Right
                                                                                                                                    Star))))
                                                                                                                        (TVar
                                                                                                                           (TV
-                                                                                                                             "am"
+                                                                                                                             "s"
                                                                                                                              Star)))
                                                                                                                     (TVar
                                                                                                                        (TV
-                                                                                                                          "ao"
+                                                                                                                          "t"
                                                                                                                           Star))))
                                                                                                               (TApp
                                                                                                                  (TApp
@@ -1079,7 +1073,7 @@ Right
                                                                                                                                 Star)))
                                                                                                                        (TVar
                                                                                                                           (TV
-                                                                                                                             "am"
+                                                                                                                             "s"
                                                                                                                              Star))))
                                                                                                                  (TApp
                                                                                                                     (TCon
@@ -1090,7 +1084,7 @@ Right
                                                                                                                              Star)))
                                                                                                                     (TVar
                                                                                                                        (TV
-                                                                                                                          "ao"
+                                                                                                                          "t"
                                                                                                                           Star)))))
                                                                                                            (Area
                                                                                                               (Loc
@@ -1116,11 +1110,11 @@ Right
                                                                                                                              Star))))
                                                                                                                  (TVar
                                                                                                                     (TV
-                                                                                                                       "am"
+                                                                                                                       "s"
                                                                                                                        Star)))
                                                                                                               (TVar
                                                                                                                  (TV
-                                                                                                                    "ao"
+                                                                                                                    "t"
                                                                                                                     Star)))
                                                                                                            (Area
                                                                                                               (Loc
@@ -1144,7 +1138,7 @@ Right
                                                                                                                  Star)))
                                                                                                         (TVar
                                                                                                            (TV
-                                                                                                              "am"
+                                                                                                              "s"
                                                                                                               Star)))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1170,7 +1164,7 @@ Right
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "am"
+                                                                                           "s"
                                                                                            Star)))
                                                                                   (Area
                                                                                      (Loc 398 13 5)
@@ -1183,7 +1177,7 @@ Right
                                                      (Solved
                                                         (TApp
                                                            (TCon (TC "List" (Kfun Star Star)))
-                                                           (TVar (TV "ao" Star)))
+                                                           (TVar (TV "t" Star)))
                                                         (Area (Loc 405 14 3) (Loc 407 14 5))
                                                         (ListConstructor []))
                                                      False))
@@ -1196,8 +1190,8 @@ Right
                                                               (TC
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star))))
-                                                           (TVar (TV "am" Star)))
-                                                        (TVar (TV "ao" Star))))
+                                                           (TVar (TV "s" Star)))
+                                                        (TVar (TV "t" Star))))
                                                   (Area (Loc 411 15 3) (Loc 414 15 6))
                                                   (Var "fns"))
                                                True)

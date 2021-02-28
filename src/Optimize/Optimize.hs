@@ -163,50 +163,50 @@ instance Optimizable Slv.Exp Opt.Exp where
 
 
 instance Optimizable Slv.Typing Opt.Typing where
-  optimize enabled t = case t of
-    Slv.TRSingle name       -> return $ Opt.TRSingle name
+  optimize enabled (Slv.Untyped area typing) = case typing of
+    Slv.TRSingle name       -> return $ Opt.Untyped area $ Opt.TRSingle name
 
     Slv.TRComp name typings -> do
       typings' <- mapM (optimize enabled) typings
-      return $ Opt.TRComp name typings'
+      return $  Opt.Untyped area $ Opt.TRComp name typings'
 
     Slv.TRArr left right -> do
       left'  <- optimize enabled left
       right' <- optimize enabled right
-      return $ Opt.TRArr left' right'
+      return $  Opt.Untyped area $ Opt.TRArr left' right'
 
     Slv.TRRecord fields -> do
       fields' <- mapM (optimize enabled) fields
-      return $ Opt.TRRecord fields'
+      return $  Opt.Untyped area $ Opt.TRRecord fields'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (optimize enabled) typings
-      return $ Opt.TRTuple typings'
+      return $  Opt.Untyped area $ Opt.TRTuple typings'
 
     Slv.TRConstrained constraints typing -> do
       constraints' <- mapM (optimize enabled) constraints
       typing'      <- optimize enabled typing
-      return $ Opt.TRConstrained constraints' typing'
+      return $  Opt.Untyped area $ Opt.TRConstrained constraints' typing'
 
 instance Optimizable Slv.ListItem Opt.ListItem where
-  optimize enabled item = case item of
+  optimize enabled (Slv.Solved t area item) = case item of
     Slv.ListItem exp -> do
       exp' <- optimize enabled exp
-      return $ Opt.ListItem exp'
+      return $ Opt.Optimized t area $ Opt.ListItem exp'
 
     Slv.ListSpread exp -> do
       exp' <- optimize enabled exp
-      return $ Opt.ListSpread exp'
+      return $ Opt.Optimized t area $ Opt.ListSpread exp'
 
 instance Optimizable Slv.Field Opt.Field where
-  optimize enabled item = case item of
+  optimize enabled (Slv.Solved t area item) = case item of
     Slv.Field (name, exp) -> do
       exp' <- optimize enabled exp
-      return $ Opt.Field (name, exp')
+      return $ Opt.Optimized t area $ Opt.Field (name, exp')
 
     Slv.FieldSpread exp -> do
       exp' <- optimize enabled exp
-      return $ Opt.FieldSpread exp'
+      return $ Opt.Optimized t area $ Opt.FieldSpread exp'
 
 instance Optimizable Slv.Is Opt.Is where
   optimize enabled (Slv.Solved t area (Slv.Is pat exp)) = do
@@ -215,85 +215,81 @@ instance Optimizable Slv.Is Opt.Is where
     return $ Opt.Optimized t area (Opt.Is pat' exp')
 
 instance Optimizable Slv.Pattern Opt.Pattern where
-  optimize enabled pat = case pat of
-    Slv.PVar name       -> return $ Opt.PVar name
+  optimize enabled (Slv.Solved t area pat) = case pat of
+    Slv.PVar name       -> return $ Opt.Optimized t area $ Opt.PVar name
 
-    Slv.PAny            -> return Opt.PAny
+    Slv.PAny            -> return $ Opt.Optimized t area Opt.PAny
 
     Slv.PCtor name pats -> do
       pats' <- mapM (optimize enabled) pats
-      return $ Opt.PCtor name pats'
+      return $ Opt.Optimized t area $ Opt.PCtor name pats'
 
-    Slv.PNum    num  -> return $ Opt.PNum num
+    Slv.PNum    num  -> return $ Opt.Optimized t area $ Opt.PNum num
 
-    Slv.PStr    str  -> return $ Opt.PStr str
+    Slv.PStr    str  -> return $ Opt.Optimized t area $ Opt.PStr str
 
-    Slv.PBool   boo  -> return $ Opt.PBool boo
+    Slv.PBool   boo  -> return $ Opt.Optimized t area $ Opt.PBool boo
 
-    Slv.PCon    name -> return $ Opt.PCon name
+    Slv.PCon    name -> return $ Opt.Optimized t area $ Opt.PCon name
 
     Slv.PRecord pats -> do
       pats' <- mapM (optimize enabled) pats
-      return $ Opt.PRecord pats'
+      return $ Opt.Optimized t area $ Opt.PRecord pats'
 
     Slv.PList pats -> do
       pats' <- mapM (optimize enabled) pats
-      return $ Opt.PList pats'
+      return $ Opt.Optimized t area $ Opt.PList pats'
 
     Slv.PTuple pats -> do
       pats' <- mapM (optimize enabled) pats
-      return $ Opt.PTuple pats'
+      return $ Opt.Optimized t area $ Opt.PTuple pats'
 
     Slv.PSpread pat -> do
       pat' <- optimize enabled pat
-      return $ Opt.PSpread pat'
+      return $ Opt.Optimized t area $ Opt.PSpread pat'
 
 instance Optimizable Slv.TypeDecl Opt.TypeDecl where
-  optimize enabled typeDecl = case typeDecl of
+  optimize enabled (Slv.Untyped area typeDecl) = case typeDecl of
     adt@Slv.ADT{} -> do
       ctors <- mapM optimizeConstructors $ Slv.adtconstructors adt
-      return Opt.ADT { Opt.adtname         = Slv.adtname adt
-                     , Opt.adtparams       = Slv.adtparams adt
-                     , Opt.adtconstructors = ctors
-                     , Opt.adtexported     = Slv.adtexported adt
-                     }
+      return $ Opt.Untyped area $ Opt.ADT { Opt.adtname         = Slv.adtname adt
+                                              , Opt.adtparams       = Slv.adtparams adt
+                                              , Opt.adtconstructors = ctors
+                                              , Opt.adtexported     = Slv.adtexported adt
+                                              }
 
     alias@Slv.Alias{} -> do
       aliastype <- optimize enabled $ Slv.aliastype alias
-      return Opt.Alias { Opt.aliasname     = Slv.aliasname alias
-                       , Opt.aliasparams   = Slv.aliasparams alias
-                       , Opt.aliastype     = aliastype
-                       , Opt.aliasexported = Slv.aliasexported alias
-                       }
+      return $ Opt.Untyped area $ Opt.Alias { Opt.aliasname     = Slv.aliasname alias
+                                                , Opt.aliasparams   = Slv.aliasparams alias
+                                                , Opt.aliastype     = aliastype
+                                                , Opt.aliasexported = Slv.aliasexported alias
+                                                }
    where
     optimizeConstructors :: Slv.Constructor -> Optimize Opt.Constructor
-    optimizeConstructors (Slv.Constructor name typings) = do
+    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings _)) = do
       typings' <- mapM (optimize enabled) typings
-      return $ Opt.Constructor name typings'
+      return $  Opt.Untyped area $ Opt.Constructor name typings'
 
 
 instance Optimizable Slv.Interface Opt.Interface where
-  optimize enabled (Slv.Interface name constraints vars methods) = do
-    -- constraints' <- mapM (optimize enabled) constraints
-    -- methods'     <- mapM (optimize enabled) methods
+  optimize enabled (Slv.Untyped area (Slv.Interface name constraints vars methods)) = do
     name' <- getClassShortname enabled name
-    return $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods
+    return $ Opt.Untyped area $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods
 
 instance Optimizable Slv.Instance Opt.Instance where
-  optimize enabled (Slv.Instance interface constraints pred methods) = do
+  optimize enabled (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do
     interface' <- getClassShortname enabled interface
-    -- constraints' <- mapM (optimize enabled) constraints
     let typingStr = intercalate "_" (getTypeHeadName <$> predTypes pred)
-    -- let typingStr = intercalate "_" (typingToStr <$> vars)
     typings' <- getTypeShortname enabled typingStr
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> optimize enabled exp) methods
-    return $ Opt.Instance interface' constraints typings' methods'
+    return $ Opt.Untyped area $ Opt.Instance interface' constraints typings' methods'
 
 instance Optimizable Slv.Import Opt.Import where
-  optimize _ imp = case imp of
-    Slv.NamedImport   names     relPath absPath -> return $ Opt.NamedImport names relPath absPath
+  optimize _ (Slv.Untyped area imp) = case imp of
+    Slv.NamedImport   names     relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport names relPath absPath
 
-    Slv.DefaultImport namespace relPath absPath -> return $ Opt.DefaultImport namespace relPath absPath
+    Slv.DefaultImport namespace relPath absPath -> return $ Opt.Untyped area $ Opt.DefaultImport namespace relPath absPath
 
 instance Optimizable Slv.AST Opt.AST where
   optimize enabled ast = do
@@ -313,7 +309,7 @@ instance Optimizable Slv.AST Opt.AST where
 
 
 typingToStr :: Slv.Typing -> String
-typingToStr t = case t of
+typingToStr (Slv.Untyped _ t) = case t of
   Slv.TRSingle n -> n
   Slv.TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
   Slv.TRTuple ts -> "Tuple_" <> show (length ts)

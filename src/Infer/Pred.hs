@@ -9,7 +9,6 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Infer
 import           Error.Error
-import           Explain.Reason
 import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
@@ -22,9 +21,9 @@ getAllParentPreds env ps = concat <$> mapM (getParentPreds env) ps
 
 getParentPreds :: Env -> Pred -> Infer [Pred]
 getParentPreds env p@(IsIn cls ts) = do
-  (Interface tvs ps _) <- case M.lookup cls (envinterfaces env) of
+  (Interface tvs ps _) <- case M.lookup cls (envInterfaces env) of
     Just x  -> return x
-    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoReason
+    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoContext
 
   s <- unify (TVar <$> tvs) ts
 
@@ -37,7 +36,7 @@ getParentPreds env p@(IsIn cls ts) = do
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
 liftPred m (IsIn i ts) (IsIn i' ts') | i == i'   = m ts ts'
-                                     | otherwise = throwError $ InferError FatalError NoReason
+                                     | otherwise = throwError $ InferError FatalError NoContext
 
 instance Unify Pred where
   unify = liftPred unify
@@ -46,15 +45,15 @@ instance Match Pred where
   match = liftPred match
 
 sig :: Env -> Id -> [TVar]
-sig env i = case M.lookup i (envinterfaces env) of
+sig env i = case M.lookup i (envInterfaces env) of
   Just (Interface vs _ _) -> vs
 
 super :: Env -> Id -> [Pred]
-super env i = case M.lookup i (envinterfaces env) of
+super env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ is _) -> is
 
 insts :: Env -> Id -> [Instance]
-insts env i = case M.lookup i (envinterfaces env) of
+insts env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ _ insts) -> insts
 
 bySuper :: Env -> Pred -> [Pred]
@@ -70,7 +69,7 @@ findInst env p@(IsIn interface t) = do
   tryInst i@(Instance (ps :=> h)) = do
     u <- match h p
     return i
-  tryInsts []          = throwError $ InferError FatalError NoReason
+  tryInsts []          = throwError $ InferError FatalError NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
 
 
@@ -87,7 +86,7 @@ specialMatch p@(IsIn cls ts) p'@(IsIn cls' ts') = do
     then do
       let zipped = zip ts ts'
       foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
-    else throwError $ InferError FatalError NoReason
+    else throwError $ InferError FatalError NoContext
 
 specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
 specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
@@ -109,8 +108,8 @@ byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
     let ps' = apply u <$> ps
     return ps'
   tryInsts [] = if all isConcrete $ predTypes p
-    then throwError $ InferError (NoInstanceFound interface ts) NoReason
-    else throwError $ InferError FatalError NoReason
+    then throwError $ InferError (NoInstanceFound interface ts) NoContext
+    else throwError $ InferError FatalError NoContext
 
   tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 

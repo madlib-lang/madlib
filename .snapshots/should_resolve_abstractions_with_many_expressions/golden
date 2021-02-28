@@ -55,12 +55,12 @@ Right
                                      "b")
                                   [ Solved
                                       (TCon (TC "Number" Star))
-                                      (Area (Loc 53 3 3) (Loc 60 3 10))
+                                      (Area (Loc 53 3 3) (Loc 64 3 14))
                                       (Assignment
                                          "sum"
                                          (Solved
                                             (TCon (TC "Number" Star))
-                                            (Area (Loc 59 3 9) (Loc 60 3 10))
+                                            (Area (Loc 59 3 9) (Loc 64 3 14))
                                             (App
                                                (Solved
                                                   (TApp
@@ -69,7 +69,7 @@ Right
                                                            (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                         (TCon (TC "Number" Star)))
                                                      (TCon (TC "Number" Star)))
-                                                  (Area (Loc 59 3 9) (Loc 60 3 10))
+                                                  (Area (Loc 59 3 9) (Loc 64 3 14))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -102,12 +102,12 @@ Right
                                                True)))
                                   , Solved
                                       (TCon (TC "Boolean" Star))
-                                      (Area (Loc 67 4 3) (Loc 84 4 20))
+                                      (Area (Loc 67 4 3) (Loc 89 4 25))
                                       (Assignment
                                          "moreThanTen"
                                          (Solved
                                             (TCon (TC "Boolean" Star))
-                                            (Area (Loc 81 4 17) (Loc 84 4 20))
+                                            (Area (Loc 81 4 17) (Loc 89 4 25))
                                             (App
                                                (Solved
                                                   (TApp
@@ -116,7 +116,7 @@ Right
                                                            (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                         (TCon (TC "Number" Star)))
                                                      (TCon (TC "Boolean" Star)))
-                                                  (Area (Loc 81 4 17) (Loc 84 4 20))
+                                                  (Area (Loc 81 4 17) (Loc 89 4 25))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -149,12 +149,12 @@ Right
                                                True)))
                                   , Solved
                                       (TCon (TC "Number" Star))
-                                      (Area (Loc 92 5 3) (Loc 130 5 41))
+                                      (Area (Loc 92 5 3) (Loc 134 5 45))
                                       (Assignment
                                          "computed"
                                          (Solved
                                             (TCon (TC "Number" Star))
-                                            (Area (Loc 103 5 14) (Loc 130 5 41))
+                                            (Area (Loc 103 5 14) (Loc 134 5 45))
                                             (If
                                                (Solved
                                                   (TCon (TC "Boolean" Star))
@@ -162,7 +162,7 @@ Right
                                                   (Var "moreThanTen"))
                                                (Solved
                                                   (TCon (TC "Number" Star))
-                                                  (Area (Loc 117 5 28) (Loc 120 5 31))
+                                                  (Area (Loc 117 5 28) (Loc 124 5 35))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -173,7 +173,7 @@ Right
                                                                     (Kfun Star (Kfun Star Star))))
                                                               (TCon (TC "Number" Star)))
                                                            (TCon (TC "Number" Star)))
-                                                        (Area (Loc 117 5 28) (Loc 120 5 31))
+                                                        (Area (Loc 117 5 28) (Loc 124 5 35))
                                                         (App
                                                            (Solved
                                                               (TApp
@@ -209,7 +209,7 @@ Right
                                                      True))
                                                (Solved
                                                   (TCon (TC "Number" Star))
-                                                  (Area (Loc 127 5 38) (Loc 130 5 41))
+                                                  (Area (Loc 127 5 38) (Loc 134 5 45))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -220,7 +220,7 @@ Right
                                                                     (Kfun Star (Kfun Star Star))))
                                                               (TCon (TC "Number" Star)))
                                                            (TCon (TC "Number" Star)))
-                                                        (Area (Loc 127 5 38) (Loc 130 5 41))
+                                                        (Area (Loc 127 5 38) (Loc 134 5 45))
                                                         (App
                                                            (Solved
                                                               (TApp
@@ -256,7 +256,7 @@ Right
                                                      True)))))
                                   , Solved
                                       (TCon (TC "Boolean" Star))
-                                      (Area (Loc 144 6 10) (Loc 152 6 18))
+                                      (Area (Loc 144 6 10) (Loc 161 6 27))
                                       (App
                                          (Solved
                                             (TApp
@@ -264,7 +264,7 @@ Right
                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                   (TCon (TC "Number" Star)))
                                                (TCon (TC "Boolean" Star)))
-                                            (Area (Loc 144 6 10) (Loc 152 6 18))
+                                            (Area (Loc 144 6 10) (Loc 161 6 27))
                                             (App
                                                (Solved
                                                   (TApp
@@ -284,7 +284,7 @@ Right
                                                   (Var "=="))
                                                (Solved
                                                   (TCon (TC "Number" Star))
-                                                  (Area (Loc 144 6 10) (Loc 152 6 18))
+                                                  (Area (Loc 144 6 10) (Loc 156 6 22))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -295,7 +295,7 @@ Right
                                                                     (Kfun Star (Kfun Star Star))))
                                                               (TCon (TC "Number" Star)))
                                                            (TCon (TC "Number" Star)))
-                                                        (Area (Loc 144 6 10) (Loc 152 6 18))
+                                                        (Area (Loc 144 6 10) (Loc 156 6 22))
                                                         (App
                                                            (Solved
                                                               (TApp

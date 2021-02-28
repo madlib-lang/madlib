@@ -108,19 +108,70 @@ Right
                True)
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "Wish"
-            , adtparams = [ "e" , "a" ]
-            , adtconstructors =
-                [ Constructor
-                    "Wish"
-                    [ TRArr
-                        (TRArr (TRSingle "e") (TRSingle "m"))
-                        (TRArr (TRArr (TRSingle "a") (TRSingle "m")) (TRSingle "m"))
-                    ]
-                ]
-            , adtexported = True
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 54 1 55))
+            ADT
+              { adtname = "Wish"
+              , adtparams = [ "e" , "a" ]
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 23 1 24) (Loc 54 1 55))
+                      (Constructor
+                         "Wish"
+                         [ Untyped
+                             (Area (Loc 30 1 31) (Loc 54 1 55))
+                             (TRArr
+                                (Untyped
+                                   (Area (Loc 30 1 31) (Loc 36 1 37))
+                                   (TRArr
+                                      (Untyped (Area (Loc 30 1 31) (Loc 31 1 32)) (TRSingle "e"))
+                                      (Untyped (Area (Loc 35 1 36) (Loc 36 1 37)) (TRSingle "m"))))
+                                (Untyped
+                                   (Area (Loc 42 1 43) (Loc 54 1 55))
+                                   (TRArr
+                                      (Untyped
+                                         (Area (Loc 42 1 43) (Loc 48 1 49))
+                                         (TRArr
+                                            (Untyped
+                                               (Area (Loc 42 1 43) (Loc 43 1 44)) (TRSingle "a"))
+                                            (Untyped
+                                               (Area (Loc 47 1 48) (Loc 48 1 49)) (TRSingle "m"))))
+                                      (Untyped (Area (Loc 53 1 54) (Loc 54 1 55)) (TRSingle "m")))))
+                         ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TVar (TV "i" Star)))
+                                        (TVar (TV "j" Star))))
+                                  (TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                        (TApp
+                                           (TApp
+                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                              (TVar (TV "k" Star)))
+                                           (TVar (TV "j" Star))))
+                                     (TVar (TV "j" Star)))))
+                            (TApp
+                               (TApp
+                                  (TCon (TC "Wish" (Kfun Star (Kfun Star Star))))
+                                  (TVar (TV "i" Star)))
+                               (TVar (TV "k" Star)))))
+                  ]
+              , adtType =
+                  TApp
+                    (TApp
+                       (TCon (TC "Wish" (Kfun Star (Kfun Star Star))))
+                       (TVar (TV "e" Star)))
+                    (TVar (TV "a" Star))
+              , adtexported = True
+              }
         ]
     , ainterfaces = []
     , ainstances = []

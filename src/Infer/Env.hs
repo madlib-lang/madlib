@@ -6,7 +6,6 @@ module Infer.Env where
 import qualified AST.Canonical                 as Can
 import           Infer.Type
 import           Infer.Infer
-import           Explain.Reason
 import           Error.Error
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
@@ -24,42 +23,43 @@ type TypeDecls = M.Map String Type
 
 data Env
   = Env
-    { envvars         :: Vars
-    , envinterfaces   :: Interfaces
-    , envmethods      :: Methods
-    , envcurrentpath  :: FilePath
+    { envVars         :: Vars
+    , envInterfaces   :: Interfaces
+    , envMethods      :: Methods
+    , envCurrentPath  :: FilePath
+    , envBacktrace    :: Backtrace
     }
     deriving(Eq, Show)
 
 lookupVar :: Env -> String -> Infer Scheme
-lookupVar env x = case M.lookup x (envvars env <> envmethods env) of
+lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
   Just x  -> return x
-  Nothing -> throwError $ InferError (UnboundVariable x) NoReason
+  Nothing -> throwError $ InferError (UnboundVariable x) NoContext
 
 
 extendVars :: Env -> (String, Scheme) -> Env
-extendVars env (x, s) = env { envvars = M.insert x s $ envvars env }
+extendVars env (x, s) = env { envVars = M.insert x s $ envVars env }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
-safeExtendVars env (i, sc) = case M.lookup i (envvars env) of
-  Just _  -> throwError $ InferError (NameAlreadyDefined i) NoReason
+safeExtendVars env (i, sc) = case M.lookup i (envVars env) of
+  Just _  -> throwError $ InferError (NameAlreadyDefined i) NoContext
   Nothing -> return $ extendVars env (i, sc)
 
 
 lookupInterface :: Env -> Can.Name -> Infer Interface
-lookupInterface env n = case M.lookup n (envinterfaces env) of
+lookupInterface env n = case M.lookup n (envInterfaces env) of
   Just i -> return i
-  _      -> throwError $ InferError (InterfaceNotExisting n) NoReason
+  _      -> throwError $ InferError (InterfaceNotExisting n) NoContext
 
 
 mergeVars :: Env -> Vars -> Env
-mergeVars env vs = env { envvars = envvars env <> vs }
+mergeVars env vs = env { envVars = envVars env <> vs }
 
 
 initialEnv :: Env
 initialEnv = Env
-  { envvars        = M.fromList
+  { envVars        = M.fromList
                        [ ("==", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("&&", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                        , ("||", Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
@@ -76,8 +76,14 @@ initialEnv = Env
                        , ("%" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("|>", Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        ]
-  , envinterfaces  = M.empty
-  , envmethods     = M.empty
-  , envcurrentpath = ""
+  , envInterfaces  = mempty
+  , envMethods     = mempty
+  , envCurrentPath = ""
+  , envBacktrace   = mempty
   }
 
+pushExpToBT :: Env -> Can.Exp -> Env
+pushExpToBT env exp = env { envBacktrace = BTExp exp : envBacktrace env }
+
+pushInstanceToBT :: Env -> Can.Instance -> Env
+pushInstanceToBT env inst = env { envBacktrace = BTInstance inst : envBacktrace env }

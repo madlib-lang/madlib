@@ -19,7 +19,7 @@ input = `
 }
 `
 
-data Parsed = Parsed (Maybe Parsed) Boolean
+type Parsed = Parsed (Maybe Parsed) Boolean
 
 
 parser :: J.Parser Parsed

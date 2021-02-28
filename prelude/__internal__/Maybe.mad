@@ -1,10 +1,22 @@
 import _ from "Functor"
 import __ from "Show"
 
-export data Maybe a
+export type Maybe a
   = Just a
   | Nothing
 
+type User = LoggedIn String Number
+          | Anonymous
+
+u1 = LoggedIn("Matt")
+u2 = Anonymous
+
+o = u1(19)
+
+getName :: User -> String
+getName = (user) => where(user)
+  is LoggedIn name _: name
+  is Anonymous      : "Somebody"
 
 instance Functor Maybe {
   map = (f) => where

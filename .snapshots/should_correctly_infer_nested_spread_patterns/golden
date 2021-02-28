@@ -119,24 +119,410 @@ Right
                                             ])
                                          True))
                                    (TCon (TC "Number" Star)))
-                                (Area (Loc 31 3 5) (Loc 71 3 45))
+                                (Area (Loc 31 3 5) (Loc 89 3 63))
                                 (Is
-                                   (PRecord
-                                      (fromList
-                                         [ ( "..." , PSpread (PVar "c") )
-                                         , ( "x"
-                                           , PRecord
-                                               (fromList
-                                                  [ ( "..." , PSpread (PVar "k") )
-                                                  , ( "y"
-                                                    , PRecord (fromList [ ( "y" , PVar "y" ) ])
-                                                    )
-                                                  ])
-                                           )
-                                         ]))
+                                   (Solved
+                                      (TRecord
+                                         (fromList
+                                            [ ( "..."
+                                              , TRecord
+                                                  (fromList
+                                                     [ ( "i" , TCon (TC "Number" Star) )
+                                                     , ( "o" , TCon (TC "Number" Star) )
+                                                     ])
+                                                  True
+                                              )
+                                            , ( "x"
+                                              , TRecord
+                                                  (fromList
+                                                     [ ( "..."
+                                                       , TRecord
+                                                           (fromList
+                                                              [ ( "z" , TCon (TC "Number" Star) ) ])
+                                                           True
+                                                       )
+                                                     , ( "y"
+                                                       , TRecord
+                                                           (fromList
+                                                              [ ( "y" , TCon (TC "Number" Star) ) ])
+                                                           True
+                                                       )
+                                                     ])
+                                                  True
+                                              )
+                                            ])
+                                         True)
+                                      (Area (Loc 34 3 8) (Loc 68 3 42))
+                                      (PRecord
+                                         (fromList
+                                            [ ( "..."
+                                              , Solved
+                                                  (TRecord
+                                                     (fromList
+                                                        [ ( "..."
+                                                          , TRecord
+                                                              (fromList
+                                                                 [ ( "i" , TCon (TC "Number" Star) )
+                                                                 , ( "o" , TCon (TC "Number" Star) )
+                                                                 ])
+                                                              True
+                                                          )
+                                                        , ( "x"
+                                                          , TRecord
+                                                              (fromList
+                                                                 [ ( "..."
+                                                                   , TRecord
+                                                                       (fromList
+                                                                          [ ( "z"
+                                                                            , TCon
+                                                                                (TC "Number" Star)
+                                                                            )
+                                                                          ])
+                                                                       True
+                                                                   )
+                                                                 , ( "y"
+                                                                   , TRecord
+                                                                       (fromList
+                                                                          [ ( "y"
+                                                                            , TCon
+                                                                                (TC "Number" Star)
+                                                                            )
+                                                                          ])
+                                                                       True
+                                                                   )
+                                                                 ])
+                                                              True
+                                                          )
+                                                        ])
+                                                     True)
+                                                  (Area (Loc 62 3 36) (Loc 66 3 40))
+                                                  (PSpread
+                                                     (Solved
+                                                        (TRecord
+                                                           (fromList
+                                                              [ ( "..."
+                                                                , TRecord
+                                                                    (fromList
+                                                                       [ ( "i"
+                                                                         , TCon (TC "Number" Star)
+                                                                         )
+                                                                       , ( "o"
+                                                                         , TCon (TC "Number" Star)
+                                                                         )
+                                                                       ])
+                                                                    True
+                                                                )
+                                                              , ( "x"
+                                                                , TRecord
+                                                                    (fromList
+                                                                       [ ( "..."
+                                                                         , TRecord
+                                                                             (fromList
+                                                                                [ ( "z"
+                                                                                  , TCon
+                                                                                      (TC
+                                                                                         "Number"
+                                                                                         Star)
+                                                                                  )
+                                                                                ])
+                                                                             True
+                                                                         )
+                                                                       , ( "y"
+                                                                         , TRecord
+                                                                             (fromList
+                                                                                [ ( "y"
+                                                                                  , TCon
+                                                                                      (TC
+                                                                                         "Number"
+                                                                                         Star)
+                                                                                  )
+                                                                                ])
+                                                                             True
+                                                                         )
+                                                                       ])
+                                                                    True
+                                                                )
+                                                              ])
+                                                           True)
+                                                        (Area (Loc 65 3 39) (Loc 66 3 40))
+                                                        (PVar "c")))
+                                              )
+                                            , ( "x"
+                                              , Solved
+                                                  (TRecord
+                                                     (fromList
+                                                        [ ( "..."
+                                                          , TRecord
+                                                              (fromList
+                                                                 [ ( "i" , TCon (TC "Number" Star) )
+                                                                 , ( "o" , TCon (TC "Number" Star) )
+                                                                 ])
+                                                              True
+                                                          )
+                                                        , ( "x"
+                                                          , TRecord
+                                                              (fromList
+                                                                 [ ( "..."
+                                                                   , TRecord
+                                                                       (fromList
+                                                                          [ ( "z"
+                                                                            , TCon
+                                                                                (TC "Number" Star)
+                                                                            )
+                                                                          ])
+                                                                       True
+                                                                   )
+                                                                 , ( "y"
+                                                                   , TRecord
+                                                                       (fromList
+                                                                          [ ( "y"
+                                                                            , TCon
+                                                                                (TC "Number" Star)
+                                                                            )
+                                                                          ])
+                                                                       True
+                                                                   )
+                                                                 ])
+                                                              True
+                                                          )
+                                                        ])
+                                                     True)
+                                                  (Area (Loc 39 3 13) (Loc 60 3 34))
+                                                  (PRecord
+                                                     (fromList
+                                                        [ ( "..."
+                                                          , Solved
+                                                              (TRecord
+                                                                 (fromList
+                                                                    [ ( "..."
+                                                                      , TRecord
+                                                                          (fromList
+                                                                             [ ( "i"
+                                                                               , TCon
+                                                                                   (TC
+                                                                                      "Number" Star)
+                                                                               )
+                                                                             , ( "o"
+                                                                               , TCon
+                                                                                   (TC
+                                                                                      "Number" Star)
+                                                                               )
+                                                                             ])
+                                                                          True
+                                                                      )
+                                                                    , ( "x"
+                                                                      , TRecord
+                                                                          (fromList
+                                                                             [ ( "..."
+                                                                               , TRecord
+                                                                                   (fromList
+                                                                                      [ ( "z"
+                                                                                        , TCon
+                                                                                            (TC
+                                                                                               "Number"
+                                                                                               Star)
+                                                                                        )
+                                                                                      ])
+                                                                                   True
+                                                                               )
+                                                                             , ( "y"
+                                                                               , TRecord
+                                                                                   (fromList
+                                                                                      [ ( "y"
+                                                                                        , TCon
+                                                                                            (TC
+                                                                                               "Number"
+                                                                                               Star)
+                                                                                        )
+                                                                                      ])
+                                                                                   True
+                                                                               )
+                                                                             ])
+                                                                          True
+                                                                      )
+                                                                    ])
+                                                                 True)
+                                                              (Area (Loc 54 3 28) (Loc 58 3 32))
+                                                              (PSpread
+                                                                 (Solved
+                                                                    (TRecord
+                                                                       (fromList
+                                                                          [ ( "..."
+                                                                            , TRecord
+                                                                                (fromList
+                                                                                   [ ( "i"
+                                                                                     , TCon
+                                                                                         (TC
+                                                                                            "Number"
+                                                                                            Star)
+                                                                                     )
+                                                                                   , ( "o"
+                                                                                     , TCon
+                                                                                         (TC
+                                                                                            "Number"
+                                                                                            Star)
+                                                                                     )
+                                                                                   ])
+                                                                                True
+                                                                            )
+                                                                          , ( "x"
+                                                                            , TRecord
+                                                                                (fromList
+                                                                                   [ ( "..."
+                                                                                     , TRecord
+                                                                                         (fromList
+                                                                                            [ ( "z"
+                                                                                              , TCon
+                                                                                                  (TC
+                                                                                                     "Number"
+                                                                                                     Star)
+                                                                                              )
+                                                                                            ])
+                                                                                         True
+                                                                                     )
+                                                                                   , ( "y"
+                                                                                     , TRecord
+                                                                                         (fromList
+                                                                                            [ ( "y"
+                                                                                              , TCon
+                                                                                                  (TC
+                                                                                                     "Number"
+                                                                                                     Star)
+                                                                                              )
+                                                                                            ])
+                                                                                         True
+                                                                                     )
+                                                                                   ])
+                                                                                True
+                                                                            )
+                                                                          ])
+                                                                       True)
+                                                                    (Area
+                                                                       (Loc 57 3 31) (Loc 58 3 32))
+                                                                    (PVar "k")))
+                                                          )
+                                                        , ( "y"
+                                                          , Solved
+                                                              (TRecord
+                                                                 (fromList
+                                                                    [ ( "..."
+                                                                      , TRecord
+                                                                          (fromList
+                                                                             [ ( "i"
+                                                                               , TCon
+                                                                                   (TC
+                                                                                      "Number" Star)
+                                                                               )
+                                                                             , ( "o"
+                                                                               , TCon
+                                                                                   (TC
+                                                                                      "Number" Star)
+                                                                               )
+                                                                             ])
+                                                                          True
+                                                                      )
+                                                                    , ( "x"
+                                                                      , TRecord
+                                                                          (fromList
+                                                                             [ ( "..."
+                                                                               , TRecord
+                                                                                   (fromList
+                                                                                      [ ( "z"
+                                                                                        , TCon
+                                                                                            (TC
+                                                                                               "Number"
+                                                                                               Star)
+                                                                                        )
+                                                                                      ])
+                                                                                   True
+                                                                               )
+                                                                             , ( "y"
+                                                                               , TRecord
+                                                                                   (fromList
+                                                                                      [ ( "y"
+                                                                                        , TCon
+                                                                                            (TC
+                                                                                               "Number"
+                                                                                               Star)
+                                                                                        )
+                                                                                      ])
+                                                                                   True
+                                                                               )
+                                                                             ])
+                                                                          True
+                                                                      )
+                                                                    ])
+                                                                 True)
+                                                              (Area (Loc 44 3 18) (Loc 52 3 26))
+                                                              (PRecord
+                                                                 (fromList
+                                                                    [ ( "y"
+                                                                      , Solved
+                                                                          (TRecord
+                                                                             (fromList
+                                                                                [ ( "..."
+                                                                                  , TRecord
+                                                                                      (fromList
+                                                                                         [ ( "i"
+                                                                                           , TCon
+                                                                                               (TC
+                                                                                                  "Number"
+                                                                                                  Star)
+                                                                                           )
+                                                                                         , ( "o"
+                                                                                           , TCon
+                                                                                               (TC
+                                                                                                  "Number"
+                                                                                                  Star)
+                                                                                           )
+                                                                                         ])
+                                                                                      True
+                                                                                  )
+                                                                                , ( "x"
+                                                                                  , TRecord
+                                                                                      (fromList
+                                                                                         [ ( "..."
+                                                                                           , TRecord
+                                                                                               (fromList
+                                                                                                  [ ( "z"
+                                                                                                    , TCon
+                                                                                                        (TC
+                                                                                                           "Number"
+                                                                                                           Star)
+                                                                                                    )
+                                                                                                  ])
+                                                                                               True
+                                                                                           )
+                                                                                         , ( "y"
+                                                                                           , TRecord
+                                                                                               (fromList
+                                                                                                  [ ( "y"
+                                                                                                    , TCon
+                                                                                                        (TC
+                                                                                                           "Number"
+                                                                                                           Star)
+                                                                                                    )
+                                                                                                  ])
+                                                                                               True
+                                                                                           )
+                                                                                         ])
+                                                                                      True
+                                                                                  )
+                                                                                ])
+                                                                             True)
+                                                                          (Area
+                                                                             (Loc 49 3 23)
+                                                                             (Loc 50 3 24))
+                                                                          (PVar "y")
+                                                                      )
+                                                                    ]))
+                                                          )
+                                                        ]))
+                                              )
+                                            ])))
                                    (Solved
                                       (TCon (TC "Number" Star))
-                                      (Area (Loc 70 3 44) (Loc 71 3 45))
+                                      (Area (Loc 70 3 44) (Loc 89 3 63))
                                       (App
                                          (Solved
                                             (TApp
@@ -144,7 +530,7 @@ Right
                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                   (TCon (TC "Number" Star)))
                                                (TCon (TC "Number" Star)))
-                                            (Area (Loc 70 3 44) (Loc 71 3 45))
+                                            (Area (Loc 70 3 44) (Loc 89 3 63))
                                             (App
                                                (Solved
                                                   (TApp
@@ -164,7 +550,7 @@ Right
                                                   (Var "+"))
                                                (Solved
                                                   (TCon (TC "Number" Star))
-                                                  (Area (Loc 70 3 44) (Loc 71 3 45))
+                                                  (Area (Loc 70 3 44) (Loc 83 3 57))
                                                   (App
                                                      (Solved
                                                         (TApp
@@ -175,7 +561,7 @@ Right
                                                                     (Kfun Star (Kfun Star Star))))
                                                               (TCon (TC "Number" Star)))
                                                            (TCon (TC "Number" Star)))
-                                                        (Area (Loc 70 3 44) (Loc 71 3 45))
+                                                        (Area (Loc 70 3 44) (Loc 83 3 57))
                                                         (App
                                                            (Solved
                                                               (TApp
@@ -201,7 +587,7 @@ Right
                                                               (Var "+"))
                                                            (Solved
                                                               (TCon (TC "Number" Star))
-                                                              (Area (Loc 70 3 44) (Loc 71 3 45))
+                                                              (Area (Loc 70 3 44) (Loc 77 3 51))
                                                               (App
                                                                  (Solved
                                                                     (TApp
@@ -216,7 +602,7 @@ Right
                                                                           (TCon (TC "Number" Star)))
                                                                        (TCon (TC "Number" Star)))
                                                                     (Area
-                                                                       (Loc 70 3 44) (Loc 71 3 45))
+                                                                       (Loc 70 3 44) (Loc 77 3 51))
                                                                     (App
                                                                        (Solved
                                                                           (TApp
@@ -271,8 +657,10 @@ Right
                                                                           (TRecord
                                                                              (fromList
                                                                                 [ ( "z"
-                                                                                  , TVar
-                                                                                      (TV "n" Star)
+                                                                                  , TCon
+                                                                                      (TC
+                                                                                         "Number"
+                                                                                         Star)
                                                                                   )
                                                                                 ])
                                                                              True)
@@ -294,14 +682,15 @@ Right
                                                                                 (TRecord
                                                                                    (fromList
                                                                                       [ ( "z"
-                                                                                        , TVar
-                                                                                            (TV
-                                                                                               "n"
+                                                                                        , TCon
+                                                                                            (TC
+                                                                                               "Number"
                                                                                                Star)
                                                                                         )
                                                                                       ])
                                                                                    True))
-                                                                             (TVar (TV "n" Star)))
+                                                                             (TCon
+                                                                                (TC "Number" Star)))
                                                                           (Area
                                                                              (Loc 76 3 50)
                                                                              (Loc 77 3 51))
@@ -315,7 +704,9 @@ Right
                                                            (Solved
                                                               (TRecord
                                                                  (fromList
-                                                                    [ ( "o" , TVar (TV "p" Star) )
+                                                                    [ ( "o"
+                                                                      , TCon (TC "Number" Star)
+                                                                      )
                                                                     ])
                                                                  True)
                                                               (Area (Loc 80 3 54) (Loc 81 3 55))
@@ -332,11 +723,12 @@ Right
                                                                     (TRecord
                                                                        (fromList
                                                                           [ ( "o"
-                                                                            , TVar (TV "p" Star)
+                                                                            , TCon
+                                                                                (TC "Number" Star)
                                                                             )
                                                                           ])
                                                                        True))
-                                                                 (TVar (TV "p" Star)))
+                                                                 (TCon (TC "Number" Star)))
                                                               (Area (Loc 82 3 56) (Loc 83 3 57))
                                                               (Var ".o"))))
                                                      True))
@@ -347,7 +739,8 @@ Right
                                             (FieldAccess
                                                (Solved
                                                   (TRecord
-                                                     (fromList [ ( "i" , TVar (TV "r" Star) ) ])
+                                                     (fromList
+                                                        [ ( "i" , TCon (TC "Number" Star) ) ])
                                                      True)
                                                   (Area (Loc 86 3 60) (Loc 87 3 61))
                                                   (Var "c"))
@@ -358,9 +751,9 @@ Right
                                                            (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                         (TRecord
                                                            (fromList
-                                                              [ ( "i" , TVar (TV "r" Star) ) ])
+                                                              [ ( "i" , TCon (TC "Number" Star) ) ])
                                                            True))
-                                                     (TVar (TV "r" Star)))
+                                                     (TCon (TC "Number" Star)))
                                                   (Area (Loc 88 3 62) (Loc 89 3 63))
                                                   (Var ".i"))))
                                          True)))

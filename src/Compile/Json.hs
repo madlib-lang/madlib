@@ -8,6 +8,10 @@ import           Explain.Location
 import           Utils.Tuple                    ( lst )
 import           Debug.Trace
 import           Text.Show.Pretty
+import           Error.Error
+import           Explain.Format
+import           Data.Char
+import Infer.Scheme
 
 
 indentSize :: Int
@@ -16,34 +20,154 @@ indentSize = 2
 indent :: Int -> String
 indent depth = concat $ replicate (depth * indentSize) " "
 
-compileASTTable :: Slv.Table -> String
-compileASTTable table =
-  let compiledASTs = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
-      wrapped      = "{\n  " <> intercalate ",\n  " compiledASTs <> "\n}\n"
-  in  wrapped
+escapeString :: String -> String
+escapeString = foldr escapeChar ""
+
+escapeChar :: Char -> String -> String
+escapeChar c s = case c of
+  '"' -> "\\\"" <> s
+  _   -> showLitChar c s
+
+compileASTTable :: [(InferError, String)] -> Slv.Table -> String
+compileASTTable errs table =
+  let compiledASTs   = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
+      compiledErrors = intercalate ",\n    " $ compileError 2 <$> errs
+  in  "{\n  \"asts\": {\n    "
+        <> intercalate ",\n    " compiledASTs
+        <> "\n  },\n  \"errors\": [\n    "
+        <> compiledErrors
+        <> "\n  ]\n}\n"
+
+
+getErrorType :: InferError -> String
+getErrorType (InferError err _) = case err of
+  UnificationError t1 t2 -> "UnificationError"
+  _                      -> "Error"
+
+
+compileError :: Int -> (InferError, String) -> String
+compileError depth (err@(InferError typeError ctx), formatted) =
+  let area    = getCtxArea ctx
+      errPath = getCtxPath ctx
+      loc     = case area of
+        Just a  -> indent (depth + 1) <> "\"loc\": " <> compileArea (depth + 1) a <> "\n"
+        Nothing -> ""
+      origin = case errPath of
+        Just a  -> indent (depth + 1) <> "\"origin\": \"" <> a <> "\",\n"
+        Nothing -> ""
+  in  "{\n"
+        <> indent (depth + 1)
+        <> "\"errorType\": \""
+        <> getErrorType err
+        <> "\",\n"
+        <> indent (depth + 1)
+        <> "\"message\": \""
+        <> escapeString formatted
+        <> "\\n\",\n"
+        <> origin
+        <> loc
+        <> indent depth
+        <> "}"
 
 compileAST :: Slv.AST -> String
 compileAST ast =
-  let (Just path)  = Slv.apath ast
-      exps         = Slv.aexps ast
-      compiledExps = intercalate ",\n      " $ compileExp 3 <$> exps
-  in  "{\n    \"path\": \""
+  let (Just path)              = Slv.apath ast
+      exps                     = Slv.aexps ast
+      instances                = Slv.ainstances ast
+      typeDeclarations         = Slv.atypedecls ast
+      compiledExps             = intercalate ",\n        " $ compileExp 4 <$> exps
+      compiledInstances        = intercalate ",\n        " $ compileInstance 4 <$> instances
+      compiledTypeDeclarations = intercalate ",\n        " $ compileTypeDeclaration 4 <$> typeDeclarations
+  in  "{\n      \"path\": \""
         <> path
         <> "\",\n"
-        <> "    \"expressions\": [\n"
-        <> "      "
+        <> "      \"instances\": [\n"
+        <> "        " <> compiledInstances
+        <> "\n      ],\n"
+        <> "      \"typeDeclarations\": [\n"
+        <> "        " <> compiledTypeDeclarations
+        <> "\n      ],\n"
+        <> "      \"expressions\": [\n"
+        <> "        "
         <> compiledExps
-        <> "\n    ]"
-        <> "\n  }"
+        <> "\n      ]\n"
+        <> "    }"
+
+compileTypeDeclaration :: Int -> Slv.TypeDecl -> String
+compileTypeDeclaration depth (Slv.Untyped area td) = case td of
+  Slv.ADT _ _ ctors _ _ ->
+    let compiledConstructors = intercalate (",\n" <> indent (depth + 2)) $ compileConstructor (depth + 2) <$> Slv.adtconstructors td
+    in "{\n"
+      <> indent (depth + 1)
+      <> "\"nodeType\": \"ADT\",\n"
+      <> indent (depth + 1)
+      <> "\"loc\": " <> compileArea (depth + 1) area <> ",\n"
+      <> indent (depth + 1)
+      <> "\"name\": \"" <> Slv.adtname td <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"kind\": \"" <> prettyPrintKind (buildKind (length $ Slv.adtparams td)) <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"constructors\": [\n"
+      <> indent (depth + 2)
+      <> compiledConstructors <> "\n"
+      <> indent (depth + 1)
+      <> "]\n"
+      <> indent depth
+      <> "}"
+  
+  _ -> "{\n"
+      <> indent (depth + 1)
+      <> "\"nodeType\": \"Alias\",\n"
+      <> indent (depth + 1) <> "\"loc\": { \"start\": { \"line\": 0, \"col\": 0 }, \"end\": { \"line\": 0, \"col\": 0 }}\n"
+      <> indent depth
+      <> "}"
+
+compileConstructor :: Int -> Slv.Constructor -> String
+compileConstructor depth (Slv.Untyped area (Slv.Constructor name typings t)) =
+  "{\n"
+  <> indent (depth + 1) <> "\"nodeType\": \"Constructor\",\n"
+  <> indent (depth + 1) <> "\"name\": \"" <> name <> "\",\n"
+  <> indent (depth + 1)
+  <> "\"loc\": " <> compileArea (depth + 1) area <> ",\n"
+  <> indent (depth + 1) <> "\"type\": \"" <> prettyPrintType t <> "\"\n"
+  <> indent depth <> "}"
+
+compileInstance :: Int -> Slv.Instance -> String
+compileInstance depth (Slv.Untyped area inst@(Slv.Instance _ _ _ methods)) =
+  let compiledLoc     = compileArea (depth + 1) area
+      compiledMethods = compileInstanceMethods (depth + 2) methods
+  in  "{\n"
+        <> indent (depth + 1)
+        <> "\"loc\": " <> compiledLoc <> ",\n"
+        <> indent (depth + 1)
+        <> "\"methods\": [\n"
+        <> indent (depth + 2)
+        <> compiledMethods
+        <> "\n"
+        <> indent (depth + 1)
+        <> "]\n"
+        <> indent depth
+        <> "}"
+
+compileInstanceMethods :: Int -> M.Map Name (Slv.Exp, Scheme) -> String
+compileInstanceMethods depth methods =
+  intercalate (",\n" <> indent depth) $ M.elems $ M.mapWithKey (\name (exp, scheme) -> compileInstanceMethod depth name exp scheme) methods
+
+compileInstanceMethod :: Int -> Name -> Slv.Exp -> Scheme -> String
+compileInstanceMethod depth name exp scheme =
+  "{\n"
+  <> indent (depth + 1) <> "\"name\": \"" <> name <> "\",\n"
+  <> indent (depth + 1) <> "\"exp\": " <> compileExp (depth + 1) exp <> "\n"
+  <> indent depth <> "}"
 
 compileExp :: Int -> Slv.Exp -> String
 compileExp depth (Slv.Solved t area exp) =
-  let compiledType      = compileType t
+  let compiledType      = prettyPrintType t
       compiledExpFields = compileExpFields (depth + 1) exp
   in  "{\n"
         <> indent (depth + 1)
         <> "\"type\": \""
-        <> compileType t
+        <> prettyPrintType t
         <> "\",\n"
         <> indent (depth + 1)
         <> "\"loc\": "
@@ -63,7 +187,12 @@ compileExpFields depth exp = case exp of
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
 
   Slv.LStr val ->
-    indent depth <> "\"nodeType\": \"LiteralString\",\n" <> indent depth <> "\"value\": \"" <> val <> "\"\n"
+    indent depth
+      <> "\"nodeType\": \"LiteralString\",\n"
+      <> indent depth
+      <> "\"value\": \""
+      <> escapeString val
+      <> "\"\n"
 
   Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
 
@@ -84,7 +213,7 @@ compileExpFields depth exp = case exp of
       <> ",\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> compileType pType
+      <> prettyPrintType pType
       <> "\"\n"
       <> indent depth
       <> "},\n"
@@ -172,6 +301,7 @@ compileExpFields depth exp = case exp of
       <> "\"isCases\": [\n"
       <> indent (depth + 1)
       <> intercalate (",\n" <> indent (depth + 1)) (compileIs (depth + 1) <$> iss)
+      <> "\n"
       <> indent depth
       <> "]\n"
 
@@ -232,11 +362,19 @@ compileIs :: Int -> Slv.Is -> String
 compileIs depth (Slv.Solved t area (Slv.Is pat exp)) =
   "{\n"
     <> indent (depth + 1)
+    <> "\"nodeType\": \"Is\",\n"
+    <> indent (depth + 1)
+    <> "\"type\": \""
+    <> prettyPrintType t
+    <> "\",\n"
+    <> indent (depth + 1)
     <> "\"loc\":"
     <> compileArea (depth + 1) area
     <> ",\n"
     <> indent (depth + 1)
-    <> "\"pattern\": \"NotImplemented\",\n"
+    <> "\"pattern\": "
+    <> compilePattern (depth + 1) pat
+    <> ",\n"
     <> indent (depth + 1)
     <> "\"expression\": "
     <> compileExp (depth + 1) exp
@@ -244,12 +382,36 @@ compileIs depth (Slv.Solved t area (Slv.Is pat exp)) =
     <> indent depth
     <> "}"
 
+compilePattern :: Int -> Slv.Pattern -> String
+compilePattern depth (Slv.Solved t area pat) =
+  "{\n"
+    <> indent (depth + 1)
+    <> "\"nodeType\": \"Pattern\",\n"
+    <> indent (depth + 1)
+    <> "\"loc\":"
+    <> compileArea (depth + 1) area
+    <> ",\n"
+    <> indent (depth + 1)
+    <> "\"type\": \""
+    <> prettyPrintType t
+    <> "\"\n"
+    <> indent depth
+    <> "}"
+
 
 compileListItem :: Int -> Slv.ListItem -> String
 compileListItem depth li = case li of
-  Slv.ListSpread exp ->
+  Slv.Solved t area (Slv.ListSpread exp) ->
     indent depth
       <> "{\n"
+      <> indent (depth + 1)
+      <> "\"type\": \""
+      <> prettyPrintType t
+      <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"loc\": "
+      <> compileArea (depth + 1) area
+      <> ",\n"
       <> indent (depth + 1)
       <> "\"itemType\": \"ListSpread\",\n"
       <> indent (depth + 1)
@@ -259,9 +421,17 @@ compileListItem depth li = case li of
       <> indent depth
       <> "}"
 
-  Slv.ListItem exp ->
+  Slv.Solved t area (Slv.ListItem exp) ->
     indent depth
       <> "{\n"
+      <> indent (depth + 1)
+      <> "\"type\": \""
+      <> prettyPrintType t
+      <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"loc\": "
+      <> compileArea (depth + 1) area
+      <> ",\n"
       <> indent (depth + 1)
       <> "\"itemType\": \"ListItem\",\n"
       <> indent (depth + 1)
@@ -272,10 +442,18 @@ compileListItem depth li = case li of
       <> "}"
 
 compileField :: Int -> Slv.Field -> String
-compileField depth li = case li of
+compileField depth (Slv.Solved t area field) = case field of
   Slv.FieldSpread exp ->
     indent depth
       <> "{\n"
+      <> indent (depth + 1)
+      <> "\"type\": \""
+      <> prettyPrintType t
+      <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"loc\": "
+      <> compileArea (depth + 1) area
+      <> ",\n"
       <> indent (depth + 1)
       <> "\"fieldType\": \"FieldSpread\",\n"
       <> indent (depth + 1)
@@ -289,11 +467,19 @@ compileField depth li = case li of
     indent depth
       <> "{\n"
       <> indent (depth + 1)
+      <> "\"type\": \""
+      <> prettyPrintType t
+      <> "\",\n"
+      <> indent (depth + 1)
+      <> "\"loc\": "
+      <> compileArea (depth + 1) area
+      <> ",\n"
+      <> indent (depth + 1)
       <> "\"itemType\": \"Field\",\n"
       <> indent (depth + 1)
-      <> "\"fieldName\": "
+      <> "\"fieldName\": \""
       <> name
-      <> ",\n"
+      <> "\",\n"
       <> indent (depth + 1)
       <> "\"expression\": "
       <> compileExp (depth + 1) exp
@@ -301,67 +487,6 @@ compileField depth li = case li of
       <> indent depth
       <> "}"
 
-compileType :: Type -> String
-compileType = lst . compileType' (mempty, mempty)
-
-letters :: [Char]
-letters = ['a' ..]
-
-hkLetters :: [Char]
-hkLetters = ['m' ..]
-
-compileType' :: (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
-compileType' (vars, hkVars) t = case t of
-  TCon (TC n _) -> (vars, hkVars, n)
-
-  TVar (TV n k) -> case k of
-    Star -> case M.lookup n vars of
-      Just x  -> (vars, hkVars, [letters !! x])
-      Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, [letters !! newIndex])
-
-    Kfun _ _ -> case M.lookup n hkVars of
-      Just x  -> (vars, hkVars, [hkLetters !! x])
-      Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
-
-  TApp (TApp (TCon (TC "(,)" _)) tl) tr ->
-    let (varsLeft , hkVarsLeft , left ) = compileType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = compileType' (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
-
-  TApp (TApp (TCon (TC "(->)" _)) (TApp (TApp (TCon (TC "(->)" _)) tl) tr)) trr ->
-    let (varsLeft      , hkVarsLeft      , left      ) = compileType' (vars, hkVars) tl
-        (varsRight     , hkVarsRight     , right     ) = compileType' (varsLeft, hkVarsLeft) tr
-        (varsRightRight, hkVarsRightRight, rightRight) = compileType' (varsRight, hkVarsRight) trr
-    in  (varsRightRight, hkVarsRightRight, "(" <> left <> " -> " <> right <> ") -> " <> rightRight)
-
-  TApp (TCon (TC "(->)" _)) (TApp (TApp (TCon (TC "(->)" _)) tl) tr) ->
-    let (varsLeft , hkVarsLeft , left ) = compileType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = compileType' (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, "(" <> left <> " -> " <> right <> ")")
-
-  TApp (TApp (TCon (TC "(->)" _)) tl) tr ->
-    let (varsLeft , hkVarsLeft , left ) = compileType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = compileType' (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, left <> " -> " <> right)
-
-  TApp tl (TApp (TApp (TCon (TC "(,)" _)) tll) tr) ->
-    let (varsLeft    , hkVarsLeft    , left    ) = compileType' (vars, hkVars) tl
-        (varsLeftLeft, hkVarsLeftLeft, leftLeft) = compileType' (varsLeft, hkVarsLeft) tll
-        (varsRight   , hkVarsRight   , right   ) = compileType' (varsLeftLeft, hkVarsLeftLeft) tr
-    in  (varsRight, hkVarsRight, left <> " <" <> leftLeft <> ", " <> right <> ">")
-
-  TApp tl (TApp tll tr) ->
-    let (varsLeft    , hkVarsLeft    , left    ) = compileType' (vars, hkVars) tl
-        (varsLeftLeft, hkVarsLeftLeft, leftLeft) = compileType' (varsLeft, hkVarsLeft) tll
-        (varsRight   , hkVarsRight   , right   ) = compileType' (varsLeftLeft, hkVarsLeftLeft) tr
-    in  (varsRight, hkVarsRight, left <> " (" <> leftLeft <> " " <> right <> ")")
-
-  TApp tl tr ->
-    let (varsLeft , hkVarsLeft , left ) = compileType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = compileType' (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, left <> " " <> right)
-
-  _ -> (vars, hkVars, "")
 
 compileArea :: Int -> Area -> String
 compileArea depth (Area start end) =

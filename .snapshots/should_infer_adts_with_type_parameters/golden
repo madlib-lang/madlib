@@ -29,13 +29,33 @@ Right
                      True)))
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "Result"
-            , adtparams = [ "a" ]
-            , adtconstructors =
-                [ Constructor "Success" [ TRSingle "a" ] , Constructor "Error" [] ]
-            , adtexported = False
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 37 3 10))
+            ADT
+              { adtname = "Result"
+              , adtparams = [ "a" ]
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 18 2 5) (Loc 27 2 14))
+                      (Constructor
+                         "Success"
+                         [ Untyped (Area (Loc 26 2 13) (Loc 27 2 14)) (TRSingle "a") ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "e" Star)))
+                            (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "e" Star)))))
+                  , Untyped
+                      (Area (Loc 32 3 5) (Loc 37 3 10))
+                      (Constructor
+                         "Error"
+                         []
+                         (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "f" Star))))
+                  ]
+              , adtType =
+                  TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "a" Star))
+              , adtexported = False
+              }
         ]
     , ainterfaces = []
     , ainstances = []

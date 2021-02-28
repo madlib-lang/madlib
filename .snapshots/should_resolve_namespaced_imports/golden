@@ -10,7 +10,7 @@ Right
                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                          (TVar (TV "c" Star)))
                       (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star))))
-                   (Area (Loc 0 1 1) (Loc 6 1 7))
+                   (Area (Loc 0 1 1) (Loc 31 1 32))
                    (Export
                       (Solved
                          (TApp
@@ -36,11 +36,14 @@ Right
                                          (TCon (TC "List" (Kfun Star Star))) (TVar (TV "c" Star)))
                                       (Area (Loc 27 1 28) (Loc 30 1 31))
                                       (ListConstructor
-                                         [ ListItem
-                                             (Solved
-                                                (TVar (TV "c" Star))
-                                                (Area (Loc 28 1 29) (Loc 29 1 30))
-                                                (Var "a"))
+                                         [ Solved
+                                             (TVar (TV "c" Star))
+                                             (Area (Loc 28 1 29) (Loc 29 1 30))
+                                             (ListItem
+                                                (Solved
+                                                   (TVar (TV "c" Star))
+                                                   (Area (Loc 28 1 29) (Loc 29 1 30))
+                                                   (Var "a")))
                                          ])
                                   ])))))
                ]
@@ -52,7 +55,11 @@ Right
        )
      , ( "./ModuleB"
        , AST
-           { aimports = [ DefaultImport "L" "./ModuleA" "./ModuleA" ]
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 25 1 26))
+                   (DefaultImport "L" "./ModuleA" "./ModuleA")
+               ]
            , aexps =
                [ Solved
                    (TApp

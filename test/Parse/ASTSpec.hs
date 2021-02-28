@@ -5,7 +5,6 @@ import qualified Data.Map                      as M
 import           Parse.AST
 import           Test.Hspec
 import           Error.Error
-import           Explain.Reason
 import           Utils.PathUtils
 import           Prelude                 hiding ( readFile )
 import           TestUtils
@@ -18,6 +17,7 @@ import           Data.Text                      ( Text
                                                 )
 import           Text.Show.Pretty               ( ppShow )
 import           GHC.IO                         ( unsafePerformIO )
+import           Explain.Location
 
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -55,7 +55,7 @@ spec = do
 
           (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Left (InferError (ImportNotFound "./fixtures/source-not-there.mad") NoReason)
+          expected    = Left (InferError (ImportNotFound "./fixtures/source-not-there.mad") NoContext)
           files       = M.fromList [("./fixtures/source.mad", source)]
 
           rf          = makeReadFile files
@@ -130,13 +130,16 @@ spec = do
 
 
   describe "buildAST" $ do
-    it "should return a GrammarError of the source is not valid" $ do
+    it "should return a GrammarError if the source is not valid" $ do
       let source   = unlines ["fn :: Number -> Number -> Number", "fn : a, b => (a + b)"]
           actual   = buildAST "source.mad" source
-          expected = Left $ InferError
-            (GrammarError "source.mad" "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon"
+          expected = Left
+            (InferError
+              (GrammarError "source.mad"
+                            "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon\n"
+              )
+              (Context "source.mad" (Area (Loc 0 2 4) (Loc 0 2 5)) [])
             )
-            NoReason
       actual `shouldBe` expected
 
     it "should return a valid AST with boolean expressions" $ do

@@ -15,7 +15,6 @@ import           Infer.Scheme
 import           Infer.Unify
 import           Infer.Placeholder
 import           Error.Error
-import           Explain.Reason
 import           Explain.Location
 import qualified Data.Map                      as M
 import           Data.List
@@ -32,24 +31,24 @@ import           Control.Monad.Trans.Maybe
 -- overlap env p q = defined (unify env p q)
 
 addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
-addInterface env id tvs ps = case M.lookup id (envinterfaces env) of
-  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoReason
-  Nothing -> return env { envinterfaces = M.insert id (Interface tvs ps []) (envinterfaces env) }
+addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
+  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
+  Nothing -> return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
 
 
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
 verifyInstancePredicates env p' p@(IsIn cls ts) = do
-  case M.lookup cls (envinterfaces env) of
-    Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoReason
+  case M.lookup cls (envInterfaces env) of
+    Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
 
     Just (Interface tvs ps' is) -> catchError
       (unify (TVar <$> tvs) ts >> return True)
-      (\_ -> throwError $ InferError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoReason)
+      (\_ -> throwError $ InferError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env
-addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envinterfaces env) of
-  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoReason
+addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
+  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
     mapM_ (verifyInstancePredicates env p) ps
@@ -59,7 +58,7 @@ addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envinterfaces env) of
     s <- match ts' ts
     catchError (mapM_ (isInstanceDefined env s) ps')
                (\e@(InferError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
-    return env { envinterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) : is)) (envinterfaces env) }
+    return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) : is)) (envInterfaces env) }
 
 
 findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)
@@ -75,31 +74,45 @@ isInstanceDefined env subst (IsIn id ts) = do
     is
   case found of
     Just _  -> return True
-    Nothing -> throwError $ InferError (NoInstanceFound id (apply subst ts)) NoReason
+    Nothing -> throwError $ InferError (NoInstanceFound id (apply subst ts)) NoContext
 
+
+resolveInstances :: Env -> [Can.Instance] -> Infer [Slv.Instance]
+resolveInstances _ []       = return []
+resolveInstances env (i:is) = do
+  next <- resolveInstances env is
+  curr <- catchError
+    (Just <$> resolveInstance env i)
+    (\err -> do
+      pushError err
+      return Nothing
+    )
+  case curr of
+    Just x  -> return $ x : next
+    Nothing -> return next
 
 
 resolveInstance :: Env -> Can.Instance -> Infer Slv.Instance
-resolveInstance env (Can.Instance name constraintPreds pred methods) = do
+resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
   let instanceTypes = predTypes pred
   let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
-  (Interface _ ps _) <- lookupInterface env name
+  (Interface _ ps _) <- catchError (lookupInterface env name) (addContext env inst)
   let instancePreds = apply subst $ [IsIn name instanceTypes] <> ps
   let psTypes       = concat $ predTypes <$> constraintPreds
   let subst'        = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
-  inferredMethods <- mapM (inferMethod env (apply subst' instancePreds) (apply subst' constraintPreds))
+  inferredMethods <- mapM (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
                           (M.toList methods)
   let dict' = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
-  return $ Slv.Instance name constraintPreds pred dict'
+  return $ Slv.Untyped area $ Slv.Instance name constraintPreds pred dict'
 
 
 inferMethod :: Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
 inferMethod env instancePreds constraintPreds (mn, m) =
-  upgradeReason env (Can.getArea m) (inferMethod' env instancePreds constraintPreds (mn, m))
+  upgradeContext (pushExpToBT env m) (Can.getArea m) (inferMethod' env instancePreds constraintPreds (mn, m))
 
 
 inferMethod' :: Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)
-inferMethod' env instancePreds constraintPreds (mn, m) = do
+inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assignment n' m)) = do
   sc'             <- lookupVar env mn
   qt@(mps :=> mt) <- instantiate sc'
   s1              <- specialMatchMany mps instancePreds
@@ -124,14 +137,13 @@ inferMethod' env instancePreds constraintPreds (mn, m) = do
   withParents <- getAllParentPreds env qs'
 
   if sc /= sc'
-    then throwError $ InferError (SignatureTooGeneral sc sc') (SimpleReason (envcurrentpath env) (Can.getArea m))
+    then throwError
+      $ InferError (SignatureTooGeneral sc sc') (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
     else if not (null rs)
-      then throwError $ InferError ContextTooWeak (SimpleReason (envcurrentpath env) (Can.getArea m))
+      then throwError $ InferError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateType e t''
-        tmp <- insertClassPlaceholders env (Slv.Solved t emptyArea $ Slv.Assignment mn e') (apply s' withParents)
-        let (Slv.Solved _ _ (Slv.Assignment _ e'')) = tmp
+        e'' <- insertClassPlaceholders env (Slv.Solved t area $ Slv.Assignment mn e') (apply s' withParents)
         e''' <- updatePlaceholders env s' e''
 
         return (mn, e''', sc)
-

@@ -18,7 +18,10 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 16 2 3) (Loc 29 2 16))
                    (Is
-                      (PCon "String")
+                      (Solved
+                         (TCon (TC "String" Star))
+                         (Area (Loc 19 2 6) (Loc 25 2 12))
+                         (PCon "String"))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 28 2 15) (Loc 29 2 16))

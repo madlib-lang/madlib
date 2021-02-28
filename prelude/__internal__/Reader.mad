@@ -12,7 +12,7 @@ import IO from "IO"
 
 // run(r, 15) |> IO.log
 
-export data Reader r a = Reader (r -> a)
+export type Reader r a = Reader (r -> a)
 
 run :: Reader r a -> r -> a
 export run = (reader, env) => where(reader)

@@ -18,7 +18,10 @@ Right
                       (TCon (TC "String" Star)))
                    (Area (Loc 16 2 3) (Loc 30 2 17))
                    (Is
-                      (PBool "true")
+                      (Solved
+                         (TCon (TC "Boolean" Star))
+                         (Area (Loc 19 2 6) (Loc 23 2 10))
+                         (PBool "true"))
                       (Solved
                          (TCon (TC "String" Star))
                          (Area (Loc 26 2 13) (Loc 30 2 17))
@@ -31,7 +34,10 @@ Right
                       (TCon (TC "String" Star)))
                    (Area (Loc 33 3 3) (Loc 51 3 21))
                    (Is
-                      (PBool "false")
+                      (Solved
+                         (TCon (TC "Boolean" Star))
+                         (Area (Loc 36 3 6) (Loc 41 3 11))
+                         (PBool "false"))
                       (Solved
                          (TCon (TC "String" Star))
                          (Area (Loc 43 3 13) (Loc 51 3 21))

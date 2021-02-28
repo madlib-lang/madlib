@@ -21,20 +21,26 @@ Right
                      False)
                   (Area (Loc 4 1 5) (Loc 18 1 19))
                   (Record
-                     [ Field
-                         ( "x"
-                         , Solved
-                             (TCon (TC "Number" Star))
-                             (Area (Loc 9 1 10) (Loc 10 1 11))
-                             (LNum "3")
-                         )
-                     , Field
-                         ( "y"
-                         , Solved
-                             (TCon (TC "Number" Star))
-                             (Area (Loc 15 1 16) (Loc 16 1 17))
-                             (LNum "5")
-                         )
+                     [ Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 6 1 7) (Loc 10 1 11))
+                         (Field
+                            ( "x"
+                            , Solved
+                                (TCon (TC "Number" Star))
+                                (Area (Loc 9 1 10) (Loc 10 1 11))
+                                (LNum "3")
+                            ))
+                     , Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 12 1 13) (Loc 16 1 17))
+                         (Field
+                            ( "y"
+                            , Solved
+                                (TCon (TC "Number" Star))
+                                (Area (Loc 15 1 16) (Loc 16 1 17))
+                                (LNum "5")
+                            ))
                      ])))
         , Solved
             (TApp
@@ -74,7 +80,7 @@ Right
                         "r")
                      [ Solved
                          (TCon (TC "Number" Star))
-                         (Area (Loc 36 2 18) (Loc 39 2 21))
+                         (Area (Loc 36 2 18) (Loc 45 2 27))
                          (App
                             (Solved
                                (TApp
@@ -82,7 +88,7 @@ Right
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                      (TCon (TC "Number" Star)))
                                   (TCon (TC "Number" Star)))
-                               (Area (Loc 36 2 18) (Loc 39 2 21))
+                               (Area (Loc 36 2 18) (Loc 45 2 27))
                                (App
                                   (Solved
                                      (TApp
@@ -102,7 +108,7 @@ Right
                                      (FieldAccess
                                         (Solved
                                            (TRecord
-                                              (fromList [ ( "x" , TVar (TV "h" Star) ) ]) True)
+                                              (fromList [ ( "x" , TCon (TC "Number" Star) ) ]) True)
                                            (Area (Loc 36 2 18) (Loc 37 2 19))
                                            (Var "r"))
                                         (Solved
@@ -110,9 +116,9 @@ Right
                                               (TApp
                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                  (TRecord
-                                                    (fromList [ ( "x" , TVar (TV "h" Star) ) ])
+                                                    (fromList [ ( "x" , TCon (TC "Number" Star) ) ])
                                                     True))
-                                              (TVar (TV "h" Star)))
+                                              (TCon (TC "Number" Star)))
                                            (Area (Loc 38 2 20) (Loc 39 2 21))
                                            (Var ".x"))))
                                   False))
@@ -121,7 +127,7 @@ Right
                                (Area (Loc 42 2 24) (Loc 45 2 27))
                                (FieldAccess
                                   (Solved
-                                     (TRecord (fromList [ ( "y" , TVar (TV "j" Star) ) ]) True)
+                                     (TRecord (fromList [ ( "y" , TCon (TC "Number" Star) ) ]) True)
                                      (Area (Loc 42 2 24) (Loc 43 2 25))
                                      (Var "r"))
                                   (Solved
@@ -129,8 +135,9 @@ Right
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                            (TRecord
-                                              (fromList [ ( "y" , TVar (TV "j" Star) ) ]) True))
-                                        (TVar (TV "j" Star)))
+                                              (fromList [ ( "y" , TCon (TC "Number" Star) ) ])
+                                              True))
+                                        (TCon (TC "Number" Star)))
                                      (Area (Loc 44 2 26) (Loc 45 2 27))
                                      (Var ".y"))))
                             True)
@@ -148,7 +155,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) )
                               , ( "y" , TCon (TC "Number" Star) )
                               ])
-                           True))
+                           False))
                      (TCon (TC "Number" Star)))
                   (Area (Loc 47 3 1) (Loc 53 3 7))
                   (Var "xPlusY"))

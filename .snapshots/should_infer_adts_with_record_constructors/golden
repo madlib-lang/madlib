@@ -25,18 +25,21 @@ Right
                            (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False)
                         (Area (Loc 90 2 19) (Loc 105 2 34))
                         (Record
-                           [ Field
-                               ( "value"
-                               , Solved
-                                   (TCon (TC "String" Star))
-                                   (Area (Loc 99 2 28) (Loc 103 2 32))
-                                   (TemplateString
-                                      [ Solved
-                                          (TCon (TC "String" Star))
-                                          (Area (Loc 102 2 31) (Loc 103 2 32))
-                                          (LStr "42")
-                                      ])
-                               )
+                           [ Solved
+                               (TCon (TC "String" Star))
+                               (Area (Loc 92 2 21) (Loc 103 2 32))
+                               (Field
+                                  ( "value"
+                                  , Solved
+                                      (TCon (TC "String" Star))
+                                      (Area (Loc 99 2 28) (Loc 103 2 32))
+                                      (TemplateString
+                                         [ Solved
+                                             (TCon (TC "String" Star))
+                                             (Area (Loc 102 2 31) (Loc 103 2 32))
+                                             (LStr "42")
+                                         ])
+                                  ))
                            ]))
                      True)))
         , Solved
@@ -62,13 +65,16 @@ Right
                            (fromList [ ( "message" , TCon (TC "String" Star) ) ]) False)
                         (Area (Loc 123 3 17) (Loc 141 3 35))
                         (Record
-                           [ Field
-                               ( "message"
-                               , Solved
-                                   (TCon (TC "String" Star))
-                                   (Area (Loc 134 3 28) (Loc 139 3 33))
-                                   (LStr "Err")
-                               )
+                           [ Solved
+                               (TCon (TC "String" Star))
+                               (Area (Loc 125 3 19) (Loc 139 3 33))
+                               (Field
+                                  ( "message"
+                                  , Solved
+                                      (TCon (TC "String" Star))
+                                      (Area (Loc 134 3 28) (Loc 139 3 33))
+                                      (LStr "Err")
+                                  ))
                            ]))
                      True)))
         , Solved
@@ -111,7 +117,7 @@ Right
                                      "b")
                                   [ Solved
                                       (TCon (TC "Boolean" Star))
-                                      (Area (Loc 155 4 13) (Loc 156 4 14))
+                                      (Area (Loc 155 4 13) (Loc 161 4 19))
                                       (App
                                          (Solved
                                             (TApp
@@ -119,7 +125,7 @@ Right
                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                   (TCon (TC "Result" Star)))
                                                (TCon (TC "Boolean" Star)))
-                                            (Area (Loc 155 4 13) (Loc 156 4 14))
+                                            (Area (Loc 155 4 13) (Loc 161 4 19))
                                             (App
                                                (Solved
                                                   (TApp
@@ -161,19 +167,56 @@ Right
                True)
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "Result"
-            , adtparams = []
-            , adtconstructors =
-                [ Constructor
-                    "Success"
-                    [ TRRecord (fromList [ ( "value" , TRSingle "String" ) ]) ]
-                , Constructor
-                    "Error"
-                    [ TRRecord (fromList [ ( "message" , TRSingle "String" ) ]) ]
-                ]
-            , adtexported = False
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 71 1 72))
+            ADT
+              { adtname = "Result"
+              , adtparams = []
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 14 1 15) (Loc 41 1 42))
+                      (Constructor
+                         "Success"
+                         [ Untyped
+                             (Area (Loc 22 1 23) (Loc 41 1 42))
+                             (TRRecord
+                                (fromList
+                                   [ ( "value"
+                                     , Untyped
+                                         (Area (Loc 33 1 34) (Loc 39 1 40)) (TRSingle "String")
+                                     )
+                                   ]))
+                         ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TRecord
+                                  (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
+                            (TCon (TC "Result" Star))))
+                  , Untyped
+                      (Area (Loc 44 1 45) (Loc 71 1 72))
+                      (Constructor
+                         "Error"
+                         [ Untyped
+                             (Area (Loc 50 1 51) (Loc 71 1 72))
+                             (TRRecord
+                                (fromList
+                                   [ ( "message"
+                                     , Untyped
+                                         (Area (Loc 63 1 64) (Loc 69 1 70)) (TRSingle "String")
+                                     )
+                                   ]))
+                         ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TRecord
+                                  (fromList [ ( "message" , TCon (TC "String" Star) ) ]) False))
+                            (TCon (TC "Result" Star))))
+                  ]
+              , adtType = TCon (TC "Result" Star)
+              , adtexported = False
+              }
         ]
     , ainterfaces = []
     , ainstances = []

@@ -1,7 +1,7 @@
 import {} from "Monad"
 import {} from "MonadTrans"
 
-export data StateT s m a = StateT (s -> m <a, s>)
+export type StateT s m a = StateT (s -> m <a, s>)
 
 runStateT :: StateT s m a -> s -> m <a, s>
 export runStateT = (m) => where(m) is StateT f: (a) => f(a)

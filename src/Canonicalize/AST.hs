@@ -14,7 +14,6 @@ import           Canonicalize.ADT
 import           Canonicalize.Interface
 import           Infer.Type
 import           Error.Error
-import           Explain.Reason
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
@@ -68,15 +67,16 @@ canonicalizeAST :: Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Tab
 canonicalizeAST target env table astPath = do
   ast <- case P.findAST table astPath of
     Right ast -> return ast
-    Left  e   -> throwError $ InferError (ImportNotFound astPath) NoReason
+    Left  e   -> throwError $ InferError (ImportNotFound astPath) NoContext
 
-  (table, env'     )   <- processImports target table $ Src.aimports ast
+  (table, env') <- processImports target table $ Src.aimports ast
+  let env'' = env' { envCurrentPath = astPath }
 
-  (env'', typeDecls)   <- canonicalizeTypeDecls env' astPath $ Src.atypedecls ast
-  imports              <- mapM (canonicalize env'' target) $ Src.aimports ast
-  exps                 <- mapM (canonicalize env'' target) $ Src.aexps ast
-  (env''', interfaces) <- canonicalizeInterfaces env'' $ Src.ainterfaces ast
-  instances            <- canonicalizeInstances env''' target $ Src.ainstances ast
+  (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
+  imports               <- mapM (canonicalize env''' target) $ Src.aimports ast
+  exps                  <- mapM (canonicalize env''' target) $ Src.aexps ast
+  (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
+  instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
 
   let canonicalizedAST = Can.AST { Can.aimports    = imports
                                  , Can.aexps       = exps
@@ -86,18 +86,18 @@ canonicalizeAST target env table astPath = do
                                  , Can.apath       = Src.apath ast
                                  }
 
-  return (M.insert astPath canonicalizedAST table, env''')
+  return (M.insert astPath canonicalizedAST table, env'''')
 
 
 findASTM :: Can.Table -> FilePath -> CanonicalM Can.AST
 findASTM table path = case M.lookup path table of
   Just found -> return found
-  Nothing    -> throwError $ InferError (ImportNotFound path) NoReason
+  Nothing    -> throwError $ InferError (ImportNotFound path) NoContext
 
 findAST :: Can.Table -> FilePath -> Either InferError Can.AST
 findAST table path = case M.lookup path table of
   Just found -> return found
-  Nothing    -> Left $ InferError (ImportNotFound path) NoReason
+  Nothing    -> Left $ InferError (ImportNotFound path) NoContext
 
 runCanonicalization :: Target -> Env -> Src.Table -> FilePath -> Either InferError Can.Table
 runCanonicalization target env table entrypoint = runExcept $ fst <$> canonicalizeAST target env table entrypoint

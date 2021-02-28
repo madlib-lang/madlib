@@ -10,7 +10,7 @@ Right
                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                          (TCon (TC "Number" Star)))
                       (TCon (TC "Number" Star)))
-                   (Area (Loc 0 1 1) (Loc 6 1 7))
+                   (Area (Loc 0 1 1) (Loc 27 1 28))
                    (Export
                       (Solved
                          (TApp
@@ -35,7 +35,7 @@ Right
                                      "a")
                                   [ Solved
                                       (TCon (TC "Number" Star))
-                                      (Area (Loc 21 1 22) (Loc 22 1 23))
+                                      (Area (Loc 21 1 22) (Loc 26 1 27))
                                       (App
                                          (Solved
                                             (TApp
@@ -43,7 +43,7 @@ Right
                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                   (TCon (TC "Number" Star)))
                                                (TCon (TC "Number" Star)))
-                                            (Area (Loc 21 1 22) (Loc 22 1 23))
+                                            (Area (Loc 21 1 22) (Loc 26 1 27))
                                             (App
                                                (Solved
                                                   (TApp
@@ -113,7 +113,7 @@ Right
                                       "b")
                                    [ Solved
                                        (TCon (TC "Number" Star))
-                                       (Area (Loc 46 3 18) (Loc 47 3 19))
+                                       (Area (Loc 46 3 18) (Loc 51 3 23))
                                        (App
                                           (Solved
                                              (TApp
@@ -121,7 +121,7 @@ Right
                                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                    (TCon (TC "Number" Star)))
                                                 (TCon (TC "Number" Star)))
-                                             (Area (Loc 46 3 18) (Loc 47 3 19))
+                                             (Area (Loc 46 3 18) (Loc 51 3 23))
                                              (App
                                                 (Solved
                                                    (TApp
@@ -195,7 +195,11 @@ Right
        )
      , ( "./ModuleB"
        , AST
-           { aimports = [ NamedImport [ "inc" ] "./ModuleA" "./ModuleA" ]
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 31 1 32))
+                   (NamedImport [ "inc" ] "./ModuleA" "./ModuleA")
+               ]
            , aexps =
                [ Solved
                    (TCon (TC "Number" Star))

@@ -6,7 +6,10 @@ import qualified Data.Map                      as M
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 
-data Solved a = Solved Ty.Type Area a deriving(Eq, Show)
+data Solved a
+  = Solved Ty.Type Area a
+  | Untyped Area a
+  deriving(Eq, Show)
 
 data AST =
   AST
@@ -19,24 +22,25 @@ data AST =
     }
     deriving(Eq, Show)
 
-data Import
+type Import = Solved Import_
+data Import_
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
--- data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
+type Interface = Solved Interface_
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
 
--- data Instance = Instance Constraints Name [Typing] (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+type Instance = Solved Instance_
+data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
-data Interface = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
-
-data Instance = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
-
-data TypeDecl
+type TypeDecl = Solved TypeDecl_
+data TypeDecl_
   = ADT
       { adtname :: Name
       , adtparams :: [Name]
       , adtconstructors :: [Constructor]
+      , adtType :: Ty.Type
       , adtexported :: Bool
       }
   | Alias
@@ -47,13 +51,15 @@ data TypeDecl
       }
     deriving(Eq, Show)
 
-data Constructor
-  = Constructor Name [Typing]
+type Constructor = Solved Constructor_
+data Constructor_
+  = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show)
 
 type Constraints = [Typing]
 
-data Typing
+type Typing = Solved Typing_
+data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
@@ -66,7 +72,8 @@ data Typing
 type Is = Solved Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
-data Pattern
+type Pattern = Solved Pattern_
+data Pattern_
   = PVar Name
   | PAny
   | PCtor Name [Pattern]
@@ -80,17 +87,17 @@ data Pattern
   | PSpread Pattern
   deriving(Eq, Show)
 
-data Field
+type Field = Solved Field_
+data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
-data ListItem
+type ListItem = Solved ListItem_
+data ListItem_
   = ListItem Exp
   | ListSpread Exp
   deriving(Eq, Show)
-
-type Exp = Solved Exp_
 
 
 data ClassRefPred
@@ -102,6 +109,7 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show)
 
+type Exp = Solved Exp_
 data Exp_ = LNum String
           | LStr String
           | LBool String
@@ -141,12 +149,12 @@ extractExp :: Exp -> Exp_
 extractExp (Solved _ (Area _ _) e) = e
 
 getConstructorName :: Constructor -> String
-getConstructorName (Constructor name _) = name
+getConstructorName (Untyped _ (Constructor name _ _)) = name
 
 isADTExported :: TypeDecl -> Bool
 isADTExported adt = case adt of
-  ADT { adtexported } -> adtexported
-  _                   -> False
+  Untyped _ ADT { adtexported } -> adtexported
+  _                              -> False
 
 isExport :: Exp -> Bool
 isExport a = case a of
@@ -156,3 +164,6 @@ isExport a = case a of
 
   _ -> False
 
+getValue :: Solved a -> a
+getValue (Solved _ _ a) = a
+getValue (Untyped _ a)  = a

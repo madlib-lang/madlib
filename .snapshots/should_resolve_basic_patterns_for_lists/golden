@@ -11,31 +11,46 @@ Right
                      (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
                   (Area (Loc 6 1 7) (Loc 21 1 22))
                   (ListConstructor
-                     [ ListItem
-                         (Solved
-                            (TCon (TC "Number" Star))
-                            (Area (Loc 7 1 8) (Loc 8 1 9))
-                            (LNum "1"))
-                     , ListItem
-                         (Solved
-                            (TCon (TC "Number" Star))
-                            (Area (Loc 10 1 11) (Loc 11 1 12))
-                            (LNum "2"))
-                     , ListItem
-                         (Solved
-                            (TCon (TC "Number" Star))
-                            (Area (Loc 13 1 14) (Loc 14 1 15))
-                            (LNum "3"))
-                     , ListItem
-                         (Solved
-                            (TCon (TC "Number" Star))
-                            (Area (Loc 16 1 17) (Loc 17 1 18))
-                            (LNum "5"))
-                     , ListItem
-                         (Solved
-                            (TCon (TC "Number" Star))
-                            (Area (Loc 19 1 20) (Loc 20 1 21))
-                            (LNum "8"))
+                     [ Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 7 1 8) (Loc 8 1 9))
+                         (ListItem
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 7 1 8) (Loc 8 1 9))
+                               (LNum "1")))
+                     , Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 10 1 11) (Loc 11 1 12))
+                         (ListItem
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 10 1 11) (Loc 11 1 12))
+                               (LNum "2")))
+                     , Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 13 1 14) (Loc 14 1 15))
+                         (ListItem
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 13 1 14) (Loc 14 1 15))
+                               (LNum "3")))
+                     , Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 16 1 17) (Loc 17 1 18))
+                         (ListItem
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 16 1 17) (Loc 17 1 18))
+                               (LNum "5")))
+                     , Solved
+                         (TCon (TC "Number" Star))
+                         (Area (Loc 19 1 20) (Loc 20 1 21))
+                         (ListItem
+                            (Solved
+                               (TCon (TC "Number" Star))
+                               (Area (Loc 19 1 20) (Loc 20 1 21))
+                               (LNum "8")))
                      ]))
                [ Solved
                    (TApp
@@ -46,7 +61,27 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 27 2 3) (Loc 42 2 18))
                    (Is
-                      (PList [ PNum "1" , PNum "2" , PNum "3" ])
+                      (Solved
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                         (Area (Loc 30 2 6) (Loc 39 2 15))
+                         (PList
+                            [ Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 31 2 7) (Loc 32 2 8))
+                                (PNum "1")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 34 2 10) (Loc 35 2 11))
+                                (PNum "2")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 37 2 13) (Loc 38 2 14))
+                                (PNum "3")
+                            ]))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 41 2 17) (Loc 42 2 18))
@@ -60,7 +95,27 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 45 3 3) (Loc 60 3 18))
                    (Is
-                      (PList [ PNum "1" , PNum "2" , PVar "n" ])
+                      (Solved
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                         (Area (Loc 48 3 6) (Loc 57 3 15))
+                         (PList
+                            [ Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 49 3 7) (Loc 50 3 8))
+                                (PNum "1")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 52 3 10) (Loc 53 3 11))
+                                (PNum "2")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 55 3 13) (Loc 56 3 14))
+                                (PVar "n")
+                            ]))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 59 3 17) (Loc 60 3 18))
@@ -74,7 +129,22 @@ Right
                       (TCon (TC "Number" Star)))
                    (Area (Loc 63 4 3) (Loc 78 4 18))
                    (Is
-                      (PList [ PVar "n" , PNum "3" ])
+                      (Solved
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                         (Area (Loc 66 4 6) (Loc 72 4 12))
+                         (PList
+                            [ Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 67 4 7) (Loc 68 4 8))
+                                (PVar "n")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 70 4 10) (Loc 71 4 11))
+                                (PNum "3")
+                            ]))
                       (Solved
                          (TCon (TC "Number" Star))
                          (Area (Loc 77 4 17) (Loc 78 4 18))
@@ -86,12 +156,32 @@ Right
                          (TApp
                             (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star))))
                       (TCon (TC "Number" Star)))
-                   (Area (Loc 81 5 3) (Loc 96 5 18))
+                   (Area (Loc 81 5 3) (Loc 104 5 26))
                    (Is
-                      (PList [ PVar "x" , PVar "y" , PVar "z" ])
+                      (Solved
+                         (TApp
+                            (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                         (Area (Loc 84 5 6) (Loc 93 5 15))
+                         (PList
+                            [ Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 85 5 7) (Loc 86 5 8))
+                                (PVar "x")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 88 5 10) (Loc 89 5 11))
+                                (PVar "y")
+                            , Solved
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star))) (TCon (TC "Number" Star)))
+                                (Area (Loc 91 5 13) (Loc 92 5 14))
+                                (PVar "z")
+                            ]))
                       (Solved
                          (TCon (TC "Number" Star))
-                         (Area (Loc 95 5 17) (Loc 96 5 18))
+                         (Area (Loc 95 5 17) (Loc 104 5 26))
                          (App
                             (Solved
                                (TApp
@@ -99,7 +189,7 @@ Right
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                      (TCon (TC "Number" Star)))
                                   (TCon (TC "Number" Star)))
-                               (Area (Loc 95 5 17) (Loc 96 5 18))
+                               (Area (Loc 95 5 17) (Loc 104 5 26))
                                (App
                                   (Solved
                                      (TApp
@@ -115,7 +205,7 @@ Right
                                      (Var "+"))
                                   (Solved
                                      (TCon (TC "Number" Star))
-                                     (Area (Loc 95 5 17) (Loc 96 5 18))
+                                     (Area (Loc 95 5 17) (Loc 100 5 22))
                                      (App
                                         (Solved
                                            (TApp
@@ -123,7 +213,7 @@ Right
                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                                  (TCon (TC "Number" Star)))
                                               (TCon (TC "Number" Star)))
-                                           (Area (Loc 95 5 17) (Loc 96 5 18))
+                                           (Area (Loc 95 5 17) (Loc 100 5 22))
                                            (App
                                               (Solved
                                                  (TApp

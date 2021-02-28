@@ -16,7 +16,7 @@ cool |> inc |> log
 warn :: a -> a
 warn = (a) => (#- {console.warn(a); return a;} -#)
 
-data Future e a = Bad e
+type Future e a = Bad e
                 | Good a
 
 readFile :: a -> Future e a
@@ -28,7 +28,7 @@ map = (f , x) => (#- x.then(f) -#)
 barf :: (e -> f) -> Future e a -> Future f a
 barf = (f, x) => (#- x.catch(f) -#)
 
-run :: (e -> f) -> (a -> b) -> String -> Void
+run :: (e -> f) -> (a -> b) -> String -> ()
 run = (bad, good, x) => (#- readFile(x).catch(bad).then(good) -#) 
 
 readFile("package.yaml") |> barf(warn) |> map(log)

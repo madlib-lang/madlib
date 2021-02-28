@@ -67,12 +67,13 @@ import           Text.Show.Pretty (ppShow)
   'pipe'      { Token _ TokenPipeKeyword }
   '|>'        { Token _ TokenPipeOperator }
   '...'       { Token _ TokenSpreadOperator }
-  'data'      { Token _ TokenData }
+  'type'      { Token _ TokenType }
   'alias'     { Token _ TokenAlias }
   '&&'        { Token _ TokenDoubleAmpersand }
   '||'        { Token _ TokenDoublePipe }
   '>'         { Token _ TokenRightChevron }
   '<'         { Token _ TokenLeftChevron }
+  'jsx<'      { Token _ TokenJsxTagOpen }
   'tuple>'    { Token _ TokenTupleEnd }
   '>='        { Token _ TokenRightChevronEq }
   '<='        { Token _ TokenLeftChevronEq }
@@ -100,7 +101,7 @@ ast :: { Src.AST }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (tokenToArea $1) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.TypedExp (Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
@@ -119,10 +120,10 @@ importNames :: { [Src.Name] }
 
 
 interface :: { Src.Interface }
-  : 'interface' name name '{' rets methodDefs rets '}'                           { Src.Interface [] (strV $2) [strV $3] $6 }
-  | 'interface' name name name '{' rets methodDefs rets '}'                      { Src.Interface [] (strV $2) ([strV $3]<>[strV $4]) $7 }
-  | 'interface' constraint '=>' name names '{' rets methodDefs rets '}'          { Src.Interface [$2] (strV $4) $5 $8 }
-  | 'interface' '(' constraints ')' '=>' name names '{' rets methodDefs rets '}' { Src.Interface $3 (strV $6) $7 $10 }
+  : 'interface' name name '{' rets methodDefs rets '}'                           { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Interface [] (strV $2) [strV $3] $6) }
+  | 'interface' name name name '{' rets methodDefs rets '}'                      { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Interface [] (strV $2) ([strV $3]<>[strV $4]) $7) }
+  | 'interface' constraint '=>' name names '{' rets methodDefs rets '}'          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Interface [$2] (strV $4) $5 $8) }
+  | 'interface' '(' constraints ')' '=>' name names '{' rets methodDefs rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Interface $3 (strV $6) $7 $10) }
 
 
 names :: { [Src.Name] }
@@ -134,26 +135,25 @@ methodDefs :: { M.Map Src.Name Src.Typing }
   | methodDefs rets name '::' constrainedTyping { M.union (M.fromList [(strV $3, $5)]) $1 }
 
 instance :: { Src.Instance }
-  : 'instance' name simpleTypings '{' rets methodImpls rets '}'                                                            %shift { Src.Instance [] (strV $2) $3 $6 }
-  | 'instance' name typing '{' rets methodImpls rets '}'                                                                   %shift { Src.Instance [] (strV $2) [$3] $6 }
-  | 'instance' name name name '{' rets methodImpls rets '}'                                                                %shift { Src.Instance [] (strV $2) [Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle $ strV $3), Src.Source emptyInfos (tokenToArea $4) (Src.TRSingle $ strV $4)] $7 }
-  | 'instance' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                                           %shift { Src.Instance [] (strV $2) [$3, $5] $9 }
-  | 'instance' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}'                          %shift { Src.Instance [] (strV $2) [$4, $7] $11 }
-  | 'instance' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                                  %shift { Src.Instance [] (strV $2) [$4] $8 }
-  | 'instance' constraint '=>' name simpleTypings '{' rets methodImpls rets '}'                                            %shift { Src.Instance [$2] (strV $4) $5 $8 }
-  | 'instance' constraint '=>' name typing '{' rets methodImpls rets '}'                                                   %shift { Src.Instance [$2] (strV $4) [$5] $8 }
-  | 'instance' constraint '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                  %shift { Src.Instance [$2] (strV $4) [$6] $10 }
-  | 'instance' constraint '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                           %shift { Src.Instance [$2] (strV $4) [$5, $7] $11 }
-  | 'instance' '(' constraints ')' '=>' name simpleTypings '{' rets methodImpls rets '}'                                   %shift { Src.Instance $3 (strV $6) $7 $10 }
-  | 'instance' '(' constraints ')' '=>' name typing '{' rets methodImpls rets '}'                                          %shift { Src.Instance $3 (strV $6) [$7] $10 }
-  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                         %shift { Src.Instance $3 (strV $6) [$8] $12 }
-  | 'instance' '(' constraints ')' '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                  %shift { Src.Instance $3 (strV $6) [$7, $9] $13 }
-  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}' %shift { Src.Instance $3 (strV $6) [$8, $11] $15 }
-  -- | 'instance' name name '.' name '{' rets methodImpls rets '}' { Src.Instance (strV $2) (Src.Source emptyInfos (tokenToArea $3) (Src.TRComp (strV $3<>"."<>strV $5) [])) $8 }
+  : 'instance' name simpleTypings '{' rets methodImpls rets '}'                                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Instance [] (strV $2) $3 $6) }
+  | 'instance' name typing '{' rets methodImpls rets '}'                                                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Instance [] (strV $2) [$3] $6) }
+  | 'instance' name name name '{' rets methodImpls rets '}'                                                                %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Instance [] (strV $2) [Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle $ strV $3), Src.Source emptyInfos (tokenToArea $4) (Src.TRSingle $ strV $4)] $7) }
+  | 'instance' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                                           %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.Instance [] (strV $2) [$3, $5] $9) }
+  | 'instance' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}'                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.Instance [] (strV $2) [$4, $7] $11) }
+  | 'instance' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [] (strV $2) [$4] $8) }
+  | 'instance' constraint '=>' name simpleTypings '{' rets methodImpls rets '}'                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [$2] (strV $4) $5 $8) }
+  | 'instance' constraint '=>' name typing '{' rets methodImpls rets '}'                                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [$2] (strV $4) [$5] $8) }
+  | 'instance' constraint '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance [$2] (strV $4) [$6] $10) }
+  | 'instance' constraint '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                           %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.Instance [$2] (strV $4) [$5, $7] $11) }
+  | 'instance' '(' constraints ')' '=>' name simpleTypings '{' rets methodImpls rets '}'                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) $7 $10) }
+  | 'instance' '(' constraints ')' '=>' name typing '{' rets methodImpls rets '}'                                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) [$7] $10) }
+  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                         %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $14)) (Src.Instance $3 (strV $6) [$8] $12) }
+  | 'instance' '(' constraints ')' '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $15)) (Src.Instance $3 (strV $6) [$7, $9] $13) }
+  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.Instance $3 (strV $6) [$8, $11] $15) }
 
 methodImpls :: { M.Map Src.Name Src.Exp }
-  : name '=' exp { M.fromList [(strV $1, $3)] }
-  | methodImpls rets name '=' exp { M.union (M.fromList [(strV $3, $5)]) $1 }
+  : name '=' exp { M.fromList [(strV $1, Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3))] }
+  | methodImpls rets name '=' exp { M.union (M.fromList [(strV $3, Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $5)) (Src.Assignment (strV $3) $5))]) $1 }
 
 rets :: { [TokenClass] }
   : 'ret'       %shift{ [] }
@@ -179,10 +179,10 @@ rComa :: { [TokenClass] }
 
 
 typedecl :: { Src.TypeDecl }
-  : 'data' name typeParams rEq adtConstructors          %shift { Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
-  | 'export' 'data' name typeParams rEq adtConstructors %shift { Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
-  | 'alias' name typeParams rEq typings                 %shift { Src.Alias { Src.aliasname = strV $2, Src.aliasparams = $3, Src.aliastype = $5, Src.aliasexported = False } }
-  | 'export' 'alias' name typeParams rEq typings        %shift { Src.Alias { Src.aliasname = strV $3, Src.aliasparams = $4, Src.aliastype = $6, Src.aliasexported = True } }
+  : 'type' name typeParams rEq adtConstructors          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $5)) Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
+  | 'export' 'type' name typeParams rEq adtConstructors %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
+  | 'alias' name typeParams rEq typings                 %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) Src.Alias { Src.aliasname = strV $2, Src.aliasparams = $3, Src.aliastype = $5, Src.aliasexported = False } }
+  | 'export' 'alias' name typeParams rEq typings        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $6)) Src.Alias { Src.aliasname = strV $3, Src.aliasparams = $4, Src.aliastype = $6, Src.aliasexported = True } }
 
 typeParams :: { [Src.Name] }
   : name typeParams %shift { strV $1 : $2 }
@@ -194,12 +194,12 @@ adtConstructors :: { [Src.Constructor] }
   | adtConstructor                            %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
-  : name adtConstructorArgs %shift { Src.Constructor (strV $1) $2 }
-  | name                    %shift { Src.Constructor (strV $1) [] }
+  : name adtConstructorArgs %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $2)) (Src.Constructor (strV $1) $2) }
+  | name                    %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Constructor (strV $1) []) }
 
 adtConstructorArgs :: { [Src.Typing] }
   : typing                     %shift { [$1] }
-  | name '.' name              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $1)) (Src.TRComp (strV $1<>"."<>strV $3) [])] }
+  | name '.' name              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1<>"."<>strV $3) [])] }
   | '(' compositeTyping ')'    %shift { [$2] }
   | '(' adtConstructorArgs ')' %shift { $2 }
   | adtConstructorArgs typing  %shift { $1 <> [$2] }
@@ -244,7 +244,7 @@ typing :: { Src.Typing }
 compositeTyping :: { Src.Typing }
   : name compositeTypingArgs          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $2))) (Src.TRComp (strV $1) $2) }
   | name '.' name compositeTypingArgs { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $4))) (Src.TRComp (strV $1<>"."<>strV $3) $4) }
-  | name '.' name                     { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $1)) (Src.TRComp (strV $1<>"."<>strV $3) []) }
+  | name '.' name                     { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1<>"."<>strV $3) []) }
 
 compositeTypingArgs :: { [Src.Typing] }
   : name                                                   { [Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
@@ -270,6 +270,7 @@ tupleTypings :: { [Src.Typing] }
 
 exp :: { Src.Exp }
   : literal                                                    { $1 }
+  | jsx                                                        { $1 }
   | record                                              %shift { $1 }
   | where                                               %shift { $1 }
   | tupleConstructor                                    %shift { $1 }
@@ -280,6 +281,7 @@ exp :: { Src.Exp }
   | js                                                  %shift { Src.Source emptyInfos (tokenToArea $1) (Src.JSExp (strV $1)) }
   | name '=' exp                                        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3) }
   | name                                                %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
+  | '.' name                                            %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' args ')' '(' args ')'                    %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
   | 'pipe' '(' args ')'                                 %shift { buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
   | app                                                 %shift { $1 }
@@ -300,6 +302,38 @@ exp :: { Src.Exp }
       { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.If $1 $4 $8) }
 
 
+jsx :: { Src.Exp }
+  : jsxTag { $1 }
+
+jsxTags :: { [Src.Exp] }
+  : jsxTag              { [$1] }
+  | jsxTags rets jsxTag { $1 <> [$3] }
+
+jsxTag :: { Src.Exp }
+  : 'jsx<' name jsxProps '/' 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps 'tuple>' rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps 'tuple>' rets jsxTags rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps 'tuple>' rets '{' exp '}' rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
+
+  | 'jsx<' name jsxProps '/' '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps 'tuple>' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps 'tuple>' rets jsxTags rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps 'tuple>' rets '{' exp '}' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
+
+  | 'jsx<' name jsxProps '>' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps '>' rets jsxTags rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps '>' rets '{' exp '}' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
+
+jsxProp :: { Src.JsxProp }
+  : name '=' str          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.JsxProp (strV $1) (Src.Source emptyInfos (tokenToArea $3) (Src.LStr $ strV $3))) }
+  | name '=' '{' exp '}'  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxProp (strV $1) $4) }
+
+jsxProps :: { [Src.JsxProp] }
+  : jsxProp            { [$1] }
+  | jsxProps jsxProp   { $1 <> [$2] }
+  | {- empty -}        { [] }
+
+
 templateString :: { Src.Exp }
   : strTplStart templateStringParts strTplEnd { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TemplateString ($2 <> [Src.Source emptyInfos (tokenToArea $3) (Src.LStr (strV $3))])) }
   | strTplStart strTplEnd                     { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TemplateString [Src.Source emptyInfos (tokenToArea $2) (Src.LStr (strV $2))]) }
@@ -311,6 +345,7 @@ templateStringParts :: { [Src.Exp] }
 app :: { Src.Exp }
   : app '(' args ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
   | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | '.' name '(' args ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $2) (Src.Var $ '.':strV $2)) $4 }
   | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
   | exp '(' args ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
   | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
@@ -398,89 +433,89 @@ record :: { Src.Exp }
   : '{' rets recordFields rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Record $3) }
 
 recordFields :: { [Src.Field] }
-  : name ':' exp                            { [Src.Field (strV $1, $3)] }
-  | '...' exp                               { [Src.FieldSpread $2] }
-  | recordFields ',' name ':' exp           { $1 <> [Src.Field (strV $3, $5)] }
-  | recordFields rets ',' rets name ':' exp { $1 <> [Src.Field (strV $5, $7)] }
-  | recordFields ',' '...' exp              { $1 <> [Src.FieldSpread $4] }
+  : name ':' exp                            { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) $ Src.Field (strV $1, $3)] }
+  | '...' exp                               { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) $ Src.FieldSpread $2] }
+  | recordFields ',' name ':' exp           { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $5)) $ Src.Field (strV $3, $5)] }
+  | recordFields rets ',' rets name ':' exp { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $7)) $ Src.Field (strV $5, $7)] }
+  | recordFields ',' '...' exp              { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) $ Src.FieldSpread $4] }
   | {- empty -}                             { [] }
 
 
 operation :: { Src.Exp }
-  : exp '+' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  : exp '+' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "+")) 
                          $1 False)))
                       $3 True)
                  }
-  | exp '++' exp { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '++' exp { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "++")) 
                          $1 False))) 
                       $3 True)
                  }
-  | exp '-' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '-' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "-")) 
                          $1 False))) 
                       $3 True)
                  }
-  | exp '*' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '*' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "*")) 
                          $1 False))) 
                       $3 True)
                  }
-  | exp '/' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '/' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "/")) 
                          $1 False))) 
                       $3 True)
                  }
-  | exp '%' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '%' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "%"))
                          $1 False)))
                       $3 True)
                  }
-  | exp '==' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '==' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "==")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '&&' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '&&' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "&&")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '||' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '||' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "||")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '>' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '<' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '<' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "<")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '>=' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '>=' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">=")) 
                          $1 False))) 
                       $3 True)
                    }
-  | exp '<=' exp  { Src.Source emptyInfos (Src.getArea $1) (Src.App
-                      ((Src.Source emptyInfos (Src.getArea $1) (Src.App
+  | exp '<=' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "<="))
                          $1 False))) 
                       $3 True)
@@ -498,11 +533,11 @@ listConstructor :: { Src.Exp }
   : '[' rets listItems rets ']' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.ListConstructor $3) }
 
 listItems :: { [Src.ListItem] }
-  : exp                         { [Src.ListItem $1] }
-  | listItems ',' exp           { $1 <> [Src.ListItem $3] }
-  | listItems rets ',' rets exp { $1 <> [Src.ListItem $5] }
-  | '...' exp                   { [Src.ListSpread $2] }
-  | listItems ',' '...' exp     { $1 <> [Src.ListSpread $4] }
+  : exp                         { [Src.Source emptyInfos (Src.getArea $1) (Src.ListItem $1)] }
+  | listItems ',' exp           { $1 <> [Src.Source emptyInfos (Src.getArea $3) (Src.ListItem $3)] }
+  | listItems rets ',' rets exp { $1 <> [Src.Source emptyInfos (Src.getArea $5) (Src.ListItem $5)] }
+  | '...' exp                   { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.ListSpread $2)] }
+  | listItems ',' '...' exp     { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) (Src.ListSpread $4)] }
   | {- empty -}                 { [] }
 
 tupleConstructor :: { Src.Exp }
@@ -584,7 +619,7 @@ lexerWrap f = alexMonadScan >>= f
 
 parseError :: Token -> Alex a
 parseError (Token (Area (Loc a l c) _) cls) =
-  alexError (printf "Syntax error - line: %d, column: %d\nThe following token is not valid: %s" l c (show cls))
+  alexError (printf "%d\n%d\nSyntax error - line: %d, column: %d\nThe following token is not valid: %s" l c l c (show cls))
 
 parse :: String -> Either String Src.AST
 parse s = runAlex s parseMadlib

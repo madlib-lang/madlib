@@ -3,7 +3,7 @@ import IO from "IO"
 import { Right } from "Either"
 import { Maybe, Just, Nothing, fromMaybe } from "Maybe"
 
-data Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
+type Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
 
 input :: String
 input = `

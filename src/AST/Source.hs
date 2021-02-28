@@ -19,14 +19,14 @@ data AST =
     deriving(Eq, Show)
 
 type Import = Source Import_
-
 -- The second FilePath parameter is the absolute path to that module
 data Import_
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
   deriving(Eq, Show)
 
-data TypeDecl
+type TypeDecl = Source TypeDecl_
+data TypeDecl_
   = ADT
       { adtname :: Name
       , adtparams :: [Name]
@@ -41,11 +41,15 @@ data TypeDecl
       }
     deriving(Eq, Show)
 
-data Interface = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
 
-data Instance = Instance Constraints Name [Typing] (M.Map Name Exp) deriving(Eq, Show)
+type Interface = Source Interface_
+data Interface_ = Interface Constraints Name [Name] (M.Map Name Typing) deriving(Eq, Show)
 
-data Constructor
+type Instance = Source Instance_
+data Instance_ = Instance Constraints Name [Typing] (M.Map Name Exp) deriving(Eq, Show)
+
+type Constructor = Source Constructor_
+data Constructor_
   = Constructor Name [Typing]
   deriving(Eq, Show)
 
@@ -83,21 +87,21 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show)
 
-
-data Field
+type Field = Source Field_
+data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
 
-data ListItem
+type ListItem = Source ListItem_
+data ListItem_
   = ListItem Exp
   | ListSpread Exp
   deriving(Eq, Show)
 
 
 type Exp = Source Exp_
-
 data Exp_ = LNum String
           | LStr String
           | LBool String
@@ -118,7 +122,13 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | Pipe [Exp]
           | JSExp String
+          | JsxTag Name [JsxProp] [Exp]
           deriving(Eq, Show)
+
+
+type JsxProp = Source JsxProp_
+data JsxProp_ = JsxProp Name Exp deriving(Eq, Show)
+
 
 type Name = String
 

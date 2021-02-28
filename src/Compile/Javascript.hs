@@ -51,7 +51,7 @@ class Compilable a where
   compile :: CompilationConfig -> a -> String
 
 instance Compilable Exp where
-  compile config e@(Optimized _ area@(Area (Loc _ l _) _) exp) =
+  compile config e@(Optimized expType area@(Area (Loc _ l _) _) exp) =
     let
       astPath   = ccastPath config
       coverage  = cccoverage config
@@ -206,7 +206,14 @@ instance Compilable Exp where
             _                         -> "    return " <> compile config exp <> ";\n"
           compileBody' (exp : es) = "    " <> compile config exp <> ";\n" <> compileBody' es
 
-        Var name -> if '.' `elem` name || name == "!" || not coverage then name else hpWrapLine coverage astPath l name
+        Var ('.' : name) -> "(__R__ => __R__." <> name <> ")"
+
+
+        Var name ->
+          -- let compiled = case expType of
+          --   TApp (TCon (TC "->" _)) _ -> 
+          -- if '.' `elem` name
+          if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
 
         NamespaceAccess name ->
           if '.' `elem` name || name == "!" || not coverage then name else hpWrapLine coverage astPath l name
@@ -301,20 +308,20 @@ instance Compilable Exp where
         Record fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
           compileField :: Field -> String
-          compileField field = case field of
+          compileField (Optimized _ _ field) = case field of
             Field (name, exp) ->
               " " <> name <> ": " <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
             FieldSpread exp -> " ..." <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
 
-        FieldAccess record field ->
-          hpWrapLine coverage astPath (getStartLine record) $ compile config record <> compile config field
+        FieldAccess record (Optimized _ _ (Var name)) ->
+          hpWrapLine coverage astPath (getStartLine record) $ compile config record <> name
 
         JSExp           content -> content
 
         ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
          where
           compileListItem :: ListItem -> String
-          compileListItem li = case li of
+          compileListItem (Optimized _ _ li) = case li of
             ListItem   exp -> compile config exp
             ListSpread exp -> " ..." <> compile config exp
 
@@ -342,38 +349,34 @@ instance Compilable Exp where
             containsSpread :: [Pattern] -> Bool
             containsSpread pats =
               let isSpread = \case
-                    PSpread _ -> True
-                    _         -> False
+                    Optimized _ _ (PSpread _) -> True
+                    _                         -> False
               in  case find isSpread pats of
                     Just _  -> True
                     Nothing -> False
 
           compilePattern :: String -> Pattern -> String
-          compilePattern _     (PVar _)  = "true"
-          compilePattern _     PAny      = "true"
-          compilePattern scope (PNum  n) = scope <> " === " <> n
-          compilePattern scope (PStr  n) = scope <> " === \"" <> n <> "\""
-          compilePattern scope (PBool n) = scope <> " === " <> n
-          compilePattern scope (PCon n) | n == "String"  = "typeof " <> scope <> " === \"string\""
-                                        | n == "Boolean" = "typeof " <> scope <> " === \"boolean\""
-                                        | n == "Number"  = "typeof " <> scope <> " === \"number\""
-                                        | otherwise      = ""
-          compilePattern scope (PCtor n []) = scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
-          compilePattern scope (PCtor n ps) =
-            scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\"" <> if not (null args)
-                                                                                   then
-                                                                                     " && " <> args
-                                                                                   else
-                                                                                     ""
-            where args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
-          compilePattern scope (PRecord m) =
-            intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
+          compilePattern scope (Optimized _ _ pat) = case pat of
+            PVar _  -> "true"
+            PAny    -> "true"
+            PNum  n -> scope <> " === " <> n
+            PStr  n -> scope <> " === \"" <> n <> "\""
+            PBool n -> scope <> " === " <> n
+            PCon n | n == "String"  -> "typeof " <> scope <> " === \"string\""
+                   | n == "Boolean" -> "typeof " <> scope <> " === \"boolean\""
+                   | n == "Number"  -> "typeof " <> scope <> " === \"number\""
+                   | otherwise      -> ""
+            PCtor n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
+            PCtor n ps ->
+              let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
+              in  scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\"" <> if not (null args)
+                    then " && " <> args
+                    else ""
+            PRecord m     -> intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
 
-          compilePattern scope (PSpread pat  ) = compilePattern scope pat
-          compilePattern scope (PList   items) = compileListOrTuplePattern scope items
-          compilePattern scope (PTuple  items) = compileListOrTuplePattern scope items
-
-          compilePattern _     _               = ""
+            PSpread pat   -> compilePattern scope pat
+            PList   items -> compileListOrTuplePattern scope items
+            PTuple  items -> compileListOrTuplePattern scope items
 
 
           compileIs :: Is -> String
@@ -388,7 +391,7 @@ instance Compilable Exp where
               <> ";\n  }\n"
 
           buildVars :: String -> Pattern -> String
-          buildVars v p = case p of
+          buildVars v (Optimized _ _ pat) = case pat of
             PRecord fields ->
               "    const { "
                 <> intercalate
@@ -399,9 +402,9 @@ instance Compilable Exp where
                 <> ";\n"
              where
               buildFieldVar :: String -> Pattern -> String
-              buildFieldVar name pat = case pat of
-                PSpread (PVar n) -> "..." <> n
-                PVar    n        -> if null name then n else name <> ": " <> n
+              buildFieldVar name (Optimized _ _ pat) = case pat of
+                PSpread (Optimized _ _ (PVar n)) -> "..." <> n
+                PVar    n                        -> if null name then n else name <> ": " <> n
                 PRecord fields ->
                   name
                     <> ": { "
@@ -434,13 +437,13 @@ instance Compilable Exp where
             in  "    const [" <> intercalate "," itemsStr <> "] = " <> scope <> ";\n"
            where
             buildListVar :: Pattern -> String
-            buildListVar pat = case pat of
-              PSpread (PVar n) -> "..." <> n
-              PVar    n        -> n
-              PCtor _ args     -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
-              PList  pats      -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-              PTuple pats      -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-              _                -> ""
+            buildListVar (Optimized _ _ pat) = case pat of
+              PSpread (Optimized _ _ (PVar n)) -> "..." <> n
+              PVar    n    -> n
+              PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
+              PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              _            -> ""
 
           compileRecord :: String -> Name -> Pattern -> String
           compileRecord scope n p = compilePattern (scope <> "." <> n) p
@@ -456,9 +459,9 @@ removeNamespace = reverse . takeWhile (/= '.') . reverse
 
 
 instance Compilable TypeDecl where
-  compile _ Alias{}                      = ""
-  compile _ ADT { adtconstructors = [] } = ""
-  compile config adt =
+  compile _ (Untyped _ Alias{})                      = ""
+  compile _ (Untyped _ ADT { adtconstructors = [] }) = ""
+  compile config (Untyped _ adt) =
     let ctors    = adtconstructors adt
         exported = adtexported adt
     in  foldr (<>) "" (addExport exported . compile config <$> ctors)
@@ -468,7 +471,7 @@ instance Compilable TypeDecl where
 
 
 instance Compilable Constructor where
-  compile config (Constructor cname cparams) =
+  compile config (Untyped _ (Constructor cname cparams)) =
     let coverage  = cccoverage config
         optimized = ccoptimize config
     in  case cparams of
@@ -494,7 +497,7 @@ instance Compilable Constructor where
 
 
 compileImport :: CompilationConfig -> Import -> String
-compileImport config imp = case imp of
+compileImport config (Untyped _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
     in  "import { " <> compileNames names <> " } from \"" <> importPath <> "\""
@@ -517,11 +520,11 @@ updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
 instance Compilable Opt.Interface where
-  compile config interface = case interface of
+  compile config (Untyped _ interface) = case interface of
     Opt.Interface name _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
 instance Compilable Opt.Instance where
-  compile config inst = case inst of
+  compile config (Untyped _ inst) = case inst of
     Opt.Instance interface _ typings dict -> -- "INST" <> interface
       interface
         <> "['"
@@ -532,7 +535,7 @@ instance Compilable Opt.Instance where
         <> "\n};\n"
    where
     compileMethod :: Name -> Exp -> String
-    compileMethod n exp = "  " <> n <> ": " <> compileAssignmentWithPlaceholder config exp
+    compileMethod n (Opt.Optimized _ _ (Opt.Assignment _ exp)) = "  " <> n <> ": " <> compileAssignmentWithPlaceholder config exp
 
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
@@ -600,7 +603,7 @@ instance Compilable AST where
 buildDefaultExport :: [TypeDecl] -> [Exp] -> String
 buildDefaultExport as es =
   let expExportNames    = getExportName <$> filter isExport es
-      adtExportNames    = getConstructorName <$> concat (adtconstructors <$> filter isADTExport as)
+      adtExportNames    = getConstructorName <$> concat (adtconstructors . getValue <$> filter isADTExport as)
       allDefaultExports = expExportNames <> adtExportNames
   in  case allDefaultExports of
         []      -> "export default {};\n"
@@ -608,7 +611,7 @@ buildDefaultExport as es =
 
  where
   isADTExport :: TypeDecl -> Bool
-  isADTExport ADT { adtexported } = adtexported
+  isADTExport (Untyped _ ADT { adtexported }) = adtexported
   isADTExport _                   = False
 
   isExport :: Exp -> Bool
@@ -623,4 +626,4 @@ buildDefaultExport as es =
   getExportName (Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment n _)))) _)) = n
 
   getConstructorName :: Constructor -> String
-  getConstructorName (Constructor cname _) = cname
+  getConstructorName (Untyped _ (Constructor cname _)) = cname

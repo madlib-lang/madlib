@@ -17,7 +17,7 @@ import IO from "IO"
 
 // run(r, 47) |> IO.log
 
-export data WriterReader w r a = WriterReader (r -> <a, List w>)
+export type WriterReader w r a = WriterReader (r -> <a, List w>)
 
 run :: WriterReader w r a -> r -> <a, List w>
 export run = (m, env) => where(m)

@@ -1,7 +1,16 @@
 import {} from "Number"
 import IO from "IO"
 
+if (true) {""} else {"21"}
+
+
 value = 42
 result = `result: ${ if (true) {show(value)} else {"21"} }`
+
+result = `fsdf
+this is a template string ${if (true) { "ok" } else { "tchou" }}  sdf
+df
+`
+
 
 IO.log(result)

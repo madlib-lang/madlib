@@ -2,4 +2,8 @@ Left
   (InferError
      (ADTAlreadyDefined
         (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "a" Star))))
-     NoReason)
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 34 2 1) (Loc 67 2 34)
+       , ctxBacktrace = []
+       })

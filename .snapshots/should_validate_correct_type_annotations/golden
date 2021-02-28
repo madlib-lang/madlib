@@ -31,7 +31,7 @@ Right
                               (TCon (TC "Number" Star)) (Area (Loc 31 2 8) (Loc 32 2 9)) "a")
                            [ Solved
                                (TCon (TC "Number" Star))
-                               (Area (Loc 38 2 15) (Loc 39 2 16))
+                               (Area (Loc 38 2 15) (Loc 43 2 20))
                                (App
                                   (Solved
                                      (TApp
@@ -39,7 +39,7 @@ Right
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
                                            (TCon (TC "Number" Star)))
                                         (TCon (TC "Number" Star)))
-                                     (Area (Loc 38 2 15) (Loc 39 2 16))
+                                     (Area (Loc 38 2 15) (Loc 43 2 20))
                                      (App
                                         (Solved
                                            (TApp
@@ -82,11 +82,11 @@ Right
                   (LNum "3"))
                (Forall [] ([] :=> TCon (TC "Number" Star))))
         , Solved
-            (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "f" Star)))
+            (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star)))
             (Area (Loc 92 5 2) (Loc 110 5 20))
             (TypedExp
                (Solved
-                  (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "f" Star)))
+                  (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "e" Star)))
                   (Area (Loc 92 5 2) (Loc 99 5 9))
                   (Var "Nothing"))
                (Forall
@@ -123,13 +123,33 @@ Right
                        (TCon (TC "Maybe" (Kfun Star Star))) (TCon (TC "Number" Star)))))
         ]
     , atypedecls =
-        [ ADT
-            { adtname = "Maybe"
-            , adtparams = [ "a" ]
-            , adtconstructors =
-                [ Constructor "Just" [ TRSingle "a" ] , Constructor "Nothing" [] ]
-            , adtexported = False
-            }
+        [ Untyped
+            (Area (Loc 59 4 1) (Loc 90 4 32))
+            ADT
+              { adtname = "Maybe"
+              , adtparams = [ "a" ]
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 74 4 16) (Loc 80 4 22))
+                      (Constructor
+                         "Just"
+                         [ Untyped (Area (Loc 79 4 21) (Loc 80 4 22)) (TRSingle "a") ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "i" Star)))
+                            (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "i" Star)))))
+                  , Untyped
+                      (Area (Loc 83 4 25) (Loc 90 4 32))
+                      (Constructor
+                         "Nothing"
+                         []
+                         (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "j" Star))))
+                  ]
+              , adtType =
+                  TApp (TCon (TC "Maybe" (Kfun Star Star))) (TVar (TV "a" Star))
+              , adtexported = False
+              }
         ]
     , ainterfaces = []
     , ainstances = []

@@ -3,12 +3,26 @@ Right
     { aimports = []
     , aexps = []
     , atypedecls =
-        [ ADT
-            { adtname = "Result"
-            , adtparams = []
-            , adtconstructors = [ Constructor "Success" [ TRSingle "b" ] ]
-            , adtexported = False
-            }
+        [ Untyped
+            (Area (Loc 0 1 1) (Loc 23 1 24))
+            ADT
+              { adtname = "Result"
+              , adtparams = []
+              , adtconstructors =
+                  [ Untyped
+                      (Area (Loc 14 1 15) (Loc 23 1 24))
+                      (Constructor
+                         "Success"
+                         [ Untyped (Area (Loc 22 1 23) (Loc 23 1 24)) (TRSingle "b") ]
+                         (TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TVar (TV "a" Star)))
+                            (TCon (TC "Result" Star))))
+                  ]
+              , adtType = TCon (TC "Result" Star)
+              , adtexported = False
+              }
         ]
     , ainterfaces = []
     , ainstances = []

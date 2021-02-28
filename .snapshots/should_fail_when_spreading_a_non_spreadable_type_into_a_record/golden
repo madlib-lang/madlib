@@ -1,4 +1,35 @@
 Left
   (InferError
      (WrongSpreadType "TCon (TC \"Number\" Star)")
-     (SimpleReason "path" (Area (Loc 0 1 1) (Loc 14 1 15))))
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 11 1 12) (Loc 12 1 13)
+       , ctxBacktrace =
+           [ BTExp
+               (Canonical
+                  (Area (Loc 0 1 1) (Loc 14 1 15))
+                  (Record
+                     [ Canonical
+                         (Area (Loc 2 1 3) (Loc 6 1 7))
+                         (Field
+                            ( "x" , Canonical (Area (Loc 5 1 6) (Loc 6 1 7)) (LNum "1") ))
+                     , Canonical
+                         (Area (Loc 8 1 9) (Loc 12 1 13))
+                         (FieldSpread
+                            (Canonical (Area (Loc 11 1 12) (Loc 12 1 13)) (LNum "3")))
+                     ]))
+           , BTExp
+               (Canonical
+                  (Area (Loc 0 1 1) (Loc 14 1 15))
+                  (Record
+                     [ Canonical
+                         (Area (Loc 2 1 3) (Loc 6 1 7))
+                         (Field
+                            ( "x" , Canonical (Area (Loc 5 1 6) (Loc 6 1 7)) (LNum "1") ))
+                     , Canonical
+                         (Area (Loc 8 1 9) (Loc 12 1 13))
+                         (FieldSpread
+                            (Canonical (Area (Loc 11 1 12) (Loc 12 1 13)) (LNum "3")))
+                     ]))
+           ]
+       })
