@@ -16,7 +16,7 @@ function getPlatform() {
 function getBinary() {
   const platform = getPlatform();
   const version = require("../package.json").version;
-  const url = `https://github.com/open-sorcerers/madlib/releases/download/v${version}/madlib-${platform}.tar.gz`;
+  const url = `https://github.com/madlib-lang/madlib/releases/download/v${version}/madlib-${platform}.tar.gz`;
   const name = "madlib";
 
   return new Binary(name, url);
