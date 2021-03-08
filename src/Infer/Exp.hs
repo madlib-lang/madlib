@@ -167,7 +167,7 @@ inferApp env (Can.Canonical area (Can.App abs arg final)) = do
   (s1, ps1, t1, eabs) <- infer env abs
   (s2, ps2, t2, earg) <- infer env arg
 
-  s3                  <- contextualUnify env arg (apply s2 t1) (t2 `fn` tv)
+  s3                  <- contextualUnify env abs (apply s2 t1) (t2 `fn` tv)
 
   let t      = apply s3 tv
   let s      = s3 `compose` s2 `compose` s1

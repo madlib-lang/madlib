@@ -91,13 +91,13 @@ formatTypeError json err = case err of
       <> schemeToStr scInferred
 
   UnificationError t t' ->
-    "Type error, you gave :\n"
-      <> "    "
-      <> colorWhen (not json) Red (prettyPrintType t)
-      <> "\n"
-      <> "But this type was expected:\n"
+    "Type error, expected:\n"
       <> "    "
       <> colorWhen (not json) Green (prettyPrintType t')
+      <> "\n"
+      <> "But found:\n"
+      <> "    "
+      <> colorWhen (not json) Red (prettyPrintType t)
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"

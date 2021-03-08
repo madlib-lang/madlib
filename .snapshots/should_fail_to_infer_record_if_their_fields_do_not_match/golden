@@ -1,17 +1,16 @@
 Left
   (InferError
      (UnificationError
+        (TRecord (fromList [ ( "name" , TCon (TC "String" Star) ) ]) False)
         (TRecord
            (fromList
               [ ( "x" , TCon (TC "Number" Star) )
               , ( "y" , TCon (TC "Number" Star) )
               ])
-           False)
-        (TRecord
-           (fromList [ ( "name" , TCon (TC "String" Star) ) ]) False))
+           False))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 18 1 19) (Loc 34 1 35)
+       , ctxArea = Area (Loc 0 1 1) (Loc 34 1 35)
        , ctxBacktrace =
            [ BTExp
                (Canonical
