@@ -36,7 +36,7 @@ instance Unify Type where
       let extraFields  = M.difference fields fields'
           extraFields' = M.difference fields' fields
       if not open && extraFields' /= mempty || not open' && extraFields /= mempty
-        then throwError $ InferError (UnificationError l r) NoContext
+        then throwError $ InferError (UnificationError r l) NoContext
         else do
           let updatedFields  = M.union fields extraFields'
               updatedFields' = M.union fields' extraFields
@@ -45,7 +45,7 @@ instance Unify Type where
               z              = zip types types'
           unifyVars M.empty z
     | M.difference fields fields' /= M.empty || M.difference fields' fields /= M.empty = throwError
-    $ InferError (UnificationError l r) NoContext
+    $ InferError (UnificationError r l) NoContext
     | otherwise = do
       let types  = M.elems fields
           types' = M.elems fields'
@@ -55,7 +55,7 @@ instance Unify Type where
   unify (TVar tv) t                = varBind tv t
   unify t         (TVar tv)        = varBind tv t
   unify (TCon a) (TCon b) | a == b = return M.empty
-  unify t1 t2                      = throwError $ InferError (UnificationError t1 t2) NoContext
+  unify t1 t2                      = throwError $ InferError (UnificationError t2 t1) NoContext
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -116,7 +116,7 @@ contextualUnifyElems env (h : r) = contextualUnifyElems' env h r
 contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Type)] -> Infer Substitution
 contextualUnifyElems' _   _      []              = return M.empty
 contextualUnifyElems' env (e, t) ((e', t') : xs) = do
-  s1 <- contextualUnify env e' t' t
+  s1 <- contextualUnify env e' t t'
   s2 <- contextualUnifyElems' env (e, t) xs
   return $ compose s1 s2
 

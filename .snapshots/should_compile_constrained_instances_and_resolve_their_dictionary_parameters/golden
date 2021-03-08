@@ -29,14 +29,14 @@ throw 'non exhaustive patterns!'; }
 })(__x__)))))
 };
 Show['Either'] = {
-  show: (Show_y) => ((Show_ab) => (__curry__((__x__) => ((__x__) => {
+  show: (Show_aj) => ((Show_ag) => (__curry__((__x__) => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     const a = __x__.__args[0];
-    return `Right ` + Show_y.show(a);
+    return `Right ` + Show_aj.show(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     const e = __x__.__args[0];
-    return `Left ` + Show_ab.show(e);
+    return `Left ` + Show_ag.show(e);
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }

@@ -61,6 +61,8 @@ export intercalate = (a, xs) => where(xs)
   is [one, two]    : [one, a, two]
   is [one, ...rest]: [one, a, ...intercalate(a, rest)]
 
+export join = intercalate
+
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
 
