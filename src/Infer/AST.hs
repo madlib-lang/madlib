@@ -23,8 +23,8 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Debug.Trace
 import           Text.Show.Pretty
-import Infer.Unify
-import Infer.Instantiate
+import           Infer.Unify
+import           Infer.Instantiate
 
 {-|
 Module      : AST
@@ -61,8 +61,15 @@ buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
   = do
     let methods = foldl (\mtds (Can.Canonical _ (Can.Interface _ _ _ mtds')) -> mtds <> mtds') mempty ainterfaces
-    env'  <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _)) -> addInterface env id vars preds) priorEnv ainterfaces
-    env'' <- foldM (\env inst@(Can.Canonical _ (Can.Instance id preds p _)) -> catchError (addInstance env preds p) (addContext env' inst)) env' ainstances
+    env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _)) -> addInterface env id vars preds)
+                  priorEnv
+                  ainterfaces
+    env'' <- foldM
+      (\env inst@(Can.Canonical _ (Can.Instance id preds p _)) ->
+        catchError (addInstance env preds p) (addContext env' inst)
+      )
+      env'
+      ainstances
     let constructors = M.fromList $ concat $ mapMaybe
           (\case
             Can.Canonical _ adt@Can.ADT{} ->
@@ -154,7 +161,8 @@ mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
 mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ is `union` is')
 
 updateInterface :: Can.Interface -> Slv.Interface
-updateInterface (Can.Canonical area (Can.Interface name preds vars methods)) = Slv.Untyped area $ Slv.Interface name preds vars methods
+updateInterface (Can.Canonical area (Can.Interface name preds vars methods)) =
+  Slv.Untyped area $ Slv.Interface name preds vars methods
 
 inferAST :: Env -> Can.AST -> Infer (Slv.AST, Env)
 inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
@@ -170,9 +178,9 @@ inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.a
       , Slv.apath       = apath
       , Slv.atypedecls  = updatedADTs
       , Slv.aimports    = (\case
-                            g@(Slv.Untyped _ Slv.DefaultImport{}) -> g
-                            i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
-                              Slv.Untyped area $ Slv.NamedImport (mapMaybe (\n -> M.lookup n (envVars env) >> Just n) names) fp afp
+                            g@(Slv.Untyped _    Slv.DefaultImport{}           ) -> g
+                            i@(Slv.Untyped area (Slv.NamedImport names fp afp)) -> Slv.Untyped area
+                              $ Slv.NamedImport (mapMaybe (\n -> M.lookup n (envVars env) >> Just n) names) fp afp
                           )
                           .   updateImport
                           <$> aimports
@@ -186,18 +194,21 @@ inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.a
 updateADT :: Can.TypeDecl -> Infer Slv.TypeDecl
 updateADT (Can.Canonical area adt@Can.ADT{}) = do
   updatedConstructors <- mapM updateADTConstructor (Can.adtconstructors adt)
-  return $ Slv.Untyped area Slv.ADT { Slv.adtname         = Can.adtname adt
-                                    , Slv.adtparams       = Can.adtparams adt
-                                    , Slv.adtconstructors = updatedConstructors
-                                    , Slv.adtexported     = Can.adtexported adt
-                                    , Slv.adtType         = Can.adtType adt
-                                    }
-updateADT (Can.Canonical area alias@Can.Alias{}) =
-  return $ Slv.Untyped area Slv.Alias { Slv.aliasname     = Can.aliasname alias
-                                      , Slv.aliasparams   = Can.aliasparams alias
-                                      , Slv.aliastype     = updateTyping $ Can.aliastype alias
-                                      , Slv.aliasexported = Can.aliasexported alias
-                                      }
+  return $ Slv.Untyped
+    area
+    Slv.ADT { Slv.adtname         = Can.adtname adt
+            , Slv.adtparams       = Can.adtparams adt
+            , Slv.adtconstructors = updatedConstructors
+            , Slv.adtexported     = Can.adtexported adt
+            , Slv.adtType         = Can.adtType adt
+            }
+updateADT (Can.Canonical area alias@Can.Alias{}) = return $ Slv.Untyped
+  area
+  Slv.Alias { Slv.aliasname     = Can.aliasname alias
+            , Slv.aliasparams   = Can.aliasparams alias
+            , Slv.aliastype     = updateTyping $ Can.aliastype alias
+            , Slv.aliasexported = Can.aliasexported alias
+            }
 
 updateADTConstructor :: Can.Constructor -> Infer Slv.Constructor
 updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme)) = do

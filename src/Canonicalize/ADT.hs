@@ -44,11 +44,13 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
     typingType <- typingToType env typing
     let env' = addADT env name (TAlias astPath name params typingType)
     typing' <- canonicalizeTyping typing
-    let alias' = Can.Canonical area Can.Alias { Can.aliasname     = name
-                                              , Can.aliasparams   = Src.aliasparams alias
-                                              , Can.aliastype     = typing'
-                                              , Can.aliasexported = Src.aliasexported alias
-                                              }
+    let alias' = Can.Canonical
+          area
+          Can.Alias { Can.aliasname     = name
+                    , Can.aliasparams   = Src.aliasparams alias
+                    , Can.aliastype     = typing'
+                    , Can.aliasexported = Src.aliasexported alias
+                    }
     return (env', alias')
 
 
@@ -70,12 +72,14 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
     )
     is
 
-  let adt' = Can.Canonical area Can.ADT { Can.adtname         = name
-                                        , Can.adtparams       = params
-                                        , Can.adtconstructors = ctors'
-                                        , Can.adtType         = rt
-                                        , Can.adtexported     = Src.adtexported adt
-                                        }
+  let adt' = Can.Canonical
+        area
+        Can.ADT { Can.adtname         = name
+                , Can.adtparams       = params
+                , Can.adtconstructors = ctors'
+                , Can.adtType         = rt
+                , Can.adtexported     = Src.adtexported adt
+                }
   return (addADT env name rt, adt')
 
 

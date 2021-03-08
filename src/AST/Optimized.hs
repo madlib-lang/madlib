@@ -7,7 +7,7 @@ import qualified Data.Map                      as M
 
 
 data Optimized a
-  = Optimized Ty.Type Area a 
+  = Optimized Ty.Type Area a
   | Untyped Area a
   deriving(Eq, Show)
 
@@ -141,8 +141,8 @@ type Table = M.Map FilePath AST
 
 getStartLine :: Exp -> Int
 getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line
-getStartLine (Untyped (Area (Loc _ line _) _) _)     = line
+getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
 getValue :: Optimized a -> a
 getValue (Optimized _ _ a) = a
-getValue (Untyped _ a)     = a
+getValue (Untyped _ a    ) = a

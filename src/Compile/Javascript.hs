@@ -459,7 +459,7 @@ removeNamespace = reverse . takeWhile (/= '.') . reverse
 
 
 instance Compilable TypeDecl where
-  compile _ (Untyped _ Alias{})                      = ""
+  compile _ (Untyped _ Alias{}                     ) = ""
   compile _ (Untyped _ ADT { adtconstructors = [] }) = ""
   compile config (Untyped _ adt) =
     let ctors    = adtconstructors adt
@@ -535,7 +535,8 @@ instance Compilable Opt.Instance where
         <> "\n};\n"
    where
     compileMethod :: Name -> Exp -> String
-    compileMethod n (Opt.Optimized _ _ (Opt.Assignment _ exp)) = "  " <> n <> ": " <> compileAssignmentWithPlaceholder config exp
+    compileMethod n (Opt.Optimized _ _ (Opt.Assignment _ exp)) =
+      "  " <> n <> ": " <> compileAssignmentWithPlaceholder config exp
 
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
@@ -612,7 +613,7 @@ buildDefaultExport as es =
  where
   isADTExport :: TypeDecl -> Bool
   isADTExport (Untyped _ ADT { adtexported }) = adtexported
-  isADTExport _                   = False
+  isADTExport _                               = False
 
   isExport :: Exp -> Bool
   isExport a = case a of

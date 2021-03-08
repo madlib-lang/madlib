@@ -154,7 +154,7 @@ getConstructorName (Untyped _ (Constructor name _ _)) = name
 isADTExported :: TypeDecl -> Bool
 isADTExported adt = case adt of
   Untyped _ ADT { adtexported } -> adtexported
-  _                              -> False
+  _                             -> False
 
 isExport :: Exp -> Bool
 isExport a = case a of
@@ -166,4 +166,4 @@ isExport a = case a of
 
 getValue :: Solved a -> a
 getValue (Solved _ _ a) = a
-getValue (Untyped _ a)  = a
+getValue (Untyped _ a ) = a

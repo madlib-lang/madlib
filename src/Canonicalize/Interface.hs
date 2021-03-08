@@ -82,14 +82,14 @@ addConstraints n tvs t =
 
 
 canonicalizeInstances :: Env -> Target -> [Src.Instance] -> CanonicalM [Can.Instance]
-canonicalizeInstances _ _ []            = return []
-canonicalizeInstances env target (i:is) = do
-  next <- canonicalizeInstances env target is
+canonicalizeInstances _   _      []       = return []
+canonicalizeInstances env target (i : is) = do
+  next    <- canonicalizeInstances env target is
   current <- catchError
     (canonicalizeInstance env target i)
     (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) (Src.getArea i) []))
 
-  return $ current:next
+  return $ current : next
 
 
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
@@ -112,7 +112,8 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
                     (zip args tvs)
                   return $ IsIn interface' vars
 
-                Nothing -> throwError $ InferError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
+                Nothing ->
+                  throwError $ InferError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 

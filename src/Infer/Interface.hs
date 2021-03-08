@@ -78,8 +78,8 @@ isInstanceDefined env subst (IsIn id ts) = do
 
 
 resolveInstances :: Env -> [Can.Instance] -> Infer [Slv.Instance]
-resolveInstances _ []       = return []
-resolveInstances env (i:is) = do
+resolveInstances _   []       = return []
+resolveInstances env (i : is) = do
   next <- resolveInstances env is
   curr <- catchError
     (Just <$> resolveInstance env i)
@@ -100,8 +100,9 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   let instancePreds = apply subst $ [IsIn name instanceTypes] <> ps
   let psTypes       = concat $ predTypes <$> constraintPreds
   let subst'        = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
-  inferredMethods <- mapM (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
-                          (M.toList methods)
+  inferredMethods <- mapM
+    (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
+    (M.toList methods)
   let dict' = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
   return $ Slv.Untyped area $ Slv.Instance name constraintPreds pred dict'
 
@@ -143,7 +144,7 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
       then throwError $ InferError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateType e t''
-        e'' <- insertClassPlaceholders env (Slv.Solved t area $ Slv.Assignment mn e') (apply s' withParents)
+        e''  <- insertClassPlaceholders env (Slv.Solved t area $ Slv.Assignment mn e') (apply s' withParents)
         e''' <- updatePlaceholders env s' e''
 
         return (mn, e''', sc)
