@@ -280,26 +280,25 @@ prettyPrintType' (vars, hkVars) t = case t of
     in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
 
   TApp (TApp (TApp (TCon (TC "(,,)" _)) tl) tr) trr ->
-    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' (vars, hkVars) tl
+        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' (varsRight, hkVarsRight) trr
     in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
 
   TApp (TApp (TCon (TC "(->)" _)) tl) tr ->
     let (varsLeft, hkVarsLeft, left) = case tl of
           TApp (TApp (TCon (TC "(->)" _)) tl') tr' ->
-            let (varsLeft', hkVarsLeft', left') = prettyPrintType' (vars, hkVars) tl'
+            let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' (vars, hkVars) tl'
                 (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft', varsLeft') tr'
-                leftParenthesis = case tl' of
+                leftParenthesis                    = case tl' of
                   TApp (TApp (TCon (TC "(->)" _)) _) _ -> True
-                  _                                    -> False
+                  _ -> False
                 left'' = if leftParenthesis then "(" <> left' <> ")" else left'
             in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
 
           _ -> prettyPrintType' (vars, hkVars) tl
 
         (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
-
     in  (varsRight, hkVarsRight, left <> " -> " <> right)
 
   TApp tl tr ->
@@ -307,11 +306,9 @@ prettyPrintType' (vars, hkVars) t = case t of
         (varsRight, hkVarsRight, right) = case tr of
           TApp _ _ ->
             let (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft, hkVarsLeft) tr
-            in
-              if not (isTuple tr) then
-                (varsRight', hkVarsRight', "(" <> right' <> ")")
-              else
-                (varsRight', hkVarsRight', right')
+            in  if not (isTuple tr)
+                  then (varsRight', hkVarsRight', "(" <> right' <> ")")
+                  else (varsRight', hkVarsRight', right')
           _ -> prettyPrintType' (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
@@ -330,16 +327,16 @@ prettyPrintType' (vars, hkVars) t = case t of
 
   TGen n -> (vars, hkVars, "TGen" <> show n)
 
-  _ -> (vars, hkVars, "")
+  _      -> (vars, hkVars, "")
 
 
 isTuple :: Type -> Bool
 isTuple t = case t of
-  TApp (TApp (TCon (TC "(,)" _)) _) _                               -> True
-  TApp (TApp (TApp (TCon (TC "(,,)" _)) _) _) _                     -> True
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _)) _) _) _) _           -> True
+  TApp (TApp (TCon (TC "(,)" _)) _) _ -> True
+  TApp (TApp (TApp (TCon (TC "(,,)" _)) _) _) _ -> True
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _)) _) _) _) _ -> True
   TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _)) _) _) _) _) _ -> True
-  _                                                                 -> False
+  _ -> False
 
 
 prettyPrintKind :: Kind -> String

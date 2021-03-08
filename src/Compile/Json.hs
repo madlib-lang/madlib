@@ -11,7 +11,7 @@ import           Text.Show.Pretty
 import           Error.Error
 import           Explain.Format
 import           Data.Char
-import Infer.Scheme
+import           Infer.Scheme
 
 
 indentSize :: Int
@@ -82,10 +82,12 @@ compileAST ast =
         <> path
         <> "\",\n"
         <> "      \"instances\": [\n"
-        <> "        " <> compiledInstances
+        <> "        "
+        <> compiledInstances
         <> "\n      ],\n"
         <> "      \"typeDeclarations\": [\n"
-        <> "        " <> compiledTypeDeclarations
+        <> "        "
+        <> compiledTypeDeclarations
         <> "\n      ],\n"
         <> "      \"expressions\": [\n"
         <> "        "
@@ -96,41 +98,61 @@ compileAST ast =
 compileTypeDeclaration :: Int -> Slv.TypeDecl -> String
 compileTypeDeclaration depth (Slv.Untyped area td) = case td of
   Slv.ADT _ _ ctors _ _ ->
-    let compiledConstructors = intercalate (",\n" <> indent (depth + 2)) $ compileConstructor (depth + 2) <$> Slv.adtconstructors td
-    in "{\n"
-      <> indent (depth + 1)
-      <> "\"nodeType\": \"ADT\",\n"
-      <> indent (depth + 1)
-      <> "\"loc\": " <> compileArea (depth + 1) area <> ",\n"
-      <> indent (depth + 1)
-      <> "\"name\": \"" <> Slv.adtname td <> "\",\n"
-      <> indent (depth + 1)
-      <> "\"kind\": \"" <> prettyPrintKind (buildKind (length $ Slv.adtparams td)) <> "\",\n"
-      <> indent (depth + 1)
-      <> "\"constructors\": [\n"
-      <> indent (depth + 2)
-      <> compiledConstructors <> "\n"
-      <> indent (depth + 1)
-      <> "]\n"
-      <> indent depth
-      <> "}"
-  
-  _ -> "{\n"
+    let compiledConstructors =
+            intercalate (",\n" <> indent (depth + 2)) $ compileConstructor (depth + 2) <$> Slv.adtconstructors td
+    in  "{\n"
+          <> indent (depth + 1)
+          <> "\"nodeType\": \"ADT\",\n"
+          <> indent (depth + 1)
+          <> "\"loc\": "
+          <> compileArea (depth + 1) area
+          <> ",\n"
+          <> indent (depth + 1)
+          <> "\"name\": \""
+          <> Slv.adtname td
+          <> "\",\n"
+          <> indent (depth + 1)
+          <> "\"kind\": \""
+          <> prettyPrintKind (buildKind (length $ Slv.adtparams td))
+          <> "\",\n"
+          <> indent (depth + 1)
+          <> "\"constructors\": [\n"
+          <> indent (depth + 2)
+          <> compiledConstructors
+          <> "\n"
+          <> indent (depth + 1)
+          <> "]\n"
+          <> indent depth
+          <> "}"
+
+  _ ->
+    "{\n"
       <> indent (depth + 1)
       <> "\"nodeType\": \"Alias\",\n"
-      <> indent (depth + 1) <> "\"loc\": { \"start\": { \"line\": 0, \"col\": 0 }, \"end\": { \"line\": 0, \"col\": 0 }}\n"
+      <> indent (depth + 1)
+      <> "\"loc\": { \"start\": { \"line\": 0, \"col\": 0 }, \"end\": { \"line\": 0, \"col\": 0 }}\n"
       <> indent depth
       <> "}"
 
 compileConstructor :: Int -> Slv.Constructor -> String
 compileConstructor depth (Slv.Untyped area (Slv.Constructor name typings t)) =
   "{\n"
-  <> indent (depth + 1) <> "\"nodeType\": \"Constructor\",\n"
-  <> indent (depth + 1) <> "\"name\": \"" <> name <> "\",\n"
-  <> indent (depth + 1)
-  <> "\"loc\": " <> compileArea (depth + 1) area <> ",\n"
-  <> indent (depth + 1) <> "\"type\": \"" <> prettyPrintType t <> "\"\n"
-  <> indent depth <> "}"
+    <> indent (depth + 1)
+    <> "\"nodeType\": \"Constructor\",\n"
+    <> indent (depth + 1)
+    <> "\"name\": \""
+    <> name
+    <> "\",\n"
+    <> indent (depth + 1)
+    <> "\"loc\": "
+    <> compileArea (depth + 1) area
+    <> ",\n"
+    <> indent (depth + 1)
+    <> "\"type\": \""
+    <> prettyPrintType t
+    <> "\"\n"
+    <> indent depth
+    <> "}"
 
 compileInstance :: Int -> Slv.Instance -> String
 compileInstance depth (Slv.Untyped area inst@(Slv.Instance _ _ _ methods)) =
@@ -138,7 +160,9 @@ compileInstance depth (Slv.Untyped area inst@(Slv.Instance _ _ _ methods)) =
       compiledMethods = compileInstanceMethods (depth + 2) methods
   in  "{\n"
         <> indent (depth + 1)
-        <> "\"loc\": " <> compiledLoc <> ",\n"
+        <> "\"loc\": "
+        <> compiledLoc
+        <> ",\n"
         <> indent (depth + 1)
         <> "\"methods\": [\n"
         <> indent (depth + 2)
@@ -150,15 +174,23 @@ compileInstance depth (Slv.Untyped area inst@(Slv.Instance _ _ _ methods)) =
         <> "}"
 
 compileInstanceMethods :: Int -> M.Map Name (Slv.Exp, Scheme) -> String
-compileInstanceMethods depth methods =
-  intercalate (",\n" <> indent depth) $ M.elems $ M.mapWithKey (\name (exp, scheme) -> compileInstanceMethod depth name exp scheme) methods
+compileInstanceMethods depth methods = intercalate (",\n" <> indent depth) $ M.elems $ M.mapWithKey
+  (\name (exp, scheme) -> compileInstanceMethod depth name exp scheme)
+  methods
 
 compileInstanceMethod :: Int -> Name -> Slv.Exp -> Scheme -> String
 compileInstanceMethod depth name exp scheme =
   "{\n"
-  <> indent (depth + 1) <> "\"name\": \"" <> name <> "\",\n"
-  <> indent (depth + 1) <> "\"exp\": " <> compileExp (depth + 1) exp <> "\n"
-  <> indent depth <> "}"
+    <> indent (depth + 1)
+    <> "\"name\": \""
+    <> name
+    <> "\",\n"
+    <> indent (depth + 1)
+    <> "\"exp\": "
+    <> compileExp (depth + 1) exp
+    <> "\n"
+    <> indent depth
+    <> "}"
 
 compileExp :: Int -> Slv.Exp -> String
 compileExp depth (Slv.Solved t area exp) =

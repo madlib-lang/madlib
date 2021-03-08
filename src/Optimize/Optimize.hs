@@ -168,25 +168,25 @@ instance Optimizable Slv.Typing Opt.Typing where
 
     Slv.TRComp name typings -> do
       typings' <- mapM (optimize enabled) typings
-      return $  Opt.Untyped area $ Opt.TRComp name typings'
+      return $ Opt.Untyped area $ Opt.TRComp name typings'
 
     Slv.TRArr left right -> do
       left'  <- optimize enabled left
       right' <- optimize enabled right
-      return $  Opt.Untyped area $ Opt.TRArr left' right'
+      return $ Opt.Untyped area $ Opt.TRArr left' right'
 
     Slv.TRRecord fields -> do
       fields' <- mapM (optimize enabled) fields
-      return $  Opt.Untyped area $ Opt.TRRecord fields'
+      return $ Opt.Untyped area $ Opt.TRRecord fields'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (optimize enabled) typings
-      return $  Opt.Untyped area $ Opt.TRTuple typings'
+      return $ Opt.Untyped area $ Opt.TRTuple typings'
 
     Slv.TRConstrained constraints typing -> do
       constraints' <- mapM (optimize enabled) constraints
       typing'      <- optimize enabled typing
-      return $  Opt.Untyped area $ Opt.TRConstrained constraints' typing'
+      return $ Opt.Untyped area $ Opt.TRConstrained constraints' typing'
 
 instance Optimizable Slv.ListItem Opt.ListItem where
   optimize enabled (Slv.Solved t area item) = case item of
@@ -253,23 +253,23 @@ instance Optimizable Slv.TypeDecl Opt.TypeDecl where
     adt@Slv.ADT{} -> do
       ctors <- mapM optimizeConstructors $ Slv.adtconstructors adt
       return $ Opt.Untyped area $ Opt.ADT { Opt.adtname         = Slv.adtname adt
-                                              , Opt.adtparams       = Slv.adtparams adt
-                                              , Opt.adtconstructors = ctors
-                                              , Opt.adtexported     = Slv.adtexported adt
-                                              }
+                                          , Opt.adtparams       = Slv.adtparams adt
+                                          , Opt.adtconstructors = ctors
+                                          , Opt.adtexported     = Slv.adtexported adt
+                                          }
 
     alias@Slv.Alias{} -> do
       aliastype <- optimize enabled $ Slv.aliastype alias
       return $ Opt.Untyped area $ Opt.Alias { Opt.aliasname     = Slv.aliasname alias
-                                                , Opt.aliasparams   = Slv.aliasparams alias
-                                                , Opt.aliastype     = aliastype
-                                                , Opt.aliasexported = Slv.aliasexported alias
-                                                }
+                                            , Opt.aliasparams   = Slv.aliasparams alias
+                                            , Opt.aliastype     = aliastype
+                                            , Opt.aliasexported = Slv.aliasexported alias
+                                            }
    where
     optimizeConstructors :: Slv.Constructor -> Optimize Opt.Constructor
     optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings _)) = do
       typings' <- mapM (optimize enabled) typings
-      return $  Opt.Untyped area $ Opt.Constructor name typings'
+      return $ Opt.Untyped area $ Opt.Constructor name typings'
 
 
 instance Optimizable Slv.Interface Opt.Interface where
@@ -287,9 +287,10 @@ instance Optimizable Slv.Instance Opt.Instance where
 
 instance Optimizable Slv.Import Opt.Import where
   optimize _ (Slv.Untyped area imp) = case imp of
-    Slv.NamedImport   names     relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport names relPath absPath
+    Slv.NamedImport names relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport names relPath absPath
 
-    Slv.DefaultImport namespace relPath absPath -> return $ Opt.Untyped area $ Opt.DefaultImport namespace relPath absPath
+    Slv.DefaultImport namespace relPath absPath ->
+      return $ Opt.Untyped area $ Opt.DefaultImport namespace relPath absPath
 
 instance Optimizable Slv.AST Opt.AST where
   optimize enabled ast = do

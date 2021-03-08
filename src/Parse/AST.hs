@@ -78,10 +78,14 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
 
             childTables <- mapM
               (\imp'@(Source _ area _) -> do
-                builtImport <- buildASTTable' pathUtils srcPath (Just imp') (previousPaths ++ [srcPath]) (getImportAbsolutePath imp')
+                builtImport <- buildASTTable' pathUtils
+                                              srcPath
+                                              (Just imp')
+                                              (previousPaths ++ [srcPath])
+                                              (getImportAbsolutePath imp')
                 case builtImport of
-                  Right x               -> return $ Right x
-                  Left (InferError e _) -> return $ Left $ InferError e (Context srcPath area [])
+                  Right x                -> return $ Right x
+                  Left  (InferError e _) -> return $ Left $ InferError e (Context srcPath area [])
               )
               completeImports
 

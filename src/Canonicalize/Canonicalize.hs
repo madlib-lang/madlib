@@ -95,25 +95,55 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Where exp' iss')
 
     Src.JsxTag name props children -> do
-      let tagFnVar = Can.Canonical emptyArea (Can.Var name)
-      children' <- ((Can.Canonical emptyArea . Can.ListItem) <$>) <$> mapM canonicalizeJsxChild children
-      propFns <- mapM (\(Src.Source _ _ (Src.JsxProp name' exp)) -> do
-                        arg <- canonicalize env target exp
-                        return $ Can.Canonical emptyArea (Can.ListItem $ Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.Var name')) arg True))
-                      ) props
-      let props' = Can.Canonical emptyArea (Can.ListConstructor propFns)
-      let children'' = Can.Canonical emptyArea (Can.ListConstructor children')
-      return $ Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.App tagFnVar props' False)) children'' True)
+      let Area (Loc _ l c) (Loc _ l' c') = area
+      let tagFnArea = Area (Loc 0 l c) (Loc 0 l (c + length name + 2))
+      let tagFnVar = Can.Canonical tagFnArea (Can.Var name)
+
+      children' <-
+        ((\e@(Can.Canonical a _) -> Can.Canonical a (Can.ListItem e)) <$>) <$> mapM canonicalizeJsxChild children
+      propFns <- mapM
+        (\(Src.Source _ a (Src.JsxProp name' exp)) -> do
+          let Area (Loc _ l c) (Loc _ l' c') = a
+          arg <- canonicalize env target exp
+          return $ Can.Canonical
+            a
+            (Can.ListItem $ Can.Canonical
+              a
+              (Can.App (Can.Canonical (Area (Loc 0 l c) (Loc 0 l (c + length name'))) (Can.Var name')) arg True)
+            )
+        )
+        props
+      let propArea     = composeArea (length name) area propFns
+      let childrenArea = composeArea 0 area children'
+
+      let props'       = Can.Canonical propArea (Can.ListConstructor propFns)
+      let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
+
+      children''' <- case children of
+        (Src.Source _ _ (Src.TemplateString _)) : _ -> return children''
+        (Src.Source _ _ (Src.LStr _)) : _ -> return children''
+        (Src.Source _ _ (Src.JsxTag _ _ _)) : _ -> return children''
+        [x ] -> canonicalize env target x
+        _    -> return children''
+
+      return $ Can.Canonical
+        area
+        (Can.App (Can.Canonical (mergeAreas tagFnArea propArea) (Can.App tagFnVar props' False)) children''' True)
      where
-       canonicalizeJsxChild :: Src.Exp -> CanonicalM Can.Exp
-       canonicalizeJsxChild e@(Src.Source _ area exp) = case exp of
-          Src.TemplateString _ -> do
-            e' <- canonicalize env target e
-            return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
-          Src.LStr _ -> do
-            e' <- canonicalize env target e
-            return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
-          _ -> canonicalize env target e
+      composeArea :: Int -> Area -> [Can.Canonical a] -> Area
+      composeArea offset (Area (Loc _ l c) _) cans = if not (null cans)
+        then mergeAreas (getArea $ head cans) (getArea $ last cans)
+        else Area (Loc 0 l (c + offset)) (Loc 0 l (c + offset))
+
+      canonicalizeJsxChild :: Src.Exp -> CanonicalM Can.Exp
+      canonicalizeJsxChild e@(Src.Source _ area exp) = case exp of
+        Src.TemplateString _ -> do
+          e' <- canonicalize env target e
+          return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+        Src.LStr _ -> do
+          e' <- canonicalize env target e
+          return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+        _ -> canonicalize env target e
 
     Src.Pipe exps -> do
       app <- buildApplication (Can.Canonical emptyArea (Can.Var "_P_")) exps
