@@ -111,7 +111,7 @@ tokens :-
   <0, stringTemplateMadlib> '($printable # ')*'                { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0> \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
-  <0> [\ \n]*"//".*[\ ]*[\n]?                        ; -- Comments
+  <0> [\ \n]*"//"[^\n]*[\n]                       ; -- Comments
   <0,comment> $head*\/\*                          { beginComment }
   <comment>   [.\n]                               ;
   <comment>   \*\/                                { endComment }
