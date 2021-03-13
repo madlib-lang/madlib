@@ -42,17 +42,17 @@ mapIdentityT = (f) => pipe(runIdentityT, f, IdentityT)
 liftToIdentityT :: (m a -> n b -> p c) -> IdentityT m a -> IdentityT n b -> IdentityT p c
 liftToIdentityT = (f, a, b) => IdentityT(f(runIdentityT(a), runIdentityT(b)))
 
-instance (Functor m) => Functor (IdentityT m) {
+instance Functor m => Functor (IdentityT m) {
   map = (f) => mapIdentityT(map(f))
 }
 
-instance (Applicative m) => Applicative (IdentityT m) {
+instance Applicative m => Applicative (IdentityT m) {
   pure = (x) => IdentityT(pure(x))
 
   ap = liftToIdentityT(ap)
 }
 
-instance (Monad m) => Monad (IdentityT m) {
+instance Monad m => Monad (IdentityT m) {
   of = pipe(of, IdentityT)
 
   chain = (f, m) => IdentityT(chain(pipe(f, runIdentityT), runIdentityT(m)))

@@ -13,6 +13,8 @@ import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
 import qualified Data.Map                      as M
+import Text.Show.Pretty
+import Debug.Trace
 
 
 
@@ -67,7 +69,7 @@ findInst env p@(IsIn interface t) = do
   catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
  where
   tryInst i@(Instance (ps :=> h)) = do
-    u <- match h p
+    u <- isInstanceOf h p
     return i
   tryInsts []          = throwError $ InferError FatalError NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
@@ -100,11 +102,22 @@ isConcrete t = case t of
   TRecord _ _ -> True
 
 
+isInstanceOf :: Pred -> Pred -> Infer Substitution
+isInstanceOf p@(IsIn interface ts) p'@(IsIn interface' ts') = do
+  if interface == interface' then do
+    let r = filter (\(t1, t2) -> not (isTVar t1)) (zip ts ts')
+    let r' = filter (\(t1, t2) -> isTVar t1) (zip ts ts')
+    s1 <- unify (IsIn interface (fst <$> r')) (IsIn interface (snd <$> r'))
+    s2 <- match (IsIn interface (fst <$> r)) (IsIn interface (snd <$> r))
+    return $ s1 <> s2
+  else
+    throwError $ InferError FatalError NoContext
+
 byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
  where
   tryInst (Instance (ps :=> h)) = do
-    u <- match h p
+    u <- isInstanceOf h p
     let ps' = apply u <$> ps
     return ps'
   tryInsts [] = if all isConcrete $ predTypes p
