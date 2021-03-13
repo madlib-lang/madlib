@@ -15,17 +15,17 @@ export type LcovLine
   | LF Number
   | LH Number
 
-export alias LcovSection
-  = { tn :: LcovLine
-    , sf :: LcovLine
-    , fns :: List LcovLine
-    , fndas :: List LcovLine
-    , fnf :: LcovLine
-    , fnh :: LcovLine
-    , das :: List LcovLine
-    , lf :: LcovLine
-    , lh :: LcovLine
-    }
+export alias LcovSection = {
+  tn :: LcovLine,
+  sf :: LcovLine,
+  fns :: List LcovLine,
+  fndas :: List LcovLine,
+  fnf :: LcovLine,
+  fnh :: LcovLine,
+  das :: List LcovLine,
+  lf :: LcovLine,
+  lh :: LcovLine
+}
 
 export alias LcovInfo = List LcovSection
 
@@ -35,16 +35,17 @@ export getPath = (section) =>
     is SF p: p
 
 emptySection :: LcovSection
-emptySection = { tn: TN("")
-               , sf: SF("")
-               , fns: []
-               , fndas: []
-               , fnf: FNF(0)
-               , fnh: FNH(0)
-               , das: []
-               , lf: LF(0)
-               , lh: LH(0)
-               }
+emptySection = {
+  tn: TN(""),
+  sf: SF(""),
+  fns: [],
+  fndas: [],
+  fnf: FNF(0),
+  fnh: FNH(0),
+  das: [],
+  lf: LF(0),
+  lh: LH(0)
+}
 
 parseNumberString :: (Number -> String -> LcovLine) -> String -> LcovLine
 parseNumberString = (ctor, args) => where(S.split(",", args))
@@ -53,10 +54,10 @@ parseNumberString = (ctor, args) => where(S.split(",", args))
 
 parseNumberNumber :: (Number -> Number -> LcovLine) -> String -> LcovLine
 parseNumberNumber = (ctor, args) => where(S.split(",", args))
-  is [line, count]:
-    ctor( Maybe.fromMaybe(0, N.fromString(line))
-        , Maybe.fromMaybe(0, N.fromString(count))
-        )
+  is [line, count]: ctor(
+    Maybe.fromMaybe(0, N.fromString(line)),
+    Maybe.fromMaybe(0, N.fromString(count))
+  )
 
 
 parseLcovSection :: String -> LcovSection
