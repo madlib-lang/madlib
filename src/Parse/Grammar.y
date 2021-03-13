@@ -80,8 +80,8 @@ import           Text.Show.Pretty (ppShow)
   '!'         { Token _ TokenExclamationMark }
 
 %nonassoc LOWEST
-%left '?' '->' '|' where is 'if' '='
-%left ':' 'else'
+%left ':' '->' '|' where is 'else' '='
+%left '?' 'if'
 %left '|>'
 %left '>' '<' '>=' '<=' '=='
 %left '+' '-' '||'

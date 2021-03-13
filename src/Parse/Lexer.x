@@ -64,6 +64,8 @@ tokens :-
   <0, stringTemplateMadlib> return                             { mapToken (\_ -> TokenReturnKeyword) }
   <0, stringTemplateMadlib> is                                 { mapToken (\_ -> TokenIs) }
   <0, stringTemplateMadlib> \=                                 { mapToken (\_ -> TokenEq) }
+  <0, stringTemplateMadlib> \n[\ ]*\-Infinity                  { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib> Infinity                           { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib> @signed @floating                  { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib> "true"                             { mapToken (\_ -> (TokenBool "true")) }
   <0, stringTemplateMadlib> "false"                            { mapToken (\_ -> (TokenBool "false")) }
