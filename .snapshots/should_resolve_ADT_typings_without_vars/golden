@@ -13,9 +13,10 @@ Right
                      , adtconstructors =
                          [ Untyped
                              (Area (Loc 24 1 25) (Loc 33 1 34))
-                             (Constructor "Something" [] (TCon (TC "Something" Star)))
+                             (Constructor
+                                "Something" [] (TCon (TC "Something" Star) "./ModuleA"))
                          ]
-                     , adtType = TCon (TC "Something" Star)
+                     , adtType = TCon (TC "Something" Star) "./ModuleA"
                      , adtexported = True
                      }
                ]
@@ -35,42 +36,42 @@ Right
                [ Solved
                    (TApp
                       (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                         (TCon (TC "Something" Star)))
-                      (TCon (TC "Something" Star)))
+                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                         (TCon (TC "Something" Star) "./ModuleA"))
+                      (TCon (TC "Something" Star) "./ModuleA"))
                    (Area (Loc 26 2 1) (Loc 81 3 23))
                    (TypedExp
                       (Solved
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TCon (TC "Something" Star)))
-                            (TCon (TC "Something" Star)))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                               (TCon (TC "Something" Star) "./ModuleA"))
+                            (TCon (TC "Something" Star) "./ModuleA"))
                          (Area (Loc 59 3 1) (Loc 81 3 23))
                          (Export
                             (Solved
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TCon (TC "Something" Star)))
-                                  (TCon (TC "Something" Star)))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "Something" Star) "./ModuleA"))
+                                  (TCon (TC "Something" Star) "./ModuleA"))
                                (Area (Loc 66 3 8) (Loc 81 3 23))
                                (Assignment
                                   "fn"
                                   (Solved
                                      (TApp
                                         (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                           (TCon (TC "Something" Star)))
-                                        (TCon (TC "Something" Star)))
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TCon (TC "Something" Star) "./ModuleA"))
+                                        (TCon (TC "Something" Star) "./ModuleA"))
                                      (Area (Loc 71 3 13) (Loc 81 3 23))
                                      (Abs
                                         (Solved
-                                           (TCon (TC "Something" Star))
+                                           (TCon (TC "Something" Star) "./ModuleA")
                                            (Area (Loc 72 3 14) (Loc 73 3 15))
                                            "x")
                                         [ Solved
-                                            (TCon (TC "Something" Star))
+                                            (TCon (TC "Something" Star) "./ModuleA")
                                             (Area (Loc 79 3 21) (Loc 80 3 22))
                                             (Var "x")
                                         ]))))))
@@ -79,9 +80,9 @@ Right
                          ([] :=>
                             TApp
                               (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                 (TCon (TC "Something" Star)))
-                              (TCon (TC "Something" Star)))))
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Something" Star) "./ModuleA"))
+                              (TCon (TC "Something" Star) "./ModuleA"))))
                ]
            , atypedecls = []
            , ainterfaces = []

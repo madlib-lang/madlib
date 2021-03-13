@@ -5,64 +5,70 @@ Right
         [ Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
                      (fromList
-                        [ ( "i" , TCon (TC "Number" Star) )
-                        , ( "o" , TCon (TC "Number" Star) )
+                        [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                        , ( "o" , TCon (TC "Number" Star) "prelude" )
                         , ( "x"
                           , TRecord
                               (fromList
                                  [ ( "y"
-                                   , TRecord (fromList [ ( "y" , TCon (TC "Number" Star) ) ]) True
+                                   , TRecord
+                                       (fromList [ ( "y" , TCon (TC "Number" Star) "prelude" ) ])
+                                       True
                                    )
-                                 , ( "z" , TCon (TC "Number" Star) )
+                                 , ( "z" , TCon (TC "Number" Star) "prelude" )
                                  ])
                               True
                           )
                         ])
                      True))
-               (TCon (TC "Number" Star)))
+               (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 0 1 1) (Loc 95 5 1))
             (Assignment
                "fn"
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
                            (fromList
-                              [ ( "i" , TCon (TC "Number" Star) )
-                              , ( "o" , TCon (TC "Number" Star) )
+                              [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                              , ( "o" , TCon (TC "Number" Star) "prelude" )
                               , ( "x"
                                 , TRecord
                                     (fromList
                                        [ ( "y"
                                          , TRecord
-                                             (fromList [ ( "y" , TCon (TC "Number" Star) ) ]) True
+                                             (fromList
+                                                [ ( "y" , TCon (TC "Number" Star) "prelude" ) ])
+                                             True
                                          )
-                                       , ( "z" , TCon (TC "Number" Star) )
+                                       , ( "z" , TCon (TC "Number" Star) "prelude" )
                                        ])
                                     True
                                 )
                               ])
                            True))
-                     (TCon (TC "Number" Star)))
+                     (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 5 1 6) (Loc 95 5 1))
                   (Abs
                      (Solved
                         (TRecord
                            (fromList
-                              [ ( "i" , TCon (TC "Number" Star) )
-                              , ( "o" , TCon (TC "Number" Star) )
+                              [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                              , ( "o" , TCon (TC "Number" Star) "prelude" )
                               , ( "x"
                                 , TRecord
                                     (fromList
                                        [ ( "y"
                                          , TRecord
-                                             (fromList [ ( "y" , TCon (TC "Number" Star) ) ]) True
+                                             (fromList
+                                                [ ( "y" , TCon (TC "Number" Star) "prelude" ) ])
+                                             True
                                          )
-                                       , ( "z" , TCon (TC "Number" Star) )
+                                       , ( "z" , TCon (TC "Number" Star) "prelude" )
                                        ])
                                     True
                                 )
@@ -71,23 +77,25 @@ Right
                         (Area (Loc 6 1 7) (Loc 7 1 8))
                         "r")
                      [ Solved
-                         (TCon (TC "Number" Star))
+                         (TCon (TC "Number" Star) "prelude")
                          (Area (Loc 16 2 3) (Loc 93 4 3))
                          (Where
                             (Solved
                                (TRecord
                                   (fromList
-                                     [ ( "i" , TCon (TC "Number" Star) )
-                                     , ( "o" , TCon (TC "Number" Star) )
+                                     [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                                     , ( "o" , TCon (TC "Number" Star) "prelude" )
                                      , ( "x"
                                        , TRecord
                                            (fromList
                                               [ ( "y"
                                                 , TRecord
-                                                    (fromList [ ( "y" , TCon (TC "Number" Star) ) ])
+                                                    (fromList
+                                                       [ ( "y" , TCon (TC "Number" Star) "prelude" )
+                                                       ])
                                                     True
                                                 )
-                                              , ( "z" , TCon (TC "Number" Star) )
+                                              , ( "z" , TCon (TC "Number" Star) "prelude" )
                                               ])
                                            True
                                        )
@@ -98,27 +106,30 @@ Right
                             [ Solved
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TRecord
                                          (fromList
-                                            [ ( "i" , TCon (TC "Number" Star) )
-                                            , ( "o" , TCon (TC "Number" Star) )
+                                            [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                                            , ( "o" , TCon (TC "Number" Star) "prelude" )
                                             , ( "x"
                                               , TRecord
                                                   (fromList
                                                      [ ( "y"
                                                        , TRecord
                                                            (fromList
-                                                              [ ( "y" , TCon (TC "Number" Star) ) ])
+                                                              [ ( "y"
+                                                                , TCon (TC "Number" Star) "prelude"
+                                                                )
+                                                              ])
                                                            True
                                                        )
-                                                     , ( "z" , TCon (TC "Number" Star) )
+                                                     , ( "z" , TCon (TC "Number" Star) "prelude" )
                                                      ])
                                                   True
                                               )
                                             ])
                                          True))
-                                   (TCon (TC "Number" Star)))
+                                   (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 31 3 5) (Loc 89 3 63))
                                 (Is
                                    (Solved
@@ -127,8 +138,8 @@ Right
                                             [ ( "..."
                                               , TRecord
                                                   (fromList
-                                                     [ ( "i" , TCon (TC "Number" Star) )
-                                                     , ( "o" , TCon (TC "Number" Star) )
+                                                     [ ( "i" , TCon (TC "Number" Star) "prelude" )
+                                                     , ( "o" , TCon (TC "Number" Star) "prelude" )
                                                      ])
                                                   True
                                               )
@@ -138,13 +149,19 @@ Right
                                                      [ ( "..."
                                                        , TRecord
                                                            (fromList
-                                                              [ ( "z" , TCon (TC "Number" Star) ) ])
+                                                              [ ( "z"
+                                                                , TCon (TC "Number" Star) "prelude"
+                                                                )
+                                                              ])
                                                            True
                                                        )
                                                      , ( "y"
                                                        , TRecord
                                                            (fromList
-                                                              [ ( "y" , TCon (TC "Number" Star) ) ])
+                                                              [ ( "y"
+                                                                , TCon (TC "Number" Star) "prelude"
+                                                                )
+                                                              ])
                                                            True
                                                        )
                                                      ])
@@ -162,8 +179,14 @@ Right
                                                         [ ( "..."
                                                           , TRecord
                                                               (fromList
-                                                                 [ ( "i" , TCon (TC "Number" Star) )
-                                                                 , ( "o" , TCon (TC "Number" Star) )
+                                                                 [ ( "i"
+                                                                   , TCon
+                                                                       (TC "Number" Star) "prelude"
+                                                                   )
+                                                                 , ( "o"
+                                                                   , TCon
+                                                                       (TC "Number" Star) "prelude"
+                                                                   )
                                                                  ])
                                                               True
                                                           )
@@ -176,6 +199,7 @@ Right
                                                                           [ ( "z"
                                                                             , TCon
                                                                                 (TC "Number" Star)
+                                                                                "prelude"
                                                                             )
                                                                           ])
                                                                        True
@@ -186,6 +210,7 @@ Right
                                                                           [ ( "y"
                                                                             , TCon
                                                                                 (TC "Number" Star)
+                                                                                "prelude"
                                                                             )
                                                                           ])
                                                                        True
@@ -204,10 +229,14 @@ Right
                                                                 , TRecord
                                                                     (fromList
                                                                        [ ( "i"
-                                                                         , TCon (TC "Number" Star)
+                                                                         , TCon
+                                                                             (TC "Number" Star)
+                                                                             "prelude"
                                                                          )
                                                                        , ( "o"
-                                                                         , TCon (TC "Number" Star)
+                                                                         , TCon
+                                                                             (TC "Number" Star)
+                                                                             "prelude"
                                                                          )
                                                                        ])
                                                                     True
@@ -223,6 +252,7 @@ Right
                                                                                       (TC
                                                                                          "Number"
                                                                                          Star)
+                                                                                      "prelude"
                                                                                   )
                                                                                 ])
                                                                              True
@@ -235,6 +265,7 @@ Right
                                                                                       (TC
                                                                                          "Number"
                                                                                          Star)
+                                                                                      "prelude"
                                                                                   )
                                                                                 ])
                                                                              True
@@ -254,8 +285,14 @@ Right
                                                         [ ( "..."
                                                           , TRecord
                                                               (fromList
-                                                                 [ ( "i" , TCon (TC "Number" Star) )
-                                                                 , ( "o" , TCon (TC "Number" Star) )
+                                                                 [ ( "i"
+                                                                   , TCon
+                                                                       (TC "Number" Star) "prelude"
+                                                                   )
+                                                                 , ( "o"
+                                                                   , TCon
+                                                                       (TC "Number" Star) "prelude"
+                                                                   )
                                                                  ])
                                                               True
                                                           )
@@ -268,6 +305,7 @@ Right
                                                                           [ ( "z"
                                                                             , TCon
                                                                                 (TC "Number" Star)
+                                                                                "prelude"
                                                                             )
                                                                           ])
                                                                        True
@@ -278,6 +316,7 @@ Right
                                                                           [ ( "y"
                                                                             , TCon
                                                                                 (TC "Number" Star)
+                                                                                "prelude"
                                                                             )
                                                                           ])
                                                                        True
@@ -301,11 +340,13 @@ Right
                                                                                , TCon
                                                                                    (TC
                                                                                       "Number" Star)
+                                                                                   "prelude"
                                                                                )
                                                                              , ( "o"
                                                                                , TCon
                                                                                    (TC
                                                                                       "Number" Star)
+                                                                                   "prelude"
                                                                                )
                                                                              ])
                                                                           True
@@ -321,6 +362,7 @@ Right
                                                                                             (TC
                                                                                                "Number"
                                                                                                Star)
+                                                                                            "prelude"
                                                                                         )
                                                                                       ])
                                                                                    True
@@ -333,6 +375,7 @@ Right
                                                                                             (TC
                                                                                                "Number"
                                                                                                Star)
+                                                                                            "prelude"
                                                                                         )
                                                                                       ])
                                                                                    True
@@ -355,12 +398,14 @@ Right
                                                                                          (TC
                                                                                             "Number"
                                                                                             Star)
+                                                                                         "prelude"
                                                                                      )
                                                                                    , ( "o"
                                                                                      , TCon
                                                                                          (TC
                                                                                             "Number"
                                                                                             Star)
+                                                                                         "prelude"
                                                                                      )
                                                                                    ])
                                                                                 True
@@ -376,6 +421,7 @@ Right
                                                                                                   (TC
                                                                                                      "Number"
                                                                                                      Star)
+                                                                                                  "prelude"
                                                                                               )
                                                                                             ])
                                                                                          True
@@ -388,6 +434,7 @@ Right
                                                                                                   (TC
                                                                                                      "Number"
                                                                                                      Star)
+                                                                                                  "prelude"
                                                                                               )
                                                                                             ])
                                                                                          True
@@ -412,11 +459,13 @@ Right
                                                                                , TCon
                                                                                    (TC
                                                                                       "Number" Star)
+                                                                                   "prelude"
                                                                                )
                                                                              , ( "o"
                                                                                , TCon
                                                                                    (TC
                                                                                       "Number" Star)
+                                                                                   "prelude"
                                                                                )
                                                                              ])
                                                                           True
@@ -432,6 +481,7 @@ Right
                                                                                             (TC
                                                                                                "Number"
                                                                                                Star)
+                                                                                            "prelude"
                                                                                         )
                                                                                       ])
                                                                                    True
@@ -444,6 +494,7 @@ Right
                                                                                             (TC
                                                                                                "Number"
                                                                                                Star)
+                                                                                            "prelude"
                                                                                         )
                                                                                       ])
                                                                                    True
@@ -468,12 +519,14 @@ Right
                                                                                                (TC
                                                                                                   "Number"
                                                                                                   Star)
+                                                                                               "prelude"
                                                                                            )
                                                                                          , ( "o"
                                                                                            , TCon
                                                                                                (TC
                                                                                                   "Number"
                                                                                                   Star)
+                                                                                               "prelude"
                                                                                            )
                                                                                          ])
                                                                                       True
@@ -489,6 +542,7 @@ Right
                                                                                                         (TC
                                                                                                            "Number"
                                                                                                            Star)
+                                                                                                        "prelude"
                                                                                                     )
                                                                                                   ])
                                                                                                True
@@ -501,6 +555,7 @@ Right
                                                                                                         (TC
                                                                                                            "Number"
                                                                                                            Star)
+                                                                                                        "prelude"
                                                                                                     )
                                                                                                   ])
                                                                                                True
@@ -521,35 +576,39 @@ Right
                                               )
                                             ])))
                                    (Solved
-                                      (TCon (TC "Number" Star))
+                                      (TCon (TC "Number" Star) "prelude")
                                       (Area (Loc 70 3 44) (Loc 89 3 63))
                                       (App
                                          (Solved
                                             (TApp
                                                (TApp
-                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                  (TCon (TC "Number" Star)))
-                                               (TCon (TC "Number" Star)))
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
+                                                  (TCon (TC "Number" Star) "prelude"))
+                                               (TCon (TC "Number" Star) "prelude"))
                                             (Area (Loc 70 3 44) (Loc 89 3 63))
                                             (App
                                                (Solved
                                                   (TApp
                                                      (TApp
                                                         (TCon
-                                                           (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                        (TCon (TC "Number" Star)))
+                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
+                                                        (TCon (TC "Number" Star) "prelude"))
                                                      (TApp
                                                         (TApp
                                                            (TCon
                                                               (TC
                                                                  "(->)"
-                                                                 (Kfun Star (Kfun Star Star))))
-                                                           (TCon (TC "Number" Star)))
-                                                        (TCon (TC "Number" Star))))
+                                                                 (Kfun Star (Kfun Star Star)))
+                                                              "prelude")
+                                                           (TCon (TC "Number" Star) "prelude"))
+                                                        (TCon (TC "Number" Star) "prelude")))
                                                   (Area (Loc 83 3 57) (Loc 85 3 59))
                                                   (Var "+"))
                                                (Solved
-                                                  (TCon (TC "Number" Star))
+                                                  (TCon (TC "Number" Star) "prelude")
                                                   (Area (Loc 70 3 44) (Loc 83 3 57))
                                                   (App
                                                      (Solved
@@ -558,9 +617,10 @@ Right
                                                               (TCon
                                                                  (TC
                                                                     "(->)"
-                                                                    (Kfun Star (Kfun Star Star))))
-                                                              (TCon (TC "Number" Star)))
-                                                           (TCon (TC "Number" Star)))
+                                                                    (Kfun Star (Kfun Star Star)))
+                                                                 "prelude")
+                                                              (TCon (TC "Number" Star) "prelude"))
+                                                           (TCon (TC "Number" Star) "prelude"))
                                                         (Area (Loc 70 3 44) (Loc 83 3 57))
                                                         (App
                                                            (Solved
@@ -570,9 +630,11 @@ Right
                                                                        (TC
                                                                           "(->)"
                                                                           (Kfun
-                                                                             Star
-                                                                             (Kfun Star Star))))
-                                                                    (TCon (TC "Number" Star)))
+                                                                             Star (Kfun Star Star)))
+                                                                       "prelude")
+                                                                    (TCon
+                                                                       (TC "Number" Star)
+                                                                       "prelude"))
                                                                  (TApp
                                                                     (TApp
                                                                        (TCon
@@ -580,13 +642,18 @@ Right
                                                                              "(->)"
                                                                              (Kfun
                                                                                 Star
-                                                                                (Kfun Star Star))))
-                                                                       (TCon (TC "Number" Star)))
-                                                                    (TCon (TC "Number" Star))))
+                                                                                (Kfun Star Star)))
+                                                                          "prelude")
+                                                                       (TCon
+                                                                          (TC "Number" Star)
+                                                                          "prelude"))
+                                                                    (TCon
+                                                                       (TC "Number" Star)
+                                                                       "prelude")))
                                                               (Area (Loc 77 3 51) (Loc 79 3 53))
                                                               (Var "+"))
                                                            (Solved
-                                                              (TCon (TC "Number" Star))
+                                                              (TCon (TC "Number" Star) "prelude")
                                                               (Area (Loc 70 3 44) (Loc 77 3 51))
                                                               (App
                                                                  (Solved
@@ -598,9 +665,14 @@ Right
                                                                                 (Kfun
                                                                                    Star
                                                                                    (Kfun
-                                                                                      Star Star))))
-                                                                          (TCon (TC "Number" Star)))
-                                                                       (TCon (TC "Number" Star)))
+                                                                                      Star Star)))
+                                                                             "prelude")
+                                                                          (TCon
+                                                                             (TC "Number" Star)
+                                                                             "prelude"))
+                                                                       (TCon
+                                                                          (TC "Number" Star)
+                                                                          "prelude"))
                                                                     (Area
                                                                        (Loc 70 3 44) (Loc 77 3 51))
                                                                     (App
@@ -614,11 +686,12 @@ Right
                                                                                          Star
                                                                                          (Kfun
                                                                                             Star
-                                                                                            Star))))
+                                                                                            Star)))
+                                                                                   "prelude")
                                                                                 (TCon
                                                                                    (TC
-                                                                                      "Number"
-                                                                                      Star)))
+                                                                                      "Number" Star)
+                                                                                   "prelude"))
                                                                              (TApp
                                                                                 (TApp
                                                                                    (TCon
@@ -628,28 +701,33 @@ Right
                                                                                             Star
                                                                                             (Kfun
                                                                                                Star
-                                                                                               Star))))
+                                                                                               Star)))
+                                                                                      "prelude")
                                                                                    (TCon
                                                                                       (TC
                                                                                          "Number"
-                                                                                         Star)))
+                                                                                         Star)
+                                                                                      "prelude"))
                                                                                 (TCon
                                                                                    (TC
-                                                                                      "Number"
-                                                                                      Star))))
+                                                                                      "Number" Star)
+                                                                                   "prelude")))
                                                                           (Area
                                                                              (Loc 71 3 45)
                                                                              (Loc 73 3 47))
                                                                           (Var "+"))
                                                                        (Solved
-                                                                          (TCon (TC "Number" Star))
+                                                                          (TCon
+                                                                             (TC "Number" Star)
+                                                                             "prelude")
                                                                           (Area
                                                                              (Loc 70 3 44)
                                                                              (Loc 71 3 45))
                                                                           (Var "y"))
                                                                        False))
                                                                  (Solved
-                                                                    (TCon (TC "Number" Star))
+                                                                    (TCon
+                                                                       (TC "Number" Star) "prelude")
                                                                     (Area
                                                                        (Loc 74 3 48) (Loc 77 3 51))
                                                                     (FieldAccess
@@ -661,6 +739,7 @@ Right
                                                                                       (TC
                                                                                          "Number"
                                                                                          Star)
+                                                                                      "prelude"
                                                                                   )
                                                                                 ])
                                                                              True)
@@ -678,7 +757,8 @@ Right
                                                                                          Star
                                                                                          (Kfun
                                                                                             Star
-                                                                                            Star))))
+                                                                                            Star)))
+                                                                                   "prelude")
                                                                                 (TRecord
                                                                                    (fromList
                                                                                       [ ( "z"
@@ -686,11 +766,13 @@ Right
                                                                                             (TC
                                                                                                "Number"
                                                                                                Star)
+                                                                                            "prelude"
                                                                                         )
                                                                                       ])
                                                                                    True))
                                                                              (TCon
-                                                                                (TC "Number" Star)))
+                                                                                (TC "Number" Star)
+                                                                                "prelude"))
                                                                           (Area
                                                                              (Loc 76 3 50)
                                                                              (Loc 77 3 51))
@@ -698,14 +780,16 @@ Right
                                                                  True))
                                                            False))
                                                      (Solved
-                                                        (TCon (TC "Number" Star))
+                                                        (TCon (TC "Number" Star) "prelude")
                                                         (Area (Loc 80 3 54) (Loc 83 3 57))
                                                         (FieldAccess
                                                            (Solved
                                                               (TRecord
                                                                  (fromList
                                                                     [ ( "o"
-                                                                      , TCon (TC "Number" Star)
+                                                                      , TCon
+                                                                          (TC "Number" Star)
+                                                                          "prelude"
                                                                       )
                                                                     ])
                                                                  True)
@@ -718,29 +802,34 @@ Right
                                                                        (TC
                                                                           "(->)"
                                                                           (Kfun
-                                                                             Star
-                                                                             (Kfun Star Star))))
+                                                                             Star (Kfun Star Star)))
+                                                                       "prelude")
                                                                     (TRecord
                                                                        (fromList
                                                                           [ ( "o"
                                                                             , TCon
                                                                                 (TC "Number" Star)
+                                                                                "prelude"
                                                                             )
                                                                           ])
                                                                        True))
-                                                                 (TCon (TC "Number" Star)))
+                                                                 (TCon
+                                                                    (TC "Number" Star) "prelude"))
                                                               (Area (Loc 82 3 56) (Loc 83 3 57))
                                                               (Var ".o"))))
                                                      True))
                                                False))
                                          (Solved
-                                            (TCon (TC "Number" Star))
+                                            (TCon (TC "Number" Star) "prelude")
                                             (Area (Loc 86 3 60) (Loc 89 3 63))
                                             (FieldAccess
                                                (Solved
                                                   (TRecord
                                                      (fromList
-                                                        [ ( "i" , TCon (TC "Number" Star) ) ])
+                                                        [ ( "i"
+                                                          , TCon (TC "Number" Star) "prelude"
+                                                          )
+                                                        ])
                                                      True)
                                                   (Area (Loc 86 3 60) (Loc 87 3 61))
                                                   (Var "c"))
@@ -748,12 +837,16 @@ Right
                                                   (TApp
                                                      (TApp
                                                         (TCon
-                                                           (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
                                                         (TRecord
                                                            (fromList
-                                                              [ ( "i" , TCon (TC "Number" Star) ) ])
+                                                              [ ( "i"
+                                                                , TCon (TC "Number" Star) "prelude"
+                                                                )
+                                                              ])
                                                            True))
-                                                     (TCon (TC "Number" Star)))
+                                                     (TCon (TC "Number" Star) "prelude"))
                                                   (Area (Loc 88 3 62) (Loc 89 3 63))
                                                   (Var ".i"))))
                                          True)))

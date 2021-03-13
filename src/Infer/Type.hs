@@ -18,7 +18,7 @@ data TCon = TC Id Kind
 
 data Type
   = TVar TVar          -- Variable type
-  | TCon TCon                   -- Constructor type
+  | TCon TCon FilePath -- Constructor type - FilePath of where that type is defined
   | TGen Int
   | TApp Type Type              -- Arrow type
   | TRecord (M.Map Id Type) Bool -- Record type: Bool means open or closed
@@ -29,31 +29,31 @@ infixr `TApp`
 
 
 tNumber :: Type
-tNumber = TCon $ TC "Number" Star
+tNumber = TCon (TC "Number" Star) "prelude"
 
 tBool :: Type
-tBool = TCon $ TC "Boolean" Star
+tBool = TCon (TC "Boolean" Star) "prelude"
 
 tStr :: Type
-tStr = TCon $ TC "String" Star
+tStr = TCon (TC "String" Star) "prelude"
 
 tUnit :: Type
-tUnit = TCon $ TC "()" Star
+tUnit = TCon (TC "()" Star) "prelude"
 
 tList :: Type
-tList = TApp (TCon $ TC "List" (Kfun Star Star)) (TVar (TV "a" Star))
+tList = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "a" Star))
 
 tTuple2 :: Type
-tTuple2 = TCon $ TC "(,)" (Kfun Star (Kfun Star Star))
+tTuple2 = TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude"
 
 tTuple3 :: Type
-tTuple3 = TCon $ TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))
+tTuple3 = TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude"
 
 tTuple4 :: Type
-tTuple4 = TCon $ TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))
+tTuple4 = TCon (TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))) "prelude"
 
 tArrow :: Type
-tArrow = TCon $ TC "(->)" (Kfun Star (Kfun Star Star))
+tArrow = TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude"
 
 getTupleCtor :: Int -> Type
 getTupleCtor n = case n of
@@ -102,7 +102,7 @@ instance HasKind TVar where
 instance HasKind TCon where
   kind (TC _ k) = k
 instance HasKind Type where
-  kind (TCon tc ) = kind tc
+  kind (TCon tc _) = kind tc
   kind (TVar u  ) = kind u
   kind (TApp t _) = case kind t of
     (Kfun _ k) -> k
@@ -117,7 +117,7 @@ buildKind n | n > 0     = Kfun Star $ buildKind (n - 1)
 searchVarInType :: Id -> Type -> Maybe Type
 searchVarInType id t = case t of
   TVar (TV n _) -> if n == id then Just t else Nothing
-  TCon _        -> Nothing
+  TCon _ _      -> Nothing
   TApp l r ->
     let l' = searchVarInType id l
         r' = searchVarInType id r
@@ -147,7 +147,7 @@ collectPredVars (IsIn _ ts) = nub $ concat $ collectVars <$> ts
 
 getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
-  TCon _      -> t
+  TCon _ _    -> t
   TApp    l r -> getConstructorCon l
   TRecord _ _ -> t
   _           -> t
@@ -155,7 +155,7 @@ getConstructorCon t = case t of
 closeRecords :: Type -> Type
 closeRecords t = case t of
   TVar _           -> t
-  TCon _           -> t
+  TCon _ _         -> t
   TApp l r         -> TApp (closeRecords l) (closeRecords r)
   TGen _           -> t
   TRecord fields _ -> TRecord fields False

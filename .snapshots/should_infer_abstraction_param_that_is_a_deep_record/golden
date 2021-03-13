@@ -5,7 +5,7 @@ Right
         [ Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
                      (fromList
                         [ ( "a"
@@ -40,7 +40,7 @@ Right
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
                            (fromList
                               [ ( "a"
@@ -214,7 +214,8 @@ Right
                                                              (TCon
                                                                 (TC
                                                                    "(->)"
-                                                                   (Kfun Star (Kfun Star Star))))
+                                                                   (Kfun Star (Kfun Star Star)))
+                                                                "prelude")
                                                              (TRecord
                                                                 (fromList
                                                                    [ ( "a"
@@ -283,7 +284,8 @@ Right
                                                  (TApp
                                                     (TApp
                                                        (TCon
-                                                          (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                          "prelude")
                                                        (TRecord
                                                           (fromList
                                                              [ ( "b"
@@ -336,7 +338,9 @@ Right
                                         (Solved
                                            (TApp
                                               (TApp
-                                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                 (TCon
+                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                    "prelude")
                                                  (TRecord
                                                     (fromList
                                                        [ ( "c"
@@ -371,7 +375,7 @@ Right
                                   (Solved
                                      (TApp
                                         (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
                                               (fromList
                                                  [ ( "d"
@@ -387,7 +391,7 @@ Right
                             (Solved
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord (fromList [ ( "e" , TVar (TV "m" Star) ) ]) True))
                                   (TVar (TV "m" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))

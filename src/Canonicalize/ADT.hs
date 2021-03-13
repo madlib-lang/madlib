@@ -33,7 +33,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
   adt@Src.ADT{} -> case M.lookup (Src.adtname adt) (envTypeDecls env) of
     Just t  -> throwError $ InferError (ADTAlreadyDefined t) (Context astPath area [])
     Nothing -> do
-      let t    = TCon $ TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))
+      let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
           env' = addADT env (Src.adtname adt) t
       canonicalizeConstructors env' astPath td
 
@@ -62,7 +62,7 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
   let s  = foldl (\s' -> compose s' . getSubstitution) mempty is
-  let rt = foldl TApp (TCon $ TC name (buildKind $ length params)) ((\x -> apply s $ TVar (TV x Star)) <$> params)
+  let rt = foldl TApp (TCon (TC name (buildKind $ length params)) astPath) ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
     (\(n, ts, _, Src.Source _ area (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]
@@ -98,8 +98,7 @@ resolveADTConstructorParams
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
 resolveADTConstructorParams env astPath n params c@(Src.Source _ area (Src.Constructor cname cparams)) = do
-  let gens = zip params (map TGen [0 ..])
-  ts <- mapM (argToType env gens n params) cparams
+  ts <- mapM (typingToType env) cparams
   let s = foldl (\s t -> buildCtorSubst t <> s) M.empty ts
 
   return (cname, ts, s, c)
@@ -109,49 +108,3 @@ buildCtorSubst t = case t of
   TVar (TV n _) -> M.singleton (TV n Star) t
   TApp l r      -> buildCtorSubst l <> buildCtorSubst r
   _             -> M.empty
-
-
-argToType :: Env -> [(Src.Name, Type)] -> Src.Name -> [Src.Name] -> Src.Typing -> CanonicalM Type
-argToType env gens _ params (Src.Source _ area (Src.TRSingle n))
-  | n == "Number" = return tNumber
-  | n == "Boolean" = return tBool
-  | n == "String" = return tStr
-  | n == "()" = return tUnit
-  | isLower (head n) = return $ TVar (TV n Star)
-  | otherwise = case M.lookup n (envTypeDecls env) of
-    Just a  -> return a
-    Nothing -> throwError $ InferError (UnknownType n) (Context (envCurrentPath env) area [])
-
-argToType env gens name params (Src.Source _ area (Src.TRComp tname targs)) = case M.lookup tname (envTypeDecls env) of
-  Just t -> foldM
-    (\prev a -> do
-      arg <- argToType env gens name params a
-      return $ TApp prev arg
-    )
-    (getConstructorCon t)
-    targs
-  Nothing -> if isLower (head tname)
-    then do
-      let t = TVar (TV tname $ buildKind (length targs))
-      foldM
-        (\prev a -> do
-          arg <- argToType env gens name params a
-          return $ TApp prev arg
-        )
-        t
-        targs
-    else throwError $ InferError (UnknownType tname) (Context (envCurrentPath env) area [])
-
-argToType env gens name params (Src.Source _ _ (Src.TRArr l r)) = do
-  l' <- argToType env gens name params l
-  r' <- argToType env gens name params r
-  return $ l' `fn` r'
-
-argToType env gens name params (Src.Source _ _ (Src.TRRecord f)) = do
-  f' <- mapM (argToType env gens name params) f
-  return $ TRecord f' False
-
-argToType env gens name params (Src.Source _ _ (Src.TRTuple elems)) = do
-  elems' <- mapM (argToType env gens name params) elems
-  let tupleT = getTupleCtor (length elems)
-  return $ foldl TApp tupleT elems'

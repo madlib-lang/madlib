@@ -5,34 +5,37 @@ Right
         [ Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
-                     (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-               (TCon (TC "Result" Star)))
+                     (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                     False))
+               (TCon (TC "Result" Star) "path"))
             (Area (Loc 42 2 1) (Loc 53 2 12))
             (Assignment
                "r"
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
-                           (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                     (TCon (TC "Result" Star)))
+                           (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                           False))
+                     (TCon (TC "Result" Star) "path"))
                   (Area (Loc 46 2 5) (Loc 53 2 12))
                   (Var "Success")))
         , Solved
             (TRecord
-               (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False)
+               (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+               False)
             (Area (Loc 54 2 13) (Loc 69 2 28))
             (Record
                [ Solved
-                   (TCon (TC "String" Star))
+                   (TCon (TC "String" Star) "prelude")
                    (Area (Loc 56 2 15) (Loc 67 2 26))
                    (Field
                       ( "value"
                       , Solved
-                          (TCon (TC "String" Star))
+                          (TCon (TC "String" Star) "prelude")
                           (Area (Loc 63 2 22) (Loc 67 2 26))
                           (LStr "42")
                       ))
@@ -40,56 +43,62 @@ Right
         , Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
-                     (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-               (TCon (TC "Result" Star)))
+                     (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                     False))
+               (TCon (TC "Result" Star) "path"))
             (Area (Loc 70 3 1) (Loc 85 3 16))
             (App
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                               (TRecord
-                                 (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                           (TCon (TC "Result" Star))))
+                                 (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                 False))
+                           (TCon (TC "Result" Star) "path")))
                      (TApp
                         (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TRecord
-                              (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                        (TCon (TC "Result" Star))))
+                              (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                              False))
+                        (TCon (TC "Result" Star) "path")))
                   (Area (Loc 71 3 2) (Loc 81 3 12))
                   (Abs
                      (Solved
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                               (TRecord
-                                 (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                           (TCon (TC "Result" Star)))
+                                 (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                 False))
+                           (TCon (TC "Result" Star) "path"))
                         (Area (Loc 72 3 3) (Loc 73 3 4))
                         "a")
                      [ Solved
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
-                                  (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                            (TCon (TC "Result" Star)))
+                                  (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                  False))
+                            (TCon (TC "Result" Star) "path"))
                          (Area (Loc 79 3 10) (Loc 80 3 11))
                          (Var "a")
                      ]))
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
-                           (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                     (TCon (TC "Result" Star)))
+                           (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                           False))
+                     (TCon (TC "Result" Star) "path"))
                   (Area (Loc 83 3 14) (Loc 84 3 15))
                   (Var "r"))
                True)
@@ -117,12 +126,13 @@ Right
                          ]
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
-                                  (fromList [ ( "value" , TCon (TC "String" Star) ) ]) False))
-                            (TCon (TC "Result" Star))))
+                                  (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                  False))
+                            (TCon (TC "Result" Star) "path")))
                   ]
-              , adtType = TCon (TC "Result" Star)
+              , adtType = TCon (TC "Result" Star) "path"
               , adtexported = False
               }
         ]

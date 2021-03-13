@@ -250,10 +250,10 @@ instance Compilable Exp where
 
           getTypeName :: Type -> String
           getTypeName t = case t of
-            TCon (TC n _) -> n
-            TApp (TCon (TC n _)) _ -> n
-            TApp (TApp (TCon (TC n _)) _) _ -> if n == "(,)" then "Tuple_2" else n
-            TApp (TApp (TApp (TCon (TC n _)) _) _) _ -> if n == "(,,)" then "Tuple_3" else n
+            TCon (TC n _) _ -> n
+            TApp (TCon (TC n _) _) _ -> n
+            TApp (TApp (TCon (TC n _) _) _) _ -> if n == "(,)" then "Tuple_2" else n
+            TApp (TApp (TApp (TCon (TC n _) _) _) _) _ -> if n == "(,,)" then "Tuple_3" else n
             _             -> ppShow t
 
 

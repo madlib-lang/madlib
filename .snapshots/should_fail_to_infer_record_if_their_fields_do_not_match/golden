@@ -1,11 +1,13 @@
 Left
   (InferError
      (UnificationError
-        (TRecord (fromList [ ( "name" , TCon (TC "String" Star) ) ]) False)
+        (TRecord
+           (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
+           False)
         (TRecord
            (fromList
-              [ ( "x" , TCon (TC "Number" Star) )
-              , ( "y" , TCon (TC "Number" Star) )
+              [ ( "x" , TCon (TC "Number" Star) "prelude" )
+              , ( "y" , TCon (TC "Number" Star) "prelude" )
               ])
            False))
      Context

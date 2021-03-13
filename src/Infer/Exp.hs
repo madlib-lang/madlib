@@ -228,7 +228,7 @@ inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv
 inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
   [] -> do
     tv <- newTVar Star
-    let t = TApp (TCon (TC "List" $ Kfun Star Star)) tv
+    let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
     return (M.empty, [], t, Slv.Solved t area (Slv.ListConstructor []))
 
   elems -> do
@@ -243,7 +243,7 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
     s <- contextualUnifyElems env (zip elems ts)
     let s''           = s `compose` s'
     
-    let t = TApp (TCon (TC "List" $ Kfun Star Star)) (apply s'' tv)
+    let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
 
     return (s'', ps, t, Slv.Solved t area (Slv.ListConstructor es))
 
@@ -258,7 +258,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
-    s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star))) ty)
+    s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
     let s = s1 `compose` s2
 
     return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)

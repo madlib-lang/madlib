@@ -135,7 +135,7 @@ toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
 
 jsxTag :: String
-jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ ]*\\/?>"
+jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/?>"
 -- jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[a-zA-Z0-9\\-_\\ ]*\"|{.*}))*[ ]*\\/?>"
 
 constraintRegex :: String

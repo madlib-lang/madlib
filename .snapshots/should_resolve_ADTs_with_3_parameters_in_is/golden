@@ -3,66 +3,70 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "Number" Star))
+            (TCon (TC "Number" Star) "prelude")
             (Area (Loc 36 2 1) (Loc 79 4 1))
             (Where
                (Solved
                   (TApp
                      (TApp
                         (TApp
-                           (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                           (TCon (TC "Number" Star)))
-                        (TCon (TC "Number" Star)))
-                     (TCon (TC "Number" Star)))
+                           (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
+                           (TCon (TC "Number" Star) "prelude"))
+                        (TCon (TC "Number" Star) "prelude"))
+                     (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 42 2 7) (Loc 54 2 19))
                   (App
                      (Solved
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TCon (TC "Number" Star)))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Number" Star) "prelude"))
                            (TApp
                               (TApp
                                  (TApp
-                                    (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                    (TCon (TC "Number" Star)))
-                                 (TCon (TC "Number" Star)))
-                              (TCon (TC "Number" Star))))
+                                    (TCon
+                                       (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
+                                    (TCon (TC "Number" Star) "prelude"))
+                                 (TCon (TC "Number" Star) "prelude"))
+                              (TCon (TC "Number" Star) "prelude")))
                         (Area (Loc 42 2 7) (Loc 51 2 16))
                         (App
                            (Solved
                               (TApp
                                  (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                    (TCon (TC "Number" Star)))
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                    (TCon (TC "Number" Star) "prelude"))
                                  (TApp
                                     (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                       (TCon (TC "Number" Star)))
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "Number" Star) "prelude"))
                                     (TApp
                                        (TApp
                                           (TApp
                                              (TCon
-                                                (TC
-                                                   "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                             (TCon (TC "Number" Star)))
-                                          (TCon (TC "Number" Star)))
-                                       (TCon (TC "Number" Star)))))
+                                                (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                                "path")
+                                             (TCon (TC "Number" Star) "prelude"))
+                                          (TCon (TC "Number" Star) "prelude"))
+                                       (TCon (TC "Number" Star) "prelude"))))
                               (Area (Loc 42 2 7) (Loc 55 2 20))
                               (App
                                  (Solved
                                     (TApp
                                        (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                          (TCon (TC "Number" Star)))
+                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                          (TCon (TC "Number" Star) "prelude"))
                                        (TApp
                                           (TApp
-                                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                             (TCon (TC "Number" Star)))
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TCon (TC "Number" Star) "prelude"))
                                           (TApp
                                              (TApp
-                                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                                (TCon (TC "Number" Star)))
+                                                (TCon
+                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TCon (TC "Number" Star) "prelude"))
                                              (TApp
                                                 (TApp
                                                    (TApp
@@ -70,49 +74,50 @@ Right
                                                          (TC
                                                             "Wish"
                                                             (Kfun
-                                                               Star (Kfun Star (Kfun Star Star)))))
-                                                      (TCon (TC "Number" Star)))
-                                                   (TCon (TC "Number" Star)))
-                                                (TCon (TC "Number" Star))))))
+                                                               Star (Kfun Star (Kfun Star Star))))
+                                                         "path")
+                                                      (TCon (TC "Number" Star) "prelude"))
+                                                   (TCon (TC "Number" Star) "prelude"))
+                                                (TCon (TC "Number" Star) "prelude")))))
                                     (Area (Loc 42 2 7) (Loc 46 2 11))
                                     (Var "Wish"))
                                  (Solved
-                                    (TCon (TC "Number" Star))
+                                    (TCon (TC "Number" Star) "prelude")
                                     (Area (Loc 47 2 12) (Loc 48 2 13))
                                     (LNum "1"))
                                  False))
                            (Solved
-                              (TCon (TC "Number" Star))
+                              (TCon (TC "Number" Star) "prelude")
                               (Area (Loc 50 2 15) (Loc 51 2 16))
                               (LNum "2"))
                            False))
                      (Solved
-                        (TCon (TC "Number" Star))
+                        (TCon (TC "Number" Star) "prelude")
                         (Area (Loc 53 2 18) (Loc 54 2 19))
                         (LNum "3"))
                      True))
                [ Solved
                    (TApp
                       (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                          (TApp
                             (TApp
                                (TApp
-                                  (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                  (TCon (TC "Number" Star)))
-                               (TCon (TC "Number" Star)))
-                            (TCon (TC "Number" Star))))
-                      (TCon (TC "Number" Star)))
+                                  (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
+                                  (TCon (TC "Number" Star) "prelude"))
+                               (TCon (TC "Number" Star) "prelude"))
+                            (TCon (TC "Number" Star) "prelude")))
+                      (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 61 3 3) (Loc 77 3 19))
                    (Is
                       (Solved
                          (TApp
                             (TApp
                                (TApp
-                                  (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                  (TCon (TC "Number" Star)))
-                               (TCon (TC "Number" Star)))
-                            (TCon (TC "Number" Star)))
+                                  (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
+                                  (TCon (TC "Number" Star) "prelude"))
+                               (TCon (TC "Number" Star) "prelude"))
+                            (TCon (TC "Number" Star) "prelude"))
                          (Area (Loc 64 3 6) (Loc 74 3 16))
                          (PCtor
                             "Wish"
@@ -120,35 +125,41 @@ Right
                                 (TApp
                                    (TApp
                                       (TApp
-                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                         (TCon (TC "Number" Star)))
-                                      (TCon (TC "Number" Star)))
-                                   (TCon (TC "Number" Star)))
+                                         (TCon
+                                            (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                            "path")
+                                         (TCon (TC "Number" Star) "prelude"))
+                                      (TCon (TC "Number" Star) "prelude"))
+                                   (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 69 3 11) (Loc 70 3 12))
                                 PAny
                             , Solved
                                 (TApp
                                    (TApp
                                       (TApp
-                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                         (TCon (TC "Number" Star)))
-                                      (TCon (TC "Number" Star)))
-                                   (TCon (TC "Number" Star)))
+                                         (TCon
+                                            (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                            "path")
+                                         (TCon (TC "Number" Star) "prelude"))
+                                      (TCon (TC "Number" Star) "prelude"))
+                                   (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 71 3 13) (Loc 72 3 14))
                                 PAny
                             , Solved
                                 (TApp
                                    (TApp
                                       (TApp
-                                         (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                                         (TCon (TC "Number" Star)))
-                                      (TCon (TC "Number" Star)))
-                                   (TCon (TC "Number" Star)))
+                                         (TCon
+                                            (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                            "path")
+                                         (TCon (TC "Number" Star) "prelude"))
+                                      (TCon (TC "Number" Star) "prelude"))
+                                   (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 73 3 15) (Loc 74 3 16))
                                 (PVar "c")
                             ]))
                       (Solved
-                         (TCon (TC "Number" Star))
+                         (TCon (TC "Number" Star) "prelude")
                          (Area (Loc 76 3 18) (Loc 77 3 19))
                          (Var "c")))
                ])
@@ -170,21 +181,22 @@ Right
                          ]
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TVar (TV "p" Star)))
                             (TApp
                                (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TVar (TV "q" Star)))
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TVar (TV "r" Star)))
                                   (TApp
                                      (TApp
                                         (TApp
                                            (TCon
-                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                              "path")
                                            (TVar (TV "p" Star)))
                                         (TVar (TV "q" Star)))
                                      (TVar (TV "r" Star)))))))
@@ -193,7 +205,7 @@ Right
                   TApp
                     (TApp
                        (TApp
-                          (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))))
+                          (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
                           (TVar (TV "e" Star)))
                        (TVar (TV "a" Star)))
                     (TVar (TV "c" Star))

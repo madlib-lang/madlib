@@ -335,9 +335,9 @@ jsxProp :: { Src.JsxProp }
   | name '=' '{' exp '}'  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxProp (strV $1) $4) }
 
 jsxProps :: { [Src.JsxProp] }
-  : jsxProp            { [$1] }
-  | jsxProps jsxProp   { $1 <> [$2] }
-  | {- empty -}        { [] }
+  : jsxProp rets               { [$1] }
+  | jsxProps rets jsxProp rets { $1 <> [$3] }
+  | {- empty -}                { [] }
 
 
 templateString :: { Src.Exp }

@@ -320,13 +320,13 @@ buildTypeStrForPlaceholder ts = intercalate "_" $ getTypeHeadName <$> ts
 
 getTypeHeadName :: Type -> String
 getTypeHeadName t = case t of
-  TVar (TV n _) -> n
-  TCon (TC n _) -> case n of
-    "(,)"   -> "Tuple_2"
-    "(,,)"  -> "Tuple_3"
-    "(,,,)" -> "Tuple_4"
-    _       -> n
-  TApp (TApp (TCon (TC "(->)" _)) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
+  TVar (TV n _)   -> n
+  TCon (TC n _) _ -> case n of
+    "(,)"         -> "Tuple_2"
+    "(,,)"        -> "Tuple_3"
+    "(,,,)"       -> "Tuple_4"
+    _             -> n
+  TApp (TApp (TCon (TC "(->)" _) _) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
   TApp l _ -> getTypeHeadName l
 
 

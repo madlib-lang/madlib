@@ -30,7 +30,8 @@ inferPattern env (Can.Canonical _ pat) = case pat of
   Can.PBool _ -> return ([], M.empty, tBool)
   Can.PStr  _ -> return ([], M.empty, tStr)
 
-  Can.PCon  n -> return ([], M.empty, TCon $ TC n Star)
+  -- TODO: these are actually primitive types and should be renamed accordingly!
+  Can.PCon  n -> return ([], M.empty, TCon (TC n Star) "prelude")
 
   Can.PVar  i -> do
     v    <- newTVar Star
@@ -61,14 +62,14 @@ inferPattern env (Can.Canonical _ pat) = case pat of
 
     s <- unifyElems (mergeVars env vars) ts
 
-    return (ps, M.map (apply s) vars, TApp (TCon (TC "List" $ Kfun Star Star)) (apply s (head ts)))
+    return (ps, M.map (apply s) vars, TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s (head ts)))
 
    where
     inferPListItem :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)
     inferPListItem env pat@(Can.Canonical _ p) = case p of
       Can.PSpread (Can.Canonical _ (Can.PVar i)) -> do
         tv <- newTVar Star
-        let t' = TApp (TCon (TC "List" $ Kfun Star Star)) tv
+        let t' = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
         return ([], M.singleton i (toScheme t'), tv)
       _ -> inferPattern env pat
 

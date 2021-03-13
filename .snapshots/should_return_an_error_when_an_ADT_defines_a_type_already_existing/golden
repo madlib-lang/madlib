@@ -1,7 +1,8 @@
 Left
   (InferError
      (ADTAlreadyDefined
-        (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "a" Star))))
+        (TApp
+           (TCon (TC "Result" (Kfun Star Star)) "path") (TVar (TV "a" Star))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 34 2 1) (Loc 67 2 34)
