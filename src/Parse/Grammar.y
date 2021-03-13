@@ -153,6 +153,10 @@ maybeRet :: { [TokenClass] }
   : 'ret'       { [] }
   | {- empty -} { [] }
 
+maybeComa :: { [TokenClass] }
+  : ','       { [] }
+  | {- empty -} { [] }
+
 rEq :: { [TokenClass] }
   : '='       { [] }
   | 'ret' '=' { [] }
@@ -432,7 +436,7 @@ tupleItemPatterns :: { [Src.Pattern] }
 
 
 record :: { Src.Exp }
-  : '{' rets recordFields rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Record $3) }
+  : '{' rets recordFields maybeComa rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Record $3) }
 
 recordFields :: { [Src.Field] }
   : name ':' exp                            { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) $ Src.Field (strV $1, $3)] }
@@ -532,7 +536,7 @@ operation :: { Src.Exp }
                   }
 
 listConstructor :: { Src.Exp }
-  : '[' rets listItems rets ']' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.ListConstructor $3) }
+  : '[' rets listItems maybeComa rets ']' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.ListConstructor $3) }
 
 listItems :: { [Src.ListItem] }
   : exp                         { [Src.Source emptyInfos (Src.getArea $1) (Src.ListItem $1)] }

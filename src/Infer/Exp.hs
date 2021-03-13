@@ -6,7 +6,7 @@ module Infer.Exp where
 
 import qualified Data.Map                      as M
 import           Control.Monad.Except
-import           Data.Foldable                  ( foldrM )
+import           Data.Foldable                  ( foldrM, foldlM )
 import qualified Parse.AST                     as AST
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
@@ -233,21 +233,17 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
   elems -> do
     tv <- newTVar Star
-    inferred <- mapM (inferListItem env tv) elems
-    let (_, _, t1, _) = head inferred
-        ts            = (\(_, _, t, _) -> t) <$> inferred
-        ss            = (\(s, _, _, _) -> s) <$> inferred
-        es            = (\(_, _, _, e) -> e) <$> inferred
-        pss           = (\(_, x, _, _) -> x) <$> inferred
+
+    (s', ps, ts, es) <-
+      foldlM (\(s, pss, ts, lis) elem -> do
+                (s', ps', t, li) <- inferListItem (apply s env) tv elem
+                return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
+              ) (mempty, [], [], []) elems
 
     s <- contextualUnifyElems env (zip elems ts)
-    let s' = foldr compose M.empty ss
     let s''           = s `compose` s'
     
-    let containedType = apply s'' tv
-
-    let t = TApp (TCon (TC "List" $ Kfun Star Star)) containedType
-    let ps            = concat pss
+    let t = TApp (TCon (TC "List" $ Kfun Star Star)) (apply s'' tv)
 
     return (s'', ps, t, Slv.Solved t area (Slv.ListConstructor es))
 
