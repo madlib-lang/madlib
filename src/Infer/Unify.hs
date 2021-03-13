@@ -44,13 +44,16 @@ instance Unify Type where
               types'         = M.elems updatedFields'
               z              = zip types types'
           unifyVars M.empty z
-    | M.difference fields fields' /= M.empty || M.difference fields' fields /= M.empty = throwError
+    -- | M.difference fields fields' /= M.empty || M.difference fields' fields /= M.empty = throwError
+    | M.difference fields fields' /= M.empty = throwError
     $ InferError (UnificationError r l) NoContext
     | otherwise = do
       let types  = M.elems fields
           types' = M.elems fields'
           z      = zip types types'
-      unifyVars M.empty z
+      s <- unifyVars M.empty z
+      let z'     = (\(l, r) -> (apply s l, apply s r)) <$> z
+      unifyVars s z'
 
   unify (TVar tv) t                                      = varBind tv t
   unify t         (TVar tv)                              = varBind tv t
@@ -70,8 +73,8 @@ instance (Unify t, Show t, Substitutable t) => Unify [t] where
 unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
 unifyVars s ((tp, tp') : xs) = do
   s1 <- unify tp tp'
-  unifyVars (compose s1 s) xs
-unifyVars s _ = return s
+  unifyVars (compose s s1) xs
+unifyVars s [] = return s
 
 
 unifyElems :: Env -> [Type] -> Infer Substitution
@@ -116,9 +119,14 @@ contextualUnifyElems env (h : r) = contextualUnifyElems' env h r
 contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Type)] -> Infer Substitution
 contextualUnifyElems' _   _      []              = return M.empty
 contextualUnifyElems' env (e, t) ((e', t') : xs) = do
-  s1 <- contextualUnify env e' t t'
+  s1 <- catchError (contextualUnify env e' t' t) flipUnificationError
   s2 <- contextualUnifyElems' env (e, t) xs
   return $ compose s1 s2
+
+flipUnificationError :: InferError -> Infer b
+flipUnificationError e@(InferError err x) = case err of
+  UnificationError l r -> throwError $ InferError (UnificationError r l) x
+  _ -> throwError e
 
 
 addContext :: Env -> Can.Canonical a -> InferError -> Infer b

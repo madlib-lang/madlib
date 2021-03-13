@@ -191,10 +191,6 @@ throw 'non exhaustive patterns!'; }
     const {  } = __x__;
     return `Bob`;
   }
-  else if (true && true) {
-    const { x: x1, ...b } = __x__;
-    return b.name;
-  }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(({ x: 4, name: `John` }));
@@ -207,14 +203,6 @@ const addXAndY = __curry__((r) => ((__x__) => {
 throw 'non exhaustive patterns!'; }
 })(r));
 const fnTCHOU = __curry__((x) => x.a.b.c.d.e);
-const crazyRecordPattern = __curry__((r) => ((__x__) => {
-  if (true && true && true) {
-    const { x: { y: { y: y }, ...k }, ...c } = __x__;
-    return y + k.z + c.o + c.i;
-  }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(r));
 const tup = ([1, 2, 3]);
 __eq__(([1, 2, 3]), ([1, 2, 3]));
 ((__x__) => {
