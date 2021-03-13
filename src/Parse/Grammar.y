@@ -282,8 +282,8 @@ exp :: { Src.Exp }
   | name '=' exp                                        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3) }
   | name                                                %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
   | '.' name                                            %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ '.':strV $2) }
-  | 'pipe' '(' args ')' '(' args ')'                    %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $7)) (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3) $6 }
-  | 'pipe' '(' args ')'                                 %shift { buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $4)) $3 }
+  | 'pipe' '(' maybeRet args ')' '(' args ')'           %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $8)) (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $5)) $4) $7 }
+  | 'pipe' '(' maybeRet args ')'                        %shift { buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $5)) $4 }
   | app                                                 %shift { $1 }
   | '(' params ')' '=>' rets exp                        %shift { buildAbs (mergeAreas (tokenToArea $1) (Src.getArea $6)) $2 [$6] }
   | '(' params ')' '=>' '(' rets exp rets ')'           %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $9)) $2 [$7] }
