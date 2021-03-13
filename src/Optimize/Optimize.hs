@@ -326,6 +326,7 @@ getTypeHeadName t = case t of
     "(,,)"  -> "Tuple_3"
     "(,,,)" -> "Tuple_4"
     _       -> n
+  TApp (TApp (TCon (TC "(->)" _)) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
   TApp l _ -> getTypeHeadName l
 
 

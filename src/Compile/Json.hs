@@ -10,8 +10,8 @@ import           Debug.Trace
 import           Text.Show.Pretty
 import           Error.Error
 import           Explain.Format
-import           Data.Char
-import           Infer.Scheme
+import           Data.Aeson.Text (encodeToLazyText)
+import           Data.Text.Lazy (unpack)
 
 
 indentSize :: Int
@@ -21,12 +21,8 @@ indent :: Int -> String
 indent depth = concat $ replicate (depth * indentSize) " "
 
 escapeString :: String -> String
-escapeString = foldr escapeChar ""
+escapeString = unpack . encodeToLazyText
 
-escapeChar :: Char -> String -> String
-escapeChar c s = case c of
-  '"' -> "\\\"" <> s
-  _   -> showLitChar c s
 
 compileASTTable :: [(InferError, String)] -> Slv.Table -> String
 compileASTTable errs table =
@@ -61,9 +57,9 @@ compileError depth (err@(InferError typeError ctx), formatted) =
         <> getErrorType err
         <> "\",\n"
         <> indent (depth + 1)
-        <> "\"message\": \""
+        <> "\"message\": "
         <> escapeString formatted
-        <> "\\n\",\n"
+        <> "\\n,\n"
         <> origin
         <> loc
         <> indent depth
@@ -214,7 +210,7 @@ compileExpFields depth exp = case exp of
   Slv.Var  n   -> indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
 
   Slv.LNum val ->
-    let compiledVal = if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "\"" <> escapeString val <> "\"" else val
+    let compiledVal = if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
     in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": " <> compiledVal <> "\n"
 
   Slv.LBool val ->
@@ -224,9 +220,9 @@ compileExpFields depth exp = case exp of
     indent depth
       <> "\"nodeType\": \"LiteralString\",\n"
       <> indent depth
-      <> "\"value\": \""
+      <> "\"value\": "
       <> escapeString val
-      <> "\"\n"
+      <> "\n"
 
   Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
 

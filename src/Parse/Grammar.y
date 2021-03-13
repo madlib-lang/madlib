@@ -28,6 +28,7 @@ import           Text.Show.Pretty (ppShow)
   strTplStart { Token _ (TokenTemplateStringStart) }
   strTplEnd   { Token _ (TokenTemplateStringEnd _) }
   name        { Token _ (TokenName _) }
+  nameC       { Token _ (TokenConstraintName _) }
   js          { Token _ (TokenJSBlock _) }
   'ret'       { Token _ TokenReturn }
   '='         { Token _ TokenEq }
@@ -46,6 +47,7 @@ import           Text.Show.Pretty (ppShow)
   ','         { Token _ TokenComma }
   '('         { Token _ TokenLeftParen }
   ')'         { Token _ TokenRightParen }
+  '{{'        { Token _ TokenLeftDoubleCurly }
   '{'         { Token _ TokenLeftCurly }
   '}'         { Token _ TokenRightCurly }
   '['         { Token _ TokenLeftSquaredBracket }
@@ -120,36 +122,23 @@ importNames :: { [Src.Name] }
 
 
 interface :: { Src.Interface }
-  : 'interface' name name '{' rets methodDefs rets '}'                           { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Interface [] (strV $2) [strV $3] $6) }
-  | 'interface' name name name '{' rets methodDefs rets '}'                      { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Interface [] (strV $2) ([strV $3]<>[strV $4]) $7) }
+  : 'interface' name names '{' rets methodDefs rets '}'                          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Interface [] (strV $2) $3 $6) }
   | 'interface' constraint '=>' name names '{' rets methodDefs rets '}'          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Interface [$2] (strV $4) $5 $8) }
   | 'interface' '(' constraints ')' '=>' name names '{' rets methodDefs rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Interface $3 (strV $6) $7 $10) }
 
 
 names :: { [Src.Name] }
   : name       { [strV $1] }
-  | names name { $1 <> [strV $2] }
+  | name names { (strV $1) : $2 }
 
 methodDefs :: { M.Map Src.Name Src.Typing }
   : name '::' constrainedTyping                 { M.fromList [(strV $1, $3)] }
   | methodDefs rets name '::' constrainedTyping { M.union (M.fromList [(strV $3, $5)]) $1 }
 
 instance :: { Src.Instance }
-  : 'instance' name simpleTypings '{' rets methodImpls rets '}'                                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Instance [] (strV $2) $3 $6) }
-  | 'instance' name typing '{' rets methodImpls rets '}'                                                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Instance [] (strV $2) [$3] $6) }
-  | 'instance' name name name '{' rets methodImpls rets '}'                                                                %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Instance [] (strV $2) [Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle $ strV $3), Src.Source emptyInfos (tokenToArea $4) (Src.TRSingle $ strV $4)] $7) }
-  | 'instance' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                                           %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.Instance [] (strV $2) [$3, $5] $9) }
-  | 'instance' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}'                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.Instance [] (strV $2) [$4, $7] $11) }
-  | 'instance' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [] (strV $2) [$4] $8) }
-  | 'instance' constraint '=>' name simpleTypings '{' rets methodImpls rets '}'                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [$2] (strV $4) $5 $8) }
-  | 'instance' constraint '=>' name typing '{' rets methodImpls rets '}'                                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [$2] (strV $4) [$5] $8) }
-  | 'instance' constraint '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance [$2] (strV $4) [$6] $10) }
-  | 'instance' constraint '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                           %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.Instance [$2] (strV $4) [$5, $7] $11) }
-  | 'instance' '(' constraints ')' '=>' name simpleTypings '{' rets methodImpls rets '}'                                   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) $7 $10) }
-  | 'instance' '(' constraints ')' '=>' name typing '{' rets methodImpls rets '}'                                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) [$7] $10) }
-  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '{' rets methodImpls rets '}'                         %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $14)) (Src.Instance $3 (strV $6) [$8] $12) }
-  | 'instance' '(' constraints ')' '=>' name typing '(' compositeTyping ')' '{' rets methodImpls rets '}'                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $15)) (Src.Instance $3 (strV $6) [$7, $9] $13) }
-  | 'instance' '(' constraints ')' '=>' name '(' compositeTyping ')' '(' compositeTyping ')' '{' rets methodImpls rets '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.Instance $3 (strV $6) [$8, $11] $15) }
+  : 'instance' name manyTypings '{{' rets methodImpls rets '}'                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Instance [] (strV $2) $3 $6) }
+  | 'instance' instanceConstraint '=>' name manyTypings '{{' rets methodImpls rets '}'           { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $10)) (Src.Instance [$2] (strV $4) $5 $8) }
+  | 'instance' '(' instanceConstraints ')' '=>' name manyTypings '{{' rets methodImpls rets '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) $7 $10) }
 
 methodImpls :: { M.Map Src.Name Src.Exp }
   : name '=' exp { M.fromList [(strV $1, Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3))] }
@@ -210,6 +199,17 @@ constrainedTyping :: { Src.Typing }
   | '(' constraints ')' '=>' typings      %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.TRConstrained $2 $5) }
   | typings  %shift { $1 }
 
+instanceConstraints :: { [Src.Typing] }
+  : instanceConstraint { [$1] }
+  | instanceConstraints ',' instanceConstraint { $1 <> [$3] }
+
+instanceConstraint :: { Src.Typing }
+  : nameC nameC                 { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2))]) }
+  | nameC nameC nameC            { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle (strV $3))]) }
+  | nameC nameC nameC nameC       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle (strV $3)), Src.Source emptyInfos (tokenToArea $4) (Src.TRSingle (strV $4))]) }
+  | nameC nameC '(' typings ')' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), $4]) }
+  | nameC '(' typings ')' nameC { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [$3, Src.Source emptyInfos (tokenToArea $5) (Src.TRSingle (strV $5))]) }
+
 constraints :: { [Src.Typing] }
   : constraint { [$1] }
   | constraints ',' constraint { $1 <> [$3] }
@@ -217,16 +217,18 @@ constraints :: { [Src.Typing] }
 constraint :: { Src.Typing }
   : name name                 { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2))]) }
   | name name name            { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle (strV $3))]) }
+  | name name name name       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), Src.Source emptyInfos (tokenToArea $3) (Src.TRSingle (strV $3)), Src.Source emptyInfos (tokenToArea $4) (Src.TRSingle (strV $4))]) }
   | name name '(' typings ')' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle (strV $2)), $4]) }
   | name '(' typings ')' name { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRComp (strV $1) [$3, Src.Source emptyInfos (tokenToArea $5) (Src.TRSingle (strV $5))]) }
 
+
 simpleTypings :: { [Src.Typing] }
   : name               %shift { [Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] }
-  | simpleTypings name %shift { $1 <> [Src.Source emptyInfos (tokenToArea $2) (Src.TRSingle $ strV $2)] }
+  | name simpleTypings %shift { [Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1)] <> $2 }
 
 manyTypings :: { [Src.Typing] }
-  : typing             %shift { [$1] }
-  | typing manyTypings %shift { $1:$2 }
+  : typing              { [$1] }
+  | typing manyTypings  { $1:$2 }
 
 typings :: { Src.Typing }
   : typings '->' typings         %shift { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.TRArr $1 $3) }

@@ -26,8 +26,14 @@ import qualified Data.ByteString.Lazy          as B
 import qualified System.Environment.Executable as E
 import           Data.Maybe
 import           Explain.Location
+import System.IO (openFile, IOMode (ReadMode), hSetEncoding, hGetContents)
+import GHC.IO.Encoding (utf8)
 
 
+rf fileName = do
+  inputHandle <- openFile fileName ReadMode 
+  hSetEncoding inputHandle utf8
+  hGetContents inputHandle
 
 
 -- TODO: Write an integration test with real files ?
@@ -35,7 +41,7 @@ import           Explain.Location
 -- Then use the scoped name in Main in order to partially apply it.
 buildASTTable :: FilePath -> IO (Either InferError Table)
 buildASTTable path = do
-  let pathUtils = PathUtils { readFile           = P.readFile
+  let pathUtils = PathUtils { readFile           = rf
                             , canonicalizePath   = Dir.canonicalizePath
                             , doesFileExist      = Dir.doesFileExist
                             , byteStringReadFile = B.readFile
@@ -85,7 +91,7 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
                                               (getImportAbsolutePath imp')
                 case builtImport of
                   Right x                -> return $ Right x
-                  Left  (InferError e _) -> return $ Left $ InferError e (Context srcPath area [])
+                  Left  e -> return $ Left e
               )
               completeImports
 

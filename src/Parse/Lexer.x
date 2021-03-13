@@ -71,24 +71,25 @@ tokens :-
   <0, stringTemplateMadlib> "false"                            { mapToken (\_ -> (TokenBool "false")) }
   <0, stringTemplateMadlib> "=="                               { mapToken (\_ -> TokenDoubleEq) }
   <0, stringTemplateMadlib> "!="                               { mapToken (\_ -> TokenExclamationMarkEq) }
-  <0, stringTemplateMadlib> \.                                 { mapToken (\_ -> TokenDot) }
-  <0, stringTemplateMadlib> $head*\,$tail*                     { mapToken (\_ -> TokenComma) }
-  <0> \{$tail*                                                 { mapToken (\_ -> TokenLeftCurly) }
-  <0> $head*\}                                                 { mapToken (\_ -> TokenRightCurly) }
+  <0, stringTemplateMadlib, instanceHeader> \.                 { mapToken (\_ -> TokenDot) }
+  <0, stringTemplateMadlib, instanceHeader> $head*\,$tail*     { mapToken (\_ -> TokenComma) }
+  <0> \{\{$tail*                                               { mapToken (\_ -> TokenLeftDoubleCurly) }
+  <0, instanceHeader> \{$tail*                                 { mapToken (\_ -> TokenLeftCurly) }
+  <0, instanceHeader> $head*\}                                 { mapToken (\_ -> TokenRightCurly) }
   <0, stringTemplateMadlib> \[$tail*                           { mapToken (\_ -> TokenLeftSquaredBracket) }
   <0, stringTemplateMadlib> $head*\]                           { mapToken (\_ -> TokenRightSquaredBracket) }
-  <0, stringTemplateMadlib> \(                                 { mapToken (\_ -> TokenLeftParen) }
-  <0, stringTemplateMadlib> \($tail*                           { mapToken (\_ -> TokenLeftParen) }
-  <0, stringTemplateMadlib> $head*\)                           { mapToken (\_ -> TokenRightParen) }
-  <0, stringTemplateMadlib> \)                                 { mapToken (\_ -> TokenRightParen) }
-  <0, stringTemplateMadlib> $head*\:\:$tail*                   { mapToken (\_ -> TokenDoubleColon) }
-  <0, stringTemplateMadlib> \:                                 { mapToken (\_ -> TokenColon) }
-  <0, stringTemplateMadlib> $head*\-\>$tail*                   { mapToken (\_ -> TokenArrow) }
-  <0, stringTemplateMadlib> $head*\=\>$tail*                   { mapToken (\_ -> TokenFatArrow) }
+  <0, stringTemplateMadlib, instanceHeader> \(                 { mapToken (\_ -> TokenLeftParen) }
+  <0, stringTemplateMadlib, instanceHeader> \($tail*           { mapToken (\_ -> TokenLeftParen) }
+  <0, stringTemplateMadlib, instanceHeader> $head*\)           { mapToken (\_ -> TokenRightParen) }
+  <0, stringTemplateMadlib, instanceHeader> \)                 { mapToken (\_ -> TokenRightParen) }
+  <0, stringTemplateMadlib, instanceHeader> $head*\:\:$tail*   { mapToken (\_ -> TokenDoubleColon) }
+  <0, stringTemplateMadlib, instanceHeader> \:                 { mapToken (\_ -> TokenColon) }
+  <0, stringTemplateMadlib, instanceHeader> $head*\-\>$tail*   { mapToken (\_ -> TokenArrow) }
+  <0, stringTemplateMadlib, instanceHeader> $head*\=\>$tail*   { mapToken (\_ -> TokenFatArrow) }
   <0> \|                                                       { mapToken (\_ -> TokenPipe) }
   <0> \;                                                       { mapToken (\_ -> TokenSemiColon) }
-  <0, stringTemplateMadlib> [\n]                               { mapToken (\_ -> TokenReturn) }
-  <0, stringTemplateMadlib> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
+  <0, stringTemplateMadlib, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
+  <0, stringTemplateMadlib, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
   <0, stringTemplateMadlib> $head*\+                           { mapToken (\_ -> TokenPlus) }
   <0, stringTemplateMadlib> $head*\+\+                         { mapToken (\_ -> TokenDoublePlus) }
   <0, stringTemplateMadlib> \-                                 { mapToken (\_ -> TokenDash) }
@@ -101,8 +102,8 @@ tokens :-
   <0, stringTemplateMadlib> \.\.\.                             { mapToken (\_ -> TokenSpreadOperator) }
   <0, stringTemplateMadlib> \&\&                               { mapToken (\_ -> TokenDoubleAmpersand) }
   <0, stringTemplateMadlib> \|\|                               { mapToken (\_ -> TokenDoublePipe) }
-  <0, stringTemplateMadlib> \>                                 { mapToken (\_ -> TokenRightChevron) }
-  <0, stringTemplateMadlib> \<                                 { mapToken (\_ -> TokenLeftChevron) }
+  <0, stringTemplateMadlib, instanceHeader> \>                 { mapToken (\_ -> TokenRightChevron) }
+  <0, stringTemplateMadlib, instanceHeader> \<                 { mapToken (\_ -> TokenLeftChevron) }
   <0, stringTemplateMadlib> \>\=                               { mapToken (\_ -> TokenRightChevronEq) }
   <0, stringTemplateMadlib> \<\=                               { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib> \!                                 { mapToken (\_ -> TokenExclamationMark) }
@@ -114,7 +115,7 @@ tokens :-
   <0,comment> $head*\/\*                          { beginComment }
   <comment>   [.\n]                               ;
   <comment>   \*\/                                { endComment }
-  <0, stringTemplateMadlib> $empty+               ;
+  <0, stringTemplateMadlib, instanceHeader> $empty+               ;
   <0> `                                           { beginStringTemplate }
   <stringTemplate> \$\{                           { beginStringTemplateMadlib }
   <stringTemplateMadlib> \{                       { stringTemplateMadlibLeftCurly }
@@ -134,8 +135,11 @@ toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
 
 jsxTag :: String
-jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[a-zA-Z0-9]+\"|{.*}))*[ ]*\\/?>"
+jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ ]*\\/?>"
+-- jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[a-zA-Z0-9\\-_\\ ]*\"|{.*}))*[ ]*\\/?>"
 
+constraintRegex :: String
+constraintRegex = "\\`[^={]*(=>)[^}]*([^=]=[^=]|{[\\t\\ ]*\n).*"
 
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
@@ -148,6 +152,11 @@ setStartCode :: Int -> Alex ()
 setStartCode code =
   Alex $ \s ->
     Right (s{ alex_scd = code }, ())
+
+getStartCode :: Alex Int
+getStartCode = Alex $ \s -> do
+  let sc = alex_scd s
+  Right (s, sc)
 
 setDefaultStartCode :: Alex ()
 setDefaultStartCode =
@@ -271,28 +280,54 @@ pushStringToTemplate i@(posn, prevChar, pending, input) len = do
 
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
-  return $ Token (makeArea posn (take len input)) token
-  
-  where
-    token = case (tokenizer (take len input)) of
-      TokenRightChevron ->
-        let next  = ((tail . (take 100)) input)
-            matchWL = next =~ whiteList :: String
-            matchBL = matchWL =~ blackList :: String
-        in
-          if ((not . null) matchWL) && null matchBL
-          then TokenRightChevron
-          else TokenTupleEnd
-      
-      TokenLeftChevron ->
-        let next    = take 1000 input
-            matched = match (toRegex jsxTag) next :: String
-        in
-          if not (null matched) then
-            TokenJsxTagOpen
+  sc <- getStartCode
+
+  token <- case (tokenizer (take len input)) of
+        TokenLeftCurly ->
+          if sc == instanceHeader then do
+            setStartCode 0
+            return TokenLeftDoubleCurly
           else
-            TokenLeftChevron
-      tok -> tok
+            return TokenLeftCurly
+
+        TokenName s ->
+          if sc /= instanceHeader then
+            return $ TokenName s
+          else
+            let next = take 250 input
+                matched = match (toRegex constraintRegex) next :: String
+            in
+              if null matched then
+                return $ TokenName s
+              else
+                return $ TokenConstraintName s
+
+        TokenRightChevron ->
+          let next  = ((tail . (take 100)) input)
+              matchWL = next =~ whiteList :: String
+              matchBL = matchWL =~ blackList :: String
+          in
+            if ((not . null) matchWL) && null matchBL
+            then return TokenRightChevron
+            else return TokenTupleEnd
+        
+        TokenLeftChevron ->
+          let next    = take 2000 input
+              matched = match (toRegex jsxTag) next :: String
+          in
+            if not (null matched) then
+              return TokenJsxTagOpen
+            else
+              return TokenLeftChevron
+        tok -> return tok
+
+
+  case token of
+    TokenInstance -> setStartCode instanceHeader
+    _ -> return ()
+
+  return $ Token (makeArea posn (take len input)) token
+
 
 
 sanitizeStr :: String -> String
@@ -325,6 +360,7 @@ data TokenClass
  | TokenNumber String
  | TokenStr  String
  | TokenName String
+ | TokenConstraintName String
  | TokenDottedName String
  | TokenJSBlock String
  | TokenBool String
@@ -345,6 +381,7 @@ data TokenClass
  | TokenDoubleEq
  | TokenExclamationMarkEq
  | TokenComma
+ | TokenLeftDoubleCurly
  | TokenLeftCurly
  | TokenRightCurly
  | TokenLeftSquaredBracket
@@ -389,6 +426,7 @@ strV (Token _ (TokenTemplateStringEnd x)) = x
 strV (Token _ (TokenNumber x))            = x
 strV (Token _ (TokenBool x))              = x
 strV (Token _ (TokenName x))              = x
+strV (Token _ (TokenConstraintName x))    = x
 strV (Token _ (TokenJSBlock x))           = x
 
 

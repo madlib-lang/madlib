@@ -61,10 +61,13 @@ import           Target
 import           PackageGenerator
 import           Debug.Trace
 import           Text.Show.Pretty
+import           GHC.IO.Encoding
 
 
 main :: IO ()
-main = execParser opts >>= run
+main = do
+  setLocaleEncoding utf8
+  execParser opts >>= run
 
 isCoverageEnabled :: IO Bool
 isCoverageEnabled = do

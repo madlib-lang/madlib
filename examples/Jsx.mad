@@ -19,3 +19,44 @@
 <Tag>
   {callFn(3)}
 </Tag>
+
+
+alias State = { input :: String, todos :: List String }
+
+initialState :: State
+initialState = { input: "", todos: [] }
+
+
+handleInput :: Action State
+handleInput = (state, event) => where(event)
+  is InputEvent e: [of(always({ ...state, input: e.target.value }))]
+
+addTodo :: Action State
+addTodo = (_, __) => [
+  of((s) => pipe(
+    .input,
+    where 
+      is ""  : s
+      is todo: { ...s, todos: mappend(s.todos, [todo]), input: "" }
+  )(s))
+]
+
+MyApp :: View State
+MyApp = (state) =>
+  <div className="container">
+    <div className="card">
+      <div className="left">
+        <h1>{"Todo list"}</h1>
+        <p>{"powered by Madlib / MadUI"}</p>
+      </div>
+      <div className="right">
+        <div className="todo-list">
+          <input value={state.input} onInput={handleInput} placeholder="Todo" />
+          <input value="Add" inputType="button" onClick={addTodo} />
+          <ul>
+            {map((todo) => <li>{`${todo}`}</li>, state.todos)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
