@@ -5,100 +5,103 @@ Right
         [ Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                  (TCon (TC "Number" Star)))
-               (TCon (TC "Number" Star)))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                  (TCon (TC "Number" Star) "prelude"))
+               (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 0 1 1) (Loc 20 1 21))
             (Assignment
                "inc"
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TCon (TC "Number" Star)))
-                     (TCon (TC "Number" Star)))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                        (TCon (TC "Number" Star) "prelude"))
+                     (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 6 1 7) (Loc 20 1 21))
                   (Abs
                      (Solved
-                        (TCon (TC "Number" Star)) (Area (Loc 7 1 8) (Loc 8 1 9)) "a")
+                        (TCon (TC "Number" Star) "prelude")
+                        (Area (Loc 7 1 8) (Loc 8 1 9))
+                        "a")
                      [ Solved
-                         (TCon (TC "Number" Star))
+                         (TCon (TC "Number" Star) "prelude")
                          (Area (Loc 14 1 15) (Loc 19 1 20))
                          (App
                             (Solved
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TCon (TC "Number" Star)))
-                                  (TCon (TC "Number" Star)))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "Number" Star) "prelude"))
+                                  (TCon (TC "Number" Star) "prelude"))
                                (Area (Loc 14 1 15) (Loc 19 1 20))
                                (App
                                   (Solved
                                      (TApp
                                         (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                           (TCon (TC "Number" Star)))
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TCon (TC "Number" Star) "prelude"))
                                         (TApp
                                            (TApp
-                                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                              (TCon (TC "Number" Star)))
-                                           (TCon (TC "Number" Star))))
+                                              (TCon
+                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TCon (TC "Number" Star) "prelude"))
+                                           (TCon (TC "Number" Star) "prelude")))
                                      (Area (Loc 15 1 16) (Loc 17 1 18))
                                      (Var "+"))
                                   (Solved
-                                     (TCon (TC "Number" Star))
+                                     (TCon (TC "Number" Star) "prelude")
                                      (Area (Loc 14 1 15) (Loc 15 1 16))
                                      (Var "a"))
                                   False))
                             (Solved
-                               (TCon (TC "Number" Star))
+                               (TCon (TC "Number" Star) "prelude")
                                (Area (Loc 18 1 19) (Loc 19 1 20))
                                (LNum "1"))
                             True)
                      ])))
         , Solved
-            (TCon (TC "Number" Star))
+            (TCon (TC "Number" Star) "prelude")
             (Area (Loc 21 2 1) (Loc 29 2 9))
             (App
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TCon (TC "Number" Star)))
-                           (TCon (TC "Number" Star))))
-                     (TCon (TC "Number" Star)))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Number" Star) "prelude"))
+                           (TCon (TC "Number" Star) "prelude")))
+                     (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 21 2 1) (Loc 29 2 9))
                   (App
                      (Solved
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TCon (TC "Number" Star)))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Number" Star) "prelude"))
                            (TApp
                               (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                  (TApp
                                     (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                       (TCon (TC "Number" Star)))
-                                    (TCon (TC "Number" Star))))
-                              (TCon (TC "Number" Star))))
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "Number" Star) "prelude"))
+                                    (TCon (TC "Number" Star) "prelude")))
+                              (TCon (TC "Number" Star) "prelude")))
                         (Area (Loc 22 2 2) (Loc 25 2 5))
                         (Var "|>"))
                      (Solved
-                        (TCon (TC "Number" Star))
+                        (TCon (TC "Number" Star) "prelude")
                         (Area (Loc 21 2 1) (Loc 22 2 2))
                         (LNum "3"))
                      False))
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                        (TCon (TC "Number" Star)))
-                     (TCon (TC "Number" Star)))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                        (TCon (TC "Number" Star) "prelude"))
+                     (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 26 2 6) (Loc 29 2 9))
                   (Var "inc"))
                True)

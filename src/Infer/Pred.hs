@@ -97,7 +97,7 @@ specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) me
 isConcrete :: Type -> Bool
 isConcrete t = case t of
   TVar _      -> False
-  TCon _      -> True
+  TCon _ _    -> True
   TApp    l r -> isConcrete l
   TRecord _ _ -> True
 

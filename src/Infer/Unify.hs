@@ -52,10 +52,10 @@ instance Unify Type where
           z      = zip types types'
       unifyVars M.empty z
 
-  unify (TVar tv) t                = varBind tv t
-  unify t         (TVar tv)        = varBind tv t
-  unify (TCon a) (TCon b) | a == b = return M.empty
-  unify t1 t2                      = throwError $ InferError (UnificationError t2 t1) NoContext
+  unify (TVar tv) t                                      = varBind tv t
+  unify t         (TVar tv)                              = varBind tv t
+  unify (TCon a fpa) (TCon b fpb) | a == b && fpa == fpb = return M.empty
+  unify t1 t2                                            = throwError $ InferError (UnificationError t2 t1) NoContext
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -95,9 +95,9 @@ instance Match Type where
     sl <- match l l'
     sr <- match r r'
     merge sl sr
-  match (TVar u) t | kind u == kind t      = return $ M.singleton u t
-  match (TCon tc1) (TCon tc2) | tc1 == tc2 = return nullSubst
-  match t1 t2                              = throwError $ InferError (UnificationError t1 t2) NoContext
+  match (TVar u) t | kind u == kind t                            = return $ M.singleton u t
+  match (TCon tc1 fp1) (TCon tc2 fp2) | tc1 == tc2 && fp1 == fp2 = return nullSubst
+  match t1 t2                                                    = throwError $ InferError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where
   match ts ts' = do

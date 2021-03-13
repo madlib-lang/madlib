@@ -4,11 +4,14 @@ Left
         (TRecord
            (fromList
               [ ( "todos"
-                , TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "bc" Star))
+                , TApp
+                    (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "bc" Star))
                 )
               ])
            True)
-        (TApp (TCon (TC "List" (Kfun Star Star))) (TVar (TV "ba" Star))))
+        (TApp
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TVar (TV "ba" Star))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 838 37 12) (Loc 863 37 37)
@@ -5348,73 +5351,90 @@ Left
                         ([] :=>
                            TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TCon (TC "Number" Star)))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Number" Star) "prelude"))
                              (TApp
                                 (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TRecord
                                       (fromList
-                                         [ ( "input" , TCon (TC "String" Star) )
+                                         [ ( "input" , TCon (TC "String" Star) "prelude" )
                                          , ( "todos"
                                            , TApp
-                                               (TCon (TC "List" (Kfun Star Star)))
-                                               (TCon (TC "Todo" Star))
+                                               (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                               (TCon (TC "Todo" Star) "path")
                                            )
                                          ])
                                       False))
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                      (TCon (TC "String" Star)))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "String" Star) "prelude"))
                                    (TApp
-                                      (TCon (TC "List" (Kfun Star Star)))
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
                                       (TApp
                                          (TApp
-                                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))))
+                                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
                                             (TApp
                                                (TApp
-                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
                                                   (TRecord
                                                      (fromList
-                                                        [ ( "input" , TCon (TC "String" Star) )
+                                                        [ ( "input"
+                                                          , TCon (TC "String" Star) "prelude"
+                                                          )
                                                         , ( "todos"
                                                           , TApp
-                                                              (TCon (TC "List" (Kfun Star Star)))
-                                                              (TCon (TC "Todo" Star))
+                                                              (TCon
+                                                                 (TC "List" (Kfun Star Star))
+                                                                 "prelude")
+                                                              (TCon (TC "Todo" Star) "path")
                                                           )
                                                         ])
                                                      False))
                                                (TRecord
                                                   (fromList
-                                                     [ ( "input" , TCon (TC "String" Star) )
+                                                     [ ( "input"
+                                                       , TCon (TC "String" Star) "prelude"
+                                                       )
                                                      , ( "todos"
                                                        , TApp
-                                                           (TCon (TC "List" (Kfun Star Star)))
-                                                           (TCon (TC "Todo" Star))
+                                                           (TCon
+                                                              (TC "List" (Kfun Star Star))
+                                                              "prelude")
+                                                           (TCon (TC "Todo" Star) "path")
                                                        )
                                                      ])
                                                   False)))
                                          (TApp
                                             (TApp
-                                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
                                                (TRecord
                                                   (fromList
-                                                     [ ( "input" , TCon (TC "String" Star) )
+                                                     [ ( "input"
+                                                       , TCon (TC "String" Star) "prelude"
+                                                       )
                                                      , ( "todos"
                                                        , TApp
-                                                           (TCon (TC "List" (Kfun Star Star)))
-                                                           (TCon (TC "Todo" Star))
+                                                           (TCon
+                                                              (TC "List" (Kfun Star Star))
+                                                              "prelude")
+                                                           (TCon (TC "Todo" Star) "path")
                                                        )
                                                      ])
                                                   False))
                                             (TRecord
                                                (fromList
-                                                  [ ( "input" , TCon (TC "String" Star) )
+                                                  [ ( "input" , TCon (TC "String" Star) "prelude" )
                                                   , ( "todos"
                                                     , TApp
-                                                        (TCon (TC "List" (Kfun Star Star)))
-                                                        (TCon (TC "Todo" Star))
+                                                        (TCon
+                                                           (TC "List" (Kfun Star Star)) "prelude")
+                                                        (TCon (TC "Todo" Star) "path")
                                                     )
                                                   ])
                                                False))))))))))
@@ -5505,9 +5525,9 @@ Left
                         ([] :=>
                            TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
-                             (TCon (TC "Number" Star))))))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                             (TCon (TC "Number" Star) "prelude")))))
            , BTExp
                (Canonical
                   (Area (Loc 192 10 1) (Loc 301 11 64))
@@ -5544,17 +5564,18 @@ Left
                         ([] :=>
                            TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TCon (TC "Number" Star)))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Number" Star) "prelude"))
                              (TApp
                                 (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                   (TCon (TC "Number" Star)))
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "Number" Star) "prelude"))
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                      (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
-                                   (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0))))))))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0))))))))
            , BTExp
                (Canonical
                   (Area (Loc 133 7 1) (Loc 190 8 23))
@@ -5579,13 +5600,13 @@ Left
                         ([] :=>
                            TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TCon (TC "Number" Star)))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Number" Star) "prelude"))
                              (TApp
                                 (TApp
-                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                   (TApp (TCon (TC "List" (Kfun Star Star))) (TGen 0)))
-                                (TApp (TCon (TC "Maybe" (Kfun Star Star))) (TGen 0)))))))
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                                (TApp (TCon (TC "Maybe" (Kfun Star Star)) "path") (TGen 0)))))))
            , BTExp
                (Canonical
                   (Area (Loc 91 5 1) (Loc 131 5 41))

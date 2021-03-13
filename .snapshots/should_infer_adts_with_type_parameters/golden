@@ -4,26 +4,29 @@ Right
     , aexps =
         [ Solved
             (TApp
-               (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "Boolean" Star)))
+               (TCon (TC "Result" (Kfun Star Star)) "path")
+               (TCon (TC "Boolean" Star) "prelude"))
             (Area (Loc 38 4 1) (Loc 60 4 23))
             (Assignment
                "result"
                (Solved
                   (TApp
-                     (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "Boolean" Star)))
+                     (TCon (TC "Result" (Kfun Star Star)) "path")
+                     (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 47 4 10) (Loc 60 4 23))
                   (App
                      (Solved
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                              (TCon (TC "Boolean" Star)))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Boolean" Star) "prelude"))
                            (TApp
-                              (TCon (TC "Result" (Kfun Star Star))) (TCon (TC "Boolean" Star))))
+                              (TCon (TC "Result" (Kfun Star Star)) "path")
+                              (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 47 4 10) (Loc 54 4 17))
                         (Var "Success"))
                      (Solved
-                        (TCon (TC "Boolean" Star))
+                        (TCon (TC "Boolean" Star) "prelude")
                         (Area (Loc 55 4 18) (Loc 59 4 22))
                         (LBool "true"))
                      True)))
@@ -42,18 +45,22 @@ Right
                          [ Untyped (Area (Loc 26 2 13) (Loc 27 2 14)) (TRSingle "a") ]
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TVar (TV "e" Star)))
-                            (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "e" Star)))))
+                            (TApp
+                               (TCon (TC "Result" (Kfun Star Star)) "path")
+                               (TVar (TV "e" Star)))))
                   , Untyped
                       (Area (Loc 32 3 5) (Loc 37 3 10))
                       (Constructor
                          "Error"
                          []
-                         (TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "f" Star))))
+                         (TApp
+                            (TCon (TC "Result" (Kfun Star Star)) "path") (TVar (TV "f" Star))))
                   ]
               , adtType =
-                  TApp (TCon (TC "Result" (Kfun Star Star))) (TVar (TV "a" Star))
+                  TApp
+                    (TCon (TC "Result" (Kfun Star Star)) "path") (TVar (TV "a" Star))
               , adtexported = False
               }
         ]

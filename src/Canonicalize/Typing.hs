@@ -141,7 +141,7 @@ typingToType env (Src.Source _ _ (Src.TRTuple elems)) = do
 getConstructorArgs :: Type -> [Type]
 getConstructorArgs t = case t of
   TApp l r -> getConstructorArgs l <> [r]
-  TCon _   -> []
+  TCon _ _ -> []
   _        -> [t]
 
 
@@ -163,7 +163,7 @@ updateAliasVars t args = do
               l' <- update l
               r' <- update r
               return $ TApp l' r'
-            TCon _       -> return ty
+            TCon _ _     -> return ty
             TRecord fs o -> do
               fs' <- mapM update fs
               return $ TRecord fs' o

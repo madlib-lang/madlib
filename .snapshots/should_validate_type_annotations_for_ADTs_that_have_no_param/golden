@@ -3,17 +3,19 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "X" Star))
+            (TCon (TC "X" Star) "path")
             (Area (Loc 11 2 1) (Loc 22 2 12))
             (Assignment
                "x"
                (Solved
-                  (TCon (TC "X" Star))
+                  (TCon (TC "X" Star) "path")
                   (Area (Loc 16 2 6) (Loc 22 2 12))
                   (TypedExp
                      (Solved
-                        (TCon (TC "X" Star)) (Area (Loc 16 2 6) (Loc 17 2 7)) (Var "X"))
-                     (Forall [] ([] :=> TCon (TC "X" Star))))))
+                        (TCon (TC "X" Star) "path")
+                        (Area (Loc 16 2 6) (Loc 17 2 7))
+                        (Var "X"))
+                     (Forall [] ([] :=> TCon (TC "X" Star) "path")))))
         ]
     , atypedecls =
         [ Untyped
@@ -24,9 +26,9 @@ Right
               , adtconstructors =
                   [ Untyped
                       (Area (Loc 9 1 10) (Loc 10 1 11))
-                      (Constructor "X" [] (TCon (TC "X" Star)))
+                      (Constructor "X" [] (TCon (TC "X" Star) "path"))
                   ]
-              , adtType = TCon (TC "X" Star)
+              , adtType = TCon (TC "X" Star) "path"
               , adtexported = False
               }
         ]

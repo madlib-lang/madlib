@@ -263,7 +263,7 @@ hkLetters = ['m' ..]
 
 prettyPrintType' :: (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
 prettyPrintType' (vars, hkVars) t = case t of
-  TCon (TC n _) -> (vars, hkVars, n)
+  TCon (TC n _) _ -> (vars, hkVars, n)
 
   TVar (TV n k) -> case k of
     Star -> case M.lookup n vars of
@@ -274,24 +274,24 @@ prettyPrintType' (vars, hkVars) t = case t of
       Just x  -> (vars, hkVars, [hkLetters !! x])
       Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
 
-  TApp (TApp (TCon (TC "(,)" _)) tl) tr ->
+  TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
         (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
 
-  TApp (TApp (TApp (TCon (TC "(,,)" _)) tl) tr) trr ->
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _) tl) tr) trr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' (varsRight, hkVarsRight) trr
     in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
 
-  TApp (TApp (TCon (TC "(->)" _)) tl) tr ->
+  TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
     let (varsLeft, hkVarsLeft, left) = case tl of
-          TApp (TApp (TCon (TC "(->)" _)) tl') tr' ->
+          TApp (TApp (TCon (TC "(->)" _) _) tl') tr' ->
             let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' (vars, hkVars) tl'
                 (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft', varsLeft') tr'
                 leftParenthesis                    = case tl' of
-                  TApp (TApp (TCon (TC "(->)" _)) _) _ -> True
+                  TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
                   _ -> False
                 left'' = if leftParenthesis then "(" <> left' <> ")" else left'
             in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
@@ -332,10 +332,10 @@ prettyPrintType' (vars, hkVars) t = case t of
 
 isTuple :: Type -> Bool
 isTuple t = case t of
-  TApp (TApp (TCon (TC "(,)" _)) _) _ -> True
-  TApp (TApp (TApp (TCon (TC "(,,)" _)) _) _) _ -> True
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _)) _) _) _) _ -> True
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _)) _) _) _) _) _ -> True
+  TApp (TApp (TCon (TC "(,)" _) _) _) _ -> True
+  TApp (TApp (TApp (TCon (TC "(,,)" _) _) _) _) _ -> True
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) _) _) _) _ -> True
+  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _) _) _) _) _) _ -> True
   _ -> False
 
 

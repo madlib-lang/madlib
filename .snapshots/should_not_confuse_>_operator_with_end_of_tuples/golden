@@ -6,39 +6,47 @@ Right
             (TApp
                (TApp
                   (TApp
-                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                     (TCon (TC "Number" Star)))
-                  (TCon (TC "Number" Star)))
-               (TCon (TC "Number" Star)))
+                     (TCon
+                        (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude")
+                     (TCon (TC "Number" Star) "prelude"))
+                  (TCon (TC "Number" Star) "prelude"))
+               (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 0 1 1) (Loc 9 1 10))
             (TupleConstructor
                [ Solved
-                   (TCon (TC "Number" Star)) (Area (Loc 1 1 2) (Loc 2 1 3)) (LNum "1")
+                   (TCon (TC "Number" Star) "prelude")
+                   (Area (Loc 1 1 2) (Loc 2 1 3))
+                   (LNum "1")
                , Solved
-                   (TCon (TC "Number" Star)) (Area (Loc 4 1 5) (Loc 5 1 6)) (LNum "2")
+                   (TCon (TC "Number" Star) "prelude")
+                   (Area (Loc 4 1 5) (Loc 5 1 6))
+                   (LNum "2")
                , Solved
-                   (TCon (TC "Number" Star)) (Area (Loc 7 1 8) (Loc 8 1 9)) (LNum "3")
+                   (TCon (TC "Number" Star) "prelude")
+                   (Area (Loc 7 1 8) (Loc 8 1 9))
+                   (LNum "3")
                ])
         , Solved
             (TApp
                (TApp
                   (TApp
-                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                     (TCon (TC "Boolean" Star)))
-                  (TCon (TC "String" Star)))
-               (TCon (TC "Number" Star)))
+                     (TCon
+                        (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude")
+                     (TCon (TC "Boolean" Star) "prelude"))
+                  (TCon (TC "String" Star) "prelude"))
+               (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 10 2 1) (Loc 28 2 19))
             (TupleConstructor
                [ Solved
-                   (TCon (TC "Boolean" Star))
+                   (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 11 2 2) (Loc 15 2 6))
                    (LBool "true")
                , Solved
-                   (TCon (TC "String" Star))
+                   (TCon (TC "String" Star) "prelude")
                    (Area (Loc 17 2 8) (Loc 23 2 14))
                    (LStr "John")
                , Solved
-                   (TCon (TC "Number" Star))
+                   (TCon (TC "Number" Star) "prelude")
                    (Area (Loc 25 2 16) (Loc 27 2 18))
                    (LNum "33")
                ])
@@ -46,51 +54,52 @@ Right
             (TApp
                (TApp
                   (TApp
-                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                     (TCon (TC "Boolean" Star)))
-                  (TCon (TC "String" Star)))
-               (TCon (TC "Boolean" Star)))
+                     (TCon
+                        (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude")
+                     (TCon (TC "Boolean" Star) "prelude"))
+                  (TCon (TC "String" Star) "prelude"))
+               (TCon (TC "Boolean" Star) "prelude"))
             (Area (Loc 29 3 1) (Loc 50 3 22))
             (TupleConstructor
                [ Solved
-                   (TCon (TC "Boolean" Star))
+                   (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 30 3 2) (Loc 34 3 6))
                    (LBool "true")
                , Solved
-                   (TCon (TC "String" Star))
+                   (TCon (TC "String" Star) "prelude")
                    (Area (Loc 36 3 8) (Loc 42 3 14))
                    (LStr "John")
                , Solved
-                   (TCon (TC "Boolean" Star))
+                   (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 44 3 16) (Loc 49 3 21))
                    (App
                       (Solved
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TCon (TC "Number" Star)))
-                            (TCon (TC "Boolean" Star)))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                               (TCon (TC "Number" Star) "prelude"))
+                            (TCon (TC "Boolean" Star) "prelude"))
                          (Area (Loc 44 3 16) (Loc 49 3 21))
                          (App
                             (Solved
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TCon (TC "Number" Star)))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "Number" Star) "prelude"))
                                   (TApp
                                      (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                        (TCon (TC "Number" Star)))
-                                     (TCon (TC "Boolean" Star))))
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "Number" Star) "prelude"))
+                                     (TCon (TC "Boolean" Star) "prelude")))
                                (Area (Loc 46 3 18) (Loc 47 3 19))
                                (Var ">"))
                             (Solved
-                               (TCon (TC "Number" Star))
+                               (TCon (TC "Number" Star) "prelude")
                                (Area (Loc 44 3 16) (Loc 46 3 18))
                                (LNum "33"))
                             False))
                       (Solved
-                         (TCon (TC "Number" Star))
+                         (TCon (TC "Number" Star) "prelude")
                          (Area (Loc 48 3 20) (Loc 49 3 21))
                          (LNum "3"))
                       True)
@@ -99,51 +108,52 @@ Right
             (TApp
                (TApp
                   (TApp
-                     (TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))))
-                     (TCon (TC "Boolean" Star)))
-                  (TCon (TC "String" Star)))
-               (TCon (TC "Boolean" Star)))
+                     (TCon
+                        (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude")
+                     (TCon (TC "Boolean" Star) "prelude"))
+                  (TCon (TC "String" Star) "prelude"))
+               (TCon (TC "Boolean" Star) "prelude"))
             (Area (Loc 51 4 1) (Loc 81 4 31))
             (TupleConstructor
                [ Solved
-                   (TCon (TC "Boolean" Star))
+                   (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 52 4 2) (Loc 56 4 6))
                    (LBool "true")
                , Solved
-                   (TCon (TC "String" Star))
+                   (TCon (TC "String" Star) "prelude")
                    (Area (Loc 58 4 8) (Loc 64 4 14))
                    (LStr "John")
                , Solved
-                   (TCon (TC "Boolean" Star))
+                   (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 66 4 16) (Loc 80 4 30))
                    (App
                       (Solved
                          (TApp
                             (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                               (TCon (TC "String" Star)))
-                            (TCon (TC "Boolean" Star)))
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                               (TCon (TC "String" Star) "prelude"))
+                            (TCon (TC "Boolean" Star) "prelude"))
                          (Area (Loc 66 4 16) (Loc 80 4 30))
                          (App
                             (Solved
                                (TApp
                                   (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                     (TCon (TC "String" Star)))
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TCon (TC "String" Star) "prelude"))
                                   (TApp
                                      (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                        (TCon (TC "String" Star)))
-                                     (TCon (TC "Boolean" Star))))
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "String" Star) "prelude"))
+                                     (TCon (TC "Boolean" Star) "prelude")))
                                (Area (Loc 70 4 20) (Loc 71 4 21))
                                (Var ">"))
                             (Solved
-                               (TCon (TC "String" Star))
+                               (TCon (TC "String" Star) "prelude")
                                (Area (Loc 66 4 16) (Loc 70 4 20))
                                (LStr "OK"))
                             False))
                       (Solved
-                         (TCon (TC "String" Star))
+                         (TCon (TC "String" Star) "prelude")
                          (Area (Loc 72 4 22) (Loc 80 4 30))
                          (LStr "NOT OK"))
                       True)

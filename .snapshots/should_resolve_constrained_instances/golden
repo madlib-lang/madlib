@@ -3,51 +3,55 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "String" Star))
+            (TCon (TC "String" Star) "prelude")
             (Area (Loc 296 17 1) (Loc 312 17 17))
             (App
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TApp
                            (TApp
-                              (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                              (TCon (TC "Number" Star)))
-                           (TCon (TC "Boolean" Star))))
-                     (TCon (TC "String" Star)))
+                              (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Number" Star) "prelude"))
+                           (TCon (TC "Boolean" Star) "prelude")))
+                     (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 296 17 1) (Loc 300 17 5))
                   (Placeholder
-                     ( ClassRef "Show" [] True False , [ TCon (TC "Boolean" Star) ] )
+                     ( ClassRef "Show" [] True False
+                     , [ TCon (TC "Boolean" Star) "prelude" ]
+                     )
                      (Solved
                         (TApp
                            (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                               (TApp
                                  (TApp
-                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                    (TCon (TC "Number" Star)))
-                                 (TCon (TC "Boolean" Star))))
-                           (TCon (TC "String" Star)))
+                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                    (TCon (TC "Number" Star) "prelude"))
+                                 (TCon (TC "Boolean" Star) "prelude")))
+                           (TCon (TC "String" Star) "prelude"))
                         (Area (Loc 296 17 1) (Loc 300 17 5))
                         (Placeholder
-                           ( ClassRef "Show" [] True False , [ TCon (TC "Number" Star) ] )
+                           ( ClassRef "Show" [] True False
+                           , [ TCon (TC "Number" Star) "prelude" ]
+                           )
                            (Solved
                               (TApp
                                  (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                     (TApp
                                        (TApp
-                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                          (TCon (TC "Number" Star)))
-                                       (TCon (TC "Boolean" Star))))
-                                 (TCon (TC "String" Star)))
+                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                          (TCon (TC "Number" Star) "prelude"))
+                                       (TCon (TC "Boolean" Star) "prelude")))
+                                 (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 296 17 1) (Loc 300 17 5))
                               (Placeholder
                                  ( MethodRef "Show" "show" False
                                  , [ TApp
                                        (TApp
-                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                           (TVar (TV "a" Star)))
                                        (TVar (TV "b" Star))
                                    ]
@@ -55,29 +59,31 @@ Right
                                  (Solved
                                     (TApp
                                        (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                           (TApp
                                              (TApp
-                                                (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                                                (TCon (TC "Number" Star)))
-                                             (TCon (TC "Boolean" Star))))
-                                       (TCon (TC "String" Star)))
+                                                (TCon
+                                                   (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TCon (TC "Number" Star) "prelude"))
+                                             (TCon (TC "Boolean" Star) "prelude")))
+                                       (TCon (TC "String" Star) "prelude"))
                                     (Area (Loc 296 17 1) (Loc 300 17 5))
                                     (Var "show"))))))))
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
-                        (TCon (TC "Number" Star)))
-                     (TCon (TC "Boolean" Star)))
+                        (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                        (TCon (TC "Number" Star) "prelude"))
+                     (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 301 17 6) (Loc 311 17 16))
                   (TupleConstructor
                      [ Solved
-                         (TCon (TC "Number" Star))
+                         (TCon (TC "Number" Star) "prelude")
                          (Area (Loc 302 17 7) (Loc 303 17 8))
                          (LNum "1")
                      , Solved
-                         (TCon (TC "Boolean" Star))
+                         (TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 305 17 10) (Loc 310 17 15))
                          (LBool "false")
                      ]))
@@ -97,8 +103,9 @@ Right
                         [ Star ]
                         ([ IsIn "Show" [ TGen 0 ] ] :=>
                            TApp
-                             (TApp (TCon (TC "(->)" (Kfun Star (Kfun Star Star)))) (TGen 0))
-                             (TCon (TC "String" Star)))
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                             (TCon (TC "String" Star) "prelude"))
                     )
                   ]))
         ]
@@ -108,44 +115,44 @@ Right
             (Instance
                "Show"
                []
-               (IsIn "Show" [ TCon (TC "Boolean" Star) ])
+               (IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ])
                (fromList
                   [ ( "show"
                     , ( Solved
                           (TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TCon (TC "Boolean" Star)))
-                             (TCon (TC "String" Star)))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Boolean" Star) "prelude"))
+                             (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 70 6 3) (Loc 104 6 37))
                           (Assignment
                              "show"
                              (Solved
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                      (TCon (TC "Boolean" Star)))
-                                   (TCon (TC "String" Star)))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Boolean" Star) "prelude"))
+                                   (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 77 6 10) (Loc 104 6 37))
                                 (Abs
                                    (Solved
-                                      (TCon (TC "Boolean" Star))
+                                      (TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 78 6 11) (Loc 79 6 12))
                                       "b")
                                    [ Solved
-                                       (TCon (TC "String" Star))
+                                       (TCon (TC "String" Star) "prelude")
                                        (Area (Loc 84 6 17) (Loc 104 6 37))
                                        (If
                                           (Solved
-                                             (TCon (TC "Boolean" Star))
+                                             (TCon (TC "Boolean" Star) "prelude")
                                              (Area (Loc 84 6 17) (Loc 85 6 18))
                                              (Var "b"))
                                           (Solved
-                                             (TCon (TC "String" Star))
+                                             (TCon (TC "String" Star) "prelude")
                                              (Area (Loc 88 6 21) (Loc 94 6 27))
                                              (LStr "True"))
                                           (Solved
-                                             (TCon (TC "String" Star))
+                                             (TCon (TC "String" Star) "prelude")
                                              (Area (Loc 97 6 30) (Loc 104 6 37))
                                              (LStr "False")))
                                    ])))
@@ -154,9 +161,9 @@ Right
                           ([] :=>
                              TApp
                                (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                  (TCon (TC "Boolean" Star)))
-                               (TCon (TC "String" Star)))
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Boolean" Star) "prelude"))
+                               (TCon (TC "String" Star) "prelude"))
                       )
                     )
                   ]))
@@ -165,32 +172,32 @@ Right
             (Instance
                "Show"
                []
-               (IsIn "Show" [ TCon (TC "Number" Star) ])
+               (IsIn "Show" [ TCon (TC "Number" Star) "prelude" ])
                (fromList
                   [ ( "show"
                     , ( Solved
                           (TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                (TCon (TC "Number" Star)))
-                             (TCon (TC "String" Star)))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Number" Star) "prelude"))
+                             (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 133 10 3) (Loc 179 10 49))
                           (Assignment
                              "show"
                              (Solved
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                      (TCon (TC "Number" Star)))
-                                   (TCon (TC "String" Star)))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Number" Star) "prelude"))
+                                   (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 140 10 10) (Loc 179 10 49))
                                 (Abs
                                    (Solved
-                                      (TCon (TC "Number" Star))
+                                      (TCon (TC "Number" Star) "prelude")
                                       (Area (Loc 141 10 11) (Loc 142 10 12))
                                       "n")
                                    [ Solved
-                                       (TCon (TC "String" Star))
+                                       (TCon (TC "String" Star) "prelude")
                                        (Area (Loc 148 10 18) (Loc 178 10 48))
                                        (JSExp "new Number(n).toString()")
                                    ])))
@@ -199,9 +206,9 @@ Right
                           ([] :=>
                              TApp
                                (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
-                                  (TCon (TC "Number" Star)))
-                               (TCon (TC "String" Star)))
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Number" Star) "prelude"))
+                               (TCon (TC "String" Star) "prelude"))
                       )
                     )
                   ]))
@@ -216,7 +223,7 @@ Right
                   "Show"
                   [ TApp
                       (TApp
-                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                          (TVar (TV "a" Star)))
                       (TVar (TV "b" Star))
                   ])
@@ -225,66 +232,73 @@ Right
                     , ( Solved
                           (TApp
                              (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "g" Star)))
                                    (TVar (TV "h" Star))))
-                             (TCon (TC "String" Star)))
+                             (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 228 14 3) (Loc 292 14 67))
                           (Assignment
                              "show"
                              (Solved
                                 (TApp
                                    (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TApp
                                          (TApp
-                                            (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                            (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "g" Star)))
                                          (TVar (TV "h" Star))))
-                                   (TCon (TC "String" Star)))
+                                   (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 228 14 3) (Loc 292 14 67))
                                 (Placeholder
                                    ( ClassRef "Show" [] False True , [ TVar (TV "h" Star) ] )
                                    (Solved
                                       (TApp
                                          (TApp
-                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TApp
                                                (TApp
-                                                  (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                  (TCon
+                                                     (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
                                                   (TVar (TV "g" Star)))
                                                (TVar (TV "h" Star))))
-                                         (TCon (TC "String" Star)))
+                                         (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 228 14 3) (Loc 292 14 67))
                                       (Placeholder
                                          ( ClassRef "Show" [] False True , [ TVar (TV "g" Star) ] )
                                          (Solved
                                             (TApp
                                                (TApp
-                                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
                                                   (TApp
                                                      (TApp
                                                         (TCon
-                                                           (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
                                                         (TVar (TV "g" Star)))
                                                      (TVar (TV "h" Star))))
-                                               (TCon (TC "String" Star)))
+                                               (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 235 14 10) (Loc 292 14 67))
                                             (Abs
                                                (Solved
                                                   (TApp
                                                      (TApp
                                                         (TCon
-                                                           (TC "(,)" (Kfun Star (Kfun Star Star))))
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
                                                         (TVar (TV "g" Star)))
                                                      (TVar (TV "h" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__x__")
                                                [ Solved
-                                                   (TCon (TC "String" Star))
+                                                   (TCon (TC "String" Star) "prelude")
                                                    (Area (Loc 235 14 10) (Loc 292 14 67))
                                                    (Where
                                                       (Solved
@@ -293,7 +307,8 @@ Right
                                                                (TCon
                                                                   (TC
                                                                      "(,)"
-                                                                     (Kfun Star (Kfun Star Star))))
+                                                                     (Kfun Star (Kfun Star Star)))
+                                                                  "prelude")
                                                                (TVar (TV "g" Star)))
                                                             (TVar (TV "h" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -304,7 +319,8 @@ Right
                                                                 (TCon
                                                                    (TC
                                                                       "(->)"
-                                                                      (Kfun Star (Kfun Star Star))))
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -312,10 +328,11 @@ Right
                                                                             "(,)"
                                                                             (Kfun
                                                                                Star
-                                                                               (Kfun Star Star))))
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
                                                                       (TVar (TV "g" Star)))
                                                                    (TVar (TV "h" Star))))
-                                                             (TCon (TC "String" Star)))
+                                                             (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 241 14 16) (Loc 292 14 67))
                                                           (Is
                                                              (Solved
@@ -326,7 +343,8 @@ Right
                                                                             "(,)"
                                                                             (Kfun
                                                                                Star
-                                                                               (Kfun Star Star))))
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
                                                                       (TVar (TV "g" Star)))
                                                                    (TVar (TV "h" Star)))
                                                                 (Area
@@ -342,7 +360,8 @@ Right
                                                                                       Star
                                                                                       (Kfun
                                                                                          Star
-                                                                                         Star))))
+                                                                                         Star)))
+                                                                                "prelude")
                                                                              (TVar (TV "g" Star)))
                                                                           (TVar (TV "h" Star)))
                                                                        (Area
@@ -359,7 +378,8 @@ Right
                                                                                       Star
                                                                                       (Kfun
                                                                                          Star
-                                                                                         Star))))
+                                                                                         Star)))
+                                                                                "prelude")
                                                                              (TVar (TV "g" Star)))
                                                                           (TVar (TV "h" Star)))
                                                                        (Area
@@ -368,7 +388,7 @@ Right
                                                                        (PVar "b")
                                                                    ]))
                                                              (Solved
-                                                                (TCon (TC "String" Star))
+                                                                (TCon (TC "String" Star) "prelude")
                                                                 (Area
                                                                    (Loc 252 14 27) (Loc 292 14 67))
                                                                 (App
@@ -381,11 +401,14 @@ Right
                                                                                   (Kfun
                                                                                      Star
                                                                                      (Kfun
-                                                                                        Star
-                                                                                        Star))))
+                                                                                        Star Star)))
+                                                                               "prelude")
                                                                             (TCon
-                                                                               (TC "String" Star)))
-                                                                         (TCon (TC "String" Star)))
+                                                                               (TC "String" Star)
+                                                                               "prelude"))
+                                                                         (TCon
+                                                                            (TC "String" Star)
+                                                                            "prelude"))
                                                                       (Area
                                                                          (Loc 252 14 27)
                                                                          (Loc 292 14 67))
@@ -400,11 +423,13 @@ Right
                                                                                            Star
                                                                                            (Kfun
                                                                                               Star
-                                                                                              Star))))
+                                                                                              Star)))
+                                                                                     "prelude")
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star)))
+                                                                                        Star)
+                                                                                     "prelude"))
                                                                                (TApp
                                                                                   (TApp
                                                                                      (TCon
@@ -414,29 +439,35 @@ Right
                                                                                               Star
                                                                                               (Kfun
                                                                                                  Star
-                                                                                                 Star))))
+                                                                                                 Star)))
+                                                                                        "prelude")
                                                                                      (TCon
                                                                                         (TC
                                                                                            "String"
-                                                                                           Star)))
+                                                                                           Star)
+                                                                                        "prelude"))
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star))))
+                                                                                        Star)
+                                                                                     "prelude")))
                                                                             (Area
                                                                                (Loc 255 14 30)
                                                                                (Loc 258 14 33))
                                                                             (Var "++"))
                                                                          (Solved
                                                                             (TCon
-                                                                               (TC "String" Star))
+                                                                               (TC "String" Star)
+                                                                               "prelude")
                                                                             (Area
                                                                                (Loc 252 14 27)
                                                                                (Loc 255 14 30))
                                                                             (LStr "<"))
                                                                          False))
                                                                    (Solved
-                                                                      (TCon (TC "String" Star))
+                                                                      (TCon
+                                                                         (TC "String" Star)
+                                                                         "prelude")
                                                                       (Area
                                                                          (Loc 259 14 34)
                                                                          (Loc 292 14 67))
@@ -451,15 +482,16 @@ Right
                                                                                            Star
                                                                                            (Kfun
                                                                                               Star
-                                                                                              Star))))
+                                                                                              Star)))
+                                                                                     "prelude")
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star)))
+                                                                                        Star)
+                                                                                     "prelude"))
                                                                                (TCon
-                                                                                  (TC
-                                                                                     "String"
-                                                                                     Star)))
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"))
                                                                             (Area
                                                                                (Loc 259 14 34)
                                                                                (Loc 292 14 67))
@@ -474,11 +506,13 @@ Right
                                                                                                  Star
                                                                                                  (Kfun
                                                                                                     Star
-                                                                                                    Star))))
+                                                                                                    Star)))
+                                                                                           "prelude")
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star)))
+                                                                                              Star)
+                                                                                           "prelude"))
                                                                                      (TApp
                                                                                         (TApp
                                                                                            (TCon
@@ -488,15 +522,18 @@ Right
                                                                                                     Star
                                                                                                     (Kfun
                                                                                                        Star
-                                                                                                       Star))))
+                                                                                                       Star)))
+                                                                                              "prelude")
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "String"
-                                                                                                 Star)))
+                                                                                                 Star)
+                                                                                              "prelude"))
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star))))
+                                                                                              Star)
+                                                                                           "prelude")))
                                                                                   (Area
                                                                                      (Loc 266 14 41)
                                                                                      (Loc
@@ -506,7 +543,8 @@ Right
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star))
+                                                                                        Star)
+                                                                                     "prelude")
                                                                                   (Area
                                                                                      (Loc 259 14 34)
                                                                                      (Loc
@@ -522,7 +560,8 @@ Right
                                                                                                        Star
                                                                                                        (Kfun
                                                                                                           Star
-                                                                                                          Star))))
+                                                                                                          Star)))
+                                                                                                 "prelude")
                                                                                               (TVar
                                                                                                  (TV
                                                                                                     "g"
@@ -530,7 +569,8 @@ Right
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "String"
-                                                                                                 Star)))
+                                                                                                 Star)
+                                                                                              "prelude"))
                                                                                         (Area
                                                                                            (Loc
                                                                                               259
@@ -561,7 +601,8 @@ Right
                                                                                                              Star
                                                                                                              (Kfun
                                                                                                                 Star
-                                                                                                                Star))))
+                                                                                                                Star)))
+                                                                                                       "prelude")
                                                                                                     (TVar
                                                                                                        (TV
                                                                                                           "g"
@@ -569,7 +610,8 @@ Right
                                                                                                  (TCon
                                                                                                     (TC
                                                                                                        "String"
-                                                                                                       Star)))
+                                                                                                       Star)
+                                                                                                    "prelude"))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     259
@@ -600,7 +642,8 @@ Right
                                                                                False))
                                                                          (Solved
                                                                             (TCon
-                                                                               (TC "String" Star))
+                                                                               (TC "String" Star)
+                                                                               "prelude")
                                                                             (Area
                                                                                (Loc 270 14 45)
                                                                                (Loc 292 14 67))
@@ -615,15 +658,18 @@ Right
                                                                                                  Star
                                                                                                  (Kfun
                                                                                                     Star
-                                                                                                    Star))))
+                                                                                                    Star)))
+                                                                                           "prelude")
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star)))
+                                                                                              Star)
+                                                                                           "prelude"))
                                                                                      (TCon
                                                                                         (TC
                                                                                            "String"
-                                                                                           Star)))
+                                                                                           Star)
+                                                                                        "prelude"))
                                                                                   (Area
                                                                                      (Loc 270 14 45)
                                                                                      (Loc
@@ -639,11 +685,13 @@ Right
                                                                                                        Star
                                                                                                        (Kfun
                                                                                                           Star
-                                                                                                          Star))))
+                                                                                                          Star)))
+                                                                                                 "prelude")
                                                                                               (TCon
                                                                                                  (TC
                                                                                                     "String"
-                                                                                                    Star)))
+                                                                                                    Star)
+                                                                                                 "prelude"))
                                                                                            (TApp
                                                                                               (TApp
                                                                                                  (TCon
@@ -653,15 +701,18 @@ Right
                                                                                                           Star
                                                                                                           (Kfun
                                                                                                              Star
-                                                                                                             Star))))
+                                                                                                             Star)))
+                                                                                                    "prelude")
                                                                                                  (TCon
                                                                                                     (TC
                                                                                                        "String"
-                                                                                                       Star)))
+                                                                                                       Star)
+                                                                                                    "prelude"))
                                                                                               (TCon
                                                                                                  (TC
                                                                                                     "String"
-                                                                                                    Star))))
+                                                                                                    Star)
+                                                                                                 "prelude")))
                                                                                         (Area
                                                                                            (Loc
                                                                                               274
@@ -676,7 +727,8 @@ Right
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star))
+                                                                                              Star)
+                                                                                           "prelude")
                                                                                         (Area
                                                                                            (Loc
                                                                                               270
@@ -692,7 +744,8 @@ Right
                                                                                   (TCon
                                                                                      (TC
                                                                                         "String"
-                                                                                        Star))
+                                                                                        Star)
+                                                                                     "prelude")
                                                                                   (Area
                                                                                      (Loc 278 14 53)
                                                                                      (Loc
@@ -708,15 +761,18 @@ Right
                                                                                                        Star
                                                                                                        (Kfun
                                                                                                           Star
-                                                                                                          Star))))
+                                                                                                          Star)))
+                                                                                                 "prelude")
                                                                                               (TCon
                                                                                                  (TC
                                                                                                     "String"
-                                                                                                    Star)))
+                                                                                                    Star)
+                                                                                                 "prelude"))
                                                                                            (TCon
                                                                                               (TC
                                                                                                  "String"
-                                                                                                 Star)))
+                                                                                                 Star)
+                                                                                              "prelude"))
                                                                                         (Area
                                                                                            (Loc
                                                                                               278
@@ -737,11 +793,13 @@ Right
                                                                                                              Star
                                                                                                              (Kfun
                                                                                                                 Star
-                                                                                                                Star))))
+                                                                                                                Star)))
+                                                                                                       "prelude")
                                                                                                     (TCon
                                                                                                        (TC
                                                                                                           "String"
-                                                                                                          Star)))
+                                                                                                          Star)
+                                                                                                       "prelude"))
                                                                                                  (TApp
                                                                                                     (TApp
                                                                                                        (TCon
@@ -751,15 +809,18 @@ Right
                                                                                                                 Star
                                                                                                                 (Kfun
                                                                                                                    Star
-                                                                                                                   Star))))
+                                                                                                                   Star)))
+                                                                                                          "prelude")
                                                                                                        (TCon
                                                                                                           (TC
                                                                                                              "String"
-                                                                                                             Star)))
+                                                                                                             Star)
+                                                                                                          "prelude"))
                                                                                                     (TCon
                                                                                                        (TC
                                                                                                           "String"
-                                                                                                          Star))))
+                                                                                                          Star)
+                                                                                                       "prelude")))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     285
@@ -775,7 +836,8 @@ Right
                                                                                               (TCon
                                                                                                  (TC
                                                                                                     "String"
-                                                                                                    Star))
+                                                                                                    Star)
+                                                                                                 "prelude")
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     278
@@ -796,7 +858,8 @@ Right
                                                                                                                    Star
                                                                                                                    (Kfun
                                                                                                                       Star
-                                                                                                                      Star))))
+                                                                                                                      Star)))
+                                                                                                             "prelude")
                                                                                                           (TVar
                                                                                                              (TV
                                                                                                                 "h"
@@ -804,7 +867,8 @@ Right
                                                                                                        (TCon
                                                                                                           (TC
                                                                                                              "String"
-                                                                                                             Star)))
+                                                                                                             Star)
+                                                                                                          "prelude"))
                                                                                                     (Area
                                                                                                        (Loc
                                                                                                           278
@@ -835,7 +899,8 @@ Right
                                                                                                                          Star
                                                                                                                          (Kfun
                                                                                                                             Star
-                                                                                                                            Star))))
+                                                                                                                            Star)))
+                                                                                                                   "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
                                                                                                                       "h"
@@ -843,7 +908,8 @@ Right
                                                                                                              (TCon
                                                                                                                 (TC
                                                                                                                    "String"
-                                                                                                                   Star)))
+                                                                                                                   Star)
+                                                                                                                "prelude"))
                                                                                                           (Area
                                                                                                              (Loc
                                                                                                                 278
@@ -877,7 +943,8 @@ Right
                                                                                         (TCon
                                                                                            (TC
                                                                                               "String"
-                                                                                              Star))
+                                                                                              Star)
+                                                                                           "prelude")
                                                                                         (Area
                                                                                            (Loc
                                                                                               289
@@ -899,11 +966,13 @@ Right
                           ([ IsIn "Show" [ TGen 0 ] , IsIn "Show" [ TGen 1 ] ] :=>
                              TApp
                                (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TApp
-                                     (TApp (TCon (TC "(,)" (Kfun Star (Kfun Star Star)))) (TGen 0))
+                                     (TApp
+                                        (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TGen 0))
                                      (TGen 1)))
-                               (TCon (TC "String" Star)))
+                               (TCon (TC "String" Star) "prelude"))
                       )
                     )
                   ]))

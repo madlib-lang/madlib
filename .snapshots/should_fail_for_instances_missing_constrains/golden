@@ -15,7 +15,7 @@ Left
                         "Show"
                         [ TApp
                             (TApp
-                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))))
+                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TVar (TV "a" Star)))
                             (TVar (TV "b" Star))
                         ])

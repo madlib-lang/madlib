@@ -5,11 +5,11 @@ Right
         [ Solved
             (TApp
                (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
                (TRecord
                   (fromList
-                     [ ( "x" , TCon (TC "String" Star) )
+                     [ ( "x" , TCon (TC "String" Star) "prelude" )
                      , ( "y" , TVar (TV "e" Star) )
                      ])
                   True))
@@ -19,11 +19,11 @@ Right
                (Solved
                   (TApp
                      (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
                      (TRecord
                         (fromList
-                           [ ( "x" , TCon (TC "String" Star) )
+                           [ ( "x" , TCon (TC "String" Star) "prelude" )
                            , ( "y" , TVar (TV "e" Star) )
                            ])
                         True))
@@ -36,7 +36,7 @@ Right
                      [ Solved
                          (TRecord
                             (fromList
-                               [ ( "x" , TCon (TC "String" Star) )
+                               [ ( "x" , TCon (TC "String" Star) "prelude" )
                                , ( "y" , TVar (TV "e" Star) )
                                ])
                             True)
@@ -51,12 +51,12 @@ Right
                                       (Area (Loc 27 1 28) (Loc 32 1 33))
                                       (Var "state")))
                             , Solved
-                                (TCon (TC "String" Star))
+                                (TCon (TC "String" Star) "prelude")
                                 (Area (Loc 34 1 35) (Loc 40 1 41))
                                 (Field
                                    ( "x"
                                    , Solved
-                                       (TCon (TC "String" Star))
+                                       (TCon (TC "String" Star) "prelude")
                                        (Area (Loc 37 1 38) (Loc 40 1 41))
                                        (LStr "3")
                                    ))
@@ -77,7 +77,9 @@ Right
                                           (Solved
                                              (TApp
                                                 (TApp
-                                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))))
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
                                                    (TRecord
                                                       (fromList [ ( "y" , TVar (TV "e" Star) ) ])
                                                       True))
