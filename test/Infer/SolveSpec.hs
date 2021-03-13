@@ -315,7 +315,7 @@ spec = do
             , ")"
             , ""
             , ""
-            , "chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b"
+            , "chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a"
             , "export chainRej = (f, m) => ("
             , "  Wish((bad, good) => ("
             , "    where(m) {"
@@ -688,6 +688,55 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should infer applications where the abstraction results from an application" actual
+
+    it "should fail to infer applications when a variable is used with different types" $ do
+      let code = unlines
+            [ "type Maybe a = Just a | Nothing"
+            , ""
+            , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+            , ""
+            , "of = (a) => Wish((bad, good) => good(a))"
+            , ""
+            , "nth :: Number -> List a -> Maybe a"
+            , "nth = (i, xs) => #- -#"
+            , ""
+            , "slice :: Number -> Number -> List a -> List a"
+            , "export slice = (start, end, xs) => (#- xs.slice(start, end) -#)"
+            , ""
+            , "len :: List a -> Number"
+            , "export len = (xs) => (#- xs.length -#)"
+            , ""
+            , "export alias Action a = a -> String -> List (Wish (a -> a) (a -> a))"
+            , ""
+            , ""
+            , "type Todo = Todo String Boolean"
+            , "alias State = { input :: String, todos :: List Todo }"
+            , ""
+            , "pipe("
+            , "  (x) => x + 1,"
+            , "  (x) => x - 1"
+            , ")(3)"
+            , ""
+            , "toggleTodo :: Number -> Action State"
+            , "toggleTodo = (index, _, __) => ["
+            , "  of((state) => pipe("
+            , "    .todos,"
+            , "    nth(index),"
+            , "    fromMaybe(Todo(\"Oups\", false)),"
+            , "    where is Todo txt checked: Todo(txt, !checked),"
+            , "    (toggled) => ({"
+            , "      ...state,"
+            , "      todos: ["
+            , "        ...slice(0, len(state.todos), state)"
+            , "      ]"
+            , "    })"
+            , "  )(state))"
+            , "]"
+            ]
+          actual = tester code
+      snapshotTest "should fail to infer applications when a variable is used with different types" actual
+
+
 
     ---------------------------------------------------------------------------
 

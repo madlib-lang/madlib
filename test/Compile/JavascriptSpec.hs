@@ -906,7 +906,7 @@ spec = do
           , ")"
           , ""
           , ""
-          , "chainRej :: (e -> Wish f b) -> Wish e a -> Wish f b"
+          , "chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a"
           , "export chainRej = (f, m) => ("
           , "  Wish((bad, good) => ("
           , "    where(m) {"

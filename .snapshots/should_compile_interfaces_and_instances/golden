@@ -68,10 +68,10 @@ throw 'non exhaustive patterns!'; }
 const inc = __curry__((a) => a + 1);
 Functor.List.map(inc)(([1, 2, 3]));
 Monad.Maybe.chain(__curry__((x) => Just(x + 1)))(Just(3));
-const doIt = (Functor_y) => (__curry__((x) => Functor_y.map(__curry__((k) => k + 1))(x)));
+const doIt = (Functor_z) => (__curry__((x) => Functor_z.map(__curry__((k) => k + 1))(x)));
 doIt(Functor.Maybe)(Just(3));
 const p = 1;
-const fn = (Functor_aq) => (Functor_aq.map(inc));
+const fn = (Functor_ar) => (Functor_ar.map(inc));
 fn(Functor.Maybe)(Just(3));
 fn(Functor.List)(([4, 5, 6]));
 const hideCall = __curry__((x) => ((__x__) => {

@@ -167,7 +167,7 @@ inferApp env (Can.Canonical area (Can.App abs arg final)) = do
   (s1, ps1, t1, eabs) <- infer env abs
   (s2, ps2, t2, earg) <- infer env arg
 
-  s3                  <- contextualUnify env abs (apply s2 t1) (t2 `fn` tv)
+  s3                  <- contextualUnify env abs (apply s2 t1) (apply s1 t2 `fn` tv)
 
   let t      = apply s3 tv
   let s      = s3 `compose` s2 `compose` s1
@@ -232,38 +232,40 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
     return (M.empty, [], t, Slv.Solved t area (Slv.ListConstructor []))
 
   elems -> do
-    inferred <- mapM (inferListItem env) elems
+    tv <- newTVar Star
+    inferred <- mapM (inferListItem env tv) elems
     let (_, _, t1, _) = head inferred
         ts            = (\(_, _, t, _) -> t) <$> inferred
+        ss            = (\(s, _, _, _) -> s) <$> inferred
+        es            = (\(_, _, _, e) -> e) <$> inferred
+        pss           = (\(_, x, _, _) -> x) <$> inferred
+
     s <- contextualUnifyElems env (zip elems ts)
-    let s' = foldr compose M.empty ((\(s, _, _, _) -> s) <$> inferred)
-
-    let containedType = if length elems > 1 then foldl mergeRecords (apply s' $ head ts) (apply s' $ tail ts) else t1
-
+    let s' = foldr compose M.empty ss
+    let s''           = s `compose` s'
+    
+    let containedType = apply s'' tv
 
     let t = TApp (TCon (TC "List" $ Kfun Star Star)) containedType
-    let ps            = concat $ (\(_, x, _, _) -> x) <$> inferred
-    let s''           = s `compose` s'
+    let ps            = concat pss
+
+    return (s'', ps, t, Slv.Solved t area (Slv.ListConstructor es))
 
 
-    return (s'', ps, t, Slv.Solved t area (Slv.ListConstructor ((\(_, _, _, es) -> es) <$> inferred)))
-
-
-inferListItem :: Env -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
-inferListItem env (Can.Canonical area li) = case li of
+inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListItem exp -> do
-    (s, ps, t, e) <- infer env exp
-    return (s, ps, t, Slv.Solved t area $ Slv.ListItem e)
+    (s1, ps, t, e) <- infer env exp
+    s2 <- unify t ty
+    let s = s1 `compose` s2
+    return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
-    (s, ps, t, e) <- infer env exp
-    case t of
-      TApp (TCon (TC "List" _)) t' -> return (s, ps, t', Slv.Solved t' area $ Slv.ListSpread e)
+    (s1, ps, t, e) <- infer env exp
+    s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star))) ty)
+    let s = s1 `compose` s2
 
-      TVar _                       -> return (s, ps, t, Slv.Solved t area $ Slv.ListSpread e)
-
-      _                            -> throwError
-        $ InferError (WrongSpreadType $ show t) (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+    return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
 
 
 

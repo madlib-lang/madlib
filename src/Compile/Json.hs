@@ -59,7 +59,7 @@ compileError depth (err@(InferError typeError ctx), formatted) =
         <> indent (depth + 1)
         <> "\"message\": "
         <> escapeString formatted
-        <> "\\n,\n"
+        <> ",\n"
         <> origin
         <> loc
         <> indent depth
