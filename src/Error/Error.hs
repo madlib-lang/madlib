@@ -12,6 +12,7 @@ type Backtrace = [BTNode]
 data BTNode
   = BTExp Can.Exp
   | BTInstance Can.Instance
+  | BTConstructor Can.Constructor
   deriving(Eq, Show)
 
 data Context

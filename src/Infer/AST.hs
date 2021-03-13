@@ -70,22 +70,36 @@ buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, C
       )
       env'
       ainstances
-    let constructors = M.fromList $ concat $ mapMaybe
+
+    let constructors = concat $ mapMaybe
           (\case
             Can.Canonical _ adt@Can.ADT{} ->
-              Just $ (\ctor -> (Can.getCtorName ctor, Can.getCtorScheme ctor)) <$> Can.adtconstructors adt
+              Just $ Can.adtconstructors adt
             _ -> Nothing
           )
           atypedecls
 
-    let env = env'' { envVars        = constructors <> envVars env''
-                    , envMethods     = methods <> envMethods priorEnv
-                    , envCurrentPath = apath
-                    }
+    env''' <- addConstructors env'' constructors
+
+    let env = env''' { envMethods     = methods <> envMethods priorEnv
+                     , envCurrentPath = apath
+                     }
 
     populateTopLevelTypings env aexps
 
 
+
+hasDuplicates :: (Ord a) => [a] -> Bool
+hasDuplicates list = length list /= length set
+  where set = S.fromList list
+
+
+
+addConstructors :: Env -> [Can.Constructor] -> Infer Env
+addConstructors env ctors = do
+  foldM (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
+          catchError (safeExtendVars env'' (name, sc)) (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
+        ) env ctors
 
 extractExportedExps :: Slv.AST -> M.Map Slv.Name Slv.Exp
 extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
