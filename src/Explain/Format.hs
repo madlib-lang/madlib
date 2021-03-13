@@ -70,6 +70,9 @@ analyzeBacktrace json err exps = case exps of
   (BTExp (Can.Canonical _ (Can.Assignment n _)) : BTInstance inst : ex) ->
     "The implementation of the following " <> underlineWhen (not json) "method" <> " is not correct:\n"
 
+  (BTConstructor ctor) : _ ->
+    "Error in the following type " <> underlineWhen (not json) "constructor" <> ":\n"
+
   _ -> if length exps > 1 then analyzeBacktrace json err (tail exps) else ""
 
 

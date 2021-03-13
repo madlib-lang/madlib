@@ -34,7 +34,9 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
     Just t  -> throwError $ InferError (ADTAlreadyDefined t) (Context astPath area [])
     Nothing -> do
       let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
-          env' = addADT env (Src.adtname adt) t
+          vars = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
+          t'   = foldl1 TApp (t:vars)
+          env' = addADT env (Src.adtname adt) t'
       canonicalizeConstructors env' astPath td
 
   alias@Src.Alias{} -> do
