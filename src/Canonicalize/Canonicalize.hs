@@ -146,8 +146,10 @@ instance Canonicalizable Src.Exp Can.Exp where
         _ -> canonicalize env target e
 
     Src.Pipe exps -> do
-      app <- buildApplication (Can.Canonical area (Can.Var "_P_")) exps
-      return $ Can.Canonical area (Can.Abs (Can.Canonical area "_P_") [app])
+      let (Area (Loc x l c) _) = area
+          varPLoc              = Area (Loc x l c) (Loc (x + 3) l (c + 3))
+      app <- buildApplication (Can.Canonical varPLoc (Can.Var "_P_")) exps
+      return $ Can.Canonical area (Can.Abs (Can.Canonical varPLoc "_P_") [app])
 
      where
       buildApplication :: Can.Exp -> [Src.Exp] -> CanonicalM Can.Exp
