@@ -2,7 +2,7 @@ module Compile.Json where
 
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
-import           Data.List                      ( intercalate )
+import           Data.List                      ( intercalate, isInfixOf )
 import           Infer.Type
 import           Explain.Location
 import           Utils.Tuple                    ( lst )
@@ -213,7 +213,9 @@ compileExpFields :: Int -> Slv.Exp_ -> String
 compileExpFields depth exp = case exp of
   Slv.Var  n   -> indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
 
-  Slv.LNum val -> indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
+  Slv.LNum val ->
+    let compiledVal = if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "\"" <> escapeString val <> "\"" else val
+    in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": " <> compiledVal <> "\n"
 
   Slv.LBool val ->
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
