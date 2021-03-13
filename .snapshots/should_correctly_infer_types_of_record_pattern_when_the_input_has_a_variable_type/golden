@@ -8,9 +8,9 @@ Right
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
                      (fromList
-                        [ ( "x" , TVar (TV "f" Star) ) , ( "z" , TVar (TV "f" Star) ) ])
+                        [ ( "x" , TVar (TV "e" Star) ) , ( "z" , TVar (TV "e" Star) ) ])
                      True))
-               (TVar (TV "f" Star)))
+               (TVar (TV "e" Star)))
             (Area (Loc 0 1 1) (Loc 61 4 3))
             (Assignment
                "fn2"
@@ -20,27 +20,27 @@ Right
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
                            (fromList
-                              [ ( "x" , TVar (TV "f" Star) ) , ( "z" , TVar (TV "f" Star) ) ])
+                              [ ( "x" , TVar (TV "e" Star) ) , ( "z" , TVar (TV "e" Star) ) ])
                            True))
-                     (TVar (TV "f" Star)))
+                     (TVar (TV "e" Star)))
                   (Area (Loc 6 1 7) (Loc 61 4 3))
                   (Abs
                      (Solved
                         (TRecord
                            (fromList
-                              [ ( "x" , TVar (TV "f" Star) ) , ( "z" , TVar (TV "f" Star) ) ])
+                              [ ( "x" , TVar (TV "e" Star) ) , ( "z" , TVar (TV "e" Star) ) ])
                            True)
                         (Area (Loc 7 1 8) (Loc 8 1 9))
                         "a")
                      [ Solved
-                         (TVar (TV "f" Star))
+                         (TVar (TV "e" Star))
                          (Area (Loc 14 1 15) (Loc 60 4 1))
                          (Where
                             (Solved
                                (TRecord
                                   (fromList
-                                     [ ( "x" , TVar (TV "f" Star) )
-                                     , ( "z" , TVar (TV "f" Star) )
+                                     [ ( "x" , TVar (TV "e" Star) )
+                                     , ( "z" , TVar (TV "e" Star) )
                                      ])
                                   True)
                                (Area (Loc 20 1 21) (Loc 21 1 22))
@@ -49,8 +49,8 @@ Right
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TRecord (fromList [ ( "z" , TVar (TV "f" Star) ) ]) True))
-                                   (TVar (TV "f" Star)))
+                                      (TRecord (fromList [ ( "z" , TVar (TV "e" Star) ) ]) True))
+                                   (TVar (TV "e" Star)))
                                 (Area (Loc 27 2 3) (Loc 41 2 17))
                                 (Is
                                    (Solved
@@ -68,15 +68,15 @@ Right
                                               )
                                             ])))
                                    (Solved
-                                      (TVar (TV "f" Star))
+                                      (TVar (TV "e" Star))
                                       (Area (Loc 40 2 16) (Loc 41 2 17))
                                       (Var "z")))
                             , Solved
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TRecord (fromList [ ( "x" , TVar (TV "f" Star) ) ]) True))
-                                   (TVar (TV "f" Star)))
+                                      (TRecord (fromList [ ( "x" , TVar (TV "e" Star) ) ]) True))
+                                   (TVar (TV "e" Star)))
                                 (Area (Loc 44 3 3) (Loc 58 3 17))
                                 (Is
                                    (Solved
@@ -94,7 +94,7 @@ Right
                                               )
                                             ])))
                                    (Solved
-                                      (TVar (TV "f" Star))
+                                      (TVar (TV "e" Star))
                                       (Area (Loc 57 3 16) (Loc 58 3 17))
                                       (Var "x")))
                             ])

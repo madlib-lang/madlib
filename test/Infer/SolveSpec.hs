@@ -913,30 +913,10 @@ spec = do
           actual = tester code
       snapshotTest "should allow deconstruction of lists" actual
 
-    it "should allow deconstruction of records" $ do
-      let code   = unlines ["where({ x: 1, y: 2, z: 3 }) {", "  is { x: 1, ...rest }: rest.z", "}"]
-          actual = tester code
-      snapshotTest "should allow deconstruction of records" actual
-
     it "should correctly infer types of record pattern when the input has a variable type" $ do
       let code   = unlines ["fn2 = (a) => (where(a) {", "  is { z: z }: z", "  is { x: x }: x", "})"]
           actual = tester code
       snapshotTest "should correctly infer types of record pattern when the input has a variable type" actual
-
-    it "should correctly infer types of spread record patterns" $ do
-      let code = unlines
-            [ "where({ x: 4, name: \"John\", job: \"Accountant\", fulfilled: false }) {"
-            , "  is { name: name }: name"
-            , "  is { x: x, ...b }: b.name"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest "should correctly infer types of spread record patterns" actual
-
-    it "should correctly infer fields accessed through spread pattern" $ do
-      let code   = unlines ["fn = (a) => (where(a) {", "  is { x: x, ...b }: b.z", "  is { x: x }: x", "})"]
-          actual = tester code
-      snapshotTest "should correctly infer fields accessed through spread pattern" actual
 
     it "should correctly infer constructor patterns given a var" $ do
       let code = unlines
@@ -950,18 +930,6 @@ spec = do
             ]
           actual = tester code
       snapshotTest "should correctly infer constructor patterns given a var" actual
-
-    it "should correctly infer nested spread patterns" $ do
-      let code =
-            unlines
-              [ "fn = (r) => ("
-              , "  where(r) {"
-              , "    is { x: { y: { y: y }, ...k }, ...c }: y + k.z + c.o + c.i"
-              , "  }"
-              , ")"
-              ]
-          actual = tester code
-      snapshotTest "should correctly infer nested spread patterns" actual
 
     it "should correctly infer shorthand syntax for record property matching" $ do
       let code   = unlines ["fn = (r) => (", "  where(r) {", "    is { x, y }: x + y", "  }", ")"]

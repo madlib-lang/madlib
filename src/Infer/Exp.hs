@@ -410,7 +410,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let issSubstitution = foldr1 compose $ (beg <$> pss) <> [s]
 
-  s' <- contextualUnifyElems env $ zip iss (Slv.getType . lst <$> pss)
+  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
 
   let s''  = compose s' issSubstitution
 
@@ -422,43 +422,22 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (ps, vars, t')     <- inferPattern env pat
-  s                  <- contextualUnify env exp t (removeSpread t')
+  s                  <- contextualUnify env exp t t'
 
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv t''
 
-  let t''' = extendRecord (s <> s'' <> s') t'
-  s''' <- contextualUnify env exp t t'''
+  s''' <- contextualUnify env exp t t'
 
   let subst = s `compose` s' `compose` s'' `compose` s'''
 
   return
     ( subst
     , ps ++ ps'
-    , Slv.Solved (apply subst (t''' `fn` t'')) area
+    , Slv.Solved (apply subst (t' `fn` t'')) area
       $ Slv.Is (updatePattern (apply subst t') pat) (updateType e' (apply subst t''))
     )
 
-removeSpread :: Type -> Type
-removeSpread t = case t of
-  TRecord fs o -> TRecord (M.filterWithKey (\k _ -> k /= "...") fs) o
-  _            -> t
-
-extendRecord :: Substitution -> Type -> Type
-extendRecord s t = case t of
-  TRecord fs _ ->
-    let spread = M.lookup "..." fs
-        fs'    = M.map (extendRecord s) fs
-    in  case spread of
-          Just (TVar tv) -> case M.lookup tv s of
-            Just t' -> do
-              case extendRecord s t' of
-                TRecord fs'' _ -> TRecord (M.filterWithKey (\k _ -> k /= "...") (fs' <> fs'')) True
-                _              -> t
-            _ -> t
-          _ -> t
-
-  _ -> t
 
 
 
