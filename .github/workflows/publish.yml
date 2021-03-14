@@ -52,7 +52,7 @@ jobs:
 
       - uses: docker-practice/actions-setup-docker@master
 
-      - run: npm i -g rollup
+      - run: npm i -g rollup @rollup/plugin-node-resolve
       - run: stack install alex happy
 
       - run: ./pkg/build-targets
