@@ -9,13 +9,13 @@
 There are currently two ways to install the madlib compiler.
 
 ### Npm package
-You can install it globally with the command `npm i -g @open-sorcerers/madlib`. You can then compile code in the following way:
+You can install it globally with the command `npm i -g @madlib-lang/madlib`. You can then compile code in the following way:
 ```
 madlib -i "entryFile.mad" -o "outputFolder"
 ```
 
 ### Download the release assets
-You can also download the archive of the build directly from the releases [releases](https://github.com/open-sorcerers/madlib/releases) and install it wherever you want in your filesystem. You would then need to make sure that the location is in your PATH environment variable to make it available from everywhere.
+You can also download the archive of the build directly from the releases [releases](https://github.com/madlib-lang/madlib/releases) and install it wherever you want in your filesystem. You would then need to make sure that the location is in your PATH environment variable to make it available from everywhere.
 
 ## Features and Ideology
 
@@ -42,9 +42,20 @@ user = { name: "Max" }
 
 1. Every expression in *madlib* must return a value.
 2. `null` / `undefined` are not valid keywords.
-
+#### Examples
 ```
 x + 1
+
+1
+
+"Hello world"
+
+// else is mandatory as the expression must return a value
+if (a % 2 == 0) { "even" } else { "odd" }
+
+where(maybe)
+  is Just x : x
+  is Nothing: "Hello world"
 ```
 
 ### Functions
@@ -82,6 +93,17 @@ inc(3) // 4
 3 |> inc |> inc // 5
 // equivalent to
 inc(inc(3)) // 5
+```
+
+You can also find the pipe expression, which returns a function:
+
+```madlib
+compute :: Number -> Number
+compute = pipe(
+  inc,
+  add(10),
+  divide(2)
+)
 ```
 
 #### Currying
@@ -133,7 +155,7 @@ Because of *madlib*'s type inference, in the majority of cases you do not need t
 (1 + 1 :: Number) // here the annotation says that 1 + 1 is a Number
 (1 :: Number) + 1 // here the annotation says that the first 1 is a Number, and tells the type checker to infer the type of the second value
 ("Madlib" :: String)
-("Madlib" :: Boolean) // Type error, "Madlib should be a Boolean"
+("Madlib" :: Boolean) // Type error, "Madlib" should be a Boolean
 ```
 
 ### Algebraic Data Types
@@ -174,13 +196,17 @@ userDisplayName = (u) => (
 
 For [Records](#records):
 ```
-getStreetName :: { address: { street: String } }
-getStreetName = (p1, p2) => (
-  where({ p1: p1, p2: p2 }) {
-    is { address: { street: s } }: s
-    is _                         : "Unknown address"
-  }
-)
+getStreetName :: { address :: { street :: String } } -> String
+getStreetName = (profile) => where(profile)
+  is { address: { street } }: street
+  is _                      : "Unknown address"
+```
+Note that you can use where without parameter, in which case it returns a function that takes whatever is matched as a parameter. So the above can be shortened like this:
+```
+getStreetName :: { address :: { street :: String } } -> String
+getStreetName = where
+  is { address: { street } }: street
+  is _                      : "Unknown address"
 ```
 
 ### Records
@@ -267,8 +293,18 @@ L.map((x) => (x * 2), [1, 2, 3])
 ```
 
 ### Packages
-
-Coming soon.
+A package is a way to share code across projects or create libraries. A package must have a madlib.json file with a following structure:
+```json
+{
+  "name": "MadUI",
+  "version": "0.0.1",
+  "main": "src/Main.mad", // you must define the main module of your package
+  "dependencies": { // dependencies of your package
+    "SomeDep": "http://some.dep.url.zip"
+  }
+}
+```
+The main module must export every name that you want to share.
 
 ### Examples
 
