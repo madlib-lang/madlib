@@ -14,7 +14,7 @@ import           System.FilePath                ( dropFileName
                                                 , splitPath
                                                 , joinPath
                                                 , splitFileName
-                                                , normalise
+                                                , normalise, takeExtension
                                                 )
 import qualified MadlibDotJSON
 import           Data.List                      ( isInfixOf
@@ -52,8 +52,9 @@ cleanRelativePath path = case normalise path of
 
 resolveAbsoluteSrcPath :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 resolveAbsoluteSrcPath pathUtils rootPath path = case getPathType path of
-  FileSystemPath ->
-    Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, path]) ".mad")
+  FileSystemPath -> do
+    let ext = if takeExtension path == ".json" then ".json" else ".mad"
+    Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, path]) ext)
   PackagePath -> makePathForPackage pathUtils rootPath path
 
 
