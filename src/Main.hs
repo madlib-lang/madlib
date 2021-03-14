@@ -10,7 +10,7 @@ import           GHC.IO                         ( )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory )
+import           System.FilePath                ( takeDirectory, takeExtension )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
                                                 )
@@ -76,12 +76,30 @@ isCoverageEnabled = do
     Right "on" -> return True
     _          -> return False
 
+sanitizeOutputPath :: Command -> Either String FilePath
+sanitizeOutputPath Compile { compileOutput, compileBundle } =
+  let ext = takeExtension compileOutput
+  in  if compileBundle then
+    case ext of
+      ".js" -> Right compileOutput
+      _     -> Left $ "Wrong output. With bundle option the output must have '.js' extension, but '"<> ext <>"' was given!"
+  else
+    if last compileOutput == '/' then
+      Right compileOutput
+    else
+      Right $ compileOutput <> "/"
+
+
 run :: Command -> IO ()
 run cmd = do
   coverage <- isCoverageEnabled
 
   case cmd of
-    Compile{}                -> runCompilation cmd coverage
+    Compile{}                ->
+      let sanitizedOutput = sanitizeOutputPath cmd
+      in  case sanitizedOutput of
+        Right s -> runCompilation cmd { compileOutput = s } coverage
+        Left  e -> putStrLn e
 
     Test entrypoint coverage -> runTests entrypoint coverage
 
