@@ -1,0 +1,29 @@
+import IO from "IO"
+import J from "Json"
+import { Right, Left } from "Either"
+
+import json from "./r.json"
+
+
+type Definition = Definition String String String
+
+type DocumentationModule = DocumentationModule String String // (List Definition)
+
+alias DocumentationData = List DocumentationModule
+
+parser :: J.Parser DocumentationData
+parser = J.field("modules", J.list(
+  J.map2(
+    DocumentationModule,
+    J.field("name", J.string),
+    J.field("path", J.string)
+  )
+))
+
+x = J.parse(parser, json)
+
+where(x)
+  is Right [DocumentationModule name path]:
+    IO.log(`module name: ${name}\nmodule path: ${path}`)
+  is Left e:
+    IO.log(e)

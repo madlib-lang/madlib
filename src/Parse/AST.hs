@@ -19,7 +19,7 @@ import           Explain.Meta
 import           Error.Error
 import qualified System.Directory              as Dir
 import           Control.Monad.Except
-import           System.FilePath                ( dropFileName )
+import           System.FilePath                ( dropFileName, takeExtension )
 import qualified Prelude                       as P
 import           Prelude                 hiding ( readFile )
 import qualified Data.ByteString.Lazy          as B
@@ -28,6 +28,7 @@ import           Data.Maybe
 import           Explain.Location
 import System.IO (openFile, IOMode (ReadMode), hSetEncoding, hGetContents)
 import GHC.IO.Encoding (utf8)
+import Data.List
 
 
 rf fileName = do
@@ -79,8 +80,14 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
         getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
           Left  x               -> return $ Left x
           Right completeImports -> do
+            let (jsonImports, madImports) = partition (\case
+                                                        (Source _ _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
+                                                        _ -> False
+                                                      ) completeImports
+            jsonAssignments <- generateJsonAssignments pathUtils jsonImports
+
             let generatedTable =
-                  uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = completeImports }) <$> ast
+                  uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
 
             childTables <- mapM
               (\imp'@(Source _ area _) -> do
@@ -93,9 +100,19 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
                   Right x                -> return $ Right x
                   Left  e -> return $ Left e
               )
-              completeImports
+              madImports
 
             return $ foldr (liftM2 M.union) generatedTable childTables
+
+generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
+generateJsonAssignments pathUtils [] = return []
+generateJsonAssignments pathUtils ((Source _ area (DefaultImport name _ absPath)):imps) = do
+  next <- generateJsonAssignments pathUtils imps
+  jsonContent <- readFile pathUtils absPath
+  let var = Source emptyInfos area (LStr jsonContent)
+  let assignment = Source emptyInfos area (Assignment name var)
+
+  return $ assignment : next
 
 
 getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either InferError AST -> IO (Either InferError [Import])
