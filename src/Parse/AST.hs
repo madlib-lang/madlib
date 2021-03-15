@@ -89,20 +89,31 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
             let generatedTable =
                   uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
 
-            childTables <- mapM
-              (\imp'@(Source _ area _) -> do
-                builtImport <- buildASTTable' pathUtils
-                                              srcPath
-                                              (Just imp')
-                                              (previousPaths ++ [srcPath])
-                                              (getImportAbsolutePath imp')
-                case builtImport of
-                  Right x                -> return $ Right x
-                  Left  e -> return $ Left e
+            -- TODO: replace mapM with foldM and verify that the import to process is not already in the table.
+            childTables <- foldM
+              (\table imp'@(Source _ area _) ->
+                case table of
+                  Left e       -> return $ Left e
+                  Right table' -> buildChildTable pathUtils previousPaths srcPath table' imp'
               )
+              (Right M.empty)
               madImports
 
-            return $ foldr (liftM2 M.union) generatedTable childTables
+            return $ liftM2 M.union generatedTable childTables
+
+buildChildTable :: PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either InferError Table)
+buildChildTable pathUtils previousPaths srcPath table imp = do
+  let absPath = getImportAbsolutePath imp
+  builtImport <- case M.lookup absPath table of
+    Just ast -> return $ Right $ M.singleton absPath ast
+    Nothing  -> buildASTTable' pathUtils
+                               srcPath
+                               (Just imp)
+                               (previousPaths ++ [srcPath])
+                               (getImportAbsolutePath imp)
+  case builtImport of
+    Right x -> return $ Right (M.union table x)
+    Left  e -> return $ Left e
 
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
