@@ -21,8 +21,6 @@ import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
-import           Debug.Trace
-import           Text.Show.Pretty
 import           Infer.Unify
 import           Infer.Instantiate
 
@@ -144,29 +142,37 @@ filterExportsByImport imp vars = case imp of
 
 
 solveImports :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
-solveImports table (imp : is) = do
+solveImports = solveImports' mempty
+
+solveImports' :: M.Map FilePath (Slv.Table, Slv.AST, Env) -> Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
+solveImports' solved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
-  (solvedAST, solvedTable, solvedEnv) <- case Can.findAST table modulePath of
-    Right ast -> do
-      (solvedTable, env) <- solveTable' table ast
-      solvedAST          <- findASTM solvedTable modulePath
-      return (solvedAST, solvedTable, env)
+  solvedImport@(solvedTable, solvedAST, solvedEnv) <- case M.lookup modulePath solved of
+    Just x -> return x
+    Nothing -> case Can.findAST table modulePath of
+      Right ast -> do
+        (solvedTable, solvedEnv) <- solveTable' solved table ast
+        solvedAST          <- findASTM solvedTable modulePath
+        return (solvedTable, solvedAST, solvedEnv)
 
-  importedVars <- extractImportedVars solvedEnv solvedAST imp
+  importedVars       <- extractImportedVars solvedEnv solvedAST imp
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
+  let solvedVars = constructorImports <> importedVars
+  let solvedInterfaces = envInterfaces solvedEnv
+  let solvedMethods = envMethods solvedEnv
 
-  (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports table is
-  let allVars = nextVars <> constructorImports <> importedVars
 
-  return
-    ( M.insert modulePath solvedAST (M.union solvedTable nextTable)
-    , allVars
-    , mergeInterfaces (envInterfaces solvedEnv) nextInterfaces
-    , M.union (envMethods solvedEnv) nextMethods
-    )
+  let solved' = M.insert modulePath solvedImport solved
+  (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports' solved' table is
 
-solveImports _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
+  return ( M.insert modulePath solvedAST (solvedTable <> nextTable)
+         , solvedVars <> nextVars
+         , mergeInterfaces solvedInterfaces nextInterfaces
+         , M.union solvedMethods nextMethods
+         )
+
+solveImports' _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
 
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
@@ -246,13 +252,13 @@ updateImport i = case i of
 -- and returning it.
 solveTable :: Can.Table -> Can.AST -> Infer Slv.Table
 solveTable table ast = do
-  (table, _) <- solveTable' table ast
+  (table, _) <- solveTable' mempty table ast
   return table
 
-solveTable' :: Can.Table -> Can.AST -> Infer (Slv.Table, Env)
-solveTable' table ast@Can.AST { Can.aimports } = do
+solveTable' :: M.Map FilePath (Slv.Table, Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (Slv.Table, Env)
+solveTable' solved table ast@Can.AST { Can.aimports } = do
   -- First we resolve imports to update the env
-  (inferredASTs, vars, interfaces, methods) <- solveImports table aimports
+  (inferredASTs, vars, interfaces, methods) <- solveImports' solved table aimports
 
   let importEnv = Env { envVars        = vars
                       , envCurrentPath = fromMaybe "" (Can.apath ast)
