@@ -30,7 +30,7 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `union` ftv t
 
 instance Substitutable Type where
-  apply _ (  TCon a fp   ) = TCon a fp
+  apply _ tc@( TCon a fp ) = tc
   apply s t@(TVar a      ) = M.findWithDefault t a s
   apply s (  t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields open) =
