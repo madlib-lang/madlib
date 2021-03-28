@@ -1,0 +1,30 @@
+import { assertEquals, test } from "TestTools"
+import { empty, fromList, insert } from "./Dictionary"
+
+test("fromList", (_) =>
+  assertEquals(
+    fromList([<1, 2>, <2, 2>]),
+    pipe(
+      insert(1, 2),
+      insert(2, 2)
+    )(empty)
+  )
+)
+
+test("fromList - should dedupe keys", (_) =>
+  assertEquals(
+    fromList([<1, 2>, <2, 2>, <2, 3>]),
+    pipe(
+      insert(1, 2),
+      insert(2, 2)
+    )(empty)
+  )
+)
+
+test("insert - no existing", (_) =>
+  assertEquals(insert(1, 2, empty), fromList([<1, 2>]))
+)
+
+test("insert - update", (_) =>
+  assertEquals(insert(1, 7, fromList([<1, 2>])), fromList([<1, 7>]))
+)

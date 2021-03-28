@@ -251,7 +251,12 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
 
 /**
+ * Removes items from a list for which the given predicate function returns true. In
+ * other words it is the complement of filter.
+ *
  * @since 0.0.5
+ * @example
+ * reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [1, 3, 5]
  */
  reject :: (a -> Boolean) -> List a -> List a
  export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
@@ -303,17 +308,30 @@ export isEmpty = (xs) => len(xs) == 0
 
 
 /**
+ * Makes items of a list unique given an equality functions that serves to decide
+ * how items should be dedupped.
+ * NB: It keeps the last item that matches the binary predicate.
+ *
  * @since 0.0.5
+ * @example
+ * uniqueBy(
+ *   (a, b) => a.id == b.id,
+ *   [
+ *     { id: 1, name: "John" },
+ *     { id: 2, name: "Paul" },
+ *     { id: 1, name: "George" },
+ *     { id: 4, name: "Ringo" }
+ *   ]
+ * )
+ * // [{ id: 1, name: "John" }, { id: 2, name: "Paul" }, { id: 4, name: "Ringo" }]
  */
 uniqueBy :: (a -> a -> Boolean) -> List a -> List a
-export uniqueBy = (f, xs) => where(xs)
-  is [curr, ...tail]:
-    where(find(f(curr), tail)) {
-      is Just _ : uniqueBy(f, tail)
-      is Nothing: [curr, ...uniqueBy(f, tail)]
-    }
-  is [l]: [l]
-  is _  : []
+export uniqueBy = (f) => reduce(
+  (result, elem) => where(find(f(elem), result))
+    is Just _ : result
+    is Nothing: [...result, elem],
+  []
+)
 
 
 /**
