@@ -7,23 +7,33 @@ import json from "./r.json"
 
 type Definition = Definition String String String
 
-type DocumentationModule = DocumentationModule String String // (List Definition)
+type ModuleDocumentation = ModuleDocumentation String String (List Definition)
 
-alias DocumentationData = List DocumentationModule
+alias DocumentationData = List ModuleDocumentation
 
 parser :: J.Parser DocumentationData
 parser = J.field("modules", J.list(
-  J.map2(
-    DocumentationModule,
-    J.field("name", J.string),
-    J.field("path", J.string)
+  J.map3(
+    ModuleDocumentation,
+    J.field("path", J.string),
+    J.field("description", J.string),
+    J.field("expressions", J.list(
+      J.map3(
+        Definition,
+        J.field("name", J.string),
+        J.field("description", J.string),
+        J.field("type", J.string)
+      )
+    ))
   )
 ))
 
 x = J.parse(parser, json)
 
-where(x)
-  is Right [DocumentationModule name path]:
-    IO.log(`module name: ${name}\nmodule path: ${path}`)
-  is Left e:
-    IO.log(e)
+// where(x)
+//   is Right [DocumentationModule name path]:
+//     IO.log(`module name: ${name}\nmodule path: ${path}`)
+//   is Left e:
+//     IO.log(e)
+
+IO.log(x)

@@ -18,8 +18,10 @@ module Parse.DocString.Lexer
   , alexError
   , alexMonadScan
   , runAlex
-  , getModuleDescCharacter
+  , getDocStringCharacter
   , getFunctionName
+  , getTypeName
+  , getInterfaceName
   )
 where
 
@@ -28,37 +30,32 @@ import           System.Exit
 import qualified Data.Text     as T
 import           Explain.Location
 import           Text.Regex.TDFA
--- import           Text.Regex.PCRE
--- import Data.Bits ((.|.))
 import           Debug.Trace (trace)
 import           Text.Show.Pretty (ppShow)
 }
 
 %wrapper "monadUserState"
 
-$alpha    = [a-zA-Z]                        -- alphabetic characters
-$empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
-$head     = [\n \ ]                         -- leading whitespace and / or newline
-$tail     = [\n]                            -- trailing newline
-$multilineStringContent = [$printable \n]
-
-$digit    = 0-9                             -- digits
-@decimal  = $digit($digit)*                 -- decimal
-@negative = \-
-@signed = @negative ?
-@floating = @decimal \. @decimal | @decimal -- floating point
-
 tokens :-
-  <0> \/\*\*          { beginDocString }
-  <docString>   \*\/  { endDocString }
-  <docString> (.|\n)  { mapToken (\input -> TokenModuleDescriptionCharacter input) }
-  <0> (.|\n)          ;
+  <0> \/\*\*            { beginDocString }
+  <docString> \*\/      { endDocString }
+  <docString> \@example { mapToken (\_ -> TokenExampleStart) }
+  <docString> \@since   { mapToken (\_ -> TokenSinceStart) }
+  <docString> (.|\n)    { mapToken (\input -> TokenDocStringCharacter input) }
+  <0> (.|\n)            ;
+
 {
 regexFunctionDocString :: String
 regexFunctionDocString = "\\`\n[ ]*export[\n\\ ]*([a-zA-Z0-9_]*)[\n\\ ]*=.*"
 
+regexTypingDocString :: String
+regexTypingDocString = "\\`\n[ ]*([a-zA-Z0-9_]*)[ ]*\\:\\:.*"
+
 regexTypeDefDocString :: String
-regexTypeDefDocString = "\\`\n[ ]*([a-zA-Z0-9_]*)[ ]*\\:\\:.*"
+regexTypeDefDocString = "\\`\n[ ]*export (type|alias)[ ]*([a-zA-Z0-9_]*)[a-zA-Z0-9_ \n]*\\=.*"
+
+regexInterfaceDocString :: String
+regexInterfaceDocString = "\\`\n[ ]*interface(.*=>)?[ ]*([a-zA-Z0-9_]*)[a-zA-Z0-9_ \n]*\\{.*"
 
 regexEndOfDocString :: String
 regexEndOfDocString = "\\*\\/"
@@ -100,12 +97,17 @@ beginDocString i@(posn, prevChar, pending, input) len = do
   setStartCode docString
 
   let (_, _, afterDocString) = match (toRegex regexEndOfDocString) (take 1000 input) :: (String, String, String)
-  let matchedTyping = match (toRegex regexTypeDefDocString) afterDocString :: (String, String, String, [String])
+  let matchedTyping = match (toRegex regexTypingDocString) afterDocString :: (String, String, String, [String])
   let matchedFn = match (toRegex regexFunctionDocString) afterDocString :: (String, String, String, [String])
-  case (matchedFn, matchedTyping) of
-    ((_, _, _, [fnName]), _) -> return $ TokenFunctionDocStringStart fnName
-    (_, (_, _, _, [fnName])) -> return $ TokenFunctionDocStringStart fnName
-    _                        -> return $ TokenModuleDocStringStart
+  let matchedTypeDec = match (toRegex regexTypeDefDocString) afterDocString :: (String, String, String, [String])
+  let matchedInterface = match (toRegex regexInterfaceDocString) afterDocString :: (String, String, String, [String])
+
+  case (matchedFn, matchedTyping, matchedTypeDec, matchedInterface) of
+    ((_, _, _, [fnName]), _, _, _)      -> return $ TokenFunctionDocStringStart fnName
+    (_, (_, _, _, [fnName]), _, _)      -> return $ TokenFunctionDocStringStart fnName
+    (_, _, (_, _, _, [_, typeName]), _) -> return $ TokenTypeDefDocStringStart typeName
+    (_, _, _, (_, _, _, [_, typeName])) -> return $ TokenInterfaceDocStringStart typeName
+    _                                   -> return $ TokenModuleDocStringStart
 
 endDocString :: AlexInput -> Int -> Alex Token
 endDocString i@(posn, prevChar, pending, input) len = do
@@ -114,28 +116,32 @@ endDocString i@(posn, prevChar, pending, input) len = do
 
 
 mapToken :: (String -> Token) -> AlexInput -> Int -> Alex Token
-mapToken tokenizer (_, _, _, input) len = do
-  return $ tokenizer (take len input)
-
-description :: (String -> Token) -> AlexInput -> Int -> Alex Token
-description tokenizer (_, _, _, input) len = do
-  setDefaultStartCode
-  return $ tokenizer $ init (init (take len input))
+mapToken tokenizer (_, _, _, input) len = return $ tokenizer (take len input)
 
 
 data Token
   = TokenModuleDocStringStart
   | TokenFunctionDocStringStart String
+  | TokenTypeDefDocStringStart String
+  | TokenInterfaceDocStringStart String
   | TokenDocStringEnd
-  | TokenModuleDescriptionCharacter String
+  | TokenExampleStart
+  | TokenSinceStart
+  | TokenDocStringCharacter String
   | TokenEOF
  deriving (Eq, Show)
 
-getModuleDescCharacter :: Token -> String
-getModuleDescCharacter (TokenModuleDescriptionCharacter s) = s
+getDocStringCharacter :: Token -> String
+getDocStringCharacter (TokenDocStringCharacter s) = s
 
 getFunctionName :: Token -> String
 getFunctionName (TokenFunctionDocStringStart n) = n
+
+getTypeName :: Token -> String
+getTypeName (TokenTypeDefDocStringStart n) = n
+
+getInterfaceName :: Token -> String
+getInterfaceName (TokenInterfaceDocStringStart n) = n
 
 
 alexEOF :: Alex Token

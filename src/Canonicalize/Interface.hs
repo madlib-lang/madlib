@@ -56,7 +56,8 @@ canonicalizeInterface env (Src.Source _ area interface) = case interface of
       then throwError $ InferError FatalError NoContext
       else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
 
-    return (env', Can.Canonical area $ Can.Interface n supers tvs' scs)
+    canMs <- mapM canonicalizeTyping ms
+    return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
 
 
 rmdups :: (Eq a) => [a] -> [a]

@@ -104,6 +104,16 @@ export map4 = (fn, parserA, parserB, parserC, parserD, input) =>
     is <_, _, Left e, _>: Left(e)
     is <_, _, _, Left e>: Left(e)
 
+map5 :: (a -> b -> c -> d -> e -> f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
+export map5 = (fn, parserA, parserB, parserC, parserD, parserE, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input)>)
+    is <Right a, Right b, Right c, Right d, Right e>: Right(fn(a, b, c, d, e))
+    is <Left e, _, _, _, _>: Left(e)
+    is <_, Left e, _, _, _>: Left(e)
+    is <_, _, Left e, _, _>: Left(e)
+    is <_, _, _, Left e, _>: Left(e)
+    is <_, _, _, _, Left e>: Left(e)
+
 
 maybe :: Parser a -> Parser (Maybe a)
 export maybe = (parser, input) => (#-{
@@ -132,6 +142,7 @@ export parse = (parser, input) => #-{
   try {
     return parser(JSON.parse(input))
   } catch(e) {
+    console.log(e)
     return Left("Parsing error!\nInvalid input you might have called parse on an already parsed input or the given JSON is invalid.")
   }
 }-#

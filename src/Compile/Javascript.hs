@@ -521,7 +521,7 @@ updateASTPath astPath config = config { ccastPath = astPath }
 
 instance Compilable Opt.Interface where
   compile config (Untyped _ interface) = case interface of
-    Opt.Interface name _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
+    Opt.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
 instance Compilable Opt.Instance where
   compile config (Untyped _ inst) = case inst of

@@ -273,9 +273,10 @@ instance Optimizable Slv.TypeDecl Opt.TypeDecl where
 
 
 instance Optimizable Slv.Interface Opt.Interface where
-  optimize enabled (Slv.Untyped area (Slv.Interface name constraints vars methods)) = do
+  optimize enabled (Slv.Untyped area (Slv.Interface name constraints vars methods methodTypings)) = do
     name' <- getClassShortname enabled name
-    return $ Opt.Untyped area $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods
+    methodTypings' <- mapM (optimize enabled) methodTypings
+    return $ Opt.Untyped area $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
 
 instance Optimizable Slv.Instance Opt.Instance where
   optimize enabled (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do

@@ -115,12 +115,23 @@ buildChildTable pathUtils previousPaths srcPath table imp = do
     Right x -> return $ Right (M.union table x)
     Left  e -> return $ Left e
 
+
+escapeJSONString :: String -> String
+escapeJSONString s = case s of
+  '\n':r -> "\\n" ++ escapeJSONString r
+  '\t':r -> "\\t" ++ escapeJSONString r
+  '\\':r -> "\\\\" ++ escapeJSONString r
+  '\"':r -> "\\\"" ++ escapeJSONString r
+  '\'':r -> "\\\'" ++ escapeJSONString r
+  x:r    -> x : escapeJSONString r
+  _      -> ""
+
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
 generateJsonAssignments pathUtils ((Source _ area (DefaultImport name _ absPath)):imps) = do
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath
-  let var = Source emptyInfos area (LStr jsonContent)
+  let var = Source emptyInfos area (LStr $ escapeJSONString jsonContent)
   let assignment = Source emptyInfos area (Assignment name var)
 
   return $ assignment : next

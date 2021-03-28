@@ -4,7 +4,7 @@ module Parse.DocString.Grammar where
 import           Text.Printf
 import           Control.Monad.Except
 import           Data.Char(isSpace)
-
+import           Data.List(isSuffixOf)
 import           Parse.DocString.Lexer
 import           Infer.Type
 import           Parse.DocString.DocString
@@ -25,8 +25,12 @@ import           Text.Show.Pretty (ppShow)
 %token
   'moduleStart'    { TokenModuleDocStringStart }
   'functionStart'  { TokenFunctionDocStringStart _ }
+  'typeDefStart'   { TokenTypeDefDocStringStart _ }
+  'interfaceStart'   { TokenInterfaceDocStringStart _ }
   'end'            { TokenDocStringEnd }
-  'moduleDescPart' { TokenModuleDescriptionCharacter _ }
+  'docStringPart'  { TokenDocStringCharacter _ }
+  'exampleStart'   { TokenExampleStart }
+  'sinceStart'     { TokenSinceStart }
 
 %%
 
@@ -35,12 +39,22 @@ docs :: { [DocString] }
   | doc docs { $1 : $2 }
 
 doc :: { DocString }
-  : 'moduleStart' parts 'end'   { ModuleDoc $ processDescriptionCharacters $2 }
-  | 'functionStart' parts 'end' { FunctionDoc (getFunctionName $1) (processDescriptionCharacters $2) }
+  : 'moduleStart' parts 'end'         { ModuleDoc $ processCharacters $2 }
+  -- | 'functionStart' parts 'end'       { FunctionDoc (getFunctionName $1) (processCharacters $2) [] }
+  | 'functionStart' parts tags 'end'  { FunctionDoc (getFunctionName $1) (processCharacters $2) $3 }
+  -- | 'typeDefStart' parts 'end'        { TypeDefDoc (getTypeName $1) (processCharacters $2) [] }
+  | 'typeDefStart' parts tags 'end'   { TypeDefDoc (getTypeName $1) (processCharacters $2) $3 }
+  -- | 'interfaceStart' parts 'end'      { InterfaceDoc (getInterfaceName $1) (processCharacters $2) [] }
+  | 'interfaceStart' parts tags 'end' { InterfaceDoc (getInterfaceName $1) (processCharacters $2) $3 }
 
 parts :: { [String] }
-  : 'moduleDescPart'       { [getModuleDescCharacter $1] }
-  | 'moduleDescPart' parts { getModuleDescCharacter $1 : $2 }
+  : 'docStringPart'       { [getDocStringCharacter $1] }
+  | 'docStringPart' parts { getDocStringCharacter $1 : $2 }
+
+tags :: { [DocStringTag] }
+  : 'exampleStart' parts tags { ExampleTag (processCharacters $2) : $3 }
+  | 'sinceStart' parts tags   { SinceTag (processCharacters $2) : $3 }
+  | {--}                      { [] }
 
 
 {
@@ -52,18 +66,29 @@ trim = f . f
   where f = reverse . dropWhile isSpace
 
 regex :: String
-regex = "[\n\\ ]*\\*[ ]*"
+regex = "[\n ]*\\*[ ]*"
 
 sanitizeDescription :: String -> String
 sanitizeDescription desc =
   let matched = match (toRegex regex) desc :: (String, String, String)
   in  case matched of
-    (before, "", "") -> trim desc
-    (before, _, after) -> sanitizeDescription $ before <> "\n" <> after
+    (before, "", "") ->
+      let trimmed = trim desc
+      in
+        if isSuffixOf "\n" trimmed then
+          sanitizeDescription (init $ init trimmed)
+        else trimmed
+    (before, _, after) ->
+      if before == "" then
+        sanitizeDescription after
+      else if after == "" then
+        sanitizeDescription before
+      else
+        sanitizeDescription $ before <> "\n" <> after
 
 
-processDescriptionCharacters :: [String] -> String
-processDescriptionCharacters chars =
+processCharacters :: [String] -> String
+processCharacters chars =
   let assembled = foldl (<>) "" chars
   in  sanitizeDescription assembled
 

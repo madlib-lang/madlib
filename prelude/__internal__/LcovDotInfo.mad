@@ -3,7 +3,10 @@ import S from "String"
 import N from "Number"
 import Maybe from "Maybe"
 
-
+/**
+ * LcovLine type
+ * @since v0.0.5
+ */
 export type LcovLine
   = TN String
   | SF String
@@ -15,6 +18,10 @@ export type LcovLine
   | LF Number
   | LH Number
 
+/**
+ * LcovLine type
+ * @since v0.0.5
+ */
 export alias LcovSection = {
   tn :: LcovLine,
   sf :: LcovLine,

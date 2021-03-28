@@ -55,6 +55,15 @@ Right
                                 (TCon (TC "String" Star) "prelude"))
                              (TGen 0))
                     )
+                  ])
+               (fromList
+                  [ ( "read"
+                    , Untyped
+                        (Area (Loc 29 2 11) (Loc 40 2 22))
+                        (TRArr
+                           (Untyped (Area (Loc 29 2 11) (Loc 35 2 17)) (TRSingle "String"))
+                           (Untyped (Area (Loc 39 2 21) (Loc 40 2 22)) (TRSingle "a")))
+                    )
                   ]))
         ]
     , ainstances =
