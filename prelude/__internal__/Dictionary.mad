@@ -59,6 +59,9 @@ export insert = (k, v, m) => (where(m)
  * Get a value from a Dictionary given a key.
  *
  * @since 0.0.5
+ * @example
+ * get("john", fromList([<"john", { age: 32 }>])) // Just({ age: 32 })
+ * get("paul", fromList([<"john", { age: 32 }>])) // Nothing
  */
 get :: k -> Dictionary k v -> Maybe v
 export get = (k) => where
@@ -73,6 +76,8 @@ export get = (k) => where
  * List all keys in a Dictionary
  *
  * @since 0.0.5
+ * @example
+ * keys(fromList([<true, "Go for it">, <false, "NOGO">])) // [true, false]
  */
 keys :: Dictionary k v -> List k
 export keys = (m) => (where(m)
@@ -83,6 +88,8 @@ export keys = (m) => (where(m)
  * List all values in a Dictionary
  *
  * @since 0.0.5
+ * @example
+ * values(fromList([<true, "Go for it">, <false, "NOGO">])) // ["Go for it", "NOGO"]
  */
 values :: Dictionary k v -> List v
 export values = (m) => (where(m)
@@ -94,6 +101,8 @@ export values = (m) => (where(m)
  * Enumerate the number of keys in a Dictionary
  *
  * @since 0.0.5
+ * @example
+ * len(fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>])) // 3
  */
 len :: Dictionary k v -> Number
 export len = (m) => (m |> keys |> L.len)
@@ -103,6 +112,9 @@ export len = (m) => (m |> keys |> L.len)
  * Map over a Dictionary with a function that takes the value and transforms it.
  *
  * @since 0.0.5
+ * @example
+ * map((x) => x / 2, fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>]))
+ * // fromList([<"Sidney", 1.5>, <"New York", 9>, <"London", 1>])
  */
 instance Functor (Dictionary k) {
   map = (fn) => where
@@ -113,6 +125,12 @@ instance Functor (Dictionary k) {
  * Map over a Dictionary with a function that takes the key and value and returns the new value. 
  *
  * @since 0.0.5
+ * @example
+ * mapWithKey(
+ *   (city, x) => city == "Sidney" ? 9 : x / 2,
+ *   fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>])
+ * )
+ * // fromList([<"Sidney", 9>, <"New York", 9>, <"London", 1>])
  */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where
