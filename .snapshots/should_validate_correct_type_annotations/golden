@@ -89,12 +89,12 @@ Right
                (Forall [] ([] :=> TCon (TC "Number" Star) "prelude")))
         , Solved
             (TApp
-               (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "e" Star)))
+               (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "e4" Star)))
             (Area (Loc 92 5 2) (Loc 110 5 20))
             (TypedExp
                (Solved
                   (TApp
-                     (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "e" Star)))
+                     (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "e4" Star)))
                   (Area (Loc 92 5 2) (Loc 99 5 9))
                   (Var "Nothing"))
                (Forall
@@ -150,16 +150,17 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "i" Star)))
+                               (TVar (TV "i8" Star)))
                             (TApp
-                               (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "i" Star)))))
+                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                               (TVar (TV "i8" Star)))))
                   , Untyped
                       (Area (Loc 83 4 25) (Loc 90 4 32))
                       (Constructor
                          "Nothing"
                          []
                          (TApp
-                            (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "j" Star))))
+                            (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "j9" Star))))
                   ]
               , adtType =
                   TApp

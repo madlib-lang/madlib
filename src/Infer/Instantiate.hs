@@ -13,15 +13,14 @@ import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
 
 
-letters :: [String]
-letters = [1 ..] >>= flip replicateM ['a' .. 'z']
-
+letters :: [Char]
+letters = ['a' .. 'z']
 
 newTVar :: Kind -> Infer Type
 newTVar k = do
   s <- get
   put s { count = count s + 1 }
-  return $ TVar $ TV (letters !! count s) k
+  return $ TVar $ TV (letters !! (count s `mod` 26) : show (count s)) k
 
 
 instantiate :: Scheme -> Infer (Qual Type)

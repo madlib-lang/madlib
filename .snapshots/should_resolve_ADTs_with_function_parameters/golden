@@ -6,7 +6,7 @@ Right
             (TApp
                (TApp
                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
-                  (TVar (TV "c" Star)))
+                  (TVar (TV "c2" Star)))
                (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 56 2 1) (Loc 86 2 31))
             (App
@@ -20,8 +20,8 @@ Right
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "c" Star)))
-                                 (TVar (TV "h" Star))))
+                                    (TVar (TV "c2" Star)))
+                                 (TVar (TV "h7" Star))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -29,12 +29,12 @@ Right
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TCon (TC "Number" Star) "prelude"))
-                                    (TVar (TV "h" Star))))
-                              (TVar (TV "h" Star)))))
+                                    (TVar (TV "h7" Star))))
+                              (TVar (TV "h7" Star)))))
                      (TApp
                         (TApp
                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
-                           (TVar (TV "c" Star)))
+                           (TVar (TV "c2" Star)))
                         (TCon (TC "Number" Star) "prelude")))
                   (Area (Loc 56 2 1) (Loc 60 2 5))
                   (Var "Wish"))
@@ -45,8 +45,8 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "c" Star)))
-                           (TVar (TV "h" Star))))
+                              (TVar (TV "c2" Star)))
+                           (TVar (TV "h7" Star))))
                      (TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -54,16 +54,16 @@ Right
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                  (TCon (TC "Number" Star) "prelude"))
-                              (TVar (TV "h" Star))))
-                        (TVar (TV "h" Star))))
+                              (TVar (TV "h7" Star))))
+                        (TVar (TV "h7" Star))))
                   (Area (Loc 61 2 6) (Loc 85 2 30))
                   (Abs
                      (Solved
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "c" Star)))
-                           (TVar (TV "h" Star)))
+                              (TVar (TV "c2" Star)))
+                           (TVar (TV "h7" Star)))
                         (Area (Loc 62 2 7) (Loc 65 2 10))
                         "bad")
                      [ Solved
@@ -74,8 +74,8 @@ Right
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TCon (TC "Number" Star) "prelude"))
-                                  (TVar (TV "h" Star))))
-                            (TVar (TV "h" Star)))
+                                  (TVar (TV "h7" Star))))
+                            (TVar (TV "h7" Star)))
                          (Area (Loc 61 2 6) (Loc 85 2 30))
                          (Abs
                             (Solved
@@ -83,11 +83,11 @@ Right
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TCon (TC "Number" Star) "prelude"))
-                                  (TVar (TV "h" Star)))
+                                  (TVar (TV "h7" Star)))
                                (Area (Loc 67 2 12) (Loc 71 2 16))
                                "good")
                             [ Solved
-                                (TVar (TV "h" Star))
+                                (TVar (TV "h7" Star))
                                 (Area (Loc 77 2 22) (Loc 84 2 29))
                                 (App
                                    (Solved
@@ -96,7 +96,7 @@ Right
                                             (TCon
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TCon (TC "Number" Star) "prelude"))
-                                         (TVar (TV "h" Star)))
+                                         (TVar (TV "h7" Star)))
                                       (Area (Loc 77 2 22) (Loc 81 2 26))
                                       (Var "good"))
                                    (Solved
@@ -148,8 +148,8 @@ Right
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "i" Star)))
-                                        (TVar (TV "j" Star))))
+                                           (TVar (TV "i8" Star)))
+                                        (TVar (TV "j9" Star))))
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -157,14 +157,14 @@ Right
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "k" Star)))
-                                           (TVar (TV "j" Star))))
-                                     (TVar (TV "j" Star)))))
+                                              (TVar (TV "k10" Star)))
+                                           (TVar (TV "j9" Star))))
+                                     (TVar (TV "j9" Star)))))
                             (TApp
                                (TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
-                                  (TVar (TV "i" Star)))
-                               (TVar (TV "k" Star)))))
+                                  (TVar (TV "i8" Star)))
+                               (TVar (TV "k10" Star)))))
                   ]
               , adtType =
                   TApp

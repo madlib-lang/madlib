@@ -19,10 +19,10 @@ Right
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "a" Star)))
+                                      (TVar (TV "a0" Star)))
                                    (TApp
                                       (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
-                                      (TVar (TV "a" Star)))))
+                                      (TVar (TV "a0" Star)))))
                          , Untyped
                              (Area (Loc 31 1 32) (Loc 38 1 39))
                              (Constructor
@@ -30,7 +30,7 @@ Right
                                 []
                                 (TApp
                                    (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
-                                   (TVar (TV "b" Star))))
+                                   (TVar (TV "b1" Star))))
                          ]
                      , adtType =
                          TApp

@@ -182,24 +182,24 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "p" Star)))
+                               (TVar (TV "p15" Star)))
                             (TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TVar (TV "q" Star)))
+                                  (TVar (TV "q16" Star)))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "r" Star)))
+                                     (TVar (TV "r17" Star)))
                                   (TApp
                                      (TApp
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                               "path")
-                                           (TVar (TV "p" Star)))
-                                        (TVar (TV "q" Star)))
-                                     (TVar (TV "r" Star)))))))
+                                           (TVar (TV "p15" Star)))
+                                        (TVar (TV "q16" Star)))
+                                     (TVar (TV "r17" Star)))))))
                   ]
               , adtType =
                   TApp
