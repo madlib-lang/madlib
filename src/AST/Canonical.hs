@@ -22,7 +22,7 @@ data AST =
     deriving(Eq, Show)
 
 type Interface = Canonical Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
 
 type Instance = Canonical Instance_
 data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show)

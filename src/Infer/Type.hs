@@ -52,6 +52,15 @@ tTuple3 = TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude"
 tTuple4 :: Type
 tTuple4 = TCon (TC "(,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))) "prelude"
 
+tTuple5 :: Type
+tTuple5 = TCon (TC "(,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))) "prelude"
+
+tTuple6 :: Type
+tTuple6 = TCon (TC "(,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))) "prelude"
+
+tTuple7 :: Type
+tTuple7 = TCon (TC "(,,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))) "prelude"
+
 tArrow :: Type
 tArrow = TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude"
 
@@ -60,6 +69,9 @@ getTupleCtor n = case n of
   2 -> tTuple2
   3 -> tTuple3
   4 -> tTuple4
+  5 -> tTuple5
+  6 -> tTuple6
+  7 -> tTuple7
 
 infixr      4 `fn`
 fn :: Type -> Type -> Type

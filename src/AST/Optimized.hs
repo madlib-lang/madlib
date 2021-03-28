@@ -29,7 +29,7 @@ data Import_
   deriving(Eq, Show)
 
 type Interface = Optimized Interface_
-data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
 
 type Instance = Optimized Instance_
 data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)

@@ -7,8 +7,8 @@ import { Maybe, Just, Nothing } from "Maybe"
 
 
 /**
- * DOC STRING
- * and another line
+ * List utility functions.
+ * In this module you'll find everything that is related to List and make working with lists convenient.
  */
 
 
@@ -40,30 +40,43 @@ instance Semigroup (List a) {
 
 instance Monoid (List a) {
   mempty = []
-  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)//assoc
+  mappend = assoc
 }
 
 instance Show a => Show (List a) {
   show = pipe(
     map(show),
     intercalate(", "),
-    reduceL((a, b) => a ++ b, ""),
-    (x) => "[" ++ x ++ "]"
+    reduceL(mappend, ""),
+    (x) => `[${x}]`
   )
 }
 
+
 /**
- * DOC STRING for function!
+ * Constructor function that creates a list with length 1. It takes an item of any type, and returns a List of that type.
+ *
+ * @since 0.0.5
+ * @example
+ * singleton(1)   // [1]
+ * singleton("1") // ["1"]
  */
 singleton :: a -> List a
 export singleton = pure
 
+/**
+ * Flattens a List String into a String, by adding line returns between the items in the List.
+ * @since 0.0.5
+ */
 unlines :: List String -> String
 export unlines = pipe(
   intercalate("\n"),
   reduce(mappend, "")
 )
 
+/**
+ * @since 0.0.5
+ */
 intercalate :: a -> List a -> List a
 export intercalate = (a, xs) => where(xs)
   is []            : []
@@ -73,24 +86,56 @@ export intercalate = (a, xs) => where(xs)
 
 /**
  * Alias for intercalate
+ * @since 0.0.5
  */
 export join = intercalate
 
+
+/**
+ * @since 0.0.5
+ */
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 concat :: List a -> List a -> List a
 export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 append :: a -> List a -> List a
 export append = (v, xs) => (#- [...xs, v] -#)
 
+
+/**
+ * Returns the last element of a List
+ * @since 0.0.5
+ */
 last :: List a -> a
 export last = (xs) => (#- xs.slice(-1)[0] -#)
 
+/**
+ * Returns the first element of a List
+ * @since 0.0.5
+ */
+ first :: List a -> a
+ export first = (xs) => (#- xs[0] -#)
+
+/**
+ * @since 0.0.5
+ */
 init :: List a -> List a
 export init = (xs) => (#- xs.slice(0, -1) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 nth :: Number -> List a -> Maybe a
 export nth = (i, xs) => (#- {
   const x = xs[i];
@@ -99,18 +144,38 @@ export nth = (i, xs) => (#- {
     : Just(x);
 } -#)
 
+
+/**
+ * @since 0.0.5
+ */
 reduceR :: (a -> b -> a) -> a -> List b -> a
 export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 reduceL :: (a -> b -> a) -> a -> List b -> a
 export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 reduce :: (a -> b -> a) -> a -> List b -> a
 export reduce = reduceL
 
+
+/**
+ * @since 0.0.5
+ */
 filter :: (a -> Boolean) -> List a -> List a
 export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 find :: (a -> Boolean) -> List a -> Maybe a
 export find = (predicate, xs) => (#- {
   const found = xs.find(predicate);
@@ -122,18 +187,38 @@ export find = (predicate, xs) => (#- {
   }
 } -#)
 
+
+/**
+ * @since 0.0.5
+ */
 len :: List a -> Number
 export len = (xs) => (#- xs.length -#)
 
+
+/**
+ * @since 0.0.5
+ */
 reject :: (a -> Boolean) -> List a -> List a
 export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 slice :: Number -> Number -> List a -> List a
 export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
 
+
+/**
+ * @since 0.0.5
+ */
 isEmpty :: List a -> Boolean
 export isEmpty = (xs) => len(xs) == 0
 
+
+/**
+ * @since 0.0.5
+ */
 uniqueBy :: (a -> a -> Boolean) -> List a -> List a
 export uniqueBy = (f, xs) => where(xs)
   is [curr, ...tail]:
@@ -144,9 +229,17 @@ export uniqueBy = (f, xs) => where(xs)
   is [l]: [l]
   is _  : []
 
+
+/**
+ * @since 0.0.5
+ */
 flatten :: List (List a) -> List a
 export flatten = reduceL(concat, [])
 
+
+/**
+ * @since 0.0.5
+ */
 zip :: List a -> List b -> List <a, b>
 export zip = (as, bs) => where(<as, bs>)
   is <[a, ...ass], [b, ...bss]>: mappend([<a, b>], zip(ass, bss))

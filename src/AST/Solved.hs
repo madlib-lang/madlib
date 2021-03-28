@@ -29,7 +29,7 @@ data Import_
   deriving(Eq, Show)
 
 type Interface = Solved Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
 
 type Instance = Solved Instance_
 data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)

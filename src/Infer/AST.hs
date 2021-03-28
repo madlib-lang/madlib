@@ -58,8 +58,8 @@ populateTopLevelTypings env ((Can.Canonical _ e) : es) = do
 buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
   = do
-    let methods = foldl (\mtds (Can.Canonical _ (Can.Interface _ _ _ mtds')) -> mtds <> mtds') mempty ainterfaces
-    env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _)) -> addInterface env id vars preds)
+    let methods = foldl (\mtds (Can.Canonical _ (Can.Interface _ _ _ mtds' _)) -> mtds <> mtds') mempty ainterfaces
+    env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _ _)) -> addInterface env id vars preds)
                   priorEnv
                   ainterfaces
     env'' <- foldM
@@ -181,8 +181,8 @@ mergeInterface :: Id -> Interface -> Interfaces -> Interfaces
 mergeInterface = M.insertWith (\(Interface tvs ps is) (Interface _ _ is') -> Interface tvs ps $ is `union` is')
 
 updateInterface :: Can.Interface -> Slv.Interface
-updateInterface (Can.Canonical area (Can.Interface name preds vars methods)) =
-  Slv.Untyped area $ Slv.Interface name preds vars methods
+updateInterface (Can.Canonical area (Can.Interface name preds vars methods methodTypings)) =
+  Slv.Untyped area $ Slv.Interface name preds vars methods (M.map updateTyping methodTypings)
 
 inferAST :: Env -> Can.AST -> Infer (Slv.AST, Env)
 inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do

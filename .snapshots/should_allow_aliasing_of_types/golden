@@ -3578,6 +3578,36 @@ Right
                                           (TApp (TGen 0) (TGen 1)))
                                        (TApp (TGen 0) (TGen 2))))
                            )
+                         ])
+                      (fromList
+                         [ ( "map"
+                           , Untyped
+                               (Area (Loc 32 2 11) (Loc 53 2 32))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 32 2 11) (Loc 38 2 17))
+                                     (TRArr
+                                        (Untyped (Area (Loc 32 2 11) (Loc 33 2 12)) (TRSingle "a"))
+                                        (Untyped
+                                           (Area (Loc 37 2 16) (Loc 38 2 17)) (TRSingle "b"))))
+                                  (Untyped
+                                     (Area (Loc 43 2 22) (Loc 53 2 32))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 43 2 22) (Loc 46 2 25))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 45 2 24) (Loc 46 2 25)) (TRSingle "a")
+                                              ]))
+                                        (Untyped
+                                           (Area (Loc 50 2 29) (Loc 53 2 32))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 52 2 31) (Loc 53 2 32)) (TRSingle "b")
+                                              ])))))
+                           )
                          ]))
                , Untyped
                    (Area (Loc 57 5 1) (Loc 149 8 1))
@@ -3618,6 +3648,59 @@ Right
                                        (TGen 1))
                                     (TApp (TGen 0) (TGen 1)))
                            )
+                         ])
+                      (fromList
+                         [ ( "ap"
+                           , Untyped
+                               (Area (Loc 104 6 9) (Loc 128 6 33))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 104 6 9) (Loc 114 6 19))
+                                     (TRComp
+                                        "m"
+                                        [ Untyped
+                                            (Area (Loc 106 6 11) (Loc 114 6 19))
+                                            (TRArr
+                                               (Untyped
+                                                  (Area (Loc 107 6 12) (Loc 108 6 13))
+                                                  (TRSingle "a"))
+                                               (Untyped
+                                                  (Area (Loc 112 6 17) (Loc 113 6 18))
+                                                  (TRSingle "b")))
+                                        ]))
+                                  (Untyped
+                                     (Area (Loc 118 6 23) (Loc 128 6 33))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 118 6 23) (Loc 121 6 26))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 120 6 25) (Loc 121 6 26))
+                                                  (TRSingle "a")
+                                              ]))
+                                        (Untyped
+                                           (Area (Loc 125 6 30) (Loc 128 6 33))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 127 6 32) (Loc 128 6 33))
+                                                  (TRSingle "b")
+                                              ])))))
+                           )
+                         , ( "pure"
+                           , Untyped
+                               (Area (Loc 139 7 11) (Loc 147 7 19))
+                               (TRArr
+                                  (Untyped (Area (Loc 139 7 11) (Loc 140 7 12)) (TRSingle "a"))
+                                  (Untyped
+                                     (Area (Loc 144 7 16) (Loc 147 7 19))
+                                     (TRComp
+                                        "m"
+                                        [ Untyped
+                                            (Area (Loc 146 7 18) (Loc 147 7 19)) (TRSingle "a")
+                                        ])))
+                           )
                          ]))
                , Untyped
                    (Area (Loc 151 10 1) (Loc 242 13 1))
@@ -3654,6 +3737,58 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TGen 1))
                                     (TApp (TGen 0) (TGen 1)))
+                           )
+                         ])
+                      (fromList
+                         [ ( "chain"
+                           , Untyped
+                               (Area (Loc 217 12 13) (Loc 240 12 36))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 217 12 13) (Loc 225 12 21))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 217 12 13) (Loc 218 12 14)) (TRSingle "a"))
+                                        (Untyped
+                                           (Area (Loc 222 12 18) (Loc 225 12 21))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 224 12 20) (Loc 225 12 21))
+                                                  (TRSingle "b")
+                                              ]))))
+                                  (Untyped
+                                     (Area (Loc 230 12 26) (Loc 240 12 36))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 230 12 26) (Loc 233 12 29))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 232 12 28) (Loc 233 12 29))
+                                                  (TRSingle "a")
+                                              ]))
+                                        (Untyped
+                                           (Area (Loc 237 12 33) (Loc 240 12 36))
+                                           (TRComp
+                                              "m"
+                                              [ Untyped
+                                                  (Area (Loc 239 12 35) (Loc 240 12 36))
+                                                  (TRSingle "b")
+                                              ])))))
+                           )
+                         , ( "of"
+                           , Untyped
+                               (Area (Loc 196 11 9) (Loc 204 11 17))
+                               (TRArr
+                                  (Untyped (Area (Loc 196 11 9) (Loc 197 11 10)) (TRSingle "a"))
+                                  (Untyped
+                                     (Area (Loc 201 11 14) (Loc 204 11 17))
+                                     (TRComp
+                                        "m"
+                                        [ Untyped
+                                            (Area (Loc 203 11 16) (Loc 204 11 17)) (TRSingle "a")
+                                        ])))
                            )
                          ]))
                ]
