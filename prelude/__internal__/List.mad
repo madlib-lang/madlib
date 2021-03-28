@@ -72,7 +72,10 @@ export singleton = pure
 
 /**
  * Flattens a List String into a String, by adding line returns between the items in the List.
+ *
  * @since 0.0.5
+ * @example
+ * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
  */
 unlines :: List String -> String
 export unlines = pipe(
@@ -81,7 +84,11 @@ export unlines = pipe(
 )
 
 /**
+ * Intercalates a value between all elements of a list.
+ *
  * @since 0.0.5
+ * @example
+ * intercalate("and", ["cats", "dogs"]) // ["cats", "and", "dogs"]
  */
 intercalate :: a -> List a -> List a
 export intercalate = (a, xs) => where(xs)
@@ -91,56 +98,108 @@ export intercalate = (a, xs) => where(xs)
   is [one, ...rest]: [one, a, ...intercalate(a, rest)]
 
 /**
- * Alias for intercalate
+ * Joins a list with a separator and returns a String.
+ *
+ * IMPORTANT:
+ * When coming from JS, beware that there is a small difference with Array.prototype.join.
+ * In JS, join relies on its dynamic nature and accepts any type as being valid, and transforms it
+ * to a string for you. In Madlib you need to provide an instance of Show for your custom types, and
+ * for Madlib types (eg. tuples, List, Boolean, Maybe) it uses the Show instance defined for them.
+ *
  * @since 0.0.5
+ * @example
+ * join(" and ", ["cats", "dogs"])   // "cats and dogs"
+ * join("", ["one", "two", "three"]) // "onetwothree"
  */
-export join = intercalate
+join :: (Show a, Show b) => a -> List b -> String
+export join = (a, xs) => pipe(
+  map(show),
+  intercalate(show(a)),
+  reduce(mappend, "")
+)(xs)
 
 
 /**
+ * Applies a function to each item of a list. This function receives the current element
+ * as well as its index as parameters, and must return the transformed item.
+ *
  * @since 0.0.5
+ * @example
+ * mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
  */
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
 
 
 /**
+ * Concatenates two lists together.
+ *
  * @since 0.0.5
+ * @example
+ * concat([1, 2, 3], [4, 5, 6]) // [1, 2, 3, 4, 5, 6]
  */
 concat :: List a -> List a -> List a
 export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
 
 
 /**
+ * Appends an item to a list. The item is then pushed at the end of it.
+ *
  * @since 0.0.5
+ * @example
+ * append(2, [1]) // [1, 2]
  */
 append :: a -> List a -> List a
 export append = (v, xs) => (#- [...xs, v] -#)
 
 
 /**
- * Returns the last element of a List
+ * Returns a Maybe containing either a Just with the last element or a Nothing if the list is empty.
+ *
  * @since 0.0.5
+ * @example
+ * last([1, 2, 3]) // Just(3)
+ * last([])        // Nothing
  */
-last :: List a -> a
-export last = (xs) => (#- xs.slice(-1)[0] -#)
+last :: List a -> Maybe a
+export last = (xs) => #-{
+  const item = xs.slice(-1)[0];
+  return item ? Just(item) : Nothing;
+}-#
 
 /**
- * Returns the first element of a List
+ * Returns a Maybe containing either a Just with the first element or a Nothing if the list is empty.
+ *
  * @since 0.0.5
+ * @example
+ * first([1, 2, 3]) // Just(1)
+ * first([])        // Nothing
  */
- first :: List a -> a
- export first = (xs) => (#- xs[0] -#)
+first :: List a -> Maybe a
+export first = (xs) => #-{
+  const item = xs[0];
+  return item ? Just(item) : Nothing;
+}-#
 
 /**
+ * Returns the list without the last item.
+ *
  * @since 0.0.5
+ * @example
+ * init([1, 2, 3]) // [1, 2]
+ * init([])        // []
  */
 init :: List a -> List a
 export init = (xs) => (#- xs.slice(0, -1) -#)
 
 
 /**
+ * Returns a Just of the nth element in a list if an element exists at that index or a Nothing otherwise.
+ *
  * @since 0.0.5
+ * @example
+ * nth(1, [1, 2, 3]) // Just(2)
+ * nth(3, [1, 2, 3]) // Nothing
  */
 nth :: Number -> List a -> Maybe a
 export nth = (i, xs) => (#- {
@@ -166,14 +225,26 @@ export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
 
 
 /**
+ * Returns a transformed value derived from all elements of a list.
+ * To do this reduce takes three parameters:
+ *   - a transformation function, that receives the currently transformed output ( an accumulator ) and the current item of the list
+ *   - an initial value that must have the same type as the value returned from the transformation function
+ *   - a list
+ *
  * @since 0.0.5
+ * @example
+ * reduce((a, b) => a + b, 0, [1, 2, 3]) // 6
  */
 reduce :: (a -> b -> a) -> a -> List b -> a
 export reduce = reduceL
 
 
 /**
+ * Filters a list given a predicate function that is called with each element of the list and must return a Boolean.
+ *
  * @since 0.0.5
+ * @example
+ * filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [2, 4, 6]
  */
 filter :: (a -> Boolean) -> List a -> List a
 export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
@@ -181,6 +252,18 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
 /**
  * @since 0.0.5
+ */
+ reject :: (a -> Boolean) -> List a -> List a
+ export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
+
+
+/**
+ * Returns a Just of the first element for which the given predicate function returns true, or Nothing otherwise.
+ *
+ * @since 0.0.5
+ * @example
+ * find((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // Just(2)
+ * find((a) => a == 0, [1, 2, 3, 4, 5, 6])     // Nothing
  */
 find :: (a -> Boolean) -> List a -> Maybe a
 export find = (predicate, xs) => (#- {
@@ -195,17 +278,14 @@ export find = (predicate, xs) => (#- {
 
 
 /**
+ * Returns the length of a list
+ *
  * @since 0.0.5
+ * @example
+ * len([1, 2, 3]) // 3
  */
 len :: List a -> Number
 export len = (xs) => (#- xs.length -#)
-
-
-/**
- * @since 0.0.5
- */
-reject :: (a -> Boolean) -> List a -> List a
-export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
 
 
 /**

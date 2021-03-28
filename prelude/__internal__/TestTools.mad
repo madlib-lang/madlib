@@ -111,11 +111,16 @@ allRow = (lcov) =>
   ) |> (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>
     |> (total) => buildRow("All", T.fst(total), T.snd(total))
 
+computePercents :: Number -> Number -> Number
+computePercents = (hit, found) => found == 0
+  ? 100
+  : 100 * hit / found
+
 generateTable :: Lcov.LcovInfo -> List IO.Row
 generateTable = (lcov) =>
   map(where
     is { sf: Lcov.SF path, lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
-      <100 * hit / found, 100 * fhit / ffound>
+      <computePercents(hit, found), computePercents(fhit, ffound)>
         |> (t) => buildRow(path, T.fst(t), T.fst(t))
     , lcov
   ) |> (table) => L.concat([allRow(lcov)], table)
@@ -144,10 +149,10 @@ formatFailureOutput = (description, result) =>
     is AssertionError expected actual:
       W.bad(
         red("\u00d7 " ++ description)
-        ++ "\n    expected:\n      "
-        ++ S.show(expected)
-        ++ "\n    actual:\n      "
-        ++ S.show(actual)
+        ++ "\n  expected:\n    "
+        ++ #- green(JSON.stringify(expected)) -#
+        ++ "\n  actual:\n    "
+        ++ #- red(JSON.stringify(actual)) -#
       )
 
 #-

@@ -158,6 +158,7 @@ getImportAbsolutePath imp = case imp of
 
 isAssignment :: Exp -> Bool
 isAssignment exp = case exp of
+  Canonical _ (Export (Canonical _ (Assignment _ _))) -> True
   Canonical _ (Assignment _ _) -> True
   _                            -> False
 

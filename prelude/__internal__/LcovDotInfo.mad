@@ -98,13 +98,13 @@ stringifyLine = (line) =>
   where(line)
     is TN arg: "TN:" ++ arg ++ "\n"
     is SF arg: "SF:" ++ arg ++ "\n"
-    is FN l name: "FN:" ++ S.show(l) ++ "," ++ name ++ "\n"
-    is FNDA count name: "FNDA:" ++ S.show(count) ++ "," ++ name ++ "\n"
-    is FNF count: "FNF:" ++ S.show(count) ++ "\n"
-    is FNH count: "FNH:" ++ S.show(count) ++ "\n"
-    is DA l count: "DA:" ++ S.show(l) ++ "," ++ S.show(count) ++ "\n"
-    is LF count: "LF:" ++ S.show(count) ++ "\n"
-    is LH count: "LH:" ++ S.show(count) ++ "\n"
+    is FN l name: "FN:" ++ show(l) ++ "," ++ name ++ "\n"
+    is FNDA count name: "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
+    is FNF count: "FNF:" ++ show(count) ++ "\n"
+    is FNH count: "FNH:" ++ show(count) ++ "\n"
+    is DA l count: "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
+    is LF count: "LF:" ++ show(count) ++ "\n"
+    is LH count: "LH:" ++ show(count) ++ "\n"
 
 stringifySection :: LcovSection -> String
 stringifySection = (section) =>

@@ -25,9 +25,9 @@ const runTestSuite = (madlibFile, done) => {
   testSuiteCount = testSuiteCount + 1;
   console.log(madlibFile);
 
-  const jsFile = madlibFile.match("prelude/__internal__")
-    ? ".tests/.prelude/" + madlibFile.replace(new RegExp("(.*).mad$"), "$1.mjs");
-    : ".tests/" + madlibFile.replace(new RegExp("(.*).mad$"), "$1.mjs");
+  const jsFile = ".tests/" + madlibFile
+    .replace(new RegExp("(.*).mad$"), "$1.mjs")
+    .replace("prelude/__internal__", ".prelude");
 
   const forked = fork(jsFile);
 

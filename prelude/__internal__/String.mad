@@ -1,4 +1,5 @@
 import {} from "Monoid"
+import {} from "Show"
 
 instance Semigroup String {
   assoc = (a, b) => a ++ b
@@ -9,10 +10,9 @@ instance Monoid String {
   mappend = (a, b) => a ++ b
 }
 
-
-show :: a -> String
-export show = (something) => (#- JSON.stringify(something) -#)
-
+instance Show String {
+  show = (a) => a
+}
 
 replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-

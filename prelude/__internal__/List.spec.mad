@@ -1,0 +1,130 @@
+import { test, assertEquals } from "TestTools"
+import {
+  append,
+  concat,
+  filter,
+  find,
+  first,
+  init,
+  intercalate,
+  join,
+  last,
+  len,
+  mapWithIndex,
+  nth,
+  reduce,
+  singleton,
+  unlines
+} from "./List"
+import {} from "Boolean" // We need the instance Show Boolean
+import { Just, Nothing } from "Maybe"
+
+test("map should apply a function to all items of a list", (_) =>
+  assertEquals(map((x) => x * 2, [1, 2, 3]), [2, 4, 6])
+)
+
+test("pure should wrap a value in a list", (_) =>
+  assertEquals(pure(true), [true])
+)
+
+test(
+  "ap should apply a list of functions to a list of items and return a list of all results",
+  (_) => assertEquals(ap([(x) => x + 1, (x) => x * 2], [1, 2, 3]), [2, 3, 4, 2, 4, 6])
+)
+
+test("of should wrap a value in a List", (_) =>
+  assertEquals(of(<1, true>), [<1, true>])
+)
+
+test(
+  "chain should apply transformation functions that return a list to a list of function and returned a flattened List",
+  (_) => assertEquals(chain((x) => [x + 1, x * 2], [1, 2, 3]), [2, 2, 3, 4, 4, 6])
+)
+
+test("assoc should concatenate two lists together", (_) =>
+  assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+)
+
+test("mappend should join two lists together", (_) =>
+  assertEquals(mappend(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+)
+
+test("mempty should return an empty list", (_) => assertEquals(mempty, []))
+
+test("singleton should wrap a value in a list", (_) =>
+  assertEquals(singleton("one value"), ["one value"])
+)
+
+test("unlines should take a list of strings and return a string with \\n characters", (_) =>
+  assertEquals(unlines(["line1", "line2", "line3"]), "line1\nline2\nline3")
+)
+
+test("intercalate should add an given value between all elements of a list", (_) =>
+  assertEquals(intercalate("and", ["cats", "dogs"]), ["cats", "and", "dogs"])
+)
+
+test("join should transform a list into a string by intercalating a value between the elements of the list", (_) =>
+  assertEquals(join(" and ", ["cats", "dogs"]), "cats and dogs")
+)
+
+test("join should work with different types that are instances of Show", (_) =>
+  assertEquals(join(true, [1, 2, 3]), "1true2true3")
+)
+
+test("mapWithIndex", (_) =>
+  assertEquals(mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]), ["a0", "b1", "c2"])
+)
+
+test("concat", (_) => assertEquals(concat([1, 2, 3], [4, 5, 6]), [1, 2, 3, 4, 5, 6]))
+
+test("append", (_) => assertEquals(append(2, [1]), [1, 2]))
+
+test("last with existing item", (_) => assertEquals(last([1, 2, 3]), Just(3)))
+test("last with empty list", (_) => assertEquals(last([]), Nothing))
+
+test("first with existing item", (_) => assertEquals(first([1, 2, 3]), Just(1)))
+test("first with empty list", (_) => assertEquals(first([]), Nothing))
+
+test("init with items", (_) => assertEquals(init([1, 2, 3]), [1, 2]))
+test("init without items", (_) => assertEquals(init([]), []))
+
+test("nth with existing element", (_) => assertEquals(nth(1, [1, 2, 3]), Just(2)))
+test("nth out of bound", (_) => assertEquals(nth(3, [1, 2, 3]), Nothing))
+
+test("reduce - sum", (_) => {
+  add = (a, b) => a + b
+  return assertEquals(reduce(add, 0, [1, 2, 3]), 6)
+})
+
+test("reduce - all", (_) =>
+  assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false)
+)
+
+test("filter - odd numbers", (_) =>
+  assertEquals(filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [2, 4, 6])
+)
+
+test("find - first odd number", (_) =>
+  assertEquals(find((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), Just(2))
+)
+
+test("find - Nothing", (_) =>
+  assertEquals(find((a) => a == 0, [1, 2, 3, 4, 5, 6]), Nothing)
+)
+
+test("find - John", (_) =>
+  assertEquals(
+    find(
+      (a) => a.id == 1,
+      [
+        { id: 1, name: "John" },
+        { id: 2, name: "Paul" },
+        { id: 3, name: "George" },
+        { id: 4, name: "Ringo" }
+      ]
+    ),
+    Just({ id: 1, name: "John" })
+  )
+)
+
+test("len - 3", (_) => assertEquals(len([1, 2, 3]), 3))
