@@ -14,7 +14,8 @@ import           System.FilePath                ( dropFileName
                                                 , splitPath
                                                 , joinPath
                                                 , splitFileName
-                                                , normalise, takeExtension
+                                                , normalise
+                                                , takeExtension
                                                 )
 import qualified MadlibDotJSON
 import           Data.List                      ( isInfixOf
@@ -42,10 +43,13 @@ madlibModulesFolder = "madlib_modules"
 
 computeRootPath :: FilePath -> FilePath
 computeRootPath path =
-  let firstPass = (fst . splitFileName) path
+  let (firstPass, fileOrDirName) = splitFileName path
+      ext                        = takeExtension path
   in
     if firstPass == "./" then
       path
+    else if ext == "" then
+      joinPath [firstPass, fileOrDirName]
     else
       firstPass
 

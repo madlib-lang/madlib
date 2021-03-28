@@ -136,31 +136,17 @@ export collectCoverage = (hitPoints) =>
            |> andDo(of(stdoutReport(lcov)))
        )
 
-
-// collectCoverage :: a -> W.Wish e <a, List IO.Row>
-// export collectCoverage = (received) =>
-//   FS.readFile(".coverage/lcov.info")
-//     |> map(Lcov.parseLcov)
-//     |> map(collect(HP.getHitPoints("")))
-//     |> chain((lcov) =>
-//          of(lcov)
-//            |> map(Lcov.stringify)
-//            |> map(FS.TextData)
-//            |> chain(FS.writeFile(".coverage/lcov.info"))
-//            |> andDo(of(<received, stdoutReport(lcov)>))
-//        )
-
-formatSuccessOutput = (description, result) => green("  \u2713 " ++ description)
+formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
 
 formatFailureOutput :: String -> AssertionError -> W.Wish String String
 formatFailureOutput = (description, result) =>
   where(result)
     is AssertionError expected actual:
       W.bad(
-        red("  \u00d7 " ++ description)
-        ++ "\n      expected:\n        "
+        red("\u00d7 " ++ description)
+        ++ "\n    expected:\n      "
         ++ S.show(expected)
-        ++ "\n      actual:\n        "
+        ++ "\n    actual:\n      "
         ++ S.show(actual)
       )
 
@@ -190,13 +176,6 @@ reportBad = (id, err) => #-{
 
 reportGood :: String -> String -> ()
 reportGood = (id, good) => #- process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() }) -#
-
-// test :: String -> (String -> W.Wish AssertionError String) -> W.Wish String String
-// export test = (description) => pipe(
-//   (run) => run(description),
-//   map(formatSuccessOutput(description)),
-//   W.chainRej(formatFailureOutput(description))
-// )
 
 assertEquals :: a -> a -> W.Wish AssertionError String
 export assertEquals = (actual, expected) => actual == expected
@@ -228,23 +207,3 @@ displayResults = (results) => {
     )
   )(T.snd(results))
 }
-
-// runTests :: List (W.Wish String String) -> ()
-// export runTests = (tests) => {
-//   IO.log("Running tests ...")
-
-//   return pipe(
-//     W.parallel,
-//     W.fulfill(F.always(()), (results) => {
-//       pipe(
-//         chain(where
-//           is true : collectCoverage(results)
-//           is false: of(<results, []>)
-//         ),
-//         W.fulfill(F.always(()), pipe(displayResults, F.always(())))
-//       )(isCoverageEnabled)
-
-//       return ()
-//     })
-//   )(tests)
-// }
