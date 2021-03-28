@@ -34,7 +34,7 @@ import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
 import qualified Explain.Format                as Explain
-import           Control.Monad                  ( when, filterM )
+import           Control.Monad                  ( when, filterM, unless )
 import           System.Process
 import           Control.Exception              ( try
                                                 , SomeException
@@ -300,9 +300,11 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   bundled <- runBundle outputPath entrypointOutputPath
                   case bundled of
                     Left  e             -> putStrLn e
-                    Right bundleContent -> do
+                    Right (bundleContent, err) -> do
                       _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
                       writeFile outputPath bundleContent
+                      unless (null err) $
+                        putStrLn err
 
 
 rollupNotFoundMessage = unlines
@@ -311,7 +313,7 @@ rollupNotFoundMessage = unlines
   , "You must have rollup installed in order to use the bundling option. Please visit this page in order to install it: https://rollupjs.org/guide/en/#installation"
   ]
 
-runBundle :: FilePath -> FilePath -> IO (Either String String)
+runBundle :: FilePath -> FilePath -> IO (Either String (String, String))
 runBundle dest entrypointCompiledPath = do
   rollupPath        <- try $ getEnv "ROLLUP_PATH"
   rollupPathChecked <- case (rollupPath :: Either IOError String) of
@@ -333,14 +335,19 @@ runBundle dest entrypointCompiledPath = do
             Right _ -> return $ Right "rollup"
         Right _ -> return $ Right p
 
-
   case rollupPathChecked of
     Right rollup -> do
-      (_, stdout, _) <- readProcessWithExitCode
-        rollup
-        [entrypointCompiledPath, "--format", "umd", "--name", "exe", "-p", "@rollup/plugin-node-resolve"]
-        ""
-      return $ Right stdout
+        r <- try (
+            readProcessWithExitCode
+            rollup
+            [entrypointCompiledPath, "--format", "umd", "--name", "exe", "-p", "@rollup/plugin-node-resolve", "--silent"]
+            ""
+          ) :: IO (Either SomeException (ExitCode, String, String))
+
+        case r of
+          Left e                    -> return $ Left (ppShow e)
+          Right (_, stdout, stderr) -> return $ Right (stdout, stderr)
+          -- Right (_, _, stderr)  -> return $ Left stderr
     Left e -> return $ Left e
 
 
@@ -357,8 +364,6 @@ generate options coverage rootPath table sourcesToCompile = do
 
 generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
 generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path } = do
-  putStrLn rootPath
-  putStrLn path
   let internalsPath = case stripPrefix rootPath path of
         Just s ->
           let dirs = splitDirectories (takeDirectory s)
