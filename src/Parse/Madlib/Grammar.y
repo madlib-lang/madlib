@@ -60,6 +60,7 @@ import           Text.Show.Pretty (ppShow)
   'is'        { Token _ TokenIs }
   'return'    { Token _ TokenReturnKeyword }
   '=='        { Token _ TokenDoubleEq }
+  '!='        { Token _ TokenExclamationMarkEq }
   false       { Token _ (TokenBool _) }
   true        { Token _ (TokenBool _) }
   'import'    { Token _ TokenImport }
@@ -75,7 +76,9 @@ import           Text.Show.Pretty (ppShow)
   '||'        { Token _ TokenDoublePipe }
   '>'         { Token _ TokenRightChevron }
   '<'         { Token _ TokenLeftChevron }
-  'jsx<'      { Token _ TokenJsxTagOpen }
+  'jsx<'      { Token _ TokenJsxTagOpenStart }
+  'jsx</'     { Token _ TokenJsxTagOpenEnd }
+  'jsx<1'     { Token _ TokenJsxTagOpenSingle }
   'tuple>'    { Token _ TokenTupleEnd }
   '>='        { Token _ TokenRightChevronEq }
   '<='        { Token _ TokenLeftChevronEq }
@@ -85,7 +88,7 @@ import           Text.Show.Pretty (ppShow)
 %left ':' '->' '|' where is 'else' '='
 %left '?' 'if'
 %left '|>'
-%left '>' '<' '>=' '<=' '=='
+%left '>' '<' '>=' '<=' '==' '!='
 %left '+' '-' '||'
 %left '*' '/' '%' '&&'
 %left ','
@@ -285,7 +288,7 @@ exp :: { Src.Exp }
   | listConstructor                                     %shift { $1 }
   | typedExp                                            %shift { $1 }
   | js                                                  %shift { Src.Source emptyInfos (tokenToArea $1) (Src.JSExp (strV $1)) }
-  | name '=' exp                                        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3) }
+  | name '=' maybeRet exp                                        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $1) $4) }
   | name                                                %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1) }
   | '.' name                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' maybeRet args ')' '(' args ')'           %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $8)) (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $5)) $4) $7 }
@@ -316,19 +319,12 @@ jsxTags :: { [Src.Exp] }
   | jsxTags rets jsxTag { $1 <> [$3] }
 
 jsxTag :: { Src.Exp }
-  : 'jsx<' name jsxProps '/' 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
-  | 'jsx<' name jsxProps 'tuple>' rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
-  | 'jsx<' name jsxProps 'tuple>' rets jsxTags rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps 'tuple>' rets '{' exp '}' rets 'jsx<' '/' name 'tuple>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
-
-  | 'jsx<' name jsxProps '/' '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
-  | 'jsx<' name jsxProps 'tuple>' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
-  | 'jsx<' name jsxProps 'tuple>' rets jsxTags rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps 'tuple>' rets '{' exp '}' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
-
-  | 'jsx<' name jsxProps '>' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.JsxTag (strV $2) $3 []) }
-  | 'jsx<' name jsxProps '>' rets jsxTags rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps '>' rets '{' exp '}' rets 'jsx<' '/' name '>' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $13)) (Src.JsxTag (strV $2) $3 [$7]) }
+  : 'jsx<1' name jsxProps '/' 'tuple>' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<1' name jsxProps '/' '>'      %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxTag (strV $2) $3 []) }
+  | 'jsx<' name jsxProps 'tuple>' rets jsxChildren rets 'jsx</' '/' name 'tuple>' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps 'tuple>' rets jsxChildren rets 'jsx</' '/' name '>'      %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps '>' rets jsxChildren rets 'jsx</' '/' name '>'           %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  | 'jsx<' name jsxProps '>' rets jsxChildren rets 'jsx</' '/' name 'tuple>'      %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
 
 jsxProp :: { Src.JsxProp }
   : name '=' str          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.JsxProp (strV $1) (Src.Source emptyInfos (tokenToArea $3) (Src.LStr $ strV $3))) }
@@ -338,6 +334,16 @@ jsxProps :: { [Src.JsxProp] }
   : jsxProp rets               { [$1] }
   | jsxProps rets jsxProp rets { $1 <> [$3] }
   | {- empty -}                { [] }
+
+jsxChildren :: { [Src.Exp] }
+  : jsxTag                        { [$1] }
+  | jsxChildren rets jsxTag       { $1 <> [$3] }
+  | '{' exp '}'                   %shift { [$2] }
+  | jsxChildren rets '{' exp '}'  %shift { $1 <> [$4] }
+  | rets names                    %shift { [Src.Source emptyInfos emptyArea (Src.LStr $ unwords $2)] }
+  | jsxChildren rets names        %shift { $1 <> [Src.Source emptyInfos emptyArea (Src.LStr $ unwords $3)] }
+  | rets                          %shift { [] }
+  | {- empty -}                   %shift { [] }
 
 
 templateString :: { Src.Exp }
@@ -486,6 +492,12 @@ operation :: { Src.Exp }
   | exp '==' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                       ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "==")) 
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '!=' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "!=")) 
                          $1 False))) 
                       $3 True)
                    }

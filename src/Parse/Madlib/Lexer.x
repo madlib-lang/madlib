@@ -38,9 +38,13 @@ import           Text.Show.Pretty (ppShow)
 
 $alpha    = [a-zA-Z]                        -- alphabetic characters
 $empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
+$superEmpty = [\ \t\f\v\r\n]                    -- equivalent to $white but without line return
 $head     = [\n \ ]                         -- leading whitespace and / or newline
 $tail     = [\n]                            -- trailing newline
 $multilineStringContent = [$printable \n]
+
+$jsxText  = [^\<\>\{\}]
+$jsxTextPopOut = [\<\>\{\}]
 
 $digit    = 0-9                             -- digits
 @decimal  = $digit($digit)*                 -- decimal
@@ -54,75 +58,77 @@ tokens :-
   <0> from                                                     { mapToken (\_ -> TokenFrom) }
   <0> type                                                     { mapToken (\_ -> TokenType) }
   <0> alias                                                    { mapToken (\_ -> TokenAlias) }
-  <0> const                                                    { mapToken (\_ -> TokenConst) }
-  <0, stringTemplateMadlib> if                                 { mapToken (\_ -> TokenIf) }
-  <0, stringTemplateMadlib> else                               { mapToken (\_ -> TokenElse) }
-  <0, stringTemplateMadlib> where                              { mapToken (\_ -> TokenWhere) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                 { mapToken (\_ -> TokenIf) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                               { mapToken (\_ -> TokenElse) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> where                              { mapToken (\_ -> TokenWhere) }
   <0> interface                                                { mapToken (\_ -> TokenInterface ) }
   <0> instance                                                 { mapToken (\_ -> TokenInstance ) }
-  <0, stringTemplateMadlib> pipe                               { mapToken (\_ -> TokenPipeKeyword) }
-  <0, stringTemplateMadlib> return                             { mapToken (\_ -> TokenReturnKeyword) }
-  <0, stringTemplateMadlib> is                                 { mapToken (\_ -> TokenIs) }
-  <0, stringTemplateMadlib> \=                                 { mapToken (\_ -> TokenEq) }
-  <0, stringTemplateMadlib> \n[\ ]*\-Infinity                  { mapToken (\s -> TokenNumber s) }
-  <0, stringTemplateMadlib> Infinity                           { mapToken (\s -> TokenNumber s) }
-  <0, stringTemplateMadlib> @signed @floating                  { mapToken (\s -> TokenNumber s) }
-  <0, stringTemplateMadlib> "true"                             { mapToken (\_ -> (TokenBool "true")) }
-  <0, stringTemplateMadlib> "false"                            { mapToken (\_ -> (TokenBool "false")) }
-  <0, stringTemplateMadlib> "=="                               { mapToken (\_ -> TokenDoubleEq) }
-  <0, stringTemplateMadlib> "!="                               { mapToken (\_ -> TokenExclamationMarkEq) }
-  <0, stringTemplateMadlib, instanceHeader> \.                 { mapToken (\_ -> TokenDot) }
-  <0, stringTemplateMadlib, instanceHeader> $head*\,$tail*     { mapToken (\_ -> TokenComma) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> pipe                               { mapToken (\_ -> TokenPipeKeyword) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> return                             { mapToken (\_ -> TokenReturnKeyword) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> is                                 { mapToken (\_ -> TokenIs) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=                                 { mapToken (\_ -> TokenEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                  { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                           { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @signed @floating                  { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "true"                             { mapToken (\_ -> (TokenBool "true")) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "false"                            { mapToken (\_ -> (TokenBool "false")) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "=="                               { mapToken (\_ -> TokenDoubleEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "!="                               { mapToken (\_ -> TokenExclamationMarkEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \.                 { mapToken (\_ -> TokenDot) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\,$tail*     { mapToken (\_ -> TokenComma) }
   <0> \{\{$tail*                                               { mapToken (\_ -> TokenLeftDoubleCurly) }
-  <0, instanceHeader> \{$tail*                                 { mapToken (\_ -> TokenLeftCurly) }
-  <0, instanceHeader> $head*\}                                 { mapToken (\_ -> TokenRightCurly) }
-  <0, stringTemplateMadlib> \[$tail*                           { mapToken (\_ -> TokenLeftSquaredBracket) }
-  <0, stringTemplateMadlib> $head*\]                           { mapToken (\_ -> TokenRightSquaredBracket) }
-  <0, stringTemplateMadlib, instanceHeader> \(                 { mapToken (\_ -> TokenLeftParen) }
-  <0, stringTemplateMadlib, instanceHeader> \($tail*           { mapToken (\_ -> TokenLeftParen) }
-  <0, stringTemplateMadlib, instanceHeader> $head*\)           { mapToken (\_ -> TokenRightParen) }
-  <0, stringTemplateMadlib, instanceHeader> \)                 { mapToken (\_ -> TokenRightParen) }
-  <0, stringTemplateMadlib, instanceHeader> $head*\:\:$tail*   { mapToken (\_ -> TokenDoubleColon) }
-  <0, stringTemplateMadlib, instanceHeader> \:                 { mapToken (\_ -> TokenColon) }
-  <0, stringTemplateMadlib, instanceHeader> $head*\-\>$tail*   { mapToken (\_ -> TokenArrow) }
-  <0, stringTemplateMadlib, instanceHeader> $head*\=\>$tail*   { mapToken (\_ -> TokenFatArrow) }
+  <0, jsxOpeningTag, jsxAutoClosed, instanceHeader, jsxText> \{$tail*                                 { mapToken (\_ -> TokenLeftCurly) }
+  <0, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\}                                 { mapToken (\_ -> TokenRightCurly) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \[$tail*                           { mapToken (\_ -> TokenLeftSquaredBracket) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\]                           { mapToken (\_ -> TokenRightSquaredBracket) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \(                 { mapToken (\_ -> TokenLeftParen) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \($tail*           { mapToken (\_ -> TokenLeftParen) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\)           { mapToken (\_ -> TokenRightParen) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \)                 { mapToken (\_ -> TokenRightParen) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\:\:$tail*   { mapToken (\_ -> TokenDoubleColon) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \:                 { mapToken (\_ -> TokenColon) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\-\>$tail*   { mapToken (\_ -> TokenArrow) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\=\>$tail*   { mapToken (\_ -> TokenFatArrow) }
   <0> \|                                                       { mapToken (\_ -> TokenPipe) }
   <0> \;                                                       { mapToken (\_ -> TokenSemiColon) }
-  <0, stringTemplateMadlib, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
-  <0, stringTemplateMadlib, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
-  <0, stringTemplateMadlib> $head*\+                           { mapToken (\_ -> TokenPlus) }
-  <0, stringTemplateMadlib> $head*\+\+                         { mapToken (\_ -> TokenDoublePlus) }
-  <0, stringTemplateMadlib> \-                                 { mapToken (\_ -> TokenDash) }
-  <0, stringTemplateMadlib> \n[\ ]*\-                          { mapToken (\_ -> TokenDash) }
-  <0, stringTemplateMadlib> $head*\?                           { mapToken (\_ -> TokenQuestionMark) }
-  <0, stringTemplateMadlib> $head*\*                           { mapToken (\_ -> TokenStar) }
-  <0, stringTemplateMadlib> $head*\/                           { mapToken (\_ -> TokenSlash) }
-  <0, stringTemplateMadlib> $head*\%                           { mapToken (\_ -> TokenPercent) }
-  <0, stringTemplateMadlib> $head*\|\>                         { mapToken (\_ -> TokenPipeOperator) }
-  <0, stringTemplateMadlib> \.\.\.                             { mapToken (\_ -> TokenSpreadOperator) }
-  <0, stringTemplateMadlib> \&\&                               { mapToken (\_ -> TokenDoubleAmpersand) }
-  <0, stringTemplateMadlib> \|\|                               { mapToken (\_ -> TokenDoublePipe) }
-  <0, stringTemplateMadlib, instanceHeader> \>                 { mapToken (\_ -> TokenRightChevron) }
-  <0, stringTemplateMadlib, instanceHeader> \<                 { mapToken (\_ -> TokenLeftChevron) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+                           { mapToken (\_ -> TokenPlus) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+\+                         { mapToken (\_ -> TokenDoublePlus) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-                                 { mapToken (\_ -> TokenDash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-                          { mapToken (\_ -> TokenDash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\?                           { mapToken (\_ -> TokenQuestionMark) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\*                           { mapToken (\_ -> TokenStar) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag> $head*\/                           { mapToken (\_ -> TokenSlash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\%                           { mapToken (\_ -> TokenPercent) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\>                         { mapToken (\_ -> TokenPipeOperator) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \.\.\.                             { mapToken (\_ -> TokenSpreadOperator) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \&\&                               { mapToken (\_ -> TokenDoubleAmpersand) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \|\|                               { mapToken (\_ -> TokenDoublePipe) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>                 { mapToken (\_ -> TokenRightChevron) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> \<        { mapToken (\_ -> TokenLeftChevron) }
   <0, stringTemplateMadlib> \>\=                               { mapToken (\_ -> TokenRightChevronEq) }
   <0, stringTemplateMadlib> \<\=                               { mapToken (\_ -> TokenLeftChevronEq) }
-  <0, stringTemplateMadlib> \!                                 { mapToken (\_ -> TokenExclamationMark) }
-  <0, stringTemplateMadlib> \"($printable # \")*\"             { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, stringTemplateMadlib> '($printable # ')*'                { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0> \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                 { mapToken (\_ -> TokenExclamationMark) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"($printable # \")*\"             { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '($printable # ')*'                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  <0, jsxOpeningTag> \#\- [$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
-  <0> [\ \n]*"//"[^\n]*[\n]                       ; -- Comments
-  <0,comment> $head*\/\*                          { beginComment }
+  <0, jsxOpeningTag, jsxAutoClosed, jsxText> [\ \n]*"//"[^\n]*[\n]                       ; -- Comments
+  <0, jsxOpeningTag, jsxAutoClosed, jsxText, comment> $head*\/\*                          { beginComment }
   <comment>   [.\n]                               ;
   <comment>   \*\/                                { endComment }
-  <0, stringTemplateMadlib, instanceHeader> $empty+               ;
-  <0> `                                           { beginStringTemplate }
-  <stringTemplate> \$\{                           { beginStringTemplateMadlib }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+               ;
+  <0, jsxOpeningTag, jsxAutoClosed> `                                           { beginStringTemplate }
+  <stringTemplate, jsxOpeningTag, jsxAutoClosed> \$\{                           { beginStringTemplateMadlib }
   <stringTemplateMadlib> \{                       { stringTemplateMadlibLeftCurly }
   <stringTemplateMadlib> \}                       { stringTemplateMadlibRightCurly }
   <stringTemplate> \\[nt`]                        { escapedStringTemplateContent }
   <stringTemplate> `                              { endStringTemplate }
   <stringTemplate> [.\n]                          { pushStringToTemplate }
+  <jsxText> \n$superEmpty+                        ;
+  <jsxText> $jsxText+                             { mapToken (\s -> TokenName s) }
+  <jsxText> $jsxTextPopOut                        { jsxTextPopOut }
 {
 blackList :: String
 blackList = "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
@@ -134,24 +140,61 @@ whiteList = "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
 toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
 
-jsxTag :: String
-jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/?>"
--- jsxTag = "\\`<\\/?[a-zA-Z1-9]+([ ]+[a-zA-Z]+=(\"[a-zA-Z0-9\\-_\\ ]*\"|{.*}))*[ ]*\\/?>"
+jsxTagOpen :: String
+jsxTagOpen = "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
+
+jsxTagSingle :: String
+jsxTagSingle = "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/>"
+
+jsxTagClose :: String
+jsxTagClose = "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
 
 constraintRegex :: String
 constraintRegex = "\\`[^={]*(=>)[^}]*([^=]=[^=]|{[\\t\\ ]*\n).*"
 
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
-data AlexUserState = AlexUserState Int (String, Int) deriving(Eq, Show)
+-- Int: jsx depth
+-- Int: start code stack
+data AlexUserState = AlexUserState Int (String, Int) Int [Int] deriving(Eq, Show)
 
 alexInitUserState :: AlexUserState
-alexInitUserState = AlexUserState 0 ("", 0)
+alexInitUserState = AlexUserState 0 ("", 0) 0 []
 
 setStartCode :: Int -> Alex ()
-setStartCode code =
-  Alex $ \s ->
-    Right (s{ alex_scd = code }, ())
+setStartCode code = do
+  sc <- getStartCode
+  Alex $ \s -> Right (s{ alex_scd = code }, ())
+
+pushStartCode :: Int -> Alex ()
+pushStartCode code = do
+  (AlexUserState n strState jsxDepth codeStack) <- getState
+  setStartCode code
+  setState $ AlexUserState n strState jsxDepth (codeStack ++ [code])
+
+popStartCode :: Alex ()
+popStartCode = do
+  (AlexUserState n strState jsxDepth codeStack) <- getState
+  if not (null codeStack) then do
+    let popped  = init codeStack
+        newCode = if not (null popped) then last popped else 0
+    setState $ AlexUserState n strState jsxDepth popped
+    setStartCode newCode
+  else
+    setStartCode 0
+
+getStartCodeStack :: Alex [Int]
+getStartCodeStack = do
+  (AlexUserState _ _ _ scs) <- getState
+  return scs
+
+getPreviousStartCode :: Alex Int
+getPreviousStartCode = do
+  codeStack <- getStartCodeStack
+  if length codeStack > 1 then
+    return $ (last . init) codeStack
+  else
+    return 0
 
 getStartCode :: Alex Int
 getStartCode = Alex $ \s -> do
@@ -169,83 +212,75 @@ setDefaultStartCode =
 getState :: Alex AlexUserState
 getState = Alex $ \s@AlexState{alex_ust = state} -> Right (s, state)
 
-updateCommentDepth :: Int -> Alex ()
-updateCommentDepth n = do
-  (AlexUserState _ strState) <- getState
-  Alex $ \s ->
-    Right
-      ( s{ alex_ust = AlexUserState n strState, alex_scd = if n > 0 then comment else 0 }
-      , ()
-      )
+setState :: AlexUserState -> Alex ()
+setState state = Alex $ \s -> Right (s{ alex_ust = state }, ())
+
+
+jsxTagOpened :: Alex ()
+jsxTagOpened = do
+  (AlexUserState n strState jsxDepth codeStack) <- getState
+  setState (AlexUserState n strState (jsxDepth + 1) codeStack)
+  pushStartCode jsxOpeningTag
+
+jsxTagClosed :: Alex ()
+jsxTagClosed = do
+  (AlexUserState n strState jsxDepth codeStack) <- getState
+  setState (AlexUserState n strState (jsxDepth - 1) codeStack)
+  popStartCode
+  pushStartCode jsxClosingTag
+
 
 beginComment :: AlexInput -> Int -> Alex Token
 beginComment input n = do
-  (AlexUserState cd _) <- getState
-  updateCommentDepth $ cd + 1
+  pushStartCode comment
   skip input n
 
 endComment :: AlexInput -> Int -> Alex Token
 endComment input n = do
-  (AlexUserState cd _) <- getState
-  updateCommentDepth $ cd - 1
+  popStartCode
   skip input n
 
 
 
 resetStringTemplate :: Alex ()
 resetStringTemplate = do
-  (AlexUserState n (_, curlyCount)) <- getState
-  Alex $ \s ->
-    Right
-      ( s{ alex_ust = AlexUserState n ("", curlyCount) }
-      , ()
-      )
+  (AlexUserState n (_, curlyCount) jsxDepth codeStack) <- getState
+  setState $ AlexUserState n ("", curlyCount) jsxDepth codeStack
 
 resetCurlyCount :: Alex ()
 resetCurlyCount = do
-  (AlexUserState n (strBuffer, _)) <- getState
-  Alex $ \s ->
-    Right
-      ( s{ alex_ust = AlexUserState n (strBuffer, 0) }
-      , ()
-      )
+  (AlexUserState n (strBuffer, _) jsxDepth codeStack) <- getState
+  setState $ AlexUserState n (strBuffer, 0) jsxDepth codeStack
 
 updateCurlyCount :: Int -> Alex ()
 updateCurlyCount n = do
-  (AlexUserState cd (strBuffer, _)) <- getState
-  Alex $ \s ->
-    Right
-      ( s{ alex_ust = AlexUserState n (strBuffer, n) }
-      , ()
-      )
+  (AlexUserState cd (strBuffer, _) jsxDepth codeStack) <- getState
+  setState $ AlexUserState n (strBuffer, n) jsxDepth codeStack
 
 appendStringToTemplate :: String -> Alex ()
 appendStringToTemplate extra = do
-  (AlexUserState n (strBuffer, curlyCount)) <- getState
-  Alex $ \s ->
-    Right
-      ( s{ alex_ust = AlexUserState n (strBuffer <> extra, curlyCount) }
-      , ()
-      )
+  (AlexUserState n (strBuffer, curlyCount) jsxDepth codeStack) <- getState
+  setState $ AlexUserState n (strBuffer <> extra, curlyCount) jsxDepth codeStack
 
 beginStringTemplateMadlib :: AlexInput -> Int -> Alex Token
 beginStringTemplateMadlib i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (strBuffer, _)) <- getState
-  setStartCode stringTemplateMadlib
+  (AlexUserState _ (strBuffer, _) _ _) <- getState
+  pushStartCode stringTemplateMadlib
   resetStringTemplate
   resetCurlyCount
   return $ Token (makeArea posn (take len input)) (TokenStr strBuffer)
 
 stringTemplateMadlibLeftCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibLeftCurly i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (_, count)) <- getState
+  (AlexUserState _ (_, count) _ _) <- getState
   updateCurlyCount $ count + 1
   return $ Token (makeArea posn (take len input)) TokenLeftCurly
 
 stringTemplateMadlibRightCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibRightCurly i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (_, count)) <- getState
-  if count == 0 then
+  (AlexUserState _ (_, count) _ _) <- getState
+  if count == 0 then do
+    popStartCode
     begin stringTemplate i len
   else do
     updateCurlyCount $ count - 1
@@ -253,14 +288,14 @@ stringTemplateMadlibRightCurly i@(posn, prevChar, pending, input) len = do
 
 beginStringTemplate :: AlexInput -> Int -> Alex Token
 beginStringTemplate i@(posn, prevChar, pending, input) len = do
-  setStartCode stringTemplate
+  pushStartCode stringTemplate
   return $ Token (makeArea posn (take len input)) TokenTemplateStringStart
 
 endStringTemplate :: AlexInput -> Int -> Alex Token
 endStringTemplate i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (strBuffer, _)) <- getState
+  (AlexUserState _ (strBuffer, _) _ _) <- getState
   resetStringTemplate
-  setDefaultStartCode
+  popStartCode
   return $ (Token (makeArea posn (take len input)) (TokenTemplateStringEnd strBuffer))
 
 escapedStringTemplateContent :: AlexInput -> Int -> Alex Token
@@ -278,15 +313,26 @@ pushStringToTemplate i@(posn, prevChar, pending, input) len = do
   skip i len
 
 
+jsxTextPopOut :: AlexInput -> Int -> Alex Token
+jsxTextPopOut i@(posn, prevChar, pending, input) len = do
+  popStartCode
+  return $ (Token (makeArea posn (take len input)) (TokenEOF))
+  -- jsxTextPopOut
+  -- return $ Token (makeArea posn (take len input)) TokenLeftCurly
+
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
   sc <- getStartCode
+  scs <- getStartCodeStack
 
   token <- case (tokenizer (take len input)) of
         TokenLeftCurly ->
           if sc == instanceHeader then do
-            setStartCode 0
+            popStartCode
             return TokenLeftDoubleCurly
+          else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
+            pushStartCode 0
+            return TokenLeftCurly
           else
             return TokenLeftCurly
 
@@ -313,17 +359,52 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
         
         TokenLeftChevron ->
           let next    = take 2000 input
-              matched = match (toRegex jsxTag) next :: String
+              matchedOpen = match (toRegex jsxTagOpen) next :: String
+              matchedClose = match (toRegex jsxTagClose) next :: String
+              matchedSingle = match (toRegex jsxTagSingle) next :: String
           in
-            if not (null matched) then
-              return TokenJsxTagOpen
+            if not (null matchedSingle) then do
+              return TokenJsxTagOpenSingle
+            else if not (null matchedOpen) then
+              return TokenJsxTagOpenStart
+            else if not (null matchedClose) then do
+              return TokenJsxTagOpenEnd
             else
               return TokenLeftChevron
         tok -> return tok
 
 
   case token of
-    TokenInstance -> setStartCode instanceHeader
+    TokenInstance -> pushStartCode instanceHeader
+    TokenJsxTagOpenStart -> jsxTagOpened
+    TokenJsxTagOpenEnd -> jsxTagClosed
+    TokenJsxTagOpenSingle -> pushStartCode jsxAutoClosed
+    TokenRightCurly -> do
+      previousCode <- getPreviousStartCode
+      if previousCode == jsxText || previousCode == jsxAutoClosed || previousCode == jsxOpeningTag then
+        popStartCode
+      else
+        return ()
+    TokenRightChevron ->
+      if sc == jsxOpeningTag then do
+        popStartCode
+        pushStartCode jsxText
+      else if sc == jsxClosingTag then
+        popStartCode
+      else if sc == jsxAutoClosed then
+        popStartCode
+      else
+        return ()
+    TokenTupleEnd ->
+      if sc == jsxOpeningTag then do
+        popStartCode
+        pushStartCode jsxText
+      else if sc == jsxClosingTag then
+        popStartCode
+      else if sc == jsxAutoClosed then
+        popStartCode
+      else
+        return ()
     _ -> return ()
 
   return $ Token (makeArea posn (take len input)) token
@@ -416,7 +497,9 @@ data TokenClass
  | TokenPipeKeyword
  | TokenTemplateStringStart
  | TokenTemplateStringEnd String
- | TokenJsxTagOpen
+ | TokenJsxTagOpenStart
+ | TokenJsxTagOpenEnd
+ | TokenJsxTagOpenSingle
  deriving (Eq, Show)
 
 

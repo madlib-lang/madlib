@@ -12,6 +12,9 @@ import Parse.DocString.DocString
 import Compile.Utils
 import qualified Data.Map as M
 import Infer.Type
+import Text.Regex.TDFA
+import Debug.Trace
+import Text.Show.Pretty
 
 
 indentSize :: Int
@@ -21,14 +24,16 @@ indent :: Int -> String
 indent depth = concat $ replicate (depth * indentSize) " "
 
 
-isADTOrAliasExported :: Slv.TypeDecl -> Bool
-isADTOrAliasExported adt = case adt of
-  Slv.Untyped _ Slv.ADT { Slv.adtexported }     -> adtexported
+isAliasExported :: Slv.TypeDecl -> Bool
+isAliasExported typeDecl = case typeDecl of
   Slv.Untyped _ Slv.Alias { Slv.aliasexported } -> aliasexported
   _                                             -> False
 
 prepareExportedADTs :: Slv.AST -> [Slv.TypeDecl]
-prepareExportedADTs ast = filter isADTOrAliasExported $ Slv.atypedecls ast
+prepareExportedADTs ast = filter Slv.isADTExported $ Slv.atypedecls ast
+
+prepareExportedAliases :: Slv.AST -> [Slv.TypeDecl]
+prepareExportedAliases ast = filter isAliasExported $ Slv.atypedecls ast
 
 
 prepareInterfacesForDocs :: Slv.AST -> [Slv.Interface]
@@ -51,6 +56,7 @@ generateASTDoc depth (ast, docStrings) =
   let astPath          = fromMaybe "unknown" $ Slv.apath ast
       expsForDoc       = prepareExportedExps ast
       adtsForDoc       = prepareExportedADTs ast
+      aliasesForDoc    = prepareExportedAliases ast
       interfacesForDoc = prepareInterfacesForDocs ast
       instancesForDoc  = prepareInstancesForDocs ast
       description = extractModuleDescription docStrings
@@ -59,6 +65,9 @@ generateASTDoc depth (ast, docStrings) =
     <> indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
     <> indent (depth + 1) <> "\"typeDeclarations\": [\n"
     <> indent (depth + 2) <> generateADTsDoc (depth + 2) docStrings adtsForDoc <> "\n"
+    <> indent (depth + 1) <> "],\n"
+    <> indent (depth + 1) <> "\"aliases\": [\n"
+    <> indent (depth + 2) <> generateAliasesDoc (depth + 2) docStrings aliasesForDoc <> "\n"
     <> indent (depth + 1) <> "],\n"
     <> indent (depth + 1) <> "\"interfaces\": [\n"
     <> indent (depth + 2) <> generateInterfacesDoc (depth + 2) docStrings interfacesForDoc <> "\n"
@@ -88,41 +97,41 @@ generateInstancesDoc depth docStrings instances =
 
 generateInstanceDoc :: Int -> [DocString] -> Slv.Instance -> String
 generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constraints declaration _)) =
-    let constraints' = case predsToStr constraints of
+    let constraints' = case predsToStr  False constraints of
           "()" -> ""
           or   -> or
-        declaration' = predToStr declaration
+        declaration' = predToStr False declaration
 
-        -- docString = findDocStringForTypeName name docStrings
+        docString = findDocStringForInstanceDeclaration declaration' docStrings
 
-        -- descriptionField = case docString of
-        --   Just (TypeDefDoc _ description _) ->
-        --     indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
+        descriptionField = case docString of
+          Just (InstanceDoc _ description _) ->
+            indent (depth + 1) <> "\"description\": " <> escapeString description <> ",\n"
 
-        --   Nothing ->
-        --     indent (depth + 1) <> "\"description\": \"\",\n"
+          Nothing ->
+            indent (depth + 1) <> "\"description\": \"\",\n"
 
-        -- exampleField = case docString of
-        --     Just (TypeDefDoc _ _ tags) -> case findExampleTag tags of
-        --       Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
-        --       Nothing      -> emptyExample $ depth + 1
+        exampleField = case docString of
+            Just (InstanceDoc _ _ tags) -> case findExampleTag tags of
+              Just example -> indent (depth + 1) <> "\"example\": " <> escapeString example <> ",\n"
+              Nothing      -> emptyExample $ depth + 1
 
-        --     Nothing -> emptyExample $ depth + 1
+            Nothing -> emptyExample $ depth + 1
 
-        -- sinceField = case docString of
-        --     Just (TypeDefDoc _ _ tags) -> case findSinceTag tags of
-        --       Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
-        --       Nothing    -> emptySince $ depth + 1
+        sinceField = case docString of
+            Just (InstanceDoc _ _ tags) -> case findSinceTag tags of
+              Just since -> indent (depth + 1) <> "\"since\": " <> escapeString since <> ",\n"
+              Nothing    -> emptySince $ depth + 1
 
-        --     Nothing -> emptySince $ depth + 1
+            Nothing -> emptySince $ depth + 1
 
     in  "{\n"
       <> indent (depth + 1) <> "\"name\": \"" <> name <> "\",\n"
+      <> descriptionField
+      <> exampleField
+      <> sinceField
       <> indent (depth + 1) <> "\"constraints\": \"" <> constraints' <> "\",\n"
       <> indent (depth + 1) <> "\"declaration\": \"" <> declaration' <> "\"\n"
-      -- <> descriptionField
-      -- <> exampleField
-      -- <> sinceField
       <> indent depth <> "}"
 
 
@@ -134,7 +143,7 @@ generateInterfacesDoc depth docStrings interfaces =
 generateInterfaceDoc :: Int -> [DocString] -> Slv.Interface -> String
 generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
     let vars'        = unwords $ (\(TV n _) -> n) <$> vars
-        constraints' = case predsToStr constraints of
+        constraints' = case predsToStr False constraints of
           "()" -> ""
           or   -> or
         methods'     = M.map (prettyPrintConstructorTyping' False) methodTypings
@@ -170,7 +179,7 @@ generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constra
       <> descriptionField
       <> exampleField
       <> sinceField
-      <> indent (depth + 1) <> "\"constructors\": [\n"
+      <> indent (depth + 1) <> "\"methods\": [\n"
       <> indent (depth + 2) <> methods''' <> "\n"
       <> indent (depth + 1) <> "]\n"
       <> indent depth <> "}"
@@ -184,7 +193,7 @@ generateADTDoc :: Int -> [DocString] -> Slv.TypeDecl -> String
 generateADTDoc depth docStrings typeDecl = case typeDecl of
   Slv.Untyped _ (Slv.ADT name params ctors _ _) ->
     let params'   = unwords params
-        ctors'    = (\(Slv.Untyped _ (Slv.Constructor n ts _)) -> "\"" <> n <> " " <> unwords (prettyPrintConstructorTyping <$> ts) <> "\"") <$> ctors
+        ctors'    = (\(Slv.Untyped _ (Slv.Constructor n ts _)) -> "\"" <> n <> " " <> unwords (prettyPrintConstructorTyping  <$> ts) <> "\"") <$> ctors
         ctors''   = intercalate (",\n" <> indent (depth + 2)) ctors'
         docString = findDocStringForTypeName name docStrings
 
@@ -221,6 +230,15 @@ generateADTDoc depth docStrings typeDecl = case typeDecl of
       <> indent (depth + 1) <> "]\n"
       <> indent depth <> "}"
 
+  _ -> ""
+
+
+generateAliasesDoc :: Int -> [DocString] -> [Slv.TypeDecl] -> String
+generateAliasesDoc depth docStrings typeDecls =
+  intercalate (",\n" <> indent depth) (generateAliasDoc depth docStrings <$> typeDecls)
+
+generateAliasDoc :: Int -> [DocString] -> Slv.TypeDecl -> String
+generateAliasDoc depth docStrings typeDecl = case typeDecl of
   Slv.Untyped _ (Slv.Alias name params tipe _) ->
     let params'   = unwords params
         tipe'     = prettyPrintConstructorTyping tipe
@@ -257,6 +275,7 @@ generateADTDoc depth docStrings typeDecl = case typeDecl of
       <> indent (depth + 1) <> "\"aliasedType\": \"" <> tipe' <> "\"\n"
       <> indent depth <> "}"
 
+  
   _ -> ""
 
 prettyPrintConstructorTyping :: Slv.Typing -> String
@@ -276,12 +295,16 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
     let space = if not (null typing') then " " else ""
     in
       if paren then
-        "(" <> n <> space <> unwords (prettyPrintConstructorTyping' False <$> typing') <> ")"
+        "(" <> n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing') <> ")"
       else
-        n <> space <> unwords (prettyPrintConstructorTyping' False <$> typing')
+        n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
   Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
     "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ") -> " <> prettyPrintConstructorTyping' False r'
-  Slv.TRArr l r        -> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
+  Slv.TRArr l r        ->
+    if paren then
+      "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
+    else
+      prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
   Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
   Slv.TRRecord ts ->
     let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
@@ -289,6 +312,12 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
         fields' = intercalate ", " fields
     in  "{ " <> fields' <> " }"
   _ -> ""
+
+isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
+isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
+  Slv.TRArr _ _   -> True
+  Slv.TRComp _ ts -> not (null ts)
+  _               -> False
 
 
 generateExpsDoc :: Int -> [DocString] -> [(String, Slv.Exp)] -> String
@@ -302,7 +331,7 @@ emptySince depth = indent depth <> "\"since\": \"\",\n"
 
 generateExpDoc :: Int -> [DocString] -> (String, Slv.Exp) -> String
 generateExpDoc depth docStrings (name, exp) =
-  let typing    = prettyPrintType $ Slv.getType exp
+  let typing    = prettyPrintType True $ Slv.getType exp
       docString = findDocStringForExpName name docStrings
       descriptionField = case docString of
           Just (FunctionDoc _ description _) ->
@@ -356,6 +385,18 @@ findDocStringForInterfaceName name = find $ interfaceDocNameEquals name
 interfaceDocNameEquals :: String -> DocString -> Bool
 interfaceDocNameEquals name docString = case docString of
   (InterfaceDoc n _ _) -> n == name
+  _ -> False
+
+findDocStringForInstanceDeclaration :: String -> [DocString] -> Maybe DocString
+findDocStringForInstanceDeclaration decl = find $ instanceDocDeclEquals decl
+
+instanceDocDeclEquals :: String -> DocString -> Bool
+instanceDocDeclEquals decl docString = case docString of
+  (InstanceDoc d _ _) ->
+    let regex = "[A-Z]+[a-zA-Z0-9_]*"
+        concreteTypesFromDocString = getAllTextMatches (d =~ regex) :: [String]
+        concreteTypesFromInstance  = getAllTextMatches (decl =~ regex) :: [String]
+    in  concreteTypesFromDocString == concreteTypesFromInstance
   _ -> False
 
 extractModuleDescription :: [DocString] -> String

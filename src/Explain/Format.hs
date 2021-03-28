@@ -79,7 +79,7 @@ analyzeBacktrace json err exps = case exps of
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
 formatTypeError :: Bool -> TypeError -> String
 formatTypeError json err = case err of
-  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> prettyPrintType t
+  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> prettyPrintType True t
 
   UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo !"
 
@@ -96,19 +96,19 @@ formatTypeError json err = case err of
   UnificationError t t' ->
     "Type error, expected:\n"
       <> "    "
-      <> colorWhen (not json) Green (prettyPrintType t')
+      <> colorWhen (not json) Green (prettyPrintType True t')
       <> "\n"
       <> "But found:\n"
       <> "    "
-      <> colorWhen (not json) Red (prettyPrintType t)
+      <> colorWhen (not json) Red (prettyPrintType True t)
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"
-      <> predToStr (IsIn cls ts)
+      <> predToStr True (IsIn cls ts)
       <> "'. Verify that you imported the module\nwhere the "
       <> cls
       <> " instance for '"
-      <> unwords (prettyPrintType <$> ts)
+      <> unwords (prettyPrintType True <$> ts)
       <> "' is defined."
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
@@ -132,23 +132,23 @@ formatTypeError json err = case err of
 
   KindError (t, k) (t', k') ->
     "The kind of types don't match, '"
-      <> prettyPrintType t
+      <> prettyPrintType True t
       <> "has kind "
       <> kindToStr k
       <> " and "
-      <> prettyPrintType t'
+      <> prettyPrintType True t'
       <> " has kind "
       <> kindToStr k'
       <> "."
 
   InstancePredicateError pInstance pWrong pCorrect ->
     "A constraint in the instance declaration '"
-      <> predToStr pInstance
+      <> predToStr True pInstance
       <> " is not correct.\n"
       <> "You gave the constraint '"
-      <> predToStr pWrong
+      <> predToStr True pWrong
       <> "' but a constraint of the form '"
-      <> predToStr pCorrect
+      <> predToStr True pCorrect
       <> "'\nwas expected."
 
   ImportCycle paths ->
@@ -239,87 +239,100 @@ kindToStr k = case k of
   Kfun l r -> kindToStr l <> " -> " <> kindToStr r
 
 schemeToStr :: Scheme -> String
-schemeToStr (Forall _ ([] :=> t)) = prettyPrintType t
-schemeToStr (Forall _ (ps :=> t)) = predsToStr ps <> " => " <> prettyPrintType t
+schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
+schemeToStr (Forall _ (ps :=> t)) = predsToStr True ps <> " => " <> prettyPrintType True t
 
-predsToStr :: [Pred] -> String
-predsToStr [p] = predToStr p
-predsToStr ps  = "(" <> intercalate ", " (predToStr <$> ps) <> ")"
-
-
-predToStr :: Pred -> String
-predToStr (IsIn cls ts) = cls <> " " <> unwords (typeToParenWrappedStr <$> ts)
-
-typeToParenWrappedStr :: Type -> String
-typeToParenWrappedStr t = case t of
-  TApp _ _ -> "(" <> prettyPrintType t <> ")"
-  _        -> prettyPrintType t
+predsToStr :: Bool -> [Pred] -> String
+predsToStr rewrite [p] = predToStr rewrite p
+predsToStr rewrite ps  = "(" <> intercalate ", " (predToStr rewrite <$> ps) <> ")"
 
 
+predToStr :: Bool -> Pred -> String
+predToStr rewrite (IsIn cls ts) =
+  let types = typeToParenWrappedStr rewrite <$> ts
+  in  cls <> " " <> unwords types
 
-prettyPrintType :: Type -> String
-prettyPrintType = lst . prettyPrintType' (mempty, mempty)
+typeToParenWrappedStr :: Bool -> Type -> String
+typeToParenWrappedStr rewrite t = case t of
+  TApp _ _ -> "(" <> prettyPrintType rewrite t <> ")"
+  _        -> prettyPrintType rewrite t
+
+
+
+prettyPrintType :: Bool -> Type -> String
+prettyPrintType rewrite = lst . prettyPrintType' rewrite (mempty, mempty)
 
 hkLetters :: [Char]
 hkLetters = ['m' ..]
 
 
-prettyPrintType' :: (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
-prettyPrintType' (vars, hkVars) t = case t of
+prettyPrintType' :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
+prettyPrintType' rewrite (vars, hkVars) t = case t of
   TCon (TC n _) _ -> (vars, hkVars, n)
 
-  TVar (TV n k) -> case k of
-    Star -> case M.lookup n vars of
-      Just x  -> (vars, hkVars, letters !! x)
-      Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, letters !! newIndex)
+  TVar (TV n k) -> 
+    if not rewrite then
+      (vars, hkVars, n)
+    else
+      case k of
+      Star -> case M.lookup n vars of
+        Just x  -> (vars, hkVars, letters !! x)
+        Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, letters !! newIndex)
 
-    Kfun _ _ -> case M.lookup n hkVars of
-      Just x  -> (vars, hkVars, [hkLetters !! x])
-      Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
+      Kfun _ _ -> case M.lookup n hkVars of
+        Just x  -> (vars, hkVars, [hkLetters !! x])
+        Nothing -> let newIndex = M.size hkVars in (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
 
   TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
-    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
+        (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
 
   TApp (TApp (TApp (TCon (TC "(,,)" _) _) tl) tr) trr ->
-    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' (vars, hkVars) tl
-        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' (varsLeft, hkVarsLeft) tr
-        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' (varsRight, hkVarsRight) trr
+    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
+        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
+        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
     in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
+  
+  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) tl) tr) trr) trrr ->
+    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
+        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
+        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
+        (varsRightRightRight, hkVarsRightRightRight, rightRightRight) = prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
+    in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> ">")
 
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
     let (varsLeft, hkVarsLeft, left) = case tl of
           TApp (TApp (TCon (TC "(->)" _) _) tl') tr' ->
-            let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' (vars, hkVars) tl'
-                (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft', varsLeft') tr'
+            let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' rewrite (vars, hkVars) tl'
+                (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', varsLeft') tr'
                 leftParenthesis                    = case tl' of
                   TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
                   _ -> False
                 left'' = if leftParenthesis then "(" <> left' <> ")" else left'
             in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
 
-          _ -> prettyPrintType' (vars, hkVars) tl
+          _ -> prettyPrintType' rewrite (vars, hkVars) tl
 
-        (varsRight, hkVarsRight, right) = prettyPrintType' (varsLeft, hkVarsLeft) tr
+        (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, left <> " -> " <> right)
 
   TApp tl tr ->
-    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' (vars, hkVars) tl
+    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight, hkVarsRight, right) = case tr of
           TApp _ _ ->
-            let (varsRight', hkVarsRight', right') = prettyPrintType' (varsLeft, hkVarsLeft) tr
+            let (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
             in  if not (isTuple tr)
                   then (varsRight', hkVarsRight', "(" <> right' <> ")")
                   else (varsRight', hkVarsRight', right')
-          _ -> prettyPrintType' (varsLeft, hkVarsLeft) tr
+          _ -> prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
   TRecord fields _ ->
     let (finalVars, finalHkVars, compiledFields) =
             foldl
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
-                  let (vars'', hkVars'', compiledField) = prettyPrintType' (vars', hkVars') fieldType
+                  let (vars'', hkVars'', compiledField) = prettyPrintType' rewrite (vars', hkVars') fieldType
                   in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
                 )
                 (vars, hkVars, [])

@@ -128,6 +128,7 @@ data Exp_ = LNum String
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | JSExp String
+          | JSXExpChild Exp
           deriving(Eq, Show)
 
 type Name = String

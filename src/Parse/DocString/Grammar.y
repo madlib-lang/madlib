@@ -26,7 +26,8 @@ import           Text.Show.Pretty (ppShow)
   'moduleStart'    { TokenModuleDocStringStart }
   'functionStart'  { TokenFunctionDocStringStart _ }
   'typeDefStart'   { TokenTypeDefDocStringStart _ }
-  'interfaceStart'   { TokenInterfaceDocStringStart _ }
+  'interfaceStart' { TokenInterfaceDocStringStart _ }
+  'instanceStart'  { TokenInstanceDocStringStart _ }
   'end'            { TokenDocStringEnd }
   'docStringPart'  { TokenDocStringCharacter _ }
   'exampleStart'   { TokenExampleStart }
@@ -40,12 +41,10 @@ docs :: { [DocString] }
 
 doc :: { DocString }
   : 'moduleStart' parts 'end'         { ModuleDoc $ processCharacters $2 }
-  -- | 'functionStart' parts 'end'       { FunctionDoc (getFunctionName $1) (processCharacters $2) [] }
   | 'functionStart' parts tags 'end'  { FunctionDoc (getFunctionName $1) (processCharacters $2) $3 }
-  -- | 'typeDefStart' parts 'end'        { TypeDefDoc (getTypeName $1) (processCharacters $2) [] }
   | 'typeDefStart' parts tags 'end'   { TypeDefDoc (getTypeName $1) (processCharacters $2) $3 }
-  -- | 'interfaceStart' parts 'end'      { InterfaceDoc (getInterfaceName $1) (processCharacters $2) [] }
   | 'interfaceStart' parts tags 'end' { InterfaceDoc (getInterfaceName $1) (processCharacters $2) $3 }
+  | 'instanceStart' parts tags 'end'  { InstanceDoc (trim $ getInstanceName $1) (processCharacters $2) $3 }
 
 parts :: { [String] }
   : 'docStringPart'       { [getDocStringCharacter $1] }
@@ -66,7 +65,7 @@ trim = f . f
   where f = reverse . dropWhile isSpace
 
 regex :: String
-regex = "[\n ]*\\*[ ]*"
+regex = "\n[ ]*\\*[ ]*"
 
 sanitizeDescription :: String -> String
 sanitizeDescription desc =

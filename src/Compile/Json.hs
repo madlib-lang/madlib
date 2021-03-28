@@ -143,7 +143,7 @@ compileConstructor depth (Slv.Untyped area (Slv.Constructor name typings t)) =
     <> ",\n"
     <> indent (depth + 1)
     <> "\"type\": \""
-    <> prettyPrintType t
+    <> prettyPrintType True t
     <> "\"\n"
     <> indent depth
     <> "}"
@@ -188,12 +188,12 @@ compileInstanceMethod depth name exp scheme =
 
 compileExp :: Int -> Slv.Exp -> String
 compileExp depth (Slv.Solved t area exp) =
-  let compiledType      = prettyPrintType t
+  let compiledType      = prettyPrintType True t
       compiledExpFields = compileExpFields (depth + 1) exp
   in  "{\n"
         <> indent (depth + 1)
         <> "\"type\": \""
-        <> prettyPrintType t
+        <> prettyPrintType True t
         <> "\",\n"
         <> indent (depth + 1)
         <> "\"loc\": "
@@ -241,7 +241,7 @@ compileExpFields depth exp = case exp of
       <> ",\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> prettyPrintType pType
+      <> prettyPrintType True pType
       <> "\"\n"
       <> indent depth
       <> "},\n"
@@ -393,7 +393,7 @@ compileIs depth (Slv.Solved t area (Slv.Is pat exp)) =
     <> "\"nodeType\": \"Is\",\n"
     <> indent (depth + 1)
     <> "\"type\": \""
-    <> prettyPrintType t
+    <> prettyPrintType True t
     <> "\",\n"
     <> indent (depth + 1)
     <> "\"loc\":"
@@ -421,7 +421,7 @@ compilePattern depth (Slv.Solved t area pat) =
     <> ",\n"
     <> indent (depth + 1)
     <> "\"type\": \""
-    <> prettyPrintType t
+    <> prettyPrintType True t
     <> "\"\n"
     <> indent depth
     <> "}"
@@ -434,7 +434,7 @@ compileListItem depth li = case li of
       <> "{\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> prettyPrintType t
+      <> prettyPrintType True t
       <> "\",\n"
       <> indent (depth + 1)
       <> "\"loc\": "
@@ -454,7 +454,7 @@ compileListItem depth li = case li of
       <> "{\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> prettyPrintType t
+      <> prettyPrintType True t
       <> "\",\n"
       <> indent (depth + 1)
       <> "\"loc\": "
@@ -476,7 +476,7 @@ compileField depth (Slv.Solved t area field) = case field of
       <> "{\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> prettyPrintType t
+      <> prettyPrintType True t
       <> "\",\n"
       <> indent (depth + 1)
       <> "\"loc\": "
@@ -496,7 +496,7 @@ compileField depth (Slv.Solved t area field) = case field of
       <> "{\n"
       <> indent (depth + 1)
       <> "\"type\": \""
-      <> prettyPrintType t
+      <> prettyPrintType True t
       <> "\",\n"
       <> indent (depth + 1)
       <> "\"loc\": "

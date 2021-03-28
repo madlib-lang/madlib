@@ -44,7 +44,6 @@ instance Unify Type where
               types'         = M.elems updatedFields'
               z              = zip types types'
           unifyVars M.empty z
-    -- | M.difference fields fields' /= M.empty || M.difference fields' fields /= M.empty = throwError
     | M.difference fields fields' /= M.empty = throwError
     $ InferError (UnificationError r l) NoContext
     | otherwise = do

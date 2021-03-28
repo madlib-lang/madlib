@@ -118,6 +118,13 @@ instance Compilable Exp where
               <> ", "
               <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg)
               <> ")"
+          Optimized _ _ (App (Optimized _ _ (Var "!=")) arg' _) ->
+            "!" <> eqFnName optimized
+              <> "("
+              <> hpWrapLine coverage astPath (getStartLine arg') (compile config arg')
+              <> ", "
+              <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg)
+              <> ")"
           Optimized _ _ (App (Optimized _ _ (Var "&&")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " && " <> hpWrapLine
               coverage

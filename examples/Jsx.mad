@@ -1,67 +1,87 @@
 
-// <1, 2>
+// <span>{getInterfaceName(interfaceDef)}    {getInterfaceVars(interfaceDef)}</span>
+import {} from "List"
+import { div, className, text, span } from "./UI"
 
-<Tag></Tag>
+methods = ["1", "2", "3"]
+map((method) => <div>{method}</div>, methods)
 
-<Tag propName="propValue" otherProp="value">
-</Tag>
+// <div className="propValue">
+// </div>
 
-<Tag propName="propValue" otherProp="value">
-  <Tag
-    propName="propValue"
-    otherProp="value"
-  >
-    {"VALUD"}
-  </Tag>
-  <SelfClosing prop={fn(1 + 3)} />
-  <SelfClosing className={state.active ? "self-closing--active" : "self-closing"} />
-</Tag>
+// manyElements = [<div></div>, <div></div>]
+// stringElement = "STRING"
 
-<SelfClosing prop="TCHOU" />
+// <div className="propValue" className="value">
+//   <div
+//     className="propValue"
+//   >
+//     {"VALUD"}
+//     some text!
+//     {["ok", " and also ok"]}
+//     {stringElement}
+//     {map((x) => <div></div>, [1, 2, 3])}
+//     <span>POUM</span> and text
+//   </div>
+// </div>
 
-<SelfClosing prop={fn(1 + 3)} />
+// // DocItemList :: View (List DocItem)
+// DocItemList = (docItems) => <div>{map((x) => <div></div>, docItems)}</div>
 
-<Tag>
-  {callFn(3)}
-</Tag>
+// <SelfClosing prop="TCHOU" />
+
+// <div className="documentation">
+// <header className="documentation__header">
+//   <input inputType="text" placeholder="What are you looking for?" className="search-field" onInput={handleInput} />
+// </header>
+// <main className="documentation__content">
+//   {[DocItemList(filteredItems)]}
+// </main>
+// </div>
+
+// <SelfClosing prop={fn(1 + 3)} />
+
+// <Tag>
+//   {callFn(3)}
+// </Tag>
 
 
-alias State = { input :: String, todos :: List String }
+// alias State = { input :: String, todos :: List String }
 
-initialState :: State
-initialState = { input: "", todos: [] }
+// initialState :: State
+// initialState = { input: "", todos: [] }
 
 
-handleInput :: Action State
-handleInput = (state, event) => where(event)
-  is InputEvent e: [of(always({ ...state, input: e.target.value }))]
+// handleInput :: Action State
+// handleInput = (state, event) => where(event)
+//   is InputEvent e: [of(always({ ...state, input: e.target.value }))]
 
-addTodo :: Action State
-addTodo = (_, __) => [
-  of((s) => pipe(
-    .input,
-    where 
-      is ""  : s
-      is todo: { ...s, todos: mappend(s.todos, [todo]), input: "" }
-  )(s))
-]
+// addTodo :: Action State
+// addTodo = (_, __) => [
+//   of((s) => pipe(
+//     .input,
+//     where 
+//       is ""  : s
+//       is todo: { ...s, todos: mappend(s.todos, [todo]), input: "" }
+//   )(s))
+// ]
 
-MyApp :: View State
-MyApp = (state) =>
-  <div className="container">
-    <div className="card">
-      <div className="left">
-        <h1>{"Todo list"}</h1>
-        <p>{"powered by Madlib / MadUI"}</p>
-      </div>
-      <div className="right">
-        <div className="todo-list">
-          <input value={state.input} onInput={handleInput} placeholder="Todo" />
-          <input value="Add" inputType="button" onClick={addTodo} />
-          <ul>
-            {map((todo) => <li>{`${todo}`}</li>, state.todos)}
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+// MyApp :: View State
+// MyApp = (state) =>
+//   <div className="container">
+//     <div className="card">
+//       <div className="left">
+//         <h1>{"Todo list"}</h1>
+//         <p>{"powered by Madlib / MadUI"}</p>
+//       </div>
+//       <div className="right">
+//         <div className="todo-list">
+//           <input value={state.input} onInput={handleInput} placeholder="Todo" />
+//           <input value="Add" inputType="button" onClick={addTodo} />
+//           <ul>
+//             {map((todo) => <li>{`${todo}`}</li>, state.todos)}
+//           </ul>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
