@@ -6,11 +6,11 @@ Right
             (TApp
                (TApp
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
+                  (TRecord (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True))
                (TRecord
                   (fromList
                      [ ( "x" , TCon (TC "String" Star) "prelude" )
-                     , ( "y" , TVar (TV "e" Star) )
+                     , ( "y" , TVar (TV "e4" Star) )
                      ])
                   True))
             (Area (Loc 0 1 1) (Loc 55 1 56))
@@ -20,34 +20,34 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True))
+                        (TRecord (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True))
                      (TRecord
                         (fromList
                            [ ( "x" , TCon (TC "String" Star) "prelude" )
-                           , ( "y" , TVar (TV "e" Star) )
+                           , ( "y" , TVar (TV "e4" Star) )
                            ])
                         True))
                   (Area (Loc 10 1 11) (Loc 55 1 56))
                   (Abs
                      (Solved
-                        (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True)
+                        (TRecord (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True)
                         (Area (Loc 11 1 12) (Loc 16 1 17))
                         "state")
                      [ Solved
                          (TRecord
                             (fromList
                                [ ( "x" , TCon (TC "String" Star) "prelude" )
-                               , ( "y" , TVar (TV "e" Star) )
+                               , ( "y" , TVar (TV "e4" Star) )
                                ])
                             True)
                          (Area (Loc 22 1 23) (Loc 54 1 55))
                          (Record
                             [ Solved
-                                (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True)
+                                (TRecord (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True)
                                 (Area (Loc 24 1 25) (Loc 32 1 33))
                                 (FieldSpread
                                    (Solved
-                                      (TRecord (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True)
+                                      (TRecord (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True)
                                       (Area (Loc 27 1 28) (Loc 32 1 33))
                                       (Var "state")))
                             , Solved
@@ -61,17 +61,17 @@ Right
                                        (LStr "3")
                                    ))
                             , Solved
-                                (TVar (TV "e" Star))
+                                (TVar (TV "e4" Star))
                                 (Area (Loc 42 1 43) (Loc 52 1 53))
                                 (Field
                                    ( "y"
                                    , Solved
-                                       (TVar (TV "e" Star))
+                                       (TVar (TV "e4" Star))
                                        (Area (Loc 45 1 46) (Loc 52 1 53))
                                        (FieldAccess
                                           (Solved
                                              (TRecord
-                                                (fromList [ ( "y" , TVar (TV "e" Star) ) ]) True)
+                                                (fromList [ ( "y" , TVar (TV "e4" Star) ) ]) True)
                                              (Area (Loc 45 1 46) (Loc 50 1 51))
                                              (Var "state"))
                                           (Solved
@@ -81,9 +81,9 @@ Right
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
                                                    (TRecord
-                                                      (fromList [ ( "y" , TVar (TV "e" Star) ) ])
+                                                      (fromList [ ( "y" , TVar (TV "e4" Star) ) ])
                                                       True))
-                                                (TVar (TV "e" Star)))
+                                                (TVar (TV "e4" Star)))
                                              (Area (Loc 51 1 52) (Loc 52 1 53))
                                              (Var ".y")))
                                    ))

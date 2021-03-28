@@ -4,7 +4,8 @@ Right
     , aexps =
         [ Solved
             (TApp
-               (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "b" Star)))
+               (TCon (TC "List" (Kfun Star Star)) "prelude")
+               (TVar (TV "b1" Star)))
             (Area (Loc 0 1 1) (Loc 2 1 3))
             (ListConstructor [])
         , Solved

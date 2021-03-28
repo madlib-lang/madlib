@@ -19,7 +19,8 @@ Right
                                                 (fromList
                                                    [ ( "d"
                                                      , TRecord
-                                                         (fromList [ ( "e" , TVar (TV "m" Star) ) ])
+                                                         (fromList
+                                                            [ ( "e" , TVar (TV "m12" Star) ) ])
                                                          True
                                                      )
                                                    ])
@@ -33,7 +34,7 @@ Right
                           )
                         ])
                      True))
-               (TVar (TV "m" Star)))
+               (TVar (TV "m12" Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
@@ -55,7 +56,8 @@ Right
                                                          [ ( "d"
                                                            , TRecord
                                                                (fromList
-                                                                  [ ( "e" , TVar (TV "m" Star) ) ])
+                                                                  [ ( "e" , TVar (TV "m12" Star) )
+                                                                  ])
                                                                True
                                                            )
                                                          ])
@@ -69,7 +71,7 @@ Right
                                 )
                               ])
                            True))
-                     (TVar (TV "m" Star)))
+                     (TVar (TV "m12" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
                      (Solved
@@ -87,7 +89,8 @@ Right
                                                          [ ( "d"
                                                            , TRecord
                                                                (fromList
-                                                                  [ ( "e" , TVar (TV "m" Star) ) ])
+                                                                  [ ( "e" , TVar (TV "m12" Star) )
+                                                                  ])
                                                                True
                                                            )
                                                          ])
@@ -104,11 +107,11 @@ Right
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
                      [ Solved
-                         (TVar (TV "m" Star))
+                         (TVar (TV "m12" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (FieldAccess
                             (Solved
-                               (TRecord (fromList [ ( "e" , TVar (TV "m" Star) ) ]) True)
+                               (TRecord (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True)
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (FieldAccess
                                   (Solved
@@ -116,7 +119,7 @@ Right
                                         (fromList
                                            [ ( "d"
                                              , TRecord
-                                                 (fromList [ ( "e" , TVar (TV "m" Star) ) ]) True
+                                                 (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True
                                              )
                                            ])
                                         True)
@@ -131,7 +134,8 @@ Right
                                                           [ ( "d"
                                                             , TRecord
                                                                 (fromList
-                                                                   [ ( "e" , TVar (TV "m" Star) ) ])
+                                                                   [ ( "e" , TVar (TV "m12" Star) )
+                                                                   ])
                                                                 True
                                                             )
                                                           ])
@@ -156,7 +160,8 @@ Right
                                                                                   [ ( "e"
                                                                                     , TVar
                                                                                         (TV
-                                                                                           "m" Star)
+                                                                                           "m12"
+                                                                                           Star)
                                                                                     )
                                                                                   ])
                                                                                True
@@ -189,7 +194,7 @@ Right
                                                                                                  [ ( "e"
                                                                                                    , TVar
                                                                                                        (TV
-                                                                                                          "m"
+                                                                                                          "m12"
                                                                                                           Star)
                                                                                                    )
                                                                                                  ])
@@ -233,7 +238,7 @@ Right
                                                                                                        [ ( "e"
                                                                                                          , TVar
                                                                                                              (TV
-                                                                                                                "m"
+                                                                                                                "m12"
                                                                                                                 Star)
                                                                                                          )
                                                                                                        ])
@@ -264,7 +269,7 @@ Right
                                                                                            [ ( "e"
                                                                                              , TVar
                                                                                                  (TV
-                                                                                                    "m"
+                                                                                                    "m12"
                                                                                                     Star)
                                                                                              )
                                                                                            ])
@@ -300,7 +305,7 @@ Right
                                                                                         [ ( "e"
                                                                                           , TVar
                                                                                               (TV
-                                                                                                 "m"
+                                                                                                 "m12"
                                                                                                  Star)
                                                                                           )
                                                                                         ])
@@ -323,7 +328,7 @@ Right
                                                                      , TRecord
                                                                          (fromList
                                                                             [ ( "e"
-                                                                              , TVar (TV "m" Star)
+                                                                              , TVar (TV "m12" Star)
                                                                               )
                                                                             ])
                                                                          True
@@ -350,7 +355,7 @@ Right
                                                                   , TRecord
                                                                       (fromList
                                                                          [ ( "e"
-                                                                           , TVar (TV "m" Star)
+                                                                           , TVar (TV "m12" Star)
                                                                            )
                                                                          ])
                                                                       True
@@ -365,7 +370,7 @@ Right
                                                     [ ( "d"
                                                       , TRecord
                                                           (fromList
-                                                             [ ( "e" , TVar (TV "m" Star) ) ])
+                                                             [ ( "e" , TVar (TV "m12" Star) ) ])
                                                           True
                                                       )
                                                     ])
@@ -380,20 +385,21 @@ Right
                                               (fromList
                                                  [ ( "d"
                                                    , TRecord
-                                                       (fromList [ ( "e" , TVar (TV "m" Star) ) ])
+                                                       (fromList [ ( "e" , TVar (TV "m12" Star) ) ])
                                                        True
                                                    )
                                                  ])
                                               True))
-                                        (TRecord (fromList [ ( "e" , TVar (TV "m" Star) ) ]) True))
+                                        (TRecord
+                                           (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d"))))
                             (Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord (fromList [ ( "e" , TVar (TV "m" Star) ) ]) True))
-                                  (TVar (TV "m" Star)))
+                                     (TRecord (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True))
+                                  (TVar (TV "m12" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e")))
                      ])))

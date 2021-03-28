@@ -245,8 +245,8 @@ Right
                                 (TApp
                                    (TApp
                                       (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "g" Star)))
-                                   (TVar (TV "h" Star))))
+                                      (TVar (TV "g6" Star)))
+                                   (TVar (TV "h7" Star))))
                              (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 228 14 3) (Loc 292 14 67))
                           (Assignment
@@ -258,12 +258,12 @@ Right
                                       (TApp
                                          (TApp
                                             (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TVar (TV "g" Star)))
-                                         (TVar (TV "h" Star))))
+                                            (TVar (TV "g6" Star)))
+                                         (TVar (TV "h7" Star))))
                                    (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 228 14 3) (Loc 292 14 67))
                                 (Placeholder
-                                   ( ClassRef "Show" [] False True , [ TVar (TV "h" Star) ] )
+                                   ( ClassRef "Show" [] False True , [ TVar (TV "h7" Star) ] )
                                    (Solved
                                       (TApp
                                          (TApp
@@ -274,12 +274,12 @@ Right
                                                   (TCon
                                                      (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                      "prelude")
-                                                  (TVar (TV "g" Star)))
-                                               (TVar (TV "h" Star))))
+                                                  (TVar (TV "g6" Star)))
+                                               (TVar (TV "h7" Star))))
                                          (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 228 14 3) (Loc 292 14 67))
                                       (Placeholder
-                                         ( ClassRef "Show" [] False True , [ TVar (TV "g" Star) ] )
+                                         ( ClassRef "Show" [] False True , [ TVar (TV "g6" Star) ] )
                                          (Solved
                                             (TApp
                                                (TApp
@@ -291,8 +291,8 @@ Right
                                                         (TCon
                                                            (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TVar (TV "g" Star)))
-                                                     (TVar (TV "h" Star))))
+                                                        (TVar (TV "g6" Star)))
+                                                     (TVar (TV "h7" Star))))
                                                (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 235 14 10) (Loc 292 14 67))
                                             (Abs
@@ -302,8 +302,8 @@ Right
                                                         (TCon
                                                            (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TVar (TV "g" Star)))
-                                                     (TVar (TV "h" Star)))
+                                                        (TVar (TV "g6" Star)))
+                                                     (TVar (TV "h7" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__x__")
                                                [ Solved
@@ -318,8 +318,8 @@ Right
                                                                      "(,)"
                                                                      (Kfun Star (Kfun Star Star)))
                                                                   "prelude")
-                                                               (TVar (TV "g" Star)))
-                                                            (TVar (TV "h" Star)))
+                                                               (TVar (TV "g6" Star)))
+                                                            (TVar (TV "h7" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Var "__x__"))
                                                       [ Solved
@@ -339,8 +339,8 @@ Right
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "prelude")
-                                                                      (TVar (TV "g" Star)))
-                                                                   (TVar (TV "h" Star))))
+                                                                      (TVar (TV "g6" Star)))
+                                                                   (TVar (TV "h7" Star))))
                                                              (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 241 14 16) (Loc 292 14 67))
                                                           (Is
@@ -354,8 +354,8 @@ Right
                                                                                Star
                                                                                (Kfun Star Star)))
                                                                          "prelude")
-                                                                      (TVar (TV "g" Star)))
-                                                                   (TVar (TV "h" Star)))
+                                                                      (TVar (TV "g6" Star)))
+                                                                   (TVar (TV "h7" Star)))
                                                                 (Area
                                                                    (Loc 244 14 19) (Loc 250 14 25))
                                                                 (PTuple
@@ -371,8 +371,8 @@ Right
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "g" Star)))
-                                                                          (TVar (TV "h" Star)))
+                                                                             (TVar (TV "g6" Star)))
+                                                                          (TVar (TV "h7" Star)))
                                                                        (Area
                                                                           (Loc 245 14 20)
                                                                           (Loc 246 14 21))
@@ -389,8 +389,8 @@ Right
                                                                                          Star
                                                                                          Star)))
                                                                                 "prelude")
-                                                                             (TVar (TV "g" Star)))
-                                                                          (TVar (TV "h" Star)))
+                                                                             (TVar (TV "g6" Star)))
+                                                                          (TVar (TV "h7" Star)))
                                                                        (Area
                                                                           (Loc 248 14 23)
                                                                           (Loc 249 14 24))
@@ -573,7 +573,7 @@ Right
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "g"
+                                                                                                    "g6"
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -596,7 +596,7 @@ Right
                                                                                                True
                                                                                            , [ TVar
                                                                                                  (TV
-                                                                                                    "g"
+                                                                                                    "g6"
                                                                                                     Star)
                                                                                              ]
                                                                                            )
@@ -614,7 +614,7 @@ Right
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "g"
+                                                                                                          "g6"
                                                                                                           Star)))
                                                                                                  (TCon
                                                                                                     (TC
@@ -635,7 +635,7 @@ Right
                                                                                      (Solved
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "g"
+                                                                                              "g6"
                                                                                               Star))
                                                                                         (Area
                                                                                            (Loc
@@ -871,7 +871,7 @@ Right
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "h"
+                                                                                                                "h7"
                                                                                                                 Star)))
                                                                                                        (TCon
                                                                                                           (TC
@@ -894,7 +894,7 @@ Right
                                                                                                            True
                                                                                                        , [ TVar
                                                                                                              (TV
-                                                                                                                "h"
+                                                                                                                "h7"
                                                                                                                 Star)
                                                                                                          ]
                                                                                                        )
@@ -912,7 +912,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "h"
+                                                                                                                      "h7"
                                                                                                                       Star)))
                                                                                                              (TCon
                                                                                                                 (TC
@@ -933,7 +933,7 @@ Right
                                                                                                  (Solved
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "h"
+                                                                                                          "h7"
                                                                                                           Star))
                                                                                                     (Area
                                                                                                        (Loc

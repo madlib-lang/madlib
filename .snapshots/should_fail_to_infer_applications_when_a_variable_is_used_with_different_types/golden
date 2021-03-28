@@ -5,13 +5,14 @@ Left
            (fromList
               [ ( "todos"
                 , TApp
-                    (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "bc" Star))
+                    (TCon (TC "List" (Kfun Star Star)) "prelude")
+                    (TVar (TV "c54" Star))
                 )
               ])
            True)
         (TApp
            (TCon (TC "List" (Kfun Star Star)) "prelude")
-           (TVar (TV "ba" Star))))
+           (TVar (TV "a52" Star))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 838 37 12) (Loc 863 37 37)
