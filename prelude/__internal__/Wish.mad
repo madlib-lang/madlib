@@ -97,7 +97,7 @@ export parallel = (wishes) => (
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
 export fulfill = (bad, good, m) => {
   where(m) {
-    is Wish run: run(bad, good)
+    is Wish run: #- setTimeout(() => run(bad, good), 0); -#
   }
 
   return ()

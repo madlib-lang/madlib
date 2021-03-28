@@ -262,6 +262,8 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
     Slv.Field       (n, e) -> Slv.Solved (apply s t) area . Slv.Field . (n, ) <$> updatePlaceholders env s e
     Slv.FieldSpread e      -> Slv.Solved (apply s t) area . Slv.FieldSpread <$> updatePlaceholders env s e
 
+
+
 isMethod :: Env -> Slv.Exp -> Bool
 isMethod env (Slv.Solved _ _ e) = case e of
   Slv.Var n -> Just True == (M.lookup n (envMethods env) >> return True)

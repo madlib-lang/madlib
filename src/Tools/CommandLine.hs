@@ -46,6 +46,9 @@ parseOptimize = switch (long "optimize" <> help "Optimize the output to generate
 parseJson :: Parser Bool
 parseJson = switch (long "json" <> help "compiles to a JSON ast with types" <> showDefault)
 
+parseTestFilesOnly :: Parser Bool
+parseTestFilesOnly = switch (long "test-files-only" <> help "compiles only test files when compiling a path" <> showDefault)
+
 
 parseTargetOption :: ReadM Target
 parseTargetOption = eitherReader $ \case
@@ -81,6 +84,7 @@ parseCompile =
     <*> parseOptimize
     <*> parseTarget
     <*> parseJson
+    <*> parseTestFilesOnly
 
 parseCoverage :: Parser Bool
 parseCoverage = switch

@@ -32,9 +32,18 @@ import Data.List
 
 
 rf fileName = do
-  inputHandle <- openFile fileName ReadMode 
+  inputHandle <- openFile fileName ReadMode
   hSetEncoding inputHandle utf8
   hGetContents inputHandle
+
+
+buildManyASTTables :: [FilePath] -> IO (Either InferError Table)
+buildManyASTTables fps = case fps of
+  [] -> return $ return mempty
+  fp:fps' -> do
+    current <- buildASTTable fp
+    next    <- buildManyASTTables fps'
+    return $ current >>= (\current' -> next >>= (\next' -> return $ current' <> next'))
 
 
 -- TODO: Write an integration test with real files ?
