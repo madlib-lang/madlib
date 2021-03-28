@@ -1,0 +1,51 @@
+import { fromString, range } from "Number"
+import S from "String"
+import IO from 'IO'
+import {sortBy, reduce, List, nth, len} from "List"
+import { Maybe, fromMaybe } from "Maybe"
+
+// semver :: String -> List Number
+export semver = pipe(
+  S.split('.'),
+  map(fromString),
+  map(fromMaybe(-1))
+)
+
+'0.0.2' |> semver |> IO.log
+
+th :: Number -> List Number -> Number
+th = (i, x) => pipe(nth(i), fromMaybe(-1))(x)
+
+semverCompare :: String -> String -> Number
+export semverCompare = (a, b) => {
+  av = semver(a)
+  bv = semver(b)
+  return pipe(
+    len,
+    range(0),
+    reduce((sort, iter) => {
+      aa = th(iter, av)
+      bb = th(iter, bv)
+      return aa == bb ? sort : aa > bb ? 1 : -1
+    }, 0),
+    (x) => {
+      IO.log(<'a', a, 'b', b, "=>", x>)
+      return x
+    }
+  )(av)
+}
+
+semverCompare('0.0.1', '0.0.2') |> IO.trace('0.0.1 > 0.0.2?')
+semverCompare('0.2.1', '0.0.1') |> IO.trace('0.2.1 > 0.0.1?')
+
+sortBy(semverCompare, [
+    '1.2.3',
+    '4.11.6',
+    '4.2.0',
+    '1.5.19',
+    '1.5.5',
+    '4.1.3',
+    '2.3.1',
+    '10.5.5',
+    '11.3.0'
+]) |> IO.trace('dopesauce')
