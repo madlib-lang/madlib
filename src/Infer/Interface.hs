@@ -34,7 +34,8 @@ import Text.Show.Pretty
 
 addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
 addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
-  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
+  Just x -> return env
+  -- Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
   Nothing -> return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
 
 

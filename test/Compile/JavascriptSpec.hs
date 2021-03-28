@@ -818,7 +818,7 @@ spec = do
 
       let
         r = unsafePerformIO
-          $ buildASTTable' pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/root/project/src" t a
@@ -855,7 +855,7 @@ spec = do
             if f == "/madlib_modules/url/madlib.json" || f == "/madlib.json" then return True else return False
           }
 
-      let r = unsafePerformIO $ buildASTTable' pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
+      let r = unsafePerformIO $ buildASTTable' mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of
@@ -899,7 +899,7 @@ spec = do
 
       let
         r = unsafePerformIO
-          $ buildASTTable' pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -924,7 +924,7 @@ spec = do
 
       let
         r = unsafePerformIO
-          $ buildASTTable' pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -1075,7 +1075,7 @@ spec = do
 
       let
         r = unsafePerformIO
-          $ buildASTTable' pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -1133,7 +1133,7 @@ spec = do
                                        return False
             }
 
-      let r = unsafePerformIO $ buildASTTable' pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
+      let r = unsafePerformIO $ buildASTTable' mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of

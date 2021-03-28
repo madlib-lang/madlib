@@ -121,7 +121,7 @@ solveASTsForDoc :: [FilePath] -> IO (Either InferError [(Slv.AST, [DocString.Doc
 solveASTsForDoc []       = return $ Right []
 solveASTsForDoc (fp:fps) = do
   canonicalEntrypoint <- canonicalizePath fp
-  astTable            <- buildASTTable canonicalEntrypoint
+  astTable            <- buildASTTable mempty canonicalEntrypoint
   let canTable = astTable >>= \table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
 
   rootPath <- canonicalizePath $ computeRootPath fp
@@ -248,14 +248,14 @@ runCompilation :: Command -> Bool -> IO ()
 runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
-  astTable            <- buildManyASTTables sourcesToCompile
+  astTable            <- buildManyASTTables mempty sourcesToCompile
   let canTable = astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
 
   rootPath <- canonicalizePath $ computeRootPath entrypoint
 
   let resolvedASTTable = case canTable of
         Right table -> do
-          runExcept (runStateT (solveManyASTs table sourcesToCompile) InferState { count = 0, errors = [] })
+          runExcept (runStateT (solveManyASTs mempty table sourcesToCompile) InferState { count = 0, errors = [] })
         Left e -> Left e
 
   when verbose $ do
