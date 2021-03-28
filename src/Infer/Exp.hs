@@ -256,14 +256,14 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
       case t of
         (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical emptyArea (Can.Var "text")) False)) exp' True
+          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)) exp' True
           (s1, ps, t, e) <- infer env exp''
           s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
         
         (TApp (TVar (TV _ (Kfun Star Star))) (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.App (Can.Canonical emptyArea (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical emptyArea (Can.Var "text")) False)) exp' True
+          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)) exp' True
           (s1, ps, t, e) <- infer env exp''
           s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
@@ -280,20 +280,25 @@ inferListItem env ty (Can.Canonical area li) = case li of
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
 
         TCon (TC "String" Star) "prelude" -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) exp' True
+          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) exp' True
           (s1, ps, t, e) <- infer env exp''
           s2 <- unify t ty
           let s = s1 `compose` s2
 
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
         
-        t' -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "__tmp_jsx_children__")) exp' True
+        t'@(TVar _) -> do
+          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
           (s1, ps, t, e') <- infer (extendVars env ("__tmp_jsx_children__", Forall [] $ [] :=> (t' `fn` ty))) exp''
           s2 <- unify t ty
           let s = s1 `compose` s2
 
-          return (s, ps, ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')
+          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')
+
+        _ -> do
+          s2 <- unify t ty
+          let s = s1 `compose` s2
+          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
 
     _ -> do
       (s1, ps, t, e) <- infer env exp
