@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b92a5a7471bbfc840e4e9fcc1595fb0800c5a39786c8930a98dcc59f60adbb25
+-- hash: 057eea0cce4241a8babc08abb2b1dc69cc0ef85a2fb210fb1020fd694846fb6a
 
 name:           madlib
 version:        0.4.0
@@ -44,6 +44,7 @@ library
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
+      Compile.Documentation
       Compile.Javascript
       Compile.JSInternals
       Compile.Json
@@ -71,9 +72,12 @@ library
       Main
       Optimize.Optimize
       PackageGenerator
-      Parse.AST
-      Parse.Grammar
-      Parse.Lexer
+      Parse.DocString.DocString
+      Parse.DocString.Grammar
+      Parse.DocString.Lexer
+      Parse.Madlib.AST
+      Parse.Madlib.Grammar
+      Parse.Madlib.Lexer
       Target
       Tools.CommandLine
       Tools.CommandLineFlags
@@ -126,6 +130,7 @@ executable madlib
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
+      Compile.Documentation
       Compile.Javascript
       Compile.JSInternals
       Compile.Json
@@ -152,9 +157,12 @@ executable madlib
       MadlibDotJSON
       Optimize.Optimize
       PackageGenerator
-      Parse.AST
-      Parse.Grammar
-      Parse.Lexer
+      Parse.DocString.DocString
+      Parse.DocString.Grammar
+      Parse.DocString.Lexer
+      Parse.Madlib.AST
+      Parse.Madlib.Grammar
+      Parse.Madlib.Lexer
       Target
       Tools.CommandLine
       Tools.CommandLineFlags
@@ -201,7 +209,7 @@ test-suite madlib-test
       Compile.JavascriptSpec
       Compile.JSInternalsSpec
       Infer.SolveSpec
-      Parse.ASTSpec
+      Parse.Madlib.ASTSpec
       TestUtils
       Utils.PathSpec
       Paths_madlib

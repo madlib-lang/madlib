@@ -10,8 +10,7 @@ import           Debug.Trace
 import           Text.Show.Pretty
 import           Error.Error
 import           Explain.Format
-import           Data.Aeson.Text (encodeToLazyText)
-import           Data.Text.Lazy (unpack)
+import           Compile.Utils
 
 
 indentSize :: Int
@@ -20,8 +19,7 @@ indentSize = 2
 indent :: Int -> String
 indent depth = concat $ replicate (depth * indentSize) " "
 
-escapeString :: String -> String
-escapeString = unpack . encodeToLazyText
+
 
 
 compileASTTable :: [(InferError, String)] -> Slv.Table -> String

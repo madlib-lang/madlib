@@ -5,6 +5,9 @@ import { Maybe, Just, Nothing, fromMaybe } from "Maybe"
 
 type Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
 
+/**
+ *
+ */
 input :: String
 input = `
 {

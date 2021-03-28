@@ -4,14 +4,14 @@
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances   #-}
-module Parse.AST where
+module Parse.Madlib.AST where
 
 import qualified Data.Map                      as M
 import           Control.Exception              ( IOException
                                                 , try
                                                 )
 
-import           Parse.Grammar                  ( parse )
+import           Parse.Madlib.Grammar           ( parse )
 import           AST.Source
 import           Utils.Path                     ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils

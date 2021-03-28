@@ -8,7 +8,7 @@ import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Canonicalize.Env
 import           Canonicalize.Canonicalize
-import qualified Parse.AST                     as P
+import qualified Parse.Madlib.AST              as P
 import           Canonicalize.CanonicalM
 import           Canonicalize.ADT
 import           Canonicalize.Interface

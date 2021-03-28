@@ -167,3 +167,15 @@ isExport a = case a of
 getValue :: Solved a -> a
 getValue (Solved _ _ a) = a
 getValue (Untyped _ a ) = a
+
+getExpName :: Exp -> Maybe String
+getExpName (Solved _ _ exp) = case exp of
+  Assignment name _ -> return name
+
+  TypedExp (Solved _ _ (Assignment name _)) _ -> return name
+
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ -> return name
+
+  Export (Solved _ _ (Assignment name _)) -> return name
+
+  _                 -> Nothing

@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Parse.ASTSpec where
+module Parse.Madlib.ASTSpec where
 
 import qualified Data.Map                      as M
-import           Parse.AST
+import           Parse.Madlib.AST
 import           Test.Hspec
 import           Error.Error
 import           Utils.PathUtils

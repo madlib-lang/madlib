@@ -10,7 +10,7 @@
 {-# OPTIONS_GHC -fno-warn-tabs                  #-}
 {-# OPTIONS_GHC -funbox-strict-fields           #-}
 
-module Parse.Lexer
+module Parse.Madlib.Lexer
   ( Alex(..)
   , AlexState(..)
   , alexEOF

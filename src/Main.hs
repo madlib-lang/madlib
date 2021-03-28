@@ -10,13 +10,16 @@ import           GHC.IO                         ( )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory, takeExtension )
+import           System.FilePath                ( takeDirectory, takeExtension, joinPath )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
+                                                , getDirectoryContents
                                                 )
 import           System.Exit
 import           Utils.Path              hiding ( PathUtils(..) )
-import           Parse.AST
+import           Parse.Madlib.AST
+import qualified Parse.DocString.Grammar      as DocString
+import qualified Parse.DocString.DocString    as DocString
 
 import           Infer.AST
 import           Infer.Infer
@@ -53,6 +56,7 @@ import           Data.List                      ( isInfixOf
                                                 )
 import           Data.String.Utils
 import           Compile.JSInternals
+import           Compile.Documentation
 import           Error.Error
 import qualified Canonicalize.Canonicalize     as Can
 import qualified Canonicalize.AST              as Can
@@ -110,8 +114,56 @@ run cmd = do
     Doc path                 -> runDocumentationGenerator path
 
 
+solveASTsForDoc :: [FilePath] -> IO (Either InferError [(Slv.AST, [DocString.DocString])])
+solveASTsForDoc []       = return $ Right []
+solveASTsForDoc (fp:fps) = do
+  canonicalEntrypoint <- canonicalizePath fp
+  astTable            <- buildASTTable canonicalEntrypoint
+  let canTable = astTable >>= \table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
+
+  rootPath <- canonicalizePath $ computeRootPath fp
+
+  let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
+      resolvedASTTable = case (entryAST, canTable) of
+        (Right ast, Right table) -> do
+          runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
+        (_     , Left e) -> Left e
+        (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoContext
+
+  case resolvedASTTable of
+    Left e -> return $ Left e
+
+    Right (table, _) -> case M.lookup canonicalEntrypoint table of
+      Just ast -> do
+        fileContent <- readFile fp
+        let docStrings = DocString.parse fileContent
+        case docStrings of
+          Right ds -> do
+            next <- solveASTsForDoc fps
+            return $ ([(ast, ds)] ++) <$> next
+          Left _ -> do
+            next <- solveASTsForDoc fps
+            return $ ([(ast, [])] ++) <$> next
+
+      Nothing  -> solveASTsForDoc fps
+
+
 runDocumentationGenerator :: FilePath -> IO ()
-runDocumentationGenerator fp = putStrLn "Not implemented"
+runDocumentationGenerator fp = do
+  let ext = takeExtension fp
+  filepaths <- case ext of
+    ".mad"   -> return [fp]
+    '.':rest -> putStrLn ("Invalid file extension '" <> ext <> "'") >> return []
+    _        -> do
+      paths <- getDirectoryContents fp
+      let filtered = (\file -> joinPath [fp, file]) <$> filter ((== ".mad") . takeExtension) paths
+      return filtered
+
+  asts <- solveASTsForDoc filepaths
+  case asts of
+    Right asts' -> putStrLn $ generateASTsDoc asts'
+
+    Left e -> putStrLn $ ppShow e
 
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
