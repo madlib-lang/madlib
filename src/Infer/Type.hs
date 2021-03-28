@@ -180,3 +180,8 @@ mergeRecords t1 t2 = case (t1, t2) of
 
   _ -> t1
 
+isFunctionType :: Type -> Bool
+isFunctionType t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
+  _ -> False
+
