@@ -94,8 +94,11 @@ parseCoverage = switch
   <> showDefault
   )
 
+parseTestInput :: Parser FilePath
+parseTestInput = strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
+
 parseTest :: Parser Command
-parseTest = Test <$> parseInput <*> parseCoverage
+parseTest = Test <$> parseTestInput <*> parseCoverage
 
 
 parseFolder :: Parser FilePath

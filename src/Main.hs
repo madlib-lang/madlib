@@ -357,10 +357,18 @@ generate options coverage rootPath table sourcesToCompile = do
 
 generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
 generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path } = do
+  putStrLn rootPath
+  putStrLn path
   let internalsPath = case stripPrefix rootPath path of
         Just s ->
           let dirs = splitDirectories (takeDirectory s)
-              dirLength = length dirs - 1
+              minus =
+                if "prelude/__internal__" `isInfixOf` path then
+                  if "prelude/__internal__" `isInfixOf` rootPath then
+                    0
+                  else 2
+                else 1
+              dirLength = length dirs - minus
           in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
         Nothing -> "./__internals__.mjs"
 

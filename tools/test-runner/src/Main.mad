@@ -23,10 +23,11 @@ const areAllTestsSuccess = () => testCount() === successCount;
 
 const runTestSuite = (madlibFile, done) => {
   testSuiteCount = testSuiteCount + 1;
-  console.log(`- ${madlibFile}`);
+  console.log(madlibFile);
+
   const jsFile = madlibFile.match("prelude/__internal__")
-    ? madlibFile.replace(new RegExp("(.*\/)(.*).mad$"), ".tests/.prelude/$2.mjs")
-    : madlibFile.replace(new RegExp("(.*\/)(.*).mad$"), ".tests/$2.mjs");
+    ? ".tests/.prelude/" + madlibFile.replace(new RegExp("(.*).mad$"), "$1.mjs");
+    : ".tests/" + madlibFile.replace(new RegExp("(.*).mad$"), "$1.mjs");
 
   const forked = fork(jsFile);
 
@@ -70,8 +71,12 @@ const getDirectories = source =>
 
 
 const getAllTestFiles = (path) => {
+  if (path.substr(-9, 9) === ".spec.mad") {
+    return Promise.resolve([path]);
+  }
   return fs.readdir(path).then(paths => {
-    const specFiles = paths.filter((s) => s.substr(-9, 9) === ".spec.mad").map((p) => path + "/" + p);
+    const separator = path[path.length - 1] === "/" ? "" : "/";
+    const specFiles = paths.filter((s) => s.substr(-9, 9) === ".spec.mad").map((p) => path + separator + p);
     return getDirectories(path).then(subDirs => {
       if (subDirs.length > 0) {
         return Promise.all(subDirs.map(subDir => getAllTestFiles(subDir))).then(results =>
@@ -85,14 +90,12 @@ const getAllTestFiles = (path) => {
   })
 }
 
-getAllTestFiles(path).then((paths) => {
-  exec(`madlib compile -i ${path} -o .tests/ --test-files-only`, (err) => {
+getAllTestFiles(path).then((specFiles) => {
+  exec(`madlib compile -i ${path} -o .tests/ --test-files-only`, (err, stdOut, stdErr) => {
     if (err) {
-      console.error(err);
+      console.error(stdOut.trim());
       return;
     }
-
-    const specFiles = paths.filter((s) => s.substr(-9, 9) === ".spec.mad").map((p) => path + "/" + p);
 
     runAllTestSuites(specFiles);
   })

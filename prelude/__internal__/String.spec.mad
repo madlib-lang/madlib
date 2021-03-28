@@ -1,5 +1,5 @@
 import { test, assertEquals } from "TestTools"
-import { lines, mapChars } from "./String"
+import { lines, mapChars, replace } from "./String"
 
 test(
   "lines should split a string by line returns",
@@ -10,3 +10,5 @@ test("mapChars should map the characters of a String", (_) => {
   mapper = (char) => char == "o" ? "a" : char
   return assertEquals(mapChars(mapper, "Hello World"), "Hella Warld")
 })
+
+test("replace should replace parts of a string given some regex and replacement string", (_) => assertEquals(replace("a", "b", "abc"), "bbc"))
