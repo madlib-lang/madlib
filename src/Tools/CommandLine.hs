@@ -100,6 +100,11 @@ parseFolder = strArgument (metavar "FOLDER" <> help "Folder where to create the 
 parseNew :: Parser Command
 parseNew = New <$> parseFolder
 
+parseDocInput :: Parser FilePath
+parseDocInput = strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What source(s) you want to generate documentation for")
+
+parseDoc :: Parser Command
+parseDoc = Doc <$> parseDocInput
 
 parseCommand :: Parser Command
 parseCommand =
@@ -108,6 +113,7 @@ parseCommand =
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")
     <> command "new"     (parseNew `withInfo` "create a new project")
+    <> command "doc"     (parseDoc `withInfo` "generate documentation")
 
 parseTransform :: Parser Command
 parseTransform = parseCommand

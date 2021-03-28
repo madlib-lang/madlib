@@ -107,6 +107,12 @@ run cmd = do
 
     New path                 -> runPackageGenerator path
 
+    Doc path                 -> runDocumentationGenerator path
+
+
+runDocumentationGenerator :: FilePath -> IO ()
+runDocumentationGenerator fp = putStrLn "Not implemented"
+
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
 shouldBeCovered rootPath path | rootPath `isPrefixOf` path && not ("Spec" `isInfixOf` path) = True
