@@ -21,6 +21,8 @@ import           Data.List
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
+import Debug.Trace
+import Text.Show.Pretty
 
 
 -- defined :: Maybe a -> Bool

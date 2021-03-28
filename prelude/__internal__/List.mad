@@ -12,6 +12,12 @@ import { Maybe, Just, Nothing } from "Maybe"
  */
 
 
+/**
+ * Functor instance for List
+ * @since v0.0.6
+ * @example
+ * map((x) => x * 2, [1, 2, 3]) // [2, 4, 6]
+ */
 instance Functor List {
   map = (f, xs) => (#- xs.map((x) => f(x)) -#)
 }

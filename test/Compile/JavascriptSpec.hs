@@ -234,6 +234,102 @@ mainCompileFixture = unlines
   ]
 
 
+jsxProgram :: String
+jsxProgram = unlines
+  [ "interface Show a {"
+  , "  show :: a -> String"
+  , "}"
+  , ""
+  , "instance Show Number {"
+  , "  show = (x) => #- new Number(x).toString() -#"
+  , "}"
+  , ""
+  , "interface Functor m {"
+  , "  map :: (a -> b) -> m a -> m b"
+  , "}"
+  , ""
+  , "instance Functor List {"
+  , "  map = (f, xs) => (#- xs.map((x) => f(x)) -#)"
+  , "}"
+  , ""
+  , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+  , "good :: a -> Wish e a"
+  , "export good = (a) => Wish((bad, good) => good(a))"
+  , "type Element = Element"
+  , ""
+  , "export alias Component a = a -> Element"
+  , ""
+  , "type Event = Event"
+  , ""
+  , ""
+  , "type Attribute"
+  , "  = AttributeId String"
+  , "  | AttributeClass String"
+  , "  | OnClick (a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , "  | OnMouseOver (a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , "  | OnMouseOut (a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , ""
+  , "id :: String -> Attribute"
+  , "export id = AttributeId"
+  , ""
+  , "className :: String -> Attribute"
+  , "export className = AttributeClass"
+  , ""
+  , "onClick :: (a -> Event -> List (Wish (a -> a) (a -> a))) -> Attribute"
+  , "export onClick = OnClick"
+  , ""
+  , "onMouseOver :: (a -> Event -> List (Wish (a -> a) (a -> a))) -> Attribute"
+  , "export onMouseOver = OnMouseOver"
+  , ""
+  , "onMouseOut :: (a -> Event -> List (Wish (a -> a) (a -> a))) -> Attribute"
+  , "export onMouseOut = OnMouseOut"
+  , ""
+  , "text :: String -> Element"
+  , "export text = (content) => #- content -#"
+  , ""
+  , "div :: List Attribute -> List Element -> Element"
+  , "export div = (attrs, children) => #- h('div', objectifyAttrs(attrs), children) -#"
+  , ""
+  , "span :: List Attribute -> List Element -> Element"
+  , "export span = (attrs, children) => #- h('span', objectifyAttrs(attrs), children) -#"
+  , ""
+  , "p :: List Attribute -> List Element -> Element"
+  , "export p = (attrs, children) => #- h('p', objectifyAttrs(attrs), children) -#"
+  , ""
+  , "input :: List Attribute -> List Element -> Element"
+  , "export input = (attrs, children) => #- h('input', objectifyAttrs(attrs), children) -#"
+  , ""
+  , "button :: List Attribute -> List Element -> Element"
+  , "export button = (attrs, children) => #- h('button', objectifyAttrs(attrs), children) -#"
+  , ""
+  , "alias State = Number"
+  , ""
+  , "initialState :: State"
+  , "initialState = 0"
+  , ""
+  , ""
+  , "MyApp :: Component State"
+  , "MyApp = (count) =>"
+  , "  <div id=\"id\" className=\"class\">"
+  , "    <div>{`Current count is ${show(count)}`}</div>"
+  , "    <div>"
+  , "      <button onClick={(state, event) => [good((s) => s + 1)]}>"
+  , "        increment"
+  , "      </button>"
+  , "    </div>"
+  , "  </div>"
+  , ""
+  , "<div>Some text!</div>"
+  , ""
+  , "<div><div><span></span></div><div><span></span></div></div>"
+  , ""
+  , "methods = ['1', '2', '3']"
+  , "children = map((method) => <div>{method}</div>, methods)"
+  , "<div>{methods}</div>"
+  , "<div>{children}</div>"
+  ]
+
+
 monadTransformersProgram :: String
 monadTransformersProgram = unlines
   [ "interface Semigroup a {"
@@ -455,6 +551,10 @@ spec = do
     it "should compile to JS with coverage trackers when COVERAGE_MODE is on" $ do
       let actual = coverageTester mainCompileFixture
       snapshotTest "should compile to JS with coverage trackers when COVERAGE_MODE is on" actual
+    
+    it "should compile JSX" $ do
+      let actual = tester False jsxProgram
+      snapshotTest "should compile JSX" actual
 
     it "should compile interfaces and instances" $ do
       let code = unlines

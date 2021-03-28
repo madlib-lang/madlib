@@ -11,6 +11,7 @@ data DocString
   | FunctionDoc String String [DocStringTag]
   | TypeDefDoc String String [DocStringTag]
   | InterfaceDoc String String [DocStringTag]
+  | InstanceDoc String String [DocStringTag]
   deriving(Eq, Show)
 
 data DocStringTag

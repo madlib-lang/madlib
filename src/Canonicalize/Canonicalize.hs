@@ -16,6 +16,8 @@ import qualified Data.Map                      as M
 import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
+import Debug.Trace
+import Text.Show.Pretty
 
 
 
@@ -119,16 +121,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       let props'       = Can.Canonical propArea (Can.ListConstructor propFns)
       let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
 
-      children''' <- case children of
-        (Src.Source _ _ (Src.TemplateString _)) : _ -> return children''
-        (Src.Source _ _ (Src.LStr _)) : _ -> return children''
-        (Src.Source _ _ (Src.JsxTag _ _ _)) : _ -> return children''
-        [x ] -> canonicalize env target x
-        _    -> return children''
-
       return $ Can.Canonical
         area
-        (Can.App (Can.Canonical (mergeAreas tagFnArea propArea) (Can.App tagFnVar props' False)) children''' True)
+        (Can.App (Can.Canonical (mergeAreas tagFnArea propArea) (Can.App tagFnVar props' False)) children'' True)
      where
       composeArea :: Int -> Area -> [Can.Canonical a] -> Area
       composeArea offset (Area (Loc _ l c) _) cans = if not (null cans)
@@ -143,7 +138,9 @@ instance Canonicalizable Src.Exp Can.Exp where
         Src.LStr _ -> do
           e' <- canonicalize env target e
           return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
-        _ -> canonicalize env target e
+        _ -> do
+          e' <- canonicalize env target e
+          return $ Can.Canonical area $ Can.JSXExpChild e'
 
     Src.Pipe exps -> do
       let (Area (Loc x l c) _) = area

@@ -229,9 +229,62 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
       exp' <- updatePlaceholders env s exp
       return $ Slv.Solved (apply s t) a $ Slv.Is pat exp'
 
+
+--  (ListConstructor
+--     [ Solved
+--         (TVar (TV "anb" Star))
+--         (Area (Loc 207 7 23) (Loc 213 7 29))
+--         (ListItem
+--            (Solved
+--               (TCon
+--                  (TC "Element" Star)
+--                  "/Users/a.boeglin/Code/madlib/examples/UI.mad")
+--               (Area (Loc 207 7 23) (Loc 213 7 29))
+--               (App
+--                  (Solved
+--                     (TApp
+--                        (TApp
+--                           (TCon
+--                              (TC
+--                                 "(->)"
+--                                 (Kfun
+--                                    Star
+--                                    (Kfun Star Star)))
+--                              "prelude")
+--                           (TCon
+--                              (TC "String" Star)
+--                              "prelude"))
+--                        (TCon
+--                           (TC "Element" Star)
+--                           "/Users/a.boeglin/Code/madlib/examples/UI.mad"))
+--                     (Area (Loc 0 0 0) (Loc 0 0 0))
+--                     (Var "__tmp_jsx_children__"))
+--                  (Solved
+--                     (TCon (TC "String" Star) "prelude")
+--                     (Area (Loc 207 7 23) (Loc 213 7 29))
+--                     (Var "method"))
+--                  True)))
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
   updateListItem s (Slv.Solved t area li) = case li of
-    Slv.ListItem   e -> Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env s e
+    Slv.ListItem   e -> do
+      updated <- updatePlaceholders env s e
+      case updated of
+        Slv.Solved _ _ (Slv.App (Slv.Solved tAbs _ (Slv.Var "__tmp_jsx_children__")) elem _) ->
+          case tAbs of
+            TApp (TApp (TCon (TC "(->)" _) _) (TCon (TC "String" Star) "prelude")) _ ->
+              return $ Slv.Solved t area $ Slv.ListItem (Slv.Solved t area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
+            
+            TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") (TCon (TC "String" Star) "prelude"))) _ ->
+              return $ Slv.Solved t area $ Slv.ListSpread (Slv.Solved t area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
+            
+            TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") tSpread)) _ ->
+              return $ Slv.Solved t area $ Slv.ListSpread elem
+            
+            _ -> return $ Slv.Solved t area $ Slv.ListItem elem
+
+        _ -> Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env s e
+
+
     Slv.ListSpread e -> Slv.Solved t area . Slv.ListSpread <$> updatePlaceholders env s e
 
   updateField :: Substitution -> Slv.Field -> Infer Slv.Field
