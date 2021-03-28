@@ -1,0 +1,15 @@
+import { test, assertEquals } from "TestTools"
+
+// Code
+
+add :: Number -> Number -> Number
+export add = (a, b) => (
+  a + b
+)
+
+
+// Tests
+
+// test("It should fail", (x) => assertEquals(add(1, 2), 4))
+
+test("It should work", (x) => assertEquals(add(1, 2), 3))

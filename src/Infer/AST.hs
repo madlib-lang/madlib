@@ -277,6 +277,17 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
     Just fp -> return (M.insert fp inferredAST inferredASTs, env)
 
 
+solveManyASTs :: Can.Table -> [FilePath] -> Infer Slv.Table
+solveManyASTs table fps = case fps of
+  [] -> return mempty
+  fp:fps' -> case M.lookup fp table of
+    Just ast -> do
+      current <- solveTable table ast
+      next    <- solveManyASTs table fps'
+      return $ current <> next
+    Nothing -> throwError $ InferError (ImportNotFound fp) NoContext
+
+
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)
 -- -- Well, or just adapt it somehow
 runInfer :: Env -> Can.AST -> Either InferError Slv.AST

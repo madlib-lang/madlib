@@ -45,6 +45,7 @@ data CompilationConfig
       , cccoverage       :: Bool
       , ccoptimize       :: Bool
       , cctarget         :: Target
+      , ccinternalsPath  :: FilePath
       }
 
 class Compilable a where
@@ -290,7 +291,7 @@ instance Compilable Exp where
                           <> param
                 next = case head body of
                   (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  Optimized _ _ (JSExp _) -> ") => " <> compile config (head body) <> "))"
+                  -- Optimized _ _ (JSExp _) -> ") => " <> compile config (head body) <> "))"
                   _                       -> ") => " <> compileBody body <> "))"
             in  start <> next
 
@@ -564,6 +565,7 @@ instance Compilable AST where
   compile config ast =
     let entrypointPath     = ccentrypointPath config
         coverage           = cccoverage config
+        internalsPath      = ccinternalsPath config
         exps               = aexps ast
         typeDecls          = atypedecls ast
         path               = apath ast
@@ -595,7 +597,7 @@ instance Compilable AST where
           x  -> foldr1 (<>) (terminate . compileImport configWithASTPath <$> x) <> "\n"
         defaultExport = buildDefaultExport typeDecls exps
     in  infoComment
-          <> (if entrypointPath == astPath then "import {} from \"./__internals__.mjs\"\n" else "")
+          <> (if entrypointPath == astPath then "import {} from \"" <> internalsPath <> "\"\n" else "")
           <> compiledImports
           <> compiledAdts
           <> compiledInterfaces

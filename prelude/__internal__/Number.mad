@@ -12,4 +12,7 @@ export fromString = (str) => (#- {
 } -#)
 
 formatDecimal :: Number -> Number -> String
-export formatDecimal = (a, x) => (#- x.toFixed(a) -#)
+export formatDecimal = (a, x) => #-{
+  const n = x.toFixed(a);
+  return isNaN(n) ? "0" : n
+}-#

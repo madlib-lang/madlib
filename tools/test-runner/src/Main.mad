@@ -1,49 +1,116 @@
 import W from "Wish"
 import IO from "IO"
-import S from "System"
-import String from "String"
-import L from "List"
-import Maybe from "Maybe"
-import F from "Function"
-import { andDo } from "Monad"
+import { collectCoverage } from "TestTools"
 
-testFilePath :: W.Wish String String
-testFilePath = chain(
-  pipe(
-    L.nth(0),
-    where
-      is Maybe.Just path: of(path)
-      is Maybe.Nothing  : W.bad("Test file not given !")
-  )
-)(S.getArgs)
+#-
+import { fork, exec } from "child_process";
+import { join } from "path";
+import fs from "fs/promises";
 
-madlibPath :: W.Wish String String
-madlibPath = S.getEnv("MADLIB_PATH") |> W.chainRej((x) => (of("madlib")))
+let hitPoints = [];
+const testsToRun = {};
+let successCount = 0;
+let testSuiteCount = 0;
 
-prepare :: W.Wish String <String, String, String>
-prepare = pipe(
-  W.parallel,
-  map(where
-    is [entry, madlib]:
-      < entry
-      , String.replace("(.*\/)(.*).mad$"
-      , ".tests/$2.mjs", entry), madlib
-      >
-  )
-)([testFilePath, madlibPath])
 
-prepare
-  |> chain(where {
-       is <entry, dest, madlib>:
-         S.exec(madlib ++ " compile -i " ++ entry ++ " -o .tests/")
-           |> andDo(S.spawn("node " ++ dest))
-           |> W.mapRej(
-                (rej) => where(rej)
-                  is S.CommandError _ msg: msg
-              )
-           |> chain((a) => {
-               S.exec("rm -r .tests")
-               return of(a)
-             })
-     })
-  |> W.fulfill(IO.err, F.identity)
+
+const isCoverageOn = process.env.COVERAGE_MODE === "on";
+
+const testCount = () => Object.keys(testsToRun).length;
+
+const areAllTestsDone = (testsToRun) => Object.values(testsToRun).reduce((all, curr) => all && curr, true);
+const areAllTestsSuccess = () => testCount() === successCount;
+
+const runTestSuite = (madlibFile, done) => {
+  testSuiteCount = testSuiteCount + 1;
+  console.log(`- ${madlibFile}`);
+  const jsFile = madlibFile.match("prelude/__internal__")
+    ? madlibFile.replace(new RegExp("(.*\/)(.*).mad$"), ".tests/.prelude/$2.mjs")
+    : madlibFile.replace(new RegExp("(.*\/)(.*).mad$"), ".tests/$2.mjs");
+
+  const forked = fork(jsFile);
+
+  forked.on("message", msg => {
+    switch(msg.reportType) {
+      case "TEST_START":
+        testsToRun[msg.id] = false;
+        break;
+      case "TEST_FAIL":
+      case "TEST_SUCCESS":
+        if (msg.reportType === "TEST_SUCCESS") {
+          successCount = successCount + 1;
+        }
+        testsToRun[msg.id] = true;
+        hitPoints = hitPoints.concat(msg.hitPoints);
+        console.log(msg.message);
+
+        if (areAllTestsDone(testsToRun)) {
+          console.log("Test suite finished\n");
+          if (done) {
+            done();
+          }
+        }
+        break;
+      default:
+    }
+  });
+}
+
+
+const path = process.argv[2];
+
+
+const isDirectory = source => fs.lstat(source).then(s => s.isDirectory())
+const getDirectories = source =>
+  fs.readdir(source).then(files => {
+    const joined = files.map(name => join(source, name));
+    const withIsDir = joined.map(fp => isDirectory(fp).then(is => ({ isDir: is, path: fp })));
+    return Promise.all(withIsDir).then(full => full.filter(x => x.isDir).map(x => x.path));
+  })
+
+
+const getAllTestFiles = (path) => {
+  return fs.readdir(path).then(paths => {
+    const specFiles = paths.filter((s) => s.substr(-9, 9) === ".spec.mad").map((p) => path + "/" + p);
+    return getDirectories(path).then(subDirs => {
+      if (subDirs.length > 0) {
+        return Promise.all(subDirs.map(subDir => getAllTestFiles(subDir))).then(results =>
+          results.reduce((acc, value) => acc.concat(value), specFiles)
+        )
+      }
+      else {
+        return specFiles;
+      }
+    });
+  })
+}
+
+getAllTestFiles(path).then((paths) => {
+  exec(`madlib compile -i ${path} -o .tests/ --test-files-only`, (err) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    const specFiles = paths.filter((s) => s.substr(-9, 9) === ".spec.mad").map((p) => path + "/" + p);
+
+    runAllTestSuites(specFiles);
+  })
+}).catch(console.error);
+
+const runAllTestSuites = (specFiles) => {
+  if (specFiles.length > 0) {
+    runTestSuite(specFiles[0], () => {
+      runAllTestSuites(specFiles.slice(1));
+    });
+  } else {
+    console.log(`Test suites: ${testSuiteCount}  tests: ${testCount()}  passed: ${successCount}  failed: ${testCount() - successCount}`);
+
+    if (isCoverageOn && areAllTestsSuccess()) {
+      console.log("\nCoverage report:");
+      W.fulfill(console.error)(t => IO.table(t)(""))(collectCoverage(hitPoints));
+    }
+  }
+}
+
+-#

@@ -13,6 +13,7 @@ data Command
       , compileOptimize :: Bool
       , compileTarget :: Target
       , compileJson :: Bool
+      , compileTestFilesOnly :: Bool
       }
   | Test { testInput :: FilePath, coverage :: Bool }
   | Install

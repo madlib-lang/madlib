@@ -101,3 +101,11 @@ findAST table path = case M.lookup path table of
 
 runCanonicalization :: Target -> Env -> Src.Table -> FilePath -> Either InferError Can.Table
 runCanonicalization target env table entrypoint = runExcept $ fst <$> canonicalizeAST target env table entrypoint
+
+canonicalizeMany :: Target -> Env -> Src.Table -> [FilePath] -> Either InferError Can.Table
+canonicalizeMany target env table fps = case fps of
+  [] -> return mempty
+  fp:fps' -> do
+    current <- runCanonicalization target env table fp
+    next    <- canonicalizeMany target env table fps'
+    return $ current <> next

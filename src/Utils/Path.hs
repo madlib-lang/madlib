@@ -41,7 +41,13 @@ madlibModulesFolder = "madlib_modules"
 
 
 computeRootPath :: FilePath -> FilePath
-computeRootPath = fst . splitFileName
+computeRootPath path =
+  let firstPass = (fst . splitFileName) path
+  in
+    if firstPass == "./" then
+      path
+    else
+      firstPass
 
 
 cleanRelativePath :: FilePath -> FilePath

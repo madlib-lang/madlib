@@ -57,7 +57,7 @@ tester optimized code =
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode)
+        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
                            (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
@@ -71,7 +71,7 @@ coverageTester code =
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode)
+        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
                            (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
@@ -88,7 +88,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
   in  case resolved of
         Right x ->
           concat
-            $   compile (CompilationConfig rootPath path path "./build" False False TNode)
+            $   compile (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
             .   (\a -> (evalState (optimize False a) initialOptimizationState :: Opt.AST))
             <$> M.elems x
         Left e -> ppShow e

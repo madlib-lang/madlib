@@ -10,10 +10,11 @@ import           GHC.IO                         ( )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory, takeExtension, joinPath )
+import           System.FilePath                ( takeDirectory, takeExtension, joinPath, splitDirectories )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
                                                 , getDirectoryContents
+                                                , doesDirectoryExist
                                                 )
 import           System.Exit
 import           Utils.Path              hiding ( PathUtils(..) )
@@ -33,7 +34,7 @@ import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
 import qualified Explain.Format                as Explain
-import           Control.Monad                  ( when )
+import           Control.Monad                  ( when, filterM )
 import           System.Process
 import           Control.Exception              ( try
                                                 , SomeException
@@ -51,8 +52,10 @@ import           Coverage.Coverable             ( collectFromAST
                                                 , Coverable(..)
                                                 )
 import           Data.List                      ( isInfixOf
+                                                , isSuffixOf
                                                 , isPrefixOf
                                                 , intercalate
+                                                , stripPrefix
                                                 )
 import           Data.String.Utils
 import           Compile.JSInternals
@@ -167,7 +170,7 @@ runDocumentationGenerator fp = do
 
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
-shouldBeCovered rootPath path | rootPath `isPrefixOf` path && not ("Spec" `isInfixOf` path) = True
+shouldBeCovered rootPath path | rootPath `isPrefixOf` path && not (".spec.mad" `isSuffixOf` path) = True
                               | otherwise = False
 
 runCoverageInitialization :: FilePath -> Slv.Table -> IO ()
@@ -224,20 +227,36 @@ runTests entrypoint coverage = do
     Left  e -> return ()
     Right a -> return ()
 
+getFilesToCompile :: Bool -> FilePath -> IO [FilePath]
+getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
+  ".mad"   -> return [entrypoint]
+  '.':rest -> putStrLn ("Invalid file extension '" <> ('.':rest) <> "'") >> return []
+  _ -> do
+    paths <- getDirectoryContents entrypoint
+    let fullPaths = (\file -> joinPath [entrypoint, file]) <$> filter (\p -> p /= "." && p /= "..") paths
+    let filtered =
+          if not testsOnly then
+            filter ((== ".mad") . takeExtension) fullPaths
+          else
+            filter (isSuffixOf ".spec.mad") fullPaths
+
+    subFolders <- filterM doesDirectoryExist fullPaths
+    next <- mapM (getFilesToCompile testsOnly) subFolders
+    return $ filtered ++ concat next
+
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json) coverage = do
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage = do
   canonicalEntrypoint <- canonicalizePath entrypoint
-  astTable            <- buildASTTable canonicalEntrypoint
-  let canTable = astTable >>= \table -> Can.runCanonicalization target Can.initialEnv table canonicalEntrypoint
+  sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
+  astTable            <- buildManyASTTables sourcesToCompile
+  let canTable = astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
 
   rootPath <- canonicalizePath $ computeRootPath entrypoint
 
-  let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
-      resolvedASTTable = case (entryAST, canTable) of
-        (Right ast, Right table) -> do
-          runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
-        (_     , Left e) -> Left e
-        (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoContext
+  let resolvedASTTable = case canTable of
+        Right table -> do
+          runExcept (runStateT (solveManyASTs table sourcesToCompile) InferState { count = 0, errors = [] })
+        Left e -> Left e
 
   when verbose $ do
     putStrLn $ "OUTPUT: " ++ outputPath
@@ -272,7 +291,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                 let optimizedTable = optimizeTable optimized table
 
-                generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable
+                generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
                 when bundle $ do
                   let entrypointOutputPath =
@@ -325,20 +344,31 @@ runBundle dest entrypointCompiledPath = do
     Left e -> return $ Left e
 
 
-generate :: Command -> Bool -> FilePath -> Opt.Table -> IO ()
-generate options coverage rootPath table = do
+generate :: Command -> Bool -> FilePath -> Opt.Table -> [FilePath] -> IO ()
+generate options coverage rootPath table sourcesToCompile = do
   let outputPath = compileOutput options
       bundle     = compileBundle options
       optimized  = compileOptimize options
       target     = compileTarget options
-  (head <$>) <$> mapM (generateAST options coverage rootPath) $ M.elems table
+  (head <$>) <$> mapM (generateAST options coverage rootPath sourcesToCompile) $ M.elems table
   writeFile (takeDirectory outputPath <> (if bundle then "/.bundle" else "") <> "/__internals__.mjs")
     $ generateInternalsModuleContent target optimized coverage
 
 
-generateAST :: Command -> Bool -> FilePath -> Opt.AST -> IO ()
-generateAST options coverage rootPath ast@Opt.AST { Opt.apath = Just path } = do
-  let entrypointPath     = compileInput options
+generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
+generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path } = do
+  let internalsPath = case stripPrefix rootPath path of
+        Just s ->
+          let dirs = splitDirectories (takeDirectory s)
+              dirLength = length dirs - 1
+          in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
+        Nothing -> "./__internals__.mjs"
+
+  let entrypointPath     =
+        if path `elem` sourcesToCompile then
+          path
+        else
+          compileInput options
       outputPath         = compileOutput options
       bundle             = compileBundle options
       optimized          = compileOptimize options
@@ -349,4 +379,4 @@ generateAST options coverage rootPath ast@Opt.AST { Opt.apath = Just path } = do
 
   createDirectoryIfMissing True $ takeDirectory computedOutputPath
   writeFile computedOutputPath
-    $ compile (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target) ast
+    $ compile (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target internalsPath) ast
