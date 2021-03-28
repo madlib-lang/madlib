@@ -134,10 +134,10 @@ instance Canonicalizable Src.Exp Can.Exp where
       canonicalizeJsxChild e@(Src.Source _ area exp) = case exp of
         Src.TemplateString _ -> do
           e' <- canonicalize env target e
-          return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+          return $ Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) e' True
         Src.LStr _ -> do
           e' <- canonicalize env target e
-          return $ Can.Canonical area $ Can.App (Can.Canonical emptyArea (Can.Var "text")) e' True
+          return $ Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) e' True
         _ -> do
           e' <- canonicalize env target e
           return $ Can.Canonical area $ Can.JSXExpChild e'
