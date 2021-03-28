@@ -23,7 +23,7 @@ import           Infer.Env                     as Infer
 import           Infer.Infer
 import           Optimize.Optimize
 import           Error.Error
-import           Parse.AST                     as Parse
+import           Parse.Madlib.AST              as Parse
 import           Compile.Javascript
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )

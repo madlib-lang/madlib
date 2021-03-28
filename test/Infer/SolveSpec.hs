@@ -23,7 +23,7 @@ import           Infer.Env
 import           Infer.Infer
 import           Infer.AST
 import           Error.Error
-import           Parse.AST
+import           Parse.Madlib.AST
 import           Canonicalize.Canonicalize
 import           Target
 import           Canonicalize.AST              as Can

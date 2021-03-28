@@ -1,12 +1,12 @@
 {
-module Parse.Grammar where
+module Parse.Madlib.Grammar where
 
 import           Text.Printf
 import           Control.Monad.Except
 import qualified Data.Map             as M
 import           Data.Char(isUpper)
 
-import           Parse.Lexer
+import           Parse.Madlib.Lexer
 import           Infer.Type
 import qualified AST.Source           as Src
 import           Explain.Location

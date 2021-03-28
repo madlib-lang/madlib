@@ -13,7 +13,7 @@ import           Canonicalize.CanonicalM
 import qualified Canonicalize.Env              as E
 import           Canonicalize.Typing
 import qualified Data.Map                      as M
-import           Parse.Grammar                  ( mergeAreas )
+import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
 

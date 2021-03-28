@@ -7,7 +7,7 @@ module Infer.Exp where
 import qualified Data.Map                      as M
 import           Control.Monad.Except
 import           Data.Foldable                  ( foldrM, foldlM )
-import qualified Parse.AST                     as AST
+import qualified Parse.Madlib.AST              as AST
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
 import           Infer.Infer

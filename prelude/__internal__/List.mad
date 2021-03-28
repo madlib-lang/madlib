@@ -5,6 +5,13 @@ import {} from "String"
 import Fun from "Function"
 import { Maybe, Just, Nothing } from "Maybe"
 
+
+/**
+ * DOC STRING
+ * and another line
+ */
+
+
 instance Functor List {
   map = (f, xs) => (#- xs.map((x) => f(x)) -#)
 }
@@ -45,6 +52,9 @@ instance Show a => Show (List a) {
   )
 }
 
+/**
+ * DOC STRING for function!
+ */
 singleton :: a -> List a
 export singleton = pure
 
@@ -61,6 +71,9 @@ export intercalate = (a, xs) => where(xs)
   is [one, two]    : [one, a, two]
   is [one, ...rest]: [one, a, ...intercalate(a, rest)]
 
+/**
+ * Alias for intercalate
+ */
 export join = intercalate
 
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
