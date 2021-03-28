@@ -57,6 +57,16 @@ mergeVars :: Env -> Vars -> Env
 mergeVars env vs = env { envVars = envVars env <> vs }
 
 
+mergeEnv :: Env -> Env -> Env
+mergeEnv initial env =
+  Env { envVars = envVars initial <> envVars env
+      , envMethods = envMethods initial <> envMethods env
+      , envInterfaces = envInterfaces initial <> envInterfaces env
+      , envBacktrace = mempty
+      , envCurrentPath = envCurrentPath env
+      }
+
+
 initialEnv :: Env
 initialEnv = Env
   { envVars        = M.fromList

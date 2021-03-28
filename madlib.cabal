@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 057eea0cce4241a8babc08abb2b1dc69cc0ef85a2fb210fb1020fd694846fb6a
+-- hash: 1b1937c8f45edbd8f5a7af475d448c2ade3adf688a296529db973ecdce5bbc09
 
 name:           madlib
 version:        0.4.0
@@ -173,7 +173,7 @@ executable madlib
       Paths_madlib
   hs-source-dirs:
       src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -funbox-strict-fields -O2 -optc-O2
   build-depends:
       MissingH
     , aeson

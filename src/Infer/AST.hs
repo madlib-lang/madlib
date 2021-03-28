@@ -23,6 +23,8 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
+import Debug.Trace
+import Text.Show.Pretty
 
 {-|
 Module      : AST
@@ -141,20 +143,22 @@ filterExportsByImport imp vars = case imp of
   Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList names
 
 
-solveImports :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
-solveImports = solveImports' mempty
+-- solveImports :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
+-- solveImports = undefined
+-- -- solveImports = solveImports' mempty
 
-solveImports' :: M.Map FilePath (Slv.Table, Slv.AST, Env) -> Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
-solveImports' solved table (imp : is) = do
+solveImports' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> [Can.Import] -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods)
+solveImports' previousSolved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
-  solvedImport@(solvedTable, solvedAST, solvedEnv) <- case M.lookup modulePath solved of
-    Just x -> return x
+  solvedImport@(allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
+    Just x@(ast, env) -> return (previousSolved, ast, env)
     Nothing -> case Can.findAST table modulePath of
       Right ast -> do
-        (solvedTable, solvedEnv) <- solveTable' solved table ast
-        solvedAST          <- findASTM solvedTable modulePath
-        return (solvedTable, solvedAST, solvedEnv)
+        solved <- solveTable' previousSolved table ast
+        solvedAST          <- findASTM (M.map fst solved) modulePath
+        let Just (_, env) = M.lookup modulePath solved
+        return (solved, solvedAST, env)
 
   importedVars       <- extractImportedVars solvedEnv solvedAST imp
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
@@ -163,10 +167,10 @@ solveImports' solved table (imp : is) = do
   let solvedMethods = envMethods solvedEnv
 
 
-  let solved' = M.insert modulePath solvedImport solved
+  let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
   (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports' solved' table is
 
-  return ( M.insert modulePath solvedAST (solvedTable <> nextTable)
+  return ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
          , solvedVars <> nextVars
          , mergeInterfaces solvedInterfaces nextInterfaces
          , M.union solvedMethods nextMethods
@@ -252,10 +256,10 @@ updateImport i = case i of
 -- and returning it.
 solveTable :: Can.Table -> Can.AST -> Infer Slv.Table
 solveTable table ast = do
-  (table, _) <- solveTable' mempty table ast
-  return table
+  solved <- solveTable' mempty table ast
+  return $ M.map fst solved
 
-solveTable' :: M.Map FilePath (Slv.Table, Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (Slv.Table, Env)
+solveTable' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (M.Map FilePath (Slv.AST, Env))
 solveTable' solved table ast@Can.AST { Can.aimports } = do
   -- First we resolve imports to update the env
   (inferredASTs, vars, interfaces, methods) <- solveImports' solved table aimports
@@ -274,17 +278,17 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
   (inferredAST, env) <- inferAST envWithImports ast
 
   case Slv.apath inferredAST of
-    Just fp -> return (M.insert fp inferredAST inferredASTs, env)
+    Just fp -> return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
 
 
-solveManyASTs :: Can.Table -> [FilePath] -> Infer Slv.Table
-solveManyASTs table fps = case fps of
-  [] -> return mempty
+solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> [FilePath] -> Infer Slv.Table
+solveManyASTs solved table fps = case fps of
+  [] -> return (M.map fst solved)
   fp:fps' -> case M.lookup fp table of
     Just ast -> do
-      current <- solveTable table ast
-      next    <- solveManyASTs table fps'
-      return $ current <> next
+      current <- solveTable' solved table ast
+      next    <- solveManyASTs (solved <> current) table fps'
+      return $ M.map fst current <> next
     Nothing -> throwError $ InferError (ImportNotFound fp) NoContext
 
 

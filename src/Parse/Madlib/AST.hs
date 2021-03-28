@@ -37,31 +37,36 @@ rf fileName = do
   hGetContents inputHandle
 
 
-buildManyASTTables :: [FilePath] -> IO (Either InferError Table)
-buildManyASTTables fps = case fps of
+buildManyASTTables :: Table -> [FilePath] -> IO (Either InferError Table)
+buildManyASTTables currentTable fps = case fps of
   [] -> return $ return mempty
   fp:fps' -> do
-    current <- buildASTTable fp
-    next    <- buildManyASTTables fps'
+    current <- buildASTTable currentTable fp
+    next    <- case current of
+      Left e  -> return $ Left e
+      Right t -> buildManyASTTables (currentTable <> t) fps'
     return $ current >>= (\current' -> next >>= (\next' -> return $ current' <> next'))
 
 
 -- TODO: Write an integration test with real files ?
 -- Move that to Main and rename buildASTTable' to buildASTTable
 -- Then use the scoped name in Main in order to partially apply it.
-buildASTTable :: FilePath -> IO (Either InferError Table)
-buildASTTable path = do
+buildASTTable :: Table -> FilePath -> IO (Either InferError Table)
+buildASTTable table path = do
   let pathUtils = PathUtils { readFile           = rf
                             , canonicalizePath   = Dir.canonicalizePath
                             , doesFileExist      = Dir.doesFileExist
                             , byteStringReadFile = B.readFile
                             , getExecutablePath  = E.getExecutablePath
                             }
-  buildASTTable' pathUtils path Nothing [] path
+  buildASTTable' table pathUtils path Nothing [] path
 
 
-buildASTTable' :: PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
-buildASTTable' pathUtils parentPath imp previousPaths srcPath
+-- buildASTTable'' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
+-- buildASTTable'' table pathUtils parentPath imp previousPaths srcPath = undefined
+
+buildASTTable' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
+buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
   | srcPath `elem` previousPaths = return $ Left $ InferError (ImportCycle (previousPaths ++ [srcPath])) NoContext
   | otherwise = do
     let parentDir = dropFileName parentPath
@@ -103,7 +108,7 @@ buildASTTable' pathUtils parentPath imp previousPaths srcPath
               (\table imp'@(Source _ area _) ->
                 case table of
                   Left e       -> return $ Left e
-                  Right table' -> buildChildTable pathUtils previousPaths srcPath table' imp'
+                  Right table' -> buildChildTable pathUtils previousPaths srcPath (previousTable <> table') imp'
               )
               (Right M.empty)
               madImports
@@ -115,7 +120,8 @@ buildChildTable pathUtils previousPaths srcPath table imp = do
   let absPath = getImportAbsolutePath imp
   builtImport <- case M.lookup absPath table of
     Just ast -> return $ Right $ M.singleton absPath ast
-    Nothing  -> buildASTTable' pathUtils
+    Nothing  -> buildASTTable' table
+                               pathUtils
                                srcPath
                                (Just imp)
                                (previousPaths ++ [srcPath])
