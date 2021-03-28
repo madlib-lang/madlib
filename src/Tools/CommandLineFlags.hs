@@ -17,4 +17,5 @@ data Command
   | Test { testInput :: FilePath, coverage :: Bool }
   | Install
   | New { newFolder :: FilePath }
+  | Doc { docInput :: FilePath }
   deriving (Eq, Show)
