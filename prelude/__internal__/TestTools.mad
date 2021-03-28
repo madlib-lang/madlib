@@ -121,7 +121,7 @@ generateTable = (lcov) =>
   map(where
     is { sf: Lcov.SF path, lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
       <computePercents(hit, found), computePercents(fhit, ffound)>
-        |> (t) => buildRow(path, T.fst(t), T.fst(t))
+        |> (t) => buildRow(path, T.fst(t), T.snd(t))
     , lcov
   ) |> (table) => L.concat([allRow(lcov)], table)
 
@@ -176,11 +176,15 @@ export test = (description, testImpl) => {
 
 reportBad :: String -> String -> ()
 reportBad = (id, err) => #-{
-  process.send({ reportType: "TEST_FAIL", message: err, id, hitPoints: __getHPs() })
+  process.send({ reportType: "TEST_FAIL", message: err, id, hitPoints: __getHPs() });
+  __resetHPs();
 }-#
 
 reportGood :: String -> String -> ()
-reportGood = (id, good) => #- process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() }) -#
+reportGood = (id, good) => #-{
+  process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() });
+  __resetHPs();
+}-#
 
 assertEquals :: a -> a -> W.Wish AssertionError String
 export assertEquals = (actual, expected) => actual == expected

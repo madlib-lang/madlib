@@ -179,3 +179,8 @@ getExpName (Solved _ _ exp) = case exp of
   Export (Solved _ _ (Assignment name _)) -> return name
 
   _                 -> Nothing
+
+
+getInstanceMethods :: Instance -> [Exp]
+getInstanceMethods inst = case inst of
+  Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods

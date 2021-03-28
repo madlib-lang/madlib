@@ -5,11 +5,21 @@ export type HitPoint = FunctionHit String String
 let __HIT_POINTS = [];
 global.__hp = (astPath, type, line, id) => {
   if (type === "function") {
-    __HIT_POINTS.push(FunctionHit(astPath, id))
-    __HIT_POINTS.push(LineHit(astPath, line))
+    const foundFunction = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === id && x.__constructor === "FunctionHit");
+    if (foundFunction === -1) {
+      __HIT_POINTS.push(FunctionHit(astPath, id))
+    }
+    
+    const foundLine = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === line && x.__constructor === "LineHit");
+    if (foundLine === -1) {
+      __HIT_POINTS.push(LineHit(astPath, line))
+    }
   }
   else if (type === "line") {
-    __HIT_POINTS.push(LineHit(astPath, line))
+    const foundLine = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === line && x.__constructor === "LineHit");
+    if (foundLine === -1) {
+      __HIT_POINTS.push(LineHit(astPath, line))
+    }
   }
 }
 
@@ -21,5 +31,5 @@ global.__getHPs = () => __HIT_POINTS;
 
 
 getHitPoints :: a -> List HitPoint
-export getHitPoints = (a) => (#- [...__HIT_POINTS] -#)
+export getHitPoints = (a) => (#- __HIT_POINTS -#)
 
