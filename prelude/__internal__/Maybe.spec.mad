@@ -1,0 +1,27 @@
+import { test, assertEquals } from "TestTools"
+import { Just, Nothing, Maybe, fromMaybe } from "Maybe"
+import {} from "Number"
+
+test("map should map the value in the Maybe", (_) =>
+  assertEquals(map((x) => x + 1, Just(0)), Just(1))
+)
+
+test("map should return Nothing if mapped over Nothing", (_) =>
+  assertEquals(map((x) => x + 1, Nothing), Nothing)
+)
+
+test("pure wraps a value in a Maybe", (_) => assertEquals(pure(3), Just(3)))
+test("ap should apply a function in a Maybe to a value in a Maybe", (_) =>
+  assertEquals(ap(Just((x) => x + 1), Just(3)), Just(4))
+)
+test("ap - Nothing", (_) => assertEquals(ap(Just((x) => x + 1), Nothing), Nothing))
+
+test("of wraps a value in a Maybe", (_) => assertEquals(of(3), Just(3)))
+test("chain", (_) => assertEquals(chain((x) => Just(x + 1), Just(1)), Just(2)))
+test("chain - Nothing", (_) => assertEquals(chain((x) => Just(x + 1), Nothing), Nothing))
+
+test("show - Just", (_) => assertEquals(show(Just(3)), "Just 3"))
+test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Number)), "Nothing"))
+
+test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
+test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))

@@ -1,16 +1,47 @@
-import _ from "Monad"
-import __ from "Show"
+import {} from "Monad"
+import {} from "Show"
 
+/**
+ * Either is a type that carries values that may fail. An Either can be a Right
+ * of a successful computation, or a Left that contains an error.
+ *
+ * @since 0.0.5
+ */
 export type Either e a
   = Left e
   | Right a
 
+
+/**
+ * The Functor instance of Either allows for a function which conditionally
+ * transforms a value (if it is a Right) or leaves it unchanged if it is a Left.
+ *
+ * @since 0.0.6
+ * @example
+ * map((x) => x + 1, Right(3))      // Right(4)
+ * map((x) => x + 1, Left("error")) // Left("error")
+ */
 instance Functor (Either e) {
   map = (f) => where
     is Right a: Right(f(a))
     is Left  e: Left(e)
 }
 
+
+/**
+ * The Applicative instance of Either defines ap that applies a function wrapped
+ * in an Either over the value of an other Either. If both parameters are Rights,
+ * it returns a Right of the result. If the first parameter is a Left it returns
+ * that error, regardless of what is contained in the second parameter. If the
+ * first parameter is a Right and the second one a Left, returns a Left carrying
+ * that error value.
+ *
+ * @since 0.0.6
+ * @example
+ * ap(Right((x) => x + 1), Right(2))     // Right(3)
+ * ap(Left("oups"), Right(2))            // Left("oups")
+ * ap(Right((x) => x + 1), Left("oups")) // Left("oups")
+ */
 instance Applicative (Either e) {
   pure = Right
   ap = (mf, m) => where(mf)
@@ -18,6 +49,14 @@ instance Applicative (Either e) {
     is Right f: map(f, m)
 }
 
+
+/**
+ * The Monad instance of Either defines chain.
+ * @since 0.0.6
+ * @example
+ * chain((x) => Right(x + 1), Right(1))   // Right(2)
+ * chain((x) => Right(x + 1), Left("no")) // Left("no")
+ */
 instance Monad (Either e) {
   of = pure
   chain = (f) => where
@@ -25,27 +64,87 @@ instance Monad (Either e) {
     is Left  e: Left(e)
 }
 
+
+/**
+ * The Show instance of Maybe returns Right or Left, following by the showed
+ * value it contains.
+ *
+ * @since 0.0.6
+ * @example
+ * show((Right(3) :: Either Number Number)) // "Right 3"
+ * show((Left(3) :: Either Number Number))  // "Left 3"
+ */
 instance (Show e, Show a) => Show (Either e a) {
   show = where
     is Right a: "Right " ++ show(a)
     is Left  e: "Left " ++ show(e)
 }
 
+/**
+ * Alias for map, it applies a function to the contained value if it is a Right.
+ *
+ * @since 0.0.5
+ * @example
+ * mapRight((x) => x + 1, Right(3)) // Right(4)
+ */
 mapRight :: (a -> b) -> Either e a -> Either e b
 export mapRight = map
 
+
+/**
+ * Applies a function to the contained value if it is a Left.
+ *
+ * @since 0.0.5
+ * @example
+ * mapLeft((x) => x + 1, Left(3))  // Left(4)
+ * mapLeft((x) => x + 1, Right(3)) // Right(3)
+ */
 mapLeft :: (e -> f) -> Either e a -> Either f a
 export mapLeft = (f, m) => (where(m) {
   is Right a: Right(a)
   is Left  e: Left(f(e))
 })
 
+
+/**
+ * Returns true if it is a Left, false otherwise.
+ *
+ * @since 0.0.5
+ * @example
+ * isLeft(Left(1))  // true
+ * isLeft(Right(1)) // false
+ */
 isLeft :: Either e a -> Boolean
 export isLeft = (either) => (where(either) {
   is Left _: true
   is _     : false
 })
 
+
+/**
+ * Returns true if it is a Right, false otherwise.
+ *
+ * @since 0.0.5
+ * @example
+ * isRight(Left(1))  // false
+ * isRight(Right(1)) // true
+ */
+isRight :: Either e a -> Boolean
+export isRight = (either) => (where(either) {
+  is Right _: true
+  is _      : false
+})
+
+
+/**
+ * Returns the value contained in the Either if it is a Right, or the given
+ * fallback value otherwise.
+ *
+ * @since 0.0.5
+ * @example
+ * fromRight(1, Right(4)) // 4
+ * fromRight(1, Left(4))  // 1
+ */
 fromRight :: a -> Either e a -> a
 export fromRight = (a, either) => (where(either) {
   is Right x: x
