@@ -3,7 +3,7 @@ import { Maybe } from "Maybe"
 import T from "Tuple"
 
 /**
- * Dictionary is a type that represents a key - value data structure.
+ * Dictionary represents a key - value data structure.
  *
  * @since 0.0.5
  */
@@ -35,8 +35,7 @@ export empty = fromList([])
 
 
 /**
- * Inserts a value at a given key.
- * NB: If the key already exists, it updates the value at that key.
+ * Inserts a value at a given key. However, if the key already exists, it updates the value at that key.
  *
  * @since 0.0.5
  * @example

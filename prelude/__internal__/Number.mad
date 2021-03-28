@@ -16,3 +16,15 @@ export formatDecimal = (a, x) => #-{
   const n = x.toFixed(a);
   return isNaN(n) ? "0" : n
 }-#
+
+range :: Number -> Number -> List Number
+export range = (a, b) => #-{
+  const out = []
+  let x = a
+  while (x < b) {
+    out.push(x)
+    x += 1
+  }
+  return out
+}-#
+

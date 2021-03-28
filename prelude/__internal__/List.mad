@@ -349,3 +349,9 @@ export zip = (as, bs) => where(<as, bs>)
   is <[a, ...ass], [b, ...bss]>: mappend([<a, b>], zip(ass, bss))
   is <[a], [b]>                : [<a, b>]
   is <[], []>                  : []
+
+includes :: x -> List x -> Boolean
+export includes = (x, xs) => (#- xs.includes(x) -#)
+
+sortBy :: (a -> a -> Number) -> List a -> List a
+export sortBy = (fn, xs) => (#- xs.sort(fn) -#)
