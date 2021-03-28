@@ -27,11 +27,13 @@ where
 
 import           Control.Monad.State
 import           System.Exit
-import qualified Data.Text     as T
+import qualified Data.Text.Lazy     as T
 import           Explain.Location
 import           Text.Regex.TDFA
 import           Debug.Trace (trace)
 import           Text.Show.Pretty (ppShow)
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy.UTF8 as BLU
 }
 
 %wrapper "monadUserState"
@@ -131,27 +133,28 @@ tokens :-
   <jsxText> $jsxText+                             { mapToken (\s -> TokenName s) }
   <jsxText> $jsxTextPopOut                        { jsxTextPopOut }
 {
-blackList :: String
-blackList = "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
+blackList :: Regex
+blackList = toRegex "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
 
 
-whiteList :: String
-whiteList = "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
+whiteList :: Regex
+whiteList = toRegex "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
 
 toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
 
-jsxTagOpen :: String
-jsxTagOpen = "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
+jsxTagOpen :: Regex
+jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
 
-jsxTagSingle :: String
-jsxTagSingle = "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/>"
+jsxTagSingle :: Regex
+jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/>"
 
-jsxTagClose :: String
-jsxTagClose = "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
+jsxTagClose :: Regex
+jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
 
-constraintRegex :: String
-constraintRegex = "\\`[^={]*(=>)[^}]*([^=]=[^=]|{[\\t\\ ]*\n).*"
+constraintRegex :: Regex
+constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
+-- constraintRegex = toRegex "\\`[^={]*(=>)[^}]*([^=]=[^=]|{[\\t\\ ]*\n).*"
 
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
@@ -318,8 +321,6 @@ jsxTextPopOut :: AlexInput -> Int -> Alex Token
 jsxTextPopOut i@(posn, prevChar, pending, input) len = do
   popStartCode
   return $ (Token (makeArea posn (take len input)) (TokenEOF))
-  -- jsxTextPopOut
-  -- return $ Token (makeArea posn (take len input)) TokenLeftCurly
 
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
@@ -341,34 +342,35 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
           if sc /= instanceHeader then
             return $ TokenName s
           else
-            let next = take 250 input
-                matched = match (toRegex constraintRegex) next :: String
+            let next = BLU.fromString $ take 125 input 
+                matched = match constraintRegex next :: Bool
+                -- matched = match constraintRegex next :: BS.ByteString -- 10.4
             in
-              if null matched then
+              if not matched then
                 return $ TokenName s
               else
                 return $ TokenConstraintName s
 
         TokenRightChevron ->
-          let next  = ((tail . (take 100)) input)
-              matchWL = next =~ whiteList :: String
-              matchBL = matchWL =~ blackList :: String
+          let next  = BLU.fromString $ ((tail . (take 100)) input)
+              matchWL = match whiteList next :: BS.ByteString
+              matchBL = match blackList matchWL :: Bool
           in
-            if ((not . null) matchWL) && null matchBL
+            if not (BS.null matchWL) && not matchBL
             then return TokenRightChevron
             else return TokenTupleEnd
         
         TokenLeftChevron ->
-          let next    = take 2000 input
-              matchedOpen = match (toRegex jsxTagOpen) next :: String
-              matchedClose = match (toRegex jsxTagClose) next :: String
-              matchedSingle = match (toRegex jsxTagSingle) next :: String
+          let next    = BLU.fromString $ take 400 input
+              matchedOpen = match jsxTagOpen next :: Bool
+              matchedClose = match jsxTagClose next :: Bool
+              matchedSingle = match jsxTagSingle next :: Bool
           in
-            if not (null matchedSingle) then do
+            if matchedSingle then do
               return TokenJsxTagOpenSingle
-            else if not (null matchedOpen) then
+            else if matchedOpen then
               return TokenJsxTagOpenStart
-            else if not (null matchedClose) then do
+            else if matchedClose then do
               return TokenJsxTagOpenEnd
             else
               return TokenLeftChevron
