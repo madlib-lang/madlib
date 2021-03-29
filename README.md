@@ -68,13 +68,13 @@ Functions are the heart of *madlib*.
 
 #### Defining a function:
 ```
-inc = (x) => (x + 1)
+inc = (x) => x + 1
 ```
 
 #### Typing a function:
 ```
 inc :: Number -> Number
-inc = (x) => (x + 1)
+inc = (x) => x + 1
 ```
 
 #### Evaluating a function
@@ -109,7 +109,7 @@ compute = pipe(
 #### Currying
 All functions are curried, therefore you can always partially apply them:
 ```
-add = (a, b) => (a + b)
+add = (a, b) => a + b
 
 addFive = add(5)
 
@@ -324,6 +324,62 @@ IO.log("Hello World !")
 ## run
 
 ```
-stack run -- -i "fixtures/example.mad"
-node build/fixtures/example.mjs
+./scripts/run compile -i "examples/HelloWorld.mad"
+node build/HelloWorld.mjs
+```
+
+## Contributing
+
+### Setup
+Your system should be setup with the following:
+- [Stack](https://docs.haskellstack.org/en/stable/README/) and [GHC](https://www.haskell.org/ghc/) `8.8.4`
+- [Node.js](https://nodejs.org/) ( > v14 is recommended )
+- [Rollup](https://rollupjs.org/) with the package `@rollup/plugin-node-resolve` installed globally if you want to enable bundling or use the build script located at `/scripts/build`
+
+### Scripts
+
+#### build
+
+This script builds a local version of madlib as well as dependencies that are
+built in Madlib itself. Currently these are located in tools and are composed
+of the test runner and the package downloader.
+
+To run it:
+```bash
+./scripts/build
+```
+
+#### install
+
+This runs a npm global install ( `npm link` effectively ) of the local package. Beware that the version used
+in the package.json there needs to be a github release that is published in this
+repository. You can have a look here to find out which versions are available:
+[https://github.com/madlib-lang/madlib/releases](https://github.com/madlib-lang/madlib/releases).
+
+To run it:
+```bash
+./scripts/install
+```
+
+#### update-pkg-build
+
+This script allows you to swap the Madlib binary, Prelude Madlib files, and the tools
+with the currently compiled version ( using the `build` script ). Then the latest
+local build becomes globally available if you rely on it for other local projects
+outside the directory of Madlib itself.
+
+To run it:
+```bash
+./scripts/update-pkg-build
+```
+
+#### run
+
+A wrapper to stack run, the usage is the same as Madlib executable itself but uses
+the locally build one.
+
+To run it:
+```bash
+./scripts/run --help
+./scripts/run compile -i INPUT [OPTIONS]
 ```
