@@ -1,0 +1,18 @@
+import { assertEquals, test } from "./TestTools"
+import { always, complement } from "./Function"
+import {} from "List"
+
+
+
+test("complement", (_) => {
+  isEven = (x) => x % 2 == 0
+  isOdd  = complement(isEven)
+
+  return assertEquals(isOdd(2), false)
+})
+
+test("always", (_) => assertEquals(always(true, "1"), true))
+test("always - map", (_) => assertEquals(
+  map(always(true), [1, 2 ,3]),
+  [true, true, true])
+)
