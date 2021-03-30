@@ -4,17 +4,16 @@ import {} from "Show"
 
 /**
  * Maybe is one of the major data types in functional programming and serves to
- * represent things that have the possibility of not existing or potentially failing.
- * Any computation that could fail or return anything like "null, nil, undefined, .." in
- * other procedural/OO languages would benefit from relying on Maybe instead.
+ * represent and encapsulate values which may not exist.
+ * 
+ * Whereas other languages may use values like `null` / `nil` / `undefined`, Madlib provides this monadic
+ * structure to encapsulate uncertainty in a computationally safe way.
  */
 
 
 /**
- * Maybe is a type that serve to represent values that can potentially
- * not exist. It's used for things like List.nth or List.last. When the
- * item you're looking for is not in the list a Nothing is returned instead
- * of "Just" the item.
+ * The Maybe type is used to model uncertain values. It is ideal for values which may not exist,
+ * and is used to provide safety and certainty when calculating against potentially uncertain or incorrect inputs.
  *
  * @since 0.0.5
  * @example
@@ -28,8 +27,8 @@ export type Maybe a
 
 
 /**
- * The Functor instance of Maybe maps over the value only if a value exists,
- * understand it is a Just. Otherwise it returns Nothing.
+ * Map over a given Maybe, returning either Just the transformed value
+ * (in the case of successful computation) or Nothing.
  *
  * @since 0.0.6
  * @example
@@ -44,9 +43,8 @@ instance Functor Maybe {
 
 
 /**
- * The Applicative instance of Maybe defines ap that applies a function wrapped in
- * a Maybe to a value wrapped in a Maybe. If one of the two is a Nothing, it
- * returns Nothing.
+ * Apply Maybe a function to Maybe a value.
+ * If either is Nothing, return Nothing.
  *
  * @since 0.0.6
  * @example
@@ -63,8 +61,8 @@ instance Applicative Maybe {
 
 
 /**
- * The Monad instance of Maybe defines chain that applies a function that returns a
- * Maybe to a value wrapped in a Maybe.
+ * Use `chain` to avoid a double-wrapped Maybe.
+ * Instead of a Just of a Just, `chain` will flatten the contained transformation to be only one Monad deep.
  *
  * @since 0.0.6
  * @example
@@ -80,8 +78,7 @@ instance Monad Maybe {
 
 
 /**
- * The Show instance of Maybe returns Just or Nothing, following by the showed
- * value it contains.
+ * Use `show` to transform a Maybe to a string. 
  *
  * @since 0.0.6
  * @example
@@ -96,8 +93,7 @@ instance Show a => Show (Maybe a) {
 
 
 /**
- * fromMaybe returns the value contained in the Maybe if it is a Just, or the
- * fallback value otherwise.
+ * Extricate the value contained in a Just, or the given fallback value if given a Nothing
  *
  * @since 0.0.5
  * @example

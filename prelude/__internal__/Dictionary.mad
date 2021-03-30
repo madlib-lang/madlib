@@ -11,12 +11,12 @@ export type Dictionary k v = Dictionary (List <k, v>)
 
 
 /**
- * Constructs a Dictionary from a list of <key, value> tuples
+ * Creates a Dictionary from a list of <key, value> tuples
  *
  * @since 0.0.5
  * @example
- * fromList([<1, 2>, <2, 2>]) // Dictionary that contains 2 for key 1 and 2 for key 2
- * fromList([<1, 2>, <2, 2>, <2, 3>]) // Dictionary that contains 2 for key 1 and 2 for key 2
+ * fromList([<"one", 2>, <"two", 2>])
+ * fromList([<"a", 2>, <"b", 2>, <"c", 3>])
  */
 fromList :: List (<k, v>) -> Dictionary k v
 export fromList = pipe(
@@ -26,7 +26,7 @@ export fromList = pipe(
 
 
 /**
- * The empty Dictionary
+ * Creates an empty Dictionary.
  *
  * @since 0.0.5
  */
@@ -35,7 +35,8 @@ export empty = fromList([])
 
 
 /**
- * Inserts a value at a given key. However, if the key already exists, it updates the value at that key.
+ * Inserts a value into the Dictionary at a given key.
+ * However, if the key already exists, it updates the value at that key.
  *
  * @since 0.0.5
  * @example
@@ -55,7 +56,11 @@ export insert = (k, v, m) => (where(m)
     |> Dictionary
 )
 
-
+/**
+ * Get a value from a Dictionary given a key.
+ *
+ * @since 0.0.5
+ */
 get :: k -> Dictionary k v -> Maybe v
 export get = (k) => where
   is Dictionary items: pipe(
@@ -65,33 +70,60 @@ export get = (k) => where
     map(T.snd)
   )(items)
 
-
+/**
+ * List all keys in a Dictionary
+ *
+ * @since 0.0.5
+ */
 keys :: Dictionary k v -> List k
 export keys = (m) => (where(m)
   is Dictionary items: map(T.fst, items)
 )
 
-
+/**
+ * List all values in a Dictionary
+ *
+ * @since 0.0.5
+ */
 values :: Dictionary k v -> List v
 export values = (m) => (where(m)
   is Dictionary items: map(T.snd, items)
 )
 
 
+/**
+ * List the number of keys in a Dictionary
+ *
+ * @since 0.0.5
+ */
 len :: Dictionary k v -> Number
 export len = (m) => (m |> keys |> L.len)
 
 
+/**
+ * Map over a Dictionary with a function that takes the value and transforms it.
+ *
+ * @since 0.0.5
+ */
 instance Functor (Dictionary k) {
   map = (fn) => where
     is Dictionary items: map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
 }
 
+/**
+ * Map over a Dictionary with a function that takes the key and value and returns the new value. 
+ *
+ * @since 0.0.5
+ */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where
   is Dictionary items: map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
 
-
+/**
+ * Merge two Dictionaries together together.
+ *
+ * @since 0.0.5
+ */
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
 export merge = (a, b) => where(<a, b>)
   is <Dictionary itemsA, Dictionary itemsB>: L.concat(itemsA, itemsB) |> fromList

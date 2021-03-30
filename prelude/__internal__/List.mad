@@ -13,7 +13,8 @@ import { Maybe, Just, Nothing } from "Maybe"
 
 
 /**
- * Functor instance for List
+ * As with all implementations of `map`, transform each value contained in the List.
+ * 
  * @since v0.0.6
  * @example
  * map((x) => x * 2, [1, 2, 3]) // [2, 4, 6]
@@ -71,7 +72,8 @@ singleton :: a -> List a
 export singleton = pure
 
 /**
- * Flattens a List String into a String, by adding line returns between the items in the List.
+ * Transform a List of Strings into a single String,
+ * by adding newlines between each item in the List.
  *
  * @since 0.0.5
  * @example
@@ -84,7 +86,7 @@ export unlines = pipe(
 )
 
 /**
- * Intercalates a value between all elements of a list.
+ * Inserts a value between all elements of a list.
  *
  * @since 0.0.5
  * @example
@@ -120,8 +122,8 @@ export join = (a, xs) => pipe(
 
 
 /**
- * Applies a function to each item of a list. This function receives the current element
- * as well as its index as parameters, and must return the transformed item.
+ * Applies a function to each item of a list. This function receives both the current element
+ * and its index as parameters, and whatever is returned is used as the new element's value.
  *
  * @since 0.0.5
  * @example
@@ -132,7 +134,7 @@ export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
 
 
 /**
- * Concatenates two lists together.
+ * Merge two Lists together.
  *
  * @since 0.0.5
  * @example
@@ -143,7 +145,7 @@ export concat = (xs1, xs2) => (#- xs1.concat(xs2) -#)
 
 
 /**
- * Appends an item to a list. The item is then pushed at the end of it.
+ * Add an item to the end of a List.
  *
  * @since 0.0.5
  * @example
@@ -154,7 +156,7 @@ export append = (v, xs) => (#- [...xs, v] -#)
 
 
 /**
- * Returns a Maybe containing either a Just with the last element or a Nothing if the list is empty.
+ * Safely access the last value in a List (wrapped in Just), or Nothing.
  *
  * @since 0.0.5
  * @example
@@ -168,7 +170,7 @@ export last = (xs) => #-{
 }-#
 
 /**
- * Returns a Maybe containing either a Just with the first element or a Nothing if the list is empty.
+ * Safely access the first value in a List (wrapped in Just), or Nothing.
  *
  * @since 0.0.5
  * @example
@@ -182,7 +184,7 @@ export first = (xs) => #-{
 }-#
 
 /**
- * Returns the list without the last item.
+ * Returns a List minus its last item.
  *
  * @since 0.0.5
  * @example
@@ -194,7 +196,7 @@ export init = (xs) => (#- xs.slice(0, -1) -#)
 
 
 /**
- * Returns a Just of the nth element in a list if an element exists at that index or a Nothing otherwise.
+ * Safely access a value at a given index in a List (wrapped in Just), or Nothing.
  *
  * @since 0.0.5
  * @example
@@ -211,6 +213,12 @@ export nth = (i, xs) => (#- {
 
 
 /**
+ * Aggregate a single value by iterating over a list, from right-to-left.
+ * Takes three parameters:
+ *   - an aggregation function, which takes the current aggregated value and the next item in the list.
+ *   - an initial value (which must share the same type as the value returned from the transformation function)
+ *   - a List
+ *
  * @since 0.0.5
  */
 reduceR :: (a -> b -> a) -> a -> List b -> a
@@ -218,6 +226,12 @@ export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
 
 
 /**
+ * Aggregate a single value by iterating over a list, from left-to-right.
+ * Takes three parameters:
+ *   - an aggregation function, which takes the current aggregated value and the next item in the list.
+ *   - an initial value (which must share the same type as the value returned from the transformation function)
+ *   - a List
+ *
  * @since 0.0.5
  */
 reduceL :: (a -> b -> a) -> a -> List b -> a
@@ -225,11 +239,11 @@ export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
 
 
 /**
- * Returns a transformed value derived from all elements of a list.
- * To do this reduce takes three parameters:
- *   - a transformation function, that receives the currently transformed output ( an accumulator ) and the current item of the list
- *   - an initial value that must have the same type as the value returned from the transformation function
- *   - a list
+ * Aggregate a single value by iterating over a list, from left-to-right.
+ * Takes three parameters:
+ *   - an aggregation function, which takes the current aggregated value and the next item in the list.
+ *   - an initial value (which must share the same type as the value returned from the transformation function)
+ *   - a List
  *
  * @since 0.0.5
  * @example
@@ -240,7 +254,7 @@ export reduce = reduceL
 
 
 /**
- * Filters a list given a predicate function that is called with each element of the list and must return a Boolean.
+ * Iterate over a List, selecting only values which are matched by predicate function.
  *
  * @since 0.0.5
  * @example
@@ -251,8 +265,8 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
 
 /**
- * Removes items from a list for which the given predicate function returns true. In
- * other words it is the complement of filter.
+ * Iterate over a List, selecting only values which are not matched by a predicate function.
+ * This is the complement of `filter`.
  *
  * @since 0.0.5
  * @example
@@ -263,7 +277,8 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
 
 
 /**
- * Returns a Just of the first element for which the given predicate function returns true, or Nothing otherwise.
+ * Safely access the first element in a List for which a given
+ * predicate function returns true; returning Just the found value or Nothing.
  *
  * @since 0.0.5
  * @example
@@ -283,7 +298,7 @@ export find = (predicate, xs) => (#- {
 
 
 /**
- * Returns the length of a list
+ * Get the length of a List.
  *
  * @since 0.0.5
  * @example
@@ -294,6 +309,7 @@ export len = (xs) => (#- xs.length -#)
 
 
 /**
+ * Cut a contiguous segment from a List, from start index to end index.
  * @since 0.0.5
  */
 slice :: Number -> Number -> List a -> List a
@@ -301,6 +317,8 @@ export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
 
 
 /**
+ * Test whether a given List has no elements.
+ *
  * @since 0.0.5
  */
 isEmpty :: List a -> Boolean
@@ -308,9 +326,7 @@ export isEmpty = (xs) => len(xs) == 0
 
 
 /**
- * Makes items of a list unique given an equality functions that serves to decide
- * how items should be dedupped.
- * NB: It keeps the last item that matches the binary predicate.
+ * Using a comparison function, select values which are distinct. 
  *
  * @since 0.0.5
  * @example
@@ -335,6 +351,8 @@ export uniqueBy = (f) => reduce(
 
 
 /**
+ * Remove nested Lists from a given List, one level deep. 
+ *
  * @since 0.0.5
  */
 flatten :: List (List a) -> List a
@@ -342,16 +360,31 @@ export flatten = reduceL(concat, [])
 
 
 /**
+ * Take two lists and combine them pair-wise, such that the elements of List x become the first value
+ * of the resulting Tuple, and the elements of List y become the the second value per element.
+ *
  * @since 0.0.5
+ * @example
+ * zip(["a", "b", "c"], [1, 2, 3]) // [<"a", 1>, <"b", 2>, <"c", 3>]
  */
 zip :: List a -> List b -> List <a, b>
 export zip = (as, bs) => where(<as, bs>)
-  is <[a, ...ass], [b, ...bss]>: mappend([<a, b>], zip(ass, bss))
+  is <[a, ...aa], [b, ...bb]>: mappend([<a, b>], zip(aa, bb))
   is <[a], [b]>                : [<a, b>]
   is <[], []>                  : []
 
+/**
+ * Test a given List to see whether it contains a given static value.
+ *
+ * @since 0.6.0
+ */
 includes :: x -> List x -> Boolean
 export includes = (x, xs) => (#- xs.includes(x) -#)
 
+/**
+ * Arrange a List according to a binary comparison function. 
+ * 
+ * @since 0.6.0
+ */
 sortBy :: (a -> a -> Number) -> List a -> List a
 export sortBy = (fn, xs) => (#- xs.sort(fn) -#)
