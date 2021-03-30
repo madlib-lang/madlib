@@ -2,8 +2,10 @@ import {} from "Monad"
 import {} from "Show"
 
 /**
- * Either is a type that carries values that may fail. An Either can be a Right
- * of a successful computation, or a Left that contains an error.
+ * An Either is a type which allows for modeling a disjoint union ("a" or "b", but in a safe way).
+ * An Either can be a Right: a successful computation, or a Left: an unsuccessful one.
+ * By capturing a value in this way, we can separate the transformation from the value contained in the Either,
+ * making it easier to reason about and safer to pass around. (mnemonic: "right" == "correct")
  *
  * @since 0.0.5
  */
@@ -13,8 +15,9 @@ export type Either e a
 
 
 /**
- * The Functor instance of Either allows for a function which conditionally
- * transforms a value (if it is a Right) or leaves it unchanged if it is a Left.
+ * We can map over an Either: if it is a Right, it transforms the contained value. 
+ * If it is a Left it does nothing. In this way we can freely frame the computations we want
+ * to perform without being concerned as to whether the transformation was succcessful until later.
  *
  * @since 0.0.6
  * @example
@@ -29,12 +32,9 @@ instance Functor (Either e) {
 
 
 /**
- * The Applicative instance of Either defines ap that applies a function wrapped
- * in an Either over the value of an other Either. If both parameters are Rights,
- * it returns a Right of the result. If the first parameter is a Left it returns
- * that error, regardless of what is contained in the second parameter. If the
- * first parameter is a Right and the second one a Left, returns a Left carrying
- * that error value.
+ * By wrapping a function in `ap` we can apply it from one Either to another Either.
+ * If both contained values are Rights, it returns a Right of the result. If either Either is a Left,
+ * that value persists and the contained value is not transformed.
  *
  * @since 0.0.6
  * @example
@@ -51,7 +51,10 @@ instance Applicative (Either e) {
 
 
 /**
- * The Monad instance of Either defines chain.
+ * Use `chain` when you want to flatten a potentially double-wrapped Either.
+ * Instead of a Right of a Right or a Right of a Left, `chain` will flatten the contained transformation
+ * and return a Right (if successful) or a Left (if unsuccessful)
+ *
  * @since 0.0.6
  * @example
  * chain((x) => Right(x + 1), Right(1))   // Right(2)
@@ -66,8 +69,7 @@ instance Monad (Either e) {
 
 
 /**
- * The Show instance of Maybe returns Right or Left, following by the showed
- * value it contains.
+ * Use `show` to transform an Either to a string.
  *
  * @since 0.0.6
  * @example
@@ -81,7 +83,7 @@ instance (Show e, Show a) => Show (Either e a) {
 }
 
 /**
- * Alias for map, it applies a function to the contained value if it is a Right.
+ * An alias for `map`, use `mapRight` to transform the interior value of a Right.
  *
  * @since 0.0.5
  * @example
@@ -92,7 +94,8 @@ export mapRight = map
 
 
 /**
- * Applies a function to the contained value if it is a Left.
+ * Unlike most other Either functions, `mapLeft` is one of the few which freely transforms the
+ * interior value of a Left. (It is the left-branch analogue of `mapRight`.)
  *
  * @since 0.0.5
  * @example
@@ -137,8 +140,8 @@ export isRight = (either) => (where(either) {
 
 
 /**
- * Returns the value contained in the Either if it is a Right, or the given
- * fallback value otherwise.
+ * Pull the value contained in the Either if it is a Right, or the given
+ * fallback value if it is a Left.
  *
  * @since 0.0.5
  * @example
