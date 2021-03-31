@@ -24,12 +24,6 @@ export fromList = pipe(
   Dictionary
 )
 
-
-/**
- * Creates an empty Dictionary.
- *
- * @since 0.0.5
- */
 empty :: Dictionary k v
 export empty = fromList([])
 
