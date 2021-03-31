@@ -120,7 +120,7 @@ export mapWithKey = (fn) => where
   is Dictionary items: map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
 
 /**
- * Merge two Dictionaries together together.
+ * Combine two Dictionaries together.
  *
  * @since 0.0.5
  */
