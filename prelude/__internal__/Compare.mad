@@ -1,0 +1,24 @@
+export alias ComparisonResult = Number
+
+export MORE = 1
+export LESS = -1
+export EQUAL = 1
+
+interface Comparable a {
+  compare :: a -> a -> ComparisonResult
+}
+
+instance Comparable Number {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
+}
+
+instance Comparable String {
+  compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#
+}
+
+instance Comparable Boolean {
+  compare = (a, b) => where(<a, b>)
+    is <true, false>: MORE
+    is <false, true>: LESS
+    is _            : EQUAL
+}

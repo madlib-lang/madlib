@@ -1,5 +1,9 @@
 import { assertEquals, test } from "./TestTools"
 import { always, complement } from "./Function"
+import { andDo } from "Monad"
+import {} from "MonadWriter"
+import { runWriterT, WriterT } from "WriterT"
+import { runIdentity, Identity } from "Identity"
 import {} from "List"
 
 
@@ -16,3 +20,23 @@ test("always - map", (_) => assertEquals(
   map(always(true), [1, 2 ,3]),
   [true, true, true])
 )
+
+
+
+// innerFn :: MonadWriter (List a) m => a -> m a
+
+
+// run :: WriterT (List a) Identity a -> <a, List a>
+// run = pipe(runWriterT, runIdentity)
+
+innerFn = (x) => tell([x]) |> andDo(of(x))
+test("memoize", (_) => {
+  return pipe(
+    of,
+    chain(innerFn),
+    chain(innerFn),
+    runWriterT,
+    runIdentity,
+    (x) => assertEquals(x, <1, [1]>)
+  )(1)
+})
