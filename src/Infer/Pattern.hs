@@ -12,8 +12,6 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
-import           Debug.Trace
-import           Text.Show.Pretty
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Pred], Vars, [Type])

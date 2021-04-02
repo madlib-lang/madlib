@@ -54,42 +54,13 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TRecord
-                                 (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                 False))
-                           (TCon (TC "Result" Star) "path")))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TRecord
-                              (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                              False))
-                        (TCon (TC "Result" Star) "path")))
+                        (TVar (TV "f5" Star)))
+                     (TVar (TV "f5" Star)))
                   (Area (Loc 71 3 2) (Loc 81 3 12))
                   (Abs
-                     (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TRecord
-                                 (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                 False))
-                           (TCon (TC "Result" Star) "path"))
-                        (Area (Loc 72 3 3) (Loc 73 3 4))
-                        "a")
+                     (Solved (TVar (TV "f5" Star)) (Area (Loc 72 3 3) (Loc 73 3 4)) "a")
                      [ Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TRecord
-                                  (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                  False))
-                            (TCon (TC "Result" Star) "path"))
-                         (Area (Loc 79 3 10) (Loc 80 3 11))
-                         (Var "a")
+                         (TVar (TV "f5" Star)) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a")
                      ]))
                (Solved
                   (TApp

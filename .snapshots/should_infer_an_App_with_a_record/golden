@@ -109,9 +109,7 @@ Right
                                      (FieldAccess
                                         (Solved
                                            (TRecord
-                                              (fromList
-                                                 [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                                              True)
+                                              (fromList [ ( "x" , TVar (TV "h7" Star) ) ]) True)
                                            (Area (Loc 36 2 18) (Loc 37 2 19))
                                            (Var "r"))
                                         (Solved
@@ -121,11 +119,9 @@ Right
                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                     "prelude")
                                                  (TRecord
-                                                    (fromList
-                                                       [ ( "x" , TCon (TC "Number" Star) "prelude" )
-                                                       ])
+                                                    (fromList [ ( "x" , TVar (TV "h7" Star) ) ])
                                                     True))
-                                              (TCon (TC "Number" Star) "prelude"))
+                                              (TVar (TV "h7" Star)))
                                            (Area (Loc 38 2 20) (Loc 39 2 21))
                                            (Var ".x"))))
                                   False))
@@ -134,9 +130,7 @@ Right
                                (Area (Loc 42 2 24) (Loc 45 2 27))
                                (FieldAccess
                                   (Solved
-                                     (TRecord
-                                        (fromList [ ( "y" , TCon (TC "Number" Star) "prelude" ) ])
-                                        True)
+                                     (TRecord (fromList [ ( "y" , TVar (TV "j9" Star) ) ]) True)
                                      (Area (Loc 42 2 24) (Loc 43 2 25))
                                      (Var "r"))
                                   (Solved
@@ -144,10 +138,8 @@ Right
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList
-                                                 [ ( "y" , TCon (TC "Number" Star) "prelude" ) ])
-                                              True))
-                                        (TCon (TC "Number" Star) "prelude"))
+                                              (fromList [ ( "y" , TVar (TV "j9" Star) ) ]) True))
+                                        (TVar (TV "j9" Star)))
                                      (Area (Loc 44 2 26) (Loc 45 2 27))
                                      (Var ".y"))))
                             True)

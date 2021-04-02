@@ -58,11 +58,7 @@ Right
                                (Area (Loc 17 1 18) (Loc 22 1 23))
                                (App
                                   (Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "Number" Star) "prelude"))
-                                        (TCon (TC "Number" Star) "prelude"))
+                                     (TVar (TV "b1" Star))
                                      (Area (Loc 17 1 18) (Loc 19 1 20))
                                      (Var "fn"))
                                   (Solved

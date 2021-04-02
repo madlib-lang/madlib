@@ -160,7 +160,7 @@ isAssignment :: Exp -> Bool
 isAssignment exp = case exp of
   Canonical _ (Export (Canonical _ (Assignment _ _))) -> True
   Canonical _ (Assignment _ _) -> True
-  _                            -> False
+  _ -> False
 
 getArea :: Canonical a -> Area
 getArea (Canonical a _) = a

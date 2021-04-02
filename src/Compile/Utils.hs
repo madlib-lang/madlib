@@ -1,8 +1,8 @@
 module Compile.Utils where
 
 import           Target
-import           Data.Aeson.Text (encodeToLazyText)
-import           Data.Text.Lazy (unpack)
+import           Data.Aeson.Text                ( encodeToLazyText )
+import           Data.Text.Lazy                 ( unpack )
 
 
 getGlobalForTarget :: Target -> String

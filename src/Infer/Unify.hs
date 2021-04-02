@@ -44,20 +44,19 @@ instance Unify Type where
               types'         = M.elems updatedFields'
               z              = zip types types'
           unifyVars M.empty z
-    | M.difference fields fields' /= M.empty = throwError
-    $ InferError (UnificationError r l) NoContext
+    | M.difference fields fields' /= M.empty = throwError $ InferError (UnificationError r l) NoContext
     | otherwise = do
       let types  = M.elems fields
           types' = M.elems fields'
           z      = zip types types'
       s <- unifyVars M.empty z
-      let z'     = (\(l, r) -> (apply s l, apply s r)) <$> z
+      let z' = (\(l, r) -> (apply s l, apply s r)) <$> z
       unifyVars s z'
 
-  unify (TVar tv) t                                      = varBind tv t
-  unify t         (TVar tv)                              = varBind tv t
+  unify (TVar tv) t         = varBind tv t
+  unify t         (TVar tv) = varBind tv t
   unify (TCon a fpa) (TCon b fpb) | a == b && fpa == fpb = return M.empty
-  unify t1 t2                                            = throwError $ InferError (UnificationError t2 t1) NoContext
+  unify t1 t2               = throwError $ InferError (UnificationError t2 t1) NoContext
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -96,10 +95,10 @@ instance Match Type where
   match (TApp l r) (TApp l' r') = do
     sl <- match l l'
     sr <- match r r'
-    merge sl sr
-  match (TVar u) t | kind u == kind t                            = return $ M.singleton u t
+    catchError (merge sl sr) (\_ -> throwError $ InferError (UnificationError (TApp l' r') (TApp l r)) NoContext)
+  match (TVar u) t | kind u == kind t = return $ M.singleton u t
   match (TCon tc1 fp1) (TCon tc2 fp2) | tc1 == tc2 && fp1 == fp2 = return nullSubst
-  match t1 t2                                                    = throwError $ InferError (UnificationError t1 t2) NoContext
+  match t1 t2                         = throwError $ InferError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where
   match ts ts' = do
@@ -125,7 +124,7 @@ contextualUnifyElems' env (e, t) ((e', t') : xs) = do
 flipUnificationError :: InferError -> Infer b
 flipUnificationError e@(InferError err x) = case err of
   UnificationError l r -> throwError $ InferError (UnificationError r l) x
-  _ -> throwError e
+  _                    -> throwError e
 
 
 addContext :: Env -> Can.Canonical a -> InferError -> Infer b

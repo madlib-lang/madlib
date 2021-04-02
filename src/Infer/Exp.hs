@@ -6,7 +6,9 @@ module Infer.Exp where
 
 import qualified Data.Map                      as M
 import           Control.Monad.Except
-import           Data.Foldable                  ( foldrM, foldlM )
+import           Data.Foldable                  ( foldrM
+                                                , foldlM
+                                                )
 import qualified Parse.Madlib.AST              as AST
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
@@ -30,9 +32,7 @@ import qualified Utils.Tuple                   as T
 import           Infer.Pattern
 import           Infer.Pred
 import           Infer.Placeholder
-import           Debug.Trace
-import           Text.Show.Pretty
-import qualified Control.Monad as CM
+import qualified Control.Monad                 as CM
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -137,8 +137,7 @@ inferAbs env l@(Can.Canonical _ (Can.Abs (Can.Canonical area param) body)) = do
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody env [e     ] =
-  (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
+inferBody env [e     ] = (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
 
 inferBody env (e : xs) = do
   (s, ps, env', e') <- case e of
@@ -147,7 +146,7 @@ inferBody env (e : xs) = do
       (s, (ds, _), env, e') <- inferImplicitlyTyped True env e
       return (s, ds, env, e')
 
-  let t = Slv.getType e'
+  let t   = Slv.getType e'
 
   let exp = Slv.extractExp e'
   let env'' = case exp of
@@ -167,10 +166,9 @@ inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferApp env (Can.Canonical area (Can.App abs arg final)) = do
   tv                  <- newTVar Star
   (s1, ps1, t1, eabs) <- infer env abs
-  -- (s2, ps2, t2, earg) <- infer env arg
   (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
-  s3                  <- contextualUnify env abs (t1) (apply s1 t2 `fn` tv)
+  s3                  <- contextualUnify env abs t1 (apply s1 t2 `fn` tv)
 
   let t      = apply s3 tv
   let s      = s3 `compose` s2 `compose` s1
@@ -235,16 +233,18 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
     return (M.empty, [], t, Slv.Solved t area (Slv.ListConstructor []))
 
   elems -> do
-    tv <- newTVar Star
+    tv               <- newTVar Star
 
-    (s', ps, ts, es) <-
-      foldlM (\(s, pss, ts, lis) elem -> do
-                (s', ps', t, li) <- inferListItem (apply s env) tv elem
-                return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
-              ) (mempty, [], [], []) elems
+    (s', ps, ts, es) <- foldlM
+      (\(s, pss, ts, lis) elem -> do
+        (s', ps', t, li) <- inferListItem (apply s env) tv elem
+        return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
+      )
+      (mempty, [], [], [])
+      elems
 
     s <- contextualUnifyElems env (zip elems ts)
-    let s''           = s `compose` s'
+    let s'' = s `compose` s'
 
     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
 
@@ -259,16 +259,34 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
       case t of
         (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)) exp' True
+          let exp'' = Can.Canonical area $ Can.App
+                (Can.Canonical
+                  area
+                  (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))"))
+                           (Can.Canonical area (Can.Var "text"))
+                           False
+                  )
+                )
+                exp'
+                True
           (s1, ps, t, e) <- infer env exp''
-          s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
+          s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
 
         (TApp (TVar (TV _ (Kfun Star Star))) (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)) exp' True
+          let exp'' = Can.Canonical area $ Can.App
+                (Can.Canonical
+                  area
+                  (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))"))
+                           (Can.Canonical area (Can.Var "text"))
+                           False
+                  )
+                )
+                exp'
+                True
           (s1, ps, t, e) <- infer env exp''
-          s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
+          s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
 
@@ -285,7 +303,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
         TCon (TC "String" Star) "prelude" -> do
           let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) exp' True
           (s1, ps, t, e) <- infer env exp''
-          s2 <- unify t ty
+          s2             <- unify t ty
           let s = s1 `compose` s2
 
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
@@ -293,7 +311,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
         t'@(TVar _) -> do
           let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
           (s1, ps, t, e') <- infer (extendVars env ("__tmp_jsx_children__", Forall [] $ [] :=> (t' `fn` ty))) exp''
-          s2 <- unify t ty
+          s2              <- unify t ty
           let s = s1 `compose` s2
 
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')
@@ -305,13 +323,13 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
     _ -> do
       (s1, ps, t, e) <- infer env exp
-      s2 <- unify t ty
+      s2             <- unify t ty
       let s = s1 `compose` s2
       return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
-    s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
+    s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
     let s = s1 `compose` s2
 
     return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
@@ -480,7 +498,7 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv t''
 
-  s''' <- contextualUnify env exp t t'
+  s'''               <- contextualUnify env exp t t'
 
   let subst = s `compose` s' `compose` s'' `compose` s'''
 
@@ -541,15 +559,14 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (split env' fs vs ps')
     (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env)))
 
-  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ InferError (AmbiguousType (TV "err" Star, [IsIn "n" [t']]))
-                                 (Context (envCurrentPath env) area (envBacktrace env))
+  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ InferError
+    (AmbiguousType (TV "err" Star, [IsIn "n" [t']]))
+    (Context (envCurrentPath env) area (envBacktrace env))
 
   case Can.getExpName exp of
-    Just n  ->
-      if isLet then
-        return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ds :=> t'), e)
-      else
-        return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
+    Just n -> if isLet
+      then return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ds :=> t'), e)
+      else return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
 
     Nothing -> return (s'', (ds, ps'), env', e)
 

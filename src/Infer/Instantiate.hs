@@ -5,12 +5,8 @@ module Infer.Instantiate where
 
 import           Infer.Type
 import qualified Data.Map                      as M
-import           Control.Monad
 import           Control.Monad.State
-import           Infer.Substitute
 import           Infer.Infer
-import           Debug.Trace                    ( trace )
-import           Text.Show.Pretty               ( ppShow )
 
 
 letters :: [Char]

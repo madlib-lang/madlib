@@ -48,7 +48,7 @@ Right
                                              (Area (Loc 28 1 29) (Loc 29 1 30))
                                              (ListItem
                                                 (Solved
-                                                   (TVar (TV "d3" Star))
+                                                   (TVar (TV "c2" Star))
                                                    (Area (Loc 28 1 29) (Loc 29 1 30))
                                                    (Var "a")))
                                          ])
@@ -78,10 +78,10 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TCon (TC "Number" Star) "prelude"))
+                               (TVar (TV "d3" Star)))
                             (TApp
                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                               (TCon (TC "Number" Star) "prelude")))
+                               (TVar (TV "d3" Star))))
                          (Area (Loc 26 2 1) (Loc 37 2 12))
                          (NamespaceAccess "L.singleton"))
                       (Solved

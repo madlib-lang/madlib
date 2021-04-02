@@ -59,7 +59,9 @@ tTuple6 :: Type
 tTuple6 = TCon (TC "(,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))) "prelude"
 
 tTuple7 :: Type
-tTuple7 = TCon (TC "(,,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))) "prelude"
+tTuple7 = TCon
+  (TC "(,,,,,,)" (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))))
+  "prelude"
 
 tArrow :: Type
 tArrow = TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude"
@@ -115,8 +117,8 @@ instance HasKind TCon where
   kind (TC _ k) = k
 instance HasKind Type where
   kind (TCon tc _) = kind tc
-  kind (TVar u  ) = kind u
-  kind (TApp t _) = case kind t of
+  kind (TVar u   ) = kind u
+  kind (TApp t _ ) = case kind t of
     (Kfun _ k) -> k
     k          -> k
   kind _ = Star
@@ -159,7 +161,7 @@ collectPredVars (IsIn _ ts) = nub $ concat $ collectVars <$> ts
 
 getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
-  TCon _ _    -> t
+  TCon    _ _ -> t
   TApp    l r -> getConstructorCon l
   TRecord _ _ -> t
   _           -> t

@@ -70,10 +70,9 @@ analyzeBacktrace json err exps = case exps of
   (BTExp (Can.Canonical _ (Can.Assignment n _)) : BTInstance inst : ex) ->
     "The implementation of the following " <> underlineWhen (not json) "method" <> " is not correct:\n"
 
-  (BTConstructor ctor) : _ ->
-    "Error in the following type " <> underlineWhen (not json) "constructor" <> ":\n"
+  (BTConstructor ctor) : _ -> "Error in the following type " <> underlineWhen (not json) "constructor" <> ":\n"
 
-  _ -> if length exps > 1 then analyzeBacktrace json err (tail exps) else ""
+  _                        -> if length exps > 1 then analyzeBacktrace json err (tail exps) else ""
 
 
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
@@ -248,9 +247,7 @@ predsToStr rewrite ps  = "(" <> intercalate ", " (predToStr rewrite <$> ps) <> "
 
 
 predToStr :: Bool -> Pred -> String
-predToStr rewrite (IsIn cls ts) =
-  let types = typeToParenWrappedStr rewrite <$> ts
-  in  cls <> " " <> unwords types
+predToStr rewrite (IsIn cls ts) = let types = typeToParenWrappedStr rewrite <$> ts in cls <> " " <> unwords types
 
 typeToParenWrappedStr :: Bool -> Type -> String
 typeToParenWrappedStr rewrite t = case t of
@@ -270,11 +267,9 @@ prettyPrintType' :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.M
 prettyPrintType' rewrite (vars, hkVars) t = case t of
   TCon (TC n _) _ -> (vars, hkVars, n)
 
-  TVar (TV n k) -> 
-    if not rewrite then
-      (vars, hkVars, n)
-    else
-      case k of
+  TVar (TV n k)   -> if not rewrite
+    then (vars, hkVars, n)
+    else case k of
       Star -> case M.lookup n vars of
         Just x  -> (vars, hkVars, letters !! x)
         Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, letters !! newIndex)
@@ -293,13 +288,17 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
     in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
-  
+
   TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) tl) tr) trr) trrr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
-        (varsRightRightRight, hkVarsRightRightRight, rightRightRight) = prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
-    in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> ">")
+        (varsRightRightRight, hkVarsRightRightRight, rightRightRight) =
+            prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
+    in  ( varsRightRight
+        , hkVarsRightRight
+        , "<" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> ">"
+        )
 
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
     let (varsLeft, hkVarsLeft, left) = case tl of

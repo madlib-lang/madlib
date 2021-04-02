@@ -10,7 +10,11 @@ import           GHC.IO                         ( )
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
-import           System.FilePath                ( takeDirectory, takeExtension, joinPath, splitDirectories )
+import           System.FilePath                ( takeDirectory
+                                                , takeExtension
+                                                , joinPath
+                                                , splitDirectories
+                                                )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
                                                 , getDirectoryContents
@@ -19,8 +23,8 @@ import           System.Directory               ( canonicalizePath
 import           System.Exit
 import           Utils.Path              hiding ( PathUtils(..) )
 import           Parse.Madlib.AST
-import qualified Parse.DocString.Grammar      as DocString
-import qualified Parse.DocString.DocString    as DocString
+import qualified Parse.DocString.Grammar       as DocString
+import qualified Parse.DocString.DocString     as DocString
 
 import           Infer.AST
 import           Infer.Infer
@@ -34,7 +38,10 @@ import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
 import qualified Explain.Format                as Explain
-import           Control.Monad                  ( when, filterM, unless )
+import           Control.Monad                  ( when
+                                                , filterM
+                                                , unless
+                                                )
 import           System.Process
 import           Control.Exception              ( try
                                                 , SomeException
@@ -86,15 +93,13 @@ isCoverageEnabled = do
 sanitizeOutputPath :: Command -> Either String FilePath
 sanitizeOutputPath Compile { compileOutput, compileBundle } =
   let ext = takeExtension compileOutput
-  in  if compileBundle then
-    case ext of
-      ".js" -> Right compileOutput
-      _     -> Left $ "Wrong output. With bundle option the output must have '.js' extension, but '"<> ext <>"' was given!"
-  else
-    if last compileOutput == '/' then
-      Right compileOutput
-    else
-      Right $ compileOutput <> "/"
+  in
+    if compileBundle
+      then case ext of
+        ".js" -> Right compileOutput
+        _ ->
+          Left $ "Wrong output. With bundle option the output must have '.js' extension, but '" <> ext <> "' was given!"
+      else if last compileOutput == '/' then Right compileOutput else Right $ compileOutput <> "/"
 
 
 run :: Command -> IO ()
@@ -102,11 +107,11 @@ run cmd = do
   coverage <- isCoverageEnabled
 
   case cmd of
-    Compile{}                ->
+    Compile{} ->
       let sanitizedOutput = sanitizeOutputPath cmd
       in  case sanitizedOutput of
-        Right s -> runCompilation cmd { compileOutput = s } coverage
-        Left  e -> putStrLn e
+            Right s -> runCompilation cmd { compileOutput = s } coverage
+            Left  e -> putStrLn e
 
     Test entrypoint coverage -> runTests entrypoint coverage
 
@@ -118,8 +123,8 @@ run cmd = do
 
 
 solveASTsForDoc :: [FilePath] -> IO (Either InferError [(Slv.AST, [DocString.DocString])])
-solveASTsForDoc []       = return $ Right []
-solveASTsForDoc (fp:fps) = do
+solveASTsForDoc []         = return $ Right []
+solveASTsForDoc (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
   astTable            <- buildASTTable mempty canonicalEntrypoint
   let canTable = astTable >>= \table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
@@ -134,7 +139,7 @@ solveASTsForDoc (fp:fps) = do
         (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoContext
 
   case resolvedASTTable of
-    Left e -> return $ Left e
+    Left  e          -> return $ Left e
 
     Right (table, _) -> case M.lookup canonicalEntrypoint table of
       Just ast -> do
@@ -148,16 +153,16 @@ solveASTsForDoc (fp:fps) = do
             next <- solveASTsForDoc fps
             return $ ([(ast, [])] ++) <$> next
 
-      Nothing  -> solveASTsForDoc fps
+      Nothing -> solveASTsForDoc fps
 
 
 runDocumentationGenerator :: FilePath -> IO ()
 runDocumentationGenerator fp = do
   let ext = takeExtension fp
   filepaths <- case ext of
-    ".mad"   -> return [fp]
-    '.':rest -> putStrLn ("Invalid file extension '" <> ext <> "'") >> return []
-    _        -> do
+    ".mad"     -> return [fp]
+    '.' : rest -> putStrLn ("Invalid file extension '" <> ext <> "'") >> return []
+    _          -> do
       paths <- getDirectoryContents fp
       let filtered = (\file -> joinPath [fp, file]) <$> filter ((== ".mad") . takeExtension) paths
       return filtered
@@ -166,7 +171,7 @@ runDocumentationGenerator fp = do
   case asts of
     Right asts' -> putStrLn $ generateASTsDoc asts'
 
-    Left e -> putStrLn $ ppShow e
+    Left  e     -> putStrLn $ ppShow e
 
 
 shouldBeCovered :: FilePath -> FilePath -> Bool
@@ -229,82 +234,80 @@ runTests entrypoint coverage = do
 
 getFilesToCompile :: Bool -> FilePath -> IO [FilePath]
 getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
-  ".mad"   -> return [entrypoint]
-  '.':rest -> putStrLn ("Invalid file extension '" <> ('.':rest) <> "'") >> return []
-  _ -> do
+  ".mad"     -> return [entrypoint]
+  '.' : rest -> putStrLn ("Invalid file extension '" <> ('.' : rest) <> "'") >> return []
+  _          -> do
     paths <- getDirectoryContents entrypoint
     let fullPaths = (\file -> joinPath [entrypoint, file]) <$> filter (\p -> p /= "." && p /= "..") paths
-    let filtered =
-          if not testsOnly then
-            filter ((== ".mad") . takeExtension) fullPaths
-          else
-            filter (isSuffixOf ".spec.mad") fullPaths
+    let filtered = if not testsOnly
+          then filter ((== ".mad") . takeExtension) fullPaths
+          else filter (isSuffixOf ".spec.mad") fullPaths
 
     subFolders <- filterM doesDirectoryExist fullPaths
-    next <- mapM (getFilesToCompile testsOnly) subFolders
+    next       <- mapM (getFilesToCompile testsOnly) subFolders
     return $ filtered ++ concat next
 
 runCompilation :: Command -> Bool -> IO ()
-runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage = do
-  canonicalEntrypoint <- canonicalizePath entrypoint
-  sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
-  astTable            <- buildManyASTTables mempty sourcesToCompile
-  let canTable = astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage
+  = do
+    canonicalEntrypoint <- canonicalizePath entrypoint
+    sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
+    astTable            <- buildManyASTTables mempty sourcesToCompile
+    let canTable = astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
 
-  rootPath <- canonicalizePath $ computeRootPath entrypoint
+    rootPath <- canonicalizePath $ computeRootPath entrypoint
 
-  let resolvedASTTable = case canTable of
-        Right table -> do
-          runExcept (runStateT (solveManyASTs mempty table sourcesToCompile) InferState { count = 0, errors = [] })
-        Left e -> Left e
+    let resolvedASTTable = case canTable of
+          Right table -> do
+            runExcept (runStateT (solveManyASTs mempty table sourcesToCompile) InferState { count = 0, errors = [] })
+          Left e -> Left e
 
-  when verbose $ do
-    putStrLn $ "OUTPUT: " ++ outputPath
-    putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
-    putStrLn $ "ROOT PATH: " ++ rootPath
-  when debug $ do
-    putStrLn $ "PARSED:\n" ++ ppShow astTable
-    putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
+    when verbose $ do
+      putStrLn $ "OUTPUT: " ++ outputPath
+      putStrLn $ "ENTRYPOINT: " ++ canonicalEntrypoint
+      putStrLn $ "ROOT PATH: " ++ rootPath
+    when debug $ do
+      putStrLn $ "PARSED:\n" ++ ppShow astTable
+      putStrLn $ "RESOLVED:\n" ++ ppShow resolvedASTTable
 
-  case resolvedASTTable of
-    Left err -> do
-      if json
-        then do
-          formattedErr <- Explain.format readFile json err
-          putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] mempty
-        else Explain.format readFile json err >>= putStrLn >> exitFailure
-    Right (table, inferState) ->
-      let errs      = errors inferState
-          hasErrors = not (null errs)
-      in  if json
-            then do
-              withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-              putStrLn $ CompileJson.compileASTTable withFormattedErrors table
-            else if hasErrors
+    case resolvedASTTable of
+      Left err -> do
+        if json
+          then do
+            formattedErr <- Explain.format readFile json err
+            putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] mempty
+          else Explain.format readFile json err >>= putStrLn >> exitFailure
+      Right (table, inferState) ->
+        let errs      = errors inferState
+            hasErrors = not (null errs)
+        in  if json
               then do
-                formattedErrors <- mapM (Explain.format readFile json) errs
-                let fullError = intercalate "\n\n\n\n" formattedErrors
-                putStrLn fullError >> exitFailure
-              else do
-                when coverage $ do
-                  runCoverageInitialization rootPath table
+                withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+                putStrLn $ CompileJson.compileASTTable withFormattedErrors table
+              else if hasErrors
+                then do
+                  formattedErrors <- mapM (Explain.format readFile json) errs
+                  let fullError = intercalate "\n\n\n\n" formattedErrors
+                  putStrLn fullError >> exitFailure
+                else do
+                  when coverage $ do
+                    runCoverageInitialization rootPath table
 
-                let optimizedTable = optimizeTable optimized table
+                  let optimizedTable = optimizeTable optimized table
 
-                generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
+                  generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
-                when bundle $ do
-                  let entrypointOutputPath =
-                        computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+                  when bundle $ do
+                    let entrypointOutputPath =
+                          computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
 
-                  bundled <- runBundle outputPath entrypointOutputPath
-                  case bundled of
-                    Left  e             -> putStrLn e
-                    Right (bundleContent, err) -> do
-                      _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-                      writeFile outputPath bundleContent
-                      unless (null err) $
-                        putStrLn err
+                    bundled <- runBundle outputPath entrypointOutputPath
+                    case bundled of
+                      Left  e                    -> putStrLn e
+                      Right (bundleContent, err) -> do
+                        _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+                        writeFile outputPath bundleContent
+                        unless (null err) $ putStrLn err
 
 
 rollupNotFoundMessage = unlines
@@ -337,16 +340,25 @@ runBundle dest entrypointCompiledPath = do
 
   case rollupPathChecked of
     Right rollup -> do
-        r <- try (
-            readProcessWithExitCode
+      r <-
+        try
+          (readProcessWithExitCode
             rollup
-            [entrypointCompiledPath, "--format", "umd", "--name", "exe", "-p", "@rollup/plugin-node-resolve", "--silent"]
+            [ entrypointCompiledPath
+            , "--format"
+            , "umd"
+            , "--name"
+            , "exe"
+            , "-p"
+            , "@rollup/plugin-node-resolve"
+            , "--silent"
+            ]
             ""
           ) :: IO (Either SomeException (ExitCode, String, String))
 
-        case r of
-          Left e                    -> return $ Left (ppShow e)
-          Right (_, stdout, stderr) -> return $ Right (stdout, stderr)
+      case r of
+        Left  e                   -> return $ Left (ppShow e)
+        Right (_, stdout, stderr) -> return $ Right (stdout, stderr)
           -- Right (_, _, stderr)  -> return $ Left stderr
     Left e -> return $ Left e
 
@@ -366,22 +378,15 @@ generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
 generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path } = do
   let internalsPath = case stripPrefix rootPath path of
         Just s ->
-          let dirs = splitDirectories (takeDirectory s)
-              minus =
-                if "prelude/__internal__" `isInfixOf` path then
-                  if "prelude/__internal__" `isInfixOf` rootPath then
-                    0
-                  else 2
+          let dirs  = splitDirectories (takeDirectory s)
+              minus = if "prelude/__internal__" `isInfixOf` path
+                then if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
                 else 1
               dirLength = length dirs - minus
           in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
         Nothing -> "./__internals__.mjs"
 
-  let entrypointPath     =
-        if path `elem` sourcesToCompile then
-          path
-        else
-          compileInput options
+  let entrypointPath     = if path `elem` sourcesToCompile then path else compileInput options
       outputPath         = compileOutput options
       bundle             = compileBundle options
       optimized          = compileOptimize options
@@ -391,5 +396,6 @@ generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath =
         else computeTargetPath (takeDirectory outputPath) rootPath path
 
   createDirectoryIfMissing True $ takeDirectory computedOutputPath
-  writeFile computedOutputPath
-    $ compile (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target internalsPath) ast
+  writeFile computedOutputPath $ compile
+    (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target internalsPath)
+    ast

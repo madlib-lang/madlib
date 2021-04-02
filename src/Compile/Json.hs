@@ -2,7 +2,9 @@ module Compile.Json where
 
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
-import           Data.List                      ( intercalate, isInfixOf )
+import           Data.List                      ( intercalate
+                                                , isInfixOf
+                                                )
 import           Infer.Type
 import           Explain.Location
 import           Utils.Tuple                    ( lst )
@@ -205,22 +207,18 @@ compileExp depth (Slv.Solved t area exp) =
 
 compileExpFields :: Int -> Slv.Exp_ -> String
 compileExpFields depth exp = case exp of
-  Slv.Var  n   -> indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
+  Slv.Var n -> indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
 
   Slv.LNum val ->
-    let compiledVal = if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
+    let compiledVal =
+            if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
     in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": " <> compiledVal <> "\n"
 
   Slv.LBool val ->
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
 
   Slv.LStr val ->
-    indent depth
-      <> "\"nodeType\": \"LiteralString\",\n"
-      <> indent depth
-      <> "\"value\": "
-      <> escapeString val
-      <> "\n"
+    indent depth <> "\"nodeType\": \"LiteralString\",\n" <> indent depth <> "\"value\": " <> escapeString val <> "\n"
 
   Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
 

@@ -23,8 +23,6 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
-import Debug.Trace
-import Text.Show.Pretty
 
 {-|
 Module      : AST
@@ -39,22 +37,27 @@ actually starts.
 
 
 populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
-populateTopLevelTypings env []                         = return env
+populateTopLevelTypings env []                             = return env
 populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
-  let nextEnv = case e of
-        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
+  let
+    nextEnv = case e of
+      Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
 
-        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
-          safeExtendVars env (name, sc)
+      Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
+        safeExtendVars env (name, sc)
 
-        (Can.Assignment name _) -> safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
+      (Can.Assignment name _) -> safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
 
-        (Can.Export (Can.Canonical _ (Can.Assignment name _))) ->
-          safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
+      (Can.Export (Can.Canonical _ (Can.Assignment name _))) ->
+        safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
 
-        _ -> return env
+      _ -> return env
 
-  nextEnv' <- catchError nextEnv (\(InferError err _) -> throwError $ InferError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env)))
+  nextEnv' <- catchError
+    nextEnv
+    (\(InferError err _) ->
+      throwError $ InferError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+    )
 
   populateTopLevelTypings nextEnv' es
 
@@ -75,33 +78,34 @@ buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, C
 
     let constructors = concat $ mapMaybe
           (\case
-            Can.Canonical _ adt@Can.ADT{} ->
-              Just $ Can.adtconstructors adt
-            _ -> Nothing
+            Can.Canonical _ adt@Can.ADT{} -> Just $ Can.adtconstructors adt
+            _                             -> Nothing
           )
           atypedecls
 
     env''' <- addConstructors env'' constructors
 
-    let env = env''' { envMethods     = methods <> envMethods priorEnv
-                     , envCurrentPath = apath
-                     }
+    let env = env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath }
 
     populateTopLevelTypings env aexps
 
 
 
 hasDuplicates :: (Ord a) => [a] -> Bool
-hasDuplicates list = length list /= length set
-  where set = S.fromList list
+hasDuplicates list = length list /= length set where set = S.fromList list
 
 
 
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
 addConstructors env ctors = do
-  foldM (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
-          catchError (safeExtendVars env'' (name, sc)) (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
-        ) env ctors
+  foldM
+    (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
+      catchError
+        (safeExtendVars env'' (name, sc))
+        (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
+    )
+    env
+    ctors
 
 extractExportedExps :: Slv.AST -> M.Map Slv.Name Slv.Exp
 extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
@@ -149,34 +153,39 @@ filterExportsByImport imp vars = case imp of
 -- solveImports = undefined
 -- -- solveImports = solveImports' mempty
 
-solveImports' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> [Can.Import] -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods)
+solveImports'
+  :: M.Map FilePath (Slv.AST, Env)
+  -> Can.Table
+  -> [Can.Import]
+  -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods)
 solveImports' previousSolved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
   solvedImport@(allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
     Just x@(ast, env) -> return (previousSolved, ast, env)
-    Nothing -> case Can.findAST table modulePath of
+    Nothing           -> case Can.findAST table modulePath of
       Right ast -> do
-        solved <- solveTable' previousSolved table ast
-        solvedAST          <- findASTM (M.map fst solved) modulePath
+        solved    <- solveTable' previousSolved table ast
+        solvedAST <- findASTM (M.map fst solved) modulePath
         let Just (_, env) = M.lookup modulePath solved
         return (solved, solvedAST, env)
 
-  importedVars       <- extractImportedVars solvedEnv solvedAST imp
+  importedVars <- extractImportedVars solvedEnv solvedAST imp
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
-  let solvedVars = constructorImports <> importedVars
-  let solvedInterfaces = envInterfaces solvedEnv
-  let solvedMethods = envMethods solvedEnv
+  let solvedVars         = constructorImports <> importedVars
+  let solvedInterfaces   = envInterfaces solvedEnv
+  let solvedMethods      = envMethods solvedEnv
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
   (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports' solved' table is
 
-  return ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
-         , solvedVars <> nextVars
-         , mergeInterfaces solvedInterfaces nextInterfaces
-         , M.union solvedMethods nextMethods
-         )
+  return
+    ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
+    , solvedVars <> nextVars
+    , mergeInterfaces solvedInterfaces nextInterfaces
+    , M.union solvedMethods nextMethods
+    )
 
 solveImports' _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
 
@@ -192,8 +201,8 @@ updateInterface (Can.Canonical area (Can.Interface name preds vars methods metho
 
 inferAST :: Env -> Can.AST -> Infer (Slv.AST, Env)
 inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
-  (inferredExps, env') <- inferExps env aexps
-  inferredInstances    <- resolveInstances env' { envBacktrace = [] } ainstances --mapM (resolveInstance env') ainstances
+  (env'        , inferredInstances) <- resolveInstances env { envBacktrace = [] } ainstances
+  (inferredExps, env'             ) <- inferExps env' aexps
   let updatedInterfaces = updateInterface <$> ainterfaces
 
   updatedADTs <- mapM updateADT atypedecls
@@ -285,8 +294,8 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
 
 solveManyASTs :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> [FilePath] -> Infer Slv.Table
 solveManyASTs solved table fps = case fps of
-  [] -> return (M.map fst solved)
-  fp:fps' -> case M.lookup fp table of
+  []        -> return (M.map fst solved)
+  fp : fps' -> case M.lookup fp table of
     Just ast -> do
       current <- solveTable' solved table ast
       next    <- solveManyASTs (solved <> current) table fps'
