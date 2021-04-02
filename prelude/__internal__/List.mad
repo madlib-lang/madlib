@@ -3,6 +3,7 @@ import {} from "Monad"
 import {} from "Monoid"
 import {} from "String"
 import Fun from "Function"
+import { ComparisonResult } from "Compare"
 import { Maybe, Just, Nothing } from "Maybe"
 
 
@@ -348,6 +349,20 @@ export uniqueBy = (f) => reduce(
     is Nothing: [...result, elem],
   []
 )
+
+
+sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
+export sortBy = (fn, xs) => (#- xs.sort(fn) -#)
+
+
+sort :: Comparable a => List a -> List a
+export sort = sortBy(compare)
+
+sortAsc :: Comparable a => List a -> List a
+export sortAsc = sort
+
+sortDesc :: Comparable a => List a -> List a
+export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
 
 /**

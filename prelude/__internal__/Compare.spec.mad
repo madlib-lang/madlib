@@ -1,0 +1,14 @@
+import { assertEquals, test } from "TestTools"
+import { MORE, LESS, EQUAL } from "./Compare"
+
+test("compare Number - MORE", (_) => assertEquals(compare(3, 2), MORE))
+test("compare Number - LESS", (_) => assertEquals(compare(1, 2), LESS))
+test("compare Number - EQUAL", (_) => assertEquals(compare(2, 2), EQUAL))
+
+test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE))
+test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LESS))
+test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUAL))
+
+test("compare Boolean - MORE", (_) => assertEquals(compare(true, false), MORE))
+test("compare Boolean - LESS", (_) => assertEquals(compare(false, true), LESS))
+test("compare Boolean - EQUAL", (_) => assertEquals(compare(false, false), EQUAL))
