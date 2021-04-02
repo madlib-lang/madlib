@@ -693,6 +693,9 @@ spec = do
       let code = unlines
             [ "type Maybe a = Just a | Nothing"
             , ""
+            , "fromMaybe :: a -> Maybe a -> a"
+            , "fromMaybe = (a, maybe) => #- -#"
+            , ""
             , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
             , ""
             , "of = (a) => Wish((bad, good) => good(a))"

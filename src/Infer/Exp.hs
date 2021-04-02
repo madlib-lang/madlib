@@ -32,6 +32,7 @@ import           Infer.Pred
 import           Infer.Placeholder
 import           Debug.Trace
 import           Text.Show.Pretty
+import qualified Control.Monad as CM
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -136,18 +137,19 @@ inferAbs env l@(Can.Canonical _ (Can.Abs (Can.Canonical area param) body)) = do
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody env [e     ] = (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
+inferBody env [e     ] =
+  (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
 
 inferBody env (e : xs) = do
-  (_, _ , t   , _ ) <- infer env e
   (s, ps, env', e') <- case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
-    _ -> inferImplicitlyTyped True env e
+    _ -> do
+      (s, (ds, _), env, e') <- inferImplicitlyTyped True env e
+      return (s, ds, env, e')
 
-  e''  <- insertClassPlaceholders env e' ps
-  e''' <- updatePlaceholders env s e''
+  let t = Slv.getType e'
 
-  let exp = Slv.extractExp e''
+  let exp = Slv.extractExp e'
   let env'' = case exp of
         Slv.Assignment name _ -> extendVars env (name, Forall [kind t] (ps :=> t))
 
@@ -165,9 +167,10 @@ inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferApp env (Can.Canonical area (Can.App abs arg final)) = do
   tv                  <- newTVar Star
   (s1, ps1, t1, eabs) <- infer env abs
+  -- (s2, ps2, t2, earg) <- infer env arg
   (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
-  s3                  <- contextualUnify env abs (apply s2 t1) (apply s1 t2 `fn` tv)
+  s3                  <- contextualUnify env abs (t1) (apply s1 t2 `fn` tv)
 
   let t      = apply s3 tv
   let s      = s3 `compose` s2 `compose` s1
@@ -242,7 +245,7 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
     s <- contextualUnifyElems env (zip elems ts)
     let s''           = s `compose` s'
-    
+
     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
 
     return (s'', ps, t, Slv.Solved t area (Slv.ListConstructor es))
@@ -261,7 +264,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
           s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-        
+
         (TApp (TVar (TV _ (Kfun Star Star))) (TCon (TC "String" Star) "prelude")) -> do
           let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)) exp' True
           (s1, ps, t, e) <- infer env exp''
@@ -273,7 +276,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
           s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-        
+
         (TApp (TVar (TV _ (Kfun Star Star))) t') -> do
           s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
           let s = s1 `compose` s2
@@ -286,7 +289,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
           let s = s1 `compose` s2
 
           return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
-        
+
         t'@(TVar _) -> do
           let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
           (s1, ps, t, e') <- infer (extendVars env ("__tmp_jsx_children__", Forall [] $ [] :=> (t' `fn` ty))) exp''
@@ -518,7 +521,7 @@ split env fs gs ps = do
   if not (null as) then throwError $ InferError (AmbiguousType (head as)) NoContext else return (ds, rs)
 
 
-inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
+inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   tv <- newTVar Star
 
@@ -538,15 +541,17 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (split env' fs vs ps')
     (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env)))
 
-  if not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)
-    then throwError $ InferError (AmbiguousType (TV "err" Star, [IsIn "n" [t']]))
+  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ InferError (AmbiguousType (TV "err" Star, [IsIn "n" [t']]))
                                  (Context (envCurrentPath env) area (envBacktrace env))
-    else return ""
 
   case Can.getExpName exp of
-    Just n  -> return (s'', ps', extendVars env' (n, Forall [] $ ps' :=> t'), e)
+    Just n  ->
+      if isLet then
+        return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ds :=> t'), e)
+      else
+        return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
 
-    Nothing -> return (s'', ps', env', e)
+    Nothing -> return (s'', (ds, ps'), env', e)
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -606,7 +611,9 @@ inferExp :: Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
-    _ -> inferImplicitlyTyped False env e
+    _ -> do
+      (s, (_, ps), env, e) <- inferImplicitlyTyped False env e
+      return (s, ps, env, e)
 
   e''  <- insertClassPlaceholders env e' ps
   e''' <- updatePlaceholders env s e''
