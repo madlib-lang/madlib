@@ -213,7 +213,7 @@ __eq__(([1, 2, 3]), ([1, 2, 3]));
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(([1, 2]));
-const fn = __curry__((a) => ([a, a]));
+const fn2 = __curry__((a) => ([a, a]));
 const fst = __curry__((tuple) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,] = __x__;

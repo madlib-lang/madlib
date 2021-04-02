@@ -74,3 +74,11 @@ buildVarSubsts t = case t of
   TCon _ _      -> mempty
   TApp    l  r  -> M.union (buildVarSubsts l) (buildVarSubsts r)
   TRecord ts _  -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst ts
+
+removeRecordTypes :: Substitution -> Substitution
+removeRecordTypes = M.filter notRecord
+ where
+  notRecord :: Type -> Bool
+  notRecord t = case t of
+    TRecord _ _ -> False
+    _           -> True

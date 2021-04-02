@@ -165,7 +165,7 @@ inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferApp env (Can.Canonical area (Can.App abs arg final)) = do
   tv                  <- newTVar Star
   (s1, ps1, t1, eabs) <- infer env abs
-  (s2, ps2, t2, earg) <- infer env arg
+  (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
   s3                  <- contextualUnify env abs (apply s2 t1) (apply s1 t2 `fn` tv)
 

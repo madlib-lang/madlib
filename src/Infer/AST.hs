@@ -40,21 +40,23 @@ actually starts.
 
 populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                         = return env
-populateTopLevelTypings env ((Can.Canonical _ e) : es) = do
-  nextEnv <- case e of
-    Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> return $ extendVars env (name, sc)
+populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
+  let nextEnv = case e of
+        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
 
-    Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
-      return $ extendVars env (name, sc)
+        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
+          safeExtendVars env (name, sc)
 
-    (Can.Assignment name _) -> return $ extendVars env (name, Forall [Star] $ [] :=> TGen 0)
+        (Can.Assignment name _) -> safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
 
-    (Can.Export (Can.Canonical _ (Can.Assignment name _))) ->
-      return $ extendVars env (name, Forall [Star] $ [] :=> TGen 0)
+        (Can.Export (Can.Canonical _ (Can.Assignment name _))) ->
+          safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
 
-    _ -> return env
+        _ -> return env
 
-  populateTopLevelTypings nextEnv es
+  nextEnv' <- catchError nextEnv (\(InferError err _) -> throwError $ InferError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env)))
+
+  populateTopLevelTypings nextEnv' es
 
 
 buildInitialEnv :: Env -> Can.AST -> Infer Env
