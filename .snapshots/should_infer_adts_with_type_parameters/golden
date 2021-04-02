@@ -19,10 +19,10 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "Boolean" Star) "prelude"))
+                              (TVar (TV "d3" Star)))
                            (TApp
                               (TCon (TC "Result" (Kfun Star Star)) "path")
-                              (TCon (TC "Boolean" Star) "prelude")))
+                              (TVar (TV "d3" Star))))
                         (Area (Loc 47 4 10) (Loc 54 4 17))
                         (Var "Success"))
                      (Solved

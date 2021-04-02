@@ -163,7 +163,7 @@ updateAliasVars t args = do
               l' <- update l
               r' <- update r
               return $ TApp l' r'
-            TCon _ _     -> return ty
+            TCon    _  _ -> return ty
             TRecord fs o -> do
               fs' <- mapM update fs
               return $ TRecord fs' o

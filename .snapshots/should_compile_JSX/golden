@@ -32,7 +32,7 @@ const MyApp = __curry__((count) => div(([id(`id`), className(`class`)]))(([div((
 div(([]))(([text(`Some text!`)]));
 div(([]))(([div(([]))(([span(([]))(([]))])), div(([]))(([span(([]))(([]))]))]));
 const methods = ([`1`, `2`, `3`]);
-const children = Functor.List.map(__curry__((method) => div(([]))(([text(method)]))))(methods);
+const children = Functor.List.map(__curry__((method) => div(([]))(([method]))))(methods);
 div(([]))(([ ...((f) => (xs) => xs.map(f))(text)(methods)]));
 div(([]))(([ ...children]));
 export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };

@@ -104,8 +104,8 @@ runCanonicalization target env table entrypoint = runExcept $ fst <$> canonicali
 
 canonicalizeMany :: Target -> Env -> Src.Table -> [FilePath] -> Either InferError Can.Table
 canonicalizeMany target env table fps = case fps of
-  [] -> return mempty
-  fp:fps' -> do
+  []        -> return mempty
+  fp : fps' -> do
     current <- runCanonicalization target env table fp
     next    <- canonicalizeMany target env table fps'
     return $ current <> next

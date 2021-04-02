@@ -47,7 +47,8 @@ parseJson :: Parser Bool
 parseJson = switch (long "json" <> help "compiles to a JSON ast with types" <> showDefault)
 
 parseTestFilesOnly :: Parser Bool
-parseTestFilesOnly = switch (long "test-files-only" <> help "compiles only test files when compiling a path" <> showDefault)
+parseTestFilesOnly =
+  switch (long "test-files-only" <> help "compiles only test files when compiling a path" <> showDefault)
 
 
 parseTargetOption :: ReadM Target
@@ -95,7 +96,8 @@ parseCoverage = switch
   )
 
 parseTestInput :: Parser FilePath
-parseTestInput = strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
+parseTestInput =
+  strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
 parseTest = Test <$> parseTestInput <*> parseCoverage
@@ -108,7 +110,8 @@ parseNew :: Parser Command
 parseNew = New <$> parseFolder
 
 parseDocInput :: Parser FilePath
-parseDocInput = strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What source(s) you want to generate documentation for")
+parseDocInput = strOption
+  (long "input" <> short 'i' <> metavar "INPUT" <> help "What source(s) you want to generate documentation for")
 
 parseDoc :: Parser Command
 parseDoc = Doc <$> parseDocInput

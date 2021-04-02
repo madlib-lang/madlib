@@ -35,7 +35,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
     Nothing -> do
       let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
           vars = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
-          t'   = foldl1 TApp (t:vars)
+          t'   = foldl1 TApp (t : vars)
           env' = addADT env (Src.adtname adt) t'
       canonicalizeConstructors env' astPath td
 
@@ -63,8 +63,10 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
       params = Src.adtparams adt
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
-  let s  = foldl (\s' -> compose s' . getSubstitution) mempty is
-  let rt = foldl TApp (TCon (TC name (buildKind $ length params)) astPath) ((\x -> apply s $ TVar (TV x Star)) <$> params)
+  let s = foldl (\s' -> compose s' . getSubstitution) mempty is
+  let rt = foldl TApp
+                 (TCon (TC name (buildKind $ length params)) astPath)
+                 ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
     (\(n, ts, _, Src.Source _ area (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]

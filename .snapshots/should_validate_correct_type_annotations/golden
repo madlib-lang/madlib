@@ -117,10 +117,9 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "Number" Star) "prelude"))
+                              (TVar (TV "h7" Star)))
                            (TApp
-                              (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                              (TCon (TC "Number" Star) "prelude")))
+                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "h7" Star))))
                         (Area (Loc 113 6 2) (Loc 117 6 6))
                         (Var "Just"))
                      (Solved

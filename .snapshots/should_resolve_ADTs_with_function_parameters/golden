@@ -21,21 +21,21 @@ Right
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                     (TVar (TV "c2" Star)))
-                                 (TVar (TV "h7" Star))))
+                                 (TVar (TV "d3" Star))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                  (TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TCon (TC "Number" Star) "prelude"))
-                                    (TVar (TV "h7" Star))))
-                              (TVar (TV "h7" Star)))))
+                                       (TVar (TV "e4" Star)))
+                                    (TVar (TV "d3" Star))))
+                              (TVar (TV "d3" Star)))))
                      (TApp
                         (TApp
                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
                            (TVar (TV "c2" Star)))
-                        (TCon (TC "Number" Star) "prelude")))
+                        (TVar (TV "e4" Star))))
                   (Area (Loc 56 2 1) (Loc 60 2 5))
                   (Var "Wish"))
                (Solved
@@ -59,13 +59,7 @@ Right
                   (Area (Loc 61 2 6) (Loc 85 2 30))
                   (Abs
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "c2" Star)))
-                           (TVar (TV "h7" Star)))
-                        (Area (Loc 62 2 7) (Loc 65 2 10))
-                        "bad")
+                        (TVar (TV "f5" Star)) (Area (Loc 62 2 7) (Loc 65 2 10)) "bad")
                      [ Solved
                          (TApp
                             (TApp
@@ -91,12 +85,7 @@ Right
                                 (Area (Loc 77 2 22) (Loc 84 2 29))
                                 (App
                                    (Solved
-                                      (TApp
-                                         (TApp
-                                            (TCon
-                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TCon (TC "Number" Star) "prelude"))
-                                         (TVar (TV "h7" Star)))
+                                      (TVar (TV "g6" Star))
                                       (Area (Loc 77 2 22) (Loc 81 2 26))
                                       (Var "good"))
                                    (Solved

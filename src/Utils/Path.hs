@@ -45,13 +45,7 @@ computeRootPath :: FilePath -> FilePath
 computeRootPath path =
   let (firstPass, fileOrDirName) = splitFileName path
       ext                        = takeExtension path
-  in
-    if firstPass == "./" then
-      path
-    else if ext == "" then
-      joinPath [firstPass, fileOrDirName]
-    else
-      firstPass
+  in  if firstPass == "./" then path else if ext == "" then joinPath [firstPass, fileOrDirName] else firstPass
 
 
 cleanRelativePath :: FilePath -> FilePath
