@@ -274,7 +274,7 @@ instance Optimizable Slv.TypeDecl Opt.TypeDecl where
 
 instance Optimizable Slv.Interface Opt.Interface where
   optimize enabled (Slv.Untyped area (Slv.Interface name constraints vars methods methodTypings)) = do
-    name' <- getClassShortname enabled name
+    name'          <- getClassShortname enabled name
     methodTypings' <- mapM (optimize enabled) methodTypings
     return $ Opt.Untyped area $ Opt.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
 
@@ -323,12 +323,12 @@ getTypeHeadName :: Type -> String
 getTypeHeadName t = case t of
   TVar (TV n _)   -> n
   TCon (TC n _) _ -> case n of
-    "(,)"         -> "Tuple_2"
-    "(,,)"        -> "Tuple_3"
-    "(,,,)"       -> "Tuple_4"
-    _             -> n
+    "(,)"   -> "Tuple_2"
+    "(,,)"  -> "Tuple_3"
+    "(,,,)" -> "Tuple_4"
+    _       -> n
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
-  TApp l _ -> getTypeHeadName l
+  TApp l _  -> getTypeHeadName l
 
 
 -- I think at some point we might want to follow imports in the optimization

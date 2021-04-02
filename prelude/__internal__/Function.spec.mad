@@ -1,8 +1,10 @@
 import { assertEquals, test } from "./TestTools"
-import { always, complement } from "./Function"
+import { always, complement, memoize } from "./Function"
 import { andDo } from "Monad"
 import {} from "MonadWriter"
+import {} from "MonadState"
 import { runWriterT, WriterT } from "WriterT"
+import { runStateT, StateT } from "StateT"
 import { runIdentity, Identity } from "Identity"
 import {} from "List"
 
@@ -23,14 +25,42 @@ test("always - map", (_) => assertEquals(
 
 
 test("memoize", (_) => {
-  innerFn = (x) => tell([x])// |> andDo(of(x))
+  spy = memoize(chain((x) => tell([x]) |> andDo(of(x))))
   run = pipe(runWriterT, runIdentity)
 
   return pipe(
     of,
-    chain(innerFn),
-    chain(innerFn),
+    spy,
+    spy,
     run,
-    (x) => assertEquals(x, <(), [1]>)
+    (x) => assertEquals(x, <1, [1]>)
   )(1)
 })
+
+// test("memoize - good", (_) => {
+//   spy = memoize((x) => put(x + 1))
+//   run = pipe((m) => runStateT(m, 0), runIdentity)
+
+//   return pipe(
+//     of,
+//     andDo(get),
+//     // chain((s) => {
+//     //   c1 = spy(s)
+//     //   c2 = spy(s)
+//     //   return andDo(c1, c2)
+//     // }),
+//     run,
+//     (x) => assertEquals(x, <(), 1>)
+//     // (x) => assertEquals(x, <(), 1>)
+//   )("1")
+// })
+
+spy = memoize((x) => put(x + 1))
+run = pipe((m) => runStateT(m, 0), runIdentity)
+
+pipe(
+    of,
+    andDo(get),
+    run,
+    (x) => assertEquals(x, <(), 1>)
+  )("1")

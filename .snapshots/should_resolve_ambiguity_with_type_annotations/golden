@@ -79,8 +79,8 @@ Right
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "String" Star) "prelude"))
-                             (TCon (TC "Number" Star) "prelude"))
+                                (TVar (TV "b1" Star)))
+                             (TVar (TV "c2" Star)))
                           (Area (Loc 69 6 3) (Loc 108 6 42))
                           (Assignment
                              "read"
@@ -93,11 +93,9 @@ Right
                                 (Area (Loc 76 6 10) (Loc 108 6 42))
                                 (Abs
                                    (Solved
-                                      (TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 77 6 11) (Loc 78 6 12))
-                                      "s")
+                                      (TVar (TV "b1" Star)) (Area (Loc 77 6 11) (Loc 78 6 12)) "s")
                                    [ Solved
-                                       (TCon (TC "Number" Star) "prelude")
+                                       (TVar (TV "c2" Star))
                                        (Area (Loc 84 6 18) (Loc 107 6 41))
                                        (JSExp "parseFloat(s, 10)")
                                    ])))

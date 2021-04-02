@@ -57,8 +57,9 @@ tester optimized code =
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
-                           (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
+        Right x -> compile
+          (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
+          (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
@@ -71,8 +72,9 @@ coverageTester code =
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
-                           (evalState (optimize False x) initialOptimizationState :: Opt.AST)
+        Right x -> compile
+          (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
+          (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
@@ -551,7 +553,7 @@ spec = do
     it "should compile to JS with coverage trackers when COVERAGE_MODE is on" $ do
       let actual = coverageTester mainCompileFixture
       snapshotTest "should compile to JS with coverage trackers when COVERAGE_MODE is on" actual
-    
+
     it "should compile JSX" $ do
       let actual = tester False jsxProgram
       snapshotTest "should compile JSX" actual
@@ -816,9 +818,8 @@ spec = do
         pathUtils =
           defaultPathUtils { readFile = makeReadFile files, byteStringReadFile = makeByteStringReadFile files }
 
-      let
-        r = unsafePerformIO
-          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+      let r = unsafePerformIO
+            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/root/project/src" t a
@@ -897,9 +898,8 @@ spec = do
                                      else return False
           }
 
-      let
-        r = unsafePerformIO
-          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+      let r = unsafePerformIO
+            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -922,9 +922,8 @@ spec = do
                                      , getExecutablePath  = return "/root/project/madlib"
                                      }
 
-      let
-        r = unsafePerformIO
-          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+      let r = unsafePerformIO
+            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -1073,9 +1072,8 @@ spec = do
                                      , getExecutablePath  = return "/root/project/madlib"
                                      }
 
-      let
-        r = unsafePerformIO
-          $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+      let r = unsafePerformIO
+            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of

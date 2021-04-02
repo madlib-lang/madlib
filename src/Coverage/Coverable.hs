@@ -5,7 +5,7 @@ module Coverage.Coverable where
 import           AST.Solved
 import           Explain.Location
 import qualified Data.Set                      as S
-import Infer.Type
+import           Infer.Type
 
 data Coverable
   = Function { line :: Int, name :: String }
@@ -23,39 +23,31 @@ class Collectable a where
   collect :: a -> [Coverable]
 
 instance Collectable Exp where
-  collect (Solved t (Area (Loc _ l _) _) exp) = case exp of    
+  collect (Solved t (Area (Loc _ l _) _) exp) = case exp of
     Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
     Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
-    
+
     TypedExp (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
-    
+
     TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))))) _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    Assignment name e ->
-      if isFunctionType t then
-        [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else
-        [Line { line = l }] <> collect e
-    Export (Solved _ _ (Assignment name e)) ->
-      if isFunctionType t then
-        [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else
-        [Line { line = l }] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ ->
-      if isFunctionType t then
-        [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else
-        [Line { line = l' }] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ ->
-      if isFunctionType t then
-        [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else
-        [Line { line = l' }] <> collect e
+    Assignment name e -> if isFunctionType t
+      then [Function { line = l, name = name }, Line { line = l }] <> collect e
+      else [Line { line = l }] <> collect e
+    Export (Solved _ _ (Assignment name e)) -> if isFunctionType t
+      then [Function { line = l, name = name }, Line { line = l }] <> collect e
+      else [Line { line = l }] <> collect e
+    TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ -> if isFunctionType t
+      then [Function { line = l', name = name }, Line { line = l' }] <> collect e
+      else [Line { line = l' }] <> collect e
+    TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ -> if isFunctionType t
+      then [Function { line = l', name = name }, Line { line = l' }] <> collect e
+      else [Line { line = l' }] <> collect e
 
     App fn arg _          -> collect fn <> collect arg
     Abs         _   body  -> concat (collect <$> body)
@@ -65,7 +57,7 @@ instance Collectable Exp where
     TypedExp e _          -> collect e
     TupleConstructor es   -> concat $ collect <$> es
     If cond good bad      -> collect cond <> collect good <> collect bad
-    Where e iss           -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
+    Where       e iss     -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
     Placeholder _ e       -> collect e
     JSExp _               -> []
     Var   n               -> [Line { line = l }]

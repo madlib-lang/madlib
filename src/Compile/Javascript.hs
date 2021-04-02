@@ -24,7 +24,6 @@ import           System.FilePath                ( replaceExtension
                                                 )
 import           Explain.Location
 import           Infer.Type
-import           Debug.Trace                    ( trace )
 import           Text.Show.Pretty               ( ppShow )
 import           Compile.JSInternals
 import           Target
@@ -120,7 +119,8 @@ instance Compilable Exp where
               <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg)
               <> ")"
           Optimized _ _ (App (Optimized _ _ (Var "!=")) arg' _) ->
-            "!" <> eqFnName optimized
+            "!"
+              <> eqFnName optimized
               <> "("
               <> hpWrapLine coverage astPath (getStartLine arg') (compile config arg')
               <> ", "
@@ -219,13 +219,9 @@ instance Compilable Exp where
 
         Var name ->
           -- if name == "!" || not coverage || not (isFunctionType expType) then
-          if name == "!" || not coverage then
-            name
-          else
-            hpWrapLine coverage astPath l name
-
-        NamespaceAccess name ->
           if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
+
+        NamespaceAccess name -> if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
           -- if '.' `elem` name || name == "!" || not coverage then name else hpWrapLine coverage astPath l name
 
 
@@ -264,16 +260,12 @@ instance Compilable Exp where
             TApp (TCon (TC n _) _) _ -> n
             TApp (TApp (TCon (TC n _) _) _) _ -> if n == "(,)" then "Tuple_2" else n
             TApp (TApp (TApp (TCon (TC n _) _) _) _) _ -> if n == "(,,)" then "Tuple_3" else n
-            _             -> ppShow t
+            _ -> ppShow t
 
 
         Placeholder (MethodRef cls method var, ts) (Opt.Optimized _ _ (Var name)) ->
           let compiled = generateRecordName optimized cls ts var <> "." <> method
-          in
-            if not coverage then
-              compiled
-            else
-              hpWrapLine coverage astPath l compiled
+          in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
         -- Build ABS for coverage
         Assignment name abs@(Optimized _ _ (Abs param body)) -> if coverage
@@ -298,7 +290,7 @@ instance Compilable Exp where
                           <> param
                 next = case head body of
                   (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  _                       -> ") => " <> compileBody body <> "))"
+                  _ -> ") => " <> compileBody body <> "))"
             in  start <> next
 
           compileBody :: [Exp] -> String
@@ -313,33 +305,43 @@ instance Compilable Exp where
 
         Assignment name exp ->
           let compiled = compileAssignmentWithPlaceholder config exp
-          in
-            if coverage && isFunctionType expType then
-              "const " <> name <> " = " <> "__hpFnWrap('"
-              <> astPath
-              <> "', "
-              <> show l
-              <> ", '"
-              <> name
-              <> "')(" <> compiled <> ")"
-            else "const " <> name <> " = " <> compiled
+          in  if coverage && isFunctionType expType
+                then
+                  "const "
+                  <> name
+                  <> " = "
+                  <> "__hpFnWrap('"
+                  <> astPath
+                  <> "', "
+                  <> show l
+                  <> ", '"
+                  <> name
+                  <> "')("
+                  <> compiled
+                  <> ")"
+                else "const " <> name <> " = " <> compiled
 
         TypedExp exp _ -> compile config exp
 
         Export ass@(Optimized _ _ (Assignment name exp)) -> case exp of
           Optimized _ _ (Abs _ _) -> "export " <> compile config ass
-          _                       -> --"export const " <> name <> " = " <> compileAssignmentWithPlaceholder config exp
+          _ -> --"export const " <> name <> " = " <> compileAssignmentWithPlaceholder config exp
             let compiled = compileAssignmentWithPlaceholder config exp
-            in
-              if coverage && isFunctionType expType then
-                "export const " <> name <> " = " <> "__hpFnWrap('"
-                <> astPath
-                <> "', "
-                <> show l
-                <> ", '"
-                <> name
-                <> "')(" <> compiled <> ")"
-              else "export const " <> name <> " = " <> compiled
+            in  if coverage && isFunctionType expType
+                  then
+                    "export const "
+                    <> name
+                    <> " = "
+                    <> "__hpFnWrap('"
+                    <> astPath
+                    <> "', "
+                    <> show l
+                    <> ", '"
+                    <> name
+                    <> "')("
+                    <> compiled
+                    <> ")"
+                  else "export const " <> name <> " = " <> compiled
 
         Record fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
@@ -573,17 +575,21 @@ instance Compilable Opt.Instance where
     compileMethod :: Name -> Exp -> String
     compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
       let compiled = compileAssignmentWithPlaceholder config exp
-      in
-        if not (cccoverage config) || not (isFunctionType t) then
-          "  " <> n <> ": " <> compiled
-        else
-          "  " <> n <> ": " <> "__hpFnWrap('"
-          <> ccastPath config
-          <> "', "
-          <> show line
-          <> ", '"
-          <> n
-          <> "')(" <> compiled <> ")"
+      in  if not (cccoverage config) || not (isFunctionType t)
+            then "  " <> n <> ": " <> compiled
+            else
+              "  "
+              <> n
+              <> ": "
+              <> "__hpFnWrap('"
+              <> ccastPath config
+              <> "', "
+              <> show line
+              <> ", '"
+              <> n
+              <> "')("
+              <> compiled
+              <> ")"
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
 compileAssignmentWithPlaceholder config fullExp@(Opt.Optimized _ _ exp) = case exp of

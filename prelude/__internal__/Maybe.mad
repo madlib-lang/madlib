@@ -104,3 +104,9 @@ fromMaybe :: a -> Maybe a -> a
 export fromMaybe = (or) => where
   is Just a : a
   is Nothing: or
+
+
+isJust :: Maybe a -> Boolean
+export isJust = where
+  is Just _ : true
+  is Nothing: false

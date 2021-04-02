@@ -16,8 +16,6 @@ import qualified Data.Map                      as M
 import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
-import Debug.Trace
-import Text.Show.Pretty
 
 
 

@@ -111,105 +111,28 @@ Right
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (FieldAccess
                             (Solved
-                               (TRecord (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True)
+                               (TRecord (fromList [ ( "e" , TVar (TV "d3" Star) ) ]) True)
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (FieldAccess
                                   (Solved
-                                     (TRecord
-                                        (fromList
-                                           [ ( "d"
-                                             , TRecord
-                                                 (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True
-                                             )
-                                           ])
-                                        True)
+                                     (TRecord (fromList [ ( "d" , TVar (TV "e4" Star) ) ]) True)
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (FieldAccess
                                         (Solved
                                            (TRecord
-                                              (fromList
-                                                 [ ( "c"
-                                                   , TRecord
-                                                       (fromList
-                                                          [ ( "d"
-                                                            , TRecord
-                                                                (fromList
-                                                                   [ ( "e" , TVar (TV "m12" Star) )
-                                                                   ])
-                                                                True
-                                                            )
-                                                          ])
-                                                       True
-                                                   )
-                                                 ])
-                                              True)
+                                              (fromList [ ( "c" , TVar (TV "f5" Star) ) ]) True)
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (FieldAccess
                                               (Solved
                                                  (TRecord
-                                                    (fromList
-                                                       [ ( "b"
-                                                         , TRecord
-                                                             (fromList
-                                                                [ ( "c"
-                                                                  , TRecord
-                                                                      (fromList
-                                                                         [ ( "d"
-                                                                           , TRecord
-                                                                               (fromList
-                                                                                  [ ( "e"
-                                                                                    , TVar
-                                                                                        (TV
-                                                                                           "m12"
-                                                                                           Star)
-                                                                                    )
-                                                                                  ])
-                                                                               True
-                                                                           )
-                                                                         ])
-                                                                      True
-                                                                  )
-                                                                ])
-                                                             True
-                                                         )
-                                                       ])
+                                                    (fromList [ ( "b" , TVar (TV "g6" Star) ) ])
                                                     True)
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (FieldAccess
                                                     (Solved
                                                        (TRecord
                                                           (fromList
-                                                             [ ( "a"
-                                                               , TRecord
-                                                                   (fromList
-                                                                      [ ( "b"
-                                                                        , TRecord
-                                                                            (fromList
-                                                                               [ ( "c"
-                                                                                 , TRecord
-                                                                                     (fromList
-                                                                                        [ ( "d"
-                                                                                          , TRecord
-                                                                                              (fromList
-                                                                                                 [ ( "e"
-                                                                                                   , TVar
-                                                                                                       (TV
-                                                                                                          "m12"
-                                                                                                          Star)
-                                                                                                   )
-                                                                                                 ])
-                                                                                              True
-                                                                                          )
-                                                                                        ])
-                                                                                     True
-                                                                                 )
-                                                                               ])
-                                                                            True
-                                                                        )
-                                                                      ])
-                                                                   True
-                                                               )
-                                                             ])
+                                                             [ ( "a" , TVar (TV "h7" Star) ) ])
                                                           True)
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x"))
@@ -223,66 +146,10 @@ Right
                                                                 "prelude")
                                                              (TRecord
                                                                 (fromList
-                                                                   [ ( "a"
-                                                                     , TRecord
-                                                                         (fromList
-                                                                            [ ( "b"
-                                                                              , TRecord
-                                                                                  (fromList
-                                                                                     [ ( "c"
-                                                                                       , TRecord
-                                                                                           (fromList
-                                                                                              [ ( "d"
-                                                                                                , TRecord
-                                                                                                    (fromList
-                                                                                                       [ ( "e"
-                                                                                                         , TVar
-                                                                                                             (TV
-                                                                                                                "m12"
-                                                                                                                Star)
-                                                                                                         )
-                                                                                                       ])
-                                                                                                    True
-                                                                                                )
-                                                                                              ])
-                                                                                           True
-                                                                                       )
-                                                                                     ])
-                                                                                  True
-                                                                              )
-                                                                            ])
-                                                                         True
-                                                                     )
+                                                                   [ ( "a" , TVar (TV "h7" Star) )
                                                                    ])
                                                                 True))
-                                                          (TRecord
-                                                             (fromList
-                                                                [ ( "b"
-                                                                  , TRecord
-                                                                      (fromList
-                                                                         [ ( "c"
-                                                                           , TRecord
-                                                                               (fromList
-                                                                                  [ ( "d"
-                                                                                    , TRecord
-                                                                                        (fromList
-                                                                                           [ ( "e"
-                                                                                             , TVar
-                                                                                                 (TV
-                                                                                                    "m12"
-                                                                                                    Star)
-                                                                                             )
-                                                                                           ])
-                                                                                        True
-                                                                                    )
-                                                                                  ])
-                                                                               True
-                                                                           )
-                                                                         ])
-                                                                      True
-                                                                  )
-                                                                ])
-                                                             True))
+                                                          (TVar (TV "h7" Star)))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a"))))
                                               (Solved
@@ -293,51 +160,9 @@ Right
                                                           "prelude")
                                                        (TRecord
                                                           (fromList
-                                                             [ ( "b"
-                                                               , TRecord
-                                                                   (fromList
-                                                                      [ ( "c"
-                                                                        , TRecord
-                                                                            (fromList
-                                                                               [ ( "d"
-                                                                                 , TRecord
-                                                                                     (fromList
-                                                                                        [ ( "e"
-                                                                                          , TVar
-                                                                                              (TV
-                                                                                                 "m12"
-                                                                                                 Star)
-                                                                                          )
-                                                                                        ])
-                                                                                     True
-                                                                                 )
-                                                                               ])
-                                                                            True
-                                                                        )
-                                                                      ])
-                                                                   True
-                                                               )
-                                                             ])
+                                                             [ ( "b" , TVar (TV "g6" Star) ) ])
                                                           True))
-                                                    (TRecord
-                                                       (fromList
-                                                          [ ( "c"
-                                                            , TRecord
-                                                                (fromList
-                                                                   [ ( "d"
-                                                                     , TRecord
-                                                                         (fromList
-                                                                            [ ( "e"
-                                                                              , TVar (TV "m12" Star)
-                                                                              )
-                                                                            ])
-                                                                         True
-                                                                     )
-                                                                   ])
-                                                                True
-                                                            )
-                                                          ])
-                                                       True))
+                                                    (TVar (TV "g6" Star)))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b"))))
                                         (Solved
@@ -347,34 +172,9 @@ Right
                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                     "prelude")
                                                  (TRecord
-                                                    (fromList
-                                                       [ ( "c"
-                                                         , TRecord
-                                                             (fromList
-                                                                [ ( "d"
-                                                                  , TRecord
-                                                                      (fromList
-                                                                         [ ( "e"
-                                                                           , TVar (TV "m12" Star)
-                                                                           )
-                                                                         ])
-                                                                      True
-                                                                  )
-                                                                ])
-                                                             True
-                                                         )
-                                                       ])
+                                                    (fromList [ ( "c" , TVar (TV "f5" Star) ) ])
                                                     True))
-                                              (TRecord
-                                                 (fromList
-                                                    [ ( "d"
-                                                      , TRecord
-                                                          (fromList
-                                                             [ ( "e" , TVar (TV "m12" Star) ) ])
-                                                          True
-                                                      )
-                                                    ])
-                                                 True))
+                                              (TVar (TV "f5" Star)))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c"))))
                                   (Solved
@@ -382,24 +182,16 @@ Right
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList
-                                                 [ ( "d"
-                                                   , TRecord
-                                                       (fromList [ ( "e" , TVar (TV "m12" Star) ) ])
-                                                       True
-                                                   )
-                                                 ])
-                                              True))
-                                        (TRecord
-                                           (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True))
+                                              (fromList [ ( "d" , TVar (TV "e4" Star) ) ]) True))
+                                        (TVar (TV "e4" Star)))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d"))))
                             (Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord (fromList [ ( "e" , TVar (TV "m12" Star) ) ]) True))
-                                  (TVar (TV "m12" Star)))
+                                     (TRecord (fromList [ ( "e" , TVar (TV "d3" Star) ) ]) True))
+                                  (TVar (TV "d3" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e")))
                      ])))

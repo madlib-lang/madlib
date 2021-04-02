@@ -31,30 +31,25 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "Number" Star) "prelude"))
+                              (TVar (TV "c2" Star)))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TCon (TC "Number" Star) "prelude"))
+                                 (TVar (TV "c2" Star)))
                               (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 39 2 6) (Loc 57 2 24))
                         (Abs
-                           (Solved
-                              (TCon (TC "Number" Star) "prelude")
-                              (Area (Loc 40 2 7) (Loc 41 2 8))
-                              "a")
+                           (Solved (TVar (TV "c2" Star)) (Area (Loc 40 2 7) (Loc 41 2 8)) "a")
                            [ Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                     (TVar (TV "c2" Star)))
                                   (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 39 2 6) (Loc 57 2 24))
                                (Abs
                                   (Solved
-                                     (TCon (TC "Number" Star) "prelude")
-                                     (Area (Loc 43 2 10) (Loc 44 2 11))
-                                     "b")
+                                     (TVar (TV "c2" Star)) (Area (Loc 43 2 10) (Loc 44 2 11)) "b")
                                   [ Solved
                                       (TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 50 2 17) (Loc 56 2 23))
@@ -65,7 +60,7 @@ Right
                                                   (TCon
                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                      "prelude")
-                                                  (TCon (TC "Number" Star) "prelude"))
+                                                  (TVar (TV "b1" Star)))
                                                (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 50 2 17) (Loc 56 2 23))
                                             (App
@@ -75,7 +70,7 @@ Right
                                                         (TCon
                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                            "prelude")
-                                                        (TCon (TC "Number" Star) "prelude"))
+                                                        (TVar (TV "f5" Star)))
                                                      (TApp
                                                         (TApp
                                                            (TCon
@@ -83,17 +78,17 @@ Right
                                                                  "(->)"
                                                                  (Kfun Star (Kfun Star Star)))
                                                               "prelude")
-                                                           (TCon (TC "Number" Star) "prelude"))
+                                                           (TVar (TV "f5" Star)))
                                                         (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 52 2 19) (Loc 54 2 21))
                                                   (Var "=="))
                                                (Solved
-                                                  (TCon (TC "Number" Star) "prelude")
+                                                  (TVar (TV "b1" Star))
                                                   (Area (Loc 50 2 17) (Loc 51 2 18))
                                                   (Var "a"))
                                                False))
                                          (Solved
-                                            (TCon (TC "Number" Star) "prelude")
+                                            (TVar (TV "c2" Star))
                                             (Area (Loc 55 2 22) (Loc 56 2 23))
                                             (Var "b"))
                                          True)

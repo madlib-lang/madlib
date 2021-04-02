@@ -85,11 +85,11 @@ Right
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                     (TVar (TV "f5" Star)))
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "Number" Star) "prelude"))
+                                        (TVar (TV "f5" Star)))
                                      (TCon (TC "Boolean" Star) "prelude")))
                                (Area (Loc 46 3 18) (Loc 47 3 19))
                                (Var ">"))
@@ -139,11 +139,11 @@ Right
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
+                                     (TVar (TV "j9" Star)))
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "String" Star) "prelude"))
+                                        (TVar (TV "j9" Star)))
                                      (TCon (TC "Boolean" Star) "prelude")))
                                (Area (Loc 70 4 20) (Loc 71 4 21))
                                (Var ">"))

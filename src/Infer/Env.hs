@@ -13,7 +13,7 @@ import           Control.Monad.Except           ( MonadError(throwError) )
 
 data Interface = Interface [TVar] [Pred] [Instance] deriving(Eq, Show)
 
-newtype Instance = Instance (Qual Pred) deriving(Eq, Show)
+data Instance = Instance (Qual Pred) Vars deriving(Eq, Show)
 
 
 type Vars = M.Map String Scheme
@@ -58,13 +58,12 @@ mergeVars env vs = env { envVars = envVars env <> vs }
 
 
 mergeEnv :: Env -> Env -> Env
-mergeEnv initial env =
-  Env { envVars = envVars initial <> envVars env
-      , envMethods = envMethods initial <> envMethods env
-      , envInterfaces = envInterfaces initial <> envInterfaces env
-      , envBacktrace = mempty
-      , envCurrentPath = envCurrentPath env
-      }
+mergeEnv initial env = Env { envVars        = envVars initial <> envVars env
+                           , envMethods     = envMethods initial <> envMethods env
+                           , envInterfaces  = envInterfaces initial <> envInterfaces env
+                           , envBacktrace   = mempty
+                           , envCurrentPath = envCurrentPath env
+                           }
 
 
 initialEnv :: Env

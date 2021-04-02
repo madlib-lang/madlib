@@ -81,10 +81,10 @@ Right
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "String" Star) "prelude"))
+                                           (TVar (TV "g6" Star)))
                                         (TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
-                                           (TCon (TC "String" Star) "prelude")))
+                                           (TVar (TV "g6" Star))))
                                      (Area (Loc 75 3 12) (Loc 81 3 18))
                                      (NamespaceAccess "M.Just"))
                                   (Solved

@@ -15,14 +15,11 @@ import           Infer.Scheme
 import           Infer.Unify
 import           Infer.Placeholder
 import           Error.Error
-import           Explain.Location
 import qualified Data.Map                      as M
 import           Data.List
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
-import Debug.Trace
-import Text.Show.Pretty
 
 
 -- defined :: Maybe a -> Bool
@@ -34,8 +31,7 @@ import Text.Show.Pretty
 
 addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
 addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
-  Just x -> return env
-  -- Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
+  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
   Nothing -> return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
 
 
@@ -61,7 +57,31 @@ addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
     s <- match ts' ts
     catchError (mapM_ (isInstanceDefined env s) ps')
                (\e@(InferError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
-    return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) : is)) (envInterfaces env) }
+    return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
+               }
+
+addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
+addInstanceMethod env ps p@(IsIn cls ts) (methodName, methodScheme) = case M.lookup cls (envInterfaces env) of
+  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+
+  Just (Interface tvs ps' is) -> do
+    maybeInstance <- findInst env p
+    case maybeInstance of
+      Just inst@(Instance qp methods) -> do
+        let withoutInst = filter (/= inst) is
+        let methods'    = M.insert methodName methodScheme methods
+        return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
+
+setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
+setInstanceMethods env p@(IsIn cls ts) methods = case M.lookup cls (envInterfaces env) of
+  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+
+  Just (Interface tvs ps' is) -> do
+    maybeInstance <- findInst env p
+    case maybeInstance of
+      Just inst@(Instance qp _) -> do
+        let withoutInst = filter (/= inst) is
+        return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods : is)) (envInterfaces env) }
 
 
 findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)
@@ -71,7 +91,7 @@ isInstanceDefined :: Env -> Substitution -> Pred -> Infer Bool
 isInstanceDefined env subst (IsIn id ts) = do
   let is = insts env id
   found <- findM
-    (\(Instance (_ :=> (IsIn _ ts'))) ->
+    (\(Instance (_ :=> (IsIn _ ts')) _) ->
       catchError (match ts' (apply subst ts) >>= \_ -> return $ Just True) (const $ return Nothing)
     )
     is
@@ -80,10 +100,10 @@ isInstanceDefined env subst (IsIn id ts) = do
     Nothing -> throwError $ InferError (NoInstanceFound id (apply subst ts)) NoContext
 
 
-resolveInstances :: Env -> [Can.Instance] -> Infer [Slv.Instance]
-resolveInstances _   []       = return []
+resolveInstances :: Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])
+resolveInstances env []       = return (env, [])
 resolveInstances env (i : is) = do
-  next <- resolveInstances env is
+
   curr <- catchError
     (Just <$> resolveInstance env i)
     (\err -> do
@@ -91,11 +111,13 @@ resolveInstances env (i : is) = do
       return Nothing
     )
   case curr of
-    Just x  -> return $ x : next
-    Nothing -> return next
+    Just (env', inst) -> do --return $ x : next
+      (nextEnv, insts) <- resolveInstances env' is
+      return (nextEnv, inst : insts)
+    Nothing -> resolveInstances env is
 
 
-resolveInstance :: Env -> Can.Instance -> Infer Slv.Instance
+resolveInstance :: Env -> Can.Instance -> Infer (Env, Slv.Instance)
 resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
   let instanceTypes = predTypes pred
   let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
@@ -106,8 +128,10 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   inferredMethods <- mapM
     (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
-  let dict' = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
-  return $ Slv.Untyped area $ Slv.Instance name constraintPreds pred dict'
+  let dict'   = M.fromList $ (\(a, b, c) -> (a, (b, c))) <$> inferredMethods
+  let methods = M.fromList $ (\(a, b, c) -> (a, c)) <$> inferredMethods
+  envWithMethods <- setInstanceMethods env pred methods
+  return (envWithMethods, Slv.Untyped area $ Slv.Instance name constraintPreds pred dict')
 
 
 inferMethod :: Env -> [Pred] -> [Pred] -> (Can.Name, Can.Exp) -> Infer (Slv.Name, Slv.Exp, Scheme)

@@ -30,9 +30,9 @@ instance Substitutable t => Substitutable (Qual t) where
   ftv (ps :=> t) = ftv ps `union` ftv t
 
 instance Substitutable Type where
-  apply _ tc@( TCon a fp ) = tc
-  apply s t@(TVar a      ) = M.findWithDefault t a s
-  apply s (  t1 `TApp` t2) = apply s t1 `TApp` apply s t2
+  apply _ tc@(TCon a fp   ) = tc
+  apply s t@( TVar a      ) = M.findWithDefault t a s
+  apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields open) =
     let applied = TRecord (apply s <$> fields) open in if rec == applied then applied else apply s applied
   apply s t = t
@@ -71,7 +71,7 @@ merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError Fatal
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
   TVar (TV n k) -> M.singleton (TV n Star) t
-  TCon _ _      -> mempty
+  TCon    _  _  -> mempty
   TApp    l  r  -> M.union (buildVarSubsts l) (buildVarSubsts r)
   TRecord ts _  -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst ts
 
