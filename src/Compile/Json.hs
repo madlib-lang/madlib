@@ -288,9 +288,9 @@ compileExpFields depth exp = case exp of
       <> compileExp depth exp
       <> "\n"
 
-  Slv.FieldAccess record field ->
+  Slv.Access record field ->
     indent depth
-      <> "\"nodeType\": \"FieldAccess\",\n"
+      <> "\"nodeType\": \"Access\",\n"
       <> indent depth
       <> "\"record\": "
       <> compileExp depth record
@@ -330,9 +330,6 @@ compileExpFields depth exp = case exp of
       <> "\n"
       <> indent depth
       <> "]\n"
-
-  Slv.NamespaceAccess n ->
-    indent depth <> "\"nodeType\": \"NamespaceAccess\",\n" <> indent depth <> "\"accessor\": \"" <> n <> "\"\n"
 
   Slv.Placeholder _ exp ->
     indent depth

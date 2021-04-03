@@ -621,14 +621,8 @@ nameToPattern area n | n == "_"      = Src.Source emptyInfos area Src.PAny
                 | otherwise          = Src.Source emptyInfos area (Src.PVar n)
 
 access :: Src.Exp -> Src.Exp -> Src.Exp
-access src field = case (src, field) of
-  (Src.Source _ _ (Src.Var ns@(h:n)), Src.Source _ _ (Src.Var f)) ->
-    if isUpper h then
-      Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.NamespaceAccess $ ns <> f)
-    else
-      Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.FieldAccess src field)
-  _ ->
-    Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.FieldAccess src field)
+access src field = 
+  Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.Access src field)
 
 
 sanitizeImportPath :: String -> String

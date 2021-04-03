@@ -51,8 +51,7 @@ instance Collectable Exp where
 
     App fn arg _          -> collect fn <> collect arg
     Abs         _   body  -> concat (collect <$> body)
-    FieldAccess rec field -> collect rec <> collect field
-    -- Assignment  _   e     -> collect e
+    Access rec field -> collect rec <> collect field
     Export e              -> collect e
     TypedExp e _          -> collect e
     TupleConstructor es   -> concat $ collect <$> es
