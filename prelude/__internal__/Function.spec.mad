@@ -24,43 +24,43 @@ test("always - map", (_) => assertEquals(
 )
 
 
-test("memoize", (_) => {
-  spy = memoize(chain((x) => tell([x]) |> andDo(of(x))))
-  run = pipe(runWriterT, runIdentity)
-
-  return pipe(
-    of,
-    spy,
-    spy,
-    run,
-    (x) => assertEquals(x, <1, [1]>)
-  )(1)
-})
-
-// test("memoize - good", (_) => {
-//   spy = memoize((x) => put(x + 1))
-//   run = pipe((m) => runStateT(m, 0), runIdentity)
+// test("memoize", (_) => {
+//   spy = memoize(chain((x) => tell([x]) |> andDo(of(x))))
+//   run = pipe(runWriterT, runIdentity)
 
 //   return pipe(
 //     of,
-//     andDo(get),
-//     // chain((s) => {
-//     //   c1 = spy(s)
-//     //   c2 = spy(s)
-//     //   return andDo(c1, c2)
-//     // }),
+//     spy,
+//     spy,
 //     run,
-//     (x) => assertEquals(x, <(), 1>)
-//     // (x) => assertEquals(x, <(), 1>)
-//   )("1")
+//     (x) => assertEquals(x, <1, [1]>)
+//   )(1)
 // })
 
-spy = memoize((x) => put(x + 1))
-run = pipe((m) => runStateT(m, 0), runIdentity)
+test("memoize - good", (_) => {
+  spy = memoize((x) => put(x + 1))
+  run = pipe((m) => runStateT(m, 0), runIdentity)
 
-pipe(
+  return pipe(
     of,
     andDo(get),
+    chain((s) => {
+      c1 = spy(s)
+      c2 = spy(s)
+      c3 = spy(s)
+      return andDo(andDo(c1, c2), c3)
+    }),
     run,
     (x) => assertEquals(x, <(), 1>)
-  )("1")
+  )(1)
+})
+
+// spy = memoize((x) => put(x + 1))
+// run = pipe((m) => runStateT(m, 0), runIdentity)
+
+// pipe(
+//   of,
+//   andDo(get),
+//   run,
+//   (x) => assertEquals(x, <1, 1>)
+// )(1)
