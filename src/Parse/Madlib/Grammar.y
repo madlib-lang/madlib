@@ -115,8 +115,8 @@ importDecls :: { [Src.Import] }
   | importDecl             %shift { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (strV $6) (strV $6)) }
-  | 'import' name 'from' str rets                { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (strV $4) (strV $4)) }
+  : 'import' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
+  | 'import' name 'from' str rets                { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
 
 importNames :: { [Src.Name] }
   : importNames ',' name %shift { $1 <> [strV $3] }
@@ -629,6 +629,10 @@ access src field = case (src, field) of
       Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.FieldAccess src field)
   _ ->
     Src.Source emptyInfos (mergeAreas (Src.getArea src) (Src.getArea field)) (Src.FieldAccess src field)
+
+
+sanitizeImportPath :: String -> String
+sanitizeImportPath = init . tail
 
 
 lexerWrap :: (Token -> Alex a) -> Alex a

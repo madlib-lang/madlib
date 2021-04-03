@@ -59,7 +59,7 @@ instance Compilable Exp where
     in
       case exp of
         LNum  v -> hpWrapLine coverage astPath l v
-        LStr  v -> hpWrapLine coverage astPath l $ "`" <> v <> "`"
+        LStr  v -> hpWrapLine coverage astPath l v
         LBool v -> hpWrapLine coverage astPath l v
         LUnit   -> hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
@@ -398,7 +398,7 @@ instance Compilable Exp where
             PVar _  -> "true"
             PAny    -> "true"
             PNum  n -> scope <> " === " <> n
-            PStr  n -> scope <> " === \"" <> n <> "\""
+            PStr  n -> scope <> " === " <> n
             PBool n -> scope <> " === " <> n
             PCon n | n == "String"  -> "typeof " <> scope <> " === \"string\""
                    | n == "Boolean" -> "typeof " <> scope <> " === \"boolean\""

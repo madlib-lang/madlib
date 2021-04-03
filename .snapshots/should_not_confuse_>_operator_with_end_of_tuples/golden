@@ -44,7 +44,7 @@ Right
                , Solved
                    (TCon (TC "String" Star) "prelude")
                    (Area (Loc 17 2 8) (Loc 23 2 14))
-                   (LStr "John")
+                   (LStr "\"John\"")
                , Solved
                    (TCon (TC "Number" Star) "prelude")
                    (Area (Loc 25 2 16) (Loc 27 2 18))
@@ -68,7 +68,7 @@ Right
                , Solved
                    (TCon (TC "String" Star) "prelude")
                    (Area (Loc 36 3 8) (Loc 42 3 14))
-                   (LStr "John")
+                   (LStr "\"John\"")
                , Solved
                    (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 44 3 16) (Loc 49 3 21))
@@ -122,7 +122,7 @@ Right
                , Solved
                    (TCon (TC "String" Star) "prelude")
                    (Area (Loc 58 4 8) (Loc 64 4 14))
-                   (LStr "John")
+                   (LStr "\"John\"")
                , Solved
                    (TCon (TC "Boolean" Star) "prelude")
                    (Area (Loc 66 4 16) (Loc 80 4 30))
@@ -150,12 +150,12 @@ Right
                             (Solved
                                (TCon (TC "String" Star) "prelude")
                                (Area (Loc 66 4 16) (Loc 70 4 20))
-                               (LStr "OK"))
+                               (LStr "\"OK\""))
                             False))
                       (Solved
                          (TCon (TC "String" Star) "prelude")
                          (Area (Loc 72 4 22) (Loc 80 4 30))
-                         (LStr "NOT OK"))
+                         (LStr "\"NOT OK\""))
                       True)
                ])
         ]

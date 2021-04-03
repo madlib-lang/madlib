@@ -112,8 +112,8 @@ tokens :-
   <0, stringTemplateMadlib> \>\=                               { mapToken (\_ -> TokenRightChevronEq) }
   <0, stringTemplateMadlib> \<\=                               { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                 { mapToken (\_ -> TokenExclamationMark) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"($printable # \")*\"             { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '($printable # ')*'                { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"      { mapToken (\s -> TokenStr (sanitizeStr s)) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '(($printable # ')|\\')*'          { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, jsxOpeningTag, jsxAutoClosed> [\ \n]*"//"[^\n]*[\n]                       ; -- Comments
@@ -342,7 +342,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
           if sc /= instanceHeader then
             return $ TokenName s
           else
-            let next = BLU.fromString $ take 125 input 
+            let next = BLU.fromString $ take 250 input 
                 matched = match constraintRegex next :: Bool
                 -- matched = match constraintRegex next :: BS.ByteString -- 10.4
             in
@@ -352,7 +352,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
                 return $ TokenConstraintName s
 
         TokenRightChevron ->
-          let next  = BLU.fromString $ ((tail . (take 100)) input)
+          let next  = BLU.fromString $ ((tail . (take 200)) input)
               matchWL = match whiteList next :: BS.ByteString
               matchBL = match blackList matchWL :: Bool
           in
@@ -415,7 +415,17 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
 
 
 sanitizeStr :: String -> String
-sanitizeStr = tail . init
+sanitizeStr s = s-- >>= escapeBacktick
+-- sanitizeStr s = (tail . init $ s) >>= escapeBacktick
+
+escapeBacktick :: Char -> String
+escapeBacktick c = case c of
+  '`' -> "\\`"
+  _   -> c:""
+
+-- sanitizeSingleQuotedStr :: String -> String
+-- sanitizeSingleQuotedStr s =
+--   let 
 
 sanitizeJSBlock :: String -> String
 sanitizeJSBlock = strip . tail . tail . init . init

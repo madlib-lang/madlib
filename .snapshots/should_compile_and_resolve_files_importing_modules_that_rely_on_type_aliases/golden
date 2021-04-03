@@ -103,5 +103,5 @@ export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 import {} from "./__internals__.mjs"
 import W from "./.prelude/Wish.mjs";
 
-W.fulfill(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(__curry__((x) => x + `!`))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(__curry__((x) => x % 2))(Monad.Wish.of(3))))));
+W.fulfill(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(__curry__((x) => x + '!'))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(__curry__((x) => x % 2))(Monad.Wish.of(3))))));
 export default {};
