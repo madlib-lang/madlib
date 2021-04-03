@@ -156,7 +156,7 @@ export append = (v, xs) => (#- [...xs, v] -#)
 
 
 /**
- * Safely access the last value in a List (wrapped in Just), or Nothing.
+ * Safely access the last value in a List (wrapped in Just), or Nothing if the array is empty.
  *
  * @since 0.0.5
  * @example
@@ -170,7 +170,7 @@ export last = (xs) => #-{
 }-#
 
 /**
- * Safely access the first value in a List (wrapped in Just), or Nothing.
+ * Safely access the first value in a List (wrapped in Just), or Nothing if the array is empty.
  *
  * @since 0.0.5
  * @example
