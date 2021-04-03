@@ -381,10 +381,3 @@ export zip = (as, bs) => where(<as, bs>)
 includes :: x -> List x -> Boolean
 export includes = (x, xs) => (#- xs.includes(x) -#)
 
-/**
- * Arrange a List according to a binary comparison function. 
- * 
- * @since 0.6.0
- */
-sortBy :: (a -> a -> Number) -> List a -> List a
-export sortBy = (fn, xs) => (#- xs.sort(fn) -#)
