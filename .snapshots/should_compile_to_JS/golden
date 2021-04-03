@@ -36,7 +36,7 @@ throw 'non exhaustive patterns!'; }
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
-})(`3`);
+})("3");
 ((__x__) => {
   if (typeof __x__ === "boolean") {
     return 3;
@@ -57,7 +57,7 @@ throw 'non exhaustive patterns!'; }
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
-})(`3`);
+})("3");
 ((__x__) => {
   if (__x__ === true) {
     return 3;
@@ -66,7 +66,7 @@ throw 'non exhaustive patterns!'; }
 throw 'non exhaustive patterns!'; }
 })(true);
 const log = __curry__((a) => { console.log(a); return a; });
-(true ? `OK` : `NOT OK`);
+(true ? "OK" : "NOT OK");
 const mapMaybe = __curry__((f, m) => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     const a = __x__.__args[0];
@@ -149,9 +149,9 @@ export const map = __curry__((f, xs) => ((__x__) => {
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
 })(xs));
-(true ? `ok` : `not ok`);
-__curry__((x) => x)(__curry__((x) => (__eq__(x, `ok`) ? 1 : 10))(__curry__((x) => x)((__eq__(1, 2) ? `ok` : `not ok`))));
-(__eq__(1, 2) ? `ok` : `not ok`);
+(true ? "ok" : "not ok");
+__curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) => x)((__eq__(1, 2) ? "ok" : "not ok"))));
+(__eq__(1, 2) ? "ok" : "not ok");
 ((__x__) => {
   if (__x__ === 3) {
     return 48;
@@ -173,7 +173,7 @@ __curry__((x) => x + 1)(((__x__) => {
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
-})(`3`));
+})("3"));
 __curry__((x) => x)(((__x__) => {
   if (__x__.length >= 2 && __x__[0] === 2 && true) {
     const [,...rest] = __x__;
@@ -189,11 +189,11 @@ throw 'non exhaustive patterns!'; }
 ((__x__) => {
   if (__x__.name === "Bob") {
     const {  } = __x__;
-    return `Bob`;
+    return "Bob";
   }
   else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
 throw 'non exhaustive patterns!'; }
-})(({ x: 4, name: `John` }));
+})(({ x: 4, name: "John" }));
 const addXAndY = __curry__((r) => ((__x__) => {
   if (true && true) {
     const { y: y, x: x1 } = __x__;

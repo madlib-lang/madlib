@@ -159,11 +159,11 @@ Right
                                           (Solved
                                              (TCon (TC "String" Star) "prelude")
                                              (Area (Loc 88 6 21) (Loc 94 6 27))
-                                             (LStr "True"))
+                                             (LStr "'True'"))
                                           (Solved
                                              (TCon (TC "String" Star) "prelude")
                                              (Area (Loc 97 6 30) (Loc 104 6 37))
-                                             (LStr "False")))
+                                             (LStr "'False'")))
                                    ])))
                       , Forall
                           []
@@ -471,7 +471,7 @@ Right
                                                                             (Area
                                                                                (Loc 252 14 27)
                                                                                (Loc 255 14 30))
-                                                                            (LStr "<"))
+                                                                            (LStr "'<'"))
                                                                          False))
                                                                    (Solved
                                                                       (TCon
@@ -747,7 +747,8 @@ Right
                                                                                               274
                                                                                               14
                                                                                               49))
-                                                                                        (LStr ", "))
+                                                                                        (LStr
+                                                                                           "', '"))
                                                                                      False))
                                                                                (Solved
                                                                                   (TCon
@@ -963,7 +964,8 @@ Right
                                                                                               292
                                                                                               14
                                                                                               67))
-                                                                                        (LStr ">"))
+                                                                                        (LStr
+                                                                                           "'>'"))
                                                                                      True))
                                                                                True))
                                                                          True))
