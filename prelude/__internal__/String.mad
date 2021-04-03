@@ -1,12 +1,48 @@
 import {} from "Monoid"
 import {} from "Show"
+import {} from "List"
+
+export C = {
+  e: "",
+  n: '\n',
+  s: ' ',
+  u: '_',
+  x: '\\',
+  e: '',
+  p: '|',
+  t: '\t',
+  q: '\'',
+  qq: '"',
+  qqq: '`',
+  r: '\r',
+  c: '^',
+  n: '~',
+  x: '!'
+}
+
+// export CONSTANTS = {
+//   newline: C.n,
+//   space: C.s,
+//   underscore: C.u,
+//   escape: C.k,
+//   empty: C.e,
+//   pipe: C.p,
+//   tab: C.t,
+//   quote: C.q,
+//   doublequote: C.qq,
+//   backtick: C.qqq,
+//   carriage: C.r,
+//   caret: C.c,
+//   ene: C.n,
+//   exclamation: C.x
+// }
 
 instance Semigroup String {
   assoc = (a, b) => a ++ b
 }
 
 instance Monoid String {
-  mempty = ""
+  mempty = C.e
   mappend = (a, b) => a ++ b
 }
 
@@ -22,8 +58,30 @@ export replace = (regex, replacing, input) => (#-
 split :: String -> String -> List String
 export split = (separator, str) => (#- str.split(separator) -#)
 
-lines :: String -> List String
-export lines = split("\n")
+alias Joint = List String -> String
+alias Split = String -> List String
+
+lines :: Split
+export lines = split(C.n)
+// unlines :: Joint
+// export unlines = join(C.n)
+
+// words :: Split
+// export words = split(C.s)
+// unwords :: Joint
+// export unwords = join(C.s)
+
+// chars :: Split
+// export chars = split(C.e)
+// unchars :: Joint
+// export unchars = join(C.e)
+// export word = unchars
+
+// tabs :: Split
+// export tabs = split(C.t)
+// untabs :: Joint
+// export untabs = join(C.t)
 
 mapChars :: (String -> String) -> String -> String
-export mapChars = (f, s) => #- s.split("").map(f).join("") -#
+export mapChars = (f, s) => #- s.split(C.e).map(f).join(C.e) -#
+
