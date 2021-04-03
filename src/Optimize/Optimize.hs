@@ -86,12 +86,10 @@ instance Optimizable Slv.Exp Opt.Exp where
       arg' <- optimize enabled arg
       return $ Opt.Optimized t area (Opt.App fn' arg' close)
 
-    Slv.FieldAccess rec field -> do
+    Slv.Access rec field -> do
       rec'   <- optimize enabled rec
       field' <- optimize enabled field
-      return $ Opt.Optimized t area (Opt.FieldAccess rec' field')
-
-    Slv.NamespaceAccess n               -> return $ Opt.Optimized t area (Opt.NamespaceAccess n)
+      return $ Opt.Optimized t area (Opt.Access rec' field')
 
     Slv.Abs (Slv.Solved _ _ param) body -> do
       body' <- mapM (optimize enabled) body

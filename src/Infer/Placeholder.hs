@@ -233,10 +233,10 @@ updatePlaceholders env s fullExp@(Slv.Solved t a e) = case e of
     es' <- mapM (updatePlaceholders env s) es
     return $ Slv.Solved t a $ Slv.TemplateString es'
 
-  Slv.FieldAccess rec field -> do
+  Slv.Access rec field -> do
     rec'   <- updatePlaceholders env s rec
     field' <- updatePlaceholders env s field
-    return $ Slv.Solved t a $ Slv.FieldAccess rec' field'
+    return $ Slv.Solved t a $ Slv.Access rec' field'
 
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields

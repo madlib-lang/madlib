@@ -45,10 +45,11 @@ export not = (b) => !b
 flip :: (a -> b -> c) -> (b -> a -> c)
 export flip = (f) => ((b, a) => f(a, b)) 
 
-x = "\""
-y = '\''
-z = `\``
-a = "`"
+export C = {
+  b: '\''
+}
+
+C.b
 
 #-
 const nativeMemoize = (fn) => {

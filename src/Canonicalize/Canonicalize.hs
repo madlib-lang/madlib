@@ -44,12 +44,10 @@ instance Canonicalizable Src.Exp Can.Exp where
       arg' <- canonicalize env target arg
       return $ Can.Canonical area (Can.App fn' arg' close)
 
-    Src.FieldAccess rec field -> do
+    Src.Access rec field -> do
       rec'   <- canonicalize env target rec
       field' <- canonicalize env target field
-      return $ Can.Canonical area (Can.FieldAccess rec' field')
-
-    Src.NamespaceAccess n                       -> return $ Can.Canonical area (Can.NamespaceAccess n)
+      return $ Can.Canonical area (Can.Access rec' field')
 
     Src.Abs (Src.Source _ paramArea param) body -> do
       body' <- mapM (canonicalize env target) body

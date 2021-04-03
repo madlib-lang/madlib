@@ -221,7 +221,7 @@ instance Compilable Exp where
           -- if name == "!" || not coverage || not (isFunctionType expType) then
           if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
 
-        NamespaceAccess name -> if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
+        -- NamespaceAccess name -> if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
           -- if '.' `elem` name || name == "!" || not coverage then name else hpWrapLine coverage astPath l name
 
 
@@ -351,7 +351,7 @@ instance Compilable Exp where
               " " <> name <> ": " <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
             FieldSpread exp -> " ..." <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
 
-        FieldAccess record (Optimized _ _ (Var name)) ->
+        Access record (Optimized _ _ (Var name)) ->
           hpWrapLine coverage astPath (getStartLine record) $ compile config record <> name
 
         JSExp           content -> content
