@@ -110,8 +110,7 @@ data Exp_ = LNum String
           | Var Name
           | App Exp Exp Bool
           | Abs (Source Name) [Exp]
-          | FieldAccess Exp Exp
-          | NamespaceAccess Name
+          | Access Exp Exp
           | Assignment Name Exp
           | Record [Field]
           | If Exp Exp Exp

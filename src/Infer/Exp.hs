@@ -52,8 +52,7 @@ infer env lexp = do
     Can.Assignment _ _     -> inferAssignment env' lexp
     Can.Where      _ _     -> inferWhere env' lexp
     Can.Record _           -> inferRecord env' lexp
-    Can.FieldAccess _ _    -> inferFieldAccess env' lexp
-    Can.NamespaceAccess _  -> inferNamespaceAccess env' lexp
+    Can.Access _ _         -> inferAccess env' lexp
     Can.TypedExp _ _       -> inferTypedExp env' lexp
     Can.ListConstructor  _ -> inferListConstructor env' lexp
     Can.TupleConstructor _ -> inferTupleConstructor env' lexp
@@ -398,14 +397,21 @@ shouldBeOpen env = foldrM
 
 
 
+-- INFER ACCESS
+inferAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferAccess env e@(Can.Canonical area (Can.Access ns field)) =
+  let inferredFieldAccess = inferFieldAccess env e
+  in  catchError inferredFieldAccess (\_ -> inferNamespaceAccess env e)
+
+
 -- INFER NAMESPACE ACCESS
 
 inferNamespaceAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferNamespaceAccess env e@(Can.Canonical area (Can.NamespaceAccess var)) = do
-  sc         <- catchError (lookupVar env var) (enhanceVarError env e area)
+inferNamespaceAccess env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field)))) = do
+  sc         <- catchError (lookupVar env (ns <> field)) (enhanceVarError env e area)
   (ps :=> t) <- instantiate sc
 
-  let e = Slv.Solved t area $ Slv.NamespaceAccess var
+  let e = Slv.Solved t area $ Slv.Var (ns <> field)
   e' <- insertVarPlaceholders env e ps
 
   return (M.empty, ps, t, e')
@@ -415,7 +421,7 @@ inferNamespaceAccess env e@(Can.Canonical area (Can.NamespaceAccess var)) = do
 -- INFER FIELD ACCESS
 
 inferFieldAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferFieldAccess env fa@(Can.Canonical area (Can.FieldAccess rec@(Can.Canonical _ re) abs@(Can.Canonical _ (Can.Var ('.' : name)))))
+inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re) abs@(Can.Canonical _ (Can.Var ('.' : name)))))
   = do
     (fieldSubst , fieldPs , fieldType , fieldExp ) <- infer env abs
     (recordSubst, recordPs, recordType, recordExp) <- infer env rec
@@ -427,7 +433,7 @@ inferFieldAccess env fa@(Can.Canonical area (Can.FieldAccess rec@(Can.Canonical 
     case foundFieldType of
       Just t -> do
         (ps :=> t') <- instantiate $ Forall [kind t] ([] :=> t)
-        let solved = Slv.Solved t' area (Slv.FieldAccess recordExp fieldExp)
+        let solved = Slv.Solved t' area (Slv.Access recordExp fieldExp)
         return (fieldSubst, ps, t', solved)
 
       Nothing -> case recordType of
@@ -441,7 +447,7 @@ inferFieldAccess env fa@(Can.Canonical area (Can.FieldAccess rec@(Can.Canonical 
           let t          = apply s tv
 
           let recordExp' = updateType recordExp (apply s3 recordType)
-          let solved = Slv.Solved t area (Slv.FieldAccess recordExp' fieldExp)
+          let solved = Slv.Solved t area (Slv.Access recordExp' fieldExp)
 
           return (s, [], t, solved)
 

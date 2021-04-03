@@ -109,26 +109,26 @@ Right
                      [ Solved
                          (TVar (TV "m12" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
-                         (FieldAccess
+                         (Access
                             (Solved
                                (TRecord (fromList [ ( "e" , TVar (TV "d3" Star) ) ]) True)
                                (Area (Loc 12 1 13) (Loc 21 1 22))
-                               (FieldAccess
+                               (Access
                                   (Solved
                                      (TRecord (fromList [ ( "d" , TVar (TV "e4" Star) ) ]) True)
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
-                                     (FieldAccess
+                                     (Access
                                         (Solved
                                            (TRecord
                                               (fromList [ ( "c" , TVar (TV "f5" Star) ) ]) True)
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
-                                           (FieldAccess
+                                           (Access
                                               (Solved
                                                  (TRecord
                                                     (fromList [ ( "b" , TVar (TV "g6" Star) ) ])
                                                     True)
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
-                                                 (FieldAccess
+                                                 (Access
                                                     (Solved
                                                        (TRecord
                                                           (fromList

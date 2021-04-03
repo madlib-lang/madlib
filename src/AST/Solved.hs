@@ -117,8 +117,7 @@ data Exp_ = LNum String
           | TemplateString [Exp]
           | JSExp String
           | App Exp Exp Bool
-          | FieldAccess Exp Exp
-          | NamespaceAccess Name
+          | Access Exp Exp
           | Abs (Solved Name) [Exp]
           | Assignment Name Exp
           | Export Exp
