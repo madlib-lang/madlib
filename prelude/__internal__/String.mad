@@ -1,12 +1,13 @@
 import {} from "Monoid"
 import {} from "Show"
+import { characters } from "Constants"
 
 instance Semigroup String {
   assoc = (a, b) => a ++ b
 }
 
 instance Monoid String {
-  mempty = ""
+  mempty = characters.empty
   mappend = (a, b) => a ++ b
 }
 
@@ -22,8 +23,16 @@ export replace = (regex, replacing, input) => (#-
 split :: String -> String -> List String
 export split = (separator, str) => (#- str.split(separator) -#)
 
-lines :: String -> List String
-export lines = split("\n")
+alias Split = String -> List String
+
+lines :: Split
+export lines = split(characters.newline)
+words :: Split
+export words = split(characters.space)
+chars :: Split
+export chars = split(characters.empty)
+tabs :: Split
+export tabs = split(characters.tab)
 
 mapChars :: (String -> String) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#

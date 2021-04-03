@@ -4,6 +4,7 @@ import {} from "Monoid"
 import {} from "String"
 import Fun from "Function"
 import { Maybe, Just, Nothing } from "Maybe"
+import { characters } from "Constants"
 
 
 /**
@@ -70,18 +71,7 @@ instance Show a => Show (List a) {
 singleton :: a -> List a
 export singleton = pure
 
-/**
- * Flattens a List String into a String, by adding line returns between the items in the List.
- *
- * @since 0.0.5
- * @example
- * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
- */
-unlines :: List String -> String
-export unlines = pipe(
-  intercalate("\n"),
-  reduce(mappend, "")
-)
+
 
 /**
  * Intercalates a value between all elements of a list.
@@ -349,3 +339,30 @@ export zip = (as, bs) => where(<as, bs>)
   is <[a, ...ass], [b, ...bss]>: mappend([<a, b>], zip(ass, bss))
   is <[a], [b]>                : [<a, b>]
   is <[], []>                  : []
+
+/**
+ * Test a given List to see whether it contains a given static value.
+ *
+ * @since 0.6.0
+ */
+includes :: x -> List x -> Boolean
+export includes = (x, xs) => (#- xs.includes(x) -#)
+
+alias Joint = List String -> String
+
+/**
+ * Flattens a List String into a String, by adding line returns between the items in the List.
+ *
+ * @since 0.0.5
+ * @example
+ * unlines(["line1", "line2", "line3"]) // "line1\nline2\nline3"
+ */
+unlines :: Joint
+export unlines = join(characters.newline)
+unwords :: Joint
+export unwords = join(characters.space)
+unchars :: Joint
+export unchars = join(characters.empty)
+export word = unchars
+untabs :: Joint
+export untabs = join(characters.tab)
