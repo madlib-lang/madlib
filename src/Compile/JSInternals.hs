@@ -5,7 +5,7 @@ import           Compile.Utils
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
-  curryFn target optimized <> "\n" <> eqFn target optimized <> "\n" <> applyDictsFn target optimized <> if coverage
+  curryFn target optimized <> "\n" <> eqFn target optimized <> "\n" <> applyDictsFn target optimized <> "\n" <> onceFn target optimized <> if coverage
     then "\n" <> hpFnWrap <> "\n" <> hpLineWrap
     else ""
 
@@ -94,4 +94,23 @@ applyDictsFn target optimized =
         [ "const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);"
         , getGlobalForTarget target <> "." <> fnName <> " = (dict, dicts) =>"
         , "  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});"
+        ]
+
+onceFnName :: Bool -> String
+onceFnName optimized = if optimized then "λ4" else "__once__"
+
+onceFn :: Target -> Bool -> String
+onceFn target optimized =
+  let fnName = onceFnName optimized
+  in  unlines
+        [ getGlobalForTarget target <> "." <> fnName <> " = (fn, context) => {\n"
+        , "    var result;\n"
+        , "    return function() {\n"
+        , "        if (fn) {\n"
+        , "            result = fn.apply(context || this, arguments);\n"
+        , "            fn = null;\n"
+        , "        }\n"
+        , "        return result;\n"
+        , "    };\n"
+        , "}\n"
         ]

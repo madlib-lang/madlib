@@ -37,8 +37,10 @@ W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(
     const { body: { __args: [d] } } = __x__.__args[0];
     return d;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(response)))(Http.get("https://github.com/open-sorcerers/madlib/archive/master.zip")))));
 export default {};
 // file: /root/project/src/Wish.mad
@@ -49,8 +51,10 @@ export const map = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) =>
     const run = __x__.__args[0];
     return run(bad)(__curry__((x) => good(f(x))));
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m))));
 export const chain = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
@@ -60,19 +64,25 @@ export const chain = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) 
     const run2 = __x__.__args[0];
     return run2(bad)(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(f(x))));
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m))));
 export const fulfill = __curry__((bad, good, m) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
     return run(bad)(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m));
 export default { of, map, chain, fulfill, Wish };

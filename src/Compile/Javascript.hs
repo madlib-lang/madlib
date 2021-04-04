@@ -28,6 +28,7 @@ import           Text.Show.Pretty               ( ppShow )
 import           Compile.JSInternals
 import           Target
 import           Compile.Utils
+import Debug.Trace
 
 
 
@@ -218,12 +219,7 @@ instance Compilable Exp where
 
 
         Var name ->
-          -- if name == "!" || not coverage || not (isFunctionType expType) then
           if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
-
-        -- NamespaceAccess name -> if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
-          -- if '.' `elem` name || name == "!" || not coverage then name else hpWrapLine coverage astPath l name
-
 
         Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
 
@@ -267,81 +263,33 @@ instance Compilable Exp where
           let compiled = generateRecordName optimized cls ts var <> "." <> method
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
-        -- Build ABS for coverage
-        Assignment name abs@(Optimized _ _ (Abs param body)) -> if coverage
-          then "const " <> name <> " = " <> compileAbs Nothing param body <> ""
-          else "const " <> name <> " = " <> compileAssignmentWithPlaceholder config abs
-         where
-          compileAbs :: Maybe [Exp] -> Name -> [Exp] -> String
-          compileAbs parent param body =
-            let start = case parent of
-                  Just _ -> ", " <> param
-                  Nothing ->
-                    let (Area (Loc _ line _) _) = area
-                    in  "__hpFnWrap('"
-                          <> astPath
-                          <> "', "
-                          <> show line
-                          <> ", '"
-                          <> name
-                          <> "')("
-                          <> curryFnName optimized
-                          <> "(("
-                          <> param
-                next = case head body of
-                  (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  _ -> ") => " <> compileBody body <> "))"
-            in  start <> next
-
-          compileBody :: [Exp] -> String
-          compileBody [exp] = compile config exp
-          compileBody exps  = "{" <> compileBody' exps <> "}"
-
-          compileBody' :: [Exp] -> String
-          compileBody' [exp] = case exp of
-            (Optimized _ _ (JSExp _)) -> compile config exp
-            _                         -> "return " <> compile config exp <> ";\n"
-          compileBody' (exp : es) = compile config exp <> ";\n" <> compileBody' es
-
         Assignment name exp ->
-          let compiled = compileAssignmentWithPlaceholder config exp
-          in  if coverage && isFunctionType expType
-                then
-                  "const "
-                  <> name
-                  <> " = "
-                  <> "__hpFnWrap('"
+          let (placeholders, dicts, content) = compileAssignmentWithPlaceholder2 config exp
+              content' =
+                if coverage && isFunctionType expType then
+                  "__hpFnWrap('"
                   <> astPath
                   <> "', "
                   <> show l
                   <> ", '"
                   <> name
                   <> "')("
-                  <> compiled
+                  <> content
                   <> ")"
-                else "const " <> name <> " = " <> compiled
+                else content
+          in  if not (null dicts) then
+                "const " <> name <> " = " <> placeholders <> "{" <> "\n  "
+                <> intercalate "\n  " ((\dict -> "global." <> dict <> " = " <> dict) <$> dicts)
+                <> "\n\n"
+                <> "  return " <> name <> "__ND__()"
+                <> "\n};\n"
+                <> "const " <> name <> "__ND__" <> " = "<>onceFnName optimized<>"(() => " <> content' <> ")"
+              else
+                "const " <> name <> " = " <> content'
 
         TypedExp exp _ -> compile config exp
 
-        Export ass@(Optimized _ _ (Assignment name exp)) -> case exp of
-          Optimized _ _ (Abs _ _) -> "export " <> compile config ass
-          _ -> --"export const " <> name <> " = " <> compileAssignmentWithPlaceholder config exp
-            let compiled = compileAssignmentWithPlaceholder config exp
-            in  if coverage && isFunctionType expType
-                  then
-                    "export const "
-                    <> name
-                    <> " = "
-                    <> "__hpFnWrap('"
-                    <> astPath
-                    <> "', "
-                    <> show l
-                    <> ", '"
-                    <> name
-                    <> "')("
-                    <> compiled
-                    <> ")"
-                  else "export const " <> name <> " = " <> compiled
+        Export ass -> "export " <> compile config ass
 
         Record fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
@@ -369,8 +317,7 @@ instance Compilable Exp where
           "((__x__) => {\n  "
             <> compileIs first
             <> concat (("  else " ++) . compileIs <$> cs)
-            <> "  else { console.log('non exhaustive patterns for value: ', __x__.toString()); \nthrow 'non exhaustive patterns!'; }\n"
-            -- TODO: Add an else for undefined patterns error and make it throw.
+            <> "  else {\n    console.log('non exhaustive patterns for value: ', __x__.toString()); \n    throw 'non exhaustive patterns!';\n  }\n"
             <> "})("
             <> compile config exp
             <> ")"
@@ -564,42 +511,57 @@ instance Compilable Opt.Interface where
 instance Compilable Opt.Instance where
   compile config (Untyped _ inst) = case inst of
     Opt.Instance interface _ typings dict ->
-      interface
-        <> "['"
-        <> typings
-        <> "']"
-        <> " = {\n"
-        <> intercalate ",\n" (uncurry compileMethod <$> M.toList (M.map fst dict))
-        <> "\n};\n"
-   where
-    compileMethod :: Name -> Exp -> String
-    compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
-      let compiled = compileAssignmentWithPlaceholder config exp
-      in  if not (cccoverage config) || not (isFunctionType t)
-            then "  " <> n <> ": " <> compiled
+      interface <> "['" <> typings <> "'] = {};\n"
+      <> concat (uncurry compileMethod <$> M.toList (M.map fst dict))
+      where
+        compileMethod :: Name -> Exp -> String
+        compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
+          let (placeholders, dicts, content) = compileAssignmentWithPlaceholder2 config exp
+              content' =
+                if cccoverage config && isFunctionType t then
+                  "__hpFnWrap('"
+                  <> ccastPath config
+                  <> "', "
+                  <> show line
+                  <> ", '"
+                  <> n
+                  <> "')("
+                  <> content
+                  <> ")"
+                else content
+              instRoot         = interface <> "['" <> typings <> "']"
+              compiledNDMethod = "const __" <> interface <> typings <> n <> " = " <> onceFnName (ccoptimize config) <> "(() => " <> content' <> ");\n"
+              compiledMethod   =
+                instRoot <> "['" <> n <> "'] = " <> placeholders <> "{\n  "
+                <> intercalate "\n  " ((\dict -> "global." <> dict <> " = " <> dict) <$> dicts)
+                <> "\n  return __" <> interface <> typings <> n <> "();\n};\n"
+          in
+            if not (null dicts) then
+              compiledNDMethod <> compiledMethod
             else
-              "  "
-              <> n
-              <> ": "
-              <> "__hpFnWrap('"
-              <> ccastPath config
-              <> "', "
-              <> show line
-              <> ", '"
-              <> n
-              <> "')("
-              <> compiled
-              <> ")"
+              instRoot <> "['" <> n <> "'] = " <> content' <> ";\n"
+
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
 compileAssignmentWithPlaceholder config fullExp@(Opt.Optimized _ _ exp) = case exp of
-  Placeholder (ClassRef cls _ call var, ts) e -> if not call
+  Placeholder (ClassRef cls _ call var, ts) e -> if not (trace ("POUF: "<>ppShow (compileAssignmentWithPlaceholder2 config fullExp)) call)
     then
       let dict = generateRecordName (ccoptimize config) cls ts var
       in  "(" <> dict <> ") => (" <> compileAssignmentWithPlaceholder config e <> ")"
     else compile config fullExp
 
   _ -> compile config fullExp
+
+compileAssignmentWithPlaceholder2 :: CompilationConfig -> Exp -> (String, [String], String)
+compileAssignmentWithPlaceholder2 config fullExp@(Opt.Optimized _ _ exp) = case exp of
+  Placeholder (ClassRef cls _ call var, ts) e -> if not call
+    then
+      let dict = generateRecordName (ccoptimize config) cls ts var
+          (phs, dicts, compiledExp) = compileAssignmentWithPlaceholder2 config e
+      in  ("(" <> dict <> ") => " <> phs, dicts <> [dict], compiledExp)
+    else ("", [], compile config fullExp)
+
+  _ -> ("", [], compile config fullExp)
 
 generateRecordName :: Bool -> String -> String -> Bool -> String
 generateRecordName optimized cls ts var =

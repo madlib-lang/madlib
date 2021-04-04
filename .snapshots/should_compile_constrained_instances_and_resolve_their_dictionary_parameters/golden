@@ -2,34 +2,45 @@
 const Right = __curry__((a) => ({ __constructor: "Right", __args: [ a ] }));
 const Left = __curry__((a) => ({ __constructor: "Left", __args: [ a ] }));
 global.Show = {};
-Show['Boolean'] = {
-  show: __curry__((b) => (b ? 'True' : 'False'))
-};
-Show['Number'] = {
-  show: __curry__((n) => new Number(n).toString())
-};
-Show['Tuple_2'] = {
-  show: (Show_j9) => ((Show_i8) => (__curry__((__x__) => ((__x__) => {
+Show['Boolean'] = {};
+Show['Boolean']['show'] = __curry__((b) => (b ? 'True' : 'False'));
+Show['Number'] = {};
+Show['Number']['show'] = __curry__((n) => new Number(n).toString());
+Show['Tuple_2'] = {};
+const __ShowTuple_2show = __once__(() => __curry__((__x__) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     const [a,b] = __x__;
     return '<' + Show_i8.show(a) + ', ' + Show_j9.show(b) + '>';
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(__x__))))
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)));
+Show['Tuple_2']['show'] = (Show_j9) => (Show_i8) => {
+  global.Show_i8 = Show_i8
+  global.Show_j9 = Show_j9
+  return __ShowTuple_2show();
 };
-Show['Tuple_3'] = {
-  show: (Show_d29) => ((Show_c28) => ((Show_b27) => (__curry__((__x__) => ((__x__) => {
+Show['Tuple_3'] = {};
+const __ShowTuple_3show = __once__(() => __curry__((__x__) => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     const [a,b,c] = __x__;
     return '<' + Show_b27.show(a) + ', ' + Show_c28.show(b) + ', ' + Show_d29.show(c) + '>';
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(__x__)))))
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)));
+Show['Tuple_3']['show'] = (Show_d29) => (Show_c28) => (Show_b27) => {
+  global.Show_b27 = Show_b27
+  global.Show_c28 = Show_c28
+  global.Show_d29 = Show_d29
+  return __ShowTuple_3show();
 };
-Show['Either'] = {
-  show: (Show_c54) => ((Show_f57) => (__curry__((__x__) => ((__x__) => {
+Show['Either'] = {};
+const __ShowEithershow = __once__(() => __curry__((__x__) => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     const a = __x__.__args[0];
     return 'Right ' + Show_c54.show(a);
@@ -38,13 +49,24 @@ Show['Either'] = {
     const e = __x__.__args[0];
     return 'Left ' + Show_f57.show(e);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(__x__))))
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(__x__)));
+Show['Either']['show'] = (Show_c54) => (Show_f57) => {
+  global.Show_f57 = Show_f57
+  global.Show_c54 = Show_c54
+  return __ShowEithershow();
 };
 Show.Tuple_2.show(Show.Boolean)(Show.Number)(([1, false]));
 Show.Either.show(Show.Number)(Show.Number)(Right(3));
-const fnWithConstraint = (Show_k88) => (Show_k88.show);
+const fnWithConstraint = (Show_k88) => {
+  global.Show_k88 = Show_k88
+
+  return fnWithConstraint__ND__()
+};
+const fnWithConstraint__ND__ = __once__(() => Show_k88.show);
 Show.Tuple_2.show(Show.Number)(Show.Number)(([1, 1]));
 Show.Tuple_3.show(Show.Boolean)(Show.Number)(Show.Boolean)(([false, 42, true]));
 export default {};
