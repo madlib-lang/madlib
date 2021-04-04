@@ -3,29 +3,31 @@ export const Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }))
 global.Functor = {};
 global.Applicative = {};
 global.Monad = {};
-Functor['Wish'] = {
-  map: __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
+Functor['Wish'] = {};
+Functor['Wish']['map'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
     return run(bad)(__curry__((x) => good(f(x))));
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(m))))
-};
-Applicative['Wish'] = {
-  ap: __curry__((mf, m) => Wish(__curry__((bad, good) => ((__x__) => {
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(m))));
+Applicative['Wish'] = {};
+Applicative['Wish']['ap'] = __curry__((mf, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     const [{ __args: [runMF]},{ __args: [runM]}] = __x__;
     return runM(bad)(__curry__((x) => runMF(bad)(__curry__((f) => good(f(x))))));
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(([mf, m]))))),
-  pure: __curry__((a) => Wish(__curry__((bad, good) => good(a))))
-};
-Monad['Wish'] = {
-  chain: __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(([mf, m])))));
+Applicative['Wish']['pure'] = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
+Monad['Wish'] = {};
+Monad['Wish']['chain'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
     return run(bad)(__curry__((x) => ((__x__) => {
@@ -33,22 +35,27 @@ Monad['Wish'] = {
     const r = __x__.__args[0];
     return r(bad)(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(f(x))));
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
-})(m)))),
-  of: Applicative.Wish.pure
-};
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
+})(m))));
+Monad['Wish']['of'] = Applicative.Wish.pure;
 export const mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
     return run(__curry__((x) => bad(f(x))))(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m))));
 export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
@@ -58,12 +65,16 @@ export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x_
     const r = __x__.__args[0];
     return r(bad)(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(f(x))))(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m))));
 export const good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
 export const bad = __curry__((e) => Wish(__curry__((bad, good) => bad(e))));
@@ -72,8 +83,10 @@ const getWishFn = __curry__((w) => ((__x__) => {
     const fn = __x__.__args[0];
     return fn;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(w));
 export const parallel = __curry__((wishes) => Wish(__curry__((bad, good) => {
     const l = wishes.length
@@ -93,8 +106,10 @@ export const fulfill = __curry__((bad, good, m) => {
     const run = __x__.__args[0];
     return run(bad)(good);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m);
     return ({ __constructor: "Unit", __args: [] });
 });

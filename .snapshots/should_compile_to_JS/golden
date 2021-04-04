@@ -20,50 +20,64 @@ const allResponses = ({ ...response, ...carResponse });
   else if (true) {
     return ([]);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(allResponses);
 ((__x__) => {
   if (typeof __x__ === "number") {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(3);
 ((__x__) => {
   if (typeof __x__ === "string") {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })("3");
 ((__x__) => {
   if (typeof __x__ === "boolean") {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(true);
 ((__x__) => {
   if (__x__ === 3) {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(3);
 ((__x__) => {
   if (__x__ === "3") {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })("3");
 ((__x__) => {
   if (__x__ === true) {
     return 3;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(true);
 const log = __curry__((a) => { console.log(a); return a; });
 (true ? "OK" : "NOT OK");
@@ -75,8 +89,10 @@ const mapMaybe = __curry__((f, m) => ((__x__) => {
   else if (__x__.__constructor === "Nothing") {
     return Nothing;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(m));
 const might = Just(3);
 const x = ((__x__) => {
@@ -87,8 +103,10 @@ const x = ((__x__) => {
   else if (__x__.__constructor === "Nothing") {
     return 1;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(might);
 true && false;
 false || true;
@@ -126,8 +144,10 @@ const all = ([ ...arr, 4, 5, 6]);
     const [] = __x__;
     return 0;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(([1, 2, 3, 5, 8]));
 export const map = __curry__((f, xs) => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
@@ -146,8 +166,10 @@ export const map = __curry__((f, xs) => ((__x__) => {
     const [] = __x__;
     return ([]);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(xs));
 (true ? "ok" : "not ok");
 __curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) => x)((__eq__(1, 2) ? "ok" : "not ok"))));
@@ -160,8 +182,10 @@ __curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) =
     const n = __x__;
     return __curry__((x) => x + 1)(1);
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(3);
 __curry__((x) => x + 1)(((__x__) => {
   if (__x__ === "3") {
@@ -171,8 +195,10 @@ __curry__((x) => x + 1)(((__x__) => {
     const n = __x__;
     return 1;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })("3"));
 __curry__((x) => x)(((__x__) => {
   if (__x__.length >= 2 && __x__[0] === 2 && true) {
@@ -183,24 +209,30 @@ __curry__((x) => x)(((__x__) => {
     const [,,,...rest] = __x__;
     return rest;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(([1, 2, 3, 4, 5])));
 ((__x__) => {
   if (__x__.name === "Bob") {
     const {  } = __x__;
     return "Bob";
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(({ x: 4, name: "John" }));
 const addXAndY = __curry__((r) => ((__x__) => {
   if (true && true) {
     const { y: y, x: x1 } = __x__;
     return x1 + y;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(r));
 const fnTCHOU = __curry__((x) => x.a.b.c.d.e);
 const tup = ([1, 2, 3]);
@@ -210,8 +242,10 @@ __eq__(([1, 2, 3]), ([1, 2, 3]));
     const [a,b] = __x__;
     return a + b;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(([1, 2]));
 const fn2 = __curry__((a) => ([a, a]));
 const fst = __curry__((tuple) => ((__x__) => {
@@ -219,8 +253,10 @@ const fst = __curry__((tuple) => ((__x__) => {
     const [a,] = __x__;
     return a;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(tuple));
 const snd = __curry__((tuple) => {
     const b = ((__x__) => {
@@ -228,8 +264,10 @@ const snd = __curry__((tuple) => {
     const [,b1] = __x__;
     return b1;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(tuple);
     return b;
 });
@@ -240,7 +278,9 @@ snd(([1, 2]));
     const [{ __args: [n]},{ __args: [m]}] = __x__;
     return n + m;
   }
-  else { console.log('non exhaustive patterns for value: ', __x__.toString()); 
-throw 'non exhaustive patterns!'; }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    throw 'non exhaustive patterns!';
+  }
 })(([Just(3), Just(4)]));
 export default { fn, map };
