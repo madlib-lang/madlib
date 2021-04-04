@@ -15,13 +15,8 @@ export type Dictionary k v = Dictionary (List <k, v>)
  *
  * @since 0.0.5
  * @example
-<<<<<<< HEAD
  * fromList([<"one", 2>, <"two", 2>])
  * fromList([<"a", 2>, <"b", 2>, <"c", 3>])
-=======
- * fromList([<1, 2>, <2, 2>])         // Dictionary that contains 2 for key 1 and 2 for key 2
- * fromList([<1, 2>, <2, 2>, <2, 3>]) // Dictionary that contains 2 for key 1 and 2 for key 2
->>>>>>> feat: Update README and small prelude adjustments
  */
 fromList :: List (<k, v>) -> Dictionary k v
 export fromList = pipe(

@@ -3430,7 +3430,7 @@ Right
                          [ ( "ap"
                            , Forall
                                [ Kfun Star Star , Star , Star ]
-                               ([ IsIn "Applicative" [ TGen 0 ] ] :=>
+                               ([ IsIn "Applicative" [ TGen 0 ] , IsIn "Functor" [ TGen 0 ] ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3452,7 +3452,7 @@ Right
                          , ( "pure"
                            , Forall
                                [ Kfun Star Star , Star ]
-                               ([ IsIn "Applicative" [ TGen 0 ] ] :=>
+                               ([ IsIn "Applicative" [ TGen 0 ] , IsIn "Functor" [ TGen 0 ] ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3523,7 +3523,7 @@ Right
                          [ ( "chain"
                            , Forall
                                [ Kfun Star Star , Star , Star ]
-                               ([ IsIn "Monad" [ TGen 0 ] ] :=>
+                               ([ IsIn "Monad" [ TGen 0 ] , IsIn "Applicative" [ TGen 0 ] ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3542,7 +3542,7 @@ Right
                          , ( "of"
                            , Forall
                                [ Kfun Star Star , Star ]
-                               ([ IsIn "Monad" [ TGen 0 ] ] :=>
+                               ([ IsIn "Monad" [ TGen 0 ] , IsIn "Applicative" [ TGen 0 ] ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")

@@ -47,7 +47,7 @@ canonicalizeInterface env (Src.Source _ area interface) = case interface of
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> supers
     let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
-    let scs = (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps) :=> apply subst t)) <$> ts'
+    let scs = (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps <> supers) :=> apply subst t)) <$> ts'
 
     let tvs'    = (\(TVar tv) -> tv) <$> tvs
 

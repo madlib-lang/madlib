@@ -340,8 +340,8 @@ jsxChildren :: { [Src.Exp] }
   | jsxChildren rets jsxTag       { $1 <> [$3] }
   | '{' exp '}'                   %shift { [$2] }
   | jsxChildren rets '{' exp '}'  %shift { $1 <> [$4] }
-  | rets names                    %shift { [Src.Source emptyInfos emptyArea (Src.LStr $ unwords $2)] }
-  | jsxChildren rets names        %shift { $1 <> [Src.Source emptyInfos emptyArea (Src.LStr $ unwords $3)] }
+  | rets names                    %shift { [Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $2 <> "\"")] }
+  | jsxChildren rets names        %shift { $1 <> [Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $3 <> "\"")] }
   | rets                          %shift { [] }
   | {- empty -}                   %shift { [] }
 

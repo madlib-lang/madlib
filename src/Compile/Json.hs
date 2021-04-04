@@ -218,7 +218,13 @@ compileExpFields depth exp = case exp of
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
 
   Slv.LStr val ->
-    indent depth <> "\"nodeType\": \"LiteralString\",\n" <> indent depth <> "\"value\": " <> escapeString (init . tail $ val) <> "\n"
+    indent depth <> "\"nodeType\": \"LiteralString\",\n" <> indent depth <> "\"value\": " <> (sanitizeVal . escapeString) val <> "\n"
+      where
+        sanitizeVal :: String -> String
+        sanitizeVal s =
+          if (length s > 3) && ((head s == '\\' && s!!1 == '"') || (head s == '\\' && s!!1 == '\'')) then
+            init . init . tail . tail $ s
+          else s
 
   Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
 
