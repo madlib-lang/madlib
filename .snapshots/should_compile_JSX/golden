@@ -9,12 +9,10 @@ const OnMouseOver = __curry__((a) => ({ __constructor: "OnMouseOver", __args: [ 
 const OnMouseOut = __curry__((a) => ({ __constructor: "OnMouseOut", __args: [ a ] }));
 global.Show = {};
 global.Functor = {};
-Show['Number'] = {
-  show: __curry__((x) => new Number(x).toString())
-};
-Functor['List'] = {
-  map: __curry__((f, xs) => xs.map((x) => f(x)))
-};
+Show['Number'] = {};
+Show['Number']['show'] = __curry__((x) => new Number(x).toString());
+Functor['List'] = {};
+Functor['List']['map'] = __curry__((f, xs) => xs.map((x) => f(x)));
 export const good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
 export const id = AttributeId;
 export const className = AttributeClass;

@@ -41,6 +41,27 @@ const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
 global.__apMtdDicts__ = (dict, dicts) =>
   Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});
 
+global.__once__ = (fn, context) => {
+
+    var result;
+
+    return function() {
+
+        if (fn) {
+
+            result = fn.apply(context || this, arguments);
+
+            fn = null;
+
+        }
+
+        return result;
+
+    };
+
+}
+
+
 global.__hpFnWrap = (astPath, line, name) => (fn) => {
   function wrapped(...args) {
     __hp(astPath, 'function', line, name)

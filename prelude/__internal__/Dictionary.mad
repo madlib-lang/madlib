@@ -144,3 +144,32 @@ export mapWithKey = (fn) => where
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
 export merge = (a, b) => where(<a, b>)
   is <Dictionary itemsA, Dictionary itemsB>: L.concat(itemsA, itemsB) |> fromList
+
+
+  // instance Compilable Opt.Instance where
+  // compile config (Untyped _ inst) = case inst of
+  //   Opt.Instance interface _ typings dict ->
+  //     interface <> "['" <> typings <> "'] = {};\n"
+  //     <> concat (uncurry compileMethod <$> M.toList (M.map fst dict))
+  //     -- interface
+  //     --   <> "['"
+  //     --   <> typings
+  //     --   <> "']"
+  //     --   <> " = {\n"
+  //       -- <> intercalate ",\n" (uncurry compileMethod <$> M.toList (M.map fst dict))
+  //       -- <> "\n};\n"
+  //     where
+  //       compileMethod :: Name -> Exp -> String
+  //       compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
+  //         let (placeholders, dicts, content) = compileAssignmentWithPlaceholder2 config exp
+  //             instRoot         = interface <> "['" <> typings <> "']"
+  //             compiledNDMethod = instRoot <> "['" <> n <> "__ND__'] = " <> onceFnName (ccoptimize config) <> "(() => " <> content <> ");\n"
+  //             compiledMethod   =
+  //               instRoot <> "['" <> n <> "'] = " <> placeholders <> "{\n  "
+  //               <> intercalate "\n  " ((\dict -> "global." <> dict <> " = " <> dict) <$> dicts)
+  //               <> "\n  return " <> instRoot <> "['" <> n <> "__ND__']();\n};\n"
+  //         in
+  //           if not (null dicts) then
+  //             compiledNDMethod <> compiledMethod
+  //           else
+  //             instRoot <> "['" <> n <> "'] = " <> content <> ";\n"
