@@ -172,6 +172,6 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
       else do
         let e' = updateType e t''
         e''  <- insertClassPlaceholders env (Slv.Solved t area $ Slv.Assignment mn e') (apply s' withParents)
-        e''' <- updatePlaceholders env s' e''
+        e''' <- updatePlaceholders env True s' e''
 
         return (mn, e''', sc)
