@@ -45,40 +45,23 @@ export not = (b) => !b
 flip :: (a -> b -> c) -> (b -> a -> c)
 export flip = (f) => ((b, a) => f(a, b)) 
 
-export C = {
-  b: '\''
-}
-
-C.b
 
 #-
 const nativeMemoize = (fn) => {
-  let cache = new Map();
+  let cache = {};
   return (...params) => {
-    // const key = JSON.stringify(params)
-    // console.log(key)
-    console.log(cache)
-    if (!cache.get(params)) {
-      cache.set(params, fn(...params))
+    const key = JSON.stringify(params)
+    console.log(cache);
+    console.log(key)
+    console.log(params)
+    if (!cache[key]) {
+      console.log("not cached")
+      cache[key] = fn(...params)
     }
-    return cache.get(params)
+    return cache[key]
   }
 }
 -#
-// #-
-// const nativeMemoize = (fn) => {
-//   let cache = {};
-//   return (...params) => {
-//     const key = JSON.stringify(params)
-//     console.log(key)
-//     console.log(cache)
-//     if (!cache[key]) {
-//       cache[key] = fn(...params)
-//     }
-//     return cache[key]
-//   }
-// }
-// -#
 
 memoize :: (a -> b) -> (a -> b)
 export memoize = (fn) => #- nativeMemoize(fn) -#

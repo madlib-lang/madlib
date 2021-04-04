@@ -136,26 +136,22 @@ inferAbs env l@(Can.Canonical _ (Can.Abs (Can.Canonical area param) body)) = do
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
-inferBody env [e     ] = (\(s, ps, t, e) -> (s, ps, t, [e])) <$> infer env e
+inferBody env [e] = do
+  (s, ps, t, e) <- infer env e
+  return (s, ps, t, [e])
 
 inferBody env (e : xs) = do
   (s, ps, env', e') <- case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
     _ -> do
-      (s, (ds, _), env, e') <- inferImplicitlyTyped True env e
-      return (s, ds, env, e')
+      (s, (ds, ps), env, e') <- inferImplicitlyTyped True env e
+      return (s, ps, env, e')
 
-  let t   = Slv.getType e'
+  e''  <- insertClassPlaceholders env e' ps
+  e''' <- updatePlaceholders env True s e''
 
-  let exp = Slv.extractExp e'
-  let env'' = case exp of
-        Slv.Assignment name _ -> extendVars env (name, Forall [kind t] (ps :=> t))
-
-        Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name _)) _ -> extendVars env (name, Forall [kind t] (ps :=> t))
-
-        _                     -> env
-
-  (\(sb, ps', tb, eb) -> (sb `compose` s, ps `union` ps', tb, e' : eb)) <$> inferBody env'' xs
+  (sb, ps', tb, eb) <- inferBody env' xs
+  return (sb `compose` s, ps', tb, e''' : eb)
 
 
 
@@ -570,9 +566,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (Context (envCurrentPath env) area (envBacktrace env))
 
   case Can.getExpName exp of
-    Just n -> if isLet
-      then return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ds :=> t'), e)
-      else return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
+    Just n -> return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
 
     Nothing -> return (s'', (ds, ps'), env', e)
 
@@ -635,11 +629,11 @@ inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
     _ -> do
-      (s, (_, ps), env, e) <- inferImplicitlyTyped False env e
+      (s, (ds, ps), env, e) <- inferImplicitlyTyped False env e
       return (s, ps, env, e)
 
   e''  <- insertClassPlaceholders env e' ps
-  e''' <- updatePlaceholders env s e''
+  e''' <- updatePlaceholders env False s e''
 
   return (Just e''', env')
 
