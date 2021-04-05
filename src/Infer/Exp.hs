@@ -33,6 +33,8 @@ import           Infer.Pattern
 import           Infer.Pred
 import           Infer.Placeholder
 import qualified Control.Monad                 as CM
+import Debug.Trace
+import Text.Show.Pretty
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -157,10 +159,15 @@ inferBody env (e : xs) = do
 
 -- INFER APP
 
-inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp env (Can.Canonical area (Can.App abs arg final)) = do
+inferApp' :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp, [(Substitution, [Pred], Type)])
+inferApp' env (Can.Canonical area (Can.App abs arg final)) = do
   tv                  <- newTVar Star
-  (s1, ps1, t1, eabs) <- infer env abs
+  (s1, ps1, t1, eabs, skippedArgs) <-
+    if isApp abs && not (isFinalApp abs) then
+      inferApp' env abs
+    else do
+      (s1, ps1, t1, eabs) <- infer env abs
+      return (s1, ps1, t1, eabs, [])
   (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
   s3                  <- contextualUnify env abs t1 (apply s1 t2 `fn` tv)
@@ -170,7 +177,49 @@ inferApp env (Can.Canonical area (Can.App abs arg final)) = do
 
   let solved = Slv.Solved (apply s t) area $ Slv.App eabs (updateType earg $ apply s t2) final
 
-  return (s, ps1 ++ ps2, t, solved)
+  let skippedArg =
+        if isPlaceholder arg then
+          [(s2, ps2, apply s t2)]
+        else []
+
+  return (s, ps1 ++ ps2, t, solved, skippedArg <> skippedArgs)
+
+inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferApp env app@(Can.Canonical area (Can.App abs arg final)) = do
+  (s, ps, t, e, skipped) <- inferApp' env app
+  let subst        = foldr compose s $ T.beg <$> skipped
+  let preds        = (concat $ T.mid <$> skipped) <> ps
+  let skippedTypes = T.lst <$> skipped
+  let realType = apply subst $ foldr fn t skippedTypes
+  
+  return (subst, preds, realType, updateType e realType)
+  -- tv                  <- newTVar Star
+  -- (s1, ps1, t1, eabs) <- infer env abs
+  -- (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
+
+  -- s3                  <- contextualUnify env abs t1 (apply s1 t2 `fn` tv)
+
+  -- let t      = apply s3 tv
+  -- let s      = s3 `compose` s2 `compose` s1
+
+  -- let solved = Slv.Solved (apply s t) area $ Slv.App eabs (updateType earg $ apply s t2) final
+
+  -- return (s, ps1 ++ ps2, t, solved)
+
+
+isPlaceholder :: Can.Exp -> Bool
+isPlaceholder (Can.Canonical _ exp) = exp == Can.Var "$"
+
+isApp :: Can.Exp -> Bool
+isApp (Can.Canonical _ exp) = case exp of
+  Can.App _ _ _ -> True
+  _             -> False
+
+isFinalApp :: Can.Exp -> Bool
+isFinalApp (Can.Canonical _ exp) = case exp of
+  Can.App _ _ final -> final
+  _                 -> False
+
 
 
 

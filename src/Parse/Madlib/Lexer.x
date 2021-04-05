@@ -55,20 +55,26 @@ $digit    = 0-9                             -- digits
 @floating = @decimal \. @decimal | @decimal -- floating point
 
 tokens :-
-  <0> import                                                   { mapToken (\_ -> TokenImport) }
-  <0> export                                                   { mapToken (\_ -> TokenExport) }
-  <0> from                                                     { mapToken (\_ -> TokenFrom) }
-  <0> type                                                     { mapToken (\_ -> TokenType) }
-  <0> alias                                                    { mapToken (\_ -> TokenAlias) }
+  <0, jsxOpeningTag, jsxAutoClosed> [\ \n]*"//"[^\n]*[\n]?                                ; -- Comments
+  <0, jsxOpeningTag, jsxAutoClosed, jsxText, comment> $head*\/\*                          { beginComment }
+  <comment>   [.\n]                                                                       ;
+  <comment>   \*\/                                                                        { endComment }
+
+  <0> import                                                                                 { mapToken (\_ -> TokenImport) }
+  <0> export                                                                                 { mapToken (\_ -> TokenExport) }
+  <0> from                                                                                   { mapToken (\_ -> TokenFrom) }
+  <0> type                                                                                   { mapToken (\_ -> TokenType) }
+  <0> alias                                                                                  { mapToken (\_ -> TokenAlias) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                 { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                 { mapToken (\_ -> TokenIf) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                               { mapToken (\_ -> TokenElse) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> where                              { mapToken (\_ -> TokenWhere) }
-  <0> interface                                                { mapToken (\_ -> TokenInterface ) }
-  <0> instance                                                 { mapToken (\_ -> TokenInstance ) }
+  <0> interface                                                                              { mapToken (\_ -> TokenInterface ) }
+  <0> instance                                                                               { mapToken (\_ -> TokenInstance ) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> pipe                               { mapToken (\_ -> TokenPipeKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> return                             { mapToken (\_ -> TokenReturnKeyword) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> is                                 { mapToken (\_ -> TokenIs) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=                                 { mapToken (\_ -> TokenEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=                  { mapToken (\_ -> TokenEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                  { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                           { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @signed @floating                  { mapToken (\s -> TokenNumber s) }
@@ -78,8 +84,8 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "!="                               { mapToken (\_ -> TokenExclamationMarkEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \.                 { mapToken (\_ -> TokenDot) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\,($tail|\ )*     { mapToken (\_ -> TokenComma) }
-  <0> \{\{$tail*                                               { mapToken (\_ -> TokenLeftDoubleCurly) }
-  <0, jsxOpeningTag, jsxAutoClosed, instanceHeader, jsxText> \{$tail*                                 { mapToken (\_ -> TokenLeftCurly) }
+  <0> \{\{$tail*                                                                             { mapToken (\_ -> TokenLeftDoubleCurly) }
+  <0, jsxOpeningTag, jsxAutoClosed, instanceHeader, jsxText> \{$tail*                        { mapToken (\_ -> TokenLeftCurly) }
   <0, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\}                                 { mapToken (\_ -> TokenRightCurly) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \[$tail*                           { mapToken (\_ -> TokenLeftSquaredBracket) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\]                           { mapToken (\_ -> TokenRightSquaredBracket) }
@@ -91,8 +97,8 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \:                 { mapToken (\_ -> TokenColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\-\>$tail*   { mapToken (\_ -> TokenArrow) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\=\>$tail*   { mapToken (\_ -> TokenFatArrow) }
-  <0> \|                                                       { mapToken (\_ -> TokenPipe) }
-  <0> \;                                                       { mapToken (\_ -> TokenSemiColon) }
+  <0> \|                                                                                     { mapToken (\_ -> TokenPipe) }
+  <0> \;                                                                                     { mapToken (\_ -> TokenSemiColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+                           { mapToken (\_ -> TokenPlus) }
@@ -116,10 +122,6 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '(($printable # ')|\\')*'          { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
-  <0, jsxOpeningTag, jsxAutoClosed> [\ \n]*"//"[^\n]*[\n]                       ; -- Comments
-  <0, jsxOpeningTag, jsxAutoClosed, jsxText, comment> $head*\/\*                          { beginComment }
-  <comment>   [.\n]                               ;
-  <comment>   \*\/                                { endComment }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+               ;
   <0, jsxOpeningTag, jsxAutoClosed> `                                           { beginStringTemplate }
   <stringTemplate, jsxOpeningTag, jsxAutoClosed> \$\{                           { beginStringTemplateMadlib }
@@ -458,6 +460,7 @@ data TokenClass
  | TokenDottedName String
  | TokenJSBlock String
  | TokenBool String
+ | TokenDollar
  | TokenIf
  | TokenElse
  | TokenInterface
