@@ -52,6 +52,7 @@ import           Text.Show.Pretty (ppShow)
   '}'         { Token _ TokenRightCurly }
   '['         { Token _ TokenLeftSquaredBracket }
   ']'         { Token _ TokenRightSquaredBracket }
+  '$'         { Token _ TokenDollar }
   'if'        { Token _ TokenIf }
   'else'      { Token _ TokenElse }
   'interface' { Token _ TokenInterface }
@@ -355,13 +356,13 @@ templateStringParts :: { [Src.Exp] }
   | templateStringParts exp  { $1 <> [$2] }
 
 app :: { Src.Exp }
-  : app '(' args ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
-  | name '(' args ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
-  | '.' name '(' args ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $2) (Src.Var $ '.':strV $2)) $4 }
-  | name '(' 'ret' args ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
-  | exp '(' args ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
-  | '(' exp ')' '(' args ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
-  | exp '.' name '(' args ')' %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $6)) (access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) $5 }
+  : app '(' argsWithPlaceholder ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
+  | name '(' argsWithPlaceholder ')'         %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $3 }
+  | '.' name '(' argsWithPlaceholder ')'     %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $2) (Src.Var $ '.':strV $2)) $4 }
+  | name '(' 'ret' argsWithPlaceholder ')'   %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.Source emptyInfos (tokenToArea $1) (Src.Var $ strV $1)) $4 }
+  | exp '(' argsWithPlaceholder ')'          %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $4)) $1 $3 }
+  | '(' exp ')' '(' argsWithPlaceholder ')'  %shift { buildApp (mergeAreas (tokenToArea $1) (tokenToArea $6)) $2 $5 }
+  | exp '.' name '(' argsWithPlaceholder ')' %shift { buildApp (mergeAreas (Src.getArea $1) (tokenToArea $6)) (access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3))) $5 }
 
 multiExpBody :: { [Src.Exp] }
   : 'return' exp          { [$2] }
@@ -571,6 +572,21 @@ literal :: { Src.Exp }
   | true    %shift { Src.Source emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
   | false   %shift { Src.Source emptyInfos (tokenToArea $1) (Src.LBool $ strV $1) }
   | '(' ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) Src.LUnit }
+
+argsWithPlaceholder :: { [Src.Exp] }
+  : '$'                                     %shift { [Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")] }
+  | '$' 'ret'                               %shift { [Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")] }
+  | '$' ',' argsWithPlaceholder             %shift { (Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")):$3 }
+  | '$' 'ret' ',' argsWithPlaceholder       %shift { (Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")):$4 }
+  | '$' ',' 'ret' argsWithPlaceholder       %shift { (Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")):$4 }
+  | '$' 'ret' ',' 'ret' argsWithPlaceholder %shift { (Src.Source emptyInfos (tokenToArea $1) (Src.Var "$")):$5 }
+
+  | exp ',' argsWithPlaceholder             %shift { $1:$3 }
+  | exp 'ret' ',' argsWithPlaceholder       %shift { $1:$4 }
+  | exp ',' 'ret' argsWithPlaceholder       %shift { $1:$4 }
+  | exp 'ret' ',' 'ret' argsWithPlaceholder %shift { $1:$5 }
+  | exp                                     %shift { [$1] }
+  | exp 'ret'                               %shift { [$1] }
 
 args :: { [Src.Exp] }
   : exp ',' args             %shift { $1:$3 }

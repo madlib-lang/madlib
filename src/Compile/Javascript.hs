@@ -169,7 +169,6 @@ instance Compilable Exp where
               <> "("
               <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg')
               <> ")"
-
           _ -> compileApp [] [] abs arg final
          where
           compileApp :: [Bool] -> [String] -> Exp -> Exp -> Bool -> String
@@ -187,7 +186,12 @@ instance Compilable Exp where
 
           buildParams :: [(String, Bool)] -> String
           buildParams []                    = ""
-          buildParams ((arg, final) : args) = if final && null args then arg else arg <> ")(" <> buildParams args
+          buildParams ((arg, final) : args) = --if final && null args then arg else arg <> ")(" <> buildParams args
+            if final then
+              if null args then
+                arg
+              else arg <> ")(" <> buildParams args
+            else arg <> ", " <> buildParams args
 
 
         If cond truthy falsy ->
@@ -544,7 +548,7 @@ instance Compilable Opt.Instance where
 
 compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
 compileAssignmentWithPlaceholder config fullExp@(Opt.Optimized _ _ exp) = case exp of
-  Placeholder (ClassRef cls _ call var, ts) e -> if not (trace ("POUF: "<>ppShow (compileAssignmentWithPlaceholder2 config fullExp)) call)
+  Placeholder (ClassRef cls _ call var, ts) e -> if not call
     then
       let dict = generateRecordName (ccoptimize config) cls ts var
       in  "(" <> dict <> ") => (" <> compileAssignmentWithPlaceholder config e <> ")"
