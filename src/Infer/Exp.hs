@@ -193,18 +193,6 @@ inferApp env app@(Can.Canonical area (Can.App abs arg final)) = do
   let realType = apply subst $ foldr fn t skippedTypes
   
   return (subst, preds, realType, updateType e realType)
-  -- tv                  <- newTVar Star
-  -- (s1, ps1, t1, eabs) <- infer env abs
-  -- (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
-
-  -- s3                  <- contextualUnify env abs t1 (apply s1 t2 `fn` tv)
-
-  -- let t      = apply s3 tv
-  -- let s      = s3 `compose` s2 `compose` s1
-
-  -- let solved = Slv.Solved (apply s t) area $ Slv.App eabs (updateType earg $ apply s t2) final
-
-  -- return (s, ps1 ++ ps2, t, solved)
 
 
 isPlaceholder :: Can.Exp -> Bool
