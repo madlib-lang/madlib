@@ -7,11 +7,13 @@ module Main where
 
 import qualified Data.Map                      as M
 import           GHC.IO                         ( )
-import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 import           System.FilePath                ( takeDirectory
+                                                , takeBaseName
                                                 , takeExtension
+                                                , takeFileName
+                                                , dropExtension
                                                 , joinPath
                                                 , splitDirectories
                                                 )
@@ -19,9 +21,11 @@ import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
                                                 , getDirectoryContents
                                                 , doesDirectoryExist
+                                                , getCurrentDirectory
                                                 )
 import           System.Exit
-import           Utils.Path              hiding ( PathUtils(..) )
+import           Utils.Path
+import qualified Utils.PathUtils               as PathUtils
 import           Parse.Madlib.AST
 import qualified Parse.DocString.Grammar       as DocString
 import qualified Parse.DocString.DocString     as DocString
@@ -76,6 +80,8 @@ import           PackageGenerator
 import           Debug.Trace
 import           Text.Show.Pretty
 import           GHC.IO.Encoding
+import qualified MadlibDotJSON
+import qualified Utils.URL as URL
 
 
 main :: IO ()
@@ -120,6 +126,88 @@ run cmd = do
     New path                 -> runPackageGenerator path
 
     Doc path                 -> runDocumentationGenerator path
+
+    Run path args            -> runRun path args
+
+
+runRun :: FilePath -> [String] -> IO ()
+runRun input args = do
+  if ".mad" `isSuffixOf` input then
+    runSingleModule input args
+  else
+    runPackage input args
+
+runPackage :: FilePath -> [String] -> IO ()
+runPackage package args = do
+  currentDir <- getCurrentDirectory
+  let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
+
+  parsedMadlibDotJson <-
+    MadlibDotJSON.load PathUtils.defaultPathUtils madlibDotJsonPath
+
+  case parsedMadlibDotJson of
+    Left e -> putStrLn e
+
+    Right MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.dependencies = maybeDeps } ->
+      case maybeDeps of
+        Just dependencies ->
+          case M.lookup package dependencies of
+            Just url ->
+              let sanitizedPackageUrl = URL.sanitize url
+                  packagePath = joinPath ["madlib_modules", sanitizedPackageUrl]
+                  packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
+
+              in  do
+                parsedMadlibDotJson <-
+                  MadlibDotJSON.load PathUtils.defaultPathUtils packageMadlibDotJsonPath
+                case parsedMadlibDotJson of
+                  Left e -> putStrLn e
+
+                  Right dotJ@MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.bin = Just bin } ->
+                    let exePath = joinPath [packagePath, bin]
+                    in  do
+                      let compileCommand =
+                            Compile { compileInput = exePath
+                                    , compileOutput = ".run/"
+                                    , compileConfig = "madlib.json"
+                                    , compileVerbose = False
+                                    , compileDebug = False
+                                    , compileBundle = False
+                                    , compileOptimize = False
+                                    , compileTarget = TNode
+                                    , compileJson = False
+                                    , compileTestFilesOnly = False
+                                    }
+
+                      runCompilation compileCommand False
+                      let target = joinPath [".run", ".deps", sanitizedPackageUrl, dropExtension bin <> ".mjs"]
+                      callCommand $ "node " <> target <> unwords args
+                    
+                  _ -> putStrLn "That package doesn't have any executable!"
+
+            Nothing  -> putStrLn "Package not found, install it first, or if you did, make sure that you used the right name!"
+
+        Nothing -> putStrLn "It seems that you have no dependency installed at the moment!"
+
+runSingleModule :: FilePath -> [String] -> IO ()
+runSingleModule input args = do
+  let compileCommand =
+        Compile { compileInput = input
+                , compileOutput = ".run/"
+                , compileConfig = "madlib.json"
+                , compileVerbose = False
+                , compileDebug = False
+                , compileBundle = False
+                , compileOptimize = False
+                , compileTarget = TNode
+                , compileJson = False
+                , compileTestFilesOnly = False
+                }
+
+  runCompilation compileCommand False
+  let target = ".run/" <> (takeBaseName . takeFileName $ input) <> ".mjs"
+  callCommand $ "node " <> target <> unwords args
+
 
 
 solveASTsForDoc :: [FilePath] -> IO (Either InferError [(Slv.AST, [DocString.DocString])])
@@ -379,9 +467,13 @@ generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath =
   let internalsPath = case stripPrefix rootPath path of
         Just s ->
           let dirs  = splitDirectories (takeDirectory s)
-              minus = if "prelude/__internal__" `isInfixOf` path
-                then if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
-                else 1
+              minus
+                | "prelude/__internal__" `isInfixOf` path =
+                    if "prelude/__internal__" `isInfixOf` rootPath then
+                      0
+                    else 2
+                | "madlib_modules" `isInfixOf` path = -2
+                | otherwise = 1
               dirLength = length dirs - minus
           in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
         Nothing -> "./__internals__.mjs"

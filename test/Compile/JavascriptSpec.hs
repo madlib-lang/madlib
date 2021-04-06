@@ -27,7 +27,7 @@ import           Parse.Madlib.AST              as Parse
 import           Compile.Javascript
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
-import           Utils.PathUtils
+import           Utils.PathUtils         hiding ( defaultPathUtils )
 import           TestUtils
 import           Canonicalize.Canonicalize     as Can
 import           Canonicalize.AST              as Can

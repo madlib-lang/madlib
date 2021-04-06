@@ -17,7 +17,7 @@ import           Utils.Path                     ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
 import           Explain.Meta
 import           Error.Error
-import qualified System.Directory              as Dir
+
 import           Control.Monad.Except
 import           System.FilePath                ( dropFileName, takeExtension )
 import qualified Prelude                       as P
@@ -26,15 +26,10 @@ import qualified Data.ByteString.Lazy          as B
 import qualified System.Environment.Executable as E
 import           Data.Maybe
 import           Explain.Location
-import System.IO (openFile, IOMode (ReadMode), hSetEncoding, hGetContents)
-import GHC.IO.Encoding (utf8)
 import Data.List
 
 
-rf fileName = do
-  inputHandle <- openFile fileName ReadMode
-  hSetEncoding inputHandle utf8
-  hGetContents inputHandle
+
 
 
 buildManyASTTables :: Table -> [FilePath] -> IO (Either InferError Table)
@@ -53,13 +48,7 @@ buildManyASTTables currentTable fps = case fps of
 -- Then use the scoped name in Main in order to partially apply it.
 buildASTTable :: Table -> FilePath -> IO (Either InferError Table)
 buildASTTable table path = do
-  let pathUtils = PathUtils { readFile           = rf
-                            , canonicalizePath   = Dir.canonicalizePath
-                            , doesFileExist      = Dir.doesFileExist
-                            , byteStringReadFile = B.readFile
-                            , getExecutablePath  = E.getExecutablePath
-                            }
-  buildASTTable' table pathUtils path Nothing [] path
+  buildASTTable' table defaultPathUtils path Nothing [] path
 
 
 -- buildASTTable'' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)

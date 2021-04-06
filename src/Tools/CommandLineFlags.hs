@@ -19,4 +19,5 @@ data Command
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
+  | Run { runInput :: FilePath, runArgs :: [String] }
   deriving (Eq, Show)

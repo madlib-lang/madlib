@@ -5,7 +5,7 @@ import qualified Data.Map                      as M
 import           Parse.Madlib.AST
 import           Test.Hspec
 import           Error.Error
-import           Utils.PathUtils
+import           Utils.PathUtils         hiding ( defaultPathUtils )
 import           Prelude                 hiding ( readFile )
 import           TestUtils
 import           Test.Hspec.Golden              ( Golden(..) )

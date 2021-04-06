@@ -103,6 +103,17 @@ parseTest :: Parser Command
 parseTest = Test <$> parseTestInput <*> parseCoverage
 
 
+parseRunInput :: Parser FilePath
+parseRunInput =
+  strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to run")
+
+parseRunArguments :: Parser [String]
+parseRunArguments = many (argument str (metavar "ARGS..."))
+
+parseRun :: Parser Command
+parseRun = Run <$> parseRunInput <*> parseRunArguments
+
+
 parseFolder :: Parser FilePath
 parseFolder = strArgument (metavar "FOLDER" <> help "Folder where to create the new project")
 
@@ -120,6 +131,7 @@ parseCommand :: Parser Command
 parseCommand =
   subparser
     $  command "compile" (parseCompile `withInfo` "compile madlib code to js")
+    <> command "run"     (parseRun `withInfo` "run a madlib module or package")
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")
     <> command "new"     (parseNew `withInfo` "create a new project")

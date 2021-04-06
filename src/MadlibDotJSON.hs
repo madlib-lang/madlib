@@ -8,6 +8,7 @@ import qualified Data.Map                      as M
 
 data MadlibDotJSON
   = MadlibDotJSON { main         :: String
+                  , bin          :: Maybe String
                   , dependencies :: Maybe (M.Map String String)
                   , version      :: Maybe String
                   , name         :: Maybe String

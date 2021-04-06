@@ -52,7 +52,6 @@ const nativeMemoize = (fn) => {
   return (...params) => {
     const key = JSON.stringify(params)
     if (!cache[key]) {
-      console.log("not cached")
       cache[key] = fn.apply(this, params)
     }
     return cache[key]
