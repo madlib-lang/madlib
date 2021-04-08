@@ -1,9 +1,10 @@
 import W from "Wish"
 
+#- import { exec as execJs, spawn as spawnJs } from "child_process" -#
+
 
 export type CommandError = CommandError Number String
 
-#- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
 exec :: String -> W.Wish CommandError String
 export exec = (command) => W.Wish((bad, good) => #- {
@@ -51,3 +52,9 @@ export getEnv = (name) => (#- {
   const envVar = process.env[name];
   return envVar === undefined ? W.bad("Not found") : W.good(envVar)
 } -#)
+
+getCurrentPath :: W.Wish String String
+export getCurrentPath = of(#- process.cwd() -#)
+
+getExecutablePath :: W.Wish String String
+export getExecutablePath = of(#- process.argv[1] -#)

@@ -23,7 +23,7 @@ Functor['List'] = {};
 Functor['List']['map'] = __curry__((f, __x__) => ((__x__) => {
   if (__x__.length >= 2 && true && true) {
     const [h,...t] = __x__;
-    return ([f(h),  ...Functor.List.map(f)(t)]);
+    return ([f(h),  ...Functor.List.map(f, t)]);
   }
   else if (__x__.length === 1 && true) {
     const [l] = __x__;
@@ -70,14 +70,14 @@ Monad['Either']['chain'] = __curry__((f, __x__) => ((__x__) => {
 })(__x__));
 Monad['Either']['of'] = __curry__((x) => Right(x));
 const inc = __curry__((a) => a + 1);
-Functor.List.map(inc)(([1, 2, 3]));
-Monad.Maybe.chain(__curry__((x) => Just(x + 1)))(Just(3));
+Functor.List.map(inc, ([1, 2, 3]));
+Monad.Maybe.chain(__curry__((x) => Just(x + 1)), Just(3));
 const doIt = (Functor_q120) => {
   global.Functor_q120 = Functor_q120
 
   return doIt__ND__()
 };
-const doIt__ND__ = __once__(() => __curry__((x) => Functor_q120.map(__curry__((k) => k + 1))(x)));
+const doIt__ND__ = __once__(() => __curry__((x) => Functor_q120.map(__curry__((k) => k + 1), x)));
 doIt(Functor.Maybe)(Just(3));
 const p = 1;
 const fn = (Functor_i138) => {
@@ -90,11 +90,11 @@ fn(Functor.Maybe)(Just(3));
 fn(Functor.List)(([4, 5, 6]));
 const hideCall = __curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0] === 2) {
-    return Monad.Either.chain(__curry__((a) => Right(a + 1)))(Right(2));
+    return Monad.Either.chain(__curry__((a) => Right(a + 1)), Right(2));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     throw 'non exhaustive patterns!';
   }
-})(Monad.Maybe.chain(__curry__((a) => Just(a + 1)))(x)));
+})(Monad.Maybe.chain(__curry__((a) => Just(a + 1)), x)));
 export default {};

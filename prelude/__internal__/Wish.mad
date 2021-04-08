@@ -72,10 +72,7 @@ export bad = (e) => (
 )
 
 
-getWishFn = (w) => (where(w)
-  is Wish fn: fn
-)
-
+getWishFn = where is Wish run: run
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => (
@@ -84,12 +81,16 @@ export parallel = (wishes) => (
     let ko = false;
     let ok = 0;
     const out = new Array(l);
-    const next = j => (j === l && good(out));
+    const next = j => (j === l && good(out))
     const fork = (w, j) => (getWishFn(w)(
       e => ko || (bad(e), ko = true),
       x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
+
+    if (l === 0) {
+      good([])
+    }
   } -#))
 )
 

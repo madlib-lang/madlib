@@ -32,7 +32,7 @@ import FS from "./FileSystem.mjs";
 import Http from "./Http.mjs";
 import IO from "./IO.mjs";
 
-W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(W.map(__curry__((response) => ((__x__) => {
+W.fulfill(IO.log, IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(W.map(__curry__((response) => ((__x__) => {
   if (__x__.__constructor === "Response" && __x__.__args[0].body.__constructor === "BinaryBody" && true) {
     const { body: { __args: [d] } } = __x__.__args[0];
     return d;
@@ -49,7 +49,7 @@ export const of = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
 export const map = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(__curry__((x) => good(f(x))));
+    return run(bad, __curry__((x) => good(f(x))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -59,10 +59,10 @@ export const map = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) =>
 export const chain = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run1 = __x__.__args[0];
-    return run1(bad)(__curry__((x) => ((__x__) => {
+    return run1(bad, __curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run2 = __x__.__args[0];
-    return run2(bad)(good);
+    return run2(bad, good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -78,7 +78,7 @@ export const chain = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) 
 export const fulfill = __curry__((bad, good, m) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(good);
+    return run(bad, good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

@@ -49,10 +49,10 @@ export flip = (f) => ((b, a) => f(a, b))
 #-
 const nativeMemoize = (fn) => {
   let cache = {};
-  return (...params) => {
-    const key = JSON.stringify(params)
+  return (a) => {
+    const key = JSON.stringify(a)
     if (!cache[key]) {
-      cache[key] = fn.apply(this, params)
+      cache[key] = fn.apply(this, a)
     }
     return cache[key]
   }
@@ -61,3 +61,35 @@ const nativeMemoize = (fn) => {
 
 memoize :: (a -> b) -> (a -> b)
 export memoize = (fn) => #- nativeMemoize(fn) -#
+
+#-
+const nativeMemoize2 = (fn) => {
+  let cache = {};
+  return __curry__((a, b) => {
+    const key = JSON.stringify([a, b])
+    if (!cache[key]) {
+      cache[key] = fn.apply(this, [a, b])
+    }
+    return cache[key]
+  })
+}
+-#
+
+memoize2 :: (a -> b -> c) -> (a -> b -> c)
+export memoize2 = (fn) => #- nativeMemoize2(fn) -#
+
+#-
+const nativeMemoize3 = (fn) => {
+  let cache = {};
+  return __curry__((a, b, c) => {
+    const key = JSON.stringify([a, b, c])
+    if (!cache[key]) {
+      cache[key] = fn.apply(this, [a, b, c])
+    }
+    return cache[key]
+  })
+}
+-#
+
+memoize3 :: (a -> b -> c -> d) -> (a -> b -> c -> d)
+export memoize3 = (fn) => #- nativeMemoize3(fn) -#

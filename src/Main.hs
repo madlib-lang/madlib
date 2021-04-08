@@ -137,6 +137,9 @@ runRun input args = do
   else
     runPackage input args
 
+runFolder :: FilePath
+runFolder = ".run/"
+
 runPackage :: FilePath -> [String] -> IO ()
 runPackage package args = do
   currentDir <- getCurrentDirectory
@@ -166,9 +169,10 @@ runPackage package args = do
                   Right dotJ@MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.bin = Just bin } ->
                     let exePath = joinPath [packagePath, bin]
                     in  do
-                      let compileCommand =
+                      let baseRunFolder  = joinPath [packagePath, runFolder]
+                          compileCommand =
                             Compile { compileInput = exePath
-                                    , compileOutput = ".run/"
+                                    , compileOutput = baseRunFolder
                                     , compileConfig = "madlib.json"
                                     , compileVerbose = False
                                     , compileDebug = False
@@ -180,8 +184,8 @@ runPackage package args = do
                                     }
 
                       runCompilation compileCommand False
-                      let target = joinPath [".run", ".deps", sanitizedPackageUrl, dropExtension bin <> ".mjs"]
-                      callCommand $ "node " <> target <> unwords args
+                      let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
+                      callCommand $ "node " <> target <> " " <> unwords args
                     
                   _ -> putStrLn "That package doesn't have any executable!"
 
@@ -193,7 +197,7 @@ runSingleModule :: FilePath -> [String] -> IO ()
 runSingleModule input args = do
   let compileCommand =
         Compile { compileInput = input
-                , compileOutput = ".run/"
+                , compileOutput = runFolder
                 , compileConfig = "madlib.json"
                 , compileVerbose = False
                 , compileDebug = False
@@ -205,8 +209,8 @@ runSingleModule input args = do
                 }
 
   runCompilation compileCommand False
-  let target = ".run/" <> (takeBaseName . takeFileName $ input) <> ".mjs"
-  callCommand $ "node " <> target <> unwords args
+  let target = runFolder <> (takeBaseName . takeFileName $ input) <> ".mjs"
+  callCommand $ "node " <> target <> " " <> unwords args
 
 
 
@@ -472,7 +476,7 @@ generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath =
                     if "prelude/__internal__" `isInfixOf` rootPath then
                       0
                     else 2
-                | "madlib_modules" `isInfixOf` path = -2
+                | "madlib_modules" `isInfixOf` path && not (rootPath `isPrefixOf` path) = -2
                 | otherwise = 1
               dirLength = length dirs - minus
           in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
