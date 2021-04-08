@@ -7,7 +7,7 @@ Functor['Wish'] = {};
 Functor['Wish']['map'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(__curry__((x) => good(f(x))));
+    return run(bad, __curry__((x) => good(f(x))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -18,7 +18,7 @@ Applicative['Wish'] = {};
 Applicative['Wish']['ap'] = __curry__((mf, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     const [{ __args: [runMF]},{ __args: [runM]}] = __x__;
-    return runM(bad)(__curry__((x) => runMF(bad)(__curry__((f) => good(f(x))))));
+    return runM(bad, __curry__((x) => runMF(bad, __curry__((f) => good(f(x))))));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -30,10 +30,10 @@ Monad['Wish'] = {};
 Monad['Wish']['chain'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(__curry__((x) => ((__x__) => {
+    return run(bad, __curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const r = __x__.__args[0];
-    return r(bad)(good);
+    return r(bad, good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -50,7 +50,7 @@ Monad['Wish']['of'] = Applicative.Wish.pure;
 export const mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(__curry__((x) => bad(f(x))))(good);
+    return run(__curry__((x) => bad(f(x))), good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -63,13 +63,13 @@ export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x_
     return run(__curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const r = __x__.__args[0];
-    return r(bad)(good);
+    return r(bad, good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     throw 'non exhaustive patterns!';
   }
-})(f(x))))(good);
+})(f(x))), good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -104,7 +104,7 @@ export const fulfill = __curry__((bad, good, m) => {
     ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     const run = __x__.__args[0];
-    return run(bad)(good);
+    return run(bad, good);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -118,5 +118,5 @@ export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 import {} from "./__internals__.mjs"
 import W from "./.prelude/Wish.mjs";
 
-W.fulfill(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(__curry__((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(__curry__((x) => x + '!'))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(__curry__((x) => x % 2))(Monad.Wish.of(3))))));
+W.fulfill(__curry__((a) => ({ __constructor: "Unit", __args: [] })), __curry__((a) => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map(__curry__((x) => x + '!'))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(`finally a string`)))(Monad.Wish.chain(__curry__((x) => Monad.Wish.of(x * 3)))(Functor.Wish.map(__curry__((x) => x % 2))(Monad.Wish.of(3))))));
 export default {};

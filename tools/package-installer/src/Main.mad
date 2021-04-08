@@ -4,7 +4,7 @@ import Math from "Math"
 import IO from "IO"
 import Http from "Http"
 import B from "Binary"
-import { readFile, writeFile, BinaryData, exists } from "FileSystem"
+import { readFile, writeFile, BinaryData, TextData, exists } from "FileSystem"
 import D from "Dictionary"
 import { Just, fromMaybe } from "Maybe"
 import J from "Json"
@@ -128,6 +128,21 @@ installPackages = (firstLevel) => pipe(
 )
 
 
+
 IO.log("Installing dependencies ...")
 
-installPackages(true, "madlib.json") |> fulfill(IO.log, identity)
+pipe(
+  exists,
+  chain(readFile),
+  fulfill(
+    (_) => pipe(
+      installPackages(true),
+      fulfill(IO.log, identity)
+    )("madlib.json"),
+    (packageDotJsonContent) => pipe(
+      installPackages(true),
+      chain((x) => writeFile("package.json", TextData(packageDotJsonContent)) |> andDo(of(x))),
+      fulfill(IO.log, identity)
+    )("madlib.json")
+  )
+)("package.json")

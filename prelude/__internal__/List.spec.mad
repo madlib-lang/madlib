@@ -2,6 +2,7 @@ import { test, assertEquals } from "TestTools"
 import {
   append,
   concat,
+  drop,
   filter,
   find,
   first,
@@ -166,3 +167,6 @@ test("sortDesc Number", (_) => assertEquals(sortDesc([3, 1, 2]), [3, 2, 1]))
 test("sortDesc String", (_) =>
   assertEquals(sortDesc(["John", "Paul", "James"]), ["Paul", "John", "James"])
 )
+
+test("drop", (_) => assertEquals(drop(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
+test("drop - empty", (_) => assertEquals(drop(2, []), []))

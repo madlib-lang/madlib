@@ -396,3 +396,6 @@ export zip = (as, bs) => where(<as, bs>)
 includes :: x -> List x -> Boolean
 export includes = (x, xs) => (#- xs.includes(x) -#)
 
+
+drop :: Number -> List a -> List a
+export drop = (amount, xs) => slice(0, 0 - amount, xs)

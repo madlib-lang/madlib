@@ -1,5 +1,5 @@
 import { assertEquals, test } from "./TestTools"
-import { always, complement, memoize } from "./Function"
+import { always, complement, memoize2 } from "./Function"
 import { andDo } from "Monad"
 import {} from "MonadWriter"
 import {} from "MonadState"
@@ -20,13 +20,13 @@ test("complement", (_) => {
 test("always", (_) => assertEquals(always(true, "1"), true))
 test("always - map", (_) => assertEquals(
   map(always(true), [1, 2 ,3]),
-  [true, true, true])
-)
+  [true, true, true]
+))
 
 
-test("memoize - good", (_) => {
+test("memoize2 - good", (_) => {
   inc = (x) => put(x + 1)
-  spy = memoize(chain((x) => pipe(
+  spy = memoize2((a) => chain((x) => pipe(
     chain(inc),
     andDo(of(x))
   )(get)))
@@ -35,11 +35,10 @@ test("memoize - good", (_) => {
   
   return pipe(
     of,
-    spy,
-    spy,
-    spy,
+    spy(3),
+    spy(3),
+    spy(3),
     run,
-    // (x) => assertEquals(x, <(), 1>)
     assertEquals($, <17, 1>)
   )(17)
 })

@@ -5,7 +5,7 @@ export default { avg };
 import R from "./Utils/Random.mjs";
 import M from "./../../urlmath/src/Main.mjs";
 
-export const random = __curry__((seed) => R.random(seed) + M.avg(seed)(seed));
+export const random = __curry__((seed) => R.random(seed) + M.avg(seed, seed));
 export default { random };
 // file: /madlib_modules/urlrandom/src/Utils/Random.mad
 export const random = __curry__((seed) => seed / 2);

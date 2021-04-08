@@ -5,5 +5,5 @@ export default { map };
 import {} from "./__internals__.mjs"
 import L from "./.prelude/List.mjs";
 
-L.map(__curry__((x) => x * 2))(([1, 2, 3]));
+L.map(__curry__((x) => x * 2), ([1, 2, 3]));
 export default {};
