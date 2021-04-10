@@ -6,6 +6,10 @@ import W from "Wish"
 export type CommandError = CommandError Number String
 
 
+getCommandErrorMessage :: CommandError -> String
+export getCommandErrorMessage = where
+  is CommandError _ message: message
+
 exec :: String -> W.Wish CommandError String
 export exec = (command) => W.Wish((bad, good) => #- {
     execJs(command, (err, stdout, stderr) => {
