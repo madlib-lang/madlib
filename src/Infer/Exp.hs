@@ -597,7 +597,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env)))
 
   CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ InferError
-    (AmbiguousType (TV "err" Star, [IsIn "n" [t']]))
+    (AmbiguousType (TV "-" Star, rs ++ ds))
     (Context (envCurrentPath env) area (envBacktrace env))
 
   case Can.getExpName exp of

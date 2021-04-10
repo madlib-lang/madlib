@@ -112,10 +112,8 @@ formatTypeError json err = case err of
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
-  AmbiguousType (TV n _, [IsIn cls _]) ->
-    "An ambiguity for the type variable '"
-      <> n
-      <> "' could not be resolved! I am\n"
+  AmbiguousType (TV n _, IsIn cls _:_) ->
+    "An ambiguity could not be resolved! I am\n"
       <> "looking for an instance of '"
       <> cls
       <> "' but could not resolve it. You\n"
