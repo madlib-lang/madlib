@@ -60,9 +60,8 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 open1, TRecord fields2 open2) -> TRecord (M.union fields1 fields2) (open1 || open2)
+    (TRecord fields1 open1, TRecord fields2 open2) -> TRecord (M.unionWith mergeTypes fields1 fields2) (open1 || open2)
     (t                    , _                    ) -> t
-
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError FatalError NoContext

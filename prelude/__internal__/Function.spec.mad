@@ -1,11 +1,9 @@
 import { assertEquals, test } from "./TestTools"
 import { always, complement, memoize2 } from "./Function"
 import { andDo } from "Monad"
-import {} from "MonadWriter"
 import {} from "MonadState"
-import { runWriterT, WriterT } from "WriterT"
-import { runStateT, StateT } from "StateT"
-import { runIdentity, Identity } from "Identity"
+import { runStateT } from "StateT"
+import { runIdentity } from "Identity"
 import {} from "List"
 
 

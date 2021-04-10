@@ -172,11 +172,11 @@ closeRecords t = case t of
   TCon _ _         -> t
   TApp l r         -> TApp (closeRecords l) (closeRecords r)
   TGen _           -> t
-  TRecord fields _ -> TRecord fields False
+  TRecord fields _ -> TRecord (M.map closeRecords fields) False
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 True, TRecord fields2 open2) -> TRecord (M.union fields1 fields2) True
+  (TRecord fields1 True, TRecord fields2 open2) -> TRecord (M.unionWith mergeRecords fields1 fields2) True
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 

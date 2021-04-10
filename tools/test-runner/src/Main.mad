@@ -4,7 +4,7 @@ import { collectCoverage } from "TestTools"
 
 #-
 import { fork, exec } from "child_process";
-import { join } from "path";
+import { join, relative, dirname } from "path";
 import fs from "fs/promises";
 
 let hitPoints = [];
@@ -12,7 +12,7 @@ const testsToRun = {};
 let successCount = 0;
 let testSuiteCount = 0;
 
-
+const INPUT_PATH = process.argv[2];
 
 const isCoverageOn = process.env.COVERAGE_MODE === "on";
 
@@ -25,9 +25,18 @@ const runTestSuite = (madlibFile, done) => {
   testSuiteCount = testSuiteCount + 1;
   console.log(madlibFile);
 
-  const jsFile = ".tests/" + madlibFile
+  const baseInputDir = INPUT_PATH.substr(-4) === ".mad"
+    ? dirname(INPUT_PATH)
+    : INPUT_PATH
+
+  const madlibFileWithoutBase = !madlibFile.match("prelude/__internal__")
+    ? relative(baseInputDir, madlibFile)
+    : madlibFile;
+
+  const jsFile = ".tests/" + madlibFileWithoutBase
     .replace(new RegExp("(.*).mad$"), "$1.mjs")
     .replace("prelude/__internal__", ".prelude");
+
 
   const forked = fork(jsFile);
 
@@ -58,7 +67,6 @@ const runTestSuite = (madlibFile, done) => {
 }
 
 
-const path = process.argv[2];
 
 
 const isDirectory = source => fs.lstat(source).then(s => s.isDirectory())
@@ -90,8 +98,8 @@ const getAllTestFiles = (path) => {
   })
 }
 
-getAllTestFiles(path).then((specFiles) => {
-  exec(`madlib compile -i ${path} -o .tests/ --test-files-only`, (err, stdOut, stdErr) => {
+getAllTestFiles(INPUT_PATH).then((specFiles) => {
+  exec(`madlib compile -i ${INPUT_PATH} -o .tests/ --test-files-only`, (err, stdOut, stdErr) => {
     if (err) {
       console.error(stdOut.trim());
       return;
