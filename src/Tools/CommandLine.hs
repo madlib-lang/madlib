@@ -104,11 +104,16 @@ parseTest = Test <$> parseTestInput <*> parseCoverage
 
 
 parseRunInput :: Parser FilePath
-parseRunInput =
-  argument str (metavar "PROGRAM" <> help "Package or module to run")
+parseRunInput = argument str (metavar "PROGRAM" <> help "Package or module to run")
 
 parseRunArguments :: Parser [String]
-parseRunArguments = many (argument str (metavar "ARGS" <> help "Arguments and options to pass to the program, note that to pass flags you should use '--' before"))
+parseRunArguments = many
+  (argument
+    str
+    (  metavar "ARGS"
+    <> help "Arguments and options to pass to the program, note that to pass flags you should use '--' before"
+    )
+  )
 
 parseRun :: Parser Command
 parseRun = Run <$> parseRunInput <*> parseRunArguments

@@ -49,18 +49,18 @@ instance Collectable Exp where
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [Line { line = l' }] <> collect e
 
-    App fn arg _          -> collect fn <> collect arg
-    Abs         _   body  -> concat (collect <$> body)
-    Access rec field -> collect rec <> collect field
-    Export e              -> collect e
-    TypedExp e _          -> collect e
-    TupleConstructor es   -> concat $ collect <$> es
-    If cond good bad      -> collect cond <> collect good <> collect bad
-    Where       e iss     -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
-    Placeholder _ e       -> collect e
-    JSExp _               -> []
-    Var   n               -> [Line { line = l }]
-    _                     -> []
+    App fn arg _        -> collect fn <> collect arg
+    Abs    _   body     -> concat (collect <$> body)
+    Access rec field    -> collect rec <> collect field
+    Export e            -> collect e
+    TypedExp e _        -> collect e
+    TupleConstructor es -> concat $ collect <$> es
+    If cond good bad    -> collect cond <> collect good <> collect bad
+    Where       e iss   -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
+    Placeholder _ e     -> collect e
+    JSExp _             -> []
+    Var   n             -> [Line { line = l }]
+    _                   -> []
 
 isOperator :: String -> Bool
 isOperator n = "|>" == n || "==" == n || ">=" == n || "<=" == n || "&&" == n || "||" == n || "!=" == n

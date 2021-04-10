@@ -5,9 +5,14 @@ import           Compile.Utils
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
-  curryFn target optimized <> "\n" <> eqFn target optimized <> "\n" <> applyDictsFn target optimized <> "\n" <> onceFn target optimized <> if coverage
-    then "\n" <> hpFnWrap <> "\n" <> hpLineWrap
-    else ""
+  curryFn target optimized
+    <> "\n"
+    <> eqFn target optimized
+    <> "\n"
+    <> applyDictsFn target optimized
+    <> "\n"
+    <> onceFn target optimized
+    <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
 
 curryFnName :: Bool -> String
@@ -17,7 +22,7 @@ curryFn :: Target -> Bool -> String
 curryFn target optimized =
   let fnName = curryFnName optimized
   in  unlines
-        [ getGlobalForTarget target <> ".$ = '__$__'" 
+        [ getGlobalForTarget target <> ".$ = '__$__'"
         , "const PLACEHOLDER = '__$__'"
         , getGlobalForTarget target <> "." <> fnName <> " = fn => {"
         , "  const test = x => x === PLACEHOLDER;"

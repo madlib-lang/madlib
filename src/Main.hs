@@ -81,7 +81,7 @@ import           Debug.Trace
 import           Text.Show.Pretty
 import           GHC.IO.Encoding
 import qualified MadlibDotJSON
-import qualified Utils.URL as URL
+import qualified Utils.URL                     as URL
 
 
 main :: IO ()
@@ -132,10 +132,7 @@ run cmd = do
 
 runRun :: FilePath -> [String] -> IO ()
 runRun input args = do
-  if ".mad" `isSuffixOf` input then
-    runSingleModule input args
-  else
-    runPackage input args
+  if ".mad" `isSuffixOf` input then runSingleModule input args else runPackage input args
 
 runFolder :: FilePath
 runFolder = ".run/"
@@ -145,68 +142,62 @@ runPackage package args = do
   currentDir <- getCurrentDirectory
   let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
 
-  parsedMadlibDotJson <-
-    MadlibDotJSON.load PathUtils.defaultPathUtils madlibDotJsonPath
+  parsedMadlibDotJson <- MadlibDotJSON.load PathUtils.defaultPathUtils madlibDotJsonPath
 
   case parsedMadlibDotJson of
-    Left e -> putStrLn e
+    Left  e -> putStrLn e
 
-    Right MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.dependencies = maybeDeps } ->
-      case maybeDeps of
-        Just dependencies ->
-          case M.lookup package dependencies of
-            Just url ->
-              let sanitizedPackageUrl = URL.sanitize url
-                  packagePath = joinPath ["madlib_modules", sanitizedPackageUrl]
-                  packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
-
-              in  do
-                parsedMadlibDotJson <-
-                  MadlibDotJSON.load PathUtils.defaultPathUtils packageMadlibDotJsonPath
+    Right MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.dependencies = maybeDeps } -> case maybeDeps of
+      Just dependencies -> case M.lookup package dependencies of
+        Just url ->
+          let sanitizedPackageUrl      = URL.sanitize url
+              packagePath              = joinPath ["madlib_modules", sanitizedPackageUrl]
+              packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
+          in  do
+                parsedMadlibDotJson <- MadlibDotJSON.load PathUtils.defaultPathUtils packageMadlibDotJsonPath
                 case parsedMadlibDotJson of
                   Left e -> putStrLn e
 
                   Right dotJ@MadlibDotJSON.MadlibDotJSON { MadlibDotJSON.bin = Just bin } ->
                     let exePath = joinPath [packagePath, bin]
                     in  do
-                      let baseRunFolder  = joinPath [packagePath, runFolder]
-                          compileCommand =
-                            Compile { compileInput = exePath
-                                    , compileOutput = baseRunFolder
-                                    , compileConfig = "madlib.json"
-                                    , compileVerbose = False
-                                    , compileDebug = False
-                                    , compileBundle = False
-                                    , compileOptimize = False
-                                    , compileTarget = TNode
-                                    , compileJson = False
-                                    , compileTestFilesOnly = False
-                                    }
+                          let baseRunFolder  = joinPath [packagePath, runFolder]
+                              compileCommand = Compile { compileInput         = exePath
+                                                       , compileOutput        = baseRunFolder
+                                                       , compileConfig        = "madlib.json"
+                                                       , compileVerbose       = False
+                                                       , compileDebug         = False
+                                                       , compileBundle        = False
+                                                       , compileOptimize      = False
+                                                       , compileTarget        = TNode
+                                                       , compileJson          = False
+                                                       , compileTestFilesOnly = False
+                                                       }
 
-                      runCompilation compileCommand False
-                      let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
-                      callCommand $ "node " <> target <> " " <> unwords args
-                    
+                          runCompilation compileCommand False
+                          let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
+                          callCommand $ "node " <> target <> " " <> unwords args
+
                   _ -> putStrLn "That package doesn't have any executable!"
 
-            Nothing  -> putStrLn "Package not found, install it first, or if you did, make sure that you used the right name!"
+        Nothing ->
+          putStrLn "Package not found, install it first, or if you did, make sure that you used the right name!"
 
-        Nothing -> putStrLn "It seems that you have no dependency installed at the moment!"
+      Nothing -> putStrLn "It seems that you have no dependency installed at the moment!"
 
 runSingleModule :: FilePath -> [String] -> IO ()
 runSingleModule input args = do
-  let compileCommand =
-        Compile { compileInput = input
-                , compileOutput = runFolder
-                , compileConfig = "madlib.json"
-                , compileVerbose = False
-                , compileDebug = False
-                , compileBundle = False
-                , compileOptimize = False
-                , compileTarget = TNode
-                , compileJson = False
-                , compileTestFilesOnly = False
-                }
+  let compileCommand = Compile { compileInput         = input
+                               , compileOutput        = runFolder
+                               , compileConfig        = "madlib.json"
+                               , compileVerbose       = False
+                               , compileDebug         = False
+                               , compileBundle        = False
+                               , compileOptimize      = False
+                               , compileTarget        = TNode
+                               , compileJson          = False
+                               , compileTestFilesOnly = False
+                               }
 
   runCompilation compileCommand False
   let target = runFolder <> (takeBaseName . takeFileName $ input) <> ".mjs"
@@ -470,12 +461,9 @@ generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
 generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path } = do
   let internalsPath = case stripPrefix rootPath path of
         Just s ->
-          let dirs  = splitDirectories (takeDirectory s)
+          let dirs = splitDirectories (takeDirectory s)
               minus
-                | "prelude/__internal__" `isInfixOf` path =
-                    if "prelude/__internal__" `isInfixOf` rootPath then
-                      0
-                    else 2
+                | "prelude/__internal__" `isInfixOf` path = if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
                 | "madlib_modules" `isInfixOf` path && not (rootPath `isPrefixOf` path) = -2
                 | otherwise = 1
               dirLength = length dirs - minus

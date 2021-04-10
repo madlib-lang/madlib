@@ -157,21 +157,22 @@ computeTargetPath outputPath rootPath path = case isPackage path of
           fromInternal    = tail $ dropWhile (/= "__internal__") split
           complete        = [cleanOutputPath, ".prelude"] <> fromInternal
       in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
-    else if rootPath `isPrefixOf` path then
-      let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
-          rootParts       = dropTrailingPathSeparator <$> splitPath rootPath
-          pathParts       = dropTrailingPathSeparator <$> splitPath path
-          withoutRoot     = if rootParts `isPrefixOf` pathParts
-            then pathParts \\ rootParts -- remove the root path components
-            else pathParts
-    in  cleanRelativePath . joinPath $ [cleanOutputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
-    else
-      let cleanOutputPath       = dropTrailingPathSeparator $ normalise outputPath
-          split                 = dropTrailingPathSeparator <$> splitPath path
-          fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
-          complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
-          madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
-      in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".mjs"
+    else if rootPath `isPrefixOf` path
+      then
+        let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
+            rootParts       = dropTrailingPathSeparator <$> splitPath rootPath
+            pathParts       = dropTrailingPathSeparator <$> splitPath path
+            withoutRoot     = if rootParts `isPrefixOf` pathParts
+              then pathParts \\ rootParts -- remove the root path components
+              else pathParts
+        in  cleanRelativePath . joinPath $ [cleanOutputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
+      else
+        let cleanOutputPath       = dropTrailingPathSeparator $ normalise outputPath
+            split                 = dropTrailingPathSeparator <$> splitPath path
+            fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
+            complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
+            madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
+        in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".mjs"
 
 
 isPreludePath :: FilePath -> Bool
