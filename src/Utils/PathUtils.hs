@@ -5,8 +5,12 @@ import qualified System.Directory              as Dir
 import           Prelude                 hiding ( readFile )
 import qualified Data.ByteString.Lazy          as B
 import qualified System.Environment.Executable as E
-import System.IO (openFile, IOMode (ReadMode), hSetEncoding, hGetContents)
-import GHC.IO.Encoding (utf8)
+import           System.IO                      ( openFile
+                                                , IOMode(ReadMode)
+                                                , hSetEncoding
+                                                , hGetContents
+                                                )
+import           GHC.IO.Encoding                ( utf8 )
 
 data PathUtils
   = PathUtils
@@ -24,8 +28,8 @@ rf fileName = do
 
 defaultPathUtils :: PathUtils
 defaultPathUtils = PathUtils { readFile           = rf
-                            , canonicalizePath   = Dir.canonicalizePath
-                            , doesFileExist      = Dir.doesFileExist
-                            , byteStringReadFile = B.readFile
-                            , getExecutablePath  = E.getExecutablePath
-                            }
+                             , canonicalizePath   = Dir.canonicalizePath
+                             , doesFileExist      = Dir.doesFileExist
+                             , byteStringReadFile = B.readFile
+                             , getExecutablePath  = E.getExecutablePath
+                             }

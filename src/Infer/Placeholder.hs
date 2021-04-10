@@ -15,7 +15,6 @@ import           Control.Monad.Except
 import           Error.Error
 import           Infer.Instantiate
 
-
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 insertVarPlaceholders _   exp                    []       = return exp
 
@@ -156,10 +155,9 @@ updateClassPlaceholder env push s ph = case ph of
     exp'  <- updatePlaceholders env push s exp
     ps'   <- buildClassRefPreds env cls instanceTypes'
 
-    if not var && not call then
-      return ph
-    else
-      return $ Slv.Solved (apply s t) a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+    if not var && not call
+      then return ph
+      else return $ Slv.Solved (apply s t) a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
 
   _ -> return ph
 
@@ -197,9 +195,8 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
     return $ Slv.Solved t a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
-    es' <-
-      if push || length es == 1 then
-        mapM (updatePlaceholders env push s) es
+    es' <- if push || length es == 1
+      then mapM (updatePlaceholders env push s) es
       else do
         let start = init es
         let l     = last es
