@@ -67,7 +67,7 @@ const runTestSuite = (madlibFile, done) => {
 }
 
 
-
+const BLACKLIST_FOLDERS = ["node_modules", "madlib_modules"]
 
 const isDirectory = source => fs.lstat(source).then(s => s.isDirectory())
 const getDirectories = source =>
@@ -79,6 +79,9 @@ const getDirectories = source =>
 
 
 const getAllTestFiles = (path) => {
+  if (BLACKLIST_FOLDERS.some((bl) => path.match(bl))) {
+    return Promise.resolve([])
+  }
   if (path.substr(-9, 9) === ".spec.mad") {
     return Promise.resolve([path]);
   }
