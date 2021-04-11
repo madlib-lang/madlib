@@ -315,13 +315,16 @@ runTests entrypoint coverage = do
     Left  e -> return ()
     Right a -> return ()
 
+compilationBlackList :: [FilePath]
+compilationBlackList = ["madlib_modules", "node_modules"]
+
 getFilesToCompile :: Bool -> FilePath -> IO [FilePath]
 getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
   ".mad"     -> return [entrypoint]
   '.' : rest -> putStrLn ("Invalid file extension '" <> ('.' : rest) <> "'") >> return []
   _          -> do
     paths <- getDirectoryContents entrypoint
-    let fullPaths = (\file -> joinPath [entrypoint, file]) <$> filter (\p -> p /= "." && p /= "..") paths
+    let fullPaths = (\file -> joinPath [entrypoint, file]) <$> filter (\p -> p /= "." && p /= ".." && not (any (`isSuffixOf` p) compilationBlackList)) paths
     let filtered = if not testsOnly
           then filter ((== ".mad") . takeExtension) fullPaths
           else filter (isSuffixOf ".spec.mad") fullPaths
