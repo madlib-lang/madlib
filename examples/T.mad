@@ -1,0 +1,24 @@
+import IO from "IO"
+import {} from "String"
+
+a = 31
+fn = (x) => {
+  a = 3
+
+  hep = (p) => {
+    a = p
+    return p
+  }
+
+  hep(45)
+
+  return a
+}
+
+IO.log(fn(1))
+IO.log(a)
+
+k = 4
+
+u = { k }
+

@@ -5,12 +5,14 @@
 {-# LANGUAGE RankNTypes #-}
 module Compile.Javascript where
 
+import qualified Data.Set                      as S
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
 import           Data.List                      ( isInfixOf
                                                 , sort
                                                 , find
                                                 , intercalate
+                                                , foldl'
                                                 )
 
 import           AST.Optimized                 as Opt
@@ -24,12 +26,17 @@ import           System.FilePath                ( replaceExtension
                                                 )
 import           Explain.Location
 import           Infer.Type
-import           Text.Show.Pretty               ( ppShow )
 import           Compile.JSInternals
 import           Target
 import           Compile.Utils
+import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace
 
+
+newtype Env = Env { varsInScope :: S.Set String }
+
+initialEnv :: Env
+initialEnv = Env { varsInScope = S.empty }
 
 
 hpWrapLine :: Bool -> FilePath -> Int -> String -> String
@@ -49,10 +56,10 @@ data CompilationConfig
       }
 
 class Compilable a where
-  compile :: CompilationConfig -> a -> String
+  compile :: Env -> CompilationConfig -> a -> String
 
 instance Compilable Exp where
-  compile config e@(Optimized expType area@(Area (Loc _ l _) _) exp) =
+  compile env config e@(Optimized expType area@(Area (Loc _ l _) _) exp) =
     let
       astPath   = ccastPath config
       coverage  = cccoverage config
@@ -65,11 +72,11 @@ instance Compilable Exp where
         LUnit   -> hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
         TemplateString exps ->
-          let parts = foldl
+          let parts = foldl'
                 (\full e -> case e of
                   Opt.Optimized _ _ (LStr v) -> full <> v
 
-                  _                          -> full <> "${" <> compile config e <> "}"
+                  _                          -> full <> "${" <> compile env config e <> "}"
                 )
                 ""
                 exps
@@ -77,103 +84,103 @@ instance Compilable Exp where
 
         App abs arg final -> case abs of
           Optimized _ _ (App (Optimized _ _ (Var "++")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " + " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " + " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg')
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "+")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " + " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " + " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "-")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " - " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " - " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "*")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " * " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " * " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "/")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " / " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " / " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "%")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " % " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " % " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "==")) arg' _) ->
             eqFnName optimized
               <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg') (compile config arg')
+              <> hpWrapLine coverage astPath (getStartLine arg') (compile env config arg')
               <> ", "
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg)
+              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
               <> ")"
           Optimized _ _ (App (Optimized _ _ (Var "!=")) arg' _) ->
             "!"
               <> eqFnName optimized
               <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg') (compile config arg')
+              <> hpWrapLine coverage astPath (getStartLine arg') (compile env config arg')
               <> ", "
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg)
+              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
               <> ")"
           Optimized _ _ (App (Optimized _ _ (Var "&&")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " && " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " && " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "||")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " || " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " || " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var ">")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " > " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " > " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "<")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " < " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " < " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var ">=")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " >= " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >= " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "<=")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg') <> " <= " <> hpWrapLine
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " <= " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
-              (compile config arg)
+              (compile env config arg)
 
           Optimized _ _ (App (Optimized _ _ (Var "|>")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile config arg)
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg)
               <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile config arg')
+              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg')
               <> ")"
           _ -> compileApp [] [] abs arg final
          where
           compileApp :: [Bool] -> [String] -> Exp -> Exp -> Bool -> String
           compileApp prevFinals prevArgs abs arg final =
-            let args   = [hpWrapLine coverage astPath (getStartLine arg) $ compile config arg] <> prevArgs
+            let args   = [hpWrapLine coverage astPath (getStartLine arg) $ compile env config arg] <> prevArgs
                 finals = [final] <> prevFinals
                 next   = case abs of
                   (Optimized _ _ (App abs' arg' final')) -> compileApp finals args abs' arg' final'
@@ -182,7 +189,7 @@ instance Compilable Exp where
             in  hpWrapLine coverage astPath (getStartLine abs) next
 
           buildAbs :: CompilationConfig -> Exp -> Exp -> String
-          buildAbs config abs arg = compile config abs
+          buildAbs config abs arg = compile env config abs
 
           buildParams :: [(String, Bool)] -> String
           buildParams []                    = ""
@@ -193,7 +200,7 @@ instance Compilable Exp where
 
 
         If cond truthy falsy ->
-          "(" <> compile config cond <> " ? " <> compile config truthy <> " : " <> compile config falsy <> ")"
+          "(" <> compile env config cond <> " ? " <> compile env config truthy <> " : " <> compile env config falsy <> ")"
 
         Abs param body -> compileAbs Nothing param body
          where
@@ -204,18 +211,24 @@ instance Compilable Exp where
                   Nothing -> curryFnName optimized <> "((" <> param
                 next = case head body of
                   (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  _ -> ") => " <> compileBody body <> ")"
+                  _ -> ") => " <> compileBody env body <> ")"
             in  start <> next
 
-          compileBody :: [Exp] -> String
-          compileBody [exp] = compile config exp
-          compileBody exps  = "{\n" <> compileBody' exps <> "}"
+          compileBody :: Env -> [Exp] -> String
+          compileBody _ [exp] = compile env config exp
+          compileBody env exps  = "{\n" <> compileBody' env exps <> "}"
 
-          compileBody' :: [Exp] -> String
-          compileBody' [exp] = case exp of
-            (Optimized _ _ (JSExp _)) -> compile config exp
-            _                         -> "    return " <> compile config exp <> ";\n"
-          compileBody' (exp : es) = "    " <> compile config exp <> ";\n" <> compileBody' es
+          compileBody' :: Env -> [Exp] -> String
+          compileBody' _ [exp] = case exp of
+            (Optimized _ _ (JSExp _)) -> compile env config exp
+            _                         -> "    return " <> compile env config exp <> ";\n"
+          compileBody' e (exp : es) = case exp of
+            Opt.Optimized _ _ (Opt.Assignment name _) ->
+              let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
+              in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
+
+            _                                           ->
+              "    " <> compile e config exp <> ";\n" <> compileBody' e es
 
         Var ('.' : name) -> "(__R__ => __R__." <> name <> ")"
 
@@ -232,7 +245,7 @@ instance Compilable Exp where
                   dict' = partiallyApplySubDicts dict ps
               in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
 
-            _ -> compile config exp'' <> prev
+            _ -> compile env config exp'' <> prev
 
           partiallyApplySubDicts :: String -> [ClassRefPred] -> String
           partiallyApplySubDicts dict ps = if not (null ps)
@@ -265,13 +278,14 @@ instance Compilable Exp where
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
         Assignment name exp ->
-          let (placeholders, dicts, content) = compileAssignmentWithPlaceholder2 config exp
+          let (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
               content'                       = if coverage && isFunctionType expType
                 then "__hpFnWrap('" <> astPath <> "', " <> show l <> ", '" <> name <> "')(" <> content <> ")"
                 else content
+              needsModifier = not $ name `elem` varsInScope env
           in  if not (null dicts)
                 then
-                  "const "
+                  (if needsModifier then "let " else "")
                   <> name
                   <> " = "
                   <> placeholders
@@ -283,7 +297,7 @@ instance Compilable Exp where
                   <> name
                   <> "__ND__()"
                   <> "\n};\n"
-                  <> "const "
+                  <> "let "
                   <> name
                   <> "__ND__"
                   <> " = "
@@ -291,22 +305,22 @@ instance Compilable Exp where
                   <> "(() => "
                   <> content'
                   <> ")"
-                else "const " <> name <> " = " <> content'
+                else (if needsModifier then "let " else "") <> name <> " = " <> content'
 
-        TypedExp exp _ -> compile config exp
+        TypedExp exp _ -> compile env config exp
 
-        Export ass     -> "export " <> compile config ass
+        Export ass     -> "export " <> compile env config ass
 
         Record fields  -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
           compileField :: Field -> String
           compileField (Optimized _ _ field) = case field of
             Field (name, exp) ->
-              " " <> name <> ": " <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
-            FieldSpread exp -> " ..." <> hpWrapLine coverage astPath (getStartLine exp) (compile config exp)
+              " " <> name <> ": " <> hpWrapLine coverage astPath (getStartLine exp) (compile env config exp)
+            FieldSpread exp -> " ..." <> hpWrapLine coverage astPath (getStartLine exp) (compile env config exp)
 
         Access record (Optimized _ _ (Var name)) ->
-          hpWrapLine coverage astPath (getStartLine record) $ compile config record <> name
+          hpWrapLine coverage astPath (getStartLine record) $ compile env config record <> name
 
         JSExp           content -> content
 
@@ -314,10 +328,10 @@ instance Compilable Exp where
          where
           compileListItem :: ListItem -> String
           compileListItem (Optimized _ _ li) = case li of
-            ListItem   exp -> compile config exp
-            ListSpread exp -> " ..." <> compile config exp
+            ListItem   exp -> compile env config exp
+            ListSpread exp -> " ..." <> compile env config exp
 
-        TupleConstructor elems -> "([" <> intercalate ", " (compile config <$> elems) <> "])"
+        TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
         Where exp (first : cs) ->
           "((__x__) => {\n  "
@@ -325,7 +339,7 @@ instance Compilable Exp where
             <> concat (("  else " ++) . compileIs <$> cs)
             <> "  else {\n    console.log('non exhaustive patterns for value: ', __x__.toString()); \n    throw 'non exhaustive patterns!';\n  }\n"
             <> "})("
-            <> compile config exp
+            <> compile env config exp
             <> ")"
          where
           compileListOrTuplePattern :: String -> [Pattern] -> String
@@ -378,13 +392,13 @@ instance Compilable Exp where
               <> ") {\n"
               <> buildVars "__x__" pat
               <> "    return "
-              <> compile config exp
+              <> compile env config exp
               <> ";\n  }\n"
 
           buildVars :: String -> Pattern -> String
           buildVars v (Optimized _ _ pat) = case pat of
             PRecord fields ->
-              "    const { "
+              "    let { "
                 <> intercalate
                      ", "
                      (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
@@ -418,14 +432,14 @@ instance Compilable Exp where
             PTuple items -> buildTupleOrListVars v items
 
             PCtor _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
-            PVar n       -> "    const " <> n <> " = " <> v <> ";\n"
+            PVar n       -> "    let " <> n <> " = " <> v <> ";\n"
 
             _            -> ""
 
           buildTupleOrListVars :: String -> [Pattern] -> String
           buildTupleOrListVars scope items =
             let itemsStr = buildListVar <$> items
-            in  "    const [" <> intercalate "," itemsStr <> "] = " <> scope <> ";\n"
+            in  "    let [" <> intercalate "," itemsStr <> "] = " <> scope <> ";\n"
            where
             buildListVar :: Pattern -> String
             buildListVar (Optimized _ _ pat) = case pat of
@@ -450,25 +464,25 @@ removeNamespace = reverse . takeWhile (/= '.') . reverse
 
 
 instance Compilable TypeDecl where
-  compile _ (Untyped _ Alias{}                     ) = ""
-  compile _ (Untyped _ ADT { adtconstructors = [] }) = ""
-  compile config (Untyped _ adt) =
+  compile _ _ (Untyped _ Alias{}                     ) = ""
+  compile _ _ (Untyped _ ADT { adtconstructors = [] }) = ""
+  compile env config (Untyped _ adt) =
     let ctors    = adtconstructors adt
         exported = adtexported adt
-    in  foldr (<>) "" (addExport exported . compile config <$> ctors)
+    in  foldr (<>) "" (addExport exported . compile env config <$> ctors)
    where
     addExport :: Bool -> String -> String
     addExport exported ctor = if exported then "export " <> ctor else ctor
 
 
 instance Compilable Constructor where
-  compile config (Untyped _ (Constructor cname cparams)) =
+  compile _ config (Untyped _ (Constructor cname cparams)) =
     let coverage  = cccoverage config
         optimized = ccoptimize config
     in  case cparams of
-          [] -> "const " <> cname <> " = " <> compileBody cname cparams <> ";\n"
+          [] -> "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
           _ ->
-            "const "
+            "let "
               <> cname
               <> " = "
               <> curryFnName optimized
@@ -511,24 +525,24 @@ updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
 instance Compilable Opt.Interface where
-  compile config (Untyped _ interface) = case interface of
+  compile _ config (Untyped _ interface) = case interface of
     Opt.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
 instance Compilable Opt.Instance where
-  compile config (Untyped _ inst) = case inst of
+  compile env config (Untyped _ inst) = case inst of
     Opt.Instance interface _ typings dict -> interface <> "['" <> typings <> "'] = {};\n" <> concat
       (uncurry compileMethod <$> M.toList (M.map fst dict))
      where
       compileMethod :: Name -> Exp -> String
       compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
         let
-          (placeholders, dicts, content) = compileAssignmentWithPlaceholder2 config exp
+          (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
           content'                       = if cccoverage config && isFunctionType t
             then "__hpFnWrap('" <> ccastPath config <> "', " <> show line <> ", '" <> n <> "')(" <> content <> ")"
             else content
           instRoot = interface <> "['" <> typings <> "']"
           compiledNDMethod =
-            "const __"
+            "let __"
               <> interface
               <> typings
               <> n
@@ -556,33 +570,23 @@ instance Compilable Opt.Instance where
             else instRoot <> "['" <> n <> "'] = " <> content' <> ";\n"
 
 
-compileAssignmentWithPlaceholder :: CompilationConfig -> Exp -> String
-compileAssignmentWithPlaceholder config fullExp@(Opt.Optimized _ _ exp) = case exp of
-  Placeholder (ClassRef cls _ call var, ts) e -> if not call
-    then
-      let dict = generateRecordName (ccoptimize config) cls ts var
-      in  "(" <> dict <> ") => (" <> compileAssignmentWithPlaceholder config e <> ")"
-    else compile config fullExp
-
-  _ -> compile config fullExp
-
-compileAssignmentWithPlaceholder2 :: CompilationConfig -> Exp -> (String, [String], String)
-compileAssignmentWithPlaceholder2 config fullExp@(Opt.Optimized _ _ exp) = case exp of
+compileAssignmentWithPlaceholder :: Env -> CompilationConfig -> Exp -> (String, [String], String)
+compileAssignmentWithPlaceholder env config fullExp@(Opt.Optimized _ _ exp) = case exp of
   Placeholder (ClassRef cls _ call var, ts) e -> if not call
     then
       let dict                      = generateRecordName (ccoptimize config) cls ts var
-          (phs, dicts, compiledExp) = compileAssignmentWithPlaceholder2 config e
+          (phs, dicts, compiledExp) = compileAssignmentWithPlaceholder env config e
       in  ("(" <> dict <> ") => " <> phs, dicts <> [dict], compiledExp)
-    else ("", [], compile config fullExp)
+    else ("", [], compile env config fullExp)
 
-  _ -> ("", [], compile config fullExp)
+  _ -> ("", [], compile env config fullExp)
 
 generateRecordName :: Bool -> String -> String -> Bool -> String
 generateRecordName optimized cls ts var =
   if var then if optimized then cls <> ts else cls <> "_" <> ts else cls <> "." <> ts
 
 instance Compilable AST where
-  compile config ast =
+  compile env config ast =
     let entrypointPath     = ccentrypointPath config
         coverage           = cccoverage config
         internalsPath      = ccinternalsPath config
@@ -602,16 +606,17 @@ instance Compilable AST where
 
         compiledInterfaces = case interfaces of
           [] -> ""
-          x  -> foldr1 (<>) (compile configWithASTPath <$> x)
+          x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledInstances = case instances of
           [] -> ""
-          x  -> foldr1 (<>) (compile configWithASTPath <$> x)
+          x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledAdts = case typeDecls of
           [] -> ""
-          x  -> foldr1 (<>) (compile configWithASTPath <$> x)
+          x  -> foldr1 (<>) (compile env configWithASTPath <$> x)
         compiledExps = case exps of
           [] -> ""
-          x  -> foldr1 (<>) (terminate . compile configWithASTPath <$> x)
+          x  -> compileExps env configWithASTPath exps
+          -- x  -> foldr1 (<>) (terminate . compile env configWithASTPath <$> x)
         compiledImports = case imports of
           [] -> ""
           x  -> foldr1 (<>) (terminate . compileImport configWithASTPath <$> x) <> "\n"
@@ -628,6 +633,19 @@ instance Compilable AST where
     terminate :: String -> String
     terminate a | null a    = ""
                 | otherwise = a <> ";\n"
+
+
+compileExps :: Env -> CompilationConfig -> [Exp] -> String
+compileExps env config [exp] = case exp of
+  (Optimized _ _ (JSExp _)) -> compile env config exp
+  _                         -> compile env config exp <> ";\n"
+compileExps env config (exp : es) = case exp of
+  Opt.Optimized _ _ (Opt.Assignment name _) ->
+    let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
+    in  compile env config exp <> ";\n" <> compileExps nextEnv config es
+
+  _                                           ->
+    compile env config exp <> ";\n" <> compileExps env config es
 
 
 buildDefaultExport :: [TypeDecl] -> [Exp] -> String

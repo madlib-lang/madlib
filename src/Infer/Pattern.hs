@@ -12,6 +12,7 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
+import           Data.List
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Pred], Vars, [Type])
@@ -47,7 +48,7 @@ inferPattern env (Can.Canonical _ pat) = case pat of
     let vars   = foldr (<>) M.empty (T.mid <$> ti)
 
     let tupleT = getTupleCtor (length ts)
-    let t      = foldl TApp tupleT ts
+    let t      = foldl' TApp tupleT ts
 
     return (ps, vars, t)
 

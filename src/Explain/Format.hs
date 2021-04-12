@@ -6,7 +6,7 @@ import           Explain.Location
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Infer.Type
-import           Data.List                      ( intercalate )
+import           Data.List                      ( intercalate, foldl' )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
@@ -327,7 +327,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
 
   TRecord fields _ ->
     let (finalVars, finalHkVars, compiledFields) =
-            foldl
+            foldl'
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
                   let (vars'', hkVars'', compiledField) = prettyPrintType' rewrite (vars', hkVars') fieldType
                   in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])

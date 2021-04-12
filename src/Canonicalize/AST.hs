@@ -14,6 +14,7 @@ import           Canonicalize.ADT
 import           Canonicalize.Interface
 import           Infer.Type
 import           Error.Error
+import           Data.List
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
@@ -53,8 +54,8 @@ extractExport env typeDecl = do
 processImports :: Target -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env)
 processImports target table imports = do
   imports' <- mapM (canonicalizeImportedAST target table) imports
-  let table' = foldl (<>) mempty (fst <$> imports')
-  let env' = foldl
+  let table' = foldl' (<>) mempty (fst <$> imports')
+  let env' = foldl'
         (\env env' -> env { envTypeDecls  = envTypeDecls env <> envTypeDecls env'
                           , envInterfaces = envInterfaces env <> envInterfaces env'
                           }

@@ -35,7 +35,7 @@ import           Infer.Infer
 import           Options.Applicative
 import           Tools.CommandLineFlags
 import           Tools.CommandLine
-import           Compile.Javascript
+import           Compile.Javascript            as CompileJS
 import qualified Compile.Json                  as CompileJson
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
@@ -483,6 +483,6 @@ generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath =
         else computeTargetPath (takeDirectory outputPath) rootPath path
 
   createDirectoryIfMissing True $ takeDirectory computedOutputPath
-  writeFile computedOutputPath $ compile
+  writeFile computedOutputPath $ compile CompileJS.initialEnv
     (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target internalsPath)
     ast

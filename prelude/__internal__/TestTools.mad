@@ -163,6 +163,7 @@ test :: String -> (String -> W.Wish AssertionError String) -> ()
 export test = (description, testImpl) => {
   id = #- generateId() -#
   #- process.send({ reportType: "TEST_START", id }) -#
+  #- process.env.COVERAGE_MODE = "off" -#
 
   pipe(
     (run) => run(description),
