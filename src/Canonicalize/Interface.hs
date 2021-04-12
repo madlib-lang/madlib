@@ -18,6 +18,7 @@ import           Control.Monad
 import           Control.Monad.Except
 import qualified Data.Map                      as M
 import           Data.Maybe
+import           Data.List
 
 
 
@@ -45,7 +46,7 @@ canonicalizeInterface env (Src.Source _ area interface) = case interface of
           constraints
 
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> supers
-    let subst   = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+    let subst   = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
     let scs =
           (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps <> supers) :=> apply subst t)) <$> ts'
@@ -98,7 +99,7 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
   Src.Instance constraints n typing methods -> do
     ts <- mapM (typingToType env) typing
 
-    let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty ts
+    let subst = foldl' (\s t -> s `compose` buildVarSubsts t) mempty ts
 
     ps <-
       apply subst
@@ -119,7 +120,7 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
               constraints
 
     let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> ps
-    let subst' = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+    let subst' = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
     let ps'     = apply subst' ps
     let p       = IsIn n (apply subst' ts)

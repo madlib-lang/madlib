@@ -4,7 +4,7 @@ module Parse.DocString.Grammar where
 import           Text.Printf
 import           Control.Monad.Except
 import           Data.Char(isSpace)
-import           Data.List(isSuffixOf)
+import           Data.List(isSuffixOf, foldl')
 import           Parse.DocString.Lexer
 import           Infer.Type
 import           Parse.DocString.DocString
@@ -88,7 +88,7 @@ sanitizeDescription desc =
 
 processCharacters :: [String] -> String
 processCharacters chars =
-  let assembled = foldl (<>) "" chars
+  let assembled = foldl' (<>) "" chars
   in  sanitizeDescription assembled
 
 

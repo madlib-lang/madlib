@@ -14,6 +14,7 @@ import           Error.Error
 import qualified Data.Map                      as M
 import           Data.Char
 import           Control.Monad.Except
+import Data.List
 
 
 
@@ -63,8 +64,8 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
       params = Src.adtparams adt
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
-  let s = foldl (\s' -> compose s' . getSubstitution) mempty is
-  let rt = foldl TApp
+  let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
+  let rt = foldl' TApp
                  (TCon (TC name (buildKind $ length params)) astPath)
                  ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
@@ -103,7 +104,7 @@ resolveADTConstructorParams
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
 resolveADTConstructorParams env astPath n params c@(Src.Source _ area (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env) cparams
-  let s = foldl (\s t -> buildCtorSubst t <> s) M.empty ts
+  let s = foldl' (\s t -> buildCtorSubst t <> s) M.empty ts
 
   return (cname, ts, s, c)
 

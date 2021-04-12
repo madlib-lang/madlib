@@ -39,6 +39,7 @@ const runTestSuite = (madlibFile, done) => {
 
 
   const forked = fork(jsFile);
+  // const forked = fork(jsFile, { env: { COVERAGE_MODE: "off" }});
 
   forked.on("message", msg => {
     switch(msg.reportType) {

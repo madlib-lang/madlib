@@ -16,6 +16,7 @@ import qualified Data.Map                      as M
 import           Data.Char
 import           Error.Error
 import           Control.Monad.Except
+import Data.List
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
@@ -96,7 +97,7 @@ typingToType env (Src.Source _ area (Src.TRSingle t))
 typingToType env (Src.Source _ area (Src.TRComp t ts))
   | isLower . head $ t = do
     params <- mapM (typingToType env) ts
-    return $ foldl TApp (TVar $ TV t (buildKind (length ts))) params
+    return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
   | otherwise = do
     h <- catchError (lookupADT env t)
                     (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area []))
@@ -120,7 +121,7 @@ typingToType env (Src.Source _ area (Src.TRComp t ts))
       (zip ts kargs)
     case h of
       (TAlias _ _ tvs t) -> updateAliasVars (getConstructorCon h) params
-      t                  -> return $ foldl TApp (getConstructorCon t) params
+      t                  -> return $ foldl' TApp (getConstructorCon t) params
 
 
 typingToType env (Src.Source _ _ (Src.TRArr l r)) = do
@@ -135,7 +136,7 @@ typingToType env (Src.Source _ _ (Src.TRRecord fields)) = do
 typingToType env (Src.Source _ _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env) elems
   let tupleT = getTupleCtor (length elems)
-  return $ foldl TApp tupleT elems'
+  return $ foldl' TApp tupleT elems'
 
 
 getConstructorArgs :: Type -> [Type]

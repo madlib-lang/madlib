@@ -24,6 +24,7 @@ import           Utils.Tuple
 import           Data.List                      ( (\\)
                                                 , union
                                                 , partition
+                                                , foldl'
                                                 )
 import           Infer.Scheme                   ( quantify
                                                 , toScheme
@@ -33,7 +34,8 @@ import           Infer.Pattern
 import           Infer.Pred
 import           Infer.Placeholder
 import qualified Control.Monad                 as CM
-
+import           Text.Show.Pretty               ( ppShow )
+import           Debug.Trace
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer env lexp = do
@@ -147,8 +149,8 @@ inferBody env (e : xs) = do
       (s, (ds, ps), env, e') <- inferImplicitlyTyped True env e
       return (s, ps, env, e')
 
-  e''               <- insertClassPlaceholders env e' ps
-  e'''              <- updatePlaceholders env True s e''
+  e''               <- insertClassPlaceholders env' e' ps
+  e'''              <- updatePlaceholders env' True s e''
 
   (sb, ps', tb, eb) <- inferBody env' xs
   return (sb `compose` s, ps', tb, e''' : eb)
@@ -218,7 +220,7 @@ inferTemplateString env e@(Can.Canonical area (Can.TemplateString exps)) = do
 
   ss <- mapM (\(exp, t) -> contextualUnify env exp t tStr) (zip exps elemTypes)
 
-  let fullSubst = foldl compose M.empty (elemSubsts <> ss)
+  let fullSubst = foldl' compose M.empty (elemSubsts <> ss)
 
   let updatedExp = Slv.Solved
         tStr
@@ -233,10 +235,15 @@ inferTemplateString env e@(Can.Canonical area (Can.TemplateString exps)) = do
 
 inferAssignment :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
-  t <- newTVar Star
-  let env' = extendVars env (name, Forall [] ([] :=> t))
+  currentScheme <- case M.lookup name (envVars env) of
+        Just sc  -> return sc
+        _        -> (\t -> Forall [] ([] :=> t)) <$> newTVar Star
+
+  (currentPreds :=> currentType) <- instantiate currentScheme
+  let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer env' exp
-  return (s1, ps1, t1, applyAssignmentSolve e name e1 t1)
+  s2 <- contextualUnify env' exp currentType t1
+  return (s2 `compose` s1, currentPreds ++ ps1, apply s2 t1, applyAssignmentSolve e name e1 t1)
 
 
 
@@ -375,7 +382,7 @@ inferTupleConstructor env (Can.Canonical area (Can.TupleConstructor elems)) = do
   let s          = foldr compose M.empty elemSubsts
 
   let tupleT     = getTupleCtor (length elems)
-  let t          = foldl TApp tupleT elemTypes
+  let t          = foldl' TApp tupleT elemTypes
 
   return (s, concat elemPS, t, Slv.Solved t area (Slv.TupleConstructor elemEXPS))
 
@@ -581,7 +588,10 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   tv <- newTVar Star
 
   let env' = case Can.getExpName exp of
-        Just n  -> extendVars env (n, toScheme tv)
+        Just n  -> case M.lookup n (envVars env) of
+          Just _  -> env
+          --  ^ if a var is already present we don't override its type with a fresh var.
+          Nothing -> extendVars env (n, toScheme tv)
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp

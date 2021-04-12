@@ -120,11 +120,11 @@ resolveInstances env (i : is) = do
 resolveInstance :: Env -> Can.Instance -> Infer (Env, Slv.Instance)
 resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
   let instanceTypes = predTypes pred
-  let subst = foldl (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
+  let subst = foldl' (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
   (Interface _ ps _) <- catchError (lookupInterface env name) (addContext env inst)
   let instancePreds = apply subst $ [IsIn name instanceTypes] <> ps
   let psTypes       = concat $ predTypes <$> constraintPreds
-  let subst'        = foldl (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+  let subst'        = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
   inferredMethods <- mapM
     (inferMethod (pushInstanceToBT env inst) (apply subst' instancePreds) (apply subst' constraintPreds))
     (M.toList methods)
