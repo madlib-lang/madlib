@@ -23,6 +23,7 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
+import Infer.Scope
 
 {-|
 Module      : AST
@@ -287,6 +288,8 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
   let envWithImports = env { envVars = M.union (envVars env) vars }
 
   (inferredAST, env) <- inferAST envWithImports ast
+
+  checkAST (importEnv { envVars = envVars importEnv <> vars }) inferredAST
 
   case Slv.apath inferredAST of
     Just fp -> return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
