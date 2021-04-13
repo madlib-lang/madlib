@@ -52,7 +52,7 @@ const nativeMemoize = (fn) => {
   return (a) => {
     const key = JSON.stringify(a)
     if (!cache[key]) {
-      cache[key] = fn.apply(this, a)
+      cache[key] = fn.apply(this, [a])
     }
     return cache[key]
   }

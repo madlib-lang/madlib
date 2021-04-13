@@ -22,6 +22,7 @@ import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
 
 
+
 -- defined :: Maybe a -> Bool
 -- defined (Just x) = True
 -- defined Nothing  = False
@@ -171,7 +172,7 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
       then throwError $ InferError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateType e t''
-        e''  <- insertClassPlaceholders env (Slv.Solved t area $ Slv.Assignment mn e') (apply s' withParents)
+        e''  <- insertClassPlaceholders env (Slv.Solved (apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
         e''' <- updatePlaceholders env True s' e''
 
         return (mn, e''', sc)

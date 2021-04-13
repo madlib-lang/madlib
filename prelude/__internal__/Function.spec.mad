@@ -1,5 +1,5 @@
 import { assertEquals, test } from "./TestTools"
-import { always, complement, memoize2 } from "./Function"
+import { always, complement, memoize2, memoize } from "./Function"
 import { andDo } from "Monad"
 import {} from "MonadState"
 import { runStateT } from "StateT"
@@ -39,4 +39,37 @@ test("memoize2 - good", (_) => {
     run,
     assertEquals($, <17, 1>)
   )(17)
+})
+
+test("memoize - should not called the memoized function if called with the same argument", (_) => {
+  count = 0
+
+  f = memoize((x) => {
+    count = count + 1
+    return x
+  })
+
+  f(1)
+  f(1)
+  f(1)
+
+  return assertEquals(count, 1)
+})
+
+test("memoize - should call the function again once per different arg", (_) => {
+  count = 0
+
+  f = memoize((x) => {
+    count = count + 1
+    return x
+  })
+
+  f(1)
+  f(1)
+  f(2)
+  f(2)
+  f(3)
+  f(3)
+
+  return assertEquals(count, 3)
 })

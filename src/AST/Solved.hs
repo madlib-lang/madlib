@@ -9,7 +9,7 @@ import           Explain.Location
 data Solved a
   = Solved Ty.Type Area a
   | Untyped Area a
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 data AST =
   AST
@@ -20,19 +20,19 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 type Import = Solved Import_
 data Import_
   = NamedImport [Name] FilePath FilePath
   | DefaultImport Name FilePath FilePath
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Interface = Solved Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
 type Instance = Solved Instance_
-data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
 
 type TypeDecl = Solved TypeDecl_
 data TypeDecl_
@@ -49,12 +49,12 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 type Constructor = Solved Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Constraints = [Typing]
 
@@ -66,11 +66,11 @@ data Typing_
   | TRRecord (M.Map Name Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 type Is = Solved Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
 type Pattern = Solved Pattern_
 data Pattern_
@@ -85,29 +85,29 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Field = Solved Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type ListItem = Solved ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 data ClassRefPred
   = CRPNode String [Ty.Type] Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
   | MethodRef String String Bool
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Exp = Solved Exp_
 data Exp_ = LNum String
@@ -129,7 +129,7 @@ data Exp_ = LNum String
           | If Exp Exp Exp
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
-          deriving(Eq, Show)
+          deriving(Eq, Show, Ord)
 
 type Name = String
 
