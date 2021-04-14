@@ -95,6 +95,12 @@ instance Compilable Exp where
               astPath
               (getStartLine arg)
               (compile env config arg)
+          Optimized _ _ (Var "unary-minus") ->
+            "-" <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "-")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " - " <> hpWrapLine
               coverage
@@ -636,9 +642,7 @@ instance Compilable AST where
 
 
 compileExps :: Env -> CompilationConfig -> [Exp] -> String
-compileExps env config [exp] = case exp of
-  (Optimized _ _ (JSExp _)) -> compile env config exp
-  _                         -> compile env config exp <> ";\n"
+compileExps env config [exp] = compile env config exp <> ";\n"
 compileExps env config (exp : es) = case exp of
   Opt.Optimized _ _ (Opt.Assignment name _) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }

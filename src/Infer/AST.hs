@@ -86,9 +86,7 @@ buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, C
 
     env''' <- addConstructors env'' constructors
 
-    let env = env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath }
-
-    populateTopLevelTypings env aexps
+    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath }
 
 
 
@@ -287,9 +285,10 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
   env <- buildInitialEnv importEnv ast
   let envWithImports = env { envVars = M.union (envVars env) vars }
 
-  (inferredAST, env) <- inferAST envWithImports ast
+  fullEnv <- populateTopLevelTypings envWithImports (Can.aexps ast)
+  (inferredAST, env) <- inferAST fullEnv ast
 
-  checkAST (importEnv { envVars = envVars importEnv <> vars }) inferredAST
+  checkAST envWithImports inferredAST
 
   case Slv.apath inferredAST of
     Just fp -> return $ M.insert fp (inferredAST, env) (solved <> inferredASTs)
