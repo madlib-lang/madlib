@@ -28,6 +28,7 @@ where
 import           Control.Monad.State
 import           System.Exit
 import qualified Data.Text.Lazy     as T
+import           Data.Char
 import           Explain.Location
 import           Text.Regex.TDFA
 import           Debug.Trace (trace)
@@ -417,17 +418,13 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
 
 
 sanitizeStr :: String -> String
-sanitizeStr s = s-- >>= escapeBacktick
--- sanitizeStr s = (tail . init $ s) >>= escapeBacktick
+sanitizeStr s = s
 
 escapeBacktick :: Char -> String
 escapeBacktick c = case c of
   '`' -> "\\`"
   _   -> c:""
 
--- sanitizeSingleQuotedStr :: String -> String
--- sanitizeSingleQuotedStr s =
---   let 
 
 sanitizeJSBlock :: String -> String
 sanitizeJSBlock = strip . tail . tail . init . init
@@ -435,9 +432,27 @@ sanitizeJSBlock = strip . tail . tail . init . init
 strip  = T.unpack . T.strip . T.pack
 
 
+computeTokenOffsetFromLeadingWhiteChars :: (Int, Int, Int) -> String -> (Int, Int, Int)
+computeTokenOffsetFromLeadingWhiteChars initialLoc input =
+  let leadingWhites = takeWhile isSpace input
+  in  computeTokenOffsetFromLeadingWhiteChars' initialLoc leadingWhites
+
+computeTokenOffsetFromLeadingWhiteChars' :: (Int, Int, Int) -> [Char] -> (Int, Int, Int)
+computeTokenOffsetFromLeadingWhiteChars' prev@(prevAbs, prevL, prevC) whites =
+  case whites of
+    ('\n':cs) ->
+      let (computedAbs, computedL, computedC) = (prevAbs + 1, prevL + 1, 0)
+      in  computeTokenOffsetFromLeadingWhiteChars' (computedAbs, computedL, computedC) cs
+    (_:cs)    ->
+      let (computedAbs, computedL, computedC) = (prevAbs + 1, prevL, prevC + 1)
+      in  computeTokenOffsetFromLeadingWhiteChars' (computedAbs, computedL, computedC) cs
+    _         -> prev
+
+
 makeArea :: AlexPosn -> String -> Area
 makeArea (AlexPn a l c) tokenContent =
-  let start         = Loc a l c
+  let (a', l', c')  = computeTokenOffsetFromLeadingWhiteChars (a, l, c) tokenContent
+      start         = Loc a' l' c'
       contentLines  = lines tokenContent
       lastLine      = last contentLines
       numberOfLines = length contentLines

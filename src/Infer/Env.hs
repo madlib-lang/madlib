@@ -80,6 +80,7 @@ initialEnv = Env
                        , ("<=", Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("++", Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
                        , ("+" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("unary-minus" , Forall [] $ [] :=> (tNumber `fn` tNumber))
                        , ("-" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("*" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("/" , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))

@@ -1,6 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections #-}
 module Infer.Scope where
 
 import Infer.Env
@@ -13,8 +12,6 @@ import Control.Monad
 import Error.Error
 import Control.Monad.Except
 import Control.Exception
-import Debug.Trace
-import Text.Show.Pretty
 
 
 type InScope = S.Set String
@@ -38,7 +35,7 @@ checkExps _ _ _ [] = return ()
 checkExps env globalScope dependencies (e:es) = do
   let globalScope'   = extendScope globalScope e
 
-  collectedAccesses <- check globalScope' S.empty e
+  collectedAccesses <- collect globalScope' S.empty e
 
   catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
 
@@ -54,11 +51,10 @@ verifyScope env globalAccesses globalScope dependencies exp =
     foldM (verifyScope' env globalScope dependencies) () globalAccesses
 
 verifyScope' :: Env -> InScope -> Dependencies -> () -> (String, Exp) -> Infer ()
-verifyScope' env globalScope dependencies _ (nameToVerify, Solved _ area _) =
+verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area _) =
   if nameToVerify `S.member` globalScope then do
-    let namesFromDependencies = M.lookup nameToVerify dependencies
-    case namesFromDependencies of
-      Just names -> foldM_ (verifyScope' env globalScope dependencies) () names
+    case M.lookup nameToVerify dependencies of
+      Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
 
       Nothing    ->
         if nameToVerify `S.member` globalScope then
@@ -70,14 +66,17 @@ verifyScope' env globalScope dependencies _ (nameToVerify, Solved _ area _) =
   else
     throwError $ InferError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area [])
 
+removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
+removeAccessFromDeps access = M.map (S.filter (/= access))
+
 extendScope :: InScope -> Exp -> InScope
 extendScope inScope exp = case getExpName exp of
   Just name -> S.insert name inScope
   Nothing   -> inScope
 
 extendDependencies :: Accesses -> Dependencies -> Exp -> Dependencies
-extendDependencies globalScope dependencies exp = case getExpName exp of
-  Just name -> M.insert name globalScope dependencies
+extendDependencies globalAccesses dependencies exp = case getExpName exp of
+  Just name -> M.insert name globalAccesses dependencies
 
   Nothing   -> dependencies
 
@@ -87,11 +86,10 @@ isFunction exp = case exp of
   _            -> False
 
 
-check :: InScope -> InScope -> Exp -> Infer Accesses
-check globalScope localScope solvedExp@(Solved _ _ exp) = case exp of
-
+collect :: InScope -> InScope -> Exp -> Infer Accesses
+collect globalScope localScope solvedExp@(Solved _ area e) = case e of
   TemplateString exps -> do
-    globalNamesAccessed <- mapM (check globalScope localScope) exps
+    globalNamesAccessed <- mapM (collect globalScope localScope) exps
     return $ foldr S.union S.empty globalNamesAccessed
 
   Var name ->
@@ -101,66 +99,87 @@ check globalScope localScope solvedExp@(Solved _ _ exp) = case exp of
       return $ S.singleton (name, solvedExp)
 
   App fn arg _ -> do
-    fnGlobalNamesAccessed <- check globalScope localScope fn
-    argGlobalNamesAccessed <- check globalScope localScope arg
+    fnGlobalNamesAccessed <- collect globalScope localScope fn
+    argGlobalNamesAccessed <- collect globalScope localScope arg
     return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
   Abs (Solved _ _ name) body -> do
     let localScope' = S.insert name localScope
-    checkBody globalScope localScope' body
+    collectFromBody globalScope localScope' body
 
     where
-      checkBody :: InScope -> InScope -> [Exp] -> Infer Accesses
-      checkBody _ _ []                        = return S.empty
-      checkBody globalScope localScope (e:es) = do
+      collectFromBody :: InScope -> InScope -> [Exp] -> Infer Accesses
+      collectFromBody _ _ []                        = return S.empty
+      collectFromBody globalScope localScope (e:es) = do
         let localScope' = extendScope localScope e
-        access <- check globalScope localScope' e
-        next   <- checkBody globalScope localScope' es
+        access <- collect globalScope localScope' e
+        next   <- collectFromBody globalScope localScope' es
         return $ access <> next
 
   If cond truthy falsy -> do
-    condAccesses   <- check globalScope localScope cond
-    truthyAccesses <- check globalScope localScope truthy
-    falsyAccesses  <- check globalScope localScope falsy
+    condAccesses   <- collect globalScope localScope cond
+    truthyAccesses <- collect globalScope localScope truthy
+    falsyAccesses  <- collect globalScope localScope falsy
 
     return $ condAccesses <> truthyAccesses <> falsyAccesses
 
-  Assignment name exp -> check globalScope (S.insert name localScope) exp
+  Assignment name exp -> collect globalScope (S.insert name localScope) exp
+
+  TypedExp exp _ -> collect globalScope localScope exp
+
+  Export exp -> collect globalScope localScope exp
+
+  Access record fieldAccessor -> do
+    recordAccesses <- collect globalScope localScope record
+    fieldAccessorAccesses <- collect globalScope localScope fieldAccessor
+    return $ recordAccesses <> fieldAccessorAccesses
 
   Where exp iss -> do
-    expAccess   <- check globalScope localScope exp
-    issAccesses <- mapM (checkIs globalScope localScope) iss
+    expAccess   <- collect globalScope localScope exp
+    issAccesses <- mapM (collectFromIs globalScope localScope) iss
     let issAccesses' = foldr S.union S.empty issAccesses
     return $ expAccess <> issAccesses'
 
   TupleConstructor exps -> do
-    accesses <- mapM (check globalScope localScope) exps
+    accesses <- mapM (collect globalScope localScope) exps
     return $ foldr S.union S.empty accesses
 
-  Placeholder _ exp -> check globalScope localScope exp
+  ListConstructor items -> do
+    listItemAccesses <- mapM (collectFromListItem globalScope localScope) items
+    return $ foldr S.union S.empty listItemAccesses
 
-  -- RECORD
+  Record fields -> do
+    fieldAccesses <- mapM (collectFromField globalScope localScope) fields
+    return $ foldr S.union S.empty fieldAccesses
+
+  Placeholder _ exp -> collect globalScope localScope exp
 
   _ -> return S.empty
 
 
-checkIs :: InScope -> InScope -> Is -> Infer Accesses
-checkIs globalScope localScope (Solved _ _ (Is pat exp)) = do
+collectFromField :: InScope -> InScope -> Field -> Infer Accesses
+collectFromField globalScope localScope (Solved _ _ field) = case field of
+  Field (name, exp) -> collect globalScope localScope exp
+  FieldSpread exp   -> collect globalScope localScope exp
+
+collectFromListItem :: InScope -> InScope -> ListItem -> Infer Accesses
+collectFromListItem globalScope localScope (Solved _ _ li) = case li of
+  ListItem exp   -> collect globalScope localScope exp
+  ListSpread exp -> collect globalScope localScope exp
+
+collectFromIs :: InScope -> InScope -> Is -> Infer Accesses
+collectFromIs globalScope localScope (Solved _ _ (Is pat exp)) = do
   let patternScope = buildPatternScope pat
       localScope'  = localScope <> patternScope
-  check globalScope localScope' exp
+  collect globalScope localScope' exp
 
 buildPatternScope :: Pattern -> S.Set String
 buildPatternScope (Solved _ _ pat) = case pat of
-  PVar name -> S.singleton name
-  PAny -> S.empty
-  PCtor _ pats -> foldr S.union S.empty $ buildPatternScope <$> pats
-  PNum _ -> S.empty
-  PStr _ -> S.empty
-  PBool _ -> S.empty
-  PCon _ -> S.empty
+  PVar name             -> S.singleton name
+  PCtor _ pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PRecord fieldPatterns -> foldr S.union S.empty $ buildPatternScope <$> M.elems fieldPatterns
-  PList pats -> foldr S.union S.empty $ buildPatternScope <$> pats
-  PTuple pats -> foldr S.union S.empty $ buildPatternScope <$> pats
-  PSpread pat -> buildPatternScope pat
+  PList pats            -> foldr S.union S.empty $ buildPatternScope <$> pats
+  PTuple pats           -> foldr S.union S.empty $ buildPatternScope <$> pats
+  PSpread pat           -> buildPatternScope pat
+  _                     -> S.empty
 

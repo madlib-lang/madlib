@@ -96,6 +96,7 @@ import           Text.Show.Pretty (ppShow)
 %nonassoc '(' ')' 'tuple>' '=>' '::' where is 'ret' '{' '}' '[' ']'
 %right '!'
 %nonassoc HIGHEST
+%left NEG
 %%
 
 ast :: { Src.AST }
@@ -468,9 +469,14 @@ operation :: { Src.Exp }
                          $1 False))) 
                       $3 True)
                  }
+  | '-' exp %prec NEG { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App
+                (Src.Source emptyInfos (tokenToArea $1) (Src.Var "unary-minus"))
+                $2 True
+                )
+            }
   | exp '-' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                       ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
-                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "-")) 
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "-"))
                          $1 False))) 
                       $3 True)
                  }
