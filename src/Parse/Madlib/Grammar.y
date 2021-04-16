@@ -108,6 +108,7 @@ ast :: { Src.AST }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
   | 'ret' ast        %shift { $2 }
+  | 'export' name ast    %shift { $3 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.NameExport $ strV $2) : Src.aexps $3 } }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.TypedExp (Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }

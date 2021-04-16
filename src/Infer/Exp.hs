@@ -60,6 +60,7 @@ infer env lexp = do
     Can.ListConstructor  _ -> inferListConstructor env' lexp
     Can.TupleConstructor _ -> inferTupleConstructor env' lexp
     Can.Export           _ -> inferExport env' lexp
+    Can.NameExport name    -> inferNameExport env' lexp
     Can.If{}               -> inferIf env' lexp
     Can.JSExp c            -> do
       t <- newTVar Star
@@ -124,6 +125,18 @@ enhanceVarError :: Env -> Can.Exp -> Area -> InferError -> Infer Scheme
 enhanceVarError env exp area (InferError e _) =
   throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env))
 
+
+
+-- INFER NAME EXPORT
+inferNameExport :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
+  sc         <- catchError (lookupVar env name) (enhanceVarError env exp area)
+  (ps :=> t) <- instantiate sc
+
+  let e = Slv.Solved t area $ Slv.NameExport name
+  -- e' <- insertVarPlaceholders env e ps
+
+  return (M.empty, ps, t, e)
 
 
 

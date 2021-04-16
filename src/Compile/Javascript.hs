@@ -313,9 +313,11 @@ instance Compilable Exp where
                   <> ")"
                 else (if needsModifier then "let " else "") <> name <> " = " <> content'
 
-        TypedExp exp _ -> compile env config exp
+        TypedExp exp _  -> compile env config exp
 
-        Export ass     -> "export " <> compile env config ass
+        Export ass      -> "export " <> compile env config ass
+
+        NameExport name -> "export { " <> name <> " }"
 
         Record fields  -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where

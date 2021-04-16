@@ -117,6 +117,8 @@ extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
 
     Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
 
+    Slv.NameExport n -> (n, e')
+
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
 findASTM table path = case M.lookup path table of

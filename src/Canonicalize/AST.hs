@@ -18,6 +18,7 @@ import           Data.List
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
+import           Explain.Location
 
 
 canonicalizeImportedAST :: Target -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env)
@@ -43,7 +44,8 @@ fromExportToImport imp exports = case imp of
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
 extractExportsFromAST env ast =
-  let tds = filter Can.isTypeDeclExported $ Can.atypedecls ast in M.fromList <$> mapM (extractExport env) tds
+  let tds = filter Can.isTypeDeclExported $ Can.atypedecls ast
+  in  M.fromList <$> mapM (extractExport env) tds
 
 extractExport :: Env -> Can.TypeDecl -> CanonicalM (String, Type)
 extractExport env typeDecl = do
@@ -73,6 +75,8 @@ canonicalizeAST target env table astPath = do
   (table, env') <- processImports target table $ Src.aimports ast
   let env'' = env' { envCurrentPath = astPath }
 
+  foldM (verifyExport env'') [] (Src.aexps ast)
+
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
   imports               <- mapM (canonicalize env''' target) $ Src.aimports ast
   exps                  <- mapM (canonicalize env''' target) $ Src.aexps ast
@@ -88,6 +92,22 @@ canonicalizeAST target env table astPath = do
                                  }
 
   return (M.insert astPath canonicalizedAST table, env'''')
+
+
+performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]
+performExportCheck env area exportedNames name = do
+  if name `elem` exportedNames then
+    throwError $ InferError (NameAlreadyExported name) (Context (envCurrentPath env) area [])
+  else
+    return $ name : exportedNames
+
+verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]
+verifyExport env exportedNames (Src.Source _ area exp) = case exp of
+  Src.NameExport name -> performExportCheck env area exportedNames name
+
+  Src.Export (Src.Source _ _ (Src.Assignment name _)) -> performExportCheck env area exportedNames name
+
+  _ -> return exportedNames
 
 
 findASTM :: Can.Table -> FilePath -> CanonicalM Can.AST

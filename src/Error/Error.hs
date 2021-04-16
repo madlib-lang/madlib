@@ -55,6 +55,7 @@ data TypeError
   | GrammarError FilePath String
   | NameAlreadyDefined String
   | SignatureTooGeneral Scheme Scheme
+  | NameAlreadyExported String
   | ContextTooWeak
   | FatalError
   | ASTHasNoPath
