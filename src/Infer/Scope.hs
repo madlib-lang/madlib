@@ -12,6 +12,8 @@ import Control.Monad
 import Error.Error
 import Control.Monad.Except
 import Control.Exception
+import Text.Show.Pretty
+import Debug.Trace
 
 
 type InScope = S.Set String
@@ -35,7 +37,7 @@ checkExps _ _ _ [] = return ()
 checkExps env globalScope dependencies (e:es) = do
   let globalScope'   = extendScope globalScope e
 
-  collectedAccesses <- collect env globalScope' S.empty e
+  collectedAccesses <- collect env globalScope S.empty e
 
   catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
 
@@ -52,13 +54,13 @@ verifyScope env globalAccesses globalScope dependencies exp =
 
 verifyScope' :: Env -> InScope -> Dependencies -> () -> (String, Exp) -> Infer ()
 verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area _) =
-  when (nameToVerify `S.member` globalScope) $ do
-  case M.lookup nameToVerify dependencies of
-    Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
+  if nameToVerify `S.member` globalScope then
+    case M.lookup nameToVerify dependencies of
+      Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
 
-    Nothing    -> return ()
-
-  return ()
+      Nothing    -> return () --throwError $ InferError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
+  else
+    throwError $ InferError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
 removeAccessFromDeps access = M.map (S.filter (/= access))
@@ -122,7 +124,7 @@ collect env globalScope localScope solvedExp@(Solved _ area e) = case e of
       (name `S.member` globalScope && not (S.null localScope))
       (pushError $ InferError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
-    collect env globalScope (S.insert name localScope) exp
+    collect env globalScope localScope exp
 
   TypedExp exp _ -> collect env globalScope localScope exp
 
