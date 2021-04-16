@@ -699,6 +699,7 @@ inferExps env (e : es) = do
 
 
 inferExp :: Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
+inferExp env (Can.Canonical _ (Can.TypeExport _)) = return (Nothing, env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e

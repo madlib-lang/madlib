@@ -43,9 +43,19 @@ fromExportToImport imp exports = case imp of
   Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((name ++ ".") ++) exports
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
-extractExportsFromAST env ast =
-  let tds = filter Can.isTypeDeclExported $ Can.atypedecls ast
-  in  M.fromList <$> mapM (extractExport env) tds
+extractExportsFromAST env ast = do
+  let tds           = filter Can.isTypeDeclExported $ Can.atypedecls ast
+      typeExports   = filter Can.isTypeExport $ Can.aexps ast
+  exportedTds   <- mapM (extractExport env) tds
+  typeExportTds <- mapM (extractTypeExport env) typeExports
+
+  return $ M.fromList (exportedTds ++ typeExportTds)
+
+extractTypeExport :: Env -> Can.Exp -> CanonicalM (String, Type)
+extractTypeExport env typeExport = do
+  let name = Can.getTypeExportName typeExport
+  t <- lookupADT env name
+  return (name, t)
 
 extractExport :: Env -> Can.TypeDecl -> CanonicalM (String, Type)
 extractExport env typeDecl = do

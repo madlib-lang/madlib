@@ -124,6 +124,7 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Export Exp
           | NameExport Name
+          | TypeExport Name
           | TypedExp Exp Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
@@ -150,6 +151,15 @@ getTypeDeclName :: TypeDecl -> String
 getTypeDeclName td = case td of
   Canonical _ ADT { adtname }     -> adtname
   Canonical _ Alias { aliasname } -> aliasname
+
+isTypeExport :: Exp -> Bool
+isTypeExport exp = case exp of
+  Canonical _ (TypeExport _) -> True
+  _                          -> False
+
+getTypeExportName :: Exp -> String
+getTypeExportName exp = case exp of
+  Canonical _ (TypeExport name) -> name
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
