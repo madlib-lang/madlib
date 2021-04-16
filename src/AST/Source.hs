@@ -116,6 +116,7 @@ data Exp_ = LNum String
           | If Exp Exp Exp
           | Where Exp [Is]
           | Export Exp
+          | NameExport Name
           | TypedExp Exp Typing
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]

@@ -62,6 +62,8 @@ instance Canonicalizable Src.Exp Can.Exp where
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Export exp')
 
+    Src.NameExport name -> return $ Can.Canonical area (Can.NameExport name)
+
     Src.Var name            -> return $ Can.Canonical area (Can.Var name)
 
     Src.TypedExp exp typing -> do

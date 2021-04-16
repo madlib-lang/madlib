@@ -177,6 +177,10 @@ formatTypeError json err = case err of
       <> "Also note that the variable might be defined further down. All top level assignments share the scope and using a local name\n"
       <> "that is defined in the global scope of a module is not allowed."
 
+  NameAlreadyExported name ->
+    "Export already defined. You are trying to export the name '" <> name <> "' but it\n"
+    <> "appears that you have already exported it."
+
   _ -> ppShow err
 
 

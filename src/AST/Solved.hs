@@ -121,6 +121,7 @@ data Exp_ = LNum String
           | Abs (Solved Name) [Exp]
           | Assignment Name Exp
           | Export Exp
+          | NameExport Name
           | Var Name
           | TypedExp Exp Ty.Scheme
           | ListConstructor [ListItem]
@@ -160,6 +161,8 @@ isExport a = case a of
   (Solved _ _ (Export _)) -> True
 
   (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+
+  (Solved _ _ (NameExport _)) -> True
 
   _ -> False
 
