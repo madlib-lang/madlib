@@ -4,22 +4,22 @@ export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())
 
 
 instance Functor (Wish e) {
-  map = (f, m) => Wish((bad, good) =>
+  map = (f, m) => Wish((badCB, goodCB) =>
     where(m)
-      is Wish run: run(bad, (x) => (good(f(x))))
+      is Wish run: run(badCB, (x) => (goodCB(f(x))))
   )
 }
 
 instance Applicative (Wish e) {
-  pure = (a) => Wish((bad, good) => good(a))
+  pure = (a) => Wish((_, goodCB) => goodCB(a))
 
-  ap = (mf, m) => Wish((bad, good) => where(<mf, m>)
+  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>)
     is <Wish runMF, Wish runM>:
       runM(
-        bad,
+        badCB,
         (x) => runMF(
-          bad,
-          (f) => good(f(x))
+          badCB,
+          (f) => goodCB(f(x))
         )
       )
   )
@@ -28,12 +28,12 @@ instance Applicative (Wish e) {
 instance Monad (Wish e) {
   of = pure
 
-  chain = (f, m) => Wish((bad, good) =>
+  chain = (f, m) => Wish((badCB, goodCB) =>
     where(m) 
       is Wish run:
-        run(bad, (x) =>
+        run(badCB, (x) =>
           where(f(x))
-            is Wish r: r(bad, good)
+            is Wish r: r(badCB, goodCB)
         )
   )
 }
@@ -41,9 +41,9 @@ instance Monad (Wish e) {
 
 mapRej :: (e -> f) -> Wish e a -> Wish f a
 export mapRej = (f, m) => (
-  Wish((bad, good) => (
+  Wish((badCB, goodCB) => (
     where(m) {
-      is Wish run: run((x) => (bad(f(x))), good)
+      is Wish run: run((x) => (badCB(f(x))), goodCB)
     }
   ))
 )
@@ -51,24 +51,24 @@ export mapRej = (f, m) => (
 
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
 export chainRej = (f, m) => (
-  Wish((bad, good) => (
+  Wish((badCB, goodCB) => (
     where(m) {
       is Wish run: run((x) => (
         where(f(x)) {
-          is Wish r: r(bad, good)
+          is Wish r: r(badCB, goodCB)
         }
-      ), good)
+      ), goodCB)
     }
   ))
 )
 
 
 good :: a -> Wish e a
-export good = (a) => Wish((bad, good) => good(a))
+export good = (a) => Wish((_, goodCB) => goodCB(a))
 
 bad :: e -> Wish e a
 export bad = (e) => (
-  Wish((bad, good) => (bad(e)))
+  Wish((badCB, _) => (badCB(e)))
 )
 
 
@@ -76,29 +76,29 @@ getWishFn = where is Wish run: run
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => (
-  Wish((bad, good) => (#- {
+  Wish((badCB, goodCB) => (#- {
     const l = wishes.length
     let ko = false;
     let ok = 0;
     const out = new Array(l);
-    const next = j => (j === l && good(out))
+    const next = j => (j === l && goodCB(out))
     const fork = (w, j) => (getWishFn(w)(
-      e => ko || (bad(e), ko = true),
+      e => ko || (badCB(e), ko = true),
       x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
 
     if (l === 0) {
-      good([])
+      goodCB([])
     }
   } -#))
 )
 
 
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
-export fulfill = (bad, good, m) => {
+export fulfill = (badCB, goodCB, m) => {
   where(m) {
-    is Wish run: #- setTimeout(() => run(bad, good), 0); -#
+    is Wish run: #- setTimeout(() => run(badCB, goodCB), 0); -#
   }
 
   return ()
@@ -106,6 +106,6 @@ export fulfill = (bad, good, m) => {
 
 
 after :: Number -> a -> Wish e a
-export after = (time, a) => Wish((bad, good) => #- {
-  setTimeout(() => good(a), time);
+export after = (time, a) => Wish((_, goodCB) => #- {
+  setTimeout(() => goodCB(a), time);
 } -#)

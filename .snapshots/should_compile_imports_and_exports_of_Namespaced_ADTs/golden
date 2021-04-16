@@ -1,8 +1,8 @@
 // file: ./ADTs
-export const Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
-export const Nothing = ({ __constructor: "Nothing", __args: [  ] });
-const NotExportedADT = __curry__((a) => ({ __constructor: "NotExportedADT", __args: [ a ] }));
-const StillNotExported = ({ __constructor: "StillNotExported", __args: [  ] });
+export let Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
+export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
+let NotExportedADT = __curry__((a) => ({ __constructor: "NotExportedADT", __args: [ a ] }));
+let StillNotExported = ({ __constructor: "StillNotExported", __args: [  ] });
 export default { Just, Nothing };
 // file: ./Module
 import {} from "./__internals__.mjs"
@@ -10,10 +10,10 @@ import ADTs from "./ADTs.mjs";
 
 ADTs.Just(3);
 ADTs.Nothing;
-export const fn = __curry__((m) => m);
-export const fn2 = __curry__((m) => ((__x__) => {
+export let fn = __curry__((m) => m);
+export let fn2 = __curry__((m) => ((__x__) => {
   if (__x__.__constructor === "Just" && __x__.__args[0].__constructor === "Just" && true) {
-    const n = __x__.__args[0].__args[0];
+    let n = __x__.__args[0].__args[0];
     return n;
   }
   else {

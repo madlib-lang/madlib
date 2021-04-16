@@ -188,8 +188,8 @@ Right
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "d3" Star)))
-                             (TVar (TV "e4" Star)))
+                                (TCon (TC "Number" Star) "prelude"))
+                             (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 133 10 3) (Loc 179 10 49))
                           (Assignment
                              "show"
@@ -461,7 +461,7 @@ Right
                                                                                         Star)
                                                                                      "prelude")))
                                                                             (Area
-                                                                               (Loc 255 14 30)
+                                                                               (Loc 256 14 31)
                                                                                (Loc 258 14 33))
                                                                             (Var "++"))
                                                                          (Solved
@@ -544,7 +544,7 @@ Right
                                                                                               Star)
                                                                                            "prelude")))
                                                                                   (Area
-                                                                                     (Loc 266 14 41)
+                                                                                     (Loc 267 14 42)
                                                                                      (Loc
                                                                                         269 14 44))
                                                                                   (Var "++"))
@@ -724,9 +724,9 @@ Right
                                                                                                  "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              274
+                                                                                              275
                                                                                               14
-                                                                                              49)
+                                                                                              50)
                                                                                            (Loc
                                                                                               277
                                                                                               14
@@ -833,9 +833,9 @@ Right
                                                                                                        "prelude")))
                                                                                               (Area
                                                                                                  (Loc
-                                                                                                    285
+                                                                                                    286
                                                                                                     14
-                                                                                                    60)
+                                                                                                    61)
                                                                                                  (Loc
                                                                                                     288
                                                                                                     14

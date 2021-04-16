@@ -100,16 +100,17 @@ buildRow = (name, lines, functions) => {
 }
 
 allRow :: Lcov.LcovInfo -> IO.Row
-allRow = (lcov) =>
+allRow = (lcov) => pipe(
   L.reduceR(
     (total, section) =>
         where(section)
           is { lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
             { lf: total.lf + found, lh: total.lh + hit, fnf: total.fnf + ffound, fnh: total.fnh + fhit }
     , { lf: 0, lh: 0, fnf: 0, fnh: 0 }
-    , lcov
-  ) |> (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>
-    |> (total) => buildRow("All", T.fst(total), T.snd(total))
+  ),
+  (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>,
+  (total) => buildRow("All", T.fst(total), T.snd(total))
+)(lcov)
 
 computePercents :: Number -> Number -> Number
 computePercents = (hit, found) => found == 0

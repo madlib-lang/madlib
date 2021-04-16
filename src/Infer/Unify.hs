@@ -107,7 +107,7 @@ instance Match t => Match [t] where
 
 
 contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnify env exp t1 t2 = catchError (unify t1 t2) (addContext env exp)
+contextualUnify env exp t1 t2 = catchError (unify t1 t2) (const $ addContext env exp (InferError (UnificationError t2 t1) NoContext))
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution

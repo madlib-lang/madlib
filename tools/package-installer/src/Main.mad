@@ -77,7 +77,7 @@ processArchive = (url) => pipe(
 
 installNodeModules :: String -> String -> Wish S.CommandError String
 installNodeModules = (url, pkgName) => pipe(
-  (url) => `${MADLIB_MODULES_PATH}${url}/`,
+  (u) => `${MADLIB_MODULES_PATH}${u}/`,
   (path) => exists(`${path}package.json`) |> andDo(of(path)),
   map(mappend("npm install ")),
   chain(S.exec),

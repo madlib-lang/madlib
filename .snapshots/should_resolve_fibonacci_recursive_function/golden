@@ -93,14 +93,14 @@ Right
                                                        "prelude")
                                                     (TCon (TC "Number" Star) "prelude"))
                                                  (TCon (TC "Number" Star) "prelude")))
-                                           (Area (Loc 48 1 49) (Loc 50 1 51))
+                                           (Area (Loc 49 1 50) (Loc 50 1 51))
                                            (Var "+"))
                                         (Solved
                                            (TCon (TC "Number" Star) "prelude")
                                            (Area (Loc 38 1 39) (Loc 48 1 49))
                                            (App
                                               (Solved
-                                                 (TVar (TV "b1" Star))
+                                                 (TVar (TV "j9" Star))
                                                  (Area (Loc 38 1 39) (Loc 41 1 42))
                                                  (Var "fib"))
                                               (Solved
@@ -164,13 +164,7 @@ Right
                                      (Area (Loc 51 1 52) (Loc 61 1 62))
                                      (App
                                         (Solved
-                                           (TApp
-                                              (TApp
-                                                 (TCon
-                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                    "prelude")
-                                                 (TCon (TC "Number" Star) "prelude"))
-                                              (TCon (TC "Number" Star) "prelude"))
+                                           (TVar (TV "n13" Star))
                                            (Area (Loc 51 1 52) (Loc 54 1 55))
                                            (Var "fib"))
                                         (Solved

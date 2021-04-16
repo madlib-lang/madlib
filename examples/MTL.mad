@@ -22,11 +22,11 @@ sumAndLog = pipe(
 )
 
 runStack :: Number -> Stack a -> <<a, Number>, List String>
-runStack = (x, m) => pipe(
+runStack = (x) => pipe(
   (m) => runStateT(m, x),
   runWriterT,
   runIdentity
-)(m)
+)
 
 of(3)
   |> chain((x) => of(29 * x))

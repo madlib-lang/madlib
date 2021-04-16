@@ -79,8 +79,8 @@ Right
                           (TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "b1" Star)))
-                             (TVar (TV "c2" Star)))
+                                (TCon (TC "String" Star) "prelude"))
+                             (TCon (TC "Number" Star) "prelude"))
                           (Area (Loc 69 6 3) (Loc 108 6 42))
                           (Assignment
                              "read"

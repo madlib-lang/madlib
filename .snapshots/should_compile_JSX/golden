@@ -1,36 +1,379 @@
-// file: path
-export const Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }));
-const Element = ({ __constructor: "Element", __args: [  ] });
-const Event = ({ __constructor: "Event", __args: [  ] });
-const AttributeId = __curry__((a) => ({ __constructor: "AttributeId", __args: [ a ] }));
-const AttributeClass = __curry__((a) => ({ __constructor: "AttributeClass", __args: [ a ] }));
-const OnClick = __curry__((a) => ({ __constructor: "OnClick", __args: [ a ] }));
-const OnMouseOver = __curry__((a) => ({ __constructor: "OnMouseOver", __args: [ a ] }));
-const OnMouseOut = __curry__((a) => ({ __constructor: "OnMouseOut", __args: [ a ] }));
-global.Show = {};
-global.Functor = {};
-Show['Number'] = {};
-Show['Number']['show'] = __curry__((x) => new Number(x).toString());
-Functor['List'] = {};
-Functor['List']['map'] = __curry__((f, xs) => xs.map((x) => f(x)));
-export const good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
-export const id = AttributeId;
-export const className = AttributeClass;
-export const onClick = OnClick;
-export const onMouseOver = OnMouseOver;
-export const onMouseOut = OnMouseOut;
-export const text = __curry__((content) => content);
-export const div = __curry__((attrs, children) => h('div', objectifyAttrs(attrs), children));
-export const span = __curry__((attrs, children) => h('span', objectifyAttrs(attrs), children));
-export const p = __curry__((attrs, children) => h('p', objectifyAttrs(attrs), children));
-export const input = __curry__((attrs, children) => h('input', objectifyAttrs(attrs), children));
-export const button = __curry__((attrs, children) => h('button', objectifyAttrs(attrs), children));
-const initialState = 0;
-const MyApp = __curry__((count) => div(([id("id"), className("class")]), ([div(([]), ([text(`Current count is ${Show.Number.show(count)}`)])), div(([]), ([button(([onClick(__curry__((state, event) => ([good(__curry__((s) => s + 1))])))]), ([text("increment")]))]))])));
-div(([]), ([text("Some text!")]));
-div(([]), ([div(([]), ([span(([]), ([]))])), div(([]), ([span(([]), ([]))]))]));
-const methods = (['1', '2', '3']);
-const children = Functor.List.map(__curry__((method) => div(([]), ([method]))), methods);
-div(([]), ([ ...((f) => (xs) => xs.map(f))(text, methods)]));
-div(([]), ([ ...children]));
-export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };
+InferError
+  (NameAlreadyDefined "children")
+  Context
+    { ctxAstPath = "path"
+    , ctxArea = Area (Loc 1277 53 22) (Loc 1285 53 30)
+    , ctxBacktrace =
+        [ BTExp
+            (Canonical
+               (Area (Loc 1269 53 14) (Loc 1337 53 82))
+               (Abs
+                  (Canonical (Area (Loc 1277 53 22) (Loc 1285 53 30)) "children")
+                  [ Canonical
+                      (Area (Loc 1290 53 35) (Loc 1337 53 82))
+                      (JSExp "h('div', objectifyAttrs(attrs), children)")
+                  ]))
+        , BTExp
+            (Canonical
+               (Area (Loc 1269 53 14) (Loc 1337 53 82))
+               (Abs
+                  (Canonical (Area (Loc 1270 53 15) (Loc 1275 53 20)) "attrs")
+                  [ Canonical
+                      (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                      (Abs
+                         (Canonical (Area (Loc 1277 53 22) (Loc 1285 53 30)) "children")
+                         [ Canonical
+                             (Area (Loc 1290 53 35) (Loc 1337 53 82))
+                             (JSExp "h('div', objectifyAttrs(attrs), children)")
+                         ])
+                  ]))
+        , BTExp
+            (Canonical
+               (Area (Loc 1263 53 8) (Loc 1337 53 82))
+               (Assignment
+                  "div"
+                  (Canonical
+                     (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                     (Abs
+                        (Canonical (Area (Loc 1270 53 15) (Loc 1275 53 20)) "attrs")
+                        [ Canonical
+                            (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                            (Abs
+                               (Canonical (Area (Loc 1277 53 22) (Loc 1285 53 30)) "children")
+                               [ Canonical
+                                   (Area (Loc 1290 53 35) (Loc 1337 53 82))
+                                   (JSExp "h('div', objectifyAttrs(attrs), children)")
+                               ])
+                        ]))))
+        , BTExp
+            (Canonical
+               (Area (Loc 1256 53 1) (Loc 1337 53 82))
+               (Export
+                  (Canonical
+                     (Area (Loc 1263 53 8) (Loc 1337 53 82))
+                     (Assignment
+                        "div"
+                        (Canonical
+                           (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                           (Abs
+                              (Canonical (Area (Loc 1270 53 15) (Loc 1275 53 20)) "attrs")
+                              [ Canonical
+                                  (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                                  (Abs
+                                     (Canonical (Area (Loc 1277 53 22) (Loc 1285 53 30)) "children")
+                                     [ Canonical
+                                         (Area (Loc 1290 53 35) (Loc 1337 53 82))
+                                         (JSExp "h('div', objectifyAttrs(attrs), children)")
+                                     ])
+                              ]))))))
+        , BTExp
+            (Canonical
+               (Area (Loc 1207 52 1) (Loc 1337 53 82))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 1256 53 1) (Loc 1337 53 82))
+                     (Export
+                        (Canonical
+                           (Area (Loc 1263 53 8) (Loc 1337 53 82))
+                           (Assignment
+                              "div"
+                              (Canonical
+                                 (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                                 (Abs
+                                    (Canonical (Area (Loc 1270 53 15) (Loc 1275 53 20)) "attrs")
+                                    [ Canonical
+                                        (Area (Loc 1269 53 14) (Loc 1337 53 82))
+                                        (Abs
+                                           (Canonical
+                                              (Area (Loc 1277 53 22) (Loc 1285 53 30)) "children")
+                                           [ Canonical
+                                               (Area (Loc 1290 53 35) (Loc 1337 53 82))
+                                               (JSExp "h('div', objectifyAttrs(attrs), children)")
+                                           ])
+                                    ]))))))
+                  (Forall
+                     []
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TCon (TC "Attribute" Star) "path")))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "Element" Star) "path")))
+                             (TCon (TC "Element" Star) "path"))))))
+        , BTExp
+            (Canonical
+               (Area (Loc 1139 49 1) (Loc 1205 50 41))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 1165 50 1) (Loc 1205 50 41))
+                     (Export
+                        (Canonical
+                           (Area (Loc 1172 50 8) (Loc 1205 50 41))
+                           (Assignment
+                              "text"
+                              (Canonical
+                                 (Area (Loc 1179 50 15) (Loc 1205 50 41))
+                                 (Abs
+                                    (Canonical (Area (Loc 1180 50 16) (Loc 1187 50 23)) "content")
+                                    [ Canonical
+                                        (Area (Loc 1192 50 28) (Loc 1205 50 41)) (JSExp "content")
+                                    ]))))))
+                  (Forall
+                     []
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "String" Star) "prelude"))
+                          (TCon (TC "Element" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 1034 46 1) (Loc 1137 47 31))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 1107 47 1) (Loc 1137 47 31))
+                     (Export
+                        (Canonical
+                           (Area (Loc 1114 47 8) (Loc 1137 47 31))
+                           (Assignment
+                              "onMouseOut"
+                              (Canonical
+                                 (Area (Loc 1127 47 21) (Loc 1137 47 31)) (Var "OnMouseOut"))))))
+                  (Forall
+                     [ Star ]
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Event" Star) "path"))
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
+                                            (TApp
+                                               (TApp
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
+                                                  (TGen 0))
+                                               (TGen 0)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TGen 0))
+                                            (TGen 0)))))))
+                          (TCon (TC "Attribute" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 926 43 1) (Loc 1032 44 33))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 1000 44 1) (Loc 1032 44 33))
+                     (Export
+                        (Canonical
+                           (Area (Loc 1007 44 8) (Loc 1032 44 33))
+                           (Assignment
+                              "onMouseOver"
+                              (Canonical
+                                 (Area (Loc 1021 44 22) (Loc 1032 44 33)) (Var "OnMouseOver"))))))
+                  (Forall
+                     [ Star ]
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Event" Star) "path"))
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
+                                            (TApp
+                                               (TApp
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
+                                                  (TGen 0))
+                                               (TGen 0)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TGen 0))
+                                            (TGen 0)))))))
+                          (TCon (TC "Attribute" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 830 40 1) (Loc 924 41 25))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 900 41 1) (Loc 924 41 25))
+                     (Export
+                        (Canonical
+                           (Area (Loc 907 41 8) (Loc 924 41 25))
+                           (Assignment
+                              "onClick"
+                              (Canonical
+                                 (Area (Loc 917 41 18) (Loc 924 41 25)) (Var "OnClick"))))))
+                  (Forall
+                     [ Star ]
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Event" Star) "path"))
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path")
+                                            (TApp
+                                               (TApp
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
+                                                  (TGen 0))
+                                               (TGen 0)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TGen 0))
+                                            (TGen 0)))))))
+                          (TCon (TC "Attribute" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 762 37 1) (Loc 828 38 34))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 795 38 1) (Loc 828 38 34))
+                     (Export
+                        (Canonical
+                           (Area (Loc 802 38 8) (Loc 828 38 34))
+                           (Assignment
+                              "className"
+                              (Canonical
+                                 (Area (Loc 814 38 20) (Loc 828 38 34)) (Var "AttributeClass"))))))
+                  (Forall
+                     []
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "String" Star) "prelude"))
+                          (TCon (TC "Attribute" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 711 34 1) (Loc 760 35 24))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 737 35 1) (Loc 760 35 24))
+                     (Export
+                        (Canonical
+                           (Area (Loc 744 35 8) (Loc 760 35 24))
+                           (Assignment
+                              "id"
+                              (Canonical
+                                 (Area (Loc 749 35 13) (Loc 760 35 24)) (Var "AttributeId"))))))
+                  (Forall
+                     []
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "String" Star) "prelude"))
+                          (TCon (TC "Attribute" Star) "path")))))
+        , BTExp
+            (Canonical
+               (Area (Loc 305 18 1) (Loc 378 19 52))
+               (TypedExp
+                  (Canonical
+                     (Area (Loc 327 19 1) (Loc 378 19 52))
+                     (Export
+                        (Canonical
+                           (Area (Loc 334 19 8) (Loc 378 19 52))
+                           (Assignment
+                              "good"
+                              (Canonical
+                                 (Area (Loc 341 19 15) (Loc 378 19 52))
+                                 (Abs
+                                    (Canonical (Area (Loc 342 19 16) (Loc 343 19 17)) "a")
+                                    [ Canonical
+                                        (Area (Loc 348 19 22) (Loc 378 19 52))
+                                        (App
+                                           (Canonical
+                                              (Area (Loc 348 19 22) (Loc 352 19 26)) (Var "Wish"))
+                                           (Canonical
+                                              (Area (Loc 353 19 27) (Loc 377 19 51))
+                                              (Abs
+                                                 (Canonical
+                                                    (Area (Loc 354 19 28) (Loc 355 19 29)) "_")
+                                                 [ Canonical
+                                                     (Area (Loc 353 19 27) (Loc 377 19 51))
+                                                     (Abs
+                                                        (Canonical
+                                                           (Area (Loc 357 19 31) (Loc 363 19 37))
+                                                           "goodCB")
+                                                        [ Canonical
+                                                            (Area (Loc 368 19 42) (Loc 377 19 51))
+                                                            (App
+                                                               (Canonical
+                                                                  (Area
+                                                                     (Loc 368 19 42)
+                                                                     (Loc 374 19 48))
+                                                                  (Var "goodCB"))
+                                                               (Canonical
+                                                                  (Area
+                                                                     (Loc 375 19 49)
+                                                                     (Loc 376 19 50))
+                                                                  (Var "a"))
+                                                               True)
+                                                        ])
+                                                 ]))
+                                           True)
+                                    ]))))))
+                  (Forall
+                     [ Star , Star ]
+                     ([] :=>
+                        TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                          (TApp
+                             (TApp
+                                (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "path") (TGen 1))
+                             (TGen 0))))))
+        ]
+    }

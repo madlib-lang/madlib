@@ -1,18 +1,28 @@
 Left
   (InferError
      (UnificationError
-        (TRecord
-           (fromList
-              [ ( "todos"
-                , TApp
-                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                    (TVar (TV "h59" Star))
-                )
-              ])
-           True)
         (TApp
-           (TCon (TC "List" (Kfun Star Star)) "prelude")
-           (TVar (TV "f57" Star))))
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TRecord
+                 (fromList
+                    [ ( "todos"
+                      , TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "g58" Star))
+                      )
+                    ])
+                 True))
+           (TVar (TV "b53" Star)))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TApp
+                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                 (TVar (TV "e56" Star))))
+           (TApp
+              (TCon (TC "List" (Kfun Star Star)) "prelude")
+              (TVar (TV "e56" Star)))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 902 40 12) (Loc 927 40 37)
@@ -5485,7 +5495,7 @@ Left
                                                         (Area (Loc 604 26 10) (Loc 609 26 15))
                                                         (App
                                                            (Canonical
-                                                              (Area (Loc 605 26 11) (Loc 607 26 13))
+                                                              (Area (Loc 606 26 12) (Loc 607 26 13))
                                                               (Var "+"))
                                                            (Canonical
                                                               (Area (Loc 604 26 10) (Loc 605 26 11))

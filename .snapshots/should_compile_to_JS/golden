@@ -1,20 +1,20 @@
 // file: path
-const Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
-const Nothing = ({ __constructor: "Nothing", __args: [  ] });
-export const fn = __curry__((b, c) => b + c);
-const inc = __curry__((x) => x + 1);
-const dec = __curry__((x) => x - 1);
-const double = __curry__((x) => x * 2);
-const half = __curry__((x) => x / 2);
+let Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
+let Nothing = ({ __constructor: "Nothing", __args: [  ] });
+export let fn = __curry__((b, c) => b + c);
+let inc = __curry__((x) => x + 1);
+let dec = __curry__((x) => x - 1);
+let double = __curry__((x) => x * 2);
+let half = __curry__((x) => x / 2);
 double(half(3));
 __eq__(3, 5);
-const response = ({ users: ([]) });
-const users = response.users;
-const carResponse = ({ cars: ([]) });
-const allResponses = ({ ...response, ...carResponse });
+let response = ({ users: ([]) });
+let users = response.users;
+let carResponse = ({ cars: ([]) });
+let allResponses = ({ ...response, ...carResponse });
 ((__x__) => {
   if (true && true) {
-    const { users: a, cars: cs } = __x__;
+    let { users: a, cars: cs } = __x__;
     return cs;
   }
   else if (true) {
@@ -79,11 +79,11 @@ const allResponses = ({ ...response, ...carResponse });
     throw 'non exhaustive patterns!';
   }
 })(true);
-const log = __curry__((a) => { console.log(a); return a; });
+let log = __curry__((a) => { console.log(a); return a; });
 (true ? "OK" : "NOT OK");
-const mapMaybe = __curry__((f, m) => ((__x__) => {
+let mapMaybe = __curry__((f, m) => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
-    const a = __x__.__args[0];
+    let a = __x__.__args[0];
     return Just(f(a));
   }
   else if (__x__.__constructor === "Nothing") {
@@ -94,10 +94,10 @@ const mapMaybe = __curry__((f, m) => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m));
-const might = Just(3);
-const x = ((__x__) => {
+let might = Just(3);
+let q = ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
-    const a = __x__.__args[0];
+    let a = __x__.__args[0];
     return a;
   }
   else if (__x__.__constructor === "Nothing") {
@@ -121,27 +121,27 @@ false || true && false;
 !(true);
 !(false) && !(true);
 !(false) || !(true);
-const arr = ([1, 2, 3]);
-const all = ([ ...arr, 4, 5, 6]);
+let arr = ([1, 2, 3]);
+let all = ([ ...arr, 4, 5, 6]);
 ((__x__) => {
   if (__x__.length === 3 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3) {
-    const [,,] = __x__;
+    let [,,] = __x__;
     return 1;
   }
   else if (__x__.length === 3 && __x__[0] === 1 && __x__[1] === 2 && true) {
-    const [,,n] = __x__;
+    let [,,n] = __x__;
     return n;
   }
   else if (__x__.length === 2 && true && __x__[1] === 3) {
-    const [n,] = __x__;
+    let [n,] = __x__;
     return n;
   }
   else if (__x__.length === 3 && true && true && true) {
-    const [x1,y1,z1] = __x__;
+    let [x1,y1,z1] = __x__;
     return x1 + y1 + z1;
   }
   else if (__x__.length === 0) {
-    const [] = __x__;
+    let [] = __x__;
     return 0;
   }
   else {
@@ -149,21 +149,21 @@ const all = ([ ...arr, 4, 5, 6]);
     throw 'non exhaustive patterns!';
   }
 })(([1, 2, 3, 5, 8]));
-export const map = __curry__((f, xs) => ((__x__) => {
+export let map = __curry__((f, xs) => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
-    const [a,b,c] = __x__;
+    let [a,b,c] = __x__;
     return ([f(a),  ...map(f, ([b, c]))]);
   }
   else if (__x__.length === 2 && true && true) {
-    const [a,b] = __x__;
+    let [a,b] = __x__;
     return ([f(a),  ...map(f, ([b]))]);
   }
   else if (__x__.length === 1 && true) {
-    const [a] = __x__;
+    let [a] = __x__;
     return ([f(a)]);
   }
   else if (__x__.length === 0) {
-    const [] = __x__;
+    let [] = __x__;
     return ([]);
   }
   else {
@@ -179,7 +179,7 @@ __curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) =
     return 48;
   }
   else if (true) {
-    const n = __x__;
+    let n = __x__;
     return __curry__((x) => x + 1)(1);
   }
   else {
@@ -192,7 +192,7 @@ __curry__((x) => x + 1)(((__x__) => {
     return 48;
   }
   else if (true) {
-    const n = __x__;
+    let n = __x__;
     return 1;
   }
   else {
@@ -202,11 +202,11 @@ __curry__((x) => x + 1)(((__x__) => {
 })("3"));
 __curry__((x) => x)(((__x__) => {
   if (__x__.length >= 2 && __x__[0] === 2 && true) {
-    const [,...rest] = __x__;
+    let [,...rest] = __x__;
     return rest;
   }
   else if (__x__.length >= 4 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3 && true) {
-    const [,,,...rest] = __x__;
+    let [,,,...rest] = __x__;
     return rest;
   }
   else {
@@ -216,7 +216,7 @@ __curry__((x) => x)(((__x__) => {
 })(([1, 2, 3, 4, 5])));
 ((__x__) => {
   if (__x__.name === "Bob") {
-    const {  } = __x__;
+    let {  } = __x__;
     return "Bob";
   }
   else {
@@ -224,9 +224,9 @@ __curry__((x) => x)(((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(({ x: 4, name: "John" }));
-const addXAndY = __curry__((r) => ((__x__) => {
+let addXAndY = __curry__((r) => ((__x__) => {
   if (true && true) {
-    const { y: y, x: x1 } = __x__;
+    let { y: y, x: x1 } = __x__;
     return x1 + y;
   }
   else {
@@ -234,12 +234,12 @@ const addXAndY = __curry__((r) => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(r));
-const fnTCHOU = __curry__((x) => x.a.b.c.d.e);
-const tup = ([1, 2, 3]);
+let fnTCHOU = __curry__((x) => x.a.b.c.d.e);
+let tup = ([1, 2, 3]);
 __eq__(([1, 2, 3]), ([1, 2, 3]));
 ((__x__) => {
   if (__x__.length === 2 && true && true) {
-    const [a,b] = __x__;
+    let [a,b] = __x__;
     return a + b;
   }
   else {
@@ -247,10 +247,10 @@ __eq__(([1, 2, 3]), ([1, 2, 3]));
     throw 'non exhaustive patterns!';
   }
 })(([1, 2]));
-const fn2 = __curry__((a) => ([a, a]));
-const fst = __curry__((tuple) => ((__x__) => {
+let fn2 = __curry__((a) => ([a, a]));
+let fst = __curry__((tuple) => ((__x__) => {
   if (__x__.length === 2 && true && true) {
-    const [a,] = __x__;
+    let [a,] = __x__;
     return a;
   }
   else {
@@ -258,10 +258,10 @@ const fst = __curry__((tuple) => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(tuple));
-const snd = __curry__((tuple) => {
-    const b = ((__x__) => {
+let snd = __curry__((tuple) => {
+    let b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
-    const [,b1] = __x__;
+    let [,b1] = __x__;
     return b1;
   }
   else {
@@ -275,7 +275,7 @@ fst(([1, 2]));
 snd(([1, 2]));
 ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
-    const [{ __args: [n]},{ __args: [m]}] = __x__;
+    let [{ __args: [n]},{ __args: [m]}] = __x__;
     return n + m;
   }
   else {
