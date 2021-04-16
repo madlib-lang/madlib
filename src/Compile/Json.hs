@@ -286,6 +286,9 @@ compileExpFields depth exp = case exp of
   Slv.Export exp ->
     indent depth <> "\"nodeType\": \"Export\",\n" <> indent depth <> "\"expression\": " <> compileExp depth exp <> "\n"
 
+  Slv.NameExport name ->
+    indent depth <> "\"nodeType\": \"NameExport\",\n" <> indent depth <> "\"name\": \"" <> name <> "\"\n"
+
   Slv.Assignment name exp ->
     indent depth
       <> "\"nodeType\": \"Assignment\",\n"
