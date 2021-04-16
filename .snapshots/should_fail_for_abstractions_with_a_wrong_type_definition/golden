@@ -1,13 +1,57 @@
 Left
   (InferError
      (UnificationError
-        (TCon (TC "Number" Star) "prelude")
-        (TCon (TC "String" Star) "prelude"))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TVar (TV "b1" Star)))
+           (TApp
+              (TApp
+                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                 (TVar (TV "b1" Star)))
+              (TCon (TC "Boolean" Star) "prelude")))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TCon (TC "String" Star) "prelude"))
+           (TApp
+              (TApp
+                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                 (TCon (TC "Number" Star) "prelude"))
+              (TCon (TC "Boolean" Star) "prelude"))))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 0 1 1) (Loc 57 2 24)
+       , ctxArea = Area (Loc 39 2 6) (Loc 57 2 24)
        , ctxBacktrace =
            [ BTExp
+               (Canonical
+                  (Area (Loc 34 2 1) (Loc 57 2 24))
+                  (Assignment
+                     "fn"
+                     (Canonical
+                        (Area (Loc 39 2 6) (Loc 57 2 24))
+                        (Abs
+                           (Canonical (Area (Loc 40 2 7) (Loc 41 2 8)) "a")
+                           [ Canonical
+                               (Area (Loc 39 2 6) (Loc 57 2 24))
+                               (Abs
+                                  (Canonical (Area (Loc 43 2 10) (Loc 44 2 11)) "b")
+                                  [ Canonical
+                                      (Area (Loc 50 2 17) (Loc 56 2 23))
+                                      (App
+                                         (Canonical
+                                            (Area (Loc 50 2 17) (Loc 56 2 23))
+                                            (App
+                                               (Canonical
+                                                  (Area (Loc 52 2 19) (Loc 54 2 21)) (Var "=="))
+                                               (Canonical
+                                                  (Area (Loc 50 2 17) (Loc 51 2 18)) (Var "a"))
+                                               False))
+                                         (Canonical (Area (Loc 55 2 22) (Loc 56 2 23)) (Var "b"))
+                                         True)
+                                  ])
+                           ]))))
+           , BTExp
                (Canonical
                   (Area (Loc 0 1 1) (Loc 57 2 24))
                   (TypedExp

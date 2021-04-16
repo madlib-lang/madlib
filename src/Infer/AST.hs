@@ -160,7 +160,7 @@ solveImports'
 solveImports' previousSolved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
-  solvedImport@(allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
+  (allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
     Just x@(ast, env) -> return (previousSolved, ast, env)
     Nothing           -> case Can.findAST table modulePath of
       Right ast -> do
@@ -309,7 +309,7 @@ solveManyASTs solved table fps = case fps of
 -- -- Well, or just adapt it somehow
 runInfer :: Env -> Can.AST -> Either InferError Slv.AST
 runInfer env ast =
-  let result = runExcept (runStateT (inferAST env ast) InferState { count = 0, errors = [] })
+  let result = runExcept (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST env' ast) InferState { count = 0, errors = [] })
   in  case result of
         Left e -> Left e
 

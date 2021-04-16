@@ -58,6 +58,7 @@ tester optimized code =
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
+          Compile.Javascript.initialEnv
           (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
           (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
@@ -73,6 +74,7 @@ coverageTester code =
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
+          Compile.Javascript.initialEnv
           (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
           (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
@@ -90,7 +92,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
   in  case resolved of
         Right x ->
           concat
-            $   compile (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
+            $   compile Compile.Javascript.initialEnv (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
             .   (\a -> (evalState (optimize False a) initialOptimizationState :: Opt.AST))
             <$> M.elems x
         Left e -> ppShow e
@@ -144,7 +146,7 @@ mainCompileFixture = unlines
   , "  is Nothing: Nothing"
   , "})"
   , "might = Just(3)"
-  , "x = where(might) {"
+  , "q = where(might) {"
   , "  is Just a : a"
   , "  is Nothing: 1"
   , "}"
@@ -256,7 +258,7 @@ jsxProgram = unlines
   , ""
   , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
   , "good :: a -> Wish e a"
-  , "export good = (a) => Wish((bad, good) => good(a))"
+  , "export good = (a) => Wish((_, goodCB) => goodCB(a))"
   , "type Element = Element"
   , ""
   , "export alias Component a = a -> Element"
@@ -349,7 +351,7 @@ monadTransformersProgram = unlines
   , ""
   , "instance Monoid (List a) {"
   , "  mempty = []"
-  , "  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)//assoc"
+  , "  mappend = (xs1, xs2) => (#- xs1.concat(xs2) -#)"
   , "}"
   , ""
   , "interface Functor m {"
@@ -525,11 +527,11 @@ monadTransformersProgram = unlines
   , ")"
   , ""
   , "runStack :: Number -> Stack a -> <<a, Number>, List String>"
-  , "runStack = (x, m) => pipe("
+  , "runStack = (x) => pipe("
   , "  (m) => runStateT(m, x),"
   , "  runWriterT,"
   , "  runIdentity"
-  , ")(m)"
+  , ")"
   , ""
   , "of(3)"
   , "  |> chain((x) => of(29 * x))"

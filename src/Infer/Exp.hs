@@ -36,6 +36,7 @@ import           Infer.Placeholder
 import qualified Control.Monad                 as CM
 import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace
+import Infer.ToSolved
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer env lexp = do
@@ -125,12 +126,27 @@ enhanceVarError env exp area (InferError e _) =
 
 
 
+
 -- INFER ABSTRACTIONS
 
+-- Param white list
+allowedShadows :: [String]
+allowedShadows = ["_P_", "__x__", "_"]
+
+extendAbsEnv :: Env -> Type -> Can.Canonical Can.Name -> Infer Env
+extendAbsEnv env tv (Can.Canonical area param) =
+  if param `elem` allowedShadows then
+    return $ extendVars env (param, Forall [] ([] :=> tv))
+  else
+    catchError
+    (safeExtendVars env (param, Forall [] ([] :=> tv)))
+    (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
+
 inferAbs :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferAbs env l@(Can.Canonical _ (Can.Abs (Can.Canonical area param) body)) = do
+inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv <- newTVar Star
-  let env' = extendVars env (param, Forall [] ([] :=> tv))
+
+  env' <- extendAbsEnv env tv p
   (s, ps, t, es) <- inferBody env' body
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
@@ -689,20 +705,21 @@ recordError env e err = do
   case Can.getExportNameAndScheme e of
     (Just name, Just sc) -> do
       (_ :=> t) <- instantiate sc
-      return (Just $ Slv.Solved t (Can.getArea e) Slv.LUnit, env)
+      return (Just $ toSolved e, env)
 
     (Just name, Nothing) -> do
       tv <- newTVar Star
-      return (Just $ Slv.Solved tv (Can.getArea e) Slv.LUnit, env)
+      return (Just $ toSolved e, env)
 
-    _ -> return (Nothing, env)
+    _ -> return (Just $ toSolved e, env)
 
 
 
 upgradeContext :: Env -> Area -> Infer a -> Infer a
-upgradeContext env area a = catchError
-  a
-  (\case
-    (InferError e NoContext) -> throwError $ InferError e $ Context (envCurrentPath env) area (envBacktrace env)
-    (InferError e r        ) -> throwError $ InferError e r
-  )
+upgradeContext env area a = catchError a (throwError . upgradeContext' env area)
+
+
+upgradeContext' :: Env -> Area -> InferError -> InferError
+upgradeContext' env area err = case err of
+  (InferError e NoContext) -> InferError e $ Context (envCurrentPath env) area (envBacktrace env)
+  (InferError e r        ) -> InferError e r

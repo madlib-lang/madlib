@@ -1,5 +1,5 @@
 // file: ./ModuleA
-export const singleton = __curry__((a) => ([a]));
+export let singleton = __curry__((a) => ([a]));
 export default { singleton };
 // file: ./ModuleB
 import {} from "./__internals__.mjs"

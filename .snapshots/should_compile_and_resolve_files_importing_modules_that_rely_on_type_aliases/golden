@@ -1,12 +1,12 @@
 // file: /root/project/prelude/__internal__/Wish.mad
-export const Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }));
+export let Wish = __curry__((a) => ({ __constructor: "Wish", __args: [ a ] }));
 global.Functor = {};
 global.Applicative = {};
 global.Monad = {};
 Functor['Wish'] = {};
 Functor['Wish']['map'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const run = __x__.__args[0];
+    let run = __x__.__args[0];
     return run(bad, __curry__((x) => good(f(x))));
   }
   else {
@@ -17,7 +17,7 @@ Functor['Wish']['map'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x
 Applicative['Wish'] = {};
 Applicative['Wish']['ap'] = __curry__((mf, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
-    const [{ __args: [runMF]},{ __args: [runM]}] = __x__;
+    let [{ __args: [runMF]},{ __args: [runM]}] = __x__;
     return runM(bad, __curry__((x) => runMF(bad, __curry__((f) => good(f(x))))));
   }
   else {
@@ -29,10 +29,10 @@ Applicative['Wish']['pure'] = __curry__((a) => Wish(__curry__((bad, good) => goo
 Monad['Wish'] = {};
 Monad['Wish']['chain'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const run = __x__.__args[0];
+    let run = __x__.__args[0];
     return run(bad, __curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const r = __x__.__args[0];
+    let r = __x__.__args[0];
     return r(bad, good);
   }
   else {
@@ -47,9 +47,9 @@ Monad['Wish']['chain'] = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x
   }
 })(m))));
 Monad['Wish']['of'] = Applicative.Wish.pure;
-export const mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
+export let mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const run = __x__.__args[0];
+    let run = __x__.__args[0];
     return run(__curry__((x) => bad(f(x))), good);
   }
   else {
@@ -57,12 +57,12 @@ export const mapRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__)
     throw 'non exhaustive patterns!';
   }
 })(m))));
-export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
+export let chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const run = __x__.__args[0];
+    let run = __x__.__args[0];
     return run(__curry__((x) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const r = __x__.__args[0];
+    let r = __x__.__args[0];
     return r(bad, good);
   }
   else {
@@ -76,11 +76,11 @@ export const chainRej = __curry__((f, m) => Wish(__curry__((bad, good) => ((__x_
     throw 'non exhaustive patterns!';
   }
 })(m))));
-export const good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
-export const bad = __curry__((e) => Wish(__curry__((bad, good) => bad(e))));
-const getWishFn = __curry__((w) => ((__x__) => {
+export let good = __curry__((a) => Wish(__curry__((bad, good) => good(a))));
+export let bad = __curry__((e) => Wish(__curry__((bad, good) => bad(e))));
+let getWishFn = __curry__((w) => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const fn = __x__.__args[0];
+    let fn = __x__.__args[0];
     return fn;
   }
   else {
@@ -88,7 +88,7 @@ const getWishFn = __curry__((w) => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(w));
-export const parallel = __curry__((wishes) => Wish(__curry__((bad, good) => {
+export let parallel = __curry__((wishes) => Wish(__curry__((bad, good) => {
     const l = wishes.length
     let ko = false;
     let ok = 0;
@@ -100,10 +100,10 @@ export const parallel = __curry__((wishes) => Wish(__curry__((bad, good) => {
     ));
     wishes.forEach(fork);
   })));
-export const fulfill = __curry__((bad, good, m) => {
+export let fulfill = __curry__((bad, good, m) => {
     ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
-    const run = __x__.__args[0];
+    let run = __x__.__args[0];
     return run(bad, good);
   }
   else {

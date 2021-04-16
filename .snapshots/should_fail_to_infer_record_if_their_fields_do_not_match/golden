@@ -1,15 +1,23 @@
 Left
   (InferError
      (UnificationError
-        (TRecord
-           (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-           False)
-        (TRecord
-           (fromList
-              [ ( "x" , TCon (TC "Number" Star) "prelude" )
-              , ( "y" , TCon (TC "Number" Star) "prelude" )
-              ])
-           False))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TRecord
+                 (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
+                 False))
+           (TVar (TV "b1" Star)))
+        (TApp
+           (TApp
+              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+              (TRecord
+                 (fromList
+                    [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                    , ( "y" , TCon (TC "Number" Star) "prelude" )
+                    ])
+                 False))
+           (TCon (TC "Boolean" Star) "prelude")))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 0 1 1) (Loc 34 1 35)

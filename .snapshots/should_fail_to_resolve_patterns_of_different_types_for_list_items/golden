@@ -1,8 +1,12 @@
 Left
   (InferError
      (UnificationError
-        (TCon (TC "String" Star) "prelude")
-        (TCon (TC "Number" Star) "prelude"))
+        (TApp
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TCon (TC "String" Star) "prelude"))
+        (TApp
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TCon (TC "Number" Star) "prelude")))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 59 3 16) (Loc 60 3 17)
