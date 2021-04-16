@@ -122,6 +122,7 @@ data Exp_ = LNum String
           | Assignment Name Exp
           | Export Exp
           | NameExport Name
+          | TypeExport Name
           | Var Name
           | TypedExp Exp Ty.Scheme
           | ListConstructor [ListItem]

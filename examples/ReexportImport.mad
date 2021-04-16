@@ -1,9 +1,15 @@
-import { d, TN } from "./Reexport"
-
-// Lco
-// L.TN("L")
-
+import { d, TN, LcovLine, LcovSection, A } from "./Reexport"
 
 b = d + 1
 
 TN("")
+
+tnWrapped :: String -> LcovLine
+tnWrapped = TN
+
+tnWrapped("3")
+
+
+someA :: A Number
+someA = { v: "Hello" }
+

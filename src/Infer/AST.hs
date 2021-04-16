@@ -150,16 +150,12 @@ filterExportsByImport imp vars = case imp of
   Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList names
 
 
--- solveImports :: Can.Table -> [Can.Import] -> Infer (Slv.Table, Vars, Interfaces, Methods)
--- solveImports = undefined
--- -- solveImports = solveImports' mempty
-
-solveImports'
+solveImports
   :: M.Map FilePath (Slv.AST, Env)
   -> Can.Table
   -> [Can.Import]
   -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods)
-solveImports' previousSolved table (imp : is) = do
+solveImports previousSolved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
   (allSolved, solvedAST, solvedEnv) <- case M.lookup modulePath previousSolved of
@@ -179,7 +175,7 @@ solveImports' previousSolved table (imp : is) = do
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
-  (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports' solved' table is
+  (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports solved' table is
 
   return
     ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
@@ -188,7 +184,7 @@ solveImports' previousSolved table (imp : is) = do
     , M.union solvedMethods nextMethods
     )
 
-solveImports' _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
+solveImports _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
 
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
@@ -274,7 +270,7 @@ solveTable table ast = do
 solveTable' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (M.Map FilePath (Slv.AST, Env))
 solveTable' solved table ast@Can.AST { Can.aimports } = do
   -- First we resolve imports to update the env
-  (inferredASTs, vars, interfaces, methods) <- solveImports' solved table aimports
+  (inferredASTs, vars, interfaces, methods) <- solveImports solved table aimports
 
   let importEnv = Env { envVars        = vars
                       , envCurrentPath = fromMaybe "" (Can.apath ast)
