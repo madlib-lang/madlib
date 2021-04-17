@@ -181,6 +181,12 @@ formatTypeError json err = case err of
     "Export already defined. You are trying to export the name '" <> name <> "' but it\n"
     <> "appears that you have already exported it."
 
+  NotExported name path ->
+    "You are trying to import '" <> name <> "' from the module located here:\n"
+    <> "'" <> path <> "'\n"
+    <> "Unfortunately, that module does not export '" <> name <> "'!\n\n"
+    <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+
   _ -> ppShow err
 
 

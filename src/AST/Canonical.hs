@@ -43,6 +43,11 @@ getCtorScheme (Canonical _ (Constructor _ _ sc)) = sc
 getCtorName :: Constructor -> Name
 getCtorName (Canonical _ (Constructor name _ _)) = name
 
+getCtors :: TypeDecl -> [Constructor]
+getCtors (Canonical _ td) = case td of
+  Alias {} -> []
+  ADT {}   -> adtconstructors td
+
 type TypeDecl = Canonical TypeDecl_
 data TypeDecl_
   = ADT
@@ -160,6 +165,16 @@ isTypeExport exp = case exp of
 getTypeExportName :: Exp -> String
 getTypeExportName exp = case exp of
   Canonical _ (TypeExport name) -> name
+
+getExportName :: Exp -> Maybe Name
+getExportName exp = case exp of
+  Canonical _ (NameExport name) -> return name
+
+  Canonical _ (Export (Canonical _ (Assignment name _))) -> return name
+
+  Canonical _ (TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _) -> return name
+
+  _ -> Nothing
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
