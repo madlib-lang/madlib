@@ -1,6 +1,6 @@
 import { d, TN, LcovLine, LcovSection, A } from "./Reexport"
 
-b = d + 1
+// b = d + 1
 
 TN("")
 
@@ -13,3 +13,46 @@ tnWrapped("3")
 someA :: A String
 someA = { v: "Hello" }
 
+
+
+
+
+
+
+
+alias Name = String
+alias Address = {
+  street :: String,
+  number :: Number,
+  postcode :: Number,
+  city :: String
+}
+
+type User
+  = LoggedIn Name Address
+  | Anonymous
+
+
+getDisplayName = (user) => where(user)
+  is LoggedIn name _: name
+  is Anonymous      : "Anonymous"
+
+
+inc = (a) => a + 1
+
+multiply = (a, b) => a * b
+double = multiply(2)
+
+x = pipe(
+  inc,
+  inc,
+  double
+)(1)
+
+calculate = pipe(
+  inc,
+  inc,
+  double
+)
+
+export User

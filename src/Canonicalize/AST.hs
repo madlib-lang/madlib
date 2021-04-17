@@ -15,17 +15,37 @@ import           Canonicalize.Interface
 import           Infer.Type
 import           Error.Error
 import           Data.List
+import           Data.Maybe
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Explain.Location
 
 
-canonicalizeImportedAST :: Target -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env)
-canonicalizeImportedAST target table imp = do
+findAllExportedNames :: Can.AST -> [Can.Name]
+findAllExportedNames ast =
+  let exportedADTs    = filter Can.isTypeDeclExported (Can.atypedecls ast)
+      ctors           = concat $ Can.getCtors <$> exportedADTs
+      typeExportNames = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
+      typeNames       = Can.getTypeDeclName <$> exportedADTs
+      ctorNames       = Can.getCtorName <$> ctors
+      varNames        = mapMaybe Can.getExportName (Can.aexps ast)
+  in  typeExportNames ++ typeNames ++ ctorNames ++ varNames
+
+canonicalizeImportedAST :: Target -> FilePath -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env)
+canonicalizeImportedAST target originAstPath table imp = do
   let path = Src.getImportAbsolutePath imp
   (table', env) <- canonicalizeAST target initialEnv table path
   ast           <- findASTM table' path
+
+  let allExportNames = findAllExportedNames ast
+  let allImportNames = Src.getImportNames imp
+  let notExported = allImportNames \\ allExportNames
+
+  unless
+    (null notExported)
+    (throwError $ InferError (NotExported (head notExported) path) (Context originAstPath (Src.getArea imp) []))
+
   envTds        <- mapImportToEnvTypeDecls env imp ast
 
   let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = envInterfaces env }
@@ -63,9 +83,9 @@ extractExport env typeDecl = do
   t <- lookupADT env name
   return (name, t)
 
-processImports :: Target -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env)
-processImports target table imports = do
-  imports' <- mapM (canonicalizeImportedAST target table) imports
+processImports :: Target -> FilePath -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env)
+processImports target astPath table imports = do
+  imports' <- mapM (canonicalizeImportedAST target astPath table) imports
   let table' = foldl' (<>) mempty (fst <$> imports')
   let env' = foldl'
         (\env env' -> env { envTypeDecls  = envTypeDecls env <> envTypeDecls env'
@@ -82,7 +102,7 @@ canonicalizeAST target env table astPath = do
     Right ast -> return ast
     Left  e   -> throwError $ InferError (ImportNotFound astPath) NoContext
 
-  (table, env') <- processImports target table $ Src.aimports ast
+  (table, env') <- processImports target astPath table $ Src.aimports ast
   let env'' = env' { envCurrentPath = astPath }
 
   foldM (verifyExport env'') [] (Src.aexps ast)

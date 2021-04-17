@@ -52,6 +52,7 @@ data TypeError
   | WrongSpreadType String
   | FieldNotExisting String
   | ImportNotFound String
+  | NotExported String String
   | GrammarError FilePath String
   | NameAlreadyDefined String
   | SignatureTooGeneral Scheme Scheme
