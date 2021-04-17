@@ -324,7 +324,9 @@ getFilesToCompile testsOnly entrypoint = case takeExtension entrypoint of
   '.' : rest -> putStrLn ("Invalid file extension '" <> ('.' : rest) <> "'") >> return []
   _          -> do
     paths <- getDirectoryContents entrypoint
-    let fullPaths = (\file -> joinPath [entrypoint, file]) <$> filter (\p -> p /= "." && p /= ".." && not (any (`isSuffixOf` p) compilationBlackList)) paths
+    let fullPaths =
+          (\file -> joinPath [entrypoint, file])
+            <$> filter (\p -> p /= "." && p /= ".." && not (any (`isSuffixOf` p) compilationBlackList)) paths
     let filtered = if not testsOnly
           then filter ((== ".mad") . takeExtension) fullPaths
           else filter (isSuffixOf ".spec.mad") fullPaths
@@ -483,6 +485,7 @@ generateAST options coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath =
         else computeTargetPath (takeDirectory outputPath) rootPath path
 
   createDirectoryIfMissing True $ takeDirectory computedOutputPath
-  writeFile computedOutputPath $ compile CompileJS.initialEnv
+  writeFile computedOutputPath $ compile
+    CompileJS.initialEnv
     (CompilationConfig rootPath path entrypointPath computedOutputPath coverage optimized target internalsPath)
     ast

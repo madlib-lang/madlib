@@ -141,8 +141,8 @@ type Table = M.Map FilePath AST
 
 getImportNames :: Import -> [Name]
 getImportNames imp = case imp of
-  Source _ _ (NamedImport   names _ n) -> names
-  Source _ _ DefaultImport {} -> []
+  Source _ _ (NamedImport names _ n) -> names
+  Source _ _ DefaultImport{}         -> []
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of

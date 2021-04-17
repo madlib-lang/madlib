@@ -96,11 +96,7 @@ instance Compilable Exp where
               (getStartLine arg)
               (compile env config arg)
           Optimized _ _ (Var "unary-minus") ->
-            "-" <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
+            "-" <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "-")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " - " <> hpWrapLine
               coverage
@@ -206,7 +202,13 @@ instance Compilable Exp where
 
 
         If cond truthy falsy ->
-          "(" <> compile env config cond <> " ? " <> compile env config truthy <> " : " <> compile env config falsy <> ")"
+          "("
+            <> compile env config cond
+            <> " ? "
+            <> compile env config truthy
+            <> " : "
+            <> compile env config falsy
+            <> ")"
 
         Abs param body -> compileAbs Nothing param body
          where
@@ -221,7 +223,7 @@ instance Compilable Exp where
             in  start <> next
 
           compileBody :: Env -> [Exp] -> String
-          compileBody _ [exp] = compile env config exp
+          compileBody _   [exp] = compile env config exp
           compileBody env exps  = "{\n" <> compileBody' env exps <> "}"
 
           compileBody' :: Env -> [Exp] -> String
@@ -233,8 +235,7 @@ instance Compilable Exp where
               let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
               in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
 
-            _                                           ->
-              "    " <> compile e config exp <> ";\n" <> compileBody' e es
+            _ -> "    " <> compile e config exp <> ";\n" <> compileBody' e es
 
         Var ('.' : name) -> "(__R__ => __R__." <> name <> ")"
 
@@ -313,13 +314,13 @@ instance Compilable Exp where
                   <> ")"
                 else (if needsModifier then "let " else "") <> name <> " = " <> content'
 
-        TypedExp exp _  -> compile env config exp
+        TypedExp exp _    -> compile env config exp
 
-        Export ass      -> "export " <> compile env config ass
+        Export     ass    -> "export " <> compile env config ass
 
-        NameExport name -> "export { " <> name <> " }"
+        NameExport name   -> "export { " <> name <> " }"
 
-        Record fields  -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
+        Record     fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
           compileField :: Field -> String
           compileField (Optimized _ _ field) = case field of
@@ -644,14 +645,13 @@ instance Compilable AST where
 
 
 compileExps :: Env -> CompilationConfig -> [Exp] -> String
-compileExps env config [exp] = compile env config exp <> ";\n"
+compileExps env config [exp     ] = compile env config exp <> ";\n"
 compileExps env config (exp : es) = case exp of
   Opt.Optimized _ _ (Opt.Assignment name _) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
     in  compile env config exp <> ";\n" <> compileExps nextEnv config es
 
-  _                                           ->
-    compile env config exp <> ";\n" <> compileExps env config es
+  _ -> compile env config exp <> ";\n" <> compileExps env config es
 
 
 buildDefaultExport :: [TypeDecl] -> [Exp] -> String

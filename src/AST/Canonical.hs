@@ -45,8 +45,8 @@ getCtorName (Canonical _ (Constructor name _ _)) = name
 
 getCtors :: TypeDecl -> [Constructor]
 getCtors (Canonical _ td) = case td of
-  Alias {} -> []
-  ADT {}   -> adtconstructors td
+  Alias{} -> []
+  ADT{}   -> adtconstructors td
 
 type TypeDecl = Canonical TypeDecl_
 data TypeDecl_

@@ -36,33 +36,33 @@ import           Infer.Placeholder
 import qualified Control.Monad                 as CM
 import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace
-import Infer.ToSolved
+import           Infer.ToSolved
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer env lexp = do
   let (Can.Canonical area exp) = lexp
       env'                     = pushExpToBT env lexp
   r@(s, ps, t, e) <- case exp of
-    Can.LNum  _            -> return (M.empty, [], tNumber, applyLitSolve lexp tNumber)
-    Can.LStr  _            -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
-    Can.LBool _            -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
-    Can.LUnit              -> return (M.empty, [], tUnit, applyLitSolve lexp tUnit)
-    Can.TemplateString _   -> inferTemplateString env' lexp
+    Can.LNum  _               -> return (M.empty, [], tNumber, applyLitSolve lexp tNumber)
+    Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
+    Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
+    Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp tUnit)
+    Can.TemplateString _      -> inferTemplateString env' lexp
 
-    Can.Var            _   -> inferVar env' lexp
-    Can.Abs _ _            -> inferAbs env' lexp
-    Can.App{}              -> inferApp env' lexp
-    Can.Assignment _ _     -> inferAssignment env' lexp
-    Can.Where      _ _     -> inferWhere env' lexp
-    Can.Record _           -> inferRecord env' lexp
-    Can.Access   _ _       -> inferAccess env' lexp
-    Can.TypedExp _ _       -> inferTypedExp env' lexp
-    Can.ListConstructor  _ -> inferListConstructor env' lexp
-    Can.TupleConstructor _ -> inferTupleConstructor env' lexp
-    Can.Export           _ -> inferExport env' lexp
-    Can.NameExport name    -> inferNameExport env' lexp
-    Can.If{}               -> inferIf env' lexp
-    Can.JSExp c            -> do
+    Can.Var            _      -> inferVar env' lexp
+    Can.Abs _ _               -> inferAbs env' lexp
+    Can.App{}                 -> inferApp env' lexp
+    Can.Assignment _ _        -> inferAssignment env' lexp
+    Can.Where      _ _        -> inferWhere env' lexp
+    Can.Record _              -> inferRecord env' lexp
+    Can.Access   _ _          -> inferAccess env' lexp
+    Can.TypedExp _ _          -> inferTypedExp env' lexp
+    Can.ListConstructor  _    -> inferListConstructor env' lexp
+    Can.TupleConstructor _    -> inferTupleConstructor env' lexp
+    Can.Export           _    -> inferExport env' lexp
+    Can.NameExport       name -> inferNameExport env' lexp
+    Can.If{}                  -> inferIf env' lexp
+    Can.JSExp c               -> do
       t <- newTVar Star
       return (M.empty, [], t, Slv.Solved t area (Slv.JSExp c))
 
@@ -147,19 +147,17 @@ allowedShadows :: [String]
 allowedShadows = ["_P_", "__x__", "_"]
 
 extendAbsEnv :: Env -> Type -> Can.Canonical Can.Name -> Infer Env
-extendAbsEnv env tv (Can.Canonical area param) =
-  if param `elem` allowedShadows then
-    return $ extendVars env (param, Forall [] ([] :=> tv))
-  else
-    catchError
+extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
+  then return $ extendVars env (param, Forall [] ([] :=> tv))
+  else catchError
     (safeExtendVars env (param, Forall [] ([] :=> tv)))
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
 inferAbs :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
-  tv <- newTVar Star
+  tv             <- newTVar Star
 
-  env' <- extendAbsEnv env tv p
+  env'           <- extendAbsEnv env tv p
   (s, ps, t, es) <- inferBody env' body
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
@@ -265,13 +263,13 @@ inferTemplateString env e@(Can.Canonical area (Can.TemplateString exps)) = do
 inferAssignment :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   currentScheme <- case M.lookup name (envVars env) of
-        Just sc  -> return sc
-        _        -> (\t -> Forall [] ([] :=> t)) <$> newTVar Star
+    Just sc -> return sc
+    _       -> (\t -> Forall [] ([] :=> t)) <$> newTVar Star
 
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer env' exp
-  s2 <- contextualUnify env' exp currentType t1
+  s2                <- contextualUnify env' exp currentType t1
   return (s2 `compose` s1, currentPreds ++ ps1, apply s2 t1, applyAssignmentSolve e name e1 t1)
 
 
@@ -617,7 +615,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   tv <- newTVar Star
 
   let env' = case Can.getExpName exp of
-        Just n  -> case M.lookup n (envVars env) of
+        Just n -> case M.lookup n (envVars env) of
           Just _  -> env
           --  ^ if a var is already present we don't override its type with a fresh var.
           Nothing -> extendVars env (n, toScheme tv)

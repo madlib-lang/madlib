@@ -40,13 +40,12 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportNames = findAllExportedNames ast
   let allImportNames = Src.getImportNames imp
-  let notExported = allImportNames \\ allExportNames
+  let notExported    = allImportNames \\ allExportNames
 
-  unless
-    (null notExported)
-    (throwError $ InferError (NotExported (head notExported) path) (Context originAstPath (Src.getArea imp) []))
+  unless (null notExported)
+         (throwError $ InferError (NotExported (head notExported) path) (Context originAstPath (Src.getArea imp) []))
 
-  envTds        <- mapImportToEnvTypeDecls env imp ast
+  envTds <- mapImportToEnvTypeDecls env imp ast
 
   let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = envInterfaces env }
   return (table', env')
@@ -64,8 +63,8 @@ fromExportToImport imp exports = case imp of
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
 extractExportsFromAST env ast = do
-  let tds           = filter Can.isTypeDeclExported $ Can.atypedecls ast
-      typeExports   = filter Can.isTypeExport $ Can.aexps ast
+  let tds         = filter Can.isTypeDeclExported $ Can.atypedecls ast
+      typeExports = filter Can.isTypeExport $ Can.aexps ast
   exportedTds   <- mapM (extractExport env) tds
   typeExportTds <- mapM (extractTypeExport env) typeExports
 
@@ -126,10 +125,9 @@ canonicalizeAST target env table astPath = do
 
 performExportCheck :: Env -> Area -> [String] -> String -> CanonicalM [String]
 performExportCheck env area exportedNames name = do
-  if name `elem` exportedNames then
-    throwError $ InferError (NameAlreadyExported name) (Context (envCurrentPath env) area [])
-  else
-    return $ name : exportedNames
+  if name `elem` exportedNames
+    then throwError $ InferError (NameAlreadyExported name) (Context (envCurrentPath env) area [])
+    else return $ name : exportedNames
 
 verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]
 verifyExport env exportedNames (Src.Source _ area exp) = case exp of
@@ -137,7 +135,7 @@ verifyExport env exportedNames (Src.Source _ area exp) = case exp of
 
   Src.Export (Src.Source _ _ (Src.Assignment name _)) -> performExportCheck env area exportedNames name
 
-  _ -> return exportedNames
+  _                   -> return exportedNames
 
 
 findASTM :: Can.Table -> FilePath -> CanonicalM Can.AST

@@ -92,7 +92,8 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
   in  case resolved of
         Right x ->
           concat
-            $   compile Compile.Javascript.initialEnv (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
+            $   compile Compile.Javascript.initialEnv
+                        (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
             .   (\a -> (evalState (optimize False a) initialOptimizationState :: Opt.AST))
             <$> M.elems x
         Left e -> ppShow e

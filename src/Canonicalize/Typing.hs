@@ -16,7 +16,7 @@ import qualified Data.Map                      as M
 import           Data.Char
 import           Error.Error
 import           Control.Monad.Except
-import Data.List
+import           Data.List
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
