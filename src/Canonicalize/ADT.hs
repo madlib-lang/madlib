@@ -14,7 +14,7 @@ import           Error.Error
 import qualified Data.Map                      as M
 import           Data.Char
 import           Control.Monad.Except
-import Data.List
+import           Data.List
 
 
 
@@ -66,8 +66,8 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
 
   let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
   let rt = foldl' TApp
-                 (TCon (TC name (buildKind $ length params)) astPath)
-                 ((\x -> apply s $ TVar (TV x Star)) <$> params)
+                  (TCon (TC name (buildKind $ length params)) astPath)
+                  ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
     (\(n, ts, _, Src.Source _ area (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]

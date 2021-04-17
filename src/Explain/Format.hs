@@ -6,7 +6,9 @@ import           Explain.Location
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Infer.Type
-import           Data.List                      ( intercalate, foldl' )
+import           Data.List                      ( intercalate
+                                                , foldl'
+                                                )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
@@ -112,7 +114,7 @@ formatTypeError json err = case err of
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
-  AmbiguousType (TV n _, IsIn cls _:_) ->
+  AmbiguousType (TV n _, IsIn cls _ : _) ->
     "An ambiguity could not be resolved! I am\n"
       <> "looking for an instance of '"
       <> cls
@@ -178,14 +180,22 @@ formatTypeError json err = case err of
       <> "that is defined in the global scope of a module is not allowed."
 
   NameAlreadyExported name ->
-    "Export already defined. You are trying to export the name '" <> name <> "' but it\n"
-    <> "appears that you have already exported it."
+    "Export already defined. You are trying to export the name '"
+      <> name
+      <> "' but it\n"
+      <> "appears that you have already exported it."
 
   NotExported name path ->
-    "You are trying to import '" <> name <> "' from the module located here:\n"
-    <> "'" <> path <> "'\n"
-    <> "Unfortunately, that module does not export '" <> name <> "'!\n\n"
-    <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+    "You are trying to import '"
+      <> name
+      <> "' from the module located here:\n"
+      <> "'"
+      <> path
+      <> "'\n"
+      <> "Unfortunately, that module does not export '"
+      <> name
+      <> "'!\n\n"
+      <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
 
   _ -> ppShow err
 

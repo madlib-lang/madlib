@@ -23,7 +23,7 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
-import Infer.Scope
+import           Infer.Scope
 
 {-|
 Module      : AST
@@ -283,7 +283,7 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
   env <- buildInitialEnv importEnv ast
   let envWithImports = env { envVars = M.union (envVars env) vars }
 
-  fullEnv <- populateTopLevelTypings envWithImports (Can.aexps ast)
+  fullEnv            <- populateTopLevelTypings envWithImports (Can.aexps ast)
   (inferredAST, env) <- inferAST fullEnv ast
 
   checkAST envWithImports inferredAST
@@ -307,7 +307,10 @@ solveManyASTs solved table fps = case fps of
 -- -- Well, or just adapt it somehow
 runInfer :: Env -> Can.AST -> Either InferError Slv.AST
 runInfer env ast =
-  let result = runExcept (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST env' ast) InferState { count = 0, errors = [] })
+  let result = runExcept
+        (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST env' ast)
+                   InferState { count = 0, errors = [] }
+        )
   in  case result of
         Left e -> Left e
 
