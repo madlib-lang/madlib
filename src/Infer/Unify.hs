@@ -6,6 +6,7 @@ module Infer.Unify where
 import           Infer.Type
 import           Infer.Substitute
 import           Error.Error
+import           Error.Context
 import           Infer.Infer
 import           Infer.Env
 import           Control.Monad.Except
@@ -18,8 +19,8 @@ import qualified AST.Canonical                 as Can
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t | t == TVar tv      = return M.empty
-             | tv `elem` ftv t   = throwError $ InferError (InfiniteType tv t) NoContext
-             | kind tv /= kind t = throwError $ InferError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
+             | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
+             | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
              | otherwise         = return $ M.singleton tv t
 
 class Unify t where
@@ -36,7 +37,7 @@ instance Unify Type where
       let extraFields  = M.difference fields fields'
           extraFields' = M.difference fields' fields
       if not open && extraFields' /= mempty || not open' && extraFields /= mempty
-        then throwError $ InferError (UnificationError r l) NoContext
+        then throwError $ CompilationError (UnificationError r l) NoContext
         else do
           let updatedFields  = M.union fields extraFields'
               updatedFields' = M.union fields' extraFields
@@ -44,7 +45,7 @@ instance Unify Type where
               types'         = M.elems updatedFields'
               z              = zip types types'
           unifyVars M.empty z
-    | M.difference fields fields' /= M.empty = throwError $ InferError (UnificationError r l) NoContext
+    | M.difference fields fields' /= M.empty = throwError $ CompilationError (UnificationError r l) NoContext
     | otherwise = do
       let types  = M.elems fields
           types' = M.elems fields'
@@ -56,7 +57,7 @@ instance Unify Type where
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
   unify (TCon a fpa) (TCon b fpb) | a == b && fpa == fpb = return M.empty
-  unify t1 t2               = throwError $ InferError (UnificationError t2 t1) NoContext
+  unify t1 t2               = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -65,7 +66,7 @@ instance (Unify t, Show t, Substitutable t) => Unify [t] where
     s2 <- unify (apply s1 xs) (apply s1 ys)
     return (s2 <> s1)
   unify [] [] = return nullSubst
-  unify a  b  = throwError $ InferError Error NoContext
+  unify a  b  = throwError $ CompilationError Error NoContext
 
 
 unifyVars :: Substitution -> [(Type, Type)] -> Infer Substitution
@@ -95,10 +96,10 @@ instance Match Type where
   match (TApp l r) (TApp l' r') = do
     sl <- match l l'
     sr <- match r r'
-    catchError (merge sl sr) (\_ -> throwError $ InferError (UnificationError (TApp l' r') (TApp l r)) NoContext)
+    catchError (merge sl sr) (\_ -> throwError $ CompilationError (UnificationError (TApp l' r') (TApp l r)) NoContext)
   match (TVar u) t | kind u == kind t = return $ M.singleton u t
   match (TCon tc1 fp1) (TCon tc2 fp2) | tc1 == tc2 && fp1 == fp2 = return nullSubst
-  match t1 t2                         = throwError $ InferError (UnificationError t1 t2) NoContext
+  match t1 t2                         = throwError $ CompilationError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where
   match ts ts' = do
@@ -108,7 +109,7 @@ instance Match t => Match [t] where
 
 contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 =
-  catchError (unify t1 t2) (const $ addContext env exp (InferError (UnificationError t2 t1) NoContext))
+  catchError (unify t1 t2) (const $ addContext env exp (CompilationError (UnificationError t2 t1) NoContext))
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution
@@ -122,12 +123,12 @@ contextualUnifyElems' env (e, t) ((e', t') : xs) = do
   s2 <- contextualUnifyElems' env (e, t) xs
   return $ compose s1 s2
 
-flipUnificationError :: InferError -> Infer b
-flipUnificationError e@(InferError err x) = case err of
-  UnificationError l r -> throwError $ InferError (UnificationError r l) x
+flipUnificationError :: CompilationError -> Infer b
+flipUnificationError e@(CompilationError err x) = case err of
+  UnificationError l r -> throwError $ CompilationError (UnificationError r l) x
   _                    -> throwError e
 
 
-addContext :: Env -> Can.Canonical a -> InferError -> Infer b
-addContext env can@(Can.Canonical area e) (InferError err _) =
-  throwError $ InferError err (Context (envCurrentPath env) area (envBacktrace env))
+addContext :: Env -> Can.Canonical a -> CompilationError -> Infer b
+addContext env can@(Can.Canonical area e) (CompilationError err _) =
+  throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))

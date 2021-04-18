@@ -6,7 +6,14 @@ Right
                [ Source
                    Infos { nthArg = Nothing , origin = Nothing }
                    (Area (Loc 0 1 1) (Loc 31 1 32))
-                   (NamedImport [ "fn2" ] "./sourceB" "/src/sourceB.mad")
+                   (NamedImport
+                      [ Source
+                          Infos { nthArg = Nothing , origin = Nothing }
+                          (Area (Loc 9 1 10) (Loc 12 1 13))
+                          "fn2"
+                      ]
+                      "./sourceB"
+                      "/src/sourceB.mad")
                ]
            , aexps =
                [ Source

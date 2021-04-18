@@ -5,6 +5,7 @@ import qualified Data.Map                      as M
 import           Parse.Madlib.AST
 import           Test.Hspec
 import           Error.Error
+import           Error.Context
 import           Utils.PathUtils         hiding ( defaultPathUtils )
 import           Prelude                 hiding ( readFile )
 import           TestUtils
@@ -55,7 +56,7 @@ spec = do
 
           (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Left (InferError (ImportNotFound "./fixtures/source-not-there.mad") NoContext)
+          expected    = Left (CompilationError (ImportNotFound "./fixtures/source-not-there.mad") NoContext)
           files       = M.fromList [("./fixtures/source.mad", source)]
 
           rf          = makeReadFile files
@@ -134,7 +135,7 @@ spec = do
       let source   = unlines ["fn :: Number -> Number -> Number", "fn : a, b => (a + b)"]
           actual   = buildAST "source.mad" source
           expected = Left
-            (InferError
+            (CompilationError
               (GrammarError "source.mad"
                             "Syntax error - line: 2, column: 4\nThe following token is not valid: TokenColon\n"
               )

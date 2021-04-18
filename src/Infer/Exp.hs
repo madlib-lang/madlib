@@ -19,6 +19,7 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
 import           Error.Error
+import           Error.Context
 import           Explain.Location
 import           Utils.Tuple
 import           Data.List                      ( (\\)
@@ -121,9 +122,9 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
 
     return (M.empty, ps, t, e')
 
-enhanceVarError :: Env -> Can.Exp -> Area -> InferError -> Infer Scheme
-enhanceVarError env exp area (InferError e _) =
-  throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env))
+enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
+enhanceVarError env exp area (CompilationError e _) =
+  throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
 
 
 
@@ -446,7 +447,7 @@ inferRecordField env (Can.Canonical area field) = case field of
       TVar _            -> return (s, ps, [], Slv.Solved t area $ Slv.FieldSpread e)
 
       _                 -> throwError
-        $ InferError (WrongSpreadType $ show t) (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+        $ CompilationError (WrongSpreadType $ show t) (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
 
 shouldBeOpen :: Env -> [Can.Field] -> Infer Bool
 shouldBeOpen env = foldrM
@@ -503,7 +504,7 @@ inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re)
 
       Nothing -> case recordType of
         TRecord _ False ->
-          throwError $ InferError (FieldNotExisting name) (Context (envCurrentPath env) area (envBacktrace env))
+          throwError $ CompilationError (FieldNotExisting name) (Context (envCurrentPath env) area (envBacktrace env))
         _ -> do
           tv <- newTVar Star
           s3 <- contextualUnify env fa (apply recordSubst fieldType) (recordType `fn` tv)
@@ -607,7 +608,7 @@ split env fs gs ps = do
   ps' <- reduce env ps
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
   let as       = ambiguities (fs ++ gs) rs
-  if not (null as) then throwError $ InferError (AmbiguousType (head as)) NoContext else return (ds, rs)
+  if not (null as) then throwError $ CompilationError (AmbiguousType (head as)) NoContext else return (ds, rs)
 
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
@@ -631,9 +632,9 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       gs  = vs \\ fs
   (ds, rs) <- catchError
     (split env' fs vs ps')
-    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env)))
+    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
 
-  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ InferError
+  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ CompilationError
     (AmbiguousType (TV "-" Star, rs ++ ds))
     (Context (envCurrentPath env) area (envBacktrace env))
 
@@ -664,14 +665,14 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' ps)
   (ds, rs) <- catchError
     (split env' fs gs ps')
-    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area (envBacktrace env)))
+    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
 
   qs'' <- getAllParentPreds env qs'
 
   if sc /= sc'
-    then throwError $ InferError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))
+    then throwError $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))
     else if not (null rs)
-      then throwError $ InferError ContextTooWeak (Context (envCurrentPath env) area (envBacktrace env))
+      then throwError $ CompilationError ContextTooWeak (Context (envCurrentPath env) area (envBacktrace env))
       else do
         let e'   = updateType e t'''
 
@@ -711,7 +712,7 @@ inferExp env e = do
   return (Just e''', env')
 
 
-recordError :: Env -> Can.Exp -> InferError -> Infer (Maybe Slv.Exp, Env)
+recordError :: Env -> Can.Exp -> CompilationError -> Infer (Maybe Slv.Exp, Env)
 recordError env e err = do
   pushError err
   case Can.getExportNameAndScheme e of
@@ -731,7 +732,7 @@ upgradeContext :: Env -> Area -> Infer a -> Infer a
 upgradeContext env area a = catchError a (throwError . upgradeContext' env area)
 
 
-upgradeContext' :: Env -> Area -> InferError -> InferError
+upgradeContext' :: Env -> Area -> CompilationError -> CompilationError
 upgradeContext' env area err = case err of
-  (InferError e NoContext) -> InferError e $ Context (envCurrentPath env) area (envBacktrace env)
-  (InferError e r        ) -> InferError e r
+  (CompilationError e NoContext) -> CompilationError e $ Context (envCurrentPath env) area (envBacktrace env)
+  (CompilationError e r        ) -> CompilationError e r

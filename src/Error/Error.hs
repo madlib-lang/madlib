@@ -3,35 +3,11 @@
 module Error.Error where
 
 import           Infer.Type
-import           Explain.Location
-import qualified AST.Canonical                 as Can
+import           Error.Context
+import           Error.Backtrace
 
 
-type Backtrace = [BTNode]
-
-data BTNode
-  = BTExp Can.Exp
-  | BTInstance Can.Instance
-  | BTConstructor Can.Constructor
-  deriving(Eq, Show)
-
-data Context
-  = NoContext
-  | Context { ctxAstPath :: FilePath, ctxArea :: Area, ctxBacktrace :: Backtrace }
-  deriving(Eq, Show)
-
-getCtxArea :: Context -> Maybe Area
-getCtxArea ctx = case ctx of
-  NoContext        -> Nothing
-  Context _ area _ -> Just area
-
-getCtxPath :: Context -> Maybe FilePath
-getCtxPath ctx = case ctx of
-  NoContext        -> Nothing
-  Context path _ _ -> Just path
-
-
-data InferError = InferError TypeError Context deriving(Eq, Show)
+data CompilationError = CompilationError TypeError Context deriving(Eq, Show)
 
 data TypeError
   = InfiniteType TVar Type

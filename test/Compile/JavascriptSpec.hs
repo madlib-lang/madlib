@@ -53,7 +53,7 @@ tester :: Bool -> String -> String
 tester optimized code =
   let Right ast    = buildAST "path" code
       table        = M.singleton "path" ast
-      Right table' = runCanonicalization TNode Can.initialEnv table "path"
+      (Right table', _) = runCanonicalization TNode Can.initialEnv table "path"
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
@@ -69,7 +69,7 @@ coverageTester :: String -> String
 coverageTester code =
   let Right ast    = buildAST "path" code
       table        = M.singleton "path" ast
-      Right table' = runCanonicalization TNode Can.initialEnv table "path"
+      (Right table', _) = runCanonicalization TNode Can.initialEnv table "path"
       Right canAST = Can.findAST table' "path"
       inferred     = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
@@ -85,8 +85,8 @@ tableTester :: FilePath -> Src.Table -> Src.AST -> String
 tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 
   let canTable = case runCanonicalization TNode Can.initialEnv table path of
-        Right table -> table
-        Left  err   -> trace ("ERR: " <> ppShow err) mempty
+        (Right table, _) -> table
+        (Left  err, _)   -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
       resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   in  case resolved of
@@ -329,9 +329,9 @@ jsxProgram = unlines
   , "<div><div><span></span></div><div><span></span></div></div>"
   , ""
   , "methods = ['1', '2', '3']"
-  , "children = map((method) => <div>{method}</div>, methods)"
+  , "childElems = map((method) => <div>{method}</div>, methods)"
   , "<div>{methods}</div>"
-  , "<div>{children}</div>"
+  , "<div>{childElems}</div>"
   ]
 
 

@@ -15,6 +15,8 @@ import           Infer.Interface
 import           Infer.Type
 import           Infer.Exp
 import           Error.Error
+import           Error.Context
+import           Error.Backtrace
 import           Data.Maybe
 import           Data.List
 import           Control.Monad.State
@@ -56,8 +58,8 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
 
   nextEnv' <- catchError
     nextEnv
-    (\(InferError err _) ->
-      throwError $ InferError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+    (\(CompilationError err _) ->
+      throwError $ CompilationError err (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
     )
 
   populateTopLevelTypings nextEnv' es
@@ -101,7 +103,7 @@ addConstructors env ctors = do
     (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
       catchError
         (safeExtendVars env'' (name, sc))
-        (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
+        (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
     )
     env
     ctors
@@ -123,7 +125,7 @@ extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
 findASTM table path = case M.lookup path table of
   Just a  -> return a
-  Nothing -> throwError $ InferError (ImportNotFound path) NoContext
+  Nothing -> throwError $ CompilationError (ImportNotFound path) NoContext
 
 
 extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Vars
@@ -302,12 +304,12 @@ solveManyASTs solved table fps = case fps of
       current <- solveTable' solved table ast
       next    <- solveManyASTs (solved <> current) table fps'
       return $ M.map fst current <> next
-    Nothing -> throwError $ InferError (ImportNotFound fp) NoContext
+    Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
 
 
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)
 -- -- Well, or just adapt it somehow
-runInfer :: Env -> Can.AST -> Either InferError Slv.AST
+runInfer :: Env -> Can.AST -> Either CompilationError Slv.AST
 runInfer env ast =
   let result = runExcept
         (runStateT (populateTopLevelTypings env (Can.aexps ast) >>= \env' -> inferAST env' ast)

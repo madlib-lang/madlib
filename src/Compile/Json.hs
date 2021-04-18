@@ -11,6 +11,7 @@ import           Utils.Tuple                    ( lst )
 import           Debug.Trace
 import           Text.Show.Pretty
 import           Error.Error
+import           Error.Context
 import           Explain.Format
 import           Compile.Utils
 
@@ -24,7 +25,7 @@ indent depth = concat $ replicate (depth * indentSize) " "
 
 
 
-compileASTTable :: [(InferError, String)] -> Slv.Table -> String
+compileASTTable :: [(CompilationError, String)] -> Slv.Table -> String
 compileASTTable errs table =
   let compiledASTs   = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
       compiledErrors = intercalate ",\n    " $ compileError 2 <$> errs
@@ -35,14 +36,14 @@ compileASTTable errs table =
         <> "\n  ]\n}\n"
 
 
-getErrorType :: InferError -> String
-getErrorType (InferError err _) = case err of
+getErrorType :: CompilationError -> String
+getErrorType (CompilationError err _) = case err of
   UnificationError t1 t2 -> "UnificationError"
   _                      -> "Error"
 
 
-compileError :: Int -> (InferError, String) -> String
-compileError depth (err@(InferError typeError ctx), formatted) =
+compileError :: Int -> (CompilationError, String) -> String
+compileError depth (err@(CompilationError typeError ctx), formatted) =
   let area    = getCtxArea ctx
       errPath = getCtxPath ctx
       loc     = case area of

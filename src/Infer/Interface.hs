@@ -15,6 +15,7 @@ import           Infer.Scheme
 import           Infer.Unify
 import           Infer.Placeholder
 import           Error.Error
+import           Error.Context
 import qualified Data.Map                      as M
 import           Data.List
 import           Control.Monad
@@ -32,23 +33,23 @@ import           Control.Monad.Trans.Maybe
 
 addInterface :: Env -> Id -> [TVar] -> [Pred] -> Infer Env
 addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
-  Just x  -> throwError $ InferError (InterfaceAlreadyDefined id) NoContext
+  Just x  -> throwError $ CompilationError (InterfaceAlreadyDefined id) NoContext
   Nothing -> return env { envInterfaces = M.insert id (Interface tvs ps []) (envInterfaces env) }
 
 
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
 verifyInstancePredicates env p' p@(IsIn cls ts) = do
   case M.lookup cls (envInterfaces env) of
-    Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+    Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
     Just (Interface tvs ps' is) -> catchError
       (unify (TVar <$> tvs) ts >> return True)
-      (\_ -> throwError $ InferError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoContext)
+      (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env
 addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
     mapM_ (verifyInstancePredicates env p) ps
@@ -57,13 +58,13 @@ addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
     let zipped = zip ts' ts
     s <- match ts' ts
     catchError (mapM_ (isInstanceDefined env s) ps')
-               (\e@(InferError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
+               (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
     return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
                }
 
 addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
 addInstanceMethod env ps p@(IsIn cls ts) (methodName, methodScheme) = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
     maybeInstance <- findInst env p
@@ -75,7 +76,7 @@ addInstanceMethod env ps p@(IsIn cls ts) (methodName, methodScheme) = case M.loo
 
 setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
 setInstanceMethods env p@(IsIn cls ts) methods = case M.lookup cls (envInterfaces env) of
-  Nothing                     -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+  Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
     maybeInstance <- findInst env p
@@ -98,7 +99,7 @@ isInstanceDefined env subst (IsIn id ts) = do
     is
   case found of
     Just _  -> return True
-    Nothing -> throwError $ InferError (NoInstanceFound id (apply subst ts)) NoContext
+    Nothing -> throwError $ CompilationError (NoInstanceFound id (apply subst ts)) NoContext
 
 
 resolveInstances :: Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])
@@ -167,9 +168,9 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
 
   if sc /= sc'
     then throwError
-      $ InferError (SignatureTooGeneral sc sc') (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+      $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
     else if not (null rs)
-      then throwError $ InferError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+      then throwError $ CompilationError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateType e t''
         e''  <- insertClassPlaceholders env (Slv.Solved (apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)

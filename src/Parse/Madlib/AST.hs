@@ -17,6 +17,7 @@ import           Utils.Path                     ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
 import           Explain.Meta
 import           Error.Error
+import           Error.Context
 
 import           Control.Monad.Except
 import           System.FilePath                ( dropFileName, takeExtension )
@@ -32,7 +33,7 @@ import Data.List
 
 
 
-buildManyASTTables :: Table -> [FilePath] -> IO (Either InferError Table)
+buildManyASTTables :: Table -> [FilePath] -> IO (Either CompilationError Table)
 buildManyASTTables currentTable fps = case fps of
   [] -> return $ return mempty
   fp:fps' -> do
@@ -46,17 +47,17 @@ buildManyASTTables currentTable fps = case fps of
 -- TODO: Write an integration test with real files ?
 -- Move that to Main and rename buildASTTable' to buildASTTable
 -- Then use the scoped name in Main in order to partially apply it.
-buildASTTable :: Table -> FilePath -> IO (Either InferError Table)
+buildASTTable :: Table -> FilePath -> IO (Either CompilationError Table)
 buildASTTable table path = do
   buildASTTable' table defaultPathUtils path Nothing [] path
 
 
--- buildASTTable'' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
+-- buildASTTable'' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
 -- buildASTTable'' table pathUtils parentPath imp previousPaths srcPath = undefined
 
-buildASTTable' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either InferError Table)
+buildASTTable' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
 buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
-  | srcPath `elem` previousPaths = return $ Left $ InferError (ImportCycle (previousPaths ++ [srcPath])) NoContext
+  | srcPath `elem` previousPaths = return $ Left $ CompilationError (ImportCycle (previousPaths ++ [srcPath])) NoContext
   | otherwise = do
     let parentDir = dropFileName parentPath
     resolveAbsoluteSrcPath pathUtils parentDir srcPath >>= \case
@@ -64,7 +65,7 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
         let ctx = case imp of
               Just imp' -> Context parentPath (getArea imp') []
               Nothing   -> NoContext
-        return $ Left $ InferError (ImportNotFound srcPath) ctx
+        return $ Left $ CompilationError (ImportNotFound srcPath) ctx
       Just absoluteSrcPath -> do
         code <- try $ readFile pathUtils absoluteSrcPath :: IO (Either IOException String)
 
@@ -74,10 +75,10 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
 
         let source = case code of
               Right a -> Right a
-              Left  _ -> Left $ InferError (ImportNotFound absoluteSrcPath) ctx
+              Left  _ -> Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
 
         ast <- case source of
-          Left  e    -> return $ Left $ InferError (ImportNotFound absoluteSrcPath) ctx
+          Left  e    -> return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
           Right code -> return $ buildAST srcPath code
 
         getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
@@ -104,7 +105,7 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
 
             return $ liftM2 M.union generatedTable childTables
 
-buildChildTable :: PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either InferError Table)
+buildChildTable :: PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
 buildChildTable pathUtils previousPaths srcPath table imp = do
   let absPath = getImportAbsolutePath imp
   builtImport <- case M.lookup absPath table of
@@ -141,7 +142,7 @@ generateJsonAssignments pathUtils ((Source _ area (DefaultImport (Source _ _ nam
   return $ assignment : next
 
 
-getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either InferError AST -> IO (Either InferError [Import])
+getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either CompilationError AST -> IO (Either CompilationError [Import])
 getImportsWithAbsolutePaths pathUtils ctxPath ast =
   let astPath = case ast of
         Right x -> fromMaybe "" $ apath x
@@ -150,12 +151,12 @@ getImportsWithAbsolutePaths pathUtils ctxPath ast =
         Left  x    -> return $ Left x
         Right ast' -> sequence <$> mapM (updatePath astPath) (aimports ast')
  where
-  updatePath :: FilePath -> Import -> IO (Either InferError Import)
+  updatePath :: FilePath -> Import -> IO (Either CompilationError Import)
   updatePath path imp = do
     let importPath = (snd . getImportPath) imp
     absolutePath <- resolveAbsoluteSrcPath pathUtils ctxPath importPath
     case absolutePath of
-      Nothing  -> return $ Left $ InferError (ImportNotFound importPath) (Context path (getArea imp) [])
+      Nothing  -> return $ Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp) [])
       Just abs -> return $ Right (setImportAbsolutePath imp abs)
 
 
@@ -165,13 +166,13 @@ setImportAbsolutePath imp fp = case imp of
   Source i a (DefaultImport s p _) -> Source i a (DefaultImport s p fp)
 
 
-findAST :: Table -> FilePath -> Either InferError AST
+findAST :: Table -> FilePath -> Either CompilationError AST
 findAST table path = case M.lookup path table of
   Just x  -> return x
-  Nothing -> Left $ InferError (ImportNotFound path) NoContext
+  Nothing -> Left $ CompilationError (ImportNotFound path) NoContext
 
 
-buildAST :: FilePath -> String -> Either InferError AST
+buildAST :: FilePath -> String -> Either CompilationError AST
 buildAST path code = case parse code of
   Right ast -> setPath ast path
   Left e ->
@@ -179,7 +180,7 @@ buildAST path code = case parse code of
         line  = (read $ head split) :: Int
         col   = (read $ split !! 1) :: Int
         text  = unlines (tail . tail $ split)
-    in  Left $ InferError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
+    in  Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
 
 setPath :: AST -> FilePath -> Either e AST
 setPath ast path = Right ast { apath = Just path }

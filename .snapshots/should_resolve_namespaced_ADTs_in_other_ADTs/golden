@@ -49,7 +49,10 @@ Right
            { aimports =
                [ Untyped
                    (Area (Loc 0 1 1) (Loc 25 1 26))
-                   (DefaultImport "M" "./ModuleA" "./ModuleA")
+                   (DefaultImport
+                      (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "M")
+                      "./ModuleA"
+                      "./ModuleA")
                ]
            , aexps =
                [ Solved

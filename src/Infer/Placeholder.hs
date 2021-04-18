@@ -13,6 +13,7 @@ import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
 import           Control.Monad.Except
 import           Error.Error
+import           Error.Context
 import           Infer.Instantiate
 
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -122,7 +123,7 @@ updateMethodPlaceholder env push s ph@(Slv.Solved t a (Slv.Placeholder (Slv.Meth
             (_ :=> mtdT) <- instantiate methodScheme
             catchError
               (match mtdT (apply s t))
-              (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) a (envBacktrace env)))
+              (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) a (envBacktrace env)))
           Nothing -> return mempty
         Nothing -> return mempty
 
@@ -274,14 +275,14 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
           TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") tSpread)) tElem -> do
             catchError
               (unify tElem tSpread)
-              (\(InferError err _) -> throwError $ InferError err (Context (envCurrentPath env) area (envBacktrace env))
+              (\(CompilationError err _) -> throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
               )
             return $ Slv.Solved t area $ Slv.ListSpread elem
 
           TApp (TApp (TCon (TC "(->)" _) _) tSingleChild) tElem -> do
             catchError
               (unify tElem tSingleChild)
-              (\(InferError err _) -> throwError $ InferError err (Context (envCurrentPath env) area (envBacktrace env))
+              (\(CompilationError err _) -> throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
               )
             return $ Slv.Solved t area $ Slv.ListItem elem
 

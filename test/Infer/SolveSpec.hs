@@ -21,6 +21,7 @@ import qualified AST.Solved                    as Slv
 import           Infer.Exp
 import           Infer.Env
 import           Infer.Infer
+import           Canonicalize.CanonicalM
 import           Infer.AST
 import           Error.Error
 import           Parse.Madlib.AST
@@ -40,21 +41,21 @@ snapshotTest name actualOutput = Golden { output        = pack $ ppShow actualOu
                                         , failFirstTime = False
                                         }
 
-tester :: String -> Either InferError Slv.AST
+tester :: String -> Either CompilationError Slv.AST
 tester code = do
   ast <- buildAST "path" code
   let table = M.singleton "path" ast
-  (table, _) <- canonicalizeAST TNode Can.initialEnv table "path"
+  ((table, _), _) <- runStateT (canonicalizeAST TNode Can.initialEnv table "path") (CanonicalState { warnings = [] })
   canAST     <- Can.findAST table "path"
 
   runEnv canAST >>= (`runInfer` canAST)
   where runEnv x = fst <$> runExcept (runStateT (buildInitialEnv initialEnv x) InferState { count = 0, errors = [] })
 
-tableTester :: Src.Table -> Src.AST -> Either InferError Slv.Table
+tableTester :: Src.Table -> Src.AST -> Either CompilationError Slv.Table
 tableTester table ast = do
   let astPath = fromMaybe "" $ Src.apath ast
-  (canTable, _) <- canonicalizeAST TNode Can.initialEnv table astPath
-  canAST        <- Can.findAST canTable astPath
+  ((canTable, _), _) <- runStateT (canonicalizeAST TNode Can.initialEnv table astPath) (CanonicalState { warnings = [] })
+  canAST             <- Can.findAST canTable astPath
 
   let result = runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   case result of
