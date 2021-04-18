@@ -145,9 +145,9 @@ extractImportedVars env ast imp = do
 
 filterExportsByImport :: Can.Import -> Vars -> Vars
 filterExportsByImport imp vars = case imp of
-  Can.Canonical _ (Can.DefaultImport namespace _ _) -> M.mapKeys ((namespace <> ".") <>) vars
+  Can.Canonical _ (Can.DefaultImport (Can.Canonical _ namespace) _ _) -> M.mapKeys ((namespace <> ".") <>) vars
 
-  Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList names
+  Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList (Can.getCanonicalContent <$> names)
 
 
 solveImports
@@ -212,7 +212,7 @@ inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.a
       , Slv.aimports    = (\case
                             g@(Slv.Untyped _    Slv.DefaultImport{}           ) -> g
                             i@(Slv.Untyped area (Slv.NamedImport names fp afp)) -> Slv.Untyped area
-                              $ Slv.NamedImport (mapMaybe (\n -> M.lookup n (envVars env) >> Just n) names) fp afp
+                              $ Slv.NamedImport (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names) fp afp
                           )
                           .   updateImport
                           <$> aimports
@@ -249,10 +249,12 @@ updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme))
 
 updateImport :: Can.Import -> Slv.Import
 updateImport i = case i of
-  Can.Canonical area (Can.NamedImport   ns p fp) -> Slv.Untyped area $ Slv.NamedImport ns p fp
+  Can.Canonical area (Can.NamedImport   ns p fp) -> Slv.Untyped area $ Slv.NamedImport (updateImportName <$> ns) p fp
 
-  Can.Canonical area (Can.DefaultImport n  p fp) -> Slv.Untyped area $ Slv.DefaultImport n p fp
+  Can.Canonical area (Can.DefaultImport n  p fp) -> Slv.Untyped area $ Slv.DefaultImport (updateImportName n) p fp
 
+updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
+updateImportName (Can.Canonical area name) = Slv.Untyped area name
 
 -- |The 'solveTable' function is the main function of this module.
 -- It runs type checking for a given canonical ast table and an entrypoint ast

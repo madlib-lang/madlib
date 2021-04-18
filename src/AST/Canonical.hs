@@ -30,8 +30,8 @@ data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, S
 type Import = Canonical Import_
 -- The second FilePath parameter is the absolute path to that module
 data Import_
-  = NamedImport [Name] FilePath FilePath
-  | DefaultImport Name FilePath FilePath
+  = NamedImport [Canonical Name] FilePath FilePath
+  | DefaultImport (Canonical Name) FilePath FilePath
   deriving(Eq, Show)
 
 type Constructor = Canonical Constructor_
@@ -189,6 +189,9 @@ isAssignment exp = case exp of
 
 getArea :: Canonical a -> Area
 getArea (Canonical a _) = a
+
+getCanonicalContent :: Canonical a -> a
+getCanonicalContent (Canonical _ a) = a
 
 getExpName :: Exp -> Maybe String
 getExpName (Canonical _ exp) = case exp of

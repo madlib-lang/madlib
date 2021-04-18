@@ -21,8 +21,8 @@ data AST =
 type Import = Source Import_
 -- The second FilePath parameter is the absolute path to that module
 data Import_
-  = NamedImport [Name] FilePath FilePath
-  | DefaultImport Name FilePath FilePath
+  = NamedImport [Source Name] FilePath FilePath
+  | DefaultImport (Source Name) FilePath FilePath
   deriving(Eq, Show)
 
 type TypeDecl = Source TypeDecl_
@@ -139,7 +139,7 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
-getImportNames :: Import -> [Name]
+getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
   Source _ _ (NamedImport names _ n) -> names
   Source _ _ DefaultImport{}         -> []
@@ -155,3 +155,6 @@ getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
 
 getArea :: Source a -> Area
 getArea (Source _ a _) = a
+
+getSourceContent :: Source a -> a
+getSourceContent (Source _ _ a) = a

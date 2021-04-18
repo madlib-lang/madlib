@@ -119,11 +119,11 @@ importDecls :: { [Src.Import] }
   
 importDecl :: { Src.Import }
   : 'import' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
-  | 'import' name 'from' str rets                { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (strV $2) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
+  | 'import' name 'from' str rets                { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (Src.Source emptyInfos (tokenToArea $2) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
 
-importNames :: { [Src.Name] }
-  : importNames ',' name %shift { $1 <> [strV $3] }
-  | name                 %shift { [strV $1] }
+importNames :: { [Src.Source Src.Name] }
+  : importNames ',' name %shift { $1 <> [Src.Source emptyInfos (tokenToArea $3) (strV $3)] }
+  | name                 %shift { [Src.Source emptyInfos (tokenToArea $1) (strV $1)] }
   | {- empty -}          %shift { [] }
 
 

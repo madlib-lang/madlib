@@ -20,6 +20,7 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Explain.Location
+import           Explain.Meta
 
 
 findAllExportedNames :: Can.AST -> [Can.Name]
@@ -40,10 +41,10 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportNames = findAllExportedNames ast
   let allImportNames = Src.getImportNames imp
-  let notExported    = allImportNames \\ allExportNames
+  let notExported    = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames--allImportNames \\ allExportNames
 
   unless (null notExported)
-         (throwError $ InferError (NotExported (head notExported) path) (Context originAstPath (Src.getArea imp) []))
+         (throwError $ InferError (NotExported (Src.getSourceContent $ head notExported) path) (Context originAstPath (Src.getArea $ head notExported) []))
 
   envTds <- mapImportToEnvTypeDecls env imp ast
 
@@ -57,9 +58,9 @@ mapImportToEnvTypeDecls env imp ast = do
 
 fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
 fromExportToImport imp exports = case imp of
-  Src.Source _ _ (Src.NamedImport   names _ _) -> M.restrictKeys exports $ S.fromList names
+  Src.Source _ _ (Src.NamedImport   names _ _) -> M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
 
-  Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((name ++ ".") ++) exports
+  Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
 extractExportsFromAST env ast = do
