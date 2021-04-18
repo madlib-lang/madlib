@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -227,7 +226,10 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
 instance Canonicalizable Src.Import Can.Import where
   canonicalize env target (Src.Source _ area imp) = case imp of
-    Src.NamedImport names relPath absPath -> return $ Can.Canonical area (Can.NamedImport names relPath absPath)
+    Src.NamedImport names relPath absPath -> return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
 
     Src.DefaultImport namespace relPath absPath ->
-      return $ Can.Canonical area (Can.DefaultImport namespace relPath absPath)
+      return $ Can.Canonical area (Can.DefaultImport (canonicalizeName namespace) relPath absPath)
+
+canonicalizeName :: Src.Source Src.Name -> Can.Canonical Can.Name
+canonicalizeName (Src.Source _ area name) = Can.Canonical area name

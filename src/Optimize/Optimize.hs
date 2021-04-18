@@ -288,10 +288,13 @@ instance Optimizable Slv.Instance Opt.Instance where
 
 instance Optimizable Slv.Import Opt.Import where
   optimize _ (Slv.Untyped area imp) = case imp of
-    Slv.NamedImport names relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport names relPath absPath
+    Slv.NamedImport names relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport (optimizeImportName <$> names) relPath absPath
 
     Slv.DefaultImport namespace relPath absPath ->
-      return $ Opt.Untyped area $ Opt.DefaultImport namespace relPath absPath
+      return $ Opt.Untyped area $ Opt.DefaultImport (optimizeImportName namespace) relPath absPath
+
+optimizeImportName :: Slv.Solved Slv.Name -> Opt.Optimized Opt.Name
+optimizeImportName (Slv.Untyped area name) = Opt.Untyped area name
 
 instance Optimizable Slv.AST Opt.AST where
   optimize enabled ast = do

@@ -24,8 +24,8 @@ data AST =
 
 type Import = Solved Import_
 data Import_
-  = NamedImport [Name] FilePath FilePath
-  | DefaultImport Name FilePath FilePath
+  = NamedImport [Solved Name] FilePath FilePath
+  | DefaultImport (Solved Name) FilePath FilePath
   deriving(Eq, Show, Ord)
 
 type Interface = Solved Interface_

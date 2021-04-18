@@ -514,10 +514,10 @@ compileImport :: CompilationConfig -> Import -> String
 compileImport config (Untyped _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
-    in  "import { " <> compileNames names <> " } from \"" <> importPath <> "\""
+    in  "import { " <> compileNames (Opt.getValue <$> names) <> " } from \"" <> importPath <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
-    let importPath = buildImportPath config absPath in "import " <> alias <> " from \"" <> importPath <> "\""
+    let importPath = buildImportPath config absPath in "import " <> Opt.getValue alias <> " from \"" <> importPath <> "\""
 
 
 buildImportPath :: CompilationConfig -> FilePath -> FilePath

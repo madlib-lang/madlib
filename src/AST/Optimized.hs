@@ -24,8 +24,8 @@ data AST =
 
 type Import = Optimized Import_
 data Import_
-  = NamedImport [Name] FilePath FilePath
-  | DefaultImport Name FilePath FilePath
+  = NamedImport [Optimized Name] FilePath FilePath
+  | DefaultImport (Optimized Name) FilePath FilePath
   deriving(Eq, Show)
 
 type Interface = Optimized Interface_

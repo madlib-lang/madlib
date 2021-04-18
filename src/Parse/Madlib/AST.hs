@@ -132,7 +132,7 @@ escapeJSONString s = case s of
 
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
-generateJsonAssignments pathUtils ((Source _ area (DefaultImport name _ absPath)):imps) = do
+generateJsonAssignments pathUtils ((Source _ area (DefaultImport (Source _ _ name) _ absPath)):imps) = do
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath
   let var = Source emptyInfos area (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
