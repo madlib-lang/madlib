@@ -11,6 +11,7 @@ import           Infer.Substitute
 import           Infer.Scheme
 import           Infer.Type
 import           Error.Error
+import           Error.Context
 import qualified Data.Map                      as M
 import           Data.Char
 import           Control.Monad.Except
@@ -32,7 +33,7 @@ canonicalizeTypeDecls env astPath (typeDecl : tds) = do
 canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
 canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl of
   adt@Src.ADT{} -> case M.lookup (Src.adtname adt) (envTypeDecls env) of
-    Just t  -> throwError $ InferError (ADTAlreadyDefined t) (Context astPath area [])
+    Just t  -> throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area [])
     Nothing -> do
       let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
           vars = (\n -> TVar (TV n Star)) <$> Src.adtparams adt

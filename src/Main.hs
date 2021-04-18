@@ -72,6 +72,7 @@ import           Data.String.Utils
 import           Compile.JSInternals
 import           Compile.Documentation
 import           Error.Error
+import           Error.Context
 import qualified Canonicalize.Canonicalize     as Can
 import qualified Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
@@ -205,12 +206,14 @@ runSingleModule input args = do
 
 
 
-solveASTsForDoc :: [FilePath] -> IO (Either InferError [(Slv.AST, [DocString.DocString])])
+solveASTsForDoc :: [FilePath] -> IO (Either CompilationError [(Slv.AST, [DocString.DocString])])
 solveASTsForDoc []         = return $ Right []
 solveASTsForDoc (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
   astTable            <- buildASTTable mempty canonicalEntrypoint
-  let canTable = astTable >>= \table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
+  let (canTable, _) = case astTable of
+        Right table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
+        Left e -> (Left e, [])
 
   rootPath <- canonicalizePath $ computeRootPath fp
 
@@ -219,7 +222,7 @@ solveASTsForDoc (fp : fps) = do
         (Right ast, Right table) -> do
           runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
         (_     , Left e) -> Left e
-        (Left e, _     ) -> Left $ InferError (ImportNotFound rootPath) NoContext
+        (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
 
   case resolvedASTTable of
     Left  e          -> return $ Left e
@@ -341,7 +344,14 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     canonicalEntrypoint <- canonicalizePath entrypoint
     sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
     astTable            <- buildManyASTTables mempty sourcesToCompile
-    let canTable = astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+    let (canTable, warnings) = case astTable of --astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+          Right table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+          Left e -> (Left e, [])
+
+
+    formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
+    let fullWarning = intercalate "\n\n\n" formattedWarnings
+    putStrLn fullWarning
 
     rootPath <- canonicalizePath $ computeRootPath entrypoint
 
@@ -364,38 +374,39 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
           then do
             formattedErr <- Explain.format readFile json err
             putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] mempty
-          else Explain.format readFile json err >>= putStrLn >> exitFailure
+          else do
+            unless (null warnings) (putStrLn "\n")
+            Explain.format readFile json err >>= putStrLn >> exitFailure
       Right (table, inferState) ->
         let errs      = errors inferState
             hasErrors = not (null errs)
-        in  if json
-              then do
-                withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-                putStrLn $ CompileJson.compileASTTable withFormattedErrors table
-              else if hasErrors
-                then do
-                  formattedErrors <- mapM (Explain.format readFile json) errs
-                  let fullError = intercalate "\n\n\n\n" formattedErrors
-                  putStrLn fullError >> exitFailure
-                else do
-                  when coverage $ do
-                    runCoverageInitialization rootPath table
+        in  if json then do
+              withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+              putStrLn $ CompileJson.compileASTTable withFormattedErrors table
+            else if hasErrors then do
+              unless (null warnings) (putStrLn "\n")
+              formattedErrors <- mapM (Explain.format readFile json) errs
+              let fullError = intercalate "\n\n\n" formattedErrors
+              putStrLn fullError >> exitFailure
+            else do
+              when coverage $ do
+                runCoverageInitialization rootPath table
 
-                  let optimizedTable = optimizeTable optimized table
+              let optimizedTable = optimizeTable optimized table
 
-                  generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
+              generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
-                  when bundle $ do
-                    let entrypointOutputPath =
-                          computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+              when bundle $ do
+                let entrypointOutputPath =
+                      computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
 
-                    bundled <- runBundle outputPath entrypointOutputPath
-                    case bundled of
-                      Left  e                    -> putStrLn e
-                      Right (bundleContent, err) -> do
-                        _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-                        writeFile outputPath bundleContent
-                        unless (null err) $ putStrLn err
+                bundled <- runBundle outputPath entrypointOutputPath
+                case bundled of
+                  Left  e                    -> putStrLn e
+                  Right (bundleContent, err) -> do
+                    _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+                    writeFile outputPath bundleContent
+                    unless (null err) $ putStrLn err
 
 
 rollupNotFoundMessage = unlines

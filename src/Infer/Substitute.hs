@@ -7,6 +7,7 @@ import           Infer.Type
 import           Infer.Env
 import           Infer.Infer
 import           Error.Error
+import           Error.Context
 import qualified Data.Map                      as M
 import           Data.Foldable                  ( Foldable(foldl') )
 import           Control.Monad.Except
@@ -64,7 +65,7 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
     (t                    , _                    ) -> t
 
 merge :: Substitution -> Substitution -> Infer Substitution
-merge s1 s2 = if agree then return (s1 <> s2) else throwError $ InferError FatalError NoContext
+merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (M.keys s1 `intersect` M.keys s2)
 
 buildVarSubsts :: Type -> Substitution

@@ -1,6 +1,9 @@
 module Explain.Format where
 
 import           Error.Error
+import           Error.Warning
+import           Error.Backtrace
+import           Error.Context
 import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
@@ -14,7 +17,7 @@ import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
 
-data Color = Green | Red | Grey | WhiteOnRed
+data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
 
 colorWhen :: Bool -> Color -> String -> String
 colorWhen when c s | when      = color c s
@@ -22,10 +25,12 @@ colorWhen when c s | when      = color c s
 
 color :: Color -> String -> String
 color c s = case c of
-  Green      -> "\x1b[32m" <> s <> "\x1b[0m"
-  Red        -> "\x1b[31m" <> s <> "\x1b[0m"
-  Grey       -> "\x1b[90m" <> s <> "\x1b[0m"
-  WhiteOnRed -> "\x1b[41m" <> s <> "\x1b[0m"
+  Green         -> "\x1b[32m" <> s <> "\x1b[0m"
+  Yellow        -> "\x1b[33m" <> s <> "\x1b[0m"
+  Red           -> "\x1b[31m" <> s <> "\x1b[0m"
+  Grey          -> "\x1b[90m" <> s <> "\x1b[0m"
+  WhiteOnRed    -> "\x1b[41m" <> s <> "\x1b[0m"
+  WhiteOnYellow -> "\x1b[43m" <> s <> "\x1b[0m"
 
 underlineWhen :: Bool -> String -> String
 underlineWhen when s | when      = "\x1b[4m" <> s <> "\x1b[0m"
@@ -37,8 +42,34 @@ getModuleContent rf (Context modulePath _ _) = rf modulePath
 getModuleContent _  _                        = return ""
 
 
-format :: (FilePath -> IO String) -> Bool -> InferError -> IO String
-format rf json (InferError err ctx) = do
+formatWarning :: (FilePath -> IO String) -> Bool -> CompilationWarning -> IO String
+formatWarning rf json (CompilationWarning warning ctx) = do
+  moduleContent <- lines <$> getModuleContent rf ctx
+  let formattedWarning = case ctx of
+        Context fp area bt ->
+          let (Area (Loc _ line _) _) = area
+          in  "in module '"
+                <> fp
+                <> "' at line "
+                <> show line
+                <> ":\n"
+                <> showAreaInSource json area area moduleContent
+                <> "\n"
+                <> formatWarningContent json warning
+
+        _ -> formatWarningContent json warning
+
+  return $ colorWhen (not json) WhiteOnYellow "Warning" <> " " <> formattedWarning
+
+formatWarningContent :: Bool -> WarningKind -> String
+formatWarningContent _ warning = case warning of
+  UnusedImport name path ->
+    "You imported '" <> name <> "' from the module located at '" <> path <> "'\n"
+    <> "but it seems that you never use it.\n\n"
+    <> "Hint: If you use it within the fence it may be undetected and you should then keep it. This will be fixed in a later release."
+
+format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
+format rf json (CompilationError err ctx) = do
   moduleContent <- lines <$> getModuleContent rf ctx
   let formattedError = case ctx of
         Context fp area bt ->
@@ -47,7 +78,7 @@ format rf json (InferError err ctx) = do
                 <> fp
                 <> "' at line "
                 <> show line
-                <> ":\n\n"
+                <> ":\n"
                 <> analyzeBacktrace json err bt
                 <> showAreaInSource json area area moduleContent
                 <> "\n"

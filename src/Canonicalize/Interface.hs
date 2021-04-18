@@ -14,6 +14,7 @@ import           Infer.Substitute
 import           Infer.Scheme
 import           Target
 import           Error.Error
+import           Error.Context
 import           Control.Monad
 import           Control.Monad.Except
 import qualified Data.Map                      as M
@@ -54,7 +55,7 @@ canonicalizeInterface env (Src.Source _ area interface) = case interface of
     let tvs' = (\(TVar tv) -> tv) <$> tvs
 
     env' <- if null tvs'
-      then throwError $ InferError FatalError (Context (envCurrentPath env) area mempty)
+      then throwError $ CompilationError FatalError (Context (envCurrentPath env) area mempty)
       else return $ env { envInterfaces = M.insert n (Interface tvs' supers) (envInterfaces env) }
 
     canMs <- mapM canonicalizeTyping ms
@@ -89,7 +90,7 @@ canonicalizeInstances env target (i : is) = do
   next    <- canonicalizeInstances env target is
   current <- catchError
     (canonicalizeInstance env target i)
-    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) (Src.getArea i) []))
+    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) (Src.getArea i) []))
 
   return $ current : next
 
@@ -115,7 +116,7 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
                   return $ IsIn interface' vars
 
                 Nothing ->
-                  throwError $ InferError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
+                  throwError $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 616abdcadfeefe3a72bc113b7d63fefd5f05c6732576a6217561615b55c5061a
+-- hash: f2fc5f9bbb613fb67ed84d024d8645e632cbf15da7f8505931e7080242aa90fd
 
 name:           madlib
 version:        0.8.0
@@ -50,7 +50,10 @@ library
       Compile.Json
       Compile.Utils
       Coverage.Coverable
+      Error.Backtrace
+      Error.Context
       Error.Error
+      Error.Warning
       Explain.Format
       Explain.Location
       Explain.Meta
@@ -140,7 +143,10 @@ executable madlib
       Compile.Json
       Compile.Utils
       Coverage.Coverable
+      Error.Backtrace
+      Error.Context
       Error.Error
+      Error.Warning
       Explain.Format
       Explain.Location
       Explain.Meta

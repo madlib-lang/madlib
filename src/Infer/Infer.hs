@@ -7,14 +7,14 @@ import           Control.Monad.State
 import           Error.Error
 
 
-data InferState = InferState { count :: Int, errors :: [InferError] }
+data InferState = InferState { count :: Int, errors :: [CompilationError] }
   deriving (Show, Eq)
 
 
-pushError :: InferError -> Infer ()
+pushError :: CompilationError -> Infer ()
 pushError err = do
   s <- get
   put s { errors = errors s ++ [err] }
 
 
-type Infer a = forall m . (MonadError InferError m, MonadState InferState m) => m a
+type Infer a = forall m . (MonadError CompilationError m, MonadState InferState m) => m a

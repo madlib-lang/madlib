@@ -15,6 +15,7 @@ import qualified Data.Set                      as S
 import qualified Data.Map                      as M
 import           Data.Char
 import           Error.Error
+import           Error.Context
 import           Control.Monad.Except
 import           Data.List
 
@@ -87,8 +88,9 @@ typingToType env (Src.Source _ area (Src.TRSingle t))
   | t == "()" = return tUnit
   | isLower $ head t = return (TVar $ TV t Star)
   | otherwise = do
+    pushNameAccess t
     h <- catchError (lookupADT env t)
-                    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area []))
+                    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
     case h of
       (TAlias _ _ _ t) -> updateAliasVars (getConstructorCon h) []
       t                -> return $ getConstructorCon t
@@ -99,8 +101,9 @@ typingToType env (Src.Source _ area (Src.TRComp t ts))
     params <- mapM (typingToType env) ts
     return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
   | otherwise = do
+    pushNameAccess t
     h <- catchError (lookupADT env t)
-                    (\(InferError e _) -> throwError $ InferError e (Context (envCurrentPath env) area []))
+                    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
 
     let (Forall ks (_ :=> rr)) = quantify (ftv h) ([] :=> h)
 

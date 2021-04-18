@@ -10,6 +10,7 @@ import qualified Data.Map                      as M
 import           Infer.Type
 import           Control.Monad
 import           Error.Error
+import           Error.Context
 import           Control.Monad.Except
 import           Control.Exception
 import           Text.Show.Pretty
@@ -57,8 +58,8 @@ verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area 
     then case M.lookup nameToVerify dependencies of
       Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
 
-      Nothing    -> return () --throwError $ InferError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
-    else throwError $ InferError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
+      Nothing    -> return () --throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
+    else throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
 removeAccessFromDeps access = M.map (S.filter (/= access))
@@ -86,6 +87,7 @@ collect env globalScope localScope solvedExp@(Solved _ area e) = case e of
     globalNamesAccessed <- mapM (collect env globalScope localScope) exps
     return $ foldr S.union S.empty globalNamesAccessed
 
+  Var ('.':_)  -> return S.empty
   Var name     -> if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
 
   App fn arg _ -> do
@@ -115,7 +117,7 @@ collect env globalScope localScope solvedExp@(Solved _ area e) = case e of
 
   Assignment name exp -> do
     when (name `S.member` globalScope && not (S.null localScope))
-         (pushError $ InferError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
+         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
     collect env globalScope localScope exp
 

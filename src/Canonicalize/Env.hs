@@ -5,6 +5,7 @@ module Canonicalize.Env where
 import           Canonicalize.CanonicalM
 import           Infer.Type
 import           Error.Error
+import           Error.Context
 import           Control.Monad.Except
 import qualified Data.Map                      as M
 
@@ -34,7 +35,7 @@ addADT env name adt =
 lookupADT :: Env -> String -> CanonicalM Type
 lookupADT env name = case M.lookup name (envTypeDecls env) of
   Just found -> return found
-  Nothing    -> throwError $ InferError (UnknownType name) NoContext
+  Nothing    -> throwError $ CompilationError (UnknownType name) NoContext
 
 
 initialEnv :: Env

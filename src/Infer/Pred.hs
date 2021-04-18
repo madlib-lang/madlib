@@ -9,6 +9,7 @@ import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Infer
 import           Error.Error
+import           Error.Context
 import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
@@ -22,7 +23,7 @@ getParentPreds :: Env -> Pred -> Infer [Pred]
 getParentPreds env p@(IsIn cls ts) = do
   (Interface tvs ps _) <- case M.lookup cls (envInterfaces env) of
     Just x  -> return x
-    Nothing -> throwError $ InferError (InterfaceNotExisting cls) NoContext
+    Nothing -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   s <- unify (TVar <$> tvs) ts
 
@@ -35,7 +36,7 @@ getParentPreds env p@(IsIn cls ts) = do
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
 liftPred m (IsIn i ts) (IsIn i' ts') | i == i'   = m ts ts'
-                                     | otherwise = throwError $ InferError FatalError NoContext
+                                     | otherwise = throwError $ CompilationError FatalError NoContext
 
 instance Unify Pred where
   unify = liftPred unify
@@ -68,7 +69,7 @@ findInst env p@(IsIn interface t) = do
   tryInst i@(Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
     return i
-  tryInsts []          = throwError $ InferError (NoInstanceFound interface t) NoContext
+  tryInsts []          = throwError $ CompilationError (NoInstanceFound interface t) NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
 
 
@@ -85,7 +86,7 @@ specialMatch p@(IsIn cls ts) p'@(IsIn cls' ts') = do
     then do
       let zipped = zip ts ts'
       foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
-    else throwError $ InferError FatalError NoContext
+    else throwError $ CompilationError FatalError NoContext
 
 specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
 specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
@@ -108,7 +109,7 @@ isInstanceOf p@(IsIn interface ts) p'@(IsIn interface' ts') = do
       s1 <- unify (IsIn interface (fst <$> r')) (IsIn interface (snd <$> r'))
       s2 <- match (IsIn interface (fst <$> r)) (IsIn interface (snd <$> r))
       return $ s1 <> s2
-    else throwError $ InferError FatalError NoContext
+    else throwError $ CompilationError FatalError NoContext
 
 byInst :: Env -> Pred -> Infer [Pred]
 byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
@@ -118,8 +119,8 @@ byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
     let ps' = apply u <$> ps
     return ps'
   tryInsts [] = if all isConcrete $ predTypes p
-    then throwError $ InferError (NoInstanceFound interface ts) NoContext
-    else throwError $ InferError FatalError NoContext
+    then throwError $ CompilationError (NoInstanceFound interface ts) NoContext
+    else throwError $ CompilationError FatalError NoContext
 
   tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 
@@ -132,7 +133,7 @@ entail env ps p = do
   tt <- catchError
     (byInst env p >>= allM (entail env ps))
     (\case
-      InferError FatalError _ -> return False
+      CompilationError FatalError _ -> return False
       e                       -> throwError e
     )
   return $ any ((p `elem`) . bySuper env) ps || tt

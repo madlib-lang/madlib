@@ -7,6 +7,8 @@ import qualified AST.Canonical                 as Can
 import           Infer.Type
 import           Infer.Infer
 import           Error.Error
+import           Error.Backtrace
+import           Error.Context
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
 
@@ -34,7 +36,7 @@ data Env
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
   Just x  -> return x
-  Nothing -> throwError $ InferError (UnboundVariable x) NoContext
+  Nothing -> throwError $ CompilationError (UnboundVariable x) NoContext
 
 
 extendVars :: Env -> (String, Scheme) -> Env
@@ -43,14 +45,14 @@ extendVars env (x, s) = env { envVars = M.insert x s $ envVars env }
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
 safeExtendVars env (i, sc) = case M.lookup i (envVars env) of
-  Just _  -> throwError $ InferError (NameAlreadyDefined i) NoContext
+  Just _  -> throwError $ CompilationError (NameAlreadyDefined i) NoContext
   Nothing -> return $ extendVars env (i, sc)
 
 
 lookupInterface :: Env -> Can.Name -> Infer Interface
 lookupInterface env n = case M.lookup n (envInterfaces env) of
   Just i -> return i
-  _      -> throwError $ InferError (InterfaceNotExisting n) NoContext
+  _      -> throwError $ CompilationError (InterfaceNotExisting n) NoContext
 
 
 mergeVars :: Env -> Vars -> Env

@@ -61,11 +61,15 @@ instance Canonicalizable Src.Exp Can.Exp where
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Export exp')
 
-    Src.NameExport name -> case M.lookup name (E.envTypeDecls env) of
-      Just found -> return $ Can.Canonical area (Can.TypeExport name)
-      Nothing    -> return $ Can.Canonical area (Can.NameExport name)
+    Src.NameExport name -> do
+      pushNameAccess name
+      case M.lookup name (E.envTypeDecls env) of
+        Just found -> return $ Can.Canonical area (Can.TypeExport name)
+        Nothing    -> return $ Can.Canonical area (Can.NameExport name)
 
-    Src.Var name            -> return $ Can.Canonical area (Can.Var name)
+    Src.Var name            -> do
+      pushNameAccess name
+      return $ Can.Canonical area (Can.Var name)
 
     Src.TypedExp exp typing -> do
       exp'   <- canonicalize env target exp
@@ -96,6 +100,8 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Where exp' iss')
 
     Src.JsxTag name props children -> do
+      pushNameAccess name
+      pushNameAccess "text" -- fix for now
       let Area (Loc _ l c) (Loc _ l' c') = area
       let tagFnArea = Area (Loc 0 l c) (Loc 0 l (c + length name + 2))
       let tagFnVar = Can.Canonical tagFnArea (Can.Var name)
@@ -104,6 +110,7 @@ instance Canonicalizable Src.Exp Can.Exp where
         ((\e@(Can.Canonical a _) -> Can.Canonical a (Can.ListItem e)) <$>) <$> mapM canonicalizeJsxChild children
       propFns <- mapM
         (\(Src.Source _ a (Src.JsxProp name' exp)) -> do
+          pushNameAccess name'
           let Area (Loc _ l c) (Loc _ l' c') = a
           arg <- canonicalize env target exp
           return $ Can.Canonical
@@ -196,6 +203,7 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
     Src.PCtor name pats -> do
+      pushNameAccess name
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PCtor name pats')
 
