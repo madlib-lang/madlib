@@ -344,14 +344,14 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     canonicalEntrypoint <- canonicalizePath entrypoint
     sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
     astTable            <- buildManyASTTables mempty sourcesToCompile
-    let (canTable, warnings) = case astTable of --astTable >>= \table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
+    let (canTable, warnings) = case astTable of
           Right table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
           Left e -> (Left e, [])
 
-
-    formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
-    let fullWarning = intercalate "\n\n\n" formattedWarnings
-    putStrLn fullWarning
+    unless json $ do
+      formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
+      let fullWarning = intercalate "\n\n\n" formattedWarnings
+      putStrLn fullWarning
 
     rootPath <- canonicalizePath $ computeRootPath entrypoint
 
@@ -372,8 +372,9 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
       Left err -> do
         if json
           then do
+            formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
             formattedErr <- Explain.format readFile json err
-            putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] mempty
+            putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
           else do
             unless (null warnings) (putStrLn "\n")
             Explain.format readFile json err >>= putStrLn >> exitFailure
@@ -381,8 +382,9 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
         let errs      = errors inferState
             hasErrors = not (null errs)
         in  if json then do
-              withFormattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-              putStrLn $ CompileJson.compileASTTable withFormattedErrors table
+              formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
+              formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+              putStrLn $ CompileJson.compileASTTable formattedErrors formattedWarnings table
             else if hasErrors then do
               unless (null warnings) (putStrLn "\n")
               formattedErrors <- mapM (Explain.format readFile json) errs
