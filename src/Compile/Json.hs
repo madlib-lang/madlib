@@ -11,6 +11,7 @@ import           Utils.Tuple                    ( lst )
 import           Debug.Trace
 import           Text.Show.Pretty
 import           Error.Error
+import           Error.Warning
 import           Error.Context
 import           Explain.Format
 import           Compile.Utils
@@ -25,22 +26,55 @@ indent depth = concat $ replicate (depth * indentSize) " "
 
 
 
-compileASTTable :: [(CompilationError, String)] -> Slv.Table -> String
-compileASTTable errs table =
-  let compiledASTs   = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
-      compiledErrors = intercalate ",\n    " $ compileError 2 <$> errs
+compileASTTable :: [(CompilationError, String)] -> [(CompilationWarning, String)] -> Slv.Table -> String
+compileASTTable errs warnings table =
+  let compiledASTs     = (\(path, ast) -> "\"" <> path <> "\": " <> compileAST ast) <$> M.toList table
+      compiledErrors   = intercalate ",\n    " $ compileError 2 <$> errs
+      compiledWarnings = intercalate ",\n    " $ compileWarning 2 <$> warnings
   in  "{\n  \"asts\": {\n    "
         <> intercalate ",\n    " compiledASTs
         <> "\n  },\n  \"errors\": [\n    "
         <> compiledErrors
-        <> "\n  ]\n}\n"
+        <> "\n  ],\n  "
+        <> "\"warnings\": [\n    "
+        <> compiledWarnings
+        <> "\n  ]\n"
+        <> "}\n"
+
+getWarningType :: CompilationWarning -> String
+getWarningType (CompilationWarning warning _) = case warning of
+  UnusedImport _ _ -> "UnusedImport"
+  _                -> "Warning"
+
+compileWarning :: Int -> (CompilationWarning, String) -> String
+compileWarning depth (warning@(CompilationWarning typeWarning ctx), formatted) =
+  let area    = getCtxArea ctx
+      errPath = getCtxPath ctx
+      loc     = case area of
+        Just a  -> indent (depth + 1) <> "\"loc\": " <> compileArea (depth + 1) a <> "\n"
+        Nothing -> ""
+      origin = case errPath of
+        Just a  -> indent (depth + 1) <> "\"origin\": \"" <> a <> "\",\n"
+        Nothing -> ""
+  in  "{\n"
+        <> indent (depth + 1)
+        <> "\"warningType\": \""
+        <> getWarningType warning
+        <> "\",\n"
+        <> indent (depth + 1)
+        <> "\"message\": "
+        <> escapeString formatted
+        <> ",\n"
+        <> origin
+        <> loc
+        <> indent depth
+        <> "}"
 
 
 getErrorType :: CompilationError -> String
 getErrorType (CompilationError err _) = case err of
   UnificationError t1 t2 -> "UnificationError"
   _                      -> "Error"
-
 
 compileError :: Int -> (CompilationError, String) -> String
 compileError depth (err@(CompilationError typeError ctx), formatted) =

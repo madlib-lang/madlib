@@ -24,6 +24,7 @@ import           Control.Monad.Except
 import           Control.Monad.State
 import           Explain.Location
 import           Explain.Meta
+import           Text.Regex.TDFA
 
 
 findAllExportedNames :: Can.AST -> [Can.Name]
@@ -111,7 +112,13 @@ checkUnusedImports env imports = do
   let importedNames = getAllImportedNames imports
   namesAccessed <- S.toList <$> getAllNameAccesses
   let unused = filter (not . (`elem` namesAccessed) . fst) importedNames
-  mapM_ (\(name, area) -> pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))) unused
+  withJSCheck <-
+    if null unused then
+      return unused
+    else do
+      allJS <- getJS
+      return $ filter (not . (allJS =~) . fst) unused
+  mapM_ (\(name, area) -> pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))) withJSCheck
 
 canonicalizeAST :: Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env)
 canonicalizeAST target env table astPath = do
@@ -125,6 +132,7 @@ canonicalizeAST target env table astPath = do
   foldM (verifyExport env'') [] (Src.aexps ast)
 
   resetNameAccesses
+  resetJS
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath $ Src.atypedecls ast
   imports               <- mapM (canonicalize env''' target) $ Src.aimports ast

@@ -36,7 +36,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       es' <- mapM (canonicalize env target) es
       return $ Can.Canonical area (Can.TemplateString es')
 
-    Src.JSExp js         -> return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
+    Src.JSExp js         -> do
+      pushJS js
+      return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
 
     Src.App fn arg close -> do
       fn'  <- canonicalize env target fn
