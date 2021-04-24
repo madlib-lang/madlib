@@ -195,6 +195,9 @@ export first = (xs) => #-{
 init :: List a -> List a
 export init = (xs) => (#- xs.slice(0, -1) -#)
 
+tail :: List a -> List a
+export tail = (xs) => (#- xs.slice(1) -#)
+
 
 /**
  * Safely access a value at a given index in a List (wrapped in Just), or Nothing.
@@ -398,4 +401,18 @@ export includes = (x, xs) => (#- xs.includes(x) -#)
 
 
 drop :: Number -> List a -> List a
-export drop = (amount, xs) => slice(0, 0 - amount, xs)
+export drop = (amount, xs) => slice(amount, len(xs) - amount - 1, xs)
+
+dropWhile :: (a -> Boolean) -> List a -> List a
+export dropWhile = (pred, xs) => #-{
+  const n = xs.length
+  let i = 0
+
+  for (; i < n; i++) {
+      if (!pred(xs[i])) {
+          break
+      }
+  }
+
+  return xs.slice(i)
+}-#

@@ -1,5 +1,6 @@
 import {} from "Monoid"
 import {} from "Show"
+import { Just, Nothing, Maybe } from "Maybe"
 
 instance Semigroup String {
   assoc = (a, b) => a ++ b
@@ -27,3 +28,31 @@ export lines = split("\n")
 
 mapChars :: (String -> String) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
+
+isEmpty :: String -> Boolean
+export isEmpty = (s) => #- !s -#
+
+nthChar :: Number -> String -> Maybe String
+export nthChar = (n, s) => #-{
+  const c = s[n]
+  return !!c ? Just(c) : Nothing
+}-#
+
+firstChar :: String -> Maybe String
+export firstChar = nthChar(0)
+
+drop :: Number -> String -> String
+export drop = (n, s) => #- s.substr(n) -#
+
+/**
+ * Returns true if the character is a letter, false otherwise. Note that if the
+ * input contains more than one character, false is returned.
+ */
+isLetter :: String -> Boolean
+export isLetter = (s) => #-{
+  if (s.length !== 1) {
+    return false
+  }
+
+  return RegExp(/^\p{L}/,'u').test(s)
+}-#

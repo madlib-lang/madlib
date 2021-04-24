@@ -54,8 +54,7 @@ import           System.Environment             ( setEnv
                                                 , getEnv
                                                 )
 import           System.Environment.Executable  ( getExecutablePath )
-import           System.IO                      ( hPutStrLn
-                                                , stderr
+import           System.IO                      ( stderr
                                                 )
 import           Coverage.Coverable             ( collectFromAST
                                                 , isFunction
@@ -351,7 +350,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     unless json $ do
       formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
       let fullWarning = intercalate "\n\n\n" formattedWarnings
-      putStrLn fullWarning
+      unless (null fullWarning) $ putStrLn fullWarning
 
     rootPath <- canonicalizePath $ computeRootPath entrypoint
 

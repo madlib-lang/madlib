@@ -42,7 +42,7 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 $alpha    = [a-zA-Z]                        -- alphabetic characters
 $empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
 $superEmpty = [\ \t\f\v\r\n]                    -- equivalent to $white but without line return
-$head     = [\n \ ]                         -- leading whitespace and / or newline
+$head     = [\ \n]                         -- leading whitespace and / or newline
 $tail     = [\n]                            -- trailing newline
 $multilineStringContent = [$printable \n]
 
@@ -50,13 +50,16 @@ $jsxText  = [^\<\>\{\}]
 $jsxTextPopOut = [\<\>\{\}]
 
 $digit    = 0-9                             -- digits
+
+@head = [\ ]*[\n]?[\ ]*
+
 @decimal  = $digit($digit)*                 -- decimal
 @negative = \-
 @signed = @negative ?
 @floating = @decimal \. @decimal | @decimal -- floating point
 
 tokens :-
-  <0, jsxOpeningTag, jsxAutoClosed> [\ \n]*"//"[^\n]*[\n]?                                ; -- Comments
+  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                  ; -- Comments
   <0, jsxOpeningTag, jsxAutoClosed, jsxText, comment> $head*\/\*                          { beginComment }
   <comment>   [.\n]                                                                       ;
   <comment>   \*\/                                                                        { endComment }
@@ -108,12 +111,12 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-                          { mapToken (\_ -> TokenDash) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\?                           { mapToken (\_ -> TokenQuestionMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\*                           { mapToken (\_ -> TokenStar) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag> $head*\/            { mapToken (\_ -> TokenSlash) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag> @head\/             { mapToken (\_ -> TokenSlash) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\%                           { mapToken (\_ -> TokenPercent) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\>                         { mapToken (\_ -> TokenPipeOperator) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \.\.\.                             { mapToken (\_ -> TokenSpreadOperator) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \&\&                               { mapToken (\_ -> TokenDoubleAmpersand) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \|\|                               { mapToken (\_ -> TokenDoublePipe) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\&\&$tail*                   { mapToken (\_ -> TokenDoubleAmpersand) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\|$tail*                   { mapToken (\_ -> TokenDoublePipe) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>                 { mapToken (\_ -> TokenRightChevron) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> \<        { mapToken (\_ -> TokenLeftChevron) }
   <0, stringTemplateMadlib> \>\=                               { mapToken (\_ -> TokenRightChevronEq) }
@@ -121,7 +124,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                 { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"      { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '(($printable # ')|\\')*'          { mapToken (\s -> TokenStr (sanitizeStr s)) }
-  <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/]|\\\#)* \-\#
+  <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+               ;
   <0, jsxOpeningTag, jsxAutoClosed> `                                           { beginStringTemplate }

@@ -1,0 +1,6 @@
+import {} from "Applicative"
+
+interface Applicative f => Alternative f {
+  empty :: f a
+  alt   :: f a -> f a -> f a
+}

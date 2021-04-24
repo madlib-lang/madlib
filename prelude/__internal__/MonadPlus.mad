@@ -1,0 +1,6 @@
+import {} from "Monad"
+
+interface Monad m => MonadPlus m {
+  mzero :: m a
+  mplus :: m a -> m a -> m a
+}
