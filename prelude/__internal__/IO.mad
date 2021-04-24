@@ -15,6 +15,39 @@ export warn = (w) => (#- { console.warn(w); return w; } -#)
 inspect :: a -> a
 export inspect = (a) => (#- { console.log(util.inspect(a, {showHidden: false, depth: null})); return a; } -#)
 
+
+#-
+const stringify = (x) => {
+  if (typeof x === "object") {
+    if (Array.isArray(x)) {
+      const items = x.map(stringify).reduce((acc, xx) => acc + ",\n    " + xx)
+      return items.length < 80
+        ? `[${items.replace("\n    ", " ")}]`
+        : `[\n    ${items}\n]`
+    }
+    else {
+      if (x.__constructor) {
+        return x.__constructor + " " + x.__args.map(stringify).reduce((acc, xx) => acc + " " + xx, "")
+      }
+      else {
+        const items = Object
+          .keys(x)
+          .map((k) => k + ": " + x[k])
+          .reduce((acc, xx) => acc + ",\n    " + xx, "")
+
+        return `{\n  ${items}\n}`
+      }
+    }
+  } else return JSON.stringify(x)
+}
+-#
+
+prettyPrint :: a -> a
+export prettyPrint = (a) => #-{
+  console.log(stringify(a))
+  return a
+}-#
+
 export alias Row = { id :: String, cols :: List <String, String> }
 
 table :: List Row -> a -> a
