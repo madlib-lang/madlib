@@ -540,7 +540,6 @@ inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
     )
 
 
-
 -- INFER WHERE
 
 inferWhere :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -570,9 +569,7 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv t''
 
-  s'''               <- contextualUnify env exp t t'
-
-  let subst = s `compose` s' `compose` s'' `compose` s'''
+  let subst = s `compose` s' `compose` s''
 
   return
     ( subst

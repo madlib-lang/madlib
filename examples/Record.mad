@@ -1,16 +1,40 @@
 import L from "List"
 import json from "./r.json"
+import M from "Maybe"
+
+
+
+
+
 
 
 type T a b = X a b
 
+
+fn34 = (x) => where(x)
+is d: d
+is _: "2"
+
+export fn47 = (x) => (
+  where(x) {
+    is M.Just a : a
+    is M.Nothing: -3
+  }
+)
+export fn48 = (x) => (
+  where(x) {
+    is M.Nothing: -3
+    is M.Just a : a
+  }
+)
+
 wrong :: { l :: Boolean } -> String
 wrong = (a) => a.name
 
-wrong2 = (rec) => rec.x + rec.y
+wrong2 = (uio) => uio.x + uio.y
 
 wrong3 = where
-  is { x }: x
+  is { x }: x + 1
   is { y }: y
 
 wrong4 = (a) => where
@@ -57,7 +81,7 @@ This should fail because the two records given do not match!
 What happens if you loop over it say:
 map(.b, x)
 */
-a = [{ x: 1, b: 1 }, { x: 7 }]
+// a = [{ x: 1, b: 1 }, { x: 7 }]
 
 p = pipe(
   .x,
@@ -71,7 +95,7 @@ sum = pipe(
   of,
   ap([.x, .y]),
   where is [x, y]: x + y
-)({ x: 5, y: 5 })
+)({ x: 5 })
 
 fn :: Number -> Number
 fn = pipe(
@@ -79,7 +103,7 @@ fn = pipe(
   (x) => x * 2
 )
 
-a = fn(5)
+// a = fn(5)
 
 
 

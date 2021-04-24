@@ -1,3 +1,8 @@
+import { always } from "Function"
+
 interface Functor m {
   map :: (a -> b) -> m a -> m b
 }
+
+mapL :: Functor m => a -> m b -> m a
+export mapL = pipe(always, map)

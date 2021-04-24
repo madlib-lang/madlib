@@ -1,8 +1,16 @@
-import _ from "Show"
+import {} from "Show"
+import {} from "Read"
 import { Maybe, Just, Nothing } from "Maybe"
 
 instance Show Number {
   show = (x) => #- new Number(x).toString() -#
+}
+
+instance Read Number {
+  read = (x) => #-{
+    const result = parseFloat(x)
+    return isNaN(result) ? Nothing : Just(result)
+  }-#
 }
 
 fromString :: String -> Maybe Number
@@ -13,7 +21,7 @@ export fromString = (str) => (#- {
 
 formatDecimal :: Number -> Number -> String
 export formatDecimal = (a, x) => #-{
-  const n = x.toFixed(a);
+  const n = x.toFixed(a)
   return isNaN(n) ? "0" : n
 }-#
 

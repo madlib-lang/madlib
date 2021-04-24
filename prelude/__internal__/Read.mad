@@ -1,0 +1,5 @@
+import { Maybe } from "Maybe"
+
+interface Read a {
+  read :: String -> Maybe a
+}
