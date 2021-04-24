@@ -31,6 +31,7 @@ data TypeError
   | NotExported String String
   | GrammarError FilePath String
   | NameAlreadyDefined String
+  | RecursiveVarAccess String
   | SignatureTooGeneral Scheme Scheme
   | NameAlreadyExported String
   | ContextTooWeak

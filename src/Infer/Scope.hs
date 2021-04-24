@@ -38,7 +38,7 @@ checkExps _   _           _            []       = return ()
 checkExps env globalScope dependencies (e : es) = do
   let globalScope' = extendScope globalScope e
 
-  collectedAccesses <- collect env globalScope S.empty e
+  collectedAccesses <- collect env Nothing globalScope S.empty e
 
   catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
 
@@ -81,37 +81,44 @@ isFunction exp = case exp of
   _            -> False
 
 
-collect :: Env -> InScope -> InScope -> Exp -> Infer Accesses
-collect env globalScope localScope solvedExp@(Solved _ area e) = case e of
+collect :: Env -> Maybe String -> InScope -> InScope -> Exp -> Infer Accesses
+collect env nameToFind globalScope localScope solvedExp@(Solved tipe area e) = case e of
   TemplateString exps -> do
-    globalNamesAccessed <- mapM (collect env globalScope localScope) exps
+    globalNamesAccessed <- mapM (collect env nameToFind globalScope localScope) exps
     return $ foldr S.union S.empty globalNamesAccessed
 
   Var ('.':_)  -> return S.empty
-  Var name     -> if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
+  Var name     -> do
+    when (nameToFind == Just name) (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area []))
+    if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
 
   App fn arg _ -> do
-    fnGlobalNamesAccessed  <- collect env globalScope localScope fn
-    argGlobalNamesAccessed <- collect env globalScope localScope arg
+    fnGlobalNamesAccessed  <- collect env nameToFind globalScope localScope fn
+    argGlobalNamesAccessed <- collect env nameToFind globalScope localScope arg
     return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
-  Abs (Solved _ _ name) body -> do
+  Abs (Solved t _ name) body -> do
+    let nameToFind' =
+          if isFunctionType tipe then
+            Nothing
+          else
+            nameToFind
     let localScope' = S.insert name localScope
-    collectFromBody globalScope localScope' body
+    collectFromBody nameToFind' globalScope localScope' body
 
    where
-    collectFromBody :: InScope -> InScope -> [Exp] -> Infer Accesses
-    collectFromBody _           _          []       = return S.empty
-    collectFromBody globalScope localScope (e : es) = do
+    collectFromBody :: Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
+    collectFromBody _ _           _          []     = return S.empty
+    collectFromBody ntf globalScope localScope (e : es) = do
       let localScope' = extendScope localScope e
-      access <- collect env globalScope localScope' e
-      next   <- collectFromBody globalScope localScope' es
+      access <- collect env ntf globalScope localScope' e
+      next   <- collectFromBody ntf globalScope localScope' es
       return $ access <> next
 
   If cond truthy falsy -> do
-    condAccesses   <- collect env globalScope localScope cond
-    truthyAccesses <- collect env globalScope localScope truthy
-    falsyAccesses  <- collect env globalScope localScope falsy
+    condAccesses   <- collect env nameToFind globalScope localScope cond
+    truthyAccesses <- collect env nameToFind globalScope localScope truthy
+    falsyAccesses  <- collect env nameToFind globalScope localScope falsy
 
     return $ condAccesses <> truthyAccesses <> falsyAccesses
 
@@ -119,53 +126,53 @@ collect env globalScope localScope solvedExp@(Solved _ area e) = case e of
     when (name `S.member` globalScope && not (S.null localScope))
          (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
-    collect env globalScope localScope exp
+    collect env (Just name) globalScope localScope exp
 
-  TypedExp exp _              -> collect env globalScope localScope exp
+  TypedExp exp _              -> collect env nameToFind globalScope localScope exp
 
-  Export exp                  -> collect env globalScope localScope exp
+  Export exp                  -> collect env nameToFind globalScope localScope exp
 
   Access record fieldAccessor -> do
-    collect env globalScope localScope record
+    collect env nameToFind globalScope localScope record
 
   Where exp iss -> do
-    expAccess   <- collect env globalScope localScope exp
-    issAccesses <- mapM (collectFromIs env globalScope localScope) iss
+    expAccess   <- collect env nameToFind globalScope localScope exp
+    issAccesses <- mapM (collectFromIs env nameToFind globalScope localScope) iss
     let issAccesses' = foldr S.union S.empty issAccesses
     return $ expAccess <> issAccesses'
 
   TupleConstructor exps -> do
-    accesses <- mapM (collect env globalScope localScope) exps
+    accesses <- mapM (collect env nameToFind globalScope localScope) exps
     return $ foldr S.union S.empty accesses
 
   ListConstructor items -> do
-    listItemAccesses <- mapM (collectFromListItem env globalScope localScope) items
+    listItemAccesses <- mapM (collectFromListItem env nameToFind globalScope localScope) items
     return $ foldr S.union S.empty listItemAccesses
 
   Record fields -> do
-    fieldAccesses <- mapM (collectFromField env globalScope localScope) fields
+    fieldAccesses <- mapM (collectFromField env nameToFind globalScope localScope) fields
     return $ foldr S.union S.empty fieldAccesses
 
-  Placeholder _ exp -> collect env globalScope localScope exp
+  Placeholder _ exp -> collect env nameToFind globalScope localScope exp
 
   _                 -> return S.empty
 
 
-collectFromField :: Env -> InScope -> InScope -> Field -> Infer Accesses
-collectFromField env globalScope localScope (Solved _ _ field) = case field of
-  Field       (name, exp) -> collect env globalScope localScope exp
-  FieldSpread exp         -> collect env globalScope localScope exp
+collectFromField :: Env -> Maybe String -> InScope -> InScope -> Field -> Infer Accesses
+collectFromField env nameToFind globalScope localScope (Solved _ _ field) = case field of
+  Field       (name, exp) -> collect env nameToFind globalScope localScope exp
+  FieldSpread exp         -> collect env nameToFind globalScope localScope exp
 
-collectFromListItem :: Env -> InScope -> InScope -> ListItem -> Infer Accesses
-collectFromListItem env globalScope localScope (Solved _ _ li) = case li of
-  ListItem   exp -> collect env globalScope localScope exp
-  ListSpread exp -> collect env globalScope localScope exp
+collectFromListItem :: Env -> Maybe String -> InScope -> InScope -> ListItem -> Infer Accesses
+collectFromListItem env nameToFind globalScope localScope (Solved _ _ li) = case li of
+  ListItem   exp -> collect env nameToFind globalScope localScope exp
+  ListSpread exp -> collect env nameToFind globalScope localScope exp
 
-collectFromIs :: Env -> InScope -> InScope -> Is -> Infer Accesses
-collectFromIs env globalScope localScope (Solved _ _ (Is pat exp)) = do
+collectFromIs :: Env -> Maybe String -> InScope -> InScope -> Is -> Infer Accesses
+collectFromIs env nameToFind globalScope localScope (Solved _ _ (Is pat exp)) = do
   let patternScope = buildPatternScope pat
       localScope'  = localScope <> patternScope
-  collect env globalScope localScope' exp
+  collect env nameToFind globalScope localScope' exp
 
 buildPatternScope :: Pattern -> S.Set String
 buildPatternScope (Solved _ _ pat) = case pat of

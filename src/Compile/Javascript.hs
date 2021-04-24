@@ -298,7 +298,7 @@ instance Compilable Exp where
                   <> placeholders
                   <> "{"
                   <> "\n  "
-                  <> intercalate "\n  " ((\dict -> "global." <> dict <> " = " <> dict) <$> dicts)
+                  <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
                   <> "\n\n"
                   <> "  return "
                   <> name
@@ -567,7 +567,7 @@ instance Compilable Opt.Instance where
               <> "'] = "
               <> placeholders
               <> "{\n  "
-              <> intercalate "\n  " ((\dict -> "global." <> dict <> " = " <> dict) <$> dicts)
+              <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
               <> "\n  return __"
               <> interface
               <> typings

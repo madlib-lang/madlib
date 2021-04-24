@@ -65,8 +65,7 @@ formatWarningContent :: Bool -> WarningKind -> String
 formatWarningContent _ warning = case warning of
   UnusedImport name path ->
     "You imported '" <> name <> "' from the module located at '" <> path <> "'\n"
-    <> "but it seems that you never use it.\n\n"
-    <> "Hint: If you use it within the fence it may be undetected and you should then keep it. This will be fixed in a later release."
+    <> "but it seems that you never use it."
 
 format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
 format rf json (CompilationError err ctx) = do
@@ -227,6 +226,13 @@ formatTypeError json err = case err of
       <> name
       <> "'!\n\n"
       <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+
+  RecursiveVarAccess name ->
+    "You are using a variable that is recursively accessing itself and is thus not yet initialized.\n"
+    <> "This is not allowed and can only work if there exists a function in between, let me show you\n"
+    <> "some examples that should make this clearer:\n"
+    <> "parser = J.map(Title, J.field(\"title\", parser)) // this is not allowed because parser is directly refering to itself\n"
+    <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser))) // this works because now the recursive accessed is wrapped in a function"
 
   _ -> ppShow err
 

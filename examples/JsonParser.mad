@@ -5,9 +5,6 @@ import { Maybe, Just, Nothing, fromMaybe } from "Maybe"
 
 type Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
 
-/**
- *
- */
 input :: String
 input = `
 {
@@ -33,6 +30,7 @@ parser = J.map2(
   J.field("field1", J.maybe(J.lazy((_) => parser))),
   J.field("field2", J.boolean)
 )
+
 
 where(J.parse(parser, input))
   is Right (Parsed { field1: Just (Parsed choco) }): IO.inspect(choco)

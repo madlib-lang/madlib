@@ -141,7 +141,7 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
 maybe :: Parser a -> Parser (Maybe a)
 export maybe = (parser, input) => (#-{
   if (input) {
-    const parsed = parser(input);
+    let parsed = parser(input);
     if (isLeft(parsed)) {
       return Right(Nothing);
     }
