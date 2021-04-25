@@ -147,7 +147,7 @@ whiteList :: Regex
 whiteList = toRegex "\\`[\ \t \n]*[a-zA-Z0-9\"]+[\\(]?.*"
 
 toRegex :: String -> Regex
-toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
+toRegex = makeRegexOpts defaultCompOpt { multiline = True, newSyntax = True } defaultExecOpt
 
 jsxTagOpen :: Regex
 jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
@@ -160,7 +160,6 @@ jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*
 
 constraintRegex :: Regex
 constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
--- constraintRegex = toRegex "\\`[^={]*(=>)[^}]*([^=]=[^=]|{[\\t\\ ]*\n).*"
 
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
@@ -348,9 +347,8 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
           if sc /= instanceHeader then
             return $ TokenName s
           else
-            let next = BLU.fromString $ take 250 input 
+            let next    = BLU.fromString $ take 500 input 
                 matched = match constraintRegex next :: Bool
-                -- matched = match constraintRegex next :: BS.ByteString -- 10.4
             in
               if not matched then
                 return $ TokenName s
@@ -358,7 +356,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
                 return $ TokenConstraintName s
 
         TokenRightChevron ->
-          let next  = BLU.fromString $ ((tail . (take 200)) input)
+          let next    = BLU.fromString $ ((tail . (take 200)) input)
               matchWL = match whiteList next :: BS.ByteString
               matchBL = match blackList matchWL :: Bool
           in
@@ -367,9 +365,9 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
             else return TokenTupleEnd
         
         TokenLeftChevron ->
-          let next    = BLU.fromString $ take 400 input
-              matchedOpen = match jsxTagOpen next :: Bool
-              matchedClose = match jsxTagClose next :: Bool
+          let next          = BLU.fromString $ take 800 input
+              matchedOpen   = match jsxTagOpen next :: Bool
+              matchedClose  = match jsxTagClose next :: Bool
               matchedSingle = match jsxTagSingle next :: Bool
           in
             if matchedSingle then do
