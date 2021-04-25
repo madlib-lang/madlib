@@ -3,6 +3,7 @@ import {
   append,
   concat,
   drop,
+  dropLast,
   dropWhile,
   filter,
   find,
@@ -171,6 +172,8 @@ test("sortDesc String", (_) =>
 
 test("drop", (_) => assertEquals(drop(2, [1, 2, 3, 4, 5, 6]), [3, 4, 5, 6]))
 test("drop - empty", (_) => assertEquals(drop(2, []), []))
+
+test("dropLast", (_) => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
 test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
 
