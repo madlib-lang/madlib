@@ -1,19 +1,15 @@
 import W from "Wish"
 import B from "Binary"
 import IO from "IO"
-
-export type Data
-  = TextData String
-  | BinaryData B.ByteArray
-
+import { Data, BinaryData, TextData } from "Data"
 
 #- import fs from "fs" -#
 
 
 writeFile :: String -> Data -> W.Wish e String
 export writeFile = (path, d) => where(d) {
-  is BinaryData (B.ByteArray arr): W.Wish((bad, good) => #- {
-      fs.writeFile(path, arr, (err) => {
+  is BinaryData bytes: W.Wish((bad, good) => #- {
+      fs.writeFile(path, bytes, (err) => {
         if (err) {
           bad(err);
         }

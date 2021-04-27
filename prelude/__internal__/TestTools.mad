@@ -11,6 +11,7 @@ import Maybe from "Maybe"
 import T from "Tuple"
 import Lcov from "LcovDotInfo"
 import { andDo } from "Monad"
+import { TextData } from "Data"
 
 
 colorString :: String -> String -> String
@@ -137,7 +138,7 @@ export collectCoverage = (hitPoints) =>
     |> chain((lcov) =>
          of(lcov)
            |> map(Lcov.stringify)
-           |> map(FS.TextData)
+           |> map(TextData)
            |> chain(FS.writeFile(".coverage/lcov.info"))
            |> andDo(of(stdoutReport(lcov)))
        )

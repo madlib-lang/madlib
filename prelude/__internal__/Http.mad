@@ -1,48 +1,204 @@
 import W from "Wish"
+import { Wish } from "Wish"
 import B from "Binary"
+import { Maybe, Just, Nothing, isJust } from "Maybe"
+import S from "String"
+import L from "List"
+import { Data, BinaryData, TextData } from "Data"
 
-export type Body = TextBody String
-                 | BinaryBody B.ByteArray
+#-
+{Node}
+import https from "https"
+import http from "http"
+{/Node}
+-#
 
-export type Response = Response { body :: Body }
+alias Status = Number
+BadRequest = 400
+Unauthorized = 401
+PaymentRequired = 402
 
-isBinary = (contentType) => contentType == "application/zip"
 
-#- import https from "https" -#
+export type Response = Response { data :: Data, status :: Status }
 
-get :: String -> W.Wish e Response
-export get = (url) => W.Wish((bad, good) => (#- {
-    const req = https.request(url, (response) => {
-      if (response.statusCode === 302) {
-        W.fulfill(bad, good, get(response.headers.location))
+export type Header = Header String String
+
+export type Method
+  = GET
+  | POST
+  | PUT
+  | DELETE
+  | PATCH
+  | HEAD
+  | OPTIONS
+  | CONNECT
+  | TRACE
+
+alias Request = {
+  method  :: Method,
+  url     :: String,
+  headers :: List Header,
+  body    :: Maybe Data
+}
+
+methodStr :: Method -> String
+methodStr = where
+  is GET    : "GET"
+  is POST   : "POST"
+  is PUT    : "PUT"
+  is DELETE : "DELETE"
+  is PATCH  : "PATCH"
+  is HEAD   : "HEAD"
+  is OPTIONS: "OPTIONS"
+  is CONNECT: "CONNECT"
+  is TRACE  : "TRACE"
+
+headerKey :: Header -> String
+headerKey = where is Header key _: key
+
+headerValue :: Header -> String
+headerValue = where is Header _ val: val
+
+bodyLength :: Data -> Number
+bodyLength = where
+  is TextData s      : S.len(s)
+  is BinaryData bytes: B.len(bytes)
+
+#-
+const buildHeaderObj = (headerItems) => {
+  return headerItems.reduce((acc, item) => {
+    const k = headerKey(item)
+    const v = headerValue(item)
+
+    return { ...acc, [k]: v }
+  }, {});
+}
+-#
+
+isBinary = (mimeType) => where(S.split("/", mimeType))
+  is ["text", _]: false
+  
+  is ["application", subType]:
+    !L.includes(
+      subType,
+      ["json", "ld+json", "x-httpd-php", "x-sh", "x-csh", "xhtml+xml", "xml"]
+    )
+
+  is _: true
+
+
+request :: Request -> Wish Response Response
+export request = (config) => Wish((bad, good) => #-{
+  {Browser}
+    const headers = config.headers
+    const xhr = new XMLHttpRequest();
+    xhr.open(methodStr(config.method), config.url)
+    xhr.responseType = "arraybuffer"
+
+    headers.forEach((header) => {
+      xhr.setRequestHeader(headerKey(header), headerValue(header))
+    })
+
+    if (isJust(config.body)) {
+      xhr.send(config.body.__args[0].__args[0])
+    } else {
+      xhr.send()
+    }
+
+    xhr.onerror = (err) => {
+      return bad(Response({ data: TextData("Unknown error"), status: xhr.status }))
+    }
+
+    xhr.onload = () => {
+      const contentType = xhr.getResponseHeader('Content-Type')
+      const isBinaryData = isBinary(contentType.split(";")[0])
+
+      const cb = xhr.status >= 400 ? bad : good
+      const buffer = xhr.response
+      const ui8 = new Uint8Array(buffer)
+
+      if (isBinaryData) {
+        cb(Response({ data: BinaryData(ui8), status: xhr.status }))
       }
       else {
-        const contentType = response.headers["content-type"];
-        let chunks = isBinary ? [] : "";
+        cb(Response({ data: TextData(new TextDecoder().decode(ui8)), status: xhr.status }))
+      }
+    }
+  {/Browser}
+  {Node}
+    const headers = buildHeaderObj(config.headers)
+    let reqFn = http.request
+    const protocol = config.url.split("://")[0]
+
+    if (protocol === "https") {
+      reqFn = https.request
+    } else if (protocol === "http") {
+    } else {
+      return bad(Response({ data: TextData(`Invalid protocol '${protocol}'`), status: 400 }))
+    }
+
+    if (isJust(config.body)) {
+      headers["Content-Length"] = bodyLength(config.body.__args[0])
+    }
+
+    const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
+      if (response.statusCode === 302) {
+        W.fulfill(bad, good, request({ ...config, url: response.headers.location }))
+      }
+      else {
+        const contentType = response.headers["content-type"].split(";")[0]
+        const isBinaryData = isBinary(contentType)
+
+        let chunks = isBinaryData ? [] : ""
 
         response.on('data', (chunk) => {
-          if (isBinary) {
-            chunks.push(chunk);
+          if (isBinaryData) {
+            chunks.push(chunk)
           }
           else {
-            chunks = chunks + chunk;
+            chunks = chunks + chunk
           }
         });
 
         response.on('end', () => {
-          if (isBinary) {
-            const buffer = Buffer.concat(chunks);
-            const ui8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT);
-            good(Response({ body: BinaryBody(B.ByteArray(ui8)) }));
+          const cb = response.statusCode >= 400 ? bad : good
+          if (isBinaryData) {
+            const buffer = Buffer.concat(chunks)
+            const ui8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Uint8Array.BYTES_PER_ELEMENT)
+
+            cb(Response({ data: BinaryData(ui8), status: response.statusCode }))
           }
           else {
-            good(Response({ body: TextBody(chunks) }));
+            cb(Response({ data: TextData(chunks), status: response.statusCode }))
           }
         });
       }
-
     });
-    req.on('error', bad)
+
+    if (isJust(config.body)) {
+      req.write(config.body.__args[0].__args[0])
+    }
+
+    req.on('error', (err) => {
+      bad({ data: TextData(err.message), status: 0 })
+    })
     req.end();
-  }
--#))
+  {/Node}
+}-#)
+
+
+
+
+
+
+
+
+
+
+get :: String -> Wish Response Response
+export get = (url) => request({
+  method: GET,
+  url,
+  headers: [],
+  body: Nothing
+})

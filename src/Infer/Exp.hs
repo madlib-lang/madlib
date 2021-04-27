@@ -423,15 +423,26 @@ inferRecord env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
   inferredFields <- mapM (inferRecordField env) fields
-  open           <- shouldBeOpen env fields
+  (open, maybeT)           <- shouldBeOpen env fields
 
   let fieldSubsts = (\(s, _, _, _) -> s) <$> inferredFields
   let fieldTypes  = (\(_, _, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, _, es) -> es) <$> inferredFields
   let fieldPS     = (\(_, ps, _, _) -> ps) <$> inferredFields
   let subst      = foldr compose M.empty fieldSubsts
-      recordType = TRecord (M.fromList $ concat fieldTypes) open
-  return (subst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
+
+  (recordType, extraSubst) <-
+    if not open then
+      return (TRecord (M.fromList $ concat fieldTypes) open, mempty)
+    else do
+      let Just t' = maybeT
+          t''     = TRecord (M.fromList $ concat fieldTypes) True
+      s <- unify t' t''
+      return (t', s)
+
+  return (extraSubst `compose` subst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
+
+
 
 inferRecordField :: Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
 inferRecordField env (Can.Canonical area field) = case field of
@@ -449,17 +460,17 @@ inferRecordField env (Can.Canonical area field) = case field of
       _                 -> throwError
         $ CompilationError (WrongSpreadType $ show t) (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
 
-shouldBeOpen :: Env -> [Can.Field] -> Infer Bool
+shouldBeOpen :: Env -> [Can.Field] -> Infer (Bool, Maybe Type)
 shouldBeOpen env = foldrM
-  (\(Can.Canonical _ field) r -> case field of
-    Can.Field       _ -> return r
+  (\(Can.Canonical _ field) (r, _) -> case field of
+    Can.Field       _ -> return (r, Nothing)
     Can.FieldSpread e -> do
       (_, _, t, _) <- infer env e
       case t of
-        TRecord _ _ -> return r
-        TVar _      -> return True
+        TRecord _ _ -> return (r, Nothing)
+        TVar _      -> return (True, Just t)
   )
-  False
+  (False, Nothing)
 
 
 

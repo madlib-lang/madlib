@@ -4,7 +4,7 @@ import Math from "Math"
 import IO from "IO"
 import Http from "Http"
 import B from "Binary"
-import { readFile, writeFile, BinaryData, TextData, exists } from "FileSystem"
+import { readFile, writeFile, exists } from "FileSystem"
 import D from "Dictionary"
 import { Just, fromMaybe } from "Maybe"
 import J from "Json"
@@ -13,6 +13,7 @@ import S from "System"
 import T from "Tuple"
 import { always, identity } from "Function"
 import { andDo } from "Monad"
+import { BinaryData, TextData } from "Data"
 
 import { sanitizeUrl } from "./URL"
 
@@ -67,15 +68,16 @@ displayPackagesToInstall = (pkgs) => pipe(
   always(pkgs)
 )(pkgs)
 
-processArchive :: String -> Wish S.CommandError String
+processArchive :: String -> Wish String String
 processArchive = (url) => pipe(
   unzipPkg,
   andDo(renameInnerFolder(url)),
   andDo(copyPackage(url)),
-  andDo(cleanUp(url))
+  andDo(cleanUp(url)),
+  mapRej(always("Error processing archive"))
 )(url)
 
-installNodeModules :: String -> String -> Wish S.CommandError String
+installNodeModules :: String -> String -> Wish String String
 installNodeModules = (url, pkgName) => pipe(
   (u) => `${MADLIB_MODULES_PATH}${u}/`,
   (path) => exists(`${path}package.json`) |> andDo(of(path)),
@@ -112,7 +114,8 @@ installPackages = (firstLevel) => pipe(
       map(where is <key, sanitizedUrl>: pipe(
         (k) => D.get(k, depMap),
         where is Just p : Http.get(p),
-        map(where is Http.Response { body: Http.BinaryBody d }: d),
+        map(where is Http.Response { data: BinaryData d }: d),
+        mapRej(always("Err fetching archive")),
         map(BinaryData),
         chain(writeFile(`${MADLIB_MODULES_PATH}${sanitizedUrl}.zip`)),
         andDo(processArchive(sanitizedUrl)),
