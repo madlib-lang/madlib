@@ -1,19 +1,20 @@
 // file: path
-let Right = __curry__((a) => ({ __constructor: "Right", __args: [ a ] }));
-let Left = __curry__((a) => ({ __constructor: "Left", __args: [ a ] }));
+let Right = (a => ({ __constructor: "Right", __args: [ a ] }));
+let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Show = {};
 Show['Boolean'] = {};
-Show['Boolean']['show'] = __curry__((b) => (b ? 'True' : 'False'));
+Show['Boolean']['show'] = (b => (b ? 'True' : 'False'));
 Show['Number'] = {};
-Show['Number']['show'] = __curry__((n) => new Number(n).toString());
+Show['Number']['show'] = (n => new Number(n).toString());
 Show['Tuple_2'] = {};
-let __ShowTuple_2show = __once__(() => __curry__((__x__) => ((__x__) => {
+let __ShowTuple_2show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
     return '<' + Show_i8.show(a) + ', ' + Show_j9.show(b) + '>';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(__x__)));
@@ -23,13 +24,14 @@ Show['Tuple_2']['show'] = (Show_j9) => (Show_i8) => {
   return __ShowTuple_2show();
 };
 Show['Tuple_3'] = {};
-let __ShowTuple_3show = __once__(() => __curry__((__x__) => ((__x__) => {
+let __ShowTuple_3show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
     return '<' + Show_b27.show(a) + ', ' + Show_c28.show(b) + ', ' + Show_d29.show(c) + '>';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(__x__)));
@@ -40,7 +42,7 @@ Show['Tuple_3']['show'] = (Show_d29) => (Show_c28) => (Show_b27) => {
   return __ShowTuple_3show();
 };
 Show['Either'] = {};
-let __ShowEithershow = __once__(() => __curry__((__x__) => ((__x__) => {
+let __ShowEithershow = __once__(() => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return 'Right ' + Show_c54.show(a);
@@ -51,6 +53,7 @@ let __ShowEithershow = __once__(() => __curry__((__x__) => ((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(__x__)));

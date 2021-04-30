@@ -406,7 +406,7 @@ instance Compilable Exp where
           "((__x__) => {\n  "
             <> compileIs first
             <> concat (("  else " ++) . compileIs <$> cs)
-            <> "  else {\n    console.log('non exhaustive patterns for value: ', __x__.toString()); \n console.trace(); \n    throw 'non exhaustive patterns!';\n  }\n"
+            <> "  else {\n    console.log('non exhaustive patterns for value: ', __x__.toString()); \n    console.trace(); \n    throw 'non exhaustive patterns!';\n  }\n"
             <> "})("
             <> compile env config exp
             <> ")"

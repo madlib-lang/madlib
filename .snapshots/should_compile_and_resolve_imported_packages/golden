@@ -1,10 +1,10 @@
 // file: /madlib_modules/url/src/Main.mad
 import R from "./Utils/Random.mjs";
 
-export let random = __curry__((seed) => R.random(seed));
+export let random = (seed => R.random(seed));
 export default { random };
 // file: /madlib_modules/url/src/Utils/Random.mad
-export let random = __curry__((seed) => seed / 2);
+export let random = (seed => seed / 2);
 export default { random };
 // file: /src/Main.mad
 import {} from "./__internals__.mjs"

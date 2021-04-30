@@ -1,11 +1,11 @@
 // file: path
-let Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
+let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-export let fn = __curry__((b, c) => b + c);
-let inc = __curry__((x) => x + 1);
-let dec = __curry__((x) => x - 1);
-let double = __curry__((x) => x * 2);
-let half = __curry__((x) => x / 2);
+export let fn = (b => c => b + c);
+let inc = (x => x + 1);
+let dec = (x => x - 1);
+let double = (x => x * 2);
+let half = (x => x / 2);
 double(half(3));
 __eq__(3, 5);
 let response = ({ users: ([]) });
@@ -22,6 +22,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(allResponses);
@@ -31,6 +32,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(3);
@@ -40,6 +42,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })("3");
@@ -49,6 +52,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(true);
@@ -58,6 +62,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(3);
@@ -67,6 +72,7 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })("3");
@@ -76,12 +82,13 @@ let allResponses = ({ ...response, ...carResponse });
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(true);
-let log = __curry__((a) => { console.log(a); return a; });
+let log = (a => { console.log(a); return a; });
 (true ? "OK" : "NOT OK");
-let mapMaybe = __curry__((f, m) => ((__x__) => {
+let mapMaybe = (f => m => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
     return Just(f(a));
@@ -91,6 +98,7 @@ let mapMaybe = __curry__((f, m) => ((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(m));
@@ -105,6 +113,7 @@ let q = ((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(might);
@@ -146,17 +155,18 @@ let all = ([ ...arr, 4, 5, 6]);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(([1, 2, 3, 5, 8]));
-export let map = __curry__((f, xs) => ((__x__) => {
+export let map = (f => xs => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return ([f(a),  ...map(f, ([b, c]))]);
+    return ([f(a),  ...map(f)(([b, c]))]);
   }
   else if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return ([f(a),  ...map(f, ([b]))]);
+    return ([f(a),  ...map(f)(([b]))]);
   }
   else if (__x__.length === 1 && true) {
     let [a] = __x__;
@@ -168,11 +178,12 @@ export let map = __curry__((f, xs) => ((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(xs));
 (true ? "ok" : "not ok");
-__curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) => x)((__eq__(1, 2) ? "ok" : "not ok"))));
+(x => x)((x => (__eq__(x, "ok") ? 1 : 10))((x => x)((__eq__(1, 2) ? "ok" : "not ok"))));
 (__eq__(1, 2) ? "ok" : "not ok");
 ((__x__) => {
   if (__x__ === 3) {
@@ -180,14 +191,15 @@ __curry__((x) => x)(__curry__((x) => (__eq__(x, "ok") ? 1 : 10))(__curry__((x) =
   }
   else if (true) {
     let n = __x__;
-    return __curry__((x) => x + 1)(1);
+    return (x => x + 1)(1);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(3);
-__curry__((x) => x + 1)(((__x__) => {
+(x => x + 1)(((__x__) => {
   if (__x__ === "3") {
     return 48;
   }
@@ -197,10 +209,11 @@ __curry__((x) => x + 1)(((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })("3"));
-__curry__((x) => x)(((__x__) => {
+(x => x)(((__x__) => {
   if (__x__.length >= 2 && __x__[0] === 2 && true) {
     let [,...rest] = __x__;
     return rest;
@@ -211,6 +224,7 @@ __curry__((x) => x)(((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(([1, 2, 3, 4, 5])));
@@ -221,20 +235,22 @@ __curry__((x) => x)(((__x__) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(({ x: 4, name: "John" }));
-let addXAndY = __curry__((r) => ((__x__) => {
+let addXAndY = (r => ((__x__) => {
   if (true && true) {
     let { y: y, x: x1 } = __x__;
     return x1 + y;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(r));
-let fnTCHOU = __curry__((x) => x.a.b.c.d.e);
+let fnTCHOU = (x => x.a.b.c.d.e);
 let tup = ([1, 2, 3]);
 __eq__(([1, 2, 3]), ([1, 2, 3]));
 ((__x__) => {
@@ -244,21 +260,23 @@ __eq__(([1, 2, 3]), ([1, 2, 3]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(([1, 2]));
-let fn2 = __curry__((a) => ([a, a]));
-let fst = __curry__((tuple) => ((__x__) => {
+let fn2 = (a => ([a, a]));
+let fst = (tuple => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,] = __x__;
     return a;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(tuple));
-let snd = __curry__((tuple) => {
+let snd = (tuple => {
     let b = ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [,b1] = __x__;
@@ -266,6 +284,7 @@ let snd = __curry__((tuple) => {
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(tuple);
@@ -280,6 +299,7 @@ snd(([1, 2]));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
     throw 'non exhaustive patterns!';
   }
 })(([Just(3), Just(4)]));

@@ -1,12 +1,12 @@
 // file: /root/project/madlib_modules/url/src/Main.mad
 import R from "./Utils/Random.mjs";
 
-export let Just = __curry__((a) => ({ __constructor: "Just", __args: [ a ] }));
+export let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 export let Nothing = ({ __constructor: "Nothing", __args: [  ] });
-export let random = __curry__((seed) => R.random(seed));
+export let random = (seed => R.random(seed));
 export default { random, Just, Nothing };
 // file: /root/project/madlib_modules/url/src/Utils/Random.mad
-export let random = __curry__((seed) => seed / 2);
+export let random = (seed => seed / 2);
 export default { random };
 // file: /root/project/src/Main.mad
 import {} from "./__internals__.mjs"
