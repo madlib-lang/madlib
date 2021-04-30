@@ -198,15 +198,9 @@ instance Compilable Exp where
                   _ ->
                     let processedArgs   = generatePlaceholderArgNames 0 args
                         hasPlaceholders = containsPlaceholders processedArgs
-                    in  if hasPlaceholders then
-                          generatePlaceholderParams processedArgs
-                          <> buildAbs config abs arg <> buildParams True True processedArgs
-                        else
-                          buildAbs config abs arg <> buildParams True False processedArgs
+                    in  generatePlaceholderParams processedArgs
+                        <> compile env config abs <> buildParams True hasPlaceholders processedArgs
             in  hpWrapLine coverage astPath (getStartLine abs) next
-
-          buildAbs :: CompilationConfig -> Exp -> Exp -> String
-          buildAbs config abs arg = compile env config abs
 
           buildParams :: Bool -> Bool -> [Arg] -> String
           buildParams _ _ []                    = ""
@@ -227,14 +221,12 @@ instance Compilable Exp where
           generatePlaceholderParams args =
             let splitByFinal = groupBy
                   (\l r -> case (l, r) of
-                    (PlaceholderArg _ final, PlaceholderArg _ final') -> not final
-                    (PlaceholderArg _ final, Arg _ final')            -> not final
-                    (Arg _ final           , Arg _ final')            -> not final
-                    (Arg _ final           , PlaceholderArg _ final') -> not final
+                    (PlaceholderArg _ final, _) -> not final
+                    (Arg _ final           , _) -> not final
                   )
                   args
                 onlyPlaceholders = filter (not . null) $ getPlaceholderNames <$> reverse (filter isPlaceholderArg <$> splitByFinal)
-                built = ("(" <>) . (<> " => ") <$> intercalate " => " <$> onlyPlaceholders
+                built = (("(" <>) . (<> " => ")) . intercalate " => " <$> onlyPlaceholders
             in  concat built
 
           isPlaceholder :: Exp -> Bool
@@ -252,12 +244,6 @@ instance Compilable Exp where
             (Arg _ True : _) -> False
             (Arg _ _ : rest) -> containsPlaceholders rest
             (PlaceholderArg _ _ : _)       -> True
-
-          placeholderCount :: [Arg] -> Int
-          placeholderCount args = case args of
-            []                        -> 0
-            ((PlaceholderArg n _):rest) -> placeholderCount rest + 1
-            (_: rest)                 -> placeholderCount rest
 
           getPlaceholderNames :: [Arg] -> [String]
           getPlaceholderNames args = case args of

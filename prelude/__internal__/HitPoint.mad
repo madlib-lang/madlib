@@ -1,31 +1,27 @@
 export type HitPoint = FunctionHit String String
                      | LineHit String Number
 
+
 #-
-let __HIT_POINTS = [];
+let __HIT_POINTS = []
+let __CACHE = {}
 global.__hp = (astPath, type, line, id) => {
+  if (!__CACHE[astPath]) { __CACHE[astPath] = {} }
+  if (__CACHE[astPath][id]) { return }
+  __CACHE[astPath][id] = true
+
   if (type === "function") {
-    const foundFunction = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === id && x.__constructor === "FunctionHit");
-    if (foundFunction === -1) {
-      __HIT_POINTS.push(FunctionHit(astPath, id))
-    }
-    
-    const foundLine = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === line && x.__constructor === "LineHit");
-    if (foundLine === -1) {
-      __HIT_POINTS.push(LineHit(astPath, line))
-    }
+    __HIT_POINTS.push(FunctionHit(astPath)(id))
+    __HIT_POINTS.push(LineHit(astPath)(line))
   }
   else if (type === "line") {
-    const foundLine = __HIT_POINTS.findIndex(x => x.__args[0] === astPath && x.__args[1] === line && x.__constructor === "LineHit");
-    if (foundLine === -1) {
-      __HIT_POINTS.push(LineHit(astPath, line))
-    }
+    __HIT_POINTS.push(LineHit(astPath)(line))
   }
 }
 
-global.__resetHPs = () => { __HIT_POINTS = []; }
+global.__resetHPs = () => { __HIT_POINTS = []; __CACHE = {}; console.log(__CACHE) }
 
-global.__getHPs = () => __HIT_POINTS;
+global.__getHPs = () => __HIT_POINTS
 -#
 
 
