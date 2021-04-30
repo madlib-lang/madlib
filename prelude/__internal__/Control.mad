@@ -1,0 +1,29 @@
+import { Maybe, isJust } from "Maybe"
+
+
+loop :: a -> (a -> Boolean) -> (a -> a) -> a
+export loop = (start, pred, evaluate) => {
+  s = start
+  #-
+  while(pred(s)) {
+    s = evaluate(s)
+  }
+  -#
+  return s
+}
+
+maybeLoop :: a -> (a -> Maybe a) -> a
+export maybeLoop = (start, evaluate) => {
+  s = start
+  #-
+  while(true) {
+    let tmp = evaluate(s)
+    if (isJust(tmp)) {
+      s = tmp.__args[0]
+    } else {
+      break
+    }
+  }
+  -#
+  return s
+}

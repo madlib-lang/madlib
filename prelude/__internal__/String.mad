@@ -42,7 +42,7 @@ firstChar :: String -> Maybe String
 export firstChar = nthChar(0)
 
 drop :: Number -> String -> String
-export drop = (n, s) => #- s.substr(n) -#
+export drop = (n, s) => #- s.slice(n) -#
 
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the
@@ -77,3 +77,6 @@ export isDigit = (s) => len(s) != 1
     s == "7" ||
     s == "8" ||
     s == "9"
+
+repeat :: Number -> String -> String
+export repeat = (n, s) => #- s.repeat(n) -#

@@ -33,7 +33,7 @@ import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace
 
 
-newtype Env = Env { varsInScope :: S.Set String }
+newtype Env = Env { varsInScope :: S.Set String } deriving(Eq, Show)
 
 initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty }
@@ -223,11 +223,11 @@ instance Compilable Exp where
             in  start <> next
 
           compileBody :: Env -> [Exp] -> String
-          compileBody _   [exp] = compile env config exp
+          compileBody env   [exp] = compile env config exp
           compileBody env exps  = "{\n" <> compileBody' env exps <> "}"
 
           compileBody' :: Env -> [Exp] -> String
-          compileBody' _ [exp] = case exp of
+          compileBody' env [exp] = case exp of
             (Optimized _ _ (JSExp _)) -> compile env config exp
             _                         -> "    return " <> compile env config exp <> ";\n"
           compileBody' e (exp : es) = case exp of
@@ -289,7 +289,7 @@ instance Compilable Exp where
               content'                       = if coverage && isFunctionType expType
                 then "__hpFnWrap('" <> astPath <> "', " <> show l <> ", '" <> name <> "')(" <> content <> ")"
                 else content
-              needsModifier = not $ name `elem` varsInScope env
+              needsModifier = notElem name $ varsInScope env
           in  if not (null dicts)
                 then
                   (if needsModifier then "let " else "")
