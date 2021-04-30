@@ -79,7 +79,7 @@ const nativeMemoize2 = (fn) => {
 -#
 
 memoize2 :: (a -> b -> c) -> (a -> b -> c)
-export memoize2 = (fn) => #- nativeMemoize2(fn) -#
+export memoize2 = (fn) => #- nativeMemoize2((a, b) => fn(a)(b)) -#
 
 #-
 const nativeMemoize3 = (fn) => {

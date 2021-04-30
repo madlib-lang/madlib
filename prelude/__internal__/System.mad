@@ -14,7 +14,7 @@ exec :: String -> W.Wish CommandError String
 export exec = (command) => W.Wish((bad, good) => #- {
     execJs(command, (err, stdout, stderr) => {
       if (err) {
-        bad(CommandError(err.code, err.message))
+        bad(CommandError(err.code)(err.message))
       }
       else {
         good(stdout)

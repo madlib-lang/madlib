@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9c789cb27eb9c056b15149629457a6482af363d0983c56799b029e8bfd600320
+-- hash: 0e013e12a8eae48fa7807d2b65ac041b4debd9b52fa6fcae906bcd7d9991411e
 
 name:           madlib
 version:        0.8.3
@@ -108,6 +108,7 @@ library
     , exceptions
     , executable-path ==0.0.3.1
     , filepath
+    , groupBy
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -200,6 +201,7 @@ executable madlib
     , exceptions
     , executable-path ==0.0.3.1
     , filepath
+    , groupBy
     , hpc-lcov
     , hspec
     , hspec-golden
@@ -244,6 +246,7 @@ test-suite madlib-test
     , exceptions
     , executable-path ==0.0.3.1
     , filepath
+    , groupBy
     , hpc-lcov
     , hspec ==2.7.2
     , hspec-golden

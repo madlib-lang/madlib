@@ -131,7 +131,7 @@ export join = (a, xs) => pipe(
  * mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
  */
 mapWithIndex :: (a -> Number -> b) -> List a -> List b
-export mapWithIndex = (f, xs) => (#- xs.map(f) -#)
+export mapWithIndex = (f, xs) => (#- xs.map((a, b) => f(a)(b)) -#)
 
 
 /**
@@ -226,7 +226,7 @@ export nth = (i, xs) => (#- {
  * @since 0.0.5
  */
 reduceR :: (a -> b -> a) -> a -> List b -> a
-export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
+export reduceR = (f, initial, xs) => (#- xs.reduceRight((a, b) => f(a)(b), initial) -#)
 
 
 /**
@@ -239,7 +239,7 @@ export reduceR = (f, initial, xs) => (#- xs.reduceRight(f, initial) -#)
  * @since 0.0.5
  */
 reduceL :: (a -> b -> a) -> a -> List b -> a
-export reduceL = (f, initial, xs) => (#- xs.reduce(f, initial) -#)
+export reduceL = (f, initial, xs) => (#- xs.reduce((a, b) => f(a)(b), initial) -#)
 
 
 /**
@@ -355,7 +355,7 @@ export uniqueBy = (f) => reduce(
 
 
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-export sortBy = (fn, xs) => (#- xs.sort(fn) -#)
+export sortBy = (fn, xs) => (#- xs.sort((a, b) => fn(a)(b)) -#)
 
 
 sort :: Comparable a => List a -> List a

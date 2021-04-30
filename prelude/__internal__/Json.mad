@@ -41,7 +41,7 @@ export dict = (parser, input) => (#- {
       if (isLeft(parsed)) {
         throw parsed;
       } else {
-        result = D.insert(k, fromRight("", parsed), result)
+        result = D.insert(k)(fromRight("")(parsed))(result)
       }
     })
 
@@ -61,7 +61,7 @@ export list = (parser, input) => (#-{
       if (isLeft(parsed)) {
         throw parsed;
       } else {
-        result.push(fromRight("", parsed));
+        result.push(fromRight("")(parsed));
       }
     })
     return Right(result);
@@ -145,7 +145,7 @@ export maybe = (parser, input) => (#-{
     if (isLeft(parsed)) {
       return Right(Nothing);
     }
-    return mapRight(Just, parsed);
+    return mapRight(Just)(parsed);
   } else {
     return Right(Nothing)
   }

@@ -112,7 +112,7 @@ installPackages = (firstLevel) => pipe(
       map((key) => <key, sanitizeUrl(fromMaybe("", D.get(key, depMap)))>),
       (x) => firstLevel ? displayPackagesToInstall(x) : x,
       map(where is <key, sanitizedUrl>: pipe(
-        (k) => D.get(k, depMap),
+        D.get($, depMap),
         where is Just p : Http.get(p),
         map(where is Http.Response { data: BinaryData d }: d),
         mapRej(always("Err fetching archive")),

@@ -83,8 +83,8 @@ export parallel = (wishes) => (
     const out = new Array(l);
     const next = j => (j === l && goodCB(out))
     const fork = (w, j) => (getWishFn(w)(
-      e => ko || (badCB(e), ko = true),
-      x => ko || (out[j] = x, next(++ok))
+      e => ko || (badCB(e), ko = true))
+      (x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
 
@@ -98,7 +98,7 @@ export parallel = (wishes) => (
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
-    is Wish run: #- setTimeout(() => run(badCB, goodCB), 0); -#
+    is Wish run: #- setTimeout(() => run(badCB)(goodCB), 0); -#
   }
 
   return ()

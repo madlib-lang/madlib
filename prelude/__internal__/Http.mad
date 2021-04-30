@@ -143,7 +143,7 @@ export request = (config) => Wish((bad, good) => #-{
 
     const req = reqFn(config.url, { method: methodStr(config.method), headers }, (response) => {
       if (response.statusCode === 302) {
-        W.fulfill(bad, good, request({ ...config, url: response.headers.location }))
+        W.fulfill(bad)(good)(request({ ...config, url: response.headers.location }))
       }
       else {
         const contentType = response.headers["content-type"].split(";")[0]
@@ -185,13 +185,6 @@ export request = (config) => Wish((bad, good) => #-{
     req.end();
   {/Node}
 }-#)
-
-
-
-
-
-
-
 
 
 
