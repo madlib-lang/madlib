@@ -47,8 +47,8 @@ checkExps env globalScope dependencies (e : es) = do
   checkExps env globalScope' dependencies' es
 
 
-shouldSkip :: Exp -> Bool
-shouldSkip e = case e of
+shouldSkip :: Env -> Exp -> Bool
+shouldSkip env e = isMethod env e || case e of
   Solved _ _ (Assignment _ shouldHaveAbs) -> hasAbs shouldHaveAbs
   Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs))) -> hasAbs shouldHaveAbs
   Solved _ _ (TypedExp (Solved _ _ (Assignment _ shouldHaveAbs)) _) -> hasAbs shouldHaveAbs
@@ -62,7 +62,7 @@ hasAbs e = case e of
   _ -> False
 
 verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
-verifyScope env globalAccesses globalScope dependencies exp = if shouldSkip exp
+verifyScope env globalAccesses globalScope dependencies exp = if shouldSkip env exp
   then return ()
   else
     foldM (verifyScope' env globalScope dependencies) () globalAccesses
@@ -74,6 +74,7 @@ verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area 
       Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
 
       Nothing    -> return ()
+    -- TODO: use a NotInScope error with the loc of where it originated and the loc of what name was not in scope
     else throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
@@ -98,6 +99,7 @@ isFunction exp = case exp of
 isMethod :: Env -> Exp -> Bool
 isMethod env (Solved _ _ e) = case e of
   Var n -> Just True == (M.lookup n (envMethods env) >> return True)
+  Assignment n _ -> Just True == (M.lookup n (envMethods env) >> return True)
   _     -> False
 
 

@@ -360,7 +360,7 @@ instance Compilable Exp where
 
 
         Placeholder (MethodRef cls method var, ts) (Opt.Optimized _ _ (Var name)) ->
-          let compiled = generateRecordName optimized cls ts var <> "." <> method
+          let compiled = generateRecordName optimized cls ts var <> "." <> method <> "()"
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
         Assignment name exp ->
@@ -643,7 +643,7 @@ instance Compilable Opt.Instance where
             instRoot
               <> "['"
               <> n
-              <> "'] = "
+              <> "'] = () => "
               <> placeholders
               <> "{\n  "
               <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
@@ -655,7 +655,7 @@ instance Compilable Opt.Instance where
         in
           if not (null dicts)
             then compiledNDMethod <> compiledMethod
-            else instRoot <> "['" <> n <> "'] = " <> content' <> ";\n"
+            else instRoot <> "['" <> n <> "'] = () => " <> content' <> ";\n"
 
 
 compileAssignmentWithPlaceholder :: Env -> CompilationConfig -> Exp -> (String, [String], String)

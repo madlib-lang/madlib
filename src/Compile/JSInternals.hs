@@ -218,7 +218,7 @@ applyDictsFn target optimized =
   in  unlines
         [ "const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);"
         , getGlobalForTarget target <> "." <> fnName <> " = (dict, dicts) =>"
-        , "  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});"
+        , "  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: () => __applyMany__(dict[k](), dicts) }), {});"
         ]
 
 onceFnName :: Bool -> String

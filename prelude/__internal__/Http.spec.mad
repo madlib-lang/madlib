@@ -26,4 +26,9 @@ test("get should return a bad Wish containing the error response when the server
       always(bad(Error("get should not be successful when the request fails")))
     )
   ))
-)(createMockRequest({ ...defaultConfig, port: 8001, statusCode: 404, response: TextData("Not found") })))
+)(createMockRequest({
+  ...defaultConfig,
+  port: 8001,
+  statusCode: 404,
+  response: TextData("Not found")
+})))

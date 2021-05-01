@@ -15,6 +15,7 @@ export type Either e a
   | Right a
 
 
+
 /**
  * We can map over an Either: if it is a Right, it transforms the contained value. 
  * If it is a Left it does nothing. In this way we can freely frame the computations we want
@@ -74,7 +75,7 @@ instance Bifunctor Either {
     is Right a: Right(rightF(a))
     is Left e : Left(leftF(e))
 
-  mapFirst = (f, m) => mapLeft(f, m)
+  mapFirst = mapLeft
   mapSecond = map
 }
 
