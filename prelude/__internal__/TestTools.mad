@@ -20,7 +20,9 @@ red = colorString("\x1b[31m")
 green = colorString("\x1b[32m")
 
 
-export type AssertionError = AssertionError a a
+export type AssertionError
+  = AssertionError a a
+  | Error a
 
 
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
@@ -155,6 +157,11 @@ formatFailureOutput = (description, result) =>
         ++ "\n  actual:\n    "
         ++ #- red(JSON.stringify(actual)) -#
       )
+    is Error msg:
+      W.bad(
+        red("\u00d7 " ++ description)
+        ++ "\n  error: " ++ #- JSON.stringify(msg) -#
+      )
 
 #-
 const generateId = () => Math.random().toString().substr(2, 10)
@@ -179,12 +186,14 @@ export test = (description, testImpl) => {
 
 reportBad :: String -> String -> ()
 reportBad = (id, err) => #-{
-  process.send({ reportType: "TEST_FAIL", message: err, id, hitPoints: __getHPs() });
+  process.send({ reportType: "TEST_FAIL", message: err, id, hitPoints: __getHPs() })
+  __resetHPs()
 }-#
 
 reportGood :: String -> String -> ()
 reportGood = (id, good) => #-{
-  process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() });
+  process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() })
+  __resetHPs()
 }-#
 
 assertEquals :: a -> a -> W.Wish AssertionError String

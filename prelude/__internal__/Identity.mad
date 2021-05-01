@@ -6,7 +6,7 @@ import {} from "MonadTrans"
 
 export type Identity a = Identity a
 
-run :: Identity a -> a
+runIdentity :: Identity a -> a
 export runIdentity = where
   is Identity a: a
 
@@ -49,7 +49,7 @@ instance Functor m => Functor (IdentityT m) {
 instance Applicative m => Applicative (IdentityT m) {
   pure = (x) => IdentityT(pure(x))
 
-  ap = liftToIdentityT(ap)
+  ap = (mf, mm) => liftToIdentityT(ap, mf, mm)
 }
 
 instance Monad m => Monad (IdentityT m) {

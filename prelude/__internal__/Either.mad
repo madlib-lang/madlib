@@ -1,4 +1,5 @@
 import {} from "Monad"
+import {} from "Bifunctor"
 import {} from "Show"
 
 /**
@@ -67,6 +68,15 @@ instance Monad (Either e) {
     is Left  e: Left(e)
 }
 
+
+instance Bifunctor Either {
+  bimap = (leftF, rightF) => where
+    is Right a: Right(rightF(a))
+    is Left e : Left(leftF(e))
+
+  mapFirst = (f, m) => mapLeft(f, m)
+  mapSecond = map
+}
 
 /**
  * Use `show` to transform an Either to a string.

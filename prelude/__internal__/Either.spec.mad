@@ -24,6 +24,10 @@ test("of", (_) => assertEquals(of(3), Right(3)))
 test("chain - Right", (_) => assertEquals(chain((x) => Right(x + 1), Right(1)), Right(2)))
 test("chain - Left", (_) => assertEquals(chain((x) => Right(x + 1), Left("no")), Left("no")))
 
+test("bimap should map the left if the Either is a Left", (_) =>
+  assertEquals(bimap((x) => x * 2, (x) => x + 1, Left(3)), Left(6))
+)
+
 test("show - Right", (_) => assertEquals(show((Right(3) :: Either Number Number)), "Right 3"))
 test("show - Left", (_) => assertEquals(show((Left(3) :: Either Number Number)), "Left 3"))
 

@@ -42,7 +42,7 @@ alias Request = {
 }
 
 methodStr :: Method -> String
-methodStr = where
+export methodStr = where
   is GET    : "GET"
   is POST   : "POST"
   is PUT    : "PUT"
@@ -111,7 +111,9 @@ export request = (config) => Wish((bad, good) => #-{
 
     xhr.onload = () => {
       const contentType = xhr.getResponseHeader('Content-Type')
-      const isBinaryData = isBinary(contentType.split(";")[0])
+        ? xhr.getResponseHeader('Content-Type').split(";")[0]
+        : "text/plain"
+      const isBinaryData = isBinary(contentType)
 
       const cb = xhr.status >= 400 ? bad : good
       const buffer = xhr.response
@@ -146,7 +148,9 @@ export request = (config) => Wish((bad, good) => #-{
         W.fulfill(bad)(good)(request({ ...config, url: response.headers.location }))
       }
       else {
-        const contentType = response.headers["content-type"].split(";")[0]
+        const contentType = response.headers["content-type"]
+          ? response.headers["content-type"].split(";")[0]
+          : "text/plain"
         const isBinaryData = isBinary(contentType)
 
         let chunks = isBinaryData ? [] : ""
@@ -186,7 +190,17 @@ export request = (config) => Wish((bad, good) => #-{
   {/Node}
 }-#)
 
+requestWithBody :: Method -> String -> Data -> Wish Response Response
+requestWithBody = (method, url, body) =>
+  requestWithBodyAndHeaders(method, url, body, [])
 
+requestWithBodyAndHeaders :: Method -> String -> Data -> List Header -> Wish Response Response
+requestWithBodyAndHeaders = (method, url, body, headers) => request({
+  method,
+  url,
+  body: Just(body),
+  headers
+})
 
 get :: String -> Wish Response Response
 export get = (url) => request({
@@ -195,3 +209,33 @@ export get = (url) => request({
   headers: [],
   body: Nothing
 })
+
+getWithHeaders :: String -> List Header -> Wish Response Response
+export getWithHeaders = (url, headers) => request({
+  method: GET,
+  url,
+  headers,
+  body: Nothing
+})
+
+post :: String -> Data -> Wish Response Response
+export post = (url, body) => requestWithBody(POST, url, body)
+
+postWithHeaders :: String -> Data -> List Header -> Wish Response Response
+export postWithHeaders = (url, body, headers) =>
+  requestWithBodyAndHeaders(POST, url, body, headers)
+
+put :: String -> Data -> Wish Response Response
+export put = (url, body) => requestWithBody(PUT, url, body)
+
+putWithHeaders :: String -> Data -> List Header -> Wish Response Response
+export putWithHeaders = (url, body, headers) =>
+  requestWithBodyAndHeaders(PUT, url, body, headers)
+
+delete :: String -> Data -> Wish Response Response
+export delete = (url, body) => requestWithBody(DELETE, url, body)
+
+deleteWithHeaders :: String -> Data -> List Header -> Wish Response Response
+export deleteWithHeaders = (url, body, headers) =>
+  requestWithBodyAndHeaders(DELETE, url, body, headers)
+

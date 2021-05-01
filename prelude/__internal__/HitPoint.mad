@@ -19,7 +19,7 @@ global.__hp = (astPath, type, line, id) => {
   }
 }
 
-global.__resetHPs = () => { __HIT_POINTS = []; __CACHE = {}; console.log(__CACHE) }
+global.__resetHPs = () => { __HIT_POINTS = []; __CACHE = {}; }
 
 global.__getHPs = () => __HIT_POINTS
 -#

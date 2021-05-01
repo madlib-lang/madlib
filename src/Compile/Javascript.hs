@@ -39,6 +39,23 @@ newtype Env = Env { varsInScope :: S.Set String } deriving(Eq, Show)
 initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty }
 
+allowedJSNames :: [String]
+allowedJSNames =
+  [ "delete"
+  , "class"
+  , "while"
+  , "for"
+  , "case"
+  , "switch"
+  ]
+
+generateSafeName :: String -> String
+generateSafeName n =
+  if n `elem` allowedJSNames then
+    "_$_" <> n <> "_$_"
+  else
+    n
+
 
 data Arg = Arg String Bool
          | PlaceholderArg String Bool
@@ -300,7 +317,9 @@ instance Compilable Exp where
         Var ('.' : name) -> "(__R__ => __R__." <> name <> ")"
 
 
-        Var name -> if name == "!" || not coverage then name else hpWrapLine coverage astPath l name
+        Var name ->
+          let safeName  = generateSafeName name
+          in  if safeName == "!" || not coverage then safeName else hpWrapLine coverage astPath l safeName
 
         Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
 
@@ -345,15 +364,16 @@ instance Compilable Exp where
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
         Assignment name exp ->
-          let (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
+          let safeName = generateSafeName name
+              (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
               content'                       = if coverage && isFunctionType expType
-                then "__hpFnWrap('" <> astPath <> "', " <> show l <> ", '" <> name <> "')(" <> content <> ")"
+                then "__hpFnWrap('" <> astPath <> "', " <> show l <> ", '" <> safeName <> "')(" <> content <> ")"
                 else content
-              needsModifier = notElem name $ varsInScope env
+              needsModifier = notElem safeName $ varsInScope env
           in  if not (null dicts)
                 then
                   (if needsModifier then "let " else "")
-                  <> name
+                  <> safeName
                   <> " = "
                   <> placeholders
                   <> "{"
@@ -361,24 +381,24 @@ instance Compilable Exp where
                   <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
                   <> "\n\n"
                   <> "  return "
-                  <> name
+                  <> safeName
                   <> "__ND__()"
                   <> "\n};\n"
                   <> "let "
-                  <> name
+                  <> safeName
                   <> "__ND__"
                   <> " = "
                   <> onceFnName optimized
                   <> "(() => "
                   <> content'
                   <> ")"
-                else (if needsModifier then "let " else "") <> name <> " = " <> content'
+                else (if needsModifier then "let " else "") <> safeName <> " = " <> content'
 
         TypedExp exp _    -> compile env config exp
 
         Export     ass    -> "export " <> compile env config ass
 
-        NameExport name   -> "export { " <> name <> " }"
+        NameExport name   -> "export { " <> generateSafeName name <> " }"
 
         Record     fields -> let fs = intercalate "," $ compileField <$> fields in "({" <> fs <> " })"
          where
@@ -554,7 +574,6 @@ instance Compilable Constructor where
             "let "
               <> cname
               <> " = "
-              -- <> curryFnName optimized
               <> "("
               <> compileParams cparams
               <> " => "
@@ -574,7 +593,7 @@ compileImport :: CompilationConfig -> Import -> String
 compileImport config (Untyped _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
-    in  "import { " <> compileNames (Opt.getValue <$> names) <> " } from \"" <> importPath <> "\""
+    in  "import { " <> compileNames (generateSafeName . Opt.getValue <$> names) <> " } from \"" <> importPath <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
     let importPath = buildImportPath config absPath in "import " <> Opt.getValue alias <> " from \"" <> importPath <> "\""
@@ -716,7 +735,7 @@ compileExps env config (exp : es) = case exp of
 
 buildDefaultExport :: [TypeDecl] -> [Exp] -> String
 buildDefaultExport as es =
-  let expExportNames    = getExportName <$> filter isExport es
+  let expExportNames    = generateSafeName . getExportName <$> filter isExport es
       adtExportNames    = getConstructorName <$> concat (adtconstructors . getValue <$> filter isADTExport as)
       allDefaultExports = expExportNames <> adtExportNames
   in  case allDefaultExports of

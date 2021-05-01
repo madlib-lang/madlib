@@ -62,6 +62,17 @@ export chainRej = (f, m) => (
   ))
 )
 
+bichain :: (a -> Wish c d) -> (b -> Wish c d) -> Wish a b -> Wish c d
+export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
+  where(m) is Wish run:
+    run(
+      (x) => where(badF(x))
+        is Wish r: r(badCB, goodCB),
+      (x) => where(goodF(x))
+        is Wish r: r(badCB, goodCB)
+    )
+)
+
 
 good :: a -> Wish e a
 export good = (a) => Wish((_, goodCB) => goodCB(a))

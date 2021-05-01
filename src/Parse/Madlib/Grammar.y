@@ -267,6 +267,7 @@ compositeTypingArgs :: { [Src.Typing] }
   | name '.' name compositeTypingArgs                      { (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRSingle $ (strV $1<>"."<>strV $3))) : $4 }
   | '(' typings ')' compositeTypingArgs                    { $2:$4 }
   | typing                                                 { [$1] }
+  | typing compositeTypingArgs                             { $1:$2 }
   | '(' typing '->' typings ')'                     %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TRArr $2 $4)] }
   | compositeTypingArgs '(' typing '->' typings ')' %shift { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $ head $1) (tokenToArea $6)) (Src.TRArr $3 $5)] }
 

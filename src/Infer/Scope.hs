@@ -31,7 +31,8 @@ checkAST :: Env -> AST -> Infer ()
 checkAST env ast = do
   let initialNamesInScope = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env)
       exps                = aexps ast
-  checkExps env initialNamesInScope M.empty exps
+      methods             = concat $ getInstanceMethods <$> ainstances ast
+  checkExps env initialNamesInScope M.empty (methods ++ exps)
 
 checkExps :: Env -> InScope -> Dependencies -> [Exp] -> Infer ()
 checkExps _   _           _            []       = return ()
@@ -46,10 +47,24 @@ checkExps env globalScope dependencies (e : es) = do
   checkExps env globalScope' dependencies' es
 
 
+shouldSkip :: Exp -> Bool
+shouldSkip e = case e of
+  Solved _ _ (Assignment _ shouldHaveAbs) -> hasAbs shouldHaveAbs
+  Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs))) -> hasAbs shouldHaveAbs
+  Solved _ _ (TypedExp (Solved _ _ (Assignment _ shouldHaveAbs)) _) -> hasAbs shouldHaveAbs
+  Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs)))) _) -> hasAbs shouldHaveAbs
+  _ -> False
+
+hasAbs :: Exp -> Bool
+hasAbs e = case e of
+  Solved _ _ (Placeholder _ exp) -> hasAbs exp
+  Solved _ _ (Abs _ _) -> True
+  _ -> False
+
 verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
-verifyScope env globalAccesses globalScope dependencies exp = if isFunction exp
+verifyScope env globalAccesses globalScope dependencies exp = if shouldSkip exp
   then return ()
-  else do
+  else
     foldM (verifyScope' env globalScope dependencies) () globalAccesses
 
 verifyScope' :: Env -> InScope -> Dependencies -> () -> (String, Exp) -> Infer ()
@@ -58,7 +73,7 @@ verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area 
     then case M.lookup nameToVerify dependencies of
       Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
 
-      Nothing    -> return () --throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
+      Nothing    -> return ()
     else throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
@@ -80,6 +95,11 @@ isFunction exp = case exp of
   Solved t _ _ -> isFunctionType t
   _            -> False
 
+isMethod :: Env -> Exp -> Bool
+isMethod env (Solved _ _ e) = case e of
+  Var n -> Just True == (M.lookup n (envMethods env) >> return True)
+  _     -> False
+
 
 collect :: Env -> [String] -> Maybe String -> InScope -> InScope -> Exp -> Infer Accesses
 collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe area e) = case e of
@@ -90,7 +110,7 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
   Var ('.':_)  -> return S.empty
   Var name     -> do
     case nameToFind of
-      Just n  -> when (n == name && notElem n foundNames) (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area []))
+      Just n  -> when (n == name && notElem n foundNames && not (isMethod env solvedExp)) (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area []))
       Nothing -> return ()
     if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
 
