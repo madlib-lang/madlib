@@ -1,0 +1,13 @@
+import { assertEquals, test, Error } from "TestTools"
+import { always } from "Function"
+import { bad, bichain } from "./Wish"
+
+
+
+test("bimap should map over the bad value if given a bad wish", (_) => pipe(
+  bimap((x) => x + 1, (x) => x * 2),
+  bichain(
+    assertEquals($, 4),
+    always(bad(Error("wish should be a left")))
+  )
+)(bad(3)))

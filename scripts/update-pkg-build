@@ -3,9 +3,8 @@
 # copy binary
 cp .stack-work/dist/x86_64-osx/Cabal-3.0.1.0/build/madlib/madlib ./pkg/node_modules/binary-install/bin/madlib
 
-# copy Prelude
-rm -r pkg/node_modules/binary-install/bin/prelude/__internal__
-cp -R prelude/__internal__ ./pkg/node_modules/binary-install/bin/prelude/__internal__
+# clean Prelude
+rm -r pkg/node_modules/binary-install/bin/prelude/__internal__ 2> /dev/null
 
 # copy tools
 cp tools/test-runner/dist/test-runner.js pkg/node_modules/binary-install/bin/

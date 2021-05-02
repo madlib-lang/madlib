@@ -27,6 +27,9 @@ data Type
 
 infixr `TApp`
 
+getTConId :: TCon -> Id
+getTConId (TC id _) = id
+
 
 tNumber :: Type
 tNumber = TCon (TC "Number" Star) "prelude"

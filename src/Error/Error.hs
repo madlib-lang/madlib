@@ -5,6 +5,7 @@ module Error.Error where
 import           Infer.Type
 import           Error.Context
 import           Error.Backtrace
+import           Explain.Location
 
 
 data CompilationError = CompilationError TypeError Context deriving(Eq, Show)
@@ -31,7 +32,9 @@ data TypeError
   | NotExported String String
   | GrammarError FilePath String
   | NameAlreadyDefined String
+  | TypesHaveDifferentOrigin String String String
   | RecursiveVarAccess String
+  | NotInScope String Loc
   | SignatureTooGeneral Scheme Scheme
   | NameAlreadyExported String
   | ContextTooWeak

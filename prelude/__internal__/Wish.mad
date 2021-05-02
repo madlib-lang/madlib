@@ -1,4 +1,5 @@
-import _ from "Monad"
+import {} from "Monad"
+import {} from "Bifunctor"
 
 export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())
 
@@ -36,6 +37,15 @@ instance Monad (Wish e) {
             is Wish r: r(badCB, goodCB)
         )
   )
+}
+
+instance Bifunctor Wish {
+  bimap = (leftF, rightF, m) => Wish((badCB, goodCB) =>
+    where(m) is Wish run: run(pipe(leftF, badCB), pipe(rightF, goodCB))
+  )
+
+  mapFirst = mapRej
+  mapSecond = map
 }
 
 

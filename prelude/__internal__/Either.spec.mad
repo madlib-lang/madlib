@@ -28,6 +28,26 @@ test("bimap should map the left if the Either is a Left", (_) =>
   assertEquals(bimap((x) => x * 2, (x) => x + 1, Left(3)), Left(6))
 )
 
+test("bimap should map the right if the Either is a Right", (_) =>
+  assertEquals(bimap((x) => x * 2, (x) => x + 1, Right(3)), Right(4))
+)
+
+test("mapFirst should map over the value in a Left", (_) =>
+  assertEquals(mapFirst((x) => x * 2, Left(3)), Left(6))
+)
+
+test("mapFirst should not alter a Right", (_) =>
+  assertEquals(mapFirst((x) => x * 2, Right(3)), Right(3))
+)
+
+test("mapSecond should map over the value in a Right", (_) =>
+  assertEquals(mapSecond((x) => x * 2, Right(3)), Right(6))
+)
+
+test("mapSecond should not alter a Left", (_) =>
+  assertEquals(mapSecond((x) => x * 2, Left(3)), Left(3))
+)
+
 test("show - Right", (_) => assertEquals(show((Right(3) :: Either Number Number)), "Right 3"))
 test("show - Left", (_) => assertEquals(show((Left(3) :: Either Number Number)), "Left 3"))
 

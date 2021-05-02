@@ -1,0 +1,7 @@
+interface Biapplicative f {
+  pureFirst :: a -> f a b
+  pureSecond :: b -> f a b
+  biap :: f (a -> c) -> f (b -> d) -> f a b -> f c d
+  apFirst :: f (a -> b) -> f a c -> f b c
+  apSecond :: f (c -> d) -> f a c -> f a d
+}
