@@ -79,6 +79,7 @@ instance Bifunctor Either {
   mapSecond = map
 }
 
+
 /**
  * Use `show` to transform an Either to a string.
  *
@@ -92,6 +93,7 @@ instance (Show e, Show a) => Show (Either e a) {
     is Right a: "Right " ++ show(a)
     is Left  e: "Left " ++ show(e)
 }
+
 
 /**
  * An alias for `map`, use `mapRight` to transform the interior value of a Right.

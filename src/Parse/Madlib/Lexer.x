@@ -59,10 +59,10 @@ $digit    = 0-9                             -- digits
 @floating = @decimal \. @decimal | @decimal -- floating point
 
 tokens :-
-  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                  ; -- Comments
-  <0, jsxOpeningTag, jsxAutoClosed, jsxText, comment> $head*\/\*                          { beginComment }
+  <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                   { beginComment }
   <comment>   [.\n]                                                                       ;
   <comment>   \*\/                                                                        { endComment }
+  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                  ; -- Comments
 
   <0> import                                                                                 { mapToken (\_ -> TokenImport) }
   <0> export                                                                                 { mapToken (\_ -> TokenExport) }
