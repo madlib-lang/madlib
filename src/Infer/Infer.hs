@@ -11,6 +11,10 @@ data InferState = InferState { count :: Int, errors :: [CompilationError] }
   deriving (Show, Eq)
 
 
+getErrors :: Infer [CompilationError]
+getErrors = gets errors
+
+
 pushError :: CompilationError -> Infer ()
 pushError err = do
   s <- get

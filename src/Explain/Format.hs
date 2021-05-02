@@ -234,6 +234,19 @@ formatTypeError json err = case err of
     <> "parser = J.map(Title, J.field(\"title\", parser)) // this is not allowed because parser is directly refering to itself\n"
     <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser))) // this works because now the recursive accessed is wrapped in a function"
 
+  NotInScope name (Loc _ line _) ->
+    "This expression relies on an expression that accesses the variable '" <> name <> "' at line " <> ppShow line
+    <> ".\nAll variables need to have been defined by the time they are accessed and this access is thus not allowed.\n\n"
+    <> "Hint: Move that call further down in the module so that the name is defined when you access it."
+
+  TypesHaveDifferentOrigin adtName origin1 origin2 ->
+    "Types do not match. You try to use a type that seems similar but comes from two different locations.\n"
+    <> "The type '" <> adtName <> "' is used from:\n"
+    <> "  - '" <> origin1 <> "'\n"
+    <> "  - '" <> origin2 <> "'\n\n"
+    <> "Hint: Import it only from one place, or if you meant to use both, make sure to convert from one to the other\n"
+    <> "correctly."
+
   _ -> ppShow err
 
 

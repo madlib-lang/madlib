@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Infer.Scope where
@@ -15,6 +16,7 @@ import           Control.Monad.Except
 import           Control.Exception
 import           Text.Show.Pretty
 import           Debug.Trace
+import           Explain.Location
 
 
 type InScope = S.Set String
@@ -65,17 +67,27 @@ verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
 verifyScope env globalAccesses globalScope dependencies exp = if shouldSkip env exp
   then return ()
   else
-    foldM (verifyScope' env globalScope dependencies) () globalAccesses
+    foldM (verifyScope' env globalScope dependencies exp) () globalAccesses
 
-verifyScope' :: Env -> InScope -> Dependencies -> () -> (String, Exp) -> Infer ()
-verifyScope' env globalScope dependencies _ access@(nameToVerify, Solved _ area _) =
+verifyScope' :: Env -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
+verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _) =
   if nameToVerify `S.member` globalScope
     then case M.lookup nameToVerify dependencies of
-      Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies)) () names
+      Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies) originExp) () names
 
       Nothing    -> return ()
-    -- TODO: use a NotInScope error with the loc of where it originated and the loc of what name was not in scope
-    else throwError $ CompilationError (UnboundVariable nameToVerify) (Context (envCurrentPath env) area (envBacktrace env))
+    else do
+      currentErrors <- getErrors
+      let isErrorReported = any
+            (\case
+              CompilationError (UnboundVariable n) (Context fp _ _) -> n == nameToVerify && envCurrentPath env == fp
+              _ -> False
+            )
+            currentErrors
+      if isErrorReported then
+        return ()
+      else
+        throwError $ CompilationError (NotInScope nameToVerify loc) (Context (envCurrentPath env) originArea (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
 removeAccessFromDeps access = M.map (S.filter (/= access))
