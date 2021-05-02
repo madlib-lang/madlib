@@ -72,7 +72,7 @@ global.__eq__ = (l, r) => {
 
 const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
 global.__apMtdDicts__ = (dict, dicts) =>
-  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: __applyMany__(dict[k], dicts) }), {});
+  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: () => __applyMany__(dict[k](), dicts) }), {});
 
 global.__once__ = (fn, context) => {
 
