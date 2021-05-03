@@ -12,6 +12,7 @@ import T from "Tuple"
 import Lcov from "LcovDotInfo"
 import { andDo } from "Monad"
 import { TextData } from "Data"
+import Context from "HitPointContext"
 
 colorString :: String -> String -> String
 colorString = (color, v) => color ++ v ++"\x1b[0m"
@@ -170,8 +171,15 @@ const generateId = () => Math.random().toString().substr(2, 10)
 test :: String -> (String -> W.Wish AssertionError String) -> ()
 export test = (description, testImpl) => {
   id = #- generateId() -#
-  #- process.send({ reportType: "TEST_START", id }) -#
-  #- process.env.COVERAGE_MODE = "off" -#
+  #-
+  
+  process.send({ reportType: "TEST_START", id })
+  process.env.COVERAGE_MODE = "off"
+  Context.initContext((context) => {
+    context.id = id;
+    context.__HIT_POINTS = []
+    context.__CACHE = {}
+  -#
 
   pipe(
     (run) => run(description),
@@ -180,20 +188,34 @@ export test = (description, testImpl) => {
     W.fulfill(reportBad(id), reportGood(id))
   )(testImpl)
 
+  #-})-#
+
   return ()
 }
 
 
 reportBad :: String -> String -> ()
 reportBad = (id, err) => #-{
-  process.send({ reportType: "TEST_FAIL", message: err, id, hitPoints: __getHPs() })
-  __resetHPs()
+  const context = Context.getContext()
+  process.send({
+    reportType: "TEST_FAIL",
+    message: err,
+    id,
+    hitPoints: context.__HIT_POINTS,
+    globalHitPoints: __getGlobalHPs()
+  })
 }-#
 
 reportGood :: String -> String -> ()
 reportGood = (id, good) => #-{
-  process.send({ reportType: "TEST_SUCCESS", message: good, id,  hitPoints: __getHPs() })
-  __resetHPs()
+  const context = Context.getContext()
+  process.send({
+    reportType: "TEST_SUCCESS",
+    message: good,
+    id,
+    hitPoints: context.__HIT_POINTS,
+    globalHitPoints: __getGlobalHPs()
+  })
 }-#
 
 assertEquals :: a -> a -> W.Wish AssertionError String

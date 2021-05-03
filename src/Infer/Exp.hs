@@ -180,10 +180,16 @@ inferBody env (e : xs) = do
   e''               <- insertClassPlaceholders env' e' ps
   e'''              <- updatePlaceholders env' True s e''
 
-  (sb, ps', tb, eb) <- inferBody env' xs
+  (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
   return (sb `compose` s, ps', tb, e''' : eb)
 
-
+updateBodyEnv :: Substitution -> Env -> Env
+updateBodyEnv s e =
+  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) ->
+                        if isFunctionType t then sc else apply s sc
+                      )
+                      (envVars e)
+    }
 
 -- INFER APP
 

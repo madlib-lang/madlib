@@ -8,6 +8,7 @@ import { join, relative, dirname } from "path";
 import fs from "fs/promises";
 
 let hitPoints = [];
+let globalHitPoints = [];
 const testsToRun = {};
 let successCount = 0;
 let testSuiteCount = 0;
@@ -38,26 +39,30 @@ const runTestSuite = (madlibFile, done) => {
     .replace("prelude/__internal__", ".prelude");
 
 
-  const forked = fork(jsFile);
+  const forked = fork(jsFile)
 
   forked.on("message", msg => {
     switch(msg.reportType) {
       case "TEST_START":
-        testsToRun[msg.id] = false;
+        testsToRun[msg.id] = false
         break;
       case "TEST_FAIL":
       case "TEST_SUCCESS":
         if (msg.reportType === "TEST_SUCCESS") {
-          successCount = successCount + 1;
+          successCount = successCount + 1
         }
-        testsToRun[msg.id] = true;
-        hitPoints = hitPoints.concat(msg.hitPoints);
-        console.log(msg.message);
+        testsToRun[msg.id] = true
+        hitPoints = hitPoints.concat(msg.hitPoints)
+        globalHitPoints = msg.globalHitPoints
+
+        console.log(msg.message)
 
         if (areAllTestsDone(testsToRun)) {
-          console.log("Test suite finished\n");
+          hitPoints = hitPoints.concat(globalHitPoints)
+          globalHitPoints = []
+          console.log("Test suite finished\n")
           if (done) {
-            done();
+            done()
           }
         }
         break;

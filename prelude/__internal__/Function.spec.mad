@@ -1,12 +1,87 @@
 import { assertEquals, test } from "./TestTools"
-import { always, complement, memoize2, memoize } from "./Function"
 import { andDo } from "Monad"
 import {} from "MonadState"
 import { runStateT } from "StateT"
 import { runIdentity } from "Identity"
 import {} from "List"
+import {
+  always,
+  complement,
+  equals,
+  flip,
+  identity,
+  ifElse,
+  memoize2,
+  memoize,
+  not,
+  notEquals,
+  when
+} from "./Function"
+
+divide :: Number -> Number -> Number
+divide = (a, b) => a / b
 
 
+test("identity should return whatever it is given", (_) => pipe(
+  identity,
+  assertEquals($, 3)
+)(3))
+
+test("equals - two equal numbers", (_) => pipe(
+  equals($, 3),
+  assertEquals($, true)
+)(3))
+
+test("equals - two different numbers", (_) => pipe(
+  equals($, 4),
+  assertEquals($, false)
+)(3))
+
+test("equals - two equal lists", (_) => pipe(
+  equals($, [1, 2, 3]),
+  assertEquals($, true)
+)([1, 2, 3]))
+
+test("notEquals - two equal numbers", (_) => pipe(
+  notEquals($, 3),
+  assertEquals($, false)
+)(3))
+
+test("ifElse - truthy", (_) => pipe(
+  ifElse(equals(4), (x) => x + 1, (x) => x * 2),
+  assertEquals($, 5)
+)(4))
+
+test("ifElse - falsy", (_) => pipe(
+  ifElse(equals(4), (x) => x + 1, (x) => x * 2),
+  assertEquals($, 10)
+)(5))
+
+test("when - truthy", (_) => pipe(
+  when(equals(4), (x) => x * 2),
+  assertEquals($, 8)
+)(4))
+
+test("when - falsy", (_) => pipe(
+  when(equals(4), (x) => x * 2),
+  assertEquals($, 5)
+)(5))
+
+test("not - true", (_) => pipe(
+  not,
+  assertEquals($, false)
+)(true))
+
+test("not - false", (_) => pipe(
+  not,
+  assertEquals($, true)
+)(false))
+
+test("flip", (_) => pipe(
+  flip,
+  (flipped) => flipped(4, 2),
+  assertEquals($, 0.5)
+)(divide))
 
 test("complement", (_) => {
   isEven = (x) => x % 2 == 0

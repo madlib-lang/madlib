@@ -1,0 +1,8 @@
+import { assertEquals, test } from "TestTools"
+import { Just } from "Maybe"
+import { apL } from "./Applicative"
+
+test("apL should return the first of the two given Applicatives", (_) => pipe(
+  apL($, Just(2)),
+  assertEquals($, Just(1))
+)(Just(1)))

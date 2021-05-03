@@ -60,6 +60,9 @@ test("mapLeft - Left", (_) => assertEquals(mapLeft((x) => x + 1, Left(1)), Left(
 test("isLeft - Left", (_) => assertEquals(isLeft(Left(1)), true))
 test("isLeft - Right", (_) => assertEquals(isLeft(Right(1)), false))
 
+test("isLeft - Left", (_) => assertEquals(isLeft(Left(1)), true))
+test("isLeft - Right", (_) => assertEquals(isLeft(Right(1)), false))
+
 test("isRight - Left", (_) => assertEquals(isRight(Left(1)), false))
 test("isRight - Right", (_) => assertEquals(isRight(Right(1)), true))
 
