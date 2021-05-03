@@ -1,15 +1,29 @@
 import {} from "Monad"
 import {} from "Bifunctor"
 
+
+/**
+ * Wish represents an async computation that needs to be fulfilled. It is
+ * cold and will only be run when fulfilled.
+ */
+
 export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())
 
-
+/**
+ * The functor instance of Wish provides a way to map over the value it contains.
+ *
+ * @since 0.0.5
+ * @example
+ * map((x) => x + 1, good(3)) // good(4)
+ * map((x) => x + 1, bad(3))  // bad(3)
+ */
 instance Functor (Wish e) {
   map = (f, m) => Wish((badCB, goodCB) =>
     where(m)
       is Wish run: run(badCB, (x) => (goodCB(f(x))))
   )
 }
+
 
 instance Applicative (Wish e) {
   pure = (a) => Wish((_, goodCB) => goodCB(a))
@@ -49,6 +63,14 @@ instance Bifunctor Wish {
 }
 
 
+/**
+ * Maps over the rejected value.
+ *
+ * @since 0.0.5
+ * @example
+ * mapRej((x) => x + 1, bad(3))  // bad(4)
+ * mapRej((x) => x + 1, good(3)) // good(3)
+ */
 mapRej :: (e -> f) -> Wish e a -> Wish f a
 export mapRej = (f, m) => (
   Wish((badCB, goodCB) => (
@@ -58,7 +80,13 @@ export mapRej = (f, m) => (
   ))
 )
 
-
+/**
+ * Chains over the rejected value.
+ *
+ * @since 0.0.5
+ * @example
+ * chainRej((x) => good(x + 1), bad(3)) // good(4)
+ */
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
 export chainRej = (f, m) => (
   Wish((badCB, goodCB) => (

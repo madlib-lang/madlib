@@ -1,16 +1,15 @@
 import {} from "Show"
 import {} from "Read"
 import { Maybe, Just, Nothing } from "Maybe"
+import { loop } from "Control"
+import { append } from "List"
 
 instance Show Number {
-  show = (x) => #- new Number(x).toString() -#
+  show = (x) => #- x.toString() -#
 }
 
 instance Read Number {
-  read = (x) => #-{
-    const result = parseFloat(x)
-    return isNaN(result) ? Nothing : Just(result)
-  }-#
+  read = fromString
 }
 
 fromString :: String -> Maybe Number
@@ -19,6 +18,13 @@ export fromString = (str) => (#- {
   return isNaN(n) ? Nothing : Just(n)
 } -#)
 
+/**
+ * Formats a a number given as the first parameter to a string containing the
+ * amount of numbers after the . given by the second parameter.
+ * @since 0.4.0
+ * @example
+ * formatDecimal(3.14159, 2) // "3.14"
+ */
 formatDecimal :: Number -> Number -> String
 export formatDecimal = (a, x) => #-{
   const n = x.toFixed(a)
@@ -35,4 +41,3 @@ export range = (a, b) => #-{
   }
   return out
 }-#
-

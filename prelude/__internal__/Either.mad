@@ -34,7 +34,7 @@ instance Functor (Either e) {
 
 
 /**
- * By wrapping a function in `ap` we can apply it from one Either to another Either.
+ * By wrapping a function in `pure` we can apply it from one Either to another Either.
  * If both contained values are Rights, it returns a Right of the result. If either Either is a Left,
  * that value persists and the contained value is not transformed.
  *
