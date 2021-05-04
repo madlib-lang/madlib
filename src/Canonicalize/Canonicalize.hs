@@ -36,7 +36,7 @@ instance Canonicalizable Src.Exp Can.Exp where
       es' <- mapM (canonicalize env target) es
       return $ Can.Canonical area (Can.TemplateString es')
 
-    Src.JSExp js         -> do
+    Src.JSExp js -> do
       pushJS js
       return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
 
@@ -69,7 +69,7 @@ instance Canonicalizable Src.Exp Can.Exp where
         Just found -> return $ Can.Canonical area (Can.TypeExport name)
         Nothing    -> return $ Can.Canonical area (Can.NameExport name)
 
-    Src.Var name            -> do
+    Src.Var name -> do
       pushNameAccess name
       return $ Can.Canonical area (Can.Var name)
 
@@ -236,7 +236,8 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
 instance Canonicalizable Src.Import Can.Import where
   canonicalize env target (Src.Source _ area imp) = case imp of
-    Src.NamedImport names relPath absPath -> return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
+    Src.NamedImport names relPath absPath ->
+      return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
 
     Src.DefaultImport namespace relPath absPath ->
       return $ Can.Canonical area (Can.DefaultImport (canonicalizeName namespace) relPath absPath)

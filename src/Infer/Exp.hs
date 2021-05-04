@@ -39,11 +39,12 @@ import           Text.Show.Pretty               ( ppShow )
 import           Debug.Trace
 import           Infer.ToSolved
 
+
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer env lexp = do
   let (Can.Canonical area exp) = lexp
       env'                     = pushExpToBT env lexp
-  r@(s, ps, t, e) <- case exp of
+  case exp of
     Can.LNum  _               -> return (M.empty, [], tNumber, applyLitSolve lexp tNumber)
     Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
     Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
@@ -66,8 +67,6 @@ infer env lexp = do
     Can.JSExp c               -> do
       t <- newTVar Star
       return (M.empty, [], t, Slv.Solved t area (Slv.JSExp c))
-
-  return r
 
 
 applyLitSolve :: Can.Exp -> Type -> Slv.Exp
@@ -129,13 +128,13 @@ enhanceVarError env exp area (CompilationError e _) =
 
 
 -- INFER NAME EXPORT
+
 inferNameExport :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
   sc         <- catchError (lookupVar env name) (enhanceVarError env exp area)
   (ps :=> t) <- instantiate sc
 
   let e = Slv.Solved t area $ Slv.NameExport name
-  -- e' <- insertVarPlaceholders env e ps
 
   return (M.empty, ps, t, e)
 
@@ -143,7 +142,7 @@ inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
 
 -- INFER ABSTRACTIONS
 
--- Param white list
+-- Param white list for shadowing check
 allowedShadows :: [String]
 allowedShadows = ["_P_", "__x__", "_"]
 
@@ -183,18 +182,22 @@ inferBody env (e : xs) = do
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
   return (sb `compose` s, ps', tb, e''' : eb)
 
+-- Applies a substitution only to types in the env that are not a function.
+-- This is needed for function bodies, so that we can define a function that is generic,
+-- but other types should not. Say if we have a var xs = [] that has type List a and that
+-- later in the function we can infer that this list is a List Number, then that substitution
+-- should be applied to the env so that correct type can be inferred.
 updateBodyEnv :: Substitution -> Env -> Env
 updateBodyEnv s e =
-  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) ->
-                        if isFunctionType t then sc else apply s sc
-                      )
-                      (envVars e)
-    }
+  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t then sc else apply s sc) (envVars e) }
+
+
+
 
 -- INFER APP
 
 inferApp' :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp, [(Substitution, [Pred], Type)])
-inferApp' env (Can.Canonical area (Can.App abs arg final)) = do
+inferApp' env app@(Can.Canonical area (Can.App abs arg final)) = do
   tv                               <- newTVar Star
   (s1, ps1, t1, eabs, skippedArgs) <- if isApp abs && not (isFinalApp abs)
     then inferApp' env abs
@@ -203,7 +206,7 @@ inferApp' env (Can.Canonical area (Can.App abs arg final)) = do
       return (s1, ps1, t1, eabs, [])
   (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
-  s3                  <- contextualUnify env abs t1 (apply s1 t2 `fn` tv)
+  s3                  <- contextualUnify env app t1 (apply s1 t2 `fn` tv)
 
   let t          = apply s3 tv
   let s          = s3 `compose` s2 `compose` s1
@@ -237,7 +240,6 @@ isFinalApp :: Can.Exp -> Bool
 isFinalApp (Can.Canonical _ exp) = case exp of
   Can.App _ _ final -> final
   _                 -> False
-
 
 
 
@@ -429,17 +431,16 @@ inferRecord env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
   inferredFields <- mapM (inferRecordField env) fields
-  (open, maybeT)           <- shouldBeOpen env fields
+  (open, maybeT) <- shouldBeOpen env fields
 
   let fieldSubsts = (\(s, _, _, _) -> s) <$> inferredFields
   let fieldTypes  = (\(_, _, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, _, es) -> es) <$> inferredFields
   let fieldPS     = (\(_, ps, _, _) -> ps) <$> inferredFields
-  let subst      = foldr compose M.empty fieldSubsts
+  let subst       = foldr compose M.empty fieldSubsts
 
-  (recordType, extraSubst) <-
-    if not open then
-      return (TRecord (M.fromList $ concat fieldTypes) open, mempty)
+  (recordType, extraSubst) <- if not open
+    then return (TRecord (M.fromList $ concat fieldTypes) open, mempty)
     else do
       let Just t' = maybeT
           t''     = TRecord (M.fromList $ concat fieldTypes) True
@@ -461,10 +462,10 @@ inferRecordField env (Can.Canonical area field) = case field of
     case t of
       TRecord tfields _ -> return (s, ps, M.toList tfields, Slv.Solved t area $ Slv.FieldSpread e)
 
-      TVar _            -> return (s, ps, [], Slv.Solved t area $ Slv.FieldSpread e)
+      TVar _ -> return (s, ps, [], Slv.Solved t area $ Slv.FieldSpread e)
 
-      _                 -> throwError
-        $ CompilationError (WrongSpreadType $ show t) (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+      _ -> throwError $ CompilationError (WrongSpreadType $ show t)
+                                         (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
 
 shouldBeOpen :: Env -> [Can.Field] -> Infer (Bool, Maybe Type)
 shouldBeOpen env = foldrM
@@ -481,9 +482,12 @@ shouldBeOpen env = foldrM
 
 
 -- INFER ACCESS
+
 inferAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAccess env e@(Can.Canonical area (Can.Access ns field)) =
-  let inferredFieldAccess = inferFieldAccess env e in catchError inferredFieldAccess (\_ -> inferNamespaceAccess env e)
+  let inferredFieldAccess = inferFieldAccess env e
+  in  catchError inferredFieldAccess (\err -> catchError (inferNamespaceAccess env e) (throwError . const err))
+
 
 
 -- INFER NAMESPACE ACCESS
@@ -498,6 +502,7 @@ inferNamespaceAccess env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can
     e' <- insertVarPlaceholders env e ps
 
     return (M.empty, ps, t, e')
+inferNamespaceAccess env _ = throwError $ CompilationError FatalError NoContext
 
 
 
@@ -684,7 +689,8 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
   qs'' <- getAllParentPreds env qs'
 
   if sc /= sc'
-    then throwError $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))
+    then throwError
+      $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))
     else if not (null rs)
       then throwError $ CompilationError ContextTooWeak (Context (envCurrentPath env) area (envBacktrace env))
       else do

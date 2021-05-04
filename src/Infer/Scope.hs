@@ -60,18 +60,16 @@ shouldSkip env e = isMethod env e || case e of
 hasAbs :: Exp -> Bool
 hasAbs e = case e of
   Solved _ _ (Placeholder _ exp) -> hasAbs exp
-  Solved _ _ (Abs _ _) -> True
-  _ -> False
+  Solved _ _ (Abs         _ _  ) -> True
+  _                              -> False
 
 verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
-verifyScope env globalAccesses globalScope dependencies exp = if shouldSkip env exp
-  then return ()
-  else
-    foldM (verifyScope' env globalScope dependencies exp) () globalAccesses
+verifyScope env globalAccesses globalScope dependencies exp =
+  if shouldSkip env exp then return () else foldM (verifyScope' env globalScope dependencies exp) () globalAccesses
 
 verifyScope' :: Env -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
-verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _) =
-  if nameToVerify `S.member` globalScope
+verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _)
+  = if nameToVerify `S.member` globalScope
     then case M.lookup nameToVerify dependencies of
       Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies) originExp) () names
 
@@ -84,10 +82,10 @@ verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ ac
               _ -> False
             )
             currentErrors
-      if isErrorReported then
-        return ()
-      else
-        throwError $ CompilationError (NotInScope nameToVerify loc) (Context (envCurrentPath env) originArea (envBacktrace env))
+      if isErrorReported
+        then return ()
+        else throwError $ CompilationError (NotInScope nameToVerify loc)
+                                           (Context (envCurrentPath env) originArea (envBacktrace env))
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
 removeAccessFromDeps access = M.map (S.filter (/= access))
@@ -110,9 +108,9 @@ isFunction exp = case exp of
 
 isMethod :: Env -> Exp -> Bool
 isMethod env (Solved _ _ e) = case e of
-  Var n -> Just True == (M.lookup n (envMethods env) >> return True)
+  Var n          -> Just True == (M.lookup n (envMethods env) >> return True)
   Assignment n _ -> Just True == (M.lookup n (envMethods env) >> return True)
-  _     -> False
+  _              -> False
 
 
 collect :: Env -> [String] -> Maybe String -> InScope -> InScope -> Exp -> Infer Accesses
@@ -121,10 +119,11 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
     globalNamesAccessed <- mapM (collect env foundNames nameToFind globalScope localScope) exps
     return $ foldr S.union S.empty globalNamesAccessed
 
-  Var ('.':_)  -> return S.empty
-  Var name     -> do
+  Var ('.' : _) -> return S.empty
+  Var name      -> do
     case nameToFind of
-      Just n  -> when (n == name && notElem n foundNames && not (isMethod env solvedExp)) (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area []))
+      Just n -> when (n == name && notElem n foundNames && not (isMethod env solvedExp))
+                     (throwError $ CompilationError (RecursiveVarAccess name) (Context (envCurrentPath env) area []))
       Nothing -> return ()
     if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
 
@@ -134,26 +133,24 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
     return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
   Abs (Solved t _ name) body -> do
-    let (nameToFind', foundNames') =
-          if isFunctionType tipe then
-            case nameToFind of
-              Just n  -> (Nothing, n:foundNames)
-              Nothing -> (Nothing, foundNames)
-          else
-            (nameToFind, foundNames)
+    let (nameToFind', foundNames') = if isFunctionType tipe
+          then case nameToFind of
+            Just n  -> (Nothing, n : foundNames)
+            Nothing -> (Nothing, foundNames)
+          else (nameToFind, foundNames)
     let localScope' = S.insert name localScope
     collectFromBody foundNames' nameToFind' globalScope localScope' body
 
    where
     collectFromBody :: [String] -> Maybe String -> InScope -> InScope -> [Exp] -> Infer Accesses
-    collectFromBody _ _ _           _          []     = return S.empty
+    collectFromBody _          _   _           _          []       = return S.empty
     collectFromBody foundNames ntf globalScope localScope (e : es) = do
       let localScope' = extendScope localScope e
       access <- collect env foundNames ntf globalScope localScope' e
       let nextFound = case getExpName e of
             Just n  -> n : foundNames
             Nothing -> foundNames
-      next   <- collectFromBody nextFound ntf globalScope localScope' es
+      next <- collectFromBody nextFound ntf globalScope localScope' es
       return $ access <> next
 
   If cond truthy falsy -> do
@@ -164,8 +161,9 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
     return $ condAccesses <> truthyAccesses <> falsyAccesses
 
   Assignment name exp -> do
-    when (name `S.member` globalScope && not (S.null localScope))
-         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
+    when
+      (name `S.member` globalScope && not (S.null localScope))
+      (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
     collect env foundNames (Just name) globalScope localScope exp
 

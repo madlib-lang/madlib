@@ -57,9 +57,10 @@ instance Unify Type where
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
-  unify (TCon a fpa) (TCon b fpb) | a == b && fpa == fpb = return M.empty
-                                  | fpa /= fpb = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
-  unify t1 t2               = throwError $ CompilationError (UnificationError t2 t1) NoContext
+  unify (TCon a fpa) (TCon b fpb)
+    | a == b && fpa == fpb = return M.empty
+    | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
+  unify t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -98,11 +99,12 @@ instance Match Type where
   match (TApp l r) (TApp l' r') = do
     sl <- match l l'
     sr <- match r r'
-    catchError (merge sl sr) (\_ -> throwError $ CompilationError (UnificationError (TApp l' r') (TApp l r)) NoContext)
+    merge sl sr
   match (TVar u) t | kind u == kind t = return $ M.singleton u t
-  match (TCon tc1 fp1) (TCon tc2 fp2) | tc1 == tc2 && fp1 == fp2 = return nullSubst
-                                      | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
-  match t1 t2                         = throwError $ CompilationError (UnificationError t1 t2) NoContext
+  match (TCon tc1 fp1) (TCon tc2 fp2)
+    | tc1 == tc2 && fp1 == fp2 = return nullSubst
+    | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
+  match t1 t2 = throwError $ CompilationError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where
   match ts ts' = do
@@ -111,13 +113,13 @@ instance Match t => Match [t] where
 
 
 contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
-contextualUnify env exp t1 t2 =
-  catchError
-    (unify t1 t2)
-    (\case
-      e@(CompilationError (TypesHaveDifferentOrigin _ _ _) _) -> addContext env exp e
-      _ -> addContext env exp (CompilationError (UnificationError t2 t1) NoContext)
-    )
+contextualUnify env exp t1 t2 = catchError
+  (unify t1 t2)
+  (\case
+    e@(CompilationError (TypesHaveDifferentOrigin _ _ _) _) -> addContext env exp e
+    e -> addContext env exp e
+    -- _ -> addContext env exp (CompilationError (UnificationError t2 t1) NoContext)
+  )
 
 
 contextualUnifyElems :: Env -> [(Can.Canonical a, Type)] -> Infer Substitution

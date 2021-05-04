@@ -167,10 +167,11 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
   withParents <- getAllParentPreds env qs'
 
   if sc /= sc'
-    then throwError
-      $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+    then throwError $ CompilationError (SignatureTooGeneral sc sc')
+                                       (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
     else if not (null rs)
-      then throwError $ CompilationError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+      then throwError
+        $ CompilationError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateType e t''
         e''  <- insertClassPlaceholders env (Slv.Solved (apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)

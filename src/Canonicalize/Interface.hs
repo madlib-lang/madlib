@@ -115,8 +115,8 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
                     (zip args tvs)
                   return $ IsIn interface' vars
 
-                Nothing ->
-                  throwError $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
+                Nothing -> throwError
+                  $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 

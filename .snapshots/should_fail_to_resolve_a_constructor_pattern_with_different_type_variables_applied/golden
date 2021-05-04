@@ -1,12 +1,8 @@
 Left
   (CompilationError
      (UnificationError
-        (TApp
-           (TCon (TC "User" (Kfun Star Star)) "path")
-           (TCon (TC "Number" Star) "prelude"))
-        (TApp
-           (TCon (TC "User" (Kfun Star Star)) "path")
-           (TCon (TC "String" Star) "prelude")))
+        (TCon (TC "Number" Star) "prelude")
+        (TCon (TC "String" Star) "prelude"))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 95 4 28) (Loc 96 4 29)

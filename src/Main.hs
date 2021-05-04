@@ -55,8 +55,7 @@ import           System.Environment             ( setEnv
                                                 , getEnv
                                                 )
 import           System.Environment.Executable  ( getExecutablePath )
-import           System.IO                      ( stderr
-                                                )
+import           System.IO                      ( stderr )
 import           Coverage.Coverable             ( collectFromAST
                                                 , isFunction
                                                 , isLine
@@ -207,13 +206,13 @@ runSingleModule input args = do
 
 
 solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, String, [DocString.DocString])])
-solveASTsForDoc _ []         = return $ Right []
+solveASTsForDoc _          []         = return $ Right []
 solveASTsForDoc rootFolder (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
   astTable            <- buildASTTable mempty canonicalEntrypoint
   let (canTable, _) = case astTable of
         Right table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
-        Left e -> (Left e, [])
+        Left  e     -> (Left e, [])
 
   rootPath <- canonicalizePath $ computeRootPath fp
   let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint
@@ -259,7 +258,7 @@ runDocumentationGenerator fp = do
 
   canonicalRootPath <- canonicalizePath rootPath
 
-  asts <- solveASTsForDoc canonicalRootPath filepaths
+  asts              <- solveASTsForDoc canonicalRootPath filepaths
   case asts of
     Right asts' -> putStrLn $ generateASTsDoc asts'
 
@@ -352,7 +351,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
     astTable            <- buildManyASTTables mempty sourcesToCompile
     let (canTable, warnings) = case astTable of
           Right table -> Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
-          Left e -> (Left e, [])
+          Left  e     -> (Left e, [])
 
     unless json $ do
       formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
@@ -379,7 +378,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
         if json
           then do
             formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
-            formattedErr <- Explain.format readFile json err
+            formattedErr      <- Explain.format readFile json err
             putStrLn $ CompileJson.compileASTTable [(err, formattedErr)] formattedWarnings mempty
           else do
             unless (null warnings) (putStrLn "\n")
@@ -387,34 +386,37 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
       Right (table, inferState) ->
         let errs      = errors inferState
             hasErrors = not (null errs)
-        in  if json then do
-              formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
-              formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
-              putStrLn $ CompileJson.compileASTTable formattedErrors formattedWarnings table
-            else if hasErrors then do
-              unless (null warnings) (putStrLn "\n")
-              formattedErrors <- mapM (Explain.format readFile json) errs
-              let fullError = intercalate "\n\n\n" formattedErrors
-              putStrLn fullError >> exitFailure
-            else do
-              when coverage $ do
-                runCoverageInitialization rootPath table
+        in  if json
+              then do
+                formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
+                                          warnings
+                formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
+                putStrLn $ CompileJson.compileASTTable formattedErrors formattedWarnings table
+              else if hasErrors
+                then do
+                  unless (null warnings) (putStrLn "\n")
+                  formattedErrors <- mapM (Explain.format readFile json) errs
+                  let fullError = intercalate "\n\n\n" formattedErrors
+                  putStrLn fullError >> exitFailure
+                else do
+                  when coverage $ do
+                    runCoverageInitialization rootPath table
 
-              let optimizedTable = optimizeTable optimized table
+                  let optimizedTable = optimizeTable optimized table
 
-              generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
+                  generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
-              when bundle $ do
-                let entrypointOutputPath =
-                      computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
+                  when bundle $ do
+                    let entrypointOutputPath =
+                          computeTargetPath (takeDirectory outputPath <> "/.bundle") rootPath canonicalEntrypoint
 
-                bundled <- runBundle outputPath entrypointOutputPath
-                case bundled of
-                  Left  e                    -> putStrLn e
-                  Right (bundleContent, err) -> do
-                    _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
-                    writeFile outputPath bundleContent
-                    unless (null err) $ putStrLn err
+                    bundled <- runBundle outputPath entrypointOutputPath
+                    case bundled of
+                      Left  e                    -> putStrLn e
+                      Right (bundleContent, err) -> do
+                        _ <- readProcessWithExitCode "rm" ["-r", takeDirectory outputPath <> "/.bundle"] ""
+                        writeFile outputPath bundleContent
+                        unless (null err) $ putStrLn err
 
 
 rollupNotFoundMessage = unlines

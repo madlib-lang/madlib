@@ -6,7 +6,7 @@ import           Control.Monad.Except
 import           Control.Monad.State
 import           Error.Error
 import           Error.Warning
-import qualified Data.Set                   as S
+import qualified Data.Set                      as S
 
 
 data CanonicalState = CanonicalState { warnings :: [CompilationWarning], namesAccessed :: S.Set String, accumulatedJS :: String }

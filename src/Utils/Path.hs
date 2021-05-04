@@ -112,7 +112,9 @@ findMadlibPackage pathUtils pkgName dir madlibDotJson = do
       found <- doesFileExist pathUtils p
       if found
         then findMadlibPackageMainPath pathUtils p
-        else if dir == "/" then return Nothing else (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
+        else if dir == "/"
+          then return Nothing
+          else (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
 
 
 findMadlibPackageMainPath :: PathUtils -> FilePath -> IO (Maybe FilePath)

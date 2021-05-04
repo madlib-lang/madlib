@@ -45,10 +45,13 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportNames = findAllExportedNames ast
   let allImportNames = Src.getImportNames imp
-  let notExported    = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames--allImportNames \\ allExportNames
+  let notExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames--allImportNames \\ allExportNames
 
-  unless (null notExported)
-         (throwError $ CompilationError (NotExported (Src.getSourceContent $ head notExported) path) (Context originAstPath (Src.getArea $ head notExported) []))
+  unless
+    (null notExported)
+    (throwError $ CompilationError (NotExported (Src.getSourceContent $ head notExported) path)
+                                   (Context originAstPath (Src.getArea $ head notExported) [])
+    )
 
   envTds <- mapImportToEnvTypeDecls env imp ast
 
@@ -112,13 +115,16 @@ checkUnusedImports env imports = do
   let importedNames = getAllImportedNames imports
   namesAccessed <- S.toList <$> getAllNameAccesses
   let unused = filter (not . (`elem` namesAccessed) . fst) importedNames
-  withJSCheck <-
-    if null unused then
-      return unused
+  withJSCheck <- if null unused
+    then return unused
     else do
       allJS <- getJS
       return $ filter (not . (allJS =~) . fst) unused
-  mapM_ (\(name, area) -> pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))) withJSCheck
+  mapM_
+    (\(name, area) ->
+      pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))
+    )
+    withJSCheck
 
 canonicalizeAST :: Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env)
 canonicalizeAST target env table astPath = do
@@ -178,15 +184,18 @@ findAST table path = case M.lookup path table of
   Just found -> return found
   Nothing    -> Left $ CompilationError (ImportNotFound path) NoContext
 
-runCanonicalization :: Target -> Env -> Src.Table -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
+runCanonicalization
+  :: Target -> Env -> Src.Table -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
 runCanonicalization target env table entrypoint = do
-  let (canonicalized, s) = runState (runExceptT (canonicalizeAST target env table entrypoint)) (CanonicalState { warnings = [], namesAccessed = S.empty })
+  let (canonicalized, s) = runState (runExceptT (canonicalizeAST target env table entrypoint))
+                                    (CanonicalState { warnings = [], namesAccessed = S.empty })
   (fst <$> canonicalized, warnings s)
 
-canonicalizeMany :: Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
+canonicalizeMany
+  :: Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
 canonicalizeMany target env table fps = case fps of
-  []        -> (Right mempty, [])
+  [] -> (Right mempty, [])
   fp : fps' ->
-    let (canTable, warnings)         = runCanonicalization target env table fp
+    let (canTable , warnings    ) = runCanonicalization target env table fp
         (nextTable, nextWarnings) = canonicalizeMany target env table fps'
     in  (liftM2 (<>) canTable nextTable, warnings ++ nextWarnings)
