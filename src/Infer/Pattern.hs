@@ -13,6 +13,9 @@ import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
 import           Data.List
+import           Error.Context
+import           Error.Error
+import           Control.Monad.Except
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Pred], Vars, [Type])
@@ -24,7 +27,7 @@ inferPatterns env pats = do
   return (ps, as, ts)
 
 inferPattern :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)
-inferPattern env (Can.Canonical _ pat) = case pat of
+inferPattern env (Can.Canonical area pat) = case pat of
   Can.PNum  _ -> return ([], M.empty, tNumber)
   Can.PBool _ -> return ([], M.empty, tBool)
   Can.PStr  _ -> return ([], M.empty, tStr)
@@ -92,7 +95,9 @@ inferPattern env (Can.Canonical _ pat) = case pat of
   Can.PCtor n pats -> do
     (ps, vars, ts) <- inferPatterns env pats
     tv             <- newTVar Star
-    sc             <- lookupVar env n
+    sc             <- catchError
+                        (lookupVar env n)
+                        (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
     (ps' :=> t)    <- instantiate sc
     s              <- unify t (foldr fn tv ts)
 

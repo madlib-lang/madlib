@@ -3,9 +3,21 @@ Left
      (UnboundVariable "NotExisting")
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 0 1 1) (Loc 32 3 1)
+       , ctxArea = Area (Loc 16 2 6) (Loc 27 2 17)
        , ctxBacktrace =
            [ BTExp
+               (Canonical
+                  (Area (Loc 0 1 1) (Loc 32 3 1))
+                  (Where
+                     (Canonical (Area (Loc 6 1 7) (Loc 7 1 8)) (LNum "3"))
+                     [ Canonical
+                         (Area (Loc 13 2 3) (Loc 30 2 20))
+                         (Is
+                            (Canonical
+                               (Area (Loc 16 2 6) (Loc 27 2 17)) (PCtor "NotExisting" []))
+                            (Canonical (Area (Loc 29 2 19) (Loc 30 2 20)) (LNum "5")))
+                     ]))
+           , BTExp
                (Canonical
                   (Area (Loc 0 1 1) (Loc 32 3 1))
                   (Where

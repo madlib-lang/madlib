@@ -16,6 +16,7 @@ import           System.FilePath                ( takeDirectory
                                                 , dropExtension
                                                 , joinPath
                                                 , splitDirectories
+                                                , makeRelative
                                                 )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
@@ -205,9 +206,9 @@ runSingleModule input args = do
 
 
 
-solveASTsForDoc :: [FilePath] -> IO (Either CompilationError [(Slv.AST, [DocString.DocString])])
-solveASTsForDoc []         = return $ Right []
-solveASTsForDoc (fp : fps) = do
+solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.AST, String, [DocString.DocString])])
+solveASTsForDoc _ []         = return $ Right []
+solveASTsForDoc rootFolder (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
   astTable            <- buildASTTable mempty canonicalEntrypoint
   let (canTable, _) = case astTable of
@@ -215,6 +216,7 @@ solveASTsForDoc (fp : fps) = do
         Left e -> (Left e, [])
 
   rootPath <- canonicalizePath $ computeRootPath fp
+  let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint
 
   let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
       resolvedASTTable = case (entryAST, canTable) of
@@ -232,27 +234,32 @@ solveASTsForDoc (fp : fps) = do
         let docStrings = DocString.parse fileContent
         case docStrings of
           Right ds -> do
-            next <- solveASTsForDoc fps
-            return $ ([(ast, ds)] ++) <$> next
+            next <- solveASTsForDoc rootFolder fps
+            return $ ([(ast, moduleName, ds)] ++) <$> next
           Left _ -> do
-            next <- solveASTsForDoc fps
-            return $ ([(ast, [])] ++) <$> next
+            next <- solveASTsForDoc rootFolder fps
+            return $ ([(ast, moduleName, [])] ++) <$> next
 
-      Nothing -> solveASTsForDoc fps
+      Nothing -> solveASTsForDoc rootFolder fps
 
+
+getFilesForDoc :: FilePath -> IO [FilePath]
+getFilesForDoc fp = do
+  allFiles <- getFilesToCompile False fp
+  return $ filter (not . isSuffixOf ".spec.mad") allFiles
 
 runDocumentationGenerator :: FilePath -> IO ()
 runDocumentationGenerator fp = do
   let ext = takeExtension fp
-  filepaths <- case ext of
-    ".mad"     -> return [fp]
-    '.' : rest -> putStrLn ("Invalid file extension '" <> ext <> "'") >> return []
-    _          -> do
-      paths <- getDirectoryContents fp
-      let filtered = (\file -> joinPath [fp, file]) <$> filter ((== ".mad") . takeExtension) paths
-      return filtered
+  filepaths <- getFilesForDoc fp
+  let rootPath = case ext of
+        ".mad"     -> takeDirectory fp
+        '.' : rest -> ""
+        _          -> fp
 
-  asts <- solveASTsForDoc filepaths
+  canonicalRootPath <- canonicalizePath rootPath
+
+  asts <- solveASTsForDoc canonicalRootPath filepaths
   case asts of
     Right asts' -> putStrLn $ generateASTsDoc asts'
 

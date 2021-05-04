@@ -57,8 +57,8 @@ prepareExportedExps ast =
       filteredExportedWithNames = filter (isJust . fst) exportsWithNames
   in  Data.Bifunctor.first (fromMaybe "") <$> filteredExportedWithNames
 
-generateASTDoc :: Int -> (Slv.AST, [DocString]) -> String
-generateASTDoc depth (ast, docStrings) =
+generateASTDoc :: Int -> (Slv.AST, String, [DocString]) -> String
+generateASTDoc depth (ast, fullModuleName, docStrings) =
   let astPath          = fromMaybe "unknown" $ Slv.apath ast
       expsForDoc       = prepareExportedExps ast
       adtsForDoc       = prepareExportedADTs ast
@@ -70,6 +70,10 @@ generateASTDoc depth (ast, docStrings) =
         <> indent (depth + 1)
         <> "\"path\": \""
         <> astPath
+        <> "\",\n"
+        <> indent (depth + 1)
+        <> "\"moduleName\": \""
+        <> fullModuleName
         <> "\",\n"
         <> indent (depth + 1)
         <> "\"description\": "
@@ -113,7 +117,7 @@ generateASTDoc depth (ast, docStrings) =
         <> indent depth
         <> "}"
 
-generateASTsDoc :: [(Slv.AST, [DocString])] -> String
+generateASTsDoc :: [(Slv.AST, String, [DocString])] -> String
 generateASTsDoc asts =
   let depth   = 0
       modules = intercalate (",\n" <> indent (depth + 2)) $ generateASTDoc (depth + 2) <$> asts

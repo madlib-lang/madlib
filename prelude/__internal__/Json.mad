@@ -137,6 +137,19 @@ export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG
     is <_, _, _, _, _, Left e, _>: Left(e)
     is <_, _, _, _, _, _, Left e>: Left(e)
 
+map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i
+export map8 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input), parserH(input)>)
+    is <Right a, Right b, Right c, Right d, Right e, Right f, Right g, Right h>: Right(fn(a, b, c, d, e, f, g, h))
+    is <Left e, _, _, _, _, _, _, _>: Left(e)
+    is <_, Left e, _, _, _, _, _, _>: Left(e)
+    is <_, _, Left e, _, _, _, _, _>: Left(e)
+    is <_, _, _, Left e, _, _, _, _>: Left(e)
+    is <_, _, _, _, Left e, _, _, _>: Left(e)
+    is <_, _, _, _, _, Left e, _, _>: Left(e)
+    is <_, _, _, _, _, _, Left e, _>: Left(e)
+    is <_, _, _, _, _, _, _, Left e>: Left(e)
+
 
 maybe :: Parser a -> Parser (Maybe a)
 export maybe = (parser, input) => (#-{
