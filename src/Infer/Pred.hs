@@ -134,7 +134,7 @@ entail env ps p = do
     (byInst env p >>= allM (entail env ps))
     (\case
       CompilationError FatalError _ -> return False
-      e                       -> throwError e
+      e                             -> throwError e
     )
   return $ any ((p `elem`) . bySuper env) ps || tt
 

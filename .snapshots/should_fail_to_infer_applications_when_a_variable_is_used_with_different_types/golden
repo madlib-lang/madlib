@@ -1,31 +1,21 @@
 Left
   (CompilationError
      (UnificationError
+        (TRecord
+           (fromList
+              [ ( "todos"
+                , TApp
+                    (TCon (TC "List" (Kfun Star Star)) "prelude")
+                    (TVar (TV "g58" Star))
+                )
+              ])
+           True)
         (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TRecord
-                 (fromList
-                    [ ( "todos"
-                      , TApp
-                          (TCon (TC "List" (Kfun Star Star)) "prelude")
-                          (TVar (TV "g58" Star))
-                      )
-                    ])
-                 True))
-           (TVar (TV "b53" Star)))
-        (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TApp
-                 (TCon (TC "List" (Kfun Star Star)) "prelude")
-                 (TVar (TV "e56" Star))))
-           (TApp
-              (TCon (TC "List" (Kfun Star Star)) "prelude")
-              (TVar (TV "e56" Star)))))
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TVar (TV "e56" Star))))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 902 40 12) (Loc 927 40 37)
+       , ctxArea = Area (Loc 902 40 12) (Loc 934 40 44)
        , ctxBacktrace =
            [ BTExp
                (Canonical

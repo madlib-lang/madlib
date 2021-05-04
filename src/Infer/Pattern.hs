@@ -96,9 +96,10 @@ inferPattern env (Can.Canonical area pat) = case pat of
     (ps, vars, ts) <- inferPatterns env pats
     tv             <- newTVar Star
     sc             <- catchError
-                        (lookupVar env n)
-                        (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
-    (ps' :=> t)    <- instantiate sc
-    s              <- unify t (foldr fn tv ts)
+      (lookupVar env n)
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+      )
+    (ps' :=> t) <- instantiate sc
+    s           <- unify t (foldr fn tv ts)
 
     return (ps <> ps', M.map (apply s) vars, apply s tv)

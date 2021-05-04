@@ -51,11 +51,11 @@ snapshotTest name actualOutput = Golden { output        = pack actualOutput
 -- TODO: Refactor in order to use the inferAST function instead that supports imports
 tester :: Bool -> String -> String
 tester optimized code =
-  let Right ast    = buildAST "path" code
-      table        = M.singleton "path" ast
+  let Right ast         = buildAST "path" code
+      table             = M.singleton "path" ast
       (Right table', _) = runCanonicalization TNode Can.initialEnv table "path"
-      Right canAST = Can.findAST table' "path"
-      inferred     = runEnv canAST >>= (`runInfer` canAST)
+      Right canAST      = Can.findAST table' "path"
+      inferred          = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
           Compile.Javascript.initialEnv
@@ -67,11 +67,11 @@ tester optimized code =
 
 coverageTester :: String -> String
 coverageTester code =
-  let Right ast    = buildAST "path" code
-      table        = M.singleton "path" ast
+  let Right ast         = buildAST "path" code
+      table             = M.singleton "path" ast
       (Right table', _) = runCanonicalization TNode Can.initialEnv table "path"
-      Right canAST = Can.findAST table' "path"
-      inferred     = runEnv canAST >>= (`runInfer` canAST)
+      Right canAST      = Can.findAST table' "path"
+      inferred          = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
           Compile.Javascript.initialEnv
@@ -86,7 +86,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 
   let canTable = case runCanonicalization TNode Can.initialEnv table path of
         (Right table, _) -> table
-        (Left  err, _)   -> trace ("ERR: " <> ppShow err) mempty
+        (Left  err  , _) -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
       resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   in  case resolved of

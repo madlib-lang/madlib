@@ -103,7 +103,9 @@ addConstructors env ctors = do
     (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
       catchError
         (safeExtendVars env'' (name, sc))
-        (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env'') area [BTConstructor ctor]))
+        (\(CompilationError e _) ->
+          throwError $ CompilationError e (Context (envCurrentPath env'') area [BTConstructor ctor])
+        )
     )
     env
     ctors
@@ -149,7 +151,7 @@ filterExportsByImport :: Can.Import -> Vars -> Vars
 filterExportsByImport imp vars = case imp of
   Can.Canonical _ (Can.DefaultImport (Can.Canonical _ namespace) _ _) -> M.mapKeys ((namespace <> ".") <>) vars
 
-  Can.Canonical _ (Can.NamedImport   names     _ _) -> M.restrictKeys vars $ S.fromList (Can.getCanonicalContent <$> names)
+  Can.Canonical _ (Can.NamedImport names _ _) -> M.restrictKeys vars $ S.fromList (Can.getCanonicalContent <$> names)
 
 
 solveImports
@@ -211,13 +213,16 @@ inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.a
       { Slv.aexps       = inferredExps
       , Slv.apath       = apath
       , Slv.atypedecls  = updatedADTs
-      , Slv.aimports    = (\case
-                            g@(Slv.Untyped _    Slv.DefaultImport{}           ) -> g
-                            i@(Slv.Untyped area (Slv.NamedImport names fp afp)) -> Slv.Untyped area
-                              $ Slv.NamedImport (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names) fp afp
-                          )
-                          .   updateImport
-                          <$> aimports
+      , Slv.aimports    =
+        (\case
+          g@(Slv.Untyped _    Slv.DefaultImport{}           ) -> g
+          i@(Slv.Untyped area (Slv.NamedImport names fp afp)) -> Slv.Untyped area $ Slv.NamedImport
+            (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
+            fp
+            afp
+        )
+        .   updateImport
+        <$> aimports
       , Slv.ainterfaces = updatedInterfaces
       , Slv.ainstances  = inferredInstances
       }

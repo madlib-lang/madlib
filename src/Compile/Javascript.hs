@@ -14,7 +14,7 @@ import           Data.List                      ( isInfixOf
                                                 , intercalate
                                                 , foldl'
                                                 )
-import Data.List.GroupBy ( groupBy )
+import           Data.List.GroupBy              ( groupBy )
 
 import           AST.Optimized                 as Opt
 import           Utils.Path                     ( cleanRelativePath
@@ -40,21 +40,10 @@ initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty }
 
 allowedJSNames :: [String]
-allowedJSNames =
-  [ "delete"
-  , "class"
-  , "while"
-  , "for"
-  , "case"
-  , "switch"
-  ]
+allowedJSNames = ["delete", "class", "while", "for", "case", "switch"]
 
 generateSafeName :: String -> String
-generateSafeName n =
-  if n `elem` allowedJSNames then
-    "_$_" <> n <> "_$_"
-  else
-    n
+generateSafeName n = if n `elem` allowedJSNames then "_$_" <> n <> "_$_" else n
 
 
 data Arg = Arg String Bool
@@ -205,44 +194,48 @@ instance Compilable Exp where
          where
           compileApp :: [Bool] -> [Arg] -> Exp -> Exp -> Bool -> String
           compileApp prevPaceholders prevArgs abs arg final =
-            let newArg       = if isPlaceholder arg then PlaceholderArg "" final else Arg (hpWrapLine coverage astPath (getStartLine arg) $ compile env config arg) final
+            let newArg = if isPlaceholder arg
+                  then PlaceholderArg "" final
+                  else Arg (hpWrapLine coverage astPath (getStartLine arg) $ compile env config arg) final
                 args         = [newArg] <> prevArgs
                 placeholders = prevPaceholders <> [isPlaceholder arg]
                 next         = case abs of
-                  (Optimized _ _ (App abs' arg' final')) ->
-                    compileApp placeholders args abs' arg' final'
+                  (Optimized _ _ (App abs' arg' final')) -> compileApp placeholders args abs' arg' final'
 
                   _ ->
                     let processedArgs   = generatePlaceholderArgNames 0 args
                         hasPlaceholders = containsPlaceholders processedArgs
                     in  generatePlaceholderParams processedArgs
-                        <> compile env config abs <> buildParams True hasPlaceholders processedArgs
+                          <> compile env config abs
+                          <> buildParams True hasPlaceholders processedArgs
             in  hpWrapLine coverage astPath (getStartLine abs) next
 
           buildParams :: Bool -> Bool -> [Arg] -> String
-          buildParams _ _ []                    = ""
+          buildParams _ _ [] = ""
           buildParams start hasPlaceholders (arg : args) =
             let (argName, final) = case arg of
-                  Arg n f            -> (n, f)
+                  Arg            n f -> (n, f)
                   PlaceholderArg n f -> (n, f)
-            in  if null args then
-                  if hasPlaceholders then "(" <> argName <> "))" else "(" <> argName <> ")"
-                else if final && hasPlaceholders then
-                  let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
-                  in  "(" <> argName <> "))" <> buildParams final hasPlaceholders' args
-                else
-                  let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
-                  in  "(" <> argName <> ")" <> buildParams final hasPlaceholders' args
+            in  if null args
+                  then if hasPlaceholders then "(" <> argName <> "))" else "(" <> argName <> ")"
+                  else if final && hasPlaceholders
+                    then
+                      let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
+                      in  "(" <> argName <> "))" <> buildParams final hasPlaceholders' args
+                    else
+                      let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
+                      in  "(" <> argName <> ")" <> buildParams final hasPlaceholders' args
 
           generatePlaceholderParams :: [Arg] -> String
           generatePlaceholderParams args =
             let splitByFinal = groupBy
                   (\l r -> case (l, r) of
                     (PlaceholderArg _ final, _) -> not final
-                    (Arg _ final           , _) -> not final
+                    (Arg            _ final, _) -> not final
                   )
                   args
-                onlyPlaceholders = filter (not . null) $ getPlaceholderNames <$> reverse (filter isPlaceholderArg <$> splitByFinal)
+                onlyPlaceholders =
+                    filter (not . null) $ getPlaceholderNames <$> reverse (filter isPlaceholderArg <$> splitByFinal)
                 built = (("(" <>) . (<> " => ")) . intercalate " => " <$> onlyPlaceholders
             in  concat built
 
@@ -254,27 +247,28 @@ instance Compilable Exp where
           isPlaceholderArg _                    = False
 
           placeholderArgName :: Int -> String
-          placeholderArgName pos = "__ph" <> show ([0..] !! pos) <> "__"
+          placeholderArgName pos = "__ph" <> show ([0 ..] !! pos) <> "__"
 
           containsPlaceholders :: [Arg] -> Bool
           containsPlaceholders args = case args of
-            (Arg _ True : _) -> False
-            (Arg _ _ : rest) -> containsPlaceholders rest
-            (PlaceholderArg _ _ : _)       -> True
+            (Arg            _ True : _   ) -> False
+            (Arg            _ _    : rest) -> containsPlaceholders rest
+            (PlaceholderArg _ _    : _   ) -> True
 
           getPlaceholderNames :: [Arg] -> [String]
           getPlaceholderNames args = case args of
-            []                        -> []
-            ((PlaceholderArg n _):rest) -> n : getPlaceholderNames rest
-            (_: rest)                 -> getPlaceholderNames rest
+            []                            -> []
+            ((PlaceholderArg n _) : rest) -> n : getPlaceholderNames rest
+            (_                    : rest) -> getPlaceholderNames rest
 
           generatePlaceholderArgNames :: Int -> [Arg] -> [Arg]
           generatePlaceholderArgNames pos args = case args of
-            []                              -> []
-            ((PlaceholderArg _ True):rest)  -> generatePlaceholderArgNames (pos + 1) rest
+            []                               -> []
+            ((PlaceholderArg _ True) : rest) -> generatePlaceholderArgNames (pos + 1) rest
             --  ^ we eliminate placeholders in final position eg. fn(3, $) as mainly it's just like not applying anything
-            ((PlaceholderArg _ final):rest) -> PlaceholderArg (placeholderArgName pos) final : generatePlaceholderArgNames (pos + 1) rest
-            (arg:rest)                      -> arg : generatePlaceholderArgNames (pos + 1) rest
+            ((PlaceholderArg _ final) : rest) ->
+              PlaceholderArg (placeholderArgName pos) final : generatePlaceholderArgNames (pos + 1) rest
+            (arg : rest) -> arg : generatePlaceholderArgNames (pos + 1) rest
 
 
 
@@ -300,7 +294,7 @@ instance Compilable Exp where
             in  start <> next
 
           compileBody :: Env -> [Exp] -> String
-          compileBody env   [exp] = compile env config exp
+          compileBody env [exp] = compile env config exp
           compileBody env exps  = "{\n" <> compileBody' env exps <> "}"
 
           compileBody' :: Env -> [Exp] -> String
@@ -318,7 +312,7 @@ instance Compilable Exp where
 
 
         Var name ->
-          let safeName  = generateSafeName name
+          let safeName = generateSafeName name
           in  if safeName == "!" || not coverage then safeName else hpWrapLine coverage astPath l safeName
 
         Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
@@ -364,7 +358,7 @@ instance Compilable Exp where
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
         Assignment name exp ->
-          let safeName = generateSafeName name
+          let safeName                       = generateSafeName name
               (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
               content'                       = if coverage && isFunctionType expType
                 then "__hpFnWrap('" <> astPath <> "', " <> show l <> ", '" <> safeName <> "')(" <> content <> ")"
@@ -378,7 +372,9 @@ instance Compilable Exp where
                   <> placeholders
                   <> "{"
                   <> "\n  "
-                  <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
+                  <> intercalate
+                       "\n  "
+                       ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
                   <> "\n\n"
                   <> "  return "
                   <> safeName
@@ -571,14 +567,7 @@ instance Compilable Constructor where
     in  case cparams of
           [] -> "let " <> cname <> " = " <> compileBody cname cparams <> ";\n"
           _ ->
-            "let "
-              <> cname
-              <> " = "
-              <> "("
-              <> compileParams cparams
-              <> " => "
-              <> compileBody cname cparams
-              <> ");\n"
+            "let " <> cname <> " = " <> "(" <> compileParams cparams <> " => " <> compileBody cname cparams <> ");\n"
    where
     compileParams n = let argNames = (: []) <$> take (length n) ['a' ..] in intercalate " => " argNames
 
@@ -596,7 +585,8 @@ compileImport config (Untyped _ imp) = case imp of
     in  "import { " <> compileNames (generateSafeName . Opt.getValue <$> names) <> " } from \"" <> importPath <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
-    let importPath = buildImportPath config absPath in "import " <> Opt.getValue alias <> " from \"" <> importPath <> "\""
+    let importPath = buildImportPath config absPath
+    in  "import " <> Opt.getValue alias <> " from \"" <> importPath <> "\""
 
 
 buildImportPath :: CompilationConfig -> FilePath -> FilePath
@@ -646,7 +636,9 @@ instance Compilable Opt.Instance where
               <> "'] = () => "
               <> placeholders
               <> "{\n  "
-              <> intercalate "\n  " ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
+              <> intercalate
+                   "\n  "
+                   ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
               <> "\n  return __"
               <> interface
               <> typings

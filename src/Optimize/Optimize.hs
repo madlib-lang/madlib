@@ -288,7 +288,8 @@ instance Optimizable Slv.Instance Opt.Instance where
 
 instance Optimizable Slv.Import Opt.Import where
   optimize _ (Slv.Untyped area imp) = case imp of
-    Slv.NamedImport names relPath absPath -> return $ Opt.Untyped area $ Opt.NamedImport (optimizeImportName <$> names) relPath absPath
+    Slv.NamedImport names relPath absPath ->
+      return $ Opt.Untyped area $ Opt.NamedImport (optimizeImportName <$> names) relPath absPath
 
     Slv.DefaultImport namespace relPath absPath ->
       return $ Opt.Untyped area $ Opt.DefaultImport (optimizeImportName namespace) relPath absPath

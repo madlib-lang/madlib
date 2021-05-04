@@ -89,8 +89,9 @@ typingToType env (Src.Source _ area (Src.TRSingle t))
   | isLower $ head t = return (TVar $ TV t Star)
   | otherwise = do
     pushNameAccess t
-    h <- catchError (lookupADT env t)
-                    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
+    h <- catchError
+      (lookupADT env t)
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
     case h of
       (TAlias _ _ _ t) -> updateAliasVars (getConstructorCon h) []
       t                -> return $ getConstructorCon t
@@ -102,8 +103,9 @@ typingToType env (Src.Source _ area (Src.TRComp t ts))
     return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
   | otherwise = do
     pushNameAccess t
-    h <- catchError (lookupADT env t)
-                    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
+    h <- catchError
+      (lookupADT env t)
+      (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
 
     let (Forall ks (_ :=> rr)) = quantify (ftv h) ([] :=> h)
 

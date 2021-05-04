@@ -1,24 +1,8 @@
 Left
   (CompilationError
      (UnificationError
-        (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TVar (TV "b1" Star)))
-           (TApp
-              (TApp
-                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                 (TVar (TV "b1" Star)))
-              (TCon (TC "Boolean" Star) "prelude")))
-        (TApp
-           (TApp
-              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-              (TCon (TC "String" Star) "prelude"))
-           (TApp
-              (TApp
-                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                 (TCon (TC "Number" Star) "prelude"))
-              (TCon (TC "Boolean" Star) "prelude"))))
+        (TCon (TC "String" Star) "prelude")
+        (TCon (TC "Number" Star) "prelude"))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 39 2 6) (Loc 57 2 24)
