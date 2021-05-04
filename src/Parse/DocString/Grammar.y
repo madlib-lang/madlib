@@ -65,7 +65,7 @@ trim = f . f
   where f = reverse . dropWhile isSpace
 
 regex :: String
-regex = "\n[ ]*\\*[ ]*"
+regex = "\n[ ]*\\*[ ]?"
 
 sanitizeDescription :: String -> String
 sanitizeDescription desc =

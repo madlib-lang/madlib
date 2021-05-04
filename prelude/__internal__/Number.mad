@@ -1,8 +1,6 @@
 import {} from "Show"
 import {} from "Read"
 import { Maybe, Just, Nothing } from "Maybe"
-import { loop } from "Control"
-import { append } from "List"
 
 instance Show Number {
   show = (x) => #- x.toString() -#
