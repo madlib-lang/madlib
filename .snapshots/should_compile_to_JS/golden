@@ -8,13 +8,10 @@ let double = (x => x * 2);
 let half = (x => x / 2);
 double(half(3));
 __eq__(3, 5);
-let response = ({ users: ([]) });
-let users = response.users;
 let carResponse = ({ cars: ([]) });
-let allResponses = ({ ...response, ...carResponse });
 ((__x__) => {
-  if (true && true) {
-    let { users: a, cars: cs } = __x__;
+  if (true) {
+    let { cars: cs } = __x__;
     return cs;
   }
   else if (true) {
@@ -25,7 +22,7 @@ let allResponses = ({ ...response, ...carResponse });
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(allResponses);
+})(carResponse);
 ((__x__) => {
   if (typeof __x__ === "number") {
     return 3;

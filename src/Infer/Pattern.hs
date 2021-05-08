@@ -77,11 +77,12 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
   Can.PRecord pats -> do
     li <- mapM (inferFieldPattern env) pats
+    tv <- newTVar Star
     let vars = foldr (<>) M.empty $ T.mid . snd <$> M.toList li
     let ps   = foldr (<>) [] $ T.beg . snd <$> M.toList li
     let ts   = T.lst . snd <$> M.toList li
 
-    return (ps, vars, TRecord (M.map T.lst li) True)
+    return (ps, vars, TRecord (M.map T.lst li) (Just tv) True)
 
    where
     inferFieldPattern :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)

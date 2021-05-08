@@ -136,7 +136,7 @@ typingToType env (Src.Source _ _ (Src.TRArr l r)) = do
 
 typingToType env (Src.Source _ _ (Src.TRRecord fields)) = do
   fields' <- mapM (typingToType env) fields
-  return $ TRecord fields' False
+  return $ TRecord fields' Nothing False
 
 typingToType env (Src.Source _ _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env) elems
@@ -169,10 +169,11 @@ updateAliasVars t args = do
               l' <- update l
               r' <- update r
               return $ TApp l' r'
-            TCon    _  _ -> return ty
-            TRecord fs o -> do
-              fs' <- mapM update fs
-              return $ TRecord fs' o
+            TCon _ _          -> return ty
+            TRecord fs base o -> do
+              fs'   <- mapM update fs
+              base' <- mapM update base
+              return $ TRecord fs' base' o
       in  update t'
 
     _ -> return t

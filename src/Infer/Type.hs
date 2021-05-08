@@ -3,6 +3,7 @@
 module Infer.Type where
 
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           AST.Source                     ( Exp )
 import           Data.List                      ( nub
                                                 , union
@@ -21,7 +22,7 @@ data Type
   | TCon TCon FilePath -- Constructor type - FilePath of where that type is defined
   | TGen Int
   | TApp Type Type              -- Arrow type
-  | TRecord (M.Map Id Type) Bool -- Record type: Bool means open or closed
+  | TRecord (M.Map Id Type) (Maybe Type) Bool -- Record type: Bool means open or closed
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   deriving (Show, Eq, Ord)
 
@@ -176,12 +177,17 @@ isTVar t = case t of
   _      -> False
 
 
+baseToList :: Maybe Type -> [Type]
+baseToList maybeBase = case maybeBase of
+  Just t  -> [t]
+  Nothing -> []
+
 collectVars :: Type -> [TVar]
 collectVars t = case t of
-  TVar tv      -> [tv]
-  TApp    l  r -> collectVars l `union` collectVars r
-  TRecord fs _ -> nub $ concat $ collectVars <$> M.elems fs
-  _            -> []
+  TVar tv           -> [tv]
+  TApp l r          -> collectVars l `union` collectVars r
+  TRecord fs base _ -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
+  _                 -> []
 
 
 collectPredVars :: Pred -> [TVar]
@@ -190,26 +196,27 @@ collectPredVars (IsIn _ ts) = nub $ concat $ collectVars <$> ts
 
 getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
-  TCon    _ _ -> t
-  TApp    l r -> getConstructorCon l
-  TRecord _ _ -> t
-  _           -> t
+  TCon _ _      -> t
+  TApp l r      -> getConstructorCon l
+  TRecord _ _ _ -> t
+  _             -> t
 
 closeRecords :: Type -> Type
 closeRecords t = case t of
-  TVar _           -> t
-  TCon _ _         -> t
-  TApp l r         -> TApp (closeRecords l) (closeRecords r)
-  TGen _           -> t
-  TRecord fields _ -> TRecord (M.map closeRecords fields) False
+  TVar _                -> t
+  TCon _ _              -> t
+  TApp l r              -> TApp (closeRecords l) (closeRecords r)
+  TGen _                -> t
+  TRecord fields base _ -> TRecord (M.map closeRecords fields) base False
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 True, TRecord fields2 open2) -> TRecord (M.unionWith mergeRecords fields1 fields2) True
+  (TRecord fields1 base1 True, TRecord fields2 base2 open2) ->
+    TRecord (M.unionWith mergeRecords fields1 fields2) base1 True
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 
-  _ -> t1
+  _                      -> t1
 
 isFunctionType :: Type -> Bool
 isFunctionType t = case t of

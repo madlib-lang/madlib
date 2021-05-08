@@ -133,11 +133,9 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
     return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
   Abs (Solved t _ name) body -> do
-    let (nameToFind', foundNames') = if isFunctionType tipe
-          then case nameToFind of
-            Just n  -> (Nothing, n : foundNames)
-            Nothing -> (Nothing, foundNames)
-          else (nameToFind, foundNames)
+    let (nameToFind', foundNames') = case nameToFind of
+          Just n  -> (Nothing, n : foundNames)
+          Nothing -> (Nothing, foundNames)
     let localScope' = S.insert name localScope
     collectFromBody foundNames' nameToFind' globalScope localScope' body
 

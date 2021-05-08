@@ -17,6 +17,7 @@ Right
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                               (TRecord
                                  (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                 Nothing
                                  False))
                            (TCon (TC "Result" Star) "path"))
                         (Area (Loc 82 2 11) (Loc 89 2 18))
@@ -24,7 +25,8 @@ Right
                      (Solved
                         (TRecord
                            (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                           False)
+                           Nothing
+                           True)
                         (Area (Loc 90 2 19) (Loc 105 2 34))
                         (Record
                            [ Solved
@@ -59,6 +61,7 @@ Right
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                               (TRecord
                                  (fromList [ ( "message" , TCon (TC "String" Star) "prelude" ) ])
+                                 Nothing
                                  False))
                            (TCon (TC "Result" Star) "path"))
                         (Area (Loc 117 3 11) (Loc 122 3 16))
@@ -66,7 +69,8 @@ Right
                      (Solved
                         (TRecord
                            (fromList [ ( "message" , TCon (TC "String" Star) "prelude" ) ])
-                           False)
+                           Nothing
+                           True)
                         (Area (Loc 123 3 17) (Loc 141 3 35))
                         (Record
                            [ Solved
@@ -198,6 +202,7 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
                                   (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                  Nothing
                                   False))
                             (TCon (TC "Result" Star) "path")))
                   , Untyped
@@ -219,6 +224,7 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
                                   (fromList [ ( "message" , TCon (TC "String" Star) "prelude" ) ])
+                                  Nothing
                                   False))
                             (TCon (TC "Result" Star) "path")))
                   ]

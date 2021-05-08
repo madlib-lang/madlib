@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 module Canonicalize.AST where
@@ -45,7 +46,7 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportNames = findAllExportedNames ast
   let allImportNames = Src.getImportNames imp
-  let notExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames--allImportNames \\ allExportNames
+  let notExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
 
   unless
     (null notExported)
@@ -126,6 +127,20 @@ checkUnusedImports env imports = do
     )
     withJSCheck
 
+
+isTypeImport :: Env -> FilePath -> Can.Table -> Can.Canonical Can.Name -> Bool
+isTypeImport env astPath table (Can.Canonical _ name) = case M.lookup name (envTypeDecls env) of
+  Just _ -> case M.lookup astPath table of
+    Just ast -> name `notElem` (Can.getCtorName <$> (Can.atypedecls ast >>= Can.getCtors)) && notElem
+      (Just name)
+      (Can.getExportName <$> Can.aexps ast)
+
+    Nothing -> True
+
+  Nothing -> False
+
+
+
 canonicalizeAST :: Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env)
 canonicalizeAST target env table astPath = do
   ast <- case P.findAST table astPath of
@@ -146,9 +161,18 @@ canonicalizeAST target env table astPath = do
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
   instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
 
+  -- When processed we remove type imports
+  let imports' =
+        (\case
+            Can.Canonical area (Can.NamedImport names relFP absFP) ->
+              Can.Canonical area $ Can.NamedImport (filter (not . isTypeImport env' absFP table) names) relFP absFP
+            imp -> imp
+          )
+          <$> imports
+
   checkUnusedImports env'' imports
 
-  let canonicalizedAST = Can.AST { Can.aimports    = imports
+  let canonicalizedAST = Can.AST { Can.aimports    = imports'
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces

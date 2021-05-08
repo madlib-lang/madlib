@@ -5,6 +5,7 @@
 module Infer.Exp where
 
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Data.Foldable                  ( foldrM
                                                 , foldlM
@@ -108,7 +109,7 @@ updatePattern t (Can.Canonical area pat) = case pat of
 inferVar :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
-    let s = Forall [Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) True `fn` TGen 0)
+    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) True `fn` TGen 0)
     (ps :=> t) <- instantiate s
     return (M.empty, ps, t, Slv.Solved t area $ Slv.Var n)
 
@@ -306,8 +307,8 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
     (s', ps, ts, es) <- foldlM
       (\(s, pss, ts, lis) elem -> do
-        (s', ps', t, li) <- inferListItem (apply s env) tv elem
-        return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
+        (s', ps', t, li) <- inferListItem env tv elem
+        return (s' `compose` s, pss ++ ps', ts ++ [t], lis ++ [li])
       )
       (mempty, [], [], [])
       elems
@@ -439,15 +440,25 @@ inferRecord env exp = do
   let fieldPS     = (\(_, ps, _, _) -> ps) <$> inferredFields
   let subst       = foldr compose M.empty fieldSubsts
 
-  (recordType, extraSubst) <- if not open
-    then return (TRecord (M.fromList $ concat fieldTypes) open, mempty)
-    else do
-      let Just t' = maybeT
-          t''     = TRecord (M.fromList $ concat fieldTypes) True
-      s <- unify t' t''
-      return (t', s)
+  let fieldTypes' = filter (\(k, _) -> k /= "...") (concat fieldTypes)
+  let spreads     = snd <$> filter (\(k, _) -> k == "...") (concat fieldTypes)
 
-  return (extraSubst `compose` subst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
+  let base = case spreads of
+        (x : _) -> Just x
+        _       -> Nothing
+
+  (recordType, extraSubst) <- do
+    (s, extraFields, newBase) <- case base of
+      Just tBase -> do
+        case tBase of
+          TRecord fields base _ -> return (mempty, fields, base)
+          _                     -> do
+            s <- unify tBase (TRecord (M.fromList fieldTypes') base True)
+            return (s, mempty, base)
+      Nothing -> return (mempty, mempty, base)
+    return (TRecord (M.fromList fieldTypes' <> extraFields) newBase True, s)
+
+  return (subst `compose` extraSubst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
 
 
 
@@ -460,9 +471,10 @@ inferRecordField env (Can.Canonical area field) = case field of
   Can.FieldSpread exp -> do
     (s, ps, t, e) <- infer env exp
     case t of
-      TRecord tfields _ -> return (s, ps, M.toList tfields, Slv.Solved t area $ Slv.FieldSpread e)
+      TRecord tfields _ _ -> return (s, ps, [("...", t)], Slv.Solved t area $ Slv.FieldSpread e)
 
-      TVar _ -> return (s, ps, [], Slv.Solved t area $ Slv.FieldSpread e)
+      TVar _              -> do
+        return (s, ps, [("...", t)], Slv.Solved t area $ Slv.FieldSpread e)
 
       _ -> throwError $ CompilationError (WrongSpreadType $ show t)
                                          (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
@@ -474,8 +486,8 @@ shouldBeOpen env = foldrM
     Can.FieldSpread e -> do
       (_, _, t, _) <- infer env e
       case t of
-        TRecord _ _ -> return (r, Nothing)
-        TVar _      -> return (True, Just t)
+        TRecord _ _ _ -> return (r, Nothing)
+        TVar _        -> return (True, Just t)
   )
   (False, Nothing)
 
@@ -511,34 +523,18 @@ inferNamespaceAccess env _ = throwError $ CompilationError FatalError NoContext
 inferFieldAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re) abs@(Can.Canonical _ (Can.Var ('.' : name)))))
   = do
-    (fieldSubst , fieldPs , fieldType , fieldExp ) <- infer env abs
-    (recordSubst, recordPs, recordType, recordExp) <- infer env rec
+    tv                  <- newTVar Star
+    (s1, _  , t1, eabs) <- infer env abs
+    (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) rec
 
-    let foundFieldType = case recordType of
-          TRecord fields _ -> M.lookup name fields
-          _                -> Nothing
+    s3                  <- contextualUnify env fa t1 (apply s1 t2 `fn` tv)
 
-    case foundFieldType of
-      Just t -> do
-        (ps :=> t') <- instantiate $ Forall [kind t] ([] :=> t)
-        let solved = Slv.Solved t' area (Slv.Access recordExp fieldExp)
-        return (fieldSubst, ps, t', solved)
+    let t      = apply s3 tv
+    let s      = s3 `compose` s2 `compose` s1
 
-      Nothing -> case recordType of
-        TRecord _ False ->
-          throwError $ CompilationError (FieldNotExisting name) (Context (envCurrentPath env) area (envBacktrace env))
-        _ -> do
-          tv <- newTVar Star
-          s3 <- contextualUnify env fa (apply recordSubst fieldType) (recordType `fn` tv)
+    let solved = Slv.Solved t area (Slv.Access earg eabs)
 
-          let s          = compose s3 recordSubst
-          let t          = apply s tv
-
-          let recordExp' = updateType recordExp (apply s3 recordType)
-          let solved = Slv.Solved t area (Slv.Access recordExp' fieldExp)
-
-          return (s, [], t, solved)
-
+    return (s, ps2, t, solved)
 
 
 -- INFER IF
@@ -645,7 +641,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   s'            <- contextualUnify env exp t tv
   let s'' = s `compose` s'
       ps' = apply s'' ps
-      t'  = closeRecords $ apply s'' tv
+      t'  = if isLet then apply s'' tv else closeRecords $ apply s'' tv
       fs  = ftv (apply s'' env)
       vs  = ftv t'
       gs  = vs \\ fs
