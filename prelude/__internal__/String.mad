@@ -15,6 +15,12 @@ instance Show String {
   show = (a) => a
 }
 
+toLower :: String -> String
+export toLower = (s) => #- s.toLowerCase() -#
+
+toUpper :: String -> String
+export toUpper = (s) => #- s.toUpperCase() -#
+
 replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex), replacing)
@@ -80,3 +86,6 @@ export isDigit = (s) => len(s) != 1
 
 repeat :: Number -> String -> String
 export repeat = (n, s) => #- s.repeat(n) -#
+
+match :: String -> String -> Boolean
+export match = (regex, input) => #- input.match(regex) -#

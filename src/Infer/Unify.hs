@@ -11,7 +11,9 @@ import           Error.Context
 import           Infer.Infer
 import           Infer.Env
 import           Control.Monad.Except
+import           Data.Maybe
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Debug.Trace
 import           Text.Show.Pretty
 import qualified AST.Canonical                 as Can
@@ -19,6 +21,7 @@ import qualified AST.Canonical                 as Can
 
 
 varBind :: TVar -> Type -> Infer Substitution
+varBind tv t@(TRecord fields (Just base) _) = return $ M.singleton tv t
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -33,11 +36,37 @@ instance Unify Type where
     s2 <- unify (apply s1 r) (apply s1 r')
     return $ compose s1 s2
 
-  unify l@(TRecord fields open) r@(TRecord fields' open')
-    | open || open' = do
+  unify l@(TRecord fields base open) r@(TRecord fields' base' open') = case (base, base') of
+    (Just tBase, Just tBase') -> do
+      s1 <- unify tBase tBase'
+      s2 <- unify tBase (TRecord fields base True)
+      s3 <- unify tBase (TRecord fields' base True)
+      s4 <- unify tBase' (TRecord fields base' True)
+      s5 <- unify tBase' (TRecord fields' base' True)
+      return $ s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+
+    (Just tBase, Nothing) -> do
+      s1 <- unify tBase (TRecord fields Nothing True)
+      s2 <- unify tBase (TRecord fields' Nothing True)
+      unless (null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
+      let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields') fields
+          z             = zip (M.elems fields) (M.elems fieldsToCheck)
+      s3 <- unifyVars M.empty z
+      return $ s1 `compose` s2 `compose` s3
+
+    (Nothing, Just tBase') -> do
+      s1 <- unify tBase' (TRecord fields base' True)
+      s2 <- unify tBase' (TRecord fields' base' True)
+      unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
+      let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields) fields'
+          z             = zip (M.elems fields') (M.elems fieldsToCheck)
+      s3 <- unifyVars M.empty z
+      return $ s1 `compose` s2 `compose` s3
+
+    _ -> do
       let extraFields  = M.difference fields fields'
           extraFields' = M.difference fields' fields
-      if not open && extraFields' /= mempty || not open' && extraFields /= mempty
+      if extraFields' /= mempty || extraFields /= mempty
         then throwError $ CompilationError (UnificationError r l) NoContext
         else do
           let updatedFields  = M.union fields extraFields'
@@ -46,14 +75,6 @@ instance Unify Type where
               types'         = M.elems updatedFields'
               z              = zip types types'
           unifyVars M.empty z
-    | M.difference fields fields' /= M.empty = throwError $ CompilationError (UnificationError r l) NoContext
-    | otherwise = do
-      let types  = M.elems fields
-          types' = M.elems fields'
-          z      = zip types types'
-      s <- unifyVars M.empty z
-      let z' = (\(l, r) -> (apply s l, apply s r)) <$> z
-      unifyVars s z'
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t

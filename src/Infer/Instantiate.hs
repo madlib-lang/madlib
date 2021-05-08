@@ -5,6 +5,7 @@ module Infer.Instantiate where
 
 import           Infer.Type
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Control.Monad.State
 import           Infer.Infer
 
@@ -27,10 +28,10 @@ instantiate (Forall ks qt) = do
 class Instantiate t where
   inst  :: [Type] -> t -> t
 instance Instantiate Type where
-  inst ts (TApp l r        ) = TApp (inst ts l) (inst ts r)
-  inst ts (TGen n          ) = ts !! n
-  inst ts (TRecord fields o) = TRecord (M.map (inst ts) fields) o
-  inst _  t                  = t
+  inst ts (TApp l r             ) = TApp (inst ts l) (inst ts r)
+  inst ts (TGen n               ) = ts !! n
+  inst ts (TRecord fields base o) = TRecord (M.map (inst ts) fields) (inst ts <$> base) o
+  inst _  t                       = t
 
 instance Instantiate a => Instantiate [a] where
   inst ts = map (inst ts)

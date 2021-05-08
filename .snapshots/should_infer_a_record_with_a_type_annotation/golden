@@ -8,6 +8,7 @@ Right
                   [ ( "x" , TCon (TC "Number" Star) "prelude" )
                   , ( "y" , TCon (TC "Number" Star) "prelude" )
                   ])
+               Nothing
                False)
             (Area (Loc 1 1 2) (Loc 47 1 48))
             (TypedExp
@@ -17,6 +18,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
+                     Nothing
                      False)
                   (Area (Loc 1 1 2) (Loc 15 1 16))
                   (Record
@@ -49,6 +51,7 @@ Right
                           [ ( "x" , TCon (TC "Number" Star) "prelude" )
                           , ( "y" , TCon (TC "Number" Star) "prelude" )
                           ])
+                       Nothing
                        False)))
         ]
     , atypedecls = []

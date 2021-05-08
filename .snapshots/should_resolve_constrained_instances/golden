@@ -10,11 +10,7 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TApp
-                           (TApp
-                              (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "Number" Star) "prelude"))
-                           (TCon (TC "Boolean" Star) "prelude")))
+                        (TVar (TV "a26" Star)))
                      (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 296 17 1) (Loc 300 17 5))
                   (Placeholder
@@ -25,11 +21,7 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TCon (TC "Number" Star) "prelude"))
-                                 (TCon (TC "Boolean" Star) "prelude")))
+                              (TVar (TV "a26" Star)))
                            (TCon (TC "String" Star) "prelude"))
                         (Area (Loc 296 17 1) (Loc 300 17 5))
                         (Placeholder
@@ -40,11 +32,7 @@ Right
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TCon (TC "Number" Star) "prelude"))
-                                       (TCon (TC "Boolean" Star) "prelude")))
+                                    (TVar (TV "a26" Star)))
                                  (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 296 17 1) (Loc 300 17 5))
                               (Placeholder
@@ -60,13 +48,7 @@ Right
                                     (TApp
                                        (TApp
                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TApp
-                                             (TApp
-                                                (TCon
-                                                   (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                   "prelude")
-                                                (TCon (TC "Number" Star) "prelude"))
-                                             (TCon (TC "Boolean" Star) "prelude")))
+                                          (TVar (TV "a26" Star)))
                                        (TCon (TC "String" Star) "prelude"))
                                     (Area (Loc 296 17 1) (Loc 300 17 5))
                                     (Var "show"))))))))
@@ -573,7 +555,7 @@ Right
                                                                                                  "prelude")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "i8"
+                                                                                                    "p15"
                                                                                                     Star)))
                                                                                            (TCon
                                                                                               (TC
@@ -614,7 +596,7 @@ Right
                                                                                                        "prelude")
                                                                                                     (TVar
                                                                                                        (TV
-                                                                                                          "i8"
+                                                                                                          "p15"
                                                                                                           Star)))
                                                                                                  (TCon
                                                                                                     (TC
@@ -872,7 +854,7 @@ Right
                                                                                                              "prelude")
                                                                                                           (TVar
                                                                                                              (TV
-                                                                                                                "j9"
+                                                                                                                "v21"
                                                                                                                 Star)))
                                                                                                        (TCon
                                                                                                           (TC
@@ -913,7 +895,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "j9"
+                                                                                                                      "v21"
                                                                                                                       Star)))
                                                                                                              (TCon
                                                                                                                 (TC

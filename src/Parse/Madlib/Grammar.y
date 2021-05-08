@@ -448,15 +448,17 @@ tupleItemPatterns :: { [Src.Pattern] }
 
 record :: { Src.Exp }
   : '{' rets recordFields maybeComa rets '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Record $3) }
+  | '{' rets '...' exp ',' recordFields maybeComa rets '}'
+        { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Record ((Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) $ Src.FieldSpread $4) : $6)) }
 
 recordFields :: { [Src.Field] }
   : name ':' exp                            { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) $ Src.Field (strV $1, $3)] }
-  | '...' exp                               { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) $ Src.FieldSpread $2] }
+  -- | '...' exp                               { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) $ Src.FieldSpread $2] }
   | name                                    { [Src.Source emptyInfos (tokenToArea $1) $ Src.Field (strV $1, Src.Source emptyInfos (tokenToArea $1) (Src.Var (strV $1)))] }
   | recordFields ',' name                   { $1 <> [Src.Source emptyInfos (tokenToArea $3) $ Src.Field (strV $3, Src.Source emptyInfos (tokenToArea $3) (Src.Var (strV $3)))] }
   | recordFields ',' name ':' exp           { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $5)) $ Src.Field (strV $3, $5)] }
   | recordFields rets ',' rets name ':' exp { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $7)) $ Src.Field (strV $5, $7)] }
-  | recordFields ',' '...' exp              { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) $ Src.FieldSpread $4] }
+  -- | recordFields ',' '...' exp              { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) $ Src.FieldSpread $4] }
   | {- empty -}                             { [] }
 
 

@@ -20,21 +20,26 @@ Right
                                                    [ ( "d"
                                                      , TRecord
                                                          (fromList
-                                                            [ ( "e" , TVar (TV "m12" Star) ) ])
+                                                            [ ( "e" , TVar (TV "d3" Star) ) ])
+                                                         (Just (TVar (TV "f5" Star)))
                                                          True
                                                      )
                                                    ])
+                                                (Just (TVar (TV "i8" Star)))
                                                 True
                                             )
                                           ])
+                                       (Just (TVar (TV "l11" Star)))
                                        True
                                    )
                                  ])
+                              (Just (TVar (TV "o14" Star)))
                               True
                           )
                         ])
+                     (Just (TVar (TV "r17" Star)))
                      True))
-               (TVar (TV "m12" Star)))
+               (TVar (TV "d3" Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
@@ -56,22 +61,26 @@ Right
                                                          [ ( "d"
                                                            , TRecord
                                                                (fromList
-                                                                  [ ( "e" , TVar (TV "m12" Star) )
-                                                                  ])
+                                                                  [ ( "e" , TVar (TV "d3" Star) ) ])
+                                                               (Just (TVar (TV "f5" Star)))
                                                                True
                                                            )
                                                          ])
+                                                      (Just (TVar (TV "i8" Star)))
                                                       True
                                                   )
                                                 ])
+                                             (Just (TVar (TV "l11" Star)))
                                              True
                                          )
                                        ])
+                                    (Just (TVar (TV "o14" Star)))
                                     True
                                 )
                               ])
+                           (Just (TVar (TV "r17" Star)))
                            True))
-                     (TVar (TV "m12" Star)))
+                     (TVar (TV "d3" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
                      (Solved
@@ -89,51 +98,49 @@ Right
                                                          [ ( "d"
                                                            , TRecord
                                                                (fromList
-                                                                  [ ( "e" , TVar (TV "m12" Star) )
-                                                                  ])
+                                                                  [ ( "e" , TVar (TV "d3" Star) ) ])
+                                                               (Just (TVar (TV "f5" Star)))
                                                                True
                                                            )
                                                          ])
+                                                      (Just (TVar (TV "i8" Star)))
                                                       True
                                                   )
                                                 ])
+                                             (Just (TVar (TV "l11" Star)))
                                              True
                                          )
                                        ])
+                                    (Just (TVar (TV "o14" Star)))
                                     True
                                 )
                               ])
+                           (Just (TVar (TV "r17" Star)))
                            True)
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
                      [ Solved
-                         (TVar (TV "m12" Star))
+                         (TVar (TV "d3" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (Access
                             (Solved
-                               (TRecord (fromList [ ( "e" , TVar (TV "d3" Star) ) ]) True)
+                               (TVar (TV "g6" Star))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
                                   (Solved
-                                     (TRecord (fromList [ ( "d" , TVar (TV "e4" Star) ) ]) True)
+                                     (TVar (TV "j9" Star))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
                                         (Solved
-                                           (TRecord
-                                              (fromList [ ( "c" , TVar (TV "f5" Star) ) ]) True)
+                                           (TVar (TV "m12" Star))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
                                               (Solved
-                                                 (TRecord
-                                                    (fromList [ ( "b" , TVar (TV "g6" Star) ) ])
-                                                    True)
+                                                 (TVar (TV "p15" Star))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
                                                     (Solved
-                                                       (TRecord
-                                                          (fromList
-                                                             [ ( "a" , TVar (TV "h7" Star) ) ])
-                                                          True)
+                                                       (TVar (TV "c2" Star))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x"))
                                                     (Solved
@@ -146,10 +153,11 @@ Right
                                                                 "prelude")
                                                              (TRecord
                                                                 (fromList
-                                                                   [ ( "a" , TVar (TV "h7" Star) )
+                                                                   [ ( "a" , TVar (TV "q16" Star) )
                                                                    ])
+                                                                (Just (TVar (TV "r17" Star)))
                                                                 True))
-                                                          (TVar (TV "h7" Star)))
+                                                          (TVar (TV "q16" Star)))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a"))))
                                               (Solved
@@ -160,9 +168,10 @@ Right
                                                           "prelude")
                                                        (TRecord
                                                           (fromList
-                                                             [ ( "b" , TVar (TV "g6" Star) ) ])
+                                                             [ ( "b" , TVar (TV "n13" Star) ) ])
+                                                          (Just (TVar (TV "o14" Star)))
                                                           True))
-                                                    (TVar (TV "g6" Star)))
+                                                    (TVar (TV "n13" Star)))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b"))))
                                         (Solved
@@ -172,9 +181,10 @@ Right
                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                     "prelude")
                                                  (TRecord
-                                                    (fromList [ ( "c" , TVar (TV "f5" Star) ) ])
+                                                    (fromList [ ( "c" , TVar (TV "k10" Star) ) ])
+                                                    (Just (TVar (TV "l11" Star)))
                                                     True))
-                                              (TVar (TV "f5" Star)))
+                                              (TVar (TV "k10" Star)))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c"))))
                                   (Solved
@@ -182,16 +192,21 @@ Right
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList [ ( "d" , TVar (TV "e4" Star) ) ]) True))
-                                        (TVar (TV "e4" Star)))
+                                              (fromList [ ( "d" , TVar (TV "h7" Star) ) ])
+                                              (Just (TVar (TV "i8" Star)))
+                                              True))
+                                        (TVar (TV "h7" Star)))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d"))))
                             (Solved
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord (fromList [ ( "e" , TVar (TV "d3" Star) ) ]) True))
-                                  (TVar (TV "d3" Star)))
+                                     (TRecord
+                                        (fromList [ ( "e" , TVar (TV "e4" Star) ) ])
+                                        (Just (TVar (TV "f5" Star)))
+                                        True))
+                                  (TVar (TV "e4" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e")))
                      ])))

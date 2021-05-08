@@ -16,6 +16,7 @@ import           Error.Error
 import           Error.Context
 import           Infer.Instantiate
 
+
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 insertVarPlaceholders _   exp                    []       = return exp
 
@@ -131,13 +132,9 @@ updateMethodPlaceholder env push s ph@(Slv.Solved t a (Slv.Placeholder (Slv.Meth
 
     ps  <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
     ps' <- getAllParentPreds env ps
-    pushPlaceholders
-      env
-      (Slv.Solved (apply s t)
-                  a
-                  (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved (apply s t') a' exp))
-      )
-      ps'
+    pushPlaceholders env
+                     (Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved t' a' exp)))
+                     ps'
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 pushPlaceholders _   exp                    []                     = return exp
@@ -160,7 +157,7 @@ updateClassPlaceholder env push s ph = case ph of
 
     if not var && not call
       then return ph
-      else return $ Slv.Solved (apply s t) a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+      else return $ Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
 
   _ -> return ph
 
@@ -265,7 +262,7 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
     Slv.ListItem e -> do
       updated <- updatePlaceholders env push s e
       case updated of
-        Slv.Solved _ _ (Slv.App (Slv.Solved tAbs _ (Slv.Var "__tmp_jsx_children__")) elem _) -> case tAbs of
+        Slv.Solved _ area (Slv.App (Slv.Solved tAbs _ (Slv.Var "__tmp_jsx_children__")) elem _) -> case apply s tAbs of
           TApp (TApp (TCon (TC "(->)" _) _) (TCon (TC "String" Star) "prelude")) _ ->
             return $ Slv.Solved t area $ Slv.ListItem
               (Slv.Solved t area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))

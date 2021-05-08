@@ -408,7 +408,8 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
           _ -> prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
-  TRecord fields _ ->
+  -- TODO: Add spreads display
+  TRecord fields spreads _ ->
     let (finalVars, finalHkVars, compiledFields) =
             foldl'
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->

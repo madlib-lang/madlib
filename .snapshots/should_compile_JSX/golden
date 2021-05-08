@@ -30,7 +30,7 @@ let MyApp = (count => div(([id("id"), className("class")]))(([div(([]))(([text(`
 div(([]))(([text("Some text!")]));
 div(([]))(([div(([]))(([span(([]))(([]))])), div(([]))(([span(([]))(([]))]))]));
 let methods = (['1', '2', '3']);
-let childElems = Functor.List.map()((method => div(([]))(([method]))))(methods);
+let childElems = Functor.List.map()((method => div(([]))(([text(method)]))))(methods);
 div(([]))(([ ...((f) => (xs) => xs.map(f))(text)(methods)]));
 div(([]))(([ ...childElems]));
 export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };

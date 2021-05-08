@@ -7251,11 +7251,7 @@ Right
                                                       "prelude")
                                                    (TVar (TV "k114" Star)))
                                                 (TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "Wish" (Kfun Star (Kfun Star Star)))
-                                                         "./ModuleA")
-                                                      (TVar (TV "m116" Star)))
+                                                   (TVar (TV "j113" (Kfun Star Star)))
                                                    (TVar (TV "k114" Star))))
                                              (Area (Loc 773 41 8) (Loc 777 41 12))
                                              (Var "pure")))))
@@ -7339,18 +7335,18 @@ Right
                                                  (TCon
                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                     "prelude")
-                                                 (TCon (TC "Number" Star) "prelude"))
-                                              (TCon (TC "Number" Star) "prelude")))
+                                                 (TVar (TV "z259" Star)))
+                                              (TVar (TV "a260" Star))))
                                         (TApp
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TApp
-                                                 (TVar (TV "v255" (Kfun Star Star)))
-                                                 (TCon (TC "Number" Star) "prelude")))
+                                                 (TVar (TV "y258" (Kfun Star Star)))
+                                                 (TVar (TV "z259" Star))))
                                            (TApp
-                                              (TVar (TV "v255" (Kfun Star Star)))
-                                              (TCon (TC "Number" Star) "prelude"))))
+                                              (TVar (TV "y258" (Kfun Star Star)))
+                                              (TVar (TV "a260" Star)))))
                                      (Area (Loc 80 4 10) (Loc 83 4 13))
                                      (Placeholder
                                         ( MethodRef "Functor" "map" True
@@ -7367,19 +7363,19 @@ Right
                                                        (TCon
                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                           "prelude")
-                                                       (TCon (TC "Number" Star) "prelude"))
-                                                    (TCon (TC "Number" Star) "prelude")))
+                                                       (TVar (TV "z259" Star)))
+                                                    (TVar (TV "a260" Star))))
                                               (TApp
                                                  (TApp
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TApp
-                                                       (TVar (TV "v255" (Kfun Star Star)))
-                                                       (TCon (TC "Number" Star) "prelude")))
+                                                       (TVar (TV "y258" (Kfun Star Star)))
+                                                       (TVar (TV "z259" Star))))
                                                  (TApp
-                                                    (TVar (TV "v255" (Kfun Star Star)))
-                                                    (TCon (TC "Number" Star) "prelude"))))
+                                                    (TVar (TV "y258" (Kfun Star Star)))
+                                                    (TVar (TV "a260" Star)))))
                                            (Area (Loc 80 4 10) (Loc 83 4 13))
                                            (Var "map"))))
                                   (Solved
@@ -7593,21 +7589,11 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon
-                                                                      (TC "Number" Star) "prelude"))
+                                                                   (TVar (TV "t279" Star)))
                                                                 (TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "Wish"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "./ModuleA")
-                                                                      (TVar (TV "r303" Star)))
-                                                                   (TCon
-                                                                      (TC "Number" Star)
-                                                                      "prelude")))
+                                                                   (TVar
+                                                                      (TV "s278" (Kfun Star Star)))
+                                                                   (TVar (TV "t279" Star))))
                                                              (Area (Loc 99 6 1) (Loc 101 6 3))
                                                              (Placeholder
                                                                 ( MethodRef "Monad" "of" False
@@ -7632,23 +7618,13 @@ Right
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TCon
-                                                                            (TC "Number" Star)
-                                                                            "prelude"))
+                                                                         (TVar (TV "t279" Star)))
                                                                       (TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "Wish"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "./ModuleA")
-                                                                            (TVar (TV "r303" Star)))
-                                                                         (TCon
-                                                                            (TC "Number" Star)
-                                                                            "prelude")))
+                                                                         (TVar
+                                                                            (TV
+                                                                               "s278"
+                                                                               (Kfun Star Star)))
+                                                                         (TVar (TV "t279" Star))))
                                                                    (Area (Loc 99 6 1) (Loc 101 6 3))
                                                                    (Var "of"))))
                                                           (Solved
@@ -7687,10 +7663,8 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TCon
-                                                                      (TC "Number" Star) "prelude"))
-                                                                (TCon
-                                                                   (TC "Number" Star) "prelude")))
+                                                                   (TVar (TV "w282" Star)))
+                                                                (TVar (TV "x283" Star))))
                                                           (TApp
                                                              (TApp
                                                                 (TCon
@@ -7699,29 +7673,12 @@ Right
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
                                                                 (TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "Wish"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "./ModuleA")
-                                                                      (TVar (TV "r303" Star)))
-                                                                   (TCon
-                                                                      (TC "Number" Star)
-                                                                      "prelude")))
+                                                                   (TVar
+                                                                      (TV "v281" (Kfun Star Star)))
+                                                                   (TVar (TV "w282" Star))))
                                                              (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "Wish"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "./ModuleA")
-                                                                   (TVar (TV "r303" Star)))
-                                                                (TCon
-                                                                   (TC "Number" Star) "prelude"))))
+                                                                (TVar (TV "v281" (Kfun Star Star)))
+                                                                (TVar (TV "x283" Star)))))
                                                        (Area (Loc 110 7 6) (Loc 113 7 9))
                                                        (Placeholder
                                                           ( MethodRef "Functor" "map" False
@@ -7752,12 +7709,8 @@ Right
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TCon
-                                                                            (TC "Number" Star)
-                                                                            "prelude"))
-                                                                      (TCon
-                                                                         (TC "Number" Star)
-                                                                         "prelude")))
+                                                                         (TVar (TV "w282" Star)))
+                                                                      (TVar (TV "x283" Star))))
                                                                 (TApp
                                                                    (TApp
                                                                       (TCon
@@ -7768,32 +7721,17 @@ Right
                                                                                (Kfun Star Star)))
                                                                          "prelude")
                                                                       (TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "Wish"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "./ModuleA")
-                                                                            (TVar (TV "r303" Star)))
-                                                                         (TCon
-                                                                            (TC "Number" Star)
-                                                                            "prelude")))
+                                                                         (TVar
+                                                                            (TV
+                                                                               "v281"
+                                                                               (Kfun Star Star)))
+                                                                         (TVar (TV "w282" Star))))
                                                                    (TApp
-                                                                      (TApp
-                                                                         (TCon
-                                                                            (TC
-                                                                               "Wish"
-                                                                               (Kfun
-                                                                                  Star
-                                                                                  (Kfun Star Star)))
-                                                                            "./ModuleA")
-                                                                         (TVar (TV "r303" Star)))
-                                                                      (TCon
-                                                                         (TC "Number" Star)
-                                                                         "prelude"))))
+                                                                      (TVar
+                                                                         (TV
+                                                                            "v281"
+                                                                            (Kfun Star Star)))
+                                                                      (TVar (TV "x283" Star)))))
                                                              (Area (Loc 110 7 6) (Loc 113 7 9))
                                                              (Var "map"))))
                                                     (Solved
@@ -7921,35 +7859,21 @@ Right
                                                        (TCon
                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                           "prelude")
-                                                       (TCon (TC "Number" Star) "prelude"))
+                                                       (TVar (TV "d289" Star)))
                                                     (TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "Wish" (Kfun Star (Kfun Star Star)))
-                                                             "./ModuleA")
-                                                          (TVar (TV "r303" Star)))
-                                                       (TCon (TC "Number" Star) "prelude"))))
+                                                       (TVar (TV "c288" (Kfun Star Star)))
+                                                       (TVar (TV "e290" Star)))))
                                               (TApp
                                                  (TApp
                                                     (TCon
                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                        "prelude")
                                                     (TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "Wish" (Kfun Star (Kfun Star Star)))
-                                                             "./ModuleA")
-                                                          (TVar (TV "r303" Star)))
-                                                       (TCon (TC "Number" Star) "prelude")))
+                                                       (TVar (TV "c288" (Kfun Star Star)))
+                                                       (TVar (TV "d289" Star))))
                                                  (TApp
-                                                    (TApp
-                                                       (TCon
-                                                          (TC "Wish" (Kfun Star (Kfun Star Star)))
-                                                          "./ModuleA")
-                                                       (TVar (TV "r303" Star)))
-                                                    (TCon (TC "Number" Star) "prelude"))))
+                                                    (TVar (TV "c288" (Kfun Star Star)))
+                                                    (TVar (TV "e290" Star)))))
                                            (Area (Loc 135 8 6) (Loc 140 8 11))
                                            (Placeholder
                                               ( MethodRef "Monad" "chain" False
@@ -7973,16 +7897,10 @@ Right
                                                                    "(->)"
                                                                    (Kfun Star (Kfun Star Star)))
                                                                 "prelude")
-                                                             (TCon (TC "Number" Star) "prelude"))
+                                                             (TVar (TV "d289" Star)))
                                                           (TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "Wish"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "./ModuleA")
-                                                                (TVar (TV "r303" Star)))
-                                                             (TCon (TC "Number" Star) "prelude"))))
+                                                             (TVar (TV "c288" (Kfun Star Star)))
+                                                             (TVar (TV "e290" Star)))))
                                                     (TApp
                                                        (TApp
                                                           (TCon
@@ -7990,23 +7908,11 @@ Right
                                                                 "(->)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
                                                           (TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "Wish"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "./ModuleA")
-                                                                (TVar (TV "r303" Star)))
-                                                             (TCon (TC "Number" Star) "prelude")))
+                                                             (TVar (TV "c288" (Kfun Star Star)))
+                                                             (TVar (TV "d289" Star))))
                                                        (TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "Wish"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "./ModuleA")
-                                                             (TVar (TV "r303" Star)))
-                                                          (TCon (TC "Number" Star) "prelude"))))
+                                                          (TVar (TV "c288" (Kfun Star Star)))
+                                                          (TVar (TV "e290" Star)))))
                                                  (Area (Loc 135 8 6) (Loc 140 8 11))
                                                  (Var "chain"))))
                                         (Solved
@@ -8039,16 +7945,10 @@ Right
                                                                     "(->)"
                                                                     (Kfun Star (Kfun Star Star)))
                                                                  "prelude")
-                                                              (TCon (TC "Number" Star) "prelude"))
+                                                              (TVar (TV "i294" Star)))
                                                            (TApp
-                                                              (TApp
-                                                                 (TCon
-                                                                    (TC
-                                                                       "Wish"
-                                                                       (Kfun Star (Kfun Star Star)))
-                                                                    "./ModuleA")
-                                                                 (TVar (TV "r303" Star)))
-                                                              (TCon (TC "Number" Star) "prelude")))
+                                                              (TVar (TV "h293" (Kfun Star Star)))
+                                                              (TVar (TV "i294" Star))))
                                                         (Area (Loc 149 8 20) (Loc 151 8 22))
                                                         (Placeholder
                                                            ( MethodRef "Monad" "of" False
@@ -8070,22 +7970,11 @@ Right
                                                                           (Kfun
                                                                              Star (Kfun Star Star)))
                                                                        "prelude")
-                                                                    (TCon
-                                                                       (TC "Number" Star)
-                                                                       "prelude"))
+                                                                    (TVar (TV "i294" Star)))
                                                                  (TApp
-                                                                    (TApp
-                                                                       (TCon
-                                                                          (TC
-                                                                             "Wish"
-                                                                             (Kfun
-                                                                                Star
-                                                                                (Kfun Star Star)))
-                                                                          "./ModuleA")
-                                                                       (TVar (TV "r303" Star)))
-                                                                    (TCon
-                                                                       (TC "Number" Star)
-                                                                       "prelude")))
+                                                                    (TVar
+                                                                       (TV "h293" (Kfun Star Star)))
+                                                                    (TVar (TV "i294" Star))))
                                                               (Area (Loc 149 8 20) (Loc 151 8 22))
                                                               (Var "of"))))
                                                      (Solved

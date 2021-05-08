@@ -531,7 +531,7 @@ spec = do
       snapshotTest "should infer abstraction param that have a record exp as body" actual
 
     it "should fail when spreading a non spreadable type into a record" $ do
-      let code   = unlines ["{ x: 1, ...3 }"]
+      let code   = unlines ["{ ...3, x: 1 }"]
           actual = tester code
       snapshotTest "should fail when spreading a non spreadable type into a record" actual
 
