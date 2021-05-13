@@ -61,7 +61,7 @@ global.__eq__ = (l, r) => {
   }
   if (typeof l === `object`) {
     if (Array.isArray(l)) {
-      return l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
+      return l.length === r.length && l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
     }
     const keysL = Object.keys(l);
     const keysR = Object.keys(r);

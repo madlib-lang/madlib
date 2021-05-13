@@ -1,0 +1,58 @@
+import String from "String"
+import { first, join, drop } from "List"
+import { fromMaybe, Nothing, Just } from "Maybe"
+import { equals, identity, ifElse } from "Function"
+
+
+
+export alias FilePath = String
+
+
+
+
+dropPathSegments :: Number -> FilePath -> FilePath
+export dropPathSegments = (howMany) => pipe(
+  splitPath,
+  drop(howMany),
+  join("")
+)
+
+dropTrailingPathSeparator :: FilePath -> FilePath
+export dropTrailingPathSeparator = ifElse(
+  (path) => path != "/" && String.lastChar(path) == Just("/"),
+  String.dropLast(1),
+  identity
+)
+
+performSplitPath = (buffer, foundSlash, path) =>
+  where(String.firstChar(path))
+    is Nothing  : [buffer]
+    is Just "/" : performSplitPath(buffer ++ "/", true, String.drop(1, path))
+    is Just char: foundSlash
+      ? mappend([buffer], performSplitPath(char, false, String.drop(1, path)))
+      : performSplitPath(buffer ++ char, false, String.drop(1, path))
+
+splitPath :: FilePath -> List FilePath
+export splitPath = performSplitPath("", false)
+
+joinPath :: List FilePath -> FilePath
+export joinPath = ifElse(
+  pipe(first, equals(Just("/"))),
+  pipe(drop(1), map(dropTrailingPathSeparator), join("/"), mappend("/")),
+  pipe(map(dropTrailingPathSeparator), join("/"))
+)
+
+isRootPathOf :: FilePath -> FilePath -> Boolean
+export isRootPathOf = (root, path) => {
+  rootParts = splitPath(root)
+  pathParts = splitPath(path)
+
+  rootStart = dropTrailingPathSeparator(fromMaybe("", first(rootParts)))
+  pathStart = dropTrailingPathSeparator(fromMaybe("", first(pathParts)))
+
+  return rootStart == pathStart || rootStart == ""
+    ? rootStart == ""
+      ? true
+      : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
+    : false
+}

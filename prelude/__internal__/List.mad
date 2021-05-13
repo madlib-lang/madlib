@@ -401,10 +401,10 @@ export includes = (x, xs) => (#- xs.includes(x) -#)
 
 
 drop :: Number -> List a -> List a
-export drop = (amount, xs) => slice(amount, len(xs) - amount - 1, xs)
+export drop = (amount, xs) => slice(amount, len(xs), xs)
 
 dropLast :: Number -> List a -> List a
-export dropLast = (amount, xs) => slice(0, len(xs) - amount - 1, xs)
+export dropLast = (amount, xs) => slice(0, len(xs) - amount, xs)
 
 dropWhile :: (a -> Boolean) -> List a -> List a
 export dropWhile = (pred, xs) => #-{

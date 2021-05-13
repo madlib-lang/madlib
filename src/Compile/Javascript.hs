@@ -520,22 +520,24 @@ instance Compilable Exp where
                 <> "{ __args: ["
                 <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
                 <> "] }"
+            PList pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PTuple pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
             _ -> ""
 
           buildTupleOrListVars :: String -> [Pattern] -> String
           buildTupleOrListVars scope items =
             let itemsStr = buildListVar <$> items
             in  "    let [" <> intercalate "," itemsStr <> "] = " <> scope <> ";\n"
-           where
-            buildListVar :: Pattern -> String
-            buildListVar (Optimized _ _ pat) = case pat of
-              PSpread (Optimized _ _ (PVar n)) -> "..." <> n
-              PVar    n    -> n
-              PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
-              PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-              PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-              PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
-              _            -> ""
+
+          buildListVar :: Pattern -> String
+          buildListVar (Optimized _ _ pat) = case pat of
+            PSpread (Optimized _ _ (PVar n)) -> "..." <> n
+            PVar    n    -> n
+            PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
+            PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
+            _            -> ""
 
           compileRecord :: String -> Name -> Pattern -> String
           compileRecord scope n p = compilePattern (scope <> "." <> n) p

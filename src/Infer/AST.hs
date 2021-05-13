@@ -49,10 +49,13 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
       Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
         safeExtendVars env (name, sc)
 
-      (Can.Assignment name _) -> safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
+      (Can.Assignment name _) -> do
+        tv <- newTVar Star
+        safeExtendVars env (name, Forall [Star] $ [] :=> tv)
 
-      (Can.Export (Can.Canonical _ (Can.Assignment name _))) ->
-        safeExtendVars env (name, Forall [Star] $ [] :=> TGen 0)
+      (Can.Export (Can.Canonical _ (Can.Assignment name _))) -> do
+        tv <- newTVar Star
+        safeExtendVars env (name, Forall [Star] $ [] :=> tv)
 
       _ -> return env
 
