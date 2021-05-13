@@ -1,0 +1,53 @@
+import { assertEquals, test } from "TestTools"
+
+import { splitPath, isRootPathOf, joinPath } from "./Posix"
+
+test("splitPath - '/some/path/file.ext'", (_) => pipe(
+  splitPath,
+  assertEquals($, ["/", "some/", "path/", "file.ext"])
+)("/some/path/file.ext"))
+
+test("splitPath - '/some/path/file'", (_) => pipe(
+  splitPath,
+  assertEquals($, ["/", "some/", "path/", "file"])
+)("/some/path/file"))
+
+test("splitPath - '/root/path'", (_) => pipe(
+  splitPath,
+  assertEquals($, ["/", "root/", "path"])
+)("/root/path"))
+
+test("splitPath - '/root///path'", (_) => pipe(
+  splitPath,
+  assertEquals($, ["/", "root///", "path"])
+)("/root///path"))
+
+test("joinPath  - ['/', 'root/', 'path']", (_) => pipe(
+  joinPath,
+  assertEquals($, "/root/path")
+)(["/", "root/", "path"]))
+
+test("joinPath  - ['/', 'root', 'path', 'file.ext']", (_) => pipe(
+  joinPath,
+  assertEquals($, "/root/path/file.ext")
+)(["/", "root", "path", "file.ext"]))
+
+test("joinPath  - ['folder/', 'path']", (_) => pipe(
+  joinPath,
+  assertEquals($, "folder/path")
+)(["folder/", "path"]))
+
+test("joinPath  - ['///', 'folder/', 'path']", (_) => pipe(
+  joinPath,
+  assertEquals($, "///folder/path")
+)(["///", "folder/", "path"]))
+
+test("isRootPathOf should return true if the first path is a parent of the second path", (_) => pipe(
+  isRootPathOf($, "/root/path/child"),
+  assertEquals($, true)
+)("/root/path"))
+
+test("isRootPathOf should return false if the first path is not a parent of the second path", (_) => pipe(
+  isRootPathOf($, "/other-root/path/child"),
+  assertEquals($, false)
+)("/root/path"))

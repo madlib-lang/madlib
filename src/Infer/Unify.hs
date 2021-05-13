@@ -38,19 +38,16 @@ instance Unify Type where
 
   unify l@(TRecord fields base open) r@(TRecord fields' base' open') = case (base, base') of
     (Just tBase, Just tBase') -> do
-      s1 <- unify tBase tBase'
-      s2 <- unify tBase (TRecord fields' base True)
-      s3 <- unify tBase' (TRecord fields base' True)
+      s1 <- unify tBase (TRecord fields' base True)
+      s2 <- unify tBase' (TRecord fields base' True)
 
       let fieldsToCheck = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
           z             = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-      s4 <- unifyVars M.empty z
+      s3 <- unifyVars M.empty z
 
-      let s1 = mempty
-
-      return $ s4 `compose` s1 `compose` s2 `compose` s3
+      return $ s3 `compose` s1 `compose` s2
 
     (Just tBase, Nothing) -> do
       s1 <- unify tBase (TRecord fields Nothing True)
@@ -151,9 +148,8 @@ contextualUnify :: Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
-    e@(CompilationError (TypesHaveDifferentOrigin _ _ _) _) -> addContext env exp e
+    e@(CompilationError TypesHaveDifferentOrigin{} _) -> addContext env exp e
     e -> addContext env exp e
-    -- _ -> addContext env exp (CompilationError (UnificationError t2 t1) NoContext)
   )
 
 
@@ -165,7 +161,7 @@ contextualUnifyElems' :: Env -> (Can.Canonical a, Type) -> [(Can.Canonical a, Ty
 contextualUnifyElems' _   _      []              = return M.empty
 contextualUnifyElems' env (e, t) ((e', t') : xs) = do
   s1 <- catchError (contextualUnify env e' t' t) flipUnificationError
-  s2 <- contextualUnifyElems' env (e, t) xs
+  s2 <- contextualUnifyElems' (apply s1 env) (e, apply s1 t) xs
   return $ compose s1 s2
 
 flipUnificationError :: CompilationError -> Infer b

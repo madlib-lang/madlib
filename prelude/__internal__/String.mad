@@ -35,6 +35,9 @@ export lines = split("\n")
 mapChars :: (String -> String) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
 
+slice :: Number -> Number -> String -> String
+export slice = (start, end, s) => #- s.slice(start, end) -#
+
 isEmpty :: String -> Boolean
 export isEmpty = (s) => #- !s -#
 
@@ -47,8 +50,14 @@ export nthChar = (n, s) => #-{
 firstChar :: String -> Maybe String
 export firstChar = nthChar(0)
 
+lastChar :: String -> Maybe String
+export lastChar = (s) => nthChar(len(s) - 1, s)
+
 drop :: Number -> String -> String
-export drop = (n, s) => #- s.slice(n) -#
+export drop = (n, s) => slice(n, len(s), s)
+
+dropLast :: Number -> String -> String
+export dropLast = (n, s) => slice(0, -n, s)
 
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the

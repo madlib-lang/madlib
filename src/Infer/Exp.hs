@@ -537,46 +537,52 @@ inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re)
     return (s, ps2, t, solved)
 
 
+
 -- INFER IF
 
 inferIf :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
   (s1, ps1, tcond  , econd  ) <- infer env cond
-  (s2, ps2, ttruthy, etruthy) <- infer env truthy
-  (s3, ps3, tfalsy , efalsy ) <- infer env falsy
+  (s2, ps2, ttruthy, etruthy) <- infer (apply s1 env) truthy
+  (s3, ps3, tfalsy , efalsy ) <- infer (apply (s1 `compose` s2) env) falsy
 
   s4                          <- contextualUnify (pushExpToBT env cond) cond tBool tcond
   s5                          <- contextualUnify (pushExpToBT env falsy) falsy ttruthy tfalsy
 
-  let t = apply s5 ttruthy
+  let s = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+  let t = apply s ttruthy
 
   return
-    ( s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+    ( s
     , ps1 ++ ps2 ++ ps3
     , t
     , Slv.Solved t area (Slv.If econd etruthy efalsy)
     )
 
 
+
 -- INFER WHERE
 
 inferWhere :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
-  (s, ps, t, e) <- infer env exp
-  tv            <- newTVar Star
-  pss           <- mapM (inferBranch env tv t) iss
+  (s, ps, t, e)          <- infer env exp
+  tv                     <- newTVar Star
+  (pss, issSubstitution) <- foldM
+    (\(res, currSubst) is -> do
+      r@(subst, _, _) <- inferBranch (apply currSubst env) tv t is
+      return (res <> [r], currSubst `compose` subst)
+    )
+    ([], s)
+    iss
 
   let ps'             = concat $ T.mid <$> pss
-
-  let issSubstitution = foldr1 compose $ s : (beg <$> pss)
-
   s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
-
-  let s''  = compose s' issSubstitution
+  
+  let s''  = s' `compose` issSubstitution
 
   let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . lst <$> pss
   let wher = Slv.Solved (apply s'' tv) area $ Slv.Where (updateType e (apply s'' t)) iss
-  return (s'', ps ++ ps', apply s'' $ apply s'' tv, wher)
+  return (s'', ps ++ ps', apply s'' tv, wher)
 
 
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
@@ -585,14 +591,14 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   s                  <- contextualUnify env exp t t'
 
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
-  s''                <- contextualUnify env exp tv t''
+  s''                <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
 
   return
     ( subst
     , ps ++ ps'
-    , Slv.Solved (apply subst (t' `fn` t'')) area
+    , Slv.Solved (apply subst (t' `fn` tv)) area
       $ Slv.Is (updatePattern (apply subst t') pat) (updateType e' (apply subst t''))
     )
 
@@ -634,7 +640,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
         Just n -> case M.lookup n (envVars env) of
           Just _  -> env
           --  ^ if a var is already present we don't override its type with a fresh var.
-          Nothing -> extendVars env (n, toScheme tv)
+          Nothing -> extendVars env (n, Forall [] $ [] :=> tv)
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp
