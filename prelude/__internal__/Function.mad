@@ -105,7 +105,11 @@ export not = (b) => !b
  * @since 0.5.0
  */
 flip :: (a -> b -> c) -> (b -> a -> c)
-export flip = (f) => ((b, a) => f(a, b)) 
+export flip = (f) => ((b, a) => f(a, b))
+
+
+any :: (a -> Boolean) -> List a -> Boolean
+export any = (predicate, xs) => #- xs.some(predicate) -#
 
 
 #-

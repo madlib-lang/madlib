@@ -1,6 +1,6 @@
 import { assertEquals, test } from "TestTools"
 
-import { splitPath, isRootPathOf, joinPath, takeExtension, takeFileName } from "./Posix"
+import { canonicalizePath, splitPath, isRootPathOf, joinPath, takeExtension, takeFileName, parentPath } from "./Posix"
 
 test("splitPath             - '/some/path/file.ext'", (_) => pipe(
   splitPath,
@@ -52,6 +52,11 @@ test("isRootPathOf should return false if the first path is not a parent of the 
   assertEquals($, false)
 )("/root/path"))
 
+test("isRootPathOf          - '/root/path/' '/root/path'", (_) => pipe(
+  isRootPathOf($, "/root/path"),
+  assertEquals($, true)
+)("/root/path/"))
+
 test("takeFileName          - '/path/filename'", (_) => pipe(
   takeFileName,
   assertEquals($, "filename")
@@ -81,3 +86,14 @@ test("takeExtension         - '/path/folder/file.ext'", (_) => pipe(
   takeExtension,
   assertEquals($, ".ext")
 )("/path/folder/file.ext"))
+
+test("parentPath            - '/root/path/child'", (_) => pipe(
+  parentPath,
+  assertEquals($, "/root/path")
+)("/root/path/child"))
+
+
+test("canonicalizePath      - '/root/path//child/'", (_) => pipe(
+  canonicalizePath,
+  assertEquals($, "/root/path/child")
+)("/root/path//child/"))
