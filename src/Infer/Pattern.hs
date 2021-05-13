@@ -82,7 +82,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
     let ps   = foldr (<>) [] $ T.beg . snd <$> M.toList li
     let ts   = T.lst . snd <$> M.toList li
 
-    return (ps, vars, TRecord (M.map T.lst li) (Just tv) True)
+    return (ps, vars, TRecord (M.map T.lst li) (Just tv))
 
    where
     inferFieldPattern :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)

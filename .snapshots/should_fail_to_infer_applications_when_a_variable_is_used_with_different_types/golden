@@ -6,14 +6,13 @@ Left
               [ ( "todos"
                 , TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                    (TVar (TV "h59" Star))
+                    (TVar (TV "g58" Star))
                 )
               ])
-           (Just (TVar (TV "k62" Star)))
-           True)
+           (Just (TVar (TV "j61" Star))))
         (TApp
            (TCon (TC "List" (Kfun Star Star)) "prelude")
-           (TVar (TV "f57" Star))))
+           (TVar (TV "e56" Star))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 902 40 12) (Loc 934 40 44)
@@ -5367,8 +5366,7 @@ Left
                                                (TCon (TC "Todo" Star) "path")
                                            )
                                          ])
-                                      Nothing
-                                      False))
+                                      Nothing))
                                 (TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -5396,8 +5394,7 @@ Left
                                                               (TCon (TC "Todo" Star) "path")
                                                           )
                                                         ])
-                                                     Nothing
-                                                     False))
+                                                     Nothing))
                                                (TRecord
                                                   (fromList
                                                      [ ( "input"
@@ -5411,8 +5408,7 @@ Left
                                                            (TCon (TC "Todo" Star) "path")
                                                        )
                                                      ])
-                                                  Nothing
-                                                  False)))
+                                                  Nothing)))
                                          (TApp
                                             (TApp
                                                (TCon
@@ -5431,8 +5427,7 @@ Left
                                                            (TCon (TC "Todo" Star) "path")
                                                        )
                                                      ])
-                                                  Nothing
-                                                  False))
+                                                  Nothing))
                                             (TRecord
                                                (fromList
                                                   [ ( "input" , TCon (TC "String" Star) "prelude" )
@@ -5443,8 +5438,7 @@ Left
                                                         (TCon (TC "Todo" Star) "path")
                                                     )
                                                   ])
-                                               Nothing
-                                               False))))))))))
+                                               Nothing))))))))))
            , BTExp
                (Canonical
                   (Area (Loc 589 25 1) (Loc 630 28 5))

@@ -19,9 +19,9 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "e4" Star)))
+                              (TVar (TV "d3" Star)))
                            (TApp
-                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "e4" Star))))
+                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
                         (Area (Loc 42 2 11) (Loc 46 2 15))
                         (Var "Just"))
                      (Solved
@@ -132,10 +132,10 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "o14" Star)))
+                               (TVar (TV "n13" Star)))
                             (TApp
                                (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                               (TVar (TV "o14" Star)))))
+                               (TVar (TV "n13" Star)))))
                   , Untyped
                       (Area (Loc 24 1 25) (Loc 31 1 32))
                       (Constructor
@@ -143,7 +143,7 @@ Right
                          []
                          (TApp
                             (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                            (TVar (TV "p15" Star))))
+                            (TVar (TV "o14" Star))))
                   ]
               , adtType =
                   TApp

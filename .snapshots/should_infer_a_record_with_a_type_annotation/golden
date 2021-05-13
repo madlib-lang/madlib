@@ -8,8 +8,7 @@ Right
                   [ ( "x" , TCon (TC "Number" Star) "prelude" )
                   , ( "y" , TCon (TC "Number" Star) "prelude" )
                   ])
-               Nothing
-               False)
+               Nothing)
             (Area (Loc 1 1 2) (Loc 47 1 48))
             (TypedExp
                (Solved
@@ -18,8 +17,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
-                     Nothing
-                     False)
+                     Nothing)
                   (Area (Loc 1 1 2) (Loc 15 1 16))
                   (Record
                      [ Solved
@@ -51,8 +49,7 @@ Right
                           [ ( "x" , TCon (TC "Number" Star) "prelude" )
                           , ( "y" , TCon (TC "Number" Star) "prelude" )
                           ])
-                       Nothing
-                       False)))
+                       Nothing)))
         ]
     , atypedecls = []
     , ainterfaces = []

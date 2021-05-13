@@ -109,7 +109,7 @@ updatePattern t (Can.Canonical area pat) = case pat of
 inferVar :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
-    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) True `fn` TGen 0)
+    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) `fn` TGen 0)
     (ps :=> t) <- instantiate s
     return (M.empty, ps, t, Slv.Solved t area $ Slv.Var n)
 
@@ -451,12 +451,12 @@ inferRecord env exp = do
     (s, extraFields, newBase) <- case base of
       Just tBase -> do
         case tBase of
-          TRecord fields base _ -> return (mempty, fields, base)
-          _                     -> do
-            s <- unify tBase (TRecord (M.fromList fieldTypes') base True)
+          TRecord fields base -> return (mempty, fields, base)
+          _                   -> do
+            s <- unify tBase (TRecord (M.fromList fieldTypes') base)
             return (s, mempty, base)
       Nothing -> return (mempty, mempty, base)
-    return (TRecord (M.fromList fieldTypes' <> extraFields) newBase True, s)
+    return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
 
   return (subst `compose` extraSubst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
 
@@ -471,9 +471,9 @@ inferRecordField env (Can.Canonical area field) = case field of
   Can.FieldSpread exp -> do
     (s, ps, t, e) <- infer env exp
     case t of
-      TRecord tfields _ _ -> return (s, ps, [("...", t)], Slv.Solved t area $ Slv.FieldSpread e)
+      TRecord tfields _ -> return (s, ps, [("...", t)], Slv.Solved t area $ Slv.FieldSpread e)
 
-      TVar _              -> do
+      TVar _            -> do
         return (s, ps, [("...", t)], Slv.Solved t area $ Slv.FieldSpread e)
 
       _ -> throwError $ CompilationError (WrongSpreadType $ show t)
@@ -486,8 +486,8 @@ shouldBeOpen env = foldrM
     Can.FieldSpread e -> do
       (_, _, t, _) <- infer env e
       case t of
-        TRecord _ _ _ -> return (r, Nothing)
-        TVar _        -> return (True, Just t)
+        TRecord _ _ -> return (r, Nothing)
+        TVar _      -> return (True, Just t)
   )
   (False, Nothing)
 

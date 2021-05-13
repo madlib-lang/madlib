@@ -1,5 +1,5 @@
 import String from "String"
-import { first, join, drop } from "List"
+import { first, last, join, drop } from "List"
 import { fromMaybe, Nothing, Just } from "Maybe"
 import { equals, identity, ifElse } from "Function"
 
@@ -56,3 +56,24 @@ export isRootPathOf = (root, path) => {
       : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
     : false
 }
+
+takeFileName :: FilePath -> FilePath
+export takeFileName = pipe(
+  splitPath,
+  last,
+  where
+    is Just part: String.lastChar(part) == Just("/")
+      ? ""
+      : part
+
+    is Nothing  : ""
+)
+
+takeExtension :: FilePath -> FilePath
+export takeExtension = pipe(
+  takeFileName,
+  String.split("."),
+  last,
+  map(ifElse(String.isEmpty, identity, mappend("."))),
+  fromMaybe("")
+)

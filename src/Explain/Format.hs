@@ -409,7 +409,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
   -- TODO: Add spreads display
-  TRecord fields spreads _ ->
+  TRecord fields base ->
     let (finalVars, finalHkVars, compiledFields) =
             foldl'
                 (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
@@ -419,7 +419,10 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
                 (vars, hkVars, [])
               $ M.toList fields
         compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
-        compiled        = "{ " <> intercalate ", " compiledFields' <> " }"
+        formattedBase   = case base of
+          Just b  -> "...base, "
+          Nothing -> ""
+        compiled        = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
     in  (finalVars, finalHkVars, compiled)
 
   TGen n -> (vars, hkVars, "TGen" <> show n)

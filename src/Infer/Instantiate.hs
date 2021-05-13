@@ -30,7 +30,7 @@ class Instantiate t where
 instance Instantiate Type where
   inst ts (TApp l r             ) = TApp (inst ts l) (inst ts r)
   inst ts (TGen n               ) = ts !! n
-  inst ts (TRecord fields base o) = TRecord (M.map (inst ts) fields) (inst ts <$> base) o
+  inst ts (TRecord fields base) = TRecord (M.map (inst ts) fields) (inst ts <$> base)
   inst _  t                       = t
 
 instance Instantiate a => Instantiate [a] where

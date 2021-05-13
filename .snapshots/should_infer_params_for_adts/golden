@@ -8,8 +8,7 @@ Right
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
                      (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                     Nothing
-                     False))
+                     Nothing))
                (TCon (TC "Result" Star) "path"))
             (Area (Loc 42 2 1) (Loc 53 2 12))
             (Assignment
@@ -20,16 +19,14 @@ Right
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
                            (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                           Nothing
-                           False))
+                           Nothing))
                      (TCon (TC "Result" Star) "path"))
                   (Area (Loc 46 2 5) (Loc 53 2 12))
                   (Var "Success")))
         , Solved
             (TRecord
                (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-               Nothing
-               True)
+               Nothing)
             (Area (Loc 54 2 13) (Loc 69 2 28))
             (Record
                [ Solved
@@ -49,8 +46,7 @@ Right
                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                   (TRecord
                      (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                     Nothing
-                     False))
+                     Nothing))
                (TCon (TC "Result" Star) "path"))
             (Area (Loc 70 3 1) (Loc 85 3 16))
             (App
@@ -58,13 +54,13 @@ Right
                   (TApp
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "g6" Star)))
-                     (TVar (TV "g6" Star)))
+                        (TVar (TV "f5" Star)))
+                     (TVar (TV "f5" Star)))
                   (Area (Loc 71 3 2) (Loc 81 3 12))
                   (Abs
-                     (Solved (TVar (TV "g6" Star)) (Area (Loc 72 3 3) (Loc 73 3 4)) "a")
+                     (Solved (TVar (TV "f5" Star)) (Area (Loc 72 3 3) (Loc 73 3 4)) "a")
                      [ Solved
-                         (TVar (TV "g6" Star)) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a")
+                         (TVar (TV "f5" Star)) (Area (Loc 79 3 10) (Loc 80 3 11)) (Var "a")
                      ]))
                (Solved
                   (TApp
@@ -72,8 +68,7 @@ Right
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
                            (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                           Nothing
-                           False))
+                           Nothing))
                      (TCon (TC "Result" Star) "path"))
                   (Area (Loc 83 3 14) (Loc 84 3 15))
                   (Var "r"))
@@ -105,8 +100,7 @@ Right
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TRecord
                                   (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                  Nothing
-                                  False))
+                                  Nothing))
                             (TCon (TC "Result" Star) "path")))
                   ]
               , adtType = TCon (TC "Result" Star) "path"

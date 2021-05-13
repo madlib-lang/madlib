@@ -68,7 +68,6 @@ resolveAbsoluteSrcPath pathUtils rootPath path = case getPathType path of
 getPathType :: FilePath -> ModulePath
 getPathType ('.' : _)              = FileSystemPath
 getPathType ('/' : _)              = FileSystemPath
-getPathType path | '/' `elem` path = FileSystemPath
 getPathType _                      = PackagePath
 
 

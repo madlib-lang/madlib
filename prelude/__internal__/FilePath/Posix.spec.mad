@@ -1,43 +1,43 @@
 import { assertEquals, test } from "TestTools"
 
-import { splitPath, isRootPathOf, joinPath } from "./Posix"
+import { splitPath, isRootPathOf, joinPath, takeExtension, takeFileName } from "./Posix"
 
-test("splitPath - '/some/path/file.ext'", (_) => pipe(
+test("splitPath             - '/some/path/file.ext'", (_) => pipe(
   splitPath,
   assertEquals($, ["/", "some/", "path/", "file.ext"])
 )("/some/path/file.ext"))
 
-test("splitPath - '/some/path/file'", (_) => pipe(
+test("splitPath             - '/some/path/file'", (_) => pipe(
   splitPath,
   assertEquals($, ["/", "some/", "path/", "file"])
 )("/some/path/file"))
 
-test("splitPath - '/root/path'", (_) => pipe(
+test("splitPath             - '/root/path'", (_) => pipe(
   splitPath,
   assertEquals($, ["/", "root/", "path"])
 )("/root/path"))
 
-test("splitPath - '/root///path'", (_) => pipe(
+test("splitPath             - '/root///path'", (_) => pipe(
   splitPath,
   assertEquals($, ["/", "root///", "path"])
 )("/root///path"))
 
-test("joinPath  - ['/', 'root/', 'path']", (_) => pipe(
+test("joinPath              - ['/', 'root/', 'path']", (_) => pipe(
   joinPath,
   assertEquals($, "/root/path")
 )(["/", "root/", "path"]))
 
-test("joinPath  - ['/', 'root', 'path', 'file.ext']", (_) => pipe(
+test("joinPath              - ['/', 'root', 'path', 'file.ext']", (_) => pipe(
   joinPath,
   assertEquals($, "/root/path/file.ext")
 )(["/", "root", "path", "file.ext"]))
 
-test("joinPath  - ['folder/', 'path']", (_) => pipe(
+test("joinPath              - ['folder/', 'path']", (_) => pipe(
   joinPath,
   assertEquals($, "folder/path")
 )(["folder/", "path"]))
 
-test("joinPath  - ['///', 'folder/', 'path']", (_) => pipe(
+test("joinPath              - ['///', 'folder/', 'path']", (_) => pipe(
   joinPath,
   assertEquals($, "///folder/path")
 )(["///", "folder/", "path"]))
@@ -51,3 +51,33 @@ test("isRootPathOf should return false if the first path is not a parent of the 
   isRootPathOf($, "/other-root/path/child"),
   assertEquals($, false)
 )("/root/path"))
+
+test("takeFileName          - '/path/filename'", (_) => pipe(
+  takeFileName,
+  assertEquals($, "filename")
+)("/path/filename"))
+
+test("takeFileName          - '/path/folder/'", (_) => pipe(
+  takeFileName,
+  assertEquals($, "")
+)("/path/folder/"))
+
+test("takeFileName          - '/path/folder/'", (_) => pipe(
+  takeFileName,
+  assertEquals($, "")
+)("/path/folder/"))
+
+test("takeFileName          - '/path/folder/.hidden'", (_) => pipe(
+  takeFileName,
+  assertEquals($, ".hidden")
+)("/path/folder/.hidden"))
+
+test("takeFileName          - '/path/folder/file.ext'", (_) => pipe(
+  takeFileName,
+  assertEquals($, "file.ext")
+)("/path/folder/file.ext"))
+
+test("takeExtension         - '/path/folder/file.ext'", (_) => pipe(
+  takeExtension,
+  assertEquals($, ".ext")
+)("/path/folder/file.ext"))
