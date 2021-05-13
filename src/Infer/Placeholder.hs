@@ -133,7 +133,7 @@ updateMethodPlaceholder env push s ph@(Slv.Solved t a (Slv.Placeholder (Slv.Meth
     ps  <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
     ps' <- getAllParentPreds env ps
     pushPlaceholders env
-                     (Slv.Solved (apply s t) a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved (apply s t') a' exp)))
+                     (Slv.Solved t a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved t' a' exp)))
                      ps'
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -157,7 +157,7 @@ updateClassPlaceholder env push s ph = case ph of
 
     if not var && not call
       then return ph
-      else return $ Slv.Solved (apply s t) a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+      else return $ Slv.Solved t a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
 
   _ -> return ph
 
@@ -192,7 +192,7 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
   Slv.App abs arg final -> do
     abs' <- updatePlaceholders env push s abs
     arg' <- updatePlaceholders env push s arg
-    return $ Slv.Solved (apply s t) a $ Slv.App abs' arg' final
+    return $ Slv.Solved t a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
     es' <- if push || length es == 1
@@ -203,59 +203,59 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
         l' <- updatePlaceholders env push s l
         return $ start <> [l']
     let param' = Slv.Solved paramType paramArea param
-    return $ Slv.Solved (apply s t) a $ Slv.Abs param' es'
+    return $ Slv.Solved t a $ Slv.Abs param' es'
 
   Slv.Where exp iss -> do
     exp' <- updatePlaceholders env push s exp
     iss' <- mapM (updateIs s) iss
-    return $ Slv.Solved (apply s t) a $ Slv.Where exp' iss'
+    return $ Slv.Solved t a $ Slv.Where exp' iss'
 
   Slv.Assignment n exp -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved (apply s t) a $ Slv.Assignment n exp'
+    return $ Slv.Solved t a $ Slv.Assignment n exp'
 
   Slv.ListConstructor li -> do
     li' <- mapM (updateListItem s) li
-    return $ Slv.Solved (apply s t) a $ Slv.ListConstructor li'
+    return $ Slv.Solved t a $ Slv.ListConstructor li'
 
   Slv.TypedExp exp typing -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved (apply s t) a $ Slv.TypedExp exp' typing
+    return $ Slv.Solved t a $ Slv.TypedExp exp' typing
 
   Slv.Export exp -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved (apply s t) a $ Slv.Export exp'
+    return $ Slv.Solved t a $ Slv.Export exp'
 
   Slv.If econd eif eelse -> do
     econd' <- updatePlaceholders env push s econd
     eif'   <- updatePlaceholders env push s eif
     eelse' <- updatePlaceholders env push s eelse
-    return $ Slv.Solved (apply s t) a $ Slv.If econd' eif' eelse'
+    return $ Slv.Solved t a $ Slv.If econd' eif' eelse'
 
   Slv.TupleConstructor es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    return $ Slv.Solved (apply s t) a $ Slv.TupleConstructor es'
+    return $ Slv.Solved t a $ Slv.TupleConstructor es'
 
   Slv.TemplateString es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    return $ Slv.Solved (apply s t) a $ Slv.TemplateString es'
+    return $ Slv.Solved t a $ Slv.TemplateString es'
 
   Slv.Access rec field -> do
     rec'   <- updatePlaceholders env push s rec
     field' <- updatePlaceholders env push s field
-    return $ Slv.Solved (apply s t) a $ Slv.Access rec' field'
+    return $ Slv.Solved t a $ Slv.Access rec' field'
 
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields
-    return $ Slv.Solved (apply s t) a $ Slv.Record fields'
+    return $ Slv.Solved t a $ Slv.Record fields'
 
-  _ -> return $ Slv.Solved (apply s t) a e
+  _ -> return $ Slv.Solved t a e
  where
   updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
   updateIs s (Slv.Solved t a is) = case is of
     Slv.Is pat exp -> do
       exp' <- updatePlaceholders env push s exp
-      return $ Slv.Solved (apply s t) a $ Slv.Is pat exp'
+      return $ Slv.Solved t a $ Slv.Is pat exp'
 
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
   updateListItem s (Slv.Solved t area li) = case li of
@@ -265,11 +265,11 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
         Slv.Solved _ area (Slv.App (Slv.Solved tAbs _ (Slv.Var "__tmp_jsx_children__")) elem _) -> case apply s tAbs of
           TApp (TApp (TCon (TC "(->)" _) _) (TCon (TC "String" Star) "prelude")) _ ->
             return $ Slv.Solved t area $ Slv.ListItem
-              (Slv.Solved (apply s t) area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
+              (Slv.Solved t area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
 
           TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") (TCon (TC "String" Star) "prelude"))) _
             -> return $ Slv.Solved t area $ Slv.ListSpread
-              (Slv.Solved (apply s t) area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
+              (Slv.Solved t area (Slv.App (Slv.Solved tAbs area (Slv.Var "text")) elem True))
 
           TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") tSpread)) tElem -> do
             catchError
@@ -285,16 +285,16 @@ updatePlaceholders env push s fullExp@(Slv.Solved t a e) = case e of
               (\(CompilationError err _) ->
                 throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
               )
-            return $ Slv.Solved (apply s t) area $ Slv.ListItem elem
+            return $ Slv.Solved t area $ Slv.ListItem elem
 
-        _ -> Slv.Solved (apply s t) area . Slv.ListItem <$> updatePlaceholders env push s e
+        _ -> Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env push s e
 
-    Slv.ListSpread e -> Slv.Solved (apply s t) area . Slv.ListSpread <$> updatePlaceholders env push s e
+    Slv.ListSpread e -> Slv.Solved t area . Slv.ListSpread <$> updatePlaceholders env push s e
 
   updateField :: Substitution -> Slv.Field -> Infer Slv.Field
   updateField s (Slv.Solved t area field) = case field of
-    Slv.Field       (n, e) -> Slv.Solved (apply s t) area . Slv.Field . (n, ) <$> updatePlaceholders env push s e
-    Slv.FieldSpread e      -> Slv.Solved (apply s t) area . Slv.FieldSpread <$> updatePlaceholders env push s e
+    Slv.Field       (n, e) -> Slv.Solved t area . Slv.Field . (n, ) <$> updatePlaceholders env push s e
+    Slv.FieldSpread e      -> Slv.Solved t area . Slv.FieldSpread <$> updatePlaceholders env push s e
 
 
 

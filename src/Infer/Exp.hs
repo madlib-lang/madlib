@@ -568,7 +568,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let ps'             = concat $ T.mid <$> pss
 
-  let issSubstitution = foldr1 compose $ s : (beg <$> pss)
+  let issSubstitution = foldr1 compose $ (beg <$> pss) <> [s]
 
   s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
 
