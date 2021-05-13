@@ -1,5 +1,5 @@
 import String from "String"
-import { first, last, join, drop } from "List"
+import { first, last, join, drop, dropLast } from "List"
 import { fromMaybe, Nothing, Just } from "Maybe"
 import { equals, identity, ifElse } from "Function"
 
@@ -8,13 +8,36 @@ import { equals, identity, ifElse } from "Function"
 export alias FilePath = String
 
 
+// canonicalizeSegment :: FilePath -> FilePath
+// canonicalizeSegment = (segment) => {
+//   lastC 
+// }
 
+canonicalizePath :: FilePath -> FilePath
+export canonicalizePath = pipe(
+  splitPath,
+  map(
+    ifElse(
+      pipe(String.lastChar, equals(Just("/"))),
+      String.replace("([^/]*)/*", "$1/"),
+      identity
+    )
+  ),
+  joinPath
+)
 
 dropPathSegments :: Number -> FilePath -> FilePath
 export dropPathSegments = (howMany) => pipe(
   splitPath,
   drop(howMany),
-  join("")
+  joinPath
+)
+
+parentPath :: FilePath -> FilePath
+export parentPath = pipe(
+  splitPath,
+  dropLast(1),
+  joinPath
 )
 
 dropTrailingPathSeparator :: FilePath -> FilePath
