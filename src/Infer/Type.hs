@@ -22,7 +22,7 @@ data Type
   | TCon TCon FilePath -- Constructor type - FilePath of where that type is defined
   | TGen Int
   | TApp Type Type              -- Arrow type
-  | TRecord (M.Map Id Type) (Maybe Type) Bool -- Record type: Bool means open or closed
+  | TRecord (M.Map Id Type) (Maybe Type) -- Maybe Type is the extended record type, most likely a type variable
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   deriving (Show, Eq, Ord)
 
@@ -186,7 +186,7 @@ collectVars :: Type -> [TVar]
 collectVars t = case t of
   TVar tv           -> [tv]
   TApp l r          -> collectVars l `union` collectVars r
-  TRecord fs base _ -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
+  TRecord fs base   -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
   _                 -> []
 
 
@@ -198,7 +198,7 @@ getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
   TCon _ _      -> t
   TApp l r      -> getConstructorCon l
-  TRecord _ _ _ -> t
+  TRecord _ _   -> t
   _             -> t
 
 closeRecords :: Type -> Type
@@ -207,12 +207,12 @@ closeRecords t = case t of
   TCon _ _              -> t
   TApp l r              -> TApp (closeRecords l) (closeRecords r)
   TGen _                -> t
-  TRecord fields base _ -> TRecord (M.map closeRecords fields) base False
+  TRecord fields base   -> TRecord (M.map closeRecords fields) base
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1 True, TRecord fields2 base2 open2) ->
-    TRecord (M.unionWith mergeRecords fields1 fields2) base1 True
+  (TRecord fields1 base1, TRecord fields2 base2) ->
+    TRecord (M.unionWith mergeRecords fields1 fields2) base1
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 

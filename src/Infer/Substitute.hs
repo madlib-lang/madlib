@@ -38,22 +38,21 @@ instance Substitutable Type where
   apply _ tc@(TCon a fp   ) = tc
   apply s t@( TVar a      ) = M.findWithDefault t a s
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
-  apply s rec@(TRecord fields base open) =
+  apply s rec@(TRecord fields base) =
     let appliedFields                        = apply s <$> fields
         appliedBase                          = apply s <$> base
         (allFields', baseResolved, nextBase) = case appliedBase of
-          Just (TRecord fields' base' _) -> (fields' <> appliedFields, True, base')
-          _                              -> (appliedFields, False, appliedBase)
+          Just (TRecord fields' base') -> (fields' <> appliedFields, True, base')
+          _                            -> (appliedFields, False, appliedBase)
 
-        applied = if baseResolved then TRecord allFields' nextBase open else TRecord allFields' appliedBase open
+        applied = if baseResolved then TRecord allFields' nextBase else TRecord allFields' appliedBase
     in  if rec == applied then applied else apply s applied
   apply s t = t
 
   ftv TCon{}               = []
   ftv (TVar a            ) = [a]
   ftv (t1 `TApp` t2      ) = ftv t1 `union` ftv t2
-  ftv (TRecord fields _ _) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
-  -- ftv (TRecord fields spreads _ ) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields ++ S.toList spreads)
+  ftv (TRecord fields _  ) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
   ftv t                    = []
 
 instance Substitutable Scheme where
@@ -73,12 +72,12 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 base1 open1, TRecord fields2 base2 open2) ->
+    (TRecord fields1 base1, TRecord fields2 base2) ->
       let base = case (base1, base2) of
             (Just tBase1, _          ) -> Just tBase1
             (_          , Just tBase2) -> Just tBase2
             _                          -> Nothing
-      in  TRecord (M.unionWith mergeTypes fields1 fields2) base (open1 || open2)
+      in  TRecord (M.unionWith mergeTypes fields1 fields2) base
 
     (TApp tl tr, TApp tl' tr') ->
       let tl'' = mergeTypes tl tl'
@@ -96,12 +95,12 @@ buildVarSubsts t = case t of
   TVar (TV n k)     -> M.singleton (TV n Star) t
   TCon _ _          -> mempty
   TApp l r          -> M.union (buildVarSubsts l) (buildVarSubsts r)
-  TRecord ts base _ -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
+  TRecord ts base   -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
 
 removeRecordTypes :: Substitution -> Substitution
 removeRecordTypes = M.filter notRecord
  where
   notRecord :: Type -> Bool
   notRecord t = case t of
-    TRecord _ _ _ -> False
+    TRecord _ _   -> False
     _             -> True

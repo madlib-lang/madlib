@@ -38,7 +38,7 @@ spec = do
     it "should return a Right AST if the ast exists" $ do
       let source      = unlines ["fn :: Number -> Number -> Number", "fn = (a, b) => (fn2(a, b) + a)"]
 
-          (Right ast) = buildAST "fixtures/source.mad" source
+          (Right ast) = buildAST "./fixtures/source.mad" source
 
           expected    = Right ast
           files       = M.fromList [("./fixtures/source.mad", source)]
@@ -47,7 +47,7 @@ spec = do
 
           pathUtils   = defaultPathUtils { readFile = rf }
 
-      r <- buildASTTable' mempty pathUtils "" Nothing [] "fixtures/source.mad"
+      r <- buildASTTable' mempty pathUtils "" Nothing [] "./fixtures/source.mad"
       let actual = r >>= flip findAST "./fixtures/source.mad"
       actual `shouldBe` expected
 
@@ -62,7 +62,7 @@ spec = do
           rf          = makeReadFile files
           pathUtils   = defaultPathUtils { readFile = rf }
 
-      r <- buildASTTable' mempty pathUtils "" Nothing [] "fixtures/source.mad"
+      r <- buildASTTable' mempty pathUtils "" Nothing [] "./fixtures/source.mad"
       let actual = r >>= flip findAST "./fixtures/source-not-there.mad"
       actual `shouldBe` expected
 

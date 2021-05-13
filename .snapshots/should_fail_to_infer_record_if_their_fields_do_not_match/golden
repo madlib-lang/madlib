@@ -3,15 +3,13 @@ Left
      (UnificationError
         (TRecord
            (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-           Nothing
-           True)
+           Nothing)
         (TRecord
            (fromList
               [ ( "x" , TCon (TC "Number" Star) "prelude" )
               , ( "y" , TCon (TC "Number" Star) "prelude" )
               ])
-           Nothing
-           True))
+           Nothing))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 0 1 1) (Loc 34 1 35)

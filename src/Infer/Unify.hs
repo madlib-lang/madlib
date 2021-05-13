@@ -21,7 +21,7 @@ import qualified AST.Canonical                 as Can
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t@(TRecord fields (Just base) _) = return $ M.singleton tv t
+varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv t
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -36,10 +36,10 @@ instance Unify Type where
     s2 <- unify (apply s1 r) (apply s1 r')
     return $ compose s1 s2
 
-  unify l@(TRecord fields base open) r@(TRecord fields' base' open') = case (base, base') of
+  unify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
     (Just tBase, Just tBase') -> do
-      s1 <- unify tBase (TRecord fields' base True)
-      s2 <- unify tBase' (TRecord fields base' True)
+      s1 <- unify tBase (TRecord fields' base)
+      s2 <- unify tBase' (TRecord fields base')
 
       let fieldsToCheck = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -50,8 +50,8 @@ instance Unify Type where
       return $ s3 `compose` s1 `compose` s2
 
     (Just tBase, Nothing) -> do
-      s1 <- unify tBase (TRecord fields Nothing True)
-      s2 <- unify tBase (TRecord fields' Nothing True)
+      s1 <- unify tBase (TRecord fields Nothing)
+      s2 <- unify tBase (TRecord fields' Nothing)
 
       unless (null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -62,8 +62,8 @@ instance Unify Type where
       return $ s3 `compose` s1 `compose` s2
 
     (Nothing, Just tBase') -> do
-      s1 <- unify tBase' (TRecord fields Nothing True)
-      s2 <- unify tBase' (TRecord fields' Nothing True)
+      s1 <- unify tBase' (TRecord fields Nothing)
+      s2 <- unify tBase' (TRecord fields' Nothing)
 
       unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 

@@ -8,8 +8,7 @@ Right
                   [ ( "x" , TCon (TC "Number" Star) "prelude" )
                   , ( "y" , TCon (TC "Number" Star) "prelude" )
                   ])
-               Nothing
-               True)
+               Nothing)
             (Area (Loc 0 1 1) (Loc 26 1 27))
             (Assignment
                "a"
@@ -19,8 +18,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
-                     Nothing
-                     True)
+                     Nothing)
                   (Area (Loc 4 1 5) (Loc 26 1 27))
                   (Record
                      [ Solved
@@ -54,8 +52,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
-                     Nothing
-                     False)
+                     Nothing)
                   (Area (Loc 27 2 1) (Loc 28 2 2))
                   (Var "a"))
                (Solved
@@ -63,10 +60,9 @@ Right
                      (TApp
                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                         (TRecord
-                           (fromList [ ( "x" , TVar (TV "f5" Star) ) ])
-                           (Just (TVar (TV "g6" Star)))
-                           True))
-                     (TVar (TV "f5" Star)))
+                           (fromList [ ( "x" , TVar (TV "e4" Star) ) ])
+                           (Just (TVar (TV "f5" Star)))))
+                     (TVar (TV "e4" Star)))
                   (Area (Loc 29 2 3) (Loc 30 2 4))
                   (Var ".x")))
         ]
