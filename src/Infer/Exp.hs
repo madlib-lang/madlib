@@ -568,7 +568,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let ps'             = concat $ T.mid <$> pss
 
-  let issSubstitution = foldr1 compose $ (beg <$> pss) <> [s]
+  let issSubstitution = foldr1 compose $ s : (beg <$> pss)
 
   s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
 
@@ -618,12 +618,12 @@ type Ambiguity = (TVar, [Pred])
 ambiguities :: [TVar] -> [Pred] -> [Ambiguity]
 ambiguities vs ps = [ (v, filter (elem v . ftv) ps) | v <- ftv ps \\ vs ]
 
-split :: Env -> [TVar] -> [TVar] -> [Pred] -> Infer ([Pred], [Pred])
-split env fs gs ps = do
+split :: Bool -> Env -> [TVar] -> [TVar] -> [Pred] -> Infer ([Pred], [Pred])
+split mustCheck env fs gs ps = do
   ps' <- reduce env ps
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
   let as       = ambiguities (fs ++ gs) rs
-  if not (null as) then throwError $ CompilationError (AmbiguousType (head as)) NoContext else return (ds, rs)
+  if mustCheck && not (null as) then throwError $ CompilationError (AmbiguousType (head as)) NoContext else return (ds, rs)
 
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
@@ -646,7 +646,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       vs  = ftv t'
       gs  = vs \\ fs
   (ds, rs) <- catchError
-    (split env' fs vs ps')
+    (split False env' fs vs ps')
     (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
 
   CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ CompilationError
@@ -679,7 +679,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
       sc'  = quantify gs (qs' :=> t''')
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' ps)
   (ds, rs) <- catchError
-    (split env' fs gs ps')
+    (split True env' fs gs ps')
     (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
 
   qs'' <- getAllParentPreds env qs'

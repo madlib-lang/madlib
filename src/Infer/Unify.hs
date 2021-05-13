@@ -39,11 +39,24 @@ instance Unify Type where
   unify l@(TRecord fields base open) r@(TRecord fields' base' open') = case (base, base') of
     (Just tBase, Just tBase') -> do
       s1 <- unify tBase tBase'
-      s2 <- unify tBase (TRecord fields base True)
+      s2 <- unify tBase (TRecord fields Nothing True)
       s3 <- unify tBase (TRecord fields' base True)
-      s4 <- unify tBase' (TRecord fields base' True)
-      s5 <- unify tBase' (TRecord fields' base' True)
-      return $ s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
+      s4 <- unify tBase' (TRecord fields Nothing True)
+      s5 <- unify tBase' (TRecord fields' Nothing True)
+
+      -- let s1 = mempty
+      let s2 = mempty
+      -- let s4 = mempty
+      let s5 = mempty
+
+
+      let fieldsToCheck = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+          z             = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+
+      s6 <- unifyVars M.empty z
+
+      return $ s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5 `compose` s6
 
     (Just tBase, Nothing) -> do
       s1 <- unify tBase (TRecord fields Nothing True)
@@ -52,15 +65,19 @@ instance Unify Type where
       let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields') fields
           z             = zip (M.elems fields) (M.elems fieldsToCheck)
       s3 <- unifyVars M.empty z
+
+      let s1 = mempty
       return $ s1 `compose` s2 `compose` s3
 
     (Nothing, Just tBase') -> do
-      s1 <- unify tBase' (TRecord fields base' True)
-      s2 <- unify tBase' (TRecord fields' base' True)
+      s1 <- unify tBase' (TRecord fields Nothing True)
+      s2 <- unify tBase' (TRecord fields' Nothing True)
       unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
       let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields) fields'
           z             = zip (M.elems fields') (M.elems fieldsToCheck)
       s3 <- unifyVars M.empty z
+      
+      let s2 = mempty
       return $ s1 `compose` s2 `compose` s3
 
     _ -> do
@@ -78,8 +95,9 @@ instance Unify Type where
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
-  unify (TCon a fpa) (TCon b fpb)
+  unify t1@(TCon a fpa) t2@(TCon b fpb)
     | a == b && fpa == fpb = return M.empty
+    | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
   unify t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
