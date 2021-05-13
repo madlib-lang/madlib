@@ -634,17 +634,19 @@ split mustCheck env fs gs ps = do
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
-  tv <- newTVar Star
-
-  let env' = case Can.getExpName exp of
-        Just n -> case M.lookup n (envVars env) of
-          Just _  -> env
-          --  ^ if a var is already present we don't override its type with a fresh var.
-          Nothing -> extendVars env (n, Forall [] $ [] :=> tv)
-        Nothing -> env
+  (env', tv) <- case Can.getExpName exp of
+    Just n -> case M.lookup n (envVars env) of
+      Just (Forall _ (_ :=> t))  -> return (env, t)
+      --  ^ if a var is already present we don't override its type with a fresh var.
+      Nothing -> do
+        tv <- newTVar Star
+        return (extendVars env (n, Forall [] $ [] :=> tv), tv)
+    Nothing -> do
+      tv <- newTVar Star
+      return (env, tv)
 
   (s, ps, t, e) <- infer env' exp
-  s'            <- contextualUnify env exp t tv
+  s'            <- contextualUnify env exp (apply s tv) t
   let s'' = s `compose` s'
       ps' = apply s'' ps
       t'  = if isLet then apply s'' tv else closeRecords $ apply s'' tv
@@ -660,9 +662,9 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (Context (envCurrentPath env) area (envBacktrace env))
 
   case Can.getExpName exp of
-    Just n  -> return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), e)
+    Just n  -> return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), updateType e t')
 
-    Nothing -> return (s'', (ds, ps'), env', e)
+    Nothing -> return (s'', (ds, ps'), env', updateType e t')
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
