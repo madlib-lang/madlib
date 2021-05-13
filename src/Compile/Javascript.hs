@@ -490,29 +490,7 @@ instance Compilable Exp where
                 <> " } = "
                 <> v
                 <> ";\n"
-             where
-              buildFieldVar :: String -> Pattern -> String
-              buildFieldVar name (Optimized _ _ pat) = case pat of
-                PSpread (Optimized _ _ (PVar n)) -> "..." <> n
-                PVar    n                        -> if null name then n else name <> ": " <> n
-                PRecord fields ->
-                  name
-                    <> ": { "
-                    <> intercalate
-                         ", "
-                         (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar
-                                                                                                       fields
-                         )
-                    <> " }"
-                PCtor _ args -> if null name
-                  then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
-                  else
-                    name
-                    <> ": "
-                    <> "{ __args: ["
-                    <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
-                    <> "] }"
-                _ -> ""
+
             PList  items -> buildTupleOrListVars v items
             PTuple items -> buildTupleOrListVars v items
 
@@ -520,6 +498,29 @@ instance Compilable Exp where
             PVar n       -> "    let " <> n <> " = " <> v <> ";\n"
 
             _            -> ""
+
+          buildFieldVar :: String -> Pattern -> String
+          buildFieldVar name (Optimized _ _ pat) = case pat of
+            PSpread (Optimized _ _ (PVar n)) -> "..." <> n
+            PVar    n                        -> if null name then n else name <> ": " <> n
+            PRecord fields ->
+              name
+                <> ": { "
+                <> intercalate
+                     ", "
+                     (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar
+                                                                                                   fields
+                     )
+                <> " }"
+            PCtor _ args -> if null name
+              then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
+              else
+                name
+                <> ": "
+                <> "{ __args: ["
+                <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
+                <> "] }"
+            _ -> ""
 
           buildTupleOrListVars :: String -> [Pattern] -> String
           buildTupleOrListVars scope items =
@@ -533,6 +534,7 @@ instance Compilable Exp where
               PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
               PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
               PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+              PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
               _            -> ""
 
           compileRecord :: String -> Name -> Pattern -> String

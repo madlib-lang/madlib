@@ -39,8 +39,8 @@ instance Unify Type where
   unify l@(TRecord fields base open) r@(TRecord fields' base' open') = case (base, base') of
     (Just tBase, Just tBase') -> do
       s1 <- unify tBase tBase'
-      s2 <- unify tBase (TRecord fields' base' True)
-      s3 <- unify tBase' (TRecord fields base True)
+      s2 <- unify tBase (TRecord fields' base True)
+      s3 <- unify tBase' (TRecord fields base' True)
 
       let fieldsToCheck = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -53,7 +53,7 @@ instance Unify Type where
       return $ s4 `compose` s1 `compose` s2 `compose` s3
 
     (Just tBase, Nothing) -> do
-      s1 <- unify tBase (TRecord fields base True)
+      s1 <- unify tBase (TRecord fields Nothing True)
       s2 <- unify tBase (TRecord fields' Nothing True)
 
       unless (null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
@@ -66,7 +66,7 @@ instance Unify Type where
 
     (Nothing, Just tBase') -> do
       s1 <- unify tBase' (TRecord fields Nothing True)
-      s2 <- unify tBase' (TRecord fields' base' True)
+      s2 <- unify tBase' (TRecord fields' Nothing True)
 
       unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
