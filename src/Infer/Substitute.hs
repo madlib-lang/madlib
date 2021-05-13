@@ -80,6 +80,11 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
             _                          -> Nothing
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base (open1 || open2)
 
+    (TApp tl tr, TApp tl' tr') ->
+      let tl'' = mergeTypes tl tl'
+          tr'' = mergeTypes tr tr'
+      in  TApp tl'' tr''
+
     (t, _) -> t
 
 merge :: Substitution -> Substitution -> Infer Substitution

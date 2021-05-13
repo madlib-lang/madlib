@@ -568,7 +568,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let ps'             = concat $ T.mid <$> pss
 
-  let issSubstitution = foldr1 compose $ (beg <$> pss) <> [s]
+  let issSubstitution = foldr1 compose $ s : (beg <$> pss)
 
   s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
 
@@ -576,7 +576,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . lst <$> pss
   let wher = Slv.Solved (apply s'' tv) area $ Slv.Where (updateType e (apply s'' t)) iss
-  return (s'', ps ++ ps', apply s'' tv, wher)
+  return (s'', ps ++ ps', apply s'' $ apply s'' tv, wher)
 
 
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
