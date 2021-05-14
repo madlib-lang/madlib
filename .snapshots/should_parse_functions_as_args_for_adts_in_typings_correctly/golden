@@ -127,12 +127,18 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "j9" Star)))
+                              (TApp
+                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                 (TVar (TV "i8" Star))))
                            (TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "k10" Star)))
-                              (TVar (TV "l11" Star))))
+                                 (TApp
+                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                    (TVar (TV "i8" Star))))
+                              (TApp
+                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                 (TVar (TV "i8" Star)))))
                         (Area (Loc 113 4 8) (Loc 159 4 54))
                         (Assignment
                            "concat"
@@ -238,15 +244,25 @@ Right
                         (TApp
                            (TApp
                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "q16" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "r17" Star)))
                               (TApp
                                  (TApp
                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "s18" Star)))
+                                    (TVar (TV "r17" Star)))
+                                 (TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TVar (TV "p15" Star)))
+                                    (TVar (TV "r17" Star)))))
+                           (TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "t19" Star)))
+                              (TApp
+                                 (TApp
+                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                    (TApp
+                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                       (TVar (TV "p15" Star))))
                                  (TVar (TV "t19" Star)))))
                         (Area (Loc 211 6 8) (Loc 269 6 66))
                         (Assignment

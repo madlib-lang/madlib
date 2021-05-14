@@ -16,6 +16,7 @@ import           Data.List
 import           Error.Context
 import           Error.Error
 import           Control.Monad.Except
+import           Data.Foldable
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Pred], Vars, [Type])
@@ -56,23 +57,25 @@ inferPattern env (Can.Canonical area pat) = case pat of
     return (ps, vars, t)
 
   Can.PList pats -> do
-    li <- mapM (inferPListItem env) pats
     tv <- newTVar Star
-    let ts   = if null li then [tv] else T.lst <$> li
-    let ps   = foldr (<>) [] (T.beg <$> li)
-    let vars = foldr (<>) M.empty (T.mid <$> li)
 
-    s <- unifyElems (mergeVars env vars) ts
+    (ps, vars, t) <- foldlM
+      (\(ps, vars, t) pat -> do
+        (ps', vars', t') <- inferPListItem env tv pat
+        s <- unify t t'
+        return (ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
+      )
+      ([], mempty, tv)
+      pats
 
-    return (ps, M.map (apply s) vars, TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s (head ts)))
+    return (ps, vars, TApp (TCon (TC "List" (Kfun Star Star)) "prelude") t)
 
    where
-    inferPListItem :: Env -> Can.Pattern -> Infer ([Pred], Vars, Type)
-    inferPListItem env pat@(Can.Canonical _ p) = case p of
+    inferPListItem :: Env -> Type -> Can.Pattern -> Infer ([Pred], Vars, Type)
+    inferPListItem env listType pat@(Can.Canonical _ p) = case p of
       Can.PSpread (Can.Canonical _ (Can.PVar i)) -> do
-        tv <- newTVar Star
-        let t' = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
-        return ([], M.singleton i (toScheme t'), tv)
+        let t' = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") listType
+        return ([], M.singleton i (toScheme t'), listType)
       _ -> inferPattern env pat
 
   Can.PRecord pats -> do

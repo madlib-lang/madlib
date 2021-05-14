@@ -2591,12 +2591,22 @@ Right
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "n221" Star)))
+                                     (TApp
+                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                        (TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "Wish" (Kfun Star (Kfun Star Star)))
+                                                 "./ModuleA")
+                                              (TVar (TV "p223" Star)))
+                                           (TVar (TV "m220" Star)))))
                                   (TApp
                                      (TApp
                                         (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                         (TVar (TV "p223" Star)))
-                                     (TVar (TV "r225" Star))))
+                                     (TApp
+                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                        (TVar (TV "m220" Star)))))
                                (Area (Loc 1669 93 8) (Loc 2036 106 1))
                                (Assignment
                                   "parallel"

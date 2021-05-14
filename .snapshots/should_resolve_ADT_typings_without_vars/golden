@@ -56,8 +56,8 @@ Right
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "a0" Star)))
-                                  (TVar (TV "a0" Star)))
+                                     (TCon (TC "Something" Star) "./ModuleA"))
+                                  (TCon (TC "Something" Star) "./ModuleA"))
                                (Area (Loc 66 3 8) (Loc 81 3 23))
                                (Assignment
                                   "fn"
