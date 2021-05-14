@@ -76,20 +76,20 @@ Monad['Either']['of'] = () => (x => Right(x));
 let inc = (a => a + 1);
 Functor.List.map()(inc)(([1, 2, 3]));
 Monad.Maybe.chain()((x => Just(x + 1)))(Just(3));
-let doIt = (Functor_s122) => {
-  global.Functor_s122 = Functor_s122
+let doIt = (Functor_r121) => {
+  global.Functor_r121 = Functor_r121
 
   return doIt__ND__()
 };
-let doIt__ND__ = __once__(() => (x => Functor_s122.map()((k => k + 1))(x)));
+let doIt__ND__ = __once__(() => (x => Functor_r121.map()((k => k + 1))(x)));
 doIt(Functor.Maybe)(Just(3));
 let p = 1;
-let fn = (Functor_j139) => {
-  global.Functor_j139 = Functor_j139
+let fn = (Functor_i138) => {
+  global.Functor_i138 = Functor_i138
 
   return fn__ND__()
 };
-let fn__ND__ = __once__(() => Functor_j139.map()(inc));
+let fn__ND__ = __once__(() => Functor_i138.map()(inc));
 fn(Functor.Maybe)(Just(3));
 fn(Functor.List)(([4, 5, 6]));
 let hideCall = (x => ((__x__) => {

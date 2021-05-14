@@ -42,6 +42,11 @@ test("joinPath              - ['///', 'folder/', 'path']", (_) => pipe(
   assertEquals($, "///folder/path")
 )(["///", "folder/", "path"]))
 
+test("joinPath              - ['', '/']", (_) => pipe(
+  joinPath,
+  assertEquals($, "/")
+)(["", "/"]))
+
 test("isRootPathOf should return true if the first path is a parent of the second path", (_) => pipe(
   isRootPathOf($, "/root/path/child"),
   assertEquals($, true)

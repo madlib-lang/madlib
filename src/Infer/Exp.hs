@@ -280,7 +280,9 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer env' exp
   s2                <- contextualUnify env' exp currentType t1
-  return (s2 `compose` s1, currentPreds ++ ps1, apply s2 t1, applyAssignmentSolve e name e1 t1)
+  let s = s2 `compose` s1
+  let t2 = apply s t1
+  return (s, currentPreds ++ ps1, t2, applyAssignmentSolve e name e1 t2)
 
 
 
@@ -649,7 +651,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   s'            <- contextualUnify env exp (apply s tv) t
   let s'' = s `compose` s'
       ps' = apply s'' ps
-      t'  = if isLet then apply s'' tv else closeRecords $ apply s'' tv
+      t'  = apply s'' tv
       fs  = ftv (apply s'' env)
       vs  = ftv t'
       gs  = vs \\ fs
@@ -661,8 +663,12 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     (AmbiguousType (TV "-" Star, rs ++ ds))
     (Context (envCurrentPath env) area (envBacktrace env))
 
+
+  let fs' = ftv $ ps' :=> t'
+      sc = quantify fs $ ps' :=> t'
+
   case Can.getExpName exp of
-    Just n  -> return (s'', (ds, ps'), extendVars env' (n, Forall [] $ ps' :=> t'), updateType e t')
+    Just n  -> return (s'', (ds, ps'), extendVars env' (n, sc), updateType e t')
 
     Nothing -> return (s'', (ds, ps'), env', updateType e t')
 
@@ -681,7 +687,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
 
   let qs'  = apply s' qs
       t''  = apply s' t
-      t''' = closeRecords $ mergeRecords t'' (apply s' t')
+      t''' = mergeRecords t'' (apply s' t')
       fs   = ftv (apply s' env)
       gs   = ftv t''' \\ fs
       sc'  = quantify gs (qs' :=> t''')

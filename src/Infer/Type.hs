@@ -201,14 +201,6 @@ getConstructorCon t = case t of
   TRecord _ _   -> t
   _             -> t
 
-closeRecords :: Type -> Type
-closeRecords t = case t of
-  TVar _                -> t
-  TCon _ _              -> t
-  TApp l r              -> TApp (closeRecords l) (closeRecords r)
-  TGen _                -> t
-  TRecord fields base   -> TRecord (M.map closeRecords fields) base
-
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
   (TRecord fields1 base1, TRecord fields2 base2) ->
