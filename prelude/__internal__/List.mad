@@ -101,16 +101,15 @@ export intercalate = (a, xs) => where(xs)
   is [one, ...rest]: [one, a, ...intercalate(a, rest)]
 
 
-
-intercalateWithIndex_ :: Number -> (Number -> a) -> List a -> List a
-intercalateWithIndex_ = (i, f, xs) => where(xs)
+_intercalateWithIndex :: Number -> (Number -> a) -> List a -> List a
+_intercalateWithIndex = (i, f, xs) => where(xs)
   is []            : []
   is [one]         : [one]
   is [one, two]    : [one, f(i), two]
-  is [one, ...rest]: [one, f(i), ...intercalateWithIndex_(i + 1, f, rest)]
+  is [one, ...rest]: [one, f(i), ..._intercalateWithIndex(i + 1, f, rest)]
 
 intercalateWithIndex :: (Number -> a) -> List a -> List a
-export intercalateWithIndex = intercalateWithIndex_(0)
+export intercalateWithIndex = _intercalateWithIndex(0)
 
 /**
  * Joins a list with a separator and returns a String.
