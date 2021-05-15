@@ -49,11 +49,12 @@ instance Substitutable Type where
     in  if rec == applied then applied else apply s applied
   apply s t = t
 
-  ftv TCon{}               = []
-  ftv (TVar a            ) = [a]
-  ftv (t1 `TApp` t2      ) = ftv t1 `union` ftv t2
-  ftv (TRecord fields _  ) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
-  ftv t                    = []
+  ftv TCon{}                       = []
+  ftv (TVar a            )         = [a]
+  ftv (t1 `TApp` t2      )         = ftv t1 `union` ftv t2
+  ftv (TRecord fields Nothing)     = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
+  ftv (TRecord fields (Just base)) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields) ++ ftv base
+  ftv t                            = []
 
 instance Substitutable Scheme where
   apply s (Forall ks t) = Forall ks $ apply s t

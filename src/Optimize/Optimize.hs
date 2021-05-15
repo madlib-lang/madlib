@@ -175,9 +175,10 @@ instance Optimizable Slv.Typing Opt.Typing where
       right' <- optimize enabled right
       return $ Opt.Untyped area $ Opt.TRArr left' right'
 
-    Slv.TRRecord fields -> do
+    Slv.TRRecord fields base -> do
       fields' <- mapM (optimize enabled) fields
-      return $ Opt.Untyped area $ Opt.TRRecord fields'
+      base'   <- mapM (optimize enabled) base
+      return $ Opt.Untyped area $ Opt.TRRecord fields' base'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (optimize enabled) typings

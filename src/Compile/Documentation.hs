@@ -399,7 +399,7 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
     then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
     else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
   Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
-  Slv.TRRecord ts ->
+  Slv.TRRecord ts _ ->
     let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
         fields  = M.elems mapped
         fields' = intercalate ", " fields
