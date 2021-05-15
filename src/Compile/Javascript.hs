@@ -40,7 +40,7 @@ initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty }
 
 allowedJSNames :: [String]
-allowedJSNames = ["delete", "class", "while", "for", "case", "switch"]
+allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try"]
 
 generateSafeName :: String -> String
 generateSafeName n = if n `elem` allowedJSNames then "_$_" <> n <> "_$_" else n
@@ -430,7 +430,7 @@ instance Compilable Exp where
           compileListOrTuplePattern :: String -> [Pattern] -> String
           compileListOrTuplePattern scope [] = scope <> ".length === 0"
           compileListOrTuplePattern scope items =
-            scope <> ".length " <> lengthComparator items <> " " <> show (length items) <> " && " <> intercalate
+            scope <> ".length " <> lengthComparator items <> " " <> show (if containsSpread items then length items - 1 else length items) <> " && " <> intercalate
               " && "
               ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
            where
@@ -495,14 +495,14 @@ instance Compilable Exp where
             PTuple items -> buildTupleOrListVars v items
 
             PCtor _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
-            PVar n       -> "    let " <> n <> " = " <> v <> ";\n"
+            PVar n       -> "    let " <> generateSafeName n <> " = " <> v <> ";\n"
 
             _            -> ""
 
           buildFieldVar :: String -> Pattern -> String
           buildFieldVar name (Optimized _ _ pat) = case pat of
-            PSpread (Optimized _ _ (PVar n)) -> "..." <> n
-            PVar    n                        -> if null name then n else name <> ": " <> n
+            PSpread (Optimized _ _ (PVar n)) -> "..." <> generateSafeName n
+            PVar    n                        -> if null name then generateSafeName n else name <> ": " <> generateSafeName n
             PRecord fields ->
               name
                 <> ": { "
@@ -531,8 +531,8 @@ instance Compilable Exp where
 
           buildListVar :: Pattern -> String
           buildListVar (Optimized _ _ pat) = case pat of
-            PSpread (Optimized _ _ (PVar n)) -> "..." <> n
-            PVar    n    -> n
+            PSpread (Optimized _ _ (PVar n)) -> "..." <> generateSafeName n
+            PVar    n    -> generateSafeName n
             PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
             PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
             PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"

@@ -22,7 +22,7 @@ Functor['Maybe']['map'] = () => (f => __x__ => ((__x__) => {
 })(__x__));
 Functor['List'] = {};
 Functor['List']['map'] = () => (f => __x__ => ((__x__) => {
-  if (__x__.length >= 2 && true && true) {
+  if (__x__.length >= 1 && true && true) {
     let [h,...t] = __x__;
     return ([f(h),  ...Functor.List.map()(f)(t)]);
   }

@@ -211,11 +211,11 @@ export let map = (f => xs => ((__x__) => {
   }
 })("3"));
 (x => x)(((__x__) => {
-  if (__x__.length >= 2 && __x__[0] === 2 && true) {
+  if (__x__.length >= 1 && __x__[0] === 2 && true) {
     let [,...rest] = __x__;
     return rest;
   }
-  else if (__x__.length >= 4 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3 && true) {
+  else if (__x__.length >= 3 && __x__[0] === 1 && __x__[1] === 2 && __x__[2] === 3 && true) {
     let [,,,...rest] = __x__;
     return rest;
   }
