@@ -157,6 +157,26 @@ isADTExported adt = case adt of
   Untyped _ ADT { adtexported } -> adtexported
   _                             -> False
 
+isExportOnly :: Exp -> Bool
+isExportOnly a = case a of
+  (Solved _ _ (Export _)) -> True
+
+  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+
+  _ -> False
+
+
+isNameExport :: Exp -> Bool
+isNameExport a = case a of
+  (Solved _ _ (NameExport _)) -> True
+
+  _ -> False
+
+getNameExportName :: Exp -> Name
+getNameExportName a = case a of
+  (Solved _ _ (NameExport name)) -> name
+
+
 isExport :: Exp -> Bool
 isExport a = case a of
   (Solved _ _ (Export _)) -> True
