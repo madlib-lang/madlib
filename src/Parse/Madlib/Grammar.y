@@ -252,7 +252,8 @@ typing :: { Src.Typing }
   : name                        %shift { Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
   | '(' ')'                     %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRSingle "()") }
   | '(' typings ')'             %shift { $2 }
-  | '{' recordTypingArgs '}'    %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2) }
+  | '{' recordTypingArgs '}'    %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2 Nothing) }
+  | '{' '...' name ','  recordTypingArgs '}'    %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $5 (Just (Src.Source emptyInfos (mergeAreas (tokenToArea $2) (tokenToArea $3)) (Src.TRSingle $ strV $3)))) }
   | '<' tupleTypings 'tuple>'   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }

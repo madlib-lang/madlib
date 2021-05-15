@@ -33,9 +33,10 @@ canonicalizeTyping (Src.Source _ area t) = case t of
     right' <- canonicalizeTyping right
     return $ Can.Canonical area (Can.TRArr left' right')
 
-  Src.TRRecord fields -> do
+  Src.TRRecord fields base -> do
     fields' <- mapM canonicalizeTyping fields
-    return $ Can.Canonical area (Can.TRRecord fields')
+    base'   <- mapM canonicalizeTyping base
+    return $ Can.Canonical area (Can.TRRecord fields' base')
 
   Src.TRTuple typings -> do
     typings' <- mapM canonicalizeTyping typings
@@ -134,9 +135,10 @@ typingToType env (Src.Source _ _ (Src.TRArr l r)) = do
   r' <- typingToType env r
   return $ l' `fn` r'
 
-typingToType env (Src.Source _ _ (Src.TRRecord fields)) = do
+typingToType env (Src.Source _ _ (Src.TRRecord fields base)) = do
   fields' <- mapM (typingToType env) fields
-  return $ TRecord fields' Nothing
+  base'    <- mapM (typingToType env) base
+  return $ TRecord fields' base'
 
 typingToType env (Src.Source _ _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env) elems

@@ -62,7 +62,7 @@ data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
   | TRArr Typing Typing
-  | TRRecord (M.Map Name Typing)
+  | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
   deriving(Eq, Show)
