@@ -47,14 +47,17 @@ instance Match Pred where
 sig :: Env -> Id -> [TVar]
 sig env i = case M.lookup i (envInterfaces env) of
   Just (Interface vs _ _) -> vs
+  Nothing                 -> []
 
 super :: Env -> Id -> [Pred]
 super env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ is _) -> is
+  Nothing                 -> []
 
 insts :: Env -> Id -> [Instance]
 insts env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ _ insts) -> insts
+  Nothing                     -> []
 
 bySuper :: Env -> Pred -> [Pred]
 bySuper env p@(IsIn i ts) = p : concatMap (bySuper env) supers

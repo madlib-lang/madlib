@@ -1,4 +1,5 @@
-import { Maybe, isJust } from "Maybe"
+import type { Maybe } from "Maybe"
+import { isJust } from "Maybe"
 
 
 loop :: a -> (a -> Boolean) -> (a -> a) -> a

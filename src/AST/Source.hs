@@ -22,6 +22,7 @@ type Import = Source Import_
 -- The second FilePath parameter is the absolute path to that module
 data Import_
   = NamedImport [Source Name] FilePath FilePath
+  | TypeImport [Source Name] FilePath FilePath
   | DefaultImport (Source Name) FilePath FilePath
   deriving(Eq, Show)
 
@@ -143,14 +144,23 @@ getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
   Source _ _ (NamedImport names _ n) -> names
   Source _ _ DefaultImport{}         -> []
+  Source _ _ TypeImport{}            -> []
+
+getImportTypeNames :: Import -> [Source Name]
+getImportTypeNames imp = case imp of
+  Source _ _ (NamedImport names _ _) -> []
+  Source _ _ (TypeImport names _ _)  -> names
+  Source _ _ DefaultImport{}         -> []
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Source _ _ (NamedImport   _ _ n) -> n
+  Source _ _ (TypeImport   _ _ n)  -> n
   Source _ _ (DefaultImport _ _ n) -> n
 
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Source _ _ (NamedImport   _ p _)) = (imp, p)
+getImportPath imp@(Source _ _ (TypeImport   _ p _))  = (imp, p)
 getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
 
 getArea :: Source a -> Area

@@ -1,7 +1,8 @@
-import IO from "IO"
-import { Either, Right, Left, isLeft, fromRight, mapRight } from "Either"
+import type { Either } from "Either"
+import type { Maybe } from "Maybe"
+import { Right, Left, isLeft, fromRight, mapRight } from "Either"
 import D from "Dictionary"
-import { Maybe, Nothing, Just } from "Maybe"
+import { Nothing, Just } from "Maybe"
 
 
 export alias Parser r = String -> Either String r

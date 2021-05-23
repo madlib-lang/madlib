@@ -1,5 +1,7 @@
+import type { StateT } from "StateT"
 import { StateT } from "StateT"
-import { WriterT } from "WriterT"
+import type { WriterT } from "WriterT"
+import {} from "WriterT"
 
 interface Monad m => MonadState s m {
   put :: s -> m ()

@@ -156,6 +156,8 @@ filterExportsByImport imp vars = case imp of
 
   Can.Canonical _ (Can.NamedImport names _ _) -> M.restrictKeys vars $ S.fromList (Can.getCanonicalContent <$> names)
 
+  Can.Canonical _ Can.TypeImport{} -> mempty
+
 
 solveImports
   :: M.Map FilePath (Slv.AST, Env)
@@ -177,8 +179,11 @@ solveImports previousSolved table (imp : is) = do
   importedVars <- extractImportedVars solvedEnv solvedAST imp
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
   let solvedVars         = constructorImports <> importedVars
-  let solvedInterfaces   = envInterfaces solvedEnv
   let solvedMethods      = envMethods solvedEnv
+  
+  let solvedInterfaces   = case imp of
+        Can.Canonical _ Can.TypeImport{} -> mempty
+        _                                -> envInterfaces solvedEnv
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
@@ -225,7 +230,7 @@ inferAST env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.a
             afp
         )
         .   updateImport
-        <$> aimports
+        <$> filter (not . Can.isTypeImport) aimports
       , Slv.ainterfaces = updatedInterfaces
       , Slv.ainstances  = inferredInstances
       }

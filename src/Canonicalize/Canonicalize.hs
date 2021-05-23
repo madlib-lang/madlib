@@ -239,6 +239,9 @@ instance Canonicalizable Src.Import Can.Import where
     Src.NamedImport names relPath absPath ->
       return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
 
+    Src.TypeImport names relPath absPath ->
+      return $ Can.Canonical area (Can.TypeImport (canonicalizeName <$> names) relPath absPath)
+
     Src.DefaultImport namespace relPath absPath ->
       return $ Can.Canonical area (Can.DefaultImport (canonicalizeName namespace) relPath absPath)
 
