@@ -149,8 +149,13 @@ type Table = M.Map FilePath AST
 
 getImportNames :: Import -> [Canonical Name]
 getImportNames imp = case imp of
-  Canonical _ (NamedImport names _ n) -> names
+  Canonical _ (NamedImport names _ _) -> names
   Canonical _ DefaultImport{}         -> []
+
+getImportAlias :: Import -> Maybe (Canonical Name)
+getImportAlias imp = case imp of
+  Canonical _ NamedImport{}             -> Nothing
+  Canonical _ (DefaultImport alias _ _) -> Just alias
 
 isTypeDeclExported :: TypeDecl -> Bool
 isTypeDeclExported td = case td of
