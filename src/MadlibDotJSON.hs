@@ -6,12 +6,14 @@ import           GHC.Generics                   ( Generic )
 import           Utils.PathUtils
 import qualified Data.Map                      as M
 
+
 data MadlibDotJSON
-  = MadlibDotJSON { main         :: String
-                  , bin          :: Maybe String
-                  , dependencies :: Maybe (M.Map String String)
-                  , version      :: Maybe String
-                  , name         :: Maybe String
+  = MadlibDotJSON { main          :: String
+                  , bin           :: Maybe String
+                  , dependencies  :: Maybe (M.Map String String)
+                  , importAliases :: Maybe (M.Map String String)
+                  , version       :: Maybe String
+                  , name          :: Maybe String
                   }
                   deriving (Show, Generic)
 
