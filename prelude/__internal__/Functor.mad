@@ -1,5 +1,8 @@
 import { always } from "Function"
 
+/**
+ * @since 0.0.8
+ */
 interface Functor m {
   map :: (a -> b) -> m a -> m b
 }

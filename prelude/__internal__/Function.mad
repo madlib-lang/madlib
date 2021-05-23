@@ -111,6 +111,9 @@ export flip = (f) => ((b, a) => f(a, b))
 any :: (a -> Boolean) -> List a -> Boolean
 export any = (predicate, xs) => #- xs.some(predicate) -#
 
+all :: (a -> Boolean) -> List a -> Boolean
+export all = (predicate, xs) => #- xs.every(predicate) -#
+
 
 #-
 const nativeMemoize = (fn) => {
