@@ -254,8 +254,10 @@ export reduceL = (f, initial, xs) => (#- xs.reduce((a, b) => f(a)(b), initial) -
 
 
 /**
+ * Alias of [reduceL](/List/reduceL).
  * Aggregate a single value by iterating over a list, from left-to-right.
  * Takes three parameters:
+ *
  *   - an aggregation function, which takes the current aggregated value and the next item in the list.
  *   - an initial value (which must share the same type as the value returned from the transformation function)
  *   - a List
