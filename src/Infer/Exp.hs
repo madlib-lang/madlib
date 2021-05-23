@@ -174,14 +174,14 @@ inferBody env (e : xs) = do
   (s, ps, env', e') <- case e of
     Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
     _ -> do
-      (s, (ds, ps), env, e') <- inferImplicitlyTyped True env e
+      (s, (_, ps), env, e') <- inferImplicitlyTyped True env e
       return (s, ps, env, e')
 
   e''               <- insertClassPlaceholders env' e' ps
   e'''              <- updatePlaceholders env' True s e''
 
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
-  return (sb `compose` s, ps', tb, e''' : eb)
+  return (s `compose` sb, ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,

@@ -9,7 +9,7 @@ Right
                   (TRecord
                      (fromList
                         [ ( "x" , TVar (TV "e4" Star) ) , ( "z" , TVar (TV "e4" Star) ) ])
-                     (Just (TVar (TV "h7" Star)))))
+                     (Just (TVar (TV "f5" Star)))))
                (TVar (TV "e4" Star)))
             (Area (Loc 0 1 1) (Loc 61 4 3))
             (Assignment
@@ -21,7 +21,7 @@ Right
                         (TRecord
                            (fromList
                               [ ( "x" , TVar (TV "e4" Star) ) , ( "z" , TVar (TV "e4" Star) ) ])
-                           (Just (TVar (TV "h7" Star)))))
+                           (Just (TVar (TV "f5" Star)))))
                      (TVar (TV "e4" Star)))
                   (Area (Loc 6 1 7) (Loc 61 4 3))
                   (Abs
@@ -29,7 +29,7 @@ Right
                         (TRecord
                            (fromList
                               [ ( "x" , TVar (TV "e4" Star) ) , ( "z" , TVar (TV "e4" Star) ) ])
-                           (Just (TVar (TV "h7" Star))))
+                           (Just (TVar (TV "f5" Star))))
                         (Area (Loc 7 1 8) (Loc 8 1 9))
                         "a")
                      [ Solved
@@ -42,7 +42,7 @@ Right
                                      [ ( "x" , TVar (TV "e4" Star) )
                                      , ( "z" , TVar (TV "e4" Star) )
                                      ])
-                                  (Just (TVar (TV "h7" Star))))
+                                  (Just (TVar (TV "f5" Star))))
                                (Area (Loc 20 1 21) (Loc 21 1 22))
                                (Var "a"))
                             [ Solved
@@ -51,7 +51,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TRecord
                                          (fromList
-                                            [ ( "x" , TVar (TV "g6" Star) )
+                                            [ ( "x" , TVar (TV "e4" Star) )
                                             , ( "z" , TVar (TV "e4" Star) )
                                             ])
                                          (Just (TVar (TV "f5" Star)))))
@@ -87,7 +87,7 @@ Right
                                             [ ( "x" , TVar (TV "e4" Star) )
                                             , ( "z" , TVar (TV "e4" Star) )
                                             ])
-                                         (Just (TVar (TV "h7" Star)))))
+                                         (Just (TVar (TV "f5" Star)))))
                                    (TVar (TV "e4" Star)))
                                 (Area (Loc 44 3 3) (Loc 58 3 17))
                                 (Is
