@@ -38,6 +38,13 @@ findAllExportedNames ast =
       varNames        = mapMaybe Can.getExportName (Can.aexps ast)
   in  typeExportNames ++ typeNames ++ ctorNames ++ varNames
 
+findAllExportedTypeNames :: Can.AST -> [Can.Name]
+findAllExportedTypeNames ast =
+  let exportedADTs    = filter Can.isTypeDeclExported (Can.atypedecls ast)
+      typeExportNames = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
+      typeNames       = Can.getTypeDeclName <$> exportedADTs
+  in  typeExportNames ++ typeNames
+
 canonicalizeImportedAST :: Target -> FilePath -> Src.Table -> Src.Import -> CanonicalM (Can.Table, Env)
 canonicalizeImportedAST target originAstPath table imp = do
   let path = Src.getImportAbsolutePath imp
@@ -46,17 +53,27 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportNames = findAllExportedNames ast
   let allImportNames = Src.getImportNames imp
-  let notExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
+  let namesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
+
+  let allExportTypes = findAllExportedTypeNames ast
+  let allImportTypes = Src.getImportTypeNames imp
+  let typesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportTypes
+
+  let allNotExported = namesNotExported ++ typesNotExported
 
   unless
-    (null notExported)
-    (throwError $ CompilationError (NotExported (Src.getSourceContent $ head notExported) path)
-                                   (Context originAstPath (Src.getArea $ head notExported) [])
+    (null allNotExported)
+    (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
+                                   (Context originAstPath (Src.getArea $ head allNotExported) [])
     )
 
   envTds <- mapImportToEnvTypeDecls env imp ast
 
-  let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = envInterfaces env }
+  let interfaces = case imp of
+        Src.Source _ _ Src.TypeImport{} -> mempty
+        _                               -> envInterfaces env
+
+  let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = interfaces }
   return (table', env')
 
 mapImportToEnvTypeDecls :: Env -> Src.Import -> Can.AST -> CanonicalM (M.Map String Type)
@@ -66,7 +83,9 @@ mapImportToEnvTypeDecls env imp ast = do
 
 fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
 fromExportToImport imp exports = case imp of
-  Src.Source _ _ (Src.NamedImport   names _ _) -> M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
+  Src.Source _ _ (Src.TypeImport names _ _)    -> M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
+
+  Src.Source _ _ (Src.NamedImport   names _ _) -> mempty --M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
 
   Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
 
@@ -100,6 +119,9 @@ getNamesFromImport imp = (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> 
 getAllImportedNamespaces :: [Can.Import] -> [(String, Area)]
 getAllImportedNamespaces imports = (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> mapMaybe Can.getImportAlias imports
 
+getAllImportedTypes :: [Can.Import] -> [(String, Area)]
+getAllImportedTypes imports = (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> concat (Can.getImportTypeNames <$> imports)
+
 processImports :: Target -> FilePath -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env)
 processImports target astPath table imports = do
   imports' <- mapM (canonicalizeImportedAST target astPath table) imports
@@ -118,11 +140,14 @@ checkUnusedImports :: Env -> [Can.Import] -> CanonicalM ()
 checkUnusedImports env imports = do
   let importedNames = getAllImportedNames imports
   let importedNamespaces = getAllImportedNamespaces imports
+  let importedTypes = getAllImportedTypes imports
 
   namesAccessed <- S.toList <$> getAllNameAccesses
+  typesAccessed <- S.toList <$> getAllTypeAccesses
 
   let unusedNames = filter (not . (`elem` namesAccessed) . fst) importedNames
   let unusedAliases = filter (not . (`elem` namesAccessed) . fst) importedNamespaces
+  let unusedTypes = filter (not . (`elem` typesAccessed) . fst) importedTypes
 
   let allUnused = unusedNames ++ unusedAliases
 
@@ -135,20 +160,7 @@ checkUnusedImports env imports = do
     (\(name, area) ->
       pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))
     )
-    withJSCheck
-
-
-isTypeImport :: Env -> FilePath -> Can.Table -> Can.Canonical Can.Name -> Bool
-isTypeImport env astPath table (Can.Canonical _ name) = case M.lookup name (envTypeDecls env) of
-  Just _ -> case M.lookup astPath table of
-    Just ast -> name `notElem` (Can.getCtorName <$> (Can.atypedecls ast >>= Can.getCtors)) && notElem
-      (Just name)
-      (Can.getExportName <$> Can.aexps ast)
-
-    Nothing -> True
-
-  Nothing -> False
-
+    (withJSCheck ++ unusedTypes)
 
 
 canonicalizeAST :: Target -> Env -> Src.Table -> FilePath -> CanonicalM (Can.Table, Env)
@@ -160,7 +172,7 @@ canonicalizeAST target env table astPath = do
   (table, env') <- processImports target astPath table $ Src.aimports ast
   let env'' = env' { envCurrentPath = astPath }
 
-  foldM (verifyExport env'') [] (Src.aexps ast)
+  foldM_ (verifyExport env'') [] (Src.aexps ast)
 
   resetNameAccesses
   resetJS
@@ -171,18 +183,10 @@ canonicalizeAST target env table astPath = do
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces ast
   instances             <- canonicalizeInstances env'''' target $ Src.ainstances ast
 
-  -- When processed we remove type imports
-  let imports' =
-        (\case
-            Can.Canonical area (Can.NamedImport names relFP absFP) ->
-              Can.Canonical area $ Can.NamedImport (filter (not . isTypeImport env' absFP table) names) relFP absFP
-            imp -> imp
-          )
-          <$> imports
 
   checkUnusedImports env'' imports
 
-  let canonicalizedAST = Can.AST { Can.aimports    = imports'
+  let canonicalizedAST = Can.AST { Can.aimports    = imports
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
@@ -222,7 +226,7 @@ runCanonicalization
   :: Target -> Env -> Src.Table -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
 runCanonicalization target env table entrypoint = do
   let (canonicalized, s) = runState (runExceptT (canonicalizeAST target env table entrypoint))
-                                    (CanonicalState { warnings = [], namesAccessed = S.empty })
+                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "" })
   (fst <$> canonicalized, warnings s)
 
 canonicalizeMany

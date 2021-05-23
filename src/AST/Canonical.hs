@@ -31,6 +31,7 @@ type Import = Canonical Import_
 -- The second FilePath parameter is the absolute path to that module
 data Import_
   = NamedImport [Canonical Name] FilePath FilePath
+  | TypeImport [Canonical Name] FilePath FilePath
   | DefaultImport (Canonical Name) FilePath FilePath
   deriving(Eq, Show)
 
@@ -150,12 +151,25 @@ type Table = M.Map FilePath AST
 getImportNames :: Import -> [Canonical Name]
 getImportNames imp = case imp of
   Canonical _ (NamedImport names _ _) -> names
+  Canonical _ TypeImport{}            -> []
   Canonical _ DefaultImport{}         -> []
 
 getImportAlias :: Import -> Maybe (Canonical Name)
 getImportAlias imp = case imp of
   Canonical _ NamedImport{}             -> Nothing
+  Canonical _ TypeImport{}              -> Nothing
   Canonical _ (DefaultImport alias _ _) -> Just alias
+
+getImportTypeNames :: Import -> [Canonical Name]
+getImportTypeNames imp = case imp of
+  Canonical _ (NamedImport names _ _) -> []
+  Canonical _ (TypeImport names _ _)  -> names
+  Canonical _ DefaultImport{}         -> []
+
+isTypeImport :: Import -> Bool
+isTypeImport imp = case imp of
+  Canonical _ TypeImport{} -> True
+  _                        -> False
 
 isTypeDeclExported :: TypeDecl -> Bool
 isTypeDeclExported td = case td of
@@ -189,6 +203,7 @@ getExportName exp = case exp of
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Canonical _ (NamedImport   _ _ n) -> n
+  Canonical _ (TypeImport   _ _ n)  -> n
   Canonical _ (DefaultImport _ _ n) -> n
 
 isAssignment :: Exp -> Bool

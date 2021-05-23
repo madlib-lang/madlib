@@ -1,7 +1,9 @@
 import {} from "Monad"
 import {} from "Monoid"
+import type { WriterT } from "WriterT"
 import { WriterT } from "WriterT"
-import { StateT } from "StateT"
+import type { StateT } from "StateT"
+import {} from "StateT"
 
 interface (Monoid w, Monad m) => MonadWriter w m {
   tell :: w -> m ()

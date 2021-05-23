@@ -104,7 +104,7 @@ import           Text.Show.Pretty (ppShow)
 ast :: { Src.AST }
   : typedecl ast     %shift { $2 { Src.atypedecls =  [$1] <> Src.atypedecls $2 } }
   | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
-  | importDecls ast  %shift { $2 { Src.aimports = $1, Src.apath = Nothing } }
+  | importDecls ast  %shift { $2 { Src.aimports = Src.aimports $2 <> $1, Src.apath = Nothing } }
   | interface ast    %shift { $2 { Src.ainterfaces = [$1] <> (Src.ainterfaces $2), Src.apath = Nothing } }
   | instance ast     %shift { $2 { Src.ainstances = [$1] <> (Src.ainstances $2), Src.apath = Nothing } }
   | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
@@ -120,8 +120,9 @@ importDecls :: { [Src.Import] }
   | importDecl             %shift { [$1] }
   
 importDecl :: { Src.Import }
-  : 'import' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
-  | 'import' name 'from' str rets                { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (Src.Source emptyInfos (tokenToArea $2) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
+  : 'import' '{' importNames '}' 'from' str rets        { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
+  | 'import' name 'from' str rets                       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (Src.Source emptyInfos (tokenToArea $2) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
+  | 'import' 'type' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $7)) (Src.TypeImport $4 (sanitizeImportPath $ strV $7) (sanitizeImportPath $ strV $7)) }
 
 importNames :: { [Src.Source Src.Name] }
   : importNames ',' name %shift { $1 <> [Src.Source emptyInfos (tokenToArea $3) (strV $3)] }

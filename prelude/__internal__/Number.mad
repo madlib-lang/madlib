@@ -1,6 +1,7 @@
 import {} from "Show"
 import {} from "Read"
-import { Maybe, Just, Nothing } from "Maybe"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
 
 instance Show Number {
   show = (x) => #- x.toString() -#
