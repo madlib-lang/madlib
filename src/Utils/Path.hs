@@ -59,17 +59,24 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
     FileSystemPath -> do
       let ext = if takeExtension path == ".json" then ".json" else ".mad"
       path' <- case path of
-        '@':'/':rest -> do
+        '@':_ -> do
+          let pathParts = splitPath path
+          let alias = dropTrailingPathSeparator . head $ pathParts
+          let afterAlias = joinPath . tail $ pathParts 
           (madlibDotJsonFile, dir) <- retrieveMadlibDotJson pathUtils rootPath
-          let mainFolderPath = case madlibDotJsonFile of
-                Just json -> dropFileName $ MadlibDotJSON.main json
-                _         -> ""
+          let aliasPath = case madlibDotJsonFile of
+                Just MadlibDotJSON.MadlibDotJSON{ MadlibDotJSON.importAliases = Just ias } ->
+                  M.lookup alias ias
+                _ -> Nothing
 
-          return $ joinPath [dir, mainFolderPath, rest]
+          return $ (\aliasPath' -> joinPath [dir, aliasPath', afterAlias]) <$> aliasPath
 
-        p            -> return p
+        p            -> return $ Just p
 
-      Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, path']) ext)
+      case path' of
+        Just p  -> Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+        Nothing -> return Nothing
+
     PackagePath -> makePathForPackage pathUtils rootPath path
 
 
