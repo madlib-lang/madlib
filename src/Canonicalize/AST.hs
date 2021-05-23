@@ -97,6 +97,9 @@ getAllImportedNames imports = concat $ getNamesFromImport <$> imports
 getNamesFromImport :: Can.Import -> [(String, Area)]
 getNamesFromImport imp = (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> Can.getImportNames imp
 
+getAllImportedNamespaces :: [Can.Import] -> [(String, Area)]
+getAllImportedNamespaces imports = (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> mapMaybe Can.getImportAlias imports
+
 processImports :: Target -> FilePath -> Src.Table -> [Src.Import] -> CanonicalM (Can.Table, Env)
 processImports target astPath table imports = do
   imports' <- mapM (canonicalizeImportedAST target astPath table) imports
@@ -114,13 +117,20 @@ processImports target astPath table imports = do
 checkUnusedImports :: Env -> [Can.Import] -> CanonicalM ()
 checkUnusedImports env imports = do
   let importedNames = getAllImportedNames imports
+  let importedNamespaces = getAllImportedNamespaces imports
+
   namesAccessed <- S.toList <$> getAllNameAccesses
-  let unused = filter (not . (`elem` namesAccessed) . fst) importedNames
-  withJSCheck <- if null unused
-    then return unused
+
+  let unusedNames = filter (not . (`elem` namesAccessed) . fst) importedNames
+  let unusedAliases = filter (not . (`elem` namesAccessed) . fst) importedNamespaces
+
+  let allUnused = unusedNames ++ unusedAliases
+
+  withJSCheck <- if null allUnused
+    then return allUnused
     else do
       allJS <- getJS
-      return $ filter (not . (allJS =~) . fst) unused
+      return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
       pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area []))
