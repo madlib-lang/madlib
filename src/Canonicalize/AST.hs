@@ -32,11 +32,9 @@ findAllExportedNames :: Can.AST -> [Can.Name]
 findAllExportedNames ast =
   let exportedADTs    = filter Can.isTypeDeclExported (Can.atypedecls ast)
       ctors           = concat $ Can.getCtors <$> exportedADTs
-      typeExportNames = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
-      typeNames       = Can.getTypeDeclName <$> exportedADTs
       ctorNames       = Can.getCtorName <$> ctors
       varNames        = mapMaybe Can.getExportName (Can.aexps ast)
-  in  typeExportNames ++ typeNames ++ ctorNames ++ varNames
+  in  ctorNames ++ varNames
 
 findAllExportedTypeNames :: Can.AST -> [Can.Name]
 findAllExportedTypeNames ast =
@@ -57,7 +55,7 @@ canonicalizeImportedAST target originAstPath table imp = do
 
   let allExportTypes = findAllExportedTypeNames ast
   let allImportTypes = Src.getImportTypeNames imp
-  let typesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportTypes
+  let typesNotExported = filter (not . (`elem` allExportTypes) . Src.getSourceContent) allImportTypes
 
   let allNotExported = namesNotExported ++ typesNotExported
 
@@ -85,7 +83,7 @@ fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
 fromExportToImport imp exports = case imp of
   Src.Source _ _ (Src.TypeImport names _ _)    -> M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
 
-  Src.Source _ _ (Src.NamedImport   names _ _) -> mempty --M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
+  Src.Source _ _ (Src.NamedImport   names _ _) -> mempty
 
   Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
 

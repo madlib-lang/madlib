@@ -116,7 +116,11 @@ formatTypeError :: Bool -> TypeError -> String
 formatTypeError json err = case err of
   InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> prettyPrintType True t
 
-  UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo !"
+  UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo!"
+
+  UnboundType n       ->
+    "The type '" <> n <> "' has not been declared, you might have a typo!\n\n"
+    <> "Hint: Maybe you forgot to import it?"
 
   SignatureTooGeneral scGiven scInferred ->
     "The signature given is too general\n"

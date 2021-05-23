@@ -66,6 +66,7 @@ import           Text.Show.Pretty (ppShow)
   true        { Token _ (TokenBool _) }
   'import'    { Token _ TokenImport }
   'export'    { Token _ TokenExport }
+  'texport'   { Token _ TokenTypeExport }
   'from'      { Token _ TokenFrom }
   '|'         { Token _ TokenPipe }
   'pipe'      { Token _ TokenPipeKeyword }
@@ -102,15 +103,16 @@ import           Text.Show.Pretty (ppShow)
 %%
 
 ast :: { Src.AST }
-  : typedecl ast     %shift { $2 { Src.atypedecls =  [$1] <> Src.atypedecls $2 } }
-  | exp ast          %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
-  | importDecls ast  %shift { $2 { Src.aimports = Src.aimports $2 <> $1, Src.apath = Nothing } }
-  | interface ast    %shift { $2 { Src.ainterfaces = [$1] <> (Src.ainterfaces $2), Src.apath = Nothing } }
-  | instance ast     %shift { $2 { Src.ainstances = [$1] <> (Src.ainstances $2), Src.apath = Nothing } }
-  | {- empty -}      %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
-  | 'ret'            %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
-  | 'ret' ast        %shift { $2 }
-  | 'export' name ast    %shift { $3 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.NameExport $ strV $2) : Src.aexps $3 } }
+  : typedecl ast              %shift { $2 { Src.atypedecls =  [$1] <> Src.atypedecls $2 } }
+  | exp ast                   %shift { $2 { Src.aexps = [$1] <> Src.aexps $2 } }
+  | importDecls ast           %shift { $2 { Src.aimports = Src.aimports $2 <> $1, Src.apath = Nothing } }
+  | interface ast             %shift { $2 { Src.ainterfaces = [$1] <> (Src.ainterfaces $2), Src.apath = Nothing } }
+  | instance ast              %shift { $2 { Src.ainstances = [$1] <> (Src.ainstances $2), Src.apath = Nothing } }
+  | {- empty -}               %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
+  | 'ret'                     %shift { Src.AST { Src.aimports = [], Src.aexps = [], Src.atypedecls = [], Src.ainterfaces = [], Src.ainstances = [], Src.apath = Nothing } }
+  | 'ret' ast                 %shift { $2 }
+  | 'export' name ast         %shift { $3 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.NameExport $ strV $2) : Src.aexps $3 } }
+  | 'texport' 'type' name ast %shift  { $4 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TypeExport $ strV $3) : Src.aexps $4 } }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
       { $9 { Src.aexps = Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.TypedExp (Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source emptyInfos (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }

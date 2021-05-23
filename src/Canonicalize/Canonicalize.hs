@@ -15,6 +15,9 @@ import qualified Data.Map                      as M
 import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
+import           Control.Monad.Except
+import           Error.Error
+import           Error.Context
 
 
 
@@ -65,9 +68,15 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.NameExport name -> do
       pushNameAccess name
+      return $ Can.Canonical area (Can.NameExport name)
+
+    Src.TypeExport name -> do
+      pushTypeAccess name
       case M.lookup name (E.envTypeDecls env) of
         Just found -> return $ Can.Canonical area (Can.TypeExport name)
-        Nothing    -> return $ Can.Canonical area (Can.NameExport name)
+        Nothing    -> throwError $ CompilationError (UnboundType name) (Context (E.envCurrentPath env) area [])
+
+      return $ Can.Canonical area (Can.TypeExport name)
 
     Src.Var name -> do
       pushNameAccess name

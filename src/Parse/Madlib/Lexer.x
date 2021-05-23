@@ -161,6 +161,13 @@ jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*
 constraintRegex :: Regex
 constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
 
+isTokenExport :: Regex
+isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+[ \n]*="
+-- isTokenExport = toRegex "\\`(export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+[ \n]*=|export[ ]+[^type]+\n)"
+
+isTypeExport :: Regex
+isTypeExport = toRegex "\\`export[ ]+type"
+
 -- Int: commentDepth
 -- (String, Int): (stringBuffer, curlyCount)
 -- Int: jsx depth
@@ -378,6 +385,18 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
               return TokenJsxTagOpenEnd
             else
               return TokenLeftChevron
+
+        TokenExport ->
+          let next    = BLU.fromString $ take 250 input
+              matchedTypeExp = match isTypeExport next :: Bool
+              matchedTE = match isTokenExport next :: Bool
+          in
+            if matchedTE then
+              return TokenExport
+            else if matchedTypeExp then
+              return TokenTypeExport
+            else
+              return TokenExport
         tok -> return tok
 
 
@@ -510,6 +529,7 @@ data TokenClass
  | TokenEOF
  | TokenImport
  | TokenExport
+ | TokenTypeExport
  | TokenFrom
  | TokenPipe
  | TokenPipeOperator
