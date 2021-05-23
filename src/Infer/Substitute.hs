@@ -41,11 +41,11 @@ instance Substitutable Type where
   apply s rec@(TRecord fields base) =
     let appliedFields                        = apply s <$> fields
         appliedBase                          = apply s <$> base
-        (allFields', baseResolved, nextBase) = case appliedBase of
-          Just (TRecord fields' base') -> (fields' <> appliedFields, True, base')
-          _                            -> (appliedFields, False, appliedBase)
+        (allFields', nextBase) = case appliedBase of
+          Just (TRecord fields' base') -> (apply s <$> fields' <> appliedFields, base')
+          _                            -> (appliedFields, appliedBase)
 
-        applied = if baseResolved then TRecord allFields' nextBase else TRecord allFields' appliedBase
+        applied = TRecord allFields' nextBase
     in  if rec == applied then applied else apply s applied
   apply s t = t
 

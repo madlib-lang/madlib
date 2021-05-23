@@ -46,8 +46,9 @@ instance Unify Type where
           z             = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       s3 <- unifyVars M.empty z
+      s4 <- unify tBase tBase'
 
-      return $ s3 `compose` s1 `compose` s2
+      return $ s4 `compose` s3 `compose` s1 `compose` s2
 
     (Just tBase, Nothing) -> do
       s1 <- unify tBase (TRecord fields Nothing)
