@@ -805,6 +805,8 @@ spec = do
 
         ioModule = unlines ["log :: a -> a", "export log = (a) => (#- { console.log(a); return a; } -#)"]
 
+        madlibDotJson = "{ \"main\": \"\" }"
+
 
         files    = M.fromList
           [ ("/root/project/src/Main.mad"      , mainModule)
@@ -813,6 +815,7 @@ spec = do
           , ("/root/project/src/Binary.mad"    , binaryModule)
           , ("/root/project/src/FileSystem.mad", fileSystemModule)
           , ("/root/project/src/IO.mad"        , ioModule)
+          , ("/root/project/madlib.json"       , madlibDotJson)
           ]
 
         pathUtils =
@@ -912,10 +915,14 @@ spec = do
       let
         listModule = unlines ["map :: (a -> b) -> List a -> List b", "export map = (f, xs) => (#- xs.map(f) -#)"]
 
-        main       = unlines ["import L from \"List\"", "L.map((x) => (x * 2), [1, 2, 3])"]
+        main          = unlines ["import L from \"List\"", "L.map((x) => (x * 2), [1, 2, 3])"]
+        madlibDotJson = "{ \"main\": \"\" }"
 
         files =
-          M.fromList [("/root/project/prelude/__internal__/List.mad", listModule), ("/root/project/src/Main.mad", main)]
+          M.fromList [ ("/root/project/prelude/__internal__/List.mad", listModule)
+                     , ("/root/project/src/Main.mad", main)
+                     , ("/root/project/madlib.json", madlibDotJson)
+                     ]
 
         pathUtils = defaultPathUtils { readFile           = makeReadFile files
                                      , byteStringReadFile = makeByteStringReadFile files
@@ -1064,8 +1071,13 @@ spec = do
           , "  |> W.fulfill((a) => (()), (a) => (()))"
           ]
 
+        madlibDotJson = "{ \"main\": \"\" }"
+
         files =
-          M.fromList [("/root/project/prelude/__internal__/Wish.mad", wishModule), ("/root/project/src/Main.mad", main)]
+          M.fromList [ ("/root/project/prelude/__internal__/Wish.mad", wishModule)
+                     , ("/root/project/src/Main.mad", main)
+                     , ("/root/project/madlib.json", madlibDotJson)
+                     ]
 
         pathUtils = defaultPathUtils { readFile           = makeReadFile files
                                      , byteStringReadFile = makeByteStringReadFile files
