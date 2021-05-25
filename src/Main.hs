@@ -211,15 +211,15 @@ solveASTsForDoc rootFolder (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
   astTable            <- buildASTTable mempty canonicalEntrypoint
   let (canTable, _) = case astTable of
-        Right table -> Can.runCanonicalization TNode Can.initialEnv table canonicalEntrypoint
+        Right table -> Can.runCanonicalization mempty TNode Can.initialEnv table canonicalEntrypoint
         Left  e     -> (Left e, [])
 
   rootPath <- canonicalizePath $ computeRootPath fp
   let moduleName = dropExtension $ makeRelative rootFolder canonicalEntrypoint
 
-  let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint
+  let entryAST         = canTable >>= flip Can.findAST canonicalEntrypoint . fst
       resolvedASTTable = case (entryAST, canTable) of
-        (Right ast, Right table) -> do
+        (Right ast, Right (table, _)) -> do
           runExcept (runStateT (solveTable table ast) InferState { count = 0, errors = [] })
         (_     , Left e) -> Left e
         (Left e, _     ) -> Left $ CompilationError (ImportNotFound rootPath) NoContext
