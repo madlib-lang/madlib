@@ -12,6 +12,7 @@ import           Canonicalize.CanonicalM
 import qualified Canonicalize.Env              as E
 import           Canonicalize.Typing
 import qualified Data.Map                      as M
+import qualified Data.List                     as L
 import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
@@ -214,7 +215,12 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
     Src.PCtor name pats -> do
-      pushNameAccess name
+      let nameToPush =
+            if "." `L.isInfixOf` name then
+              takeWhile (/= '.') name
+            else
+              name
+      pushNameAccess nameToPush
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PCtor name pats')
 
