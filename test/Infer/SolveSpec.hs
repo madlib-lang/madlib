@@ -45,7 +45,7 @@ tester :: String -> Either CompilationError Slv.AST
 tester code = do
   ast <- buildAST "path" code
   let table = M.singleton "path" ast
-  ((table, _), _) <- runStateT (canonicalizeAST TNode Can.initialEnv table "path") (CanonicalState { warnings = [] })
+  ((table, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table "path") (CanonicalState { warnings = [] })
   canAST          <- Can.findAST table "path"
 
   runEnv canAST >>= (`runInfer` canAST)
@@ -54,7 +54,7 @@ tester code = do
 tableTester :: Src.Table -> Src.AST -> Either CompilationError Slv.Table
 tableTester table ast = do
   let astPath = fromMaybe "" $ Src.apath ast
-  ((canTable, _), _) <- runStateT (canonicalizeAST TNode Can.initialEnv table astPath)
+  ((canTable, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table astPath)
                                   (CanonicalState { warnings = [] })
   canAST <- Can.findAST canTable astPath
 

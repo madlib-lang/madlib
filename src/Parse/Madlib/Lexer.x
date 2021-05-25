@@ -59,10 +59,10 @@ $digit    = 0-9                             -- digits
 @floating = @decimal \. @decimal | @decimal -- floating point
 
 tokens :-
-  <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                   { beginComment }
-  <comment>   [.\n]                                                                       ;
-  <comment>   \*\/                                                                        { endComment }
-  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                  ; -- Comments
+  <0, jsxOpeningTag, jsxAutoClosed, jsxText> $head*\/\*                                      { beginComment }
+  <comment>   [.\n]                                                                          ;
+  <comment>   \*\/                                                                           { endComment }
+  <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                     ; -- Comments
 
   <0> import                                                                                 { mapToken (\_ -> TokenImport) }
   <0> export                                                                                 { decideTokenExport }
@@ -398,18 +398,19 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
   token <-
     if not (BS.null matchWL) && not matchBL then
       return TokenRightChevron
-    else do
-      sc <- getStartCode
-      if sc == jsxOpeningTag then do
-        popStartCode
-        pushStartCode jsxText
-      else if sc == jsxClosingTag then
-        popStartCode
-      else if sc == jsxAutoClosed then
-        popStartCode
-      else
-        return ()
+    else
       return TokenTupleEnd
+
+  sc <- getStartCode
+  if sc == jsxOpeningTag then do
+    popStartCode
+    pushStartCode jsxText
+  else if sc == jsxClosingTag then
+    popStartCode
+  else if sc == jsxAutoClosed then
+    popStartCode
+  else
+    return ()
 
   return $ Token (makeArea posn (take len input)) token
 
