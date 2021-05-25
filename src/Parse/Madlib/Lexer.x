@@ -65,7 +65,7 @@ tokens :-
   <0, jsxOpeningTag, jsxAutoClosed> @head"//"[^\n]*[\n]?                                  ; -- Comments
 
   <0> import                                                                                 { mapToken (\_ -> TokenImport) }
-  <0> export                                                                                 { mapToken (\_ -> TokenExport) }
+  <0> export                                                                                 { decideTokenExport }
   <0> from                                                                                   { mapToken (\_ -> TokenFrom) }
   <0> type                                                                                   { mapToken (\_ -> TokenType) }
   <0> alias                                                                                  { mapToken (\_ -> TokenAlias) }
@@ -104,7 +104,7 @@ tokens :-
   <0> \|                                                                                     { mapToken (\_ -> TokenPipe) }
   <0> \;                                                                                     { mapToken (\_ -> TokenSemiColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { mapToken (\s -> TokenName s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { decideTokenName }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+                           { mapToken (\_ -> TokenPlus) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\+\+                         { mapToken (\_ -> TokenDoublePlus) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \-                                 { mapToken (\_ -> TokenDash) }
@@ -117,10 +117,10 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \.\.\.                             { mapToken (\_ -> TokenSpreadOperator) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\&\&$tail*                   { mapToken (\_ -> TokenDoubleAmpersand) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\|\|$tail*                   { mapToken (\_ -> TokenDoublePipe) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>                 { mapToken (\_ -> TokenRightChevron) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> \<        { mapToken (\_ -> TokenLeftChevron) }
-  <0, stringTemplateMadlib> \>\=                               { mapToken (\_ -> TokenRightChevronEq) }
-  <0, stringTemplateMadlib> \<\=                               { mapToken (\_ -> TokenLeftChevronEq) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> \>  { decideTokenRightChevron }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxText, instanceHeader> \<        { decideTokenLeftChevron }
+  <0, stringTemplateMadlib> \>\=                                                             { mapToken (\_ -> TokenRightChevronEq) }
+  <0, stringTemplateMadlib> \<\=                                                             { mapToken (\_ -> TokenLeftChevronEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \!                                 { mapToken (\_ -> TokenExclamationMark) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \"(($printable # \")|\\\")*\"      { mapToken (\s -> TokenStr (sanitizeStr s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> '(($printable # ')|\\')*'          { mapToken (\s -> TokenStr (sanitizeStr s)) }
@@ -136,7 +136,7 @@ tokens :-
   <stringTemplate> [.\n]                          { pushStringToTemplate }
   <jsxText> [\ \n]*"//"[^\n]*                     ; -- Comments jsx
   <jsxText> \n($superEmpty|\/\/)*                 ;
-  <jsxText> $jsxText+                             { mapToken (\s -> TokenName s) }
+  <jsxText> $jsxText+                             { decideTokenName }
   <jsxText> $jsxTextPopOut                        { jsxTextPopOut }
 {
 blackList :: Regex
@@ -334,100 +334,110 @@ jsxTextPopOut i@(posn, prevChar, pending, input) len = do
   popStartCode
   return $ (Token (makeArea posn (take len input)) (TokenEOF))
 
+
+decideTokenExport :: AlexInput -> Int -> Alex Token
+decideTokenExport (posn, prevChar, pending, input) len =
+  let next           = BLU.fromString $ take 125 input
+      matchedTypeExp = match isTypeExport next :: Bool
+      matchedTE      = match isTokenExport next :: Bool
+      token          = 
+        if matchedTE then
+          TokenExport
+        else if matchedTypeExp then
+          TokenTypeExport
+        else
+          TokenExport
+  
+  in  return $ Token (makeArea posn (take len input)) token
+
+
+decideTokenName :: AlexInput -> Int -> Alex Token
+decideTokenName (posn, prevChar, pending, input) len = do
+  sc <- getStartCode
+  let s     = take len input
+      token =
+        if sc /= instanceHeader then
+          TokenName s
+        else
+          let next    = BLU.fromString $ take 500 input
+              matched = match constraintRegex next :: Bool
+          in
+            if not matched then
+              TokenName s
+            else
+              TokenConstraintName s
+
+  return $ Token (makeArea posn (take len input)) token
+
+
+decideTokenLeftChevron :: AlexInput -> Int -> Alex Token
+decideTokenLeftChevron (posn, prevChar, pending, input) len = do
+  let next          = BLU.fromString $ take 800 input
+      matchedOpen   = match jsxTagOpen next :: Bool
+      matchedClose  = match jsxTagClose next :: Bool
+      matchedSingle = match jsxTagSingle next :: Bool
+  token <-
+    if matchedSingle then do
+      pushStartCode jsxAutoClosed
+      return TokenJsxTagOpenSingle
+    else if matchedOpen then do
+      jsxTagOpened
+      return TokenJsxTagOpenStart
+    else if matchedClose then do
+      jsxTagClosed
+      return TokenJsxTagOpenEnd
+    else
+      return TokenLeftChevron
+  return $ Token (makeArea posn (take len input)) token
+
+decideTokenRightChevron :: AlexInput -> Int -> Alex Token
+decideTokenRightChevron (posn, prevChar, pending, input) len = do
+  let next    = BLU.fromString $ ((tail . (take 200)) input)
+      matchWL = match whiteList next :: BS.ByteString
+      matchBL = match blackList matchWL :: Bool
+  token <-
+    if not (BS.null matchWL) && not matchBL then
+      return TokenRightChevron
+    else do
+      sc <- getStartCode
+      if sc == jsxOpeningTag then do
+        popStartCode
+        pushStartCode jsxText
+      else if sc == jsxClosingTag then
+        popStartCode
+      else if sc == jsxAutoClosed then
+        popStartCode
+      else
+        return ()
+      return TokenTupleEnd
+
+  return $ Token (makeArea posn (take len input)) token
+
+
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
   sc <- getStartCode
   scs <- getStartCodeStack
 
   token <- case (tokenizer (take len input)) of
-        TokenLeftCurly ->
-          if sc == instanceHeader then do
-            popStartCode
-            return TokenLeftDoubleCurly
-          else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
-            pushStartCode 0
-            return TokenLeftCurly
-          else
-            return TokenLeftCurly
+    TokenLeftCurly ->
+      if sc == instanceHeader then do
+        popStartCode
+        return TokenLeftDoubleCurly
+      else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
+        pushStartCode 0
+        return TokenLeftCurly
+      else
+        return TokenLeftCurly
 
-        TokenName s ->
-          if sc /= instanceHeader then
-            return $ TokenName s
-          else
-            let next    = BLU.fromString $ take 500 input 
-                matched = match constraintRegex next :: Bool
-            in
-              if not matched then
-                return $ TokenName s
-              else
-                return $ TokenConstraintName s
-
-        TokenRightChevron ->
-          let next    = BLU.fromString $ ((tail . (take 200)) input)
-              matchWL = match whiteList next :: BS.ByteString
-              matchBL = match blackList matchWL :: Bool
-          in
-            if not (BS.null matchWL) && not matchBL
-            then return TokenRightChevron
-            else return TokenTupleEnd
-        
-        TokenLeftChevron ->
-          let next          = BLU.fromString $ take 800 input
-              matchedOpen   = match jsxTagOpen next :: Bool
-              matchedClose  = match jsxTagClose next :: Bool
-              matchedSingle = match jsxTagSingle next :: Bool
-          in
-            if matchedSingle then do
-              return TokenJsxTagOpenSingle
-            else if matchedOpen then
-              return TokenJsxTagOpenStart
-            else if matchedClose then do
-              return TokenJsxTagOpenEnd
-            else
-              return TokenLeftChevron
-
-        TokenExport ->
-          let next    = BLU.fromString $ take 250 input
-              matchedTypeExp = match isTypeExport next :: Bool
-              matchedTE = match isTokenExport next :: Bool
-          in
-            if matchedTE then
-              return TokenExport
-            else if matchedTypeExp then
-              return TokenTypeExport
-            else
-              return TokenExport
-        tok -> return tok
+    tok -> return tok
 
 
   case token of
     TokenInstance -> pushStartCode instanceHeader
-    TokenJsxTagOpenStart -> jsxTagOpened
-    TokenJsxTagOpenEnd -> jsxTagClosed
-    TokenJsxTagOpenSingle -> pushStartCode jsxAutoClosed
     TokenRightCurly -> do
       previousCode <- getPreviousStartCode
       if previousCode == jsxText || previousCode == jsxAutoClosed || previousCode == jsxOpeningTag then
-        popStartCode
-      else
-        return ()
-    TokenRightChevron ->
-      if sc == jsxOpeningTag then do
-        popStartCode
-        pushStartCode jsxText
-      else if sc == jsxClosingTag then
-        popStartCode
-      else if sc == jsxAutoClosed then
-        popStartCode
-      else
-        return ()
-    TokenTupleEnd ->
-      if sc == jsxOpeningTag then do
-        popStartCode
-        pushStartCode jsxText
-      else if sc == jsxClosingTag then
-        popStartCode
-      else if sc == jsxAutoClosed then
         popStartCode
       else
         return ()

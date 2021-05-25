@@ -6,17 +6,29 @@ import           Text.Regex.TDFA
 toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = False } defaultExecOpt
 
+browserStartRegex :: Regex
+browserStartRegex = toRegex "{Browser}"
+
+browserEndRegex :: Regex
+browserEndRegex = toRegex "{/Browser}"
+
+nodeStartRegex :: Regex
+nodeStartRegex = toRegex "{Node}"
+
+nodeEndRegex :: Regex
+nodeEndRegex = toRegex "{/Node}"
+
 filterJSExp :: Target -> String -> String
 filterJSExp target = removeSelectors target . removeOtherTargets target
 
 removeOtherTargets :: Target -> String -> String
 removeOtherTargets target code =
   let (startRegex, endRegex) = case target of
-        TNode    -> ("{Browser}", "{/Browser}")
-        TBrowser -> ("{Node}", "{/Node}")
-      (before, matched, after) = match (toRegex startRegex) code :: (String, String, String)
+        TNode    -> (browserStartRegex, browserEndRegex)
+        TBrowser -> (nodeStartRegex, nodeEndRegex)
+      (before, matched, after) = match startRegex code :: (String, String, String)
       withoutStart             = before <> after
-      (_, matched', after')    = match (toRegex endRegex) after :: (String, String, String)
+      (_, matched', after')    = match endRegex after :: (String, String, String)
       oneLess                  = before <> after'
       found                    = not (null $ matched <> matched')
   in  if found then removeOtherTargets target oneLess else before

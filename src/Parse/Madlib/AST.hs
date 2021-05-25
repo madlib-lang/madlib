@@ -52,9 +52,6 @@ buildASTTable table path = do
   buildASTTable' table defaultPathUtils path Nothing [] path
 
 
--- buildASTTable'' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
--- buildASTTable'' table pathUtils parentPath imp previousPaths srcPath = undefined
-
 buildASTTable' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
 buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
   | srcPath `elem` previousPaths = return $ Left $ CompilationError (ImportCycle (previousPaths ++ [srcPath])) NoContext
