@@ -7,18 +7,18 @@ module Optimize.Optimize where
 
 import           Control.Monad.State
 import qualified Data.Map                      as M
+import           Data.List
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Infer.Type
-import           Data.List
 
 
 data OptimizationState
   = OptimizationState { typeCount  :: Int
-                     , classCount :: Int
-                     , typeMap    :: M.Map String String
-                     , classMap   :: M.Map String String
-                     }
+                      , classCount :: Int
+                      , typeMap    :: M.Map String String
+                      , classMap   :: M.Map String String
+                      }
 
 initialOptimizationState :: OptimizationState
 initialOptimizationState = OptimizationState { typeCount = 0, classCount = 0, typeMap = mempty, classMap = mempty }
@@ -318,7 +318,9 @@ instance Optimizable Slv.AST Opt.AST where
 typingToStr :: Slv.Typing -> String
 typingToStr (Slv.Untyped _ t) = case t of
   Slv.TRSingle n -> n
+
   Slv.TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
+
   Slv.TRTuple ts -> "Tuple_" <> show (length ts)
 
 buildTypeStrForPlaceholder :: [Type] -> String
@@ -331,6 +333,12 @@ getTypeHeadName t = case t of
     "(,)"   -> "Tuple_2"
     "(,,)"  -> "Tuple_3"
     "(,,,)" -> "Tuple_4"
+    "(,,,,)" -> "Tuple_5"
+    "(,,,,,)" -> "Tuple_6"
+    "(,,,,,,)" -> "Tuple_7"
+    "(,,,,,,,)" -> "Tuple_8"
+    "(,,,,,,,,)" -> "Tuple_9"
+    "(,,,,,,,,,)" -> "Tuple_10"
     _       -> n
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
   TApp l _  -> getTypeHeadName l

@@ -8,34 +8,6 @@ import { complement, equals, identity, ifElse } from "Function"
 export alias FilePath = String
 
 
-
-canonicalizePath :: FilePath -> FilePath
-export canonicalizePath = pipe(
-  splitPath,
-  map(
-    ifElse(
-      pipe(String.lastChar, equals(Just("/"))),
-      String.replace("([^/]*)/*", "$1/"),
-      identity
-    )
-  ),
-  joinPath
-)
-
-dropPathSegments :: Number -> FilePath -> FilePath
-export dropPathSegments = (howMany) => pipe(
-  splitPath,
-  drop(howMany),
-  joinPath
-)
-
-parentPath :: FilePath -> FilePath
-export parentPath = pipe(
-  splitPath,
-  dropLast(1),
-  joinPath
-)
-
 dropTrailingPathSeparator :: FilePath -> FilePath
 export dropTrailingPathSeparator = ifElse(
   (path) => path != "/" && String.lastChar(path) == Just("/"),
@@ -62,6 +34,33 @@ export joinPath = pipe(
     pipe(drop(1), map(dropTrailingPathSeparator), join("/"), mappend("/")),
     pipe(map(dropTrailingPathSeparator), join("/"))
   )
+)
+
+canonicalizePath :: FilePath -> FilePath
+export canonicalizePath = pipe(
+  splitPath,
+  map(
+    ifElse(
+      pipe(String.lastChar, equals(Just("/"))),
+      String.replace("([^/]*)/*", "$1/"),
+      identity
+    )
+  ),
+  joinPath
+)
+
+dropPathSegments :: Number -> FilePath -> FilePath
+export dropPathSegments = (howMany) => pipe(
+  splitPath,
+  drop(howMany),
+  joinPath
+)
+
+parentPath :: FilePath -> FilePath
+export parentPath = pipe(
+  splitPath,
+  dropLast(1),
+  joinPath
 )
 
 isRootPathOf :: FilePath -> FilePath -> Boolean

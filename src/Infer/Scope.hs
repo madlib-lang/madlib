@@ -6,17 +6,16 @@ module Infer.Scope where
 import           Infer.Env
 import           AST.Solved
 import           Infer.Infer
+import           Infer.Type
 import qualified Data.Set                      as S
 import qualified Data.Map                      as M
-import           Infer.Type
 import           Control.Monad
 import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
-import           Control.Exception
-import           Text.Show.Pretty
-import           Debug.Trace
 import           Explain.Location
+import Debug.Trace
+import           Text.Show.Pretty               ( ppShow )
 
 
 type InScope = S.Set String
@@ -28,6 +27,13 @@ type Accesses = S.Set (String, Exp)
 -- We'd have a dependency entry for fn like this:
 -- M.fromList [("fn", S.fromList ["var1", "var2"])]
 type Dependencies = M.Map String (S.Set (String, Exp))
+
+
+isNotTypedYet :: Exp -> Bool
+isNotTypedYet exp = case exp of
+  Solved (TVar (TV ('N':'O':'T':'_':'T':'Y':'P':'E':'D':'_':'Y':'E':'T':_) _)) _ _ -> True
+  _ -> False
+
 
 checkAST :: Env -> AST -> Infer ()
 checkAST env ast = do
@@ -45,8 +51,26 @@ checkExps env globalScope dependencies (e : es) = do
 
   catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
 
+  let shouldBeTypedOrAbove =
+        if isMethod env e then
+          S.empty
+        else
+          S.filter (\(name, exp) -> name `notElem` globalScope' && isNotTypedYet exp) collectedAccesses
+
+  generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
+
   let dependencies' = extendDependencies collectedAccesses dependencies e
   checkExps env globalScope' dependencies' es
+
+
+generateShouldBeTypedOrAboveErrors :: Env -> S.Set (String, Exp) -> Infer ()
+generateShouldBeTypedOrAboveErrors env =
+  foldM_
+    (\_ (name, exp) ->
+      pushError
+        $ CompilationError (ShouldBeTypedOrAbove name) (Context (envCurrentPath env) (getArea exp) (envBacktrace env))
+    )
+    ()
 
 
 shouldSkip :: Env -> Exp -> Bool
@@ -101,10 +125,6 @@ extendDependencies globalAccesses dependencies exp = case getExpName exp of
 
   Nothing   -> dependencies
 
-isFunction :: Exp -> Bool
-isFunction exp = case exp of
-  Solved t _ _ -> isFunctionType t
-  _            -> False
 
 isMethod :: Env -> Exp -> Bool
 isMethod env (Solved _ _ e) = case e of

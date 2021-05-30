@@ -38,6 +38,11 @@ requires an AST which is the AST of the entrypoint, where the whole compilation
 actually starts.
 -}
 
+generateNotTypedYetType :: Infer Type
+generateNotTypedYetType = do
+  tv <- newTVar Star
+  let TVar (TV n _) = tv
+  return $ TVar (TV ("NOT_TYPED_YET" ++ n) Star)
 
 populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                             = return env
@@ -50,12 +55,12 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
         safeExtendVars env (name, sc)
 
       (Can.Assignment name _) -> do
-        tv <- newTVar Star
-        safeExtendVars env (name, Forall [Star] $ [] :=> tv)
+        tv <- generateNotTypedYetType
+        safeExtendVars env (name, Forall [] $ [] :=> tv)
 
       (Can.Export (Can.Canonical _ (Can.Assignment name _))) -> do
-        tv <- newTVar Star
-        safeExtendVars env (name, Forall [Star] $ [] :=> tv)
+        tv <- generateNotTypedYetType
+        safeExtendVars env (name, Forall [] $ [] :=> tv)
 
       _ -> return env
 
@@ -117,14 +122,13 @@ extractExportedExps :: Slv.AST -> M.Map Slv.Name Slv.Exp
 extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
   Just p -> M.fromList $ bundleExports <$> filter Slv.isExport aexps
 
- where
-  bundleExports :: Slv.Exp -> (Slv.Name, Slv.Exp)
-  bundleExports e'@(Slv.Solved _ _ exp) = case exp of
-    Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)) -> (n, e')
+bundleExports :: Slv.Exp -> (Slv.Name, Slv.Exp)
+bundleExports e'@(Slv.Solved _ _ exp) = case exp of
+  Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)) -> (n, e')
 
-    Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
+  Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
 
-    Slv.NameExport n -> (n, e')
+  Slv.NameExport n -> (n, e')
 
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST

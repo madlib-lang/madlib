@@ -71,6 +71,23 @@ formatWarningContent _ warning = case warning of
       <> "'\n"
       <> "but it seems that you never use it."
 
+  MadlibVersionMinorTooLow pkgName minVersion versionUsed ->
+    let start = case pkgName of
+          Just n  -> "The package '" <> n <> "'"
+          Nothing -> "This package"
+    in  start <> " requires the minimum version '" <> minVersion <> "' but you currently use madlib\n"
+          <> "version '" <> versionUsed <> "'.\n\n"
+          <> "Hint: Update your version of madlib."
+
+  MadlibVersionMajorDiffer pkgName minVersion versionUsed ->
+    let start = case pkgName of
+          Just n  -> "The package '" <> n <> "'"
+          Nothing -> "This package"
+    in  start <> " requires the minimum version '" <> minVersion <> "' but you currently use madlib\n"
+          <> "version '" <> versionUsed <> "'. Because major versions differ it means there is a breaking\n"
+          <> "change and you may not be able to run the project.\n\n"
+          <> "Hint: Update your version of madlib."
+
 format :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
 format rf json (CompilationError err ctx) = do
   moduleContent <- lines <$> getModuleContent rf ctx
@@ -263,6 +280,11 @@ formatTypeError json err = case err of
       <> "'\n\n"
       <> "Hint: Import it only from one place, or if you meant to use both, make sure to convert from one to the other\n"
       <> "correctly."
+
+  ShouldBeTypedOrAbove name ->
+    "You access the name '" <> name <> "' before it is defined. This is fine, but in that case you must\n"
+    <> "give it a type annotation.\n\n"
+    <> "Hint: Place that declaration above the place you use it, or give it a type annotation."
 
   _ -> ppShow err
 

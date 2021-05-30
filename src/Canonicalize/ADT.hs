@@ -13,7 +13,6 @@ import           Infer.Type
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
-import           Data.Char
 import           Control.Monad.Except
 import           Data.List
 

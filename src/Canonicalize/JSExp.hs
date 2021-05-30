@@ -1,6 +1,6 @@
 module Canonicalize.JSExp where
 
-import           Target
+import           Run.Target
 import           Text.Regex.TDFA
 
 toRegex :: String -> Regex

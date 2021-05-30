@@ -3,13 +3,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-module Compile.Javascript where
+module Generate.Javascript where
 
 import qualified Data.Set                      as S
 import qualified Data.Map                      as M
 import           Data.Maybe                     ( fromMaybe )
-import           Data.List                      ( isInfixOf
-                                                , sort
+import           Data.List                      ( sort
                                                 , find
                                                 , intercalate
                                                 , foldl'
@@ -27,11 +26,10 @@ import           System.FilePath                ( replaceExtension
                                                 )
 import           Explain.Location
 import           Infer.Type
-import           Compile.JSInternals
-import           Target
-import           Compile.Utils
+import           Generate.JSInternals
+import           Run.Target
+import           Generate.Utils
 import           Text.Show.Pretty               ( ppShow )
-import           Debug.Trace
 
 
 newtype Env = Env { varsInScope :: S.Set String } deriving(Eq, Show)

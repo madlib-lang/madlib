@@ -17,7 +17,7 @@ import           System.FilePath                ( dropFileName
                                                 , normalise
                                                 , takeExtension
                                                 )
-import qualified MadlibDotJSON
+import qualified MadlibDotJson.MadlibDotJson    as MadlibDotJson
 import           Data.List                      ( isInfixOf
                                                 , isPrefixOf
                                                 , (\\)
@@ -59,13 +59,15 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
     FileSystemPath -> do
       let ext = if takeExtension path == ".json" then ".json" else ".mad"
       path' <- case path of
-        '@':_ -> do
+        '@':rest -> do
           let pathParts = splitPath path
-          let alias = dropTrailingPathSeparator . head $ pathParts
-          let afterAlias = joinPath . tail $ pathParts 
+          let alias = case dropTrailingPathSeparator . head $ pathParts of
+                "@"       -> "."
+                '@':after -> after
+          let afterAlias = joinPath . tail $ pathParts
           (madlibDotJsonFile, dir) <- retrieveMadlibDotJson pathUtils rootPath
           let aliasPath = case madlibDotJsonFile of
-                Just MadlibDotJSON.MadlibDotJSON{ MadlibDotJSON.importAliases = Just ias } ->
+                Just MadlibDotJson.MadlibDotJson{ MadlibDotJson.importAliases = Just ias } ->
                   M.lookup alias ias
                 _ -> Nothing
 
@@ -103,13 +105,13 @@ makePathForPackage pathUtils rootPath pkgName = do
 
 
 
-retrieveMadlibDotJson :: PathUtils -> FilePath -> IO (Maybe MadlibDotJSON.MadlibDotJSON, FilePath)
+retrieveMadlibDotJson :: PathUtils -> FilePath -> IO (Maybe MadlibDotJson.MadlibDotJson, FilePath)
 retrieveMadlibDotJson pathUtils dir = do
   let path = joinPath [dir, madlibDotJsonFile]
   found <- doesFileExist pathUtils path
   if found
     then do
-      json <- MadlibDotJSON.load pathUtils path
+      json <- MadlibDotJson.load pathUtils path
       case json of
         Right json' -> return $ (Just json', dir)
         Left  _     -> return (Nothing, dir)
@@ -119,9 +121,9 @@ getParentFolder :: FilePath -> FilePath
 getParentFolder = joinPath . init . splitPath
 
 
-findMadlibPackage :: PathUtils -> FilePath -> FilePath -> MadlibDotJSON.MadlibDotJSON -> IO (Maybe FilePath)
+findMadlibPackage :: PathUtils -> FilePath -> FilePath -> MadlibDotJson.MadlibDotJson -> IO (Maybe FilePath)
 findMadlibPackage pathUtils pkgName dir madlibDotJson = do
-  let dependencies = MadlibDotJSON.dependencies madlibDotJson
+  let dependencies = MadlibDotJson.dependencies madlibDotJson
   let sanitizedUrl = URL.sanitize <$> (dependencies >>= M.lookup pkgName)
   let path = (\url -> joinPath [dir, madlibModulesFolder, url, madlibDotJsonFile]) <$> sanitizedUrl
   case path of
@@ -137,11 +139,11 @@ findMadlibPackage pathUtils pkgName dir madlibDotJson = do
 
 findMadlibPackageMainPath :: PathUtils -> FilePath -> IO (Maybe FilePath)
 findMadlibPackageMainPath pathUtils file = do
-  json <- MadlibDotJSON.load pathUtils file
+  json <- MadlibDotJson.load pathUtils file
   let folder = takeDirectory file
   case json of
     Left  _     -> return Nothing
-    Right json' -> Just <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJSON.main json'])
+    Right json' -> Just <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
 
 
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)

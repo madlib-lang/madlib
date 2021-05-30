@@ -146,6 +146,9 @@ type Table = M.Map FilePath AST
 getType :: Solved a -> Ty.Type
 getType (Solved t _ _) = t
 
+getArea :: Solved a -> Area
+getArea (Solved _ a _) = a
+
 extractExp :: Exp -> Exp_
 extractExp (Solved _ (Area _ _) e) = e
 
@@ -171,6 +174,11 @@ isNameExport a = case a of
   (Solved _ _ (NameExport _)) -> True
 
   _ -> False
+
+isTypedExp :: Exp -> Bool
+isTypedExp a = case a of
+  (Solved _ _ (TypedExp _ _)) -> True
+  _                           -> False
 
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of

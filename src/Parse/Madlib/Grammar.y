@@ -11,9 +11,7 @@ import           Infer.Type
 import qualified AST.Source           as Src
 import           Explain.Location
 import           Explain.Meta
-import           Target
-import           Debug.Trace (trace)
-import           Text.Show.Pretty (ppShow)
+import           Run.Target
 }
 
 %name parseMadlib ast

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1d7e50156215008254cd90968c7b01e166af4e8fb0a800cda3e0e56ca1e20eda
+-- hash: de29623c4cd731a5e9add9f8eaf0390c37d4f3d5078d9114897c73c9b8757d0f
 
 name:           madlib
 version:        0.8.7
@@ -44,11 +44,6 @@ library
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
-      Compile.Documentation
-      Compile.Javascript
-      Compile.JSInternals
-      Compile.Json
-      Compile.Utils
       Coverage.Coverable
       Error.Backtrace
       Error.Context
@@ -57,12 +52,18 @@ library
       Explain.Format
       Explain.Location
       Explain.Meta
+      Generate.Documentation
+      Generate.Javascript
+      Generate.JSInternals
+      Generate.Json
+      Generate.Utils
       Infer.AST
       Infer.Env
       Infer.Exp
       Infer.Infer
       Infer.Instantiate
       Infer.Interface
+      Infer.JSX
       Infer.Pattern
       Infer.Placeholder
       Infer.Pred
@@ -73,19 +74,25 @@ library
       Infer.Type
       Infer.Typing
       Infer.Unify
-      MadlibDotJSON
+      MadlibDotJson.MadlibDotJson
+      MadlibDotJson.Version
       Main
       Optimize.Optimize
-      PackageGenerator
       Parse.DocString.DocString
       Parse.DocString.Grammar
       Parse.DocString.Lexer
       Parse.Madlib.AST
       Parse.Madlib.Grammar
       Parse.Madlib.Lexer
-      Target
-      Tools.CommandLine
-      Tools.CommandLineFlags
+      Run.CommandLine
+      Run.Compile
+      Run.GenerateDocumentation
+      Run.GeneratePackage
+      Run.PackageInstaller
+      Run.Run
+      Run.Target
+      Run.TestRunner
+      Run.Utils
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
@@ -138,11 +145,6 @@ executable madlib
       Canonicalize.Interface
       Canonicalize.JSExp
       Canonicalize.Typing
-      Compile.Documentation
-      Compile.Javascript
-      Compile.JSInternals
-      Compile.Json
-      Compile.Utils
       Coverage.Coverable
       Error.Backtrace
       Error.Context
@@ -151,12 +153,18 @@ executable madlib
       Explain.Format
       Explain.Location
       Explain.Meta
+      Generate.Documentation
+      Generate.Javascript
+      Generate.JSInternals
+      Generate.Json
+      Generate.Utils
       Infer.AST
       Infer.Env
       Infer.Exp
       Infer.Infer
       Infer.Instantiate
       Infer.Interface
+      Infer.JSX
       Infer.Pattern
       Infer.Placeholder
       Infer.Pred
@@ -167,18 +175,24 @@ executable madlib
       Infer.Type
       Infer.Typing
       Infer.Unify
-      MadlibDotJSON
+      MadlibDotJson.MadlibDotJson
+      MadlibDotJson.Version
       Optimize.Optimize
-      PackageGenerator
       Parse.DocString.DocString
       Parse.DocString.Grammar
       Parse.DocString.Lexer
       Parse.Madlib.AST
       Parse.Madlib.Grammar
       Parse.Madlib.Lexer
-      Target
-      Tools.CommandLine
-      Tools.CommandLineFlags
+      Run.CommandLine
+      Run.Compile
+      Run.GenerateDocumentation
+      Run.GeneratePackage
+      Run.PackageInstaller
+      Run.Run
+      Run.Target
+      Run.TestRunner
+      Run.Utils
       Utils.Path
       Utils.PathUtils
       Utils.Tuple

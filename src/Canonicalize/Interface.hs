@@ -12,7 +12,7 @@ import           Canonicalize.Canonicalize
 import           Infer.Type
 import           Infer.Substitute
 import           Infer.Scheme
-import           Target
+import           Run.Target
 import           Error.Error
 import           Error.Context
 import           Control.Monad

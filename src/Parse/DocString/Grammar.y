@@ -10,7 +10,7 @@ import           Infer.Type
 import           Parse.DocString.DocString
 import           Explain.Location
 import           Explain.Meta
-import           Target
+import           Run.Target
 import           Text.Regex.TDFA
 import           Debug.Trace (trace)
 import           Text.Show.Pretty (ppShow)

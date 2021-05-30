@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Canonicalize.Canonicalize where
 
-import           Target
+import           Run.Target
 import qualified AST.Canonical                 as Can
 import qualified AST.Source                    as Src
 import           Canonicalize.JSExp

@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Compile.Documentation where
+module Generate.Documentation where
 
 import           Data.Aeson.Text                ( encodeToLazyText )
 import           Data.Text.Lazy                 ( unpack )
@@ -17,7 +17,7 @@ import           Data.List                      ( intercalate
                                                 , find
                                                 )
 import           Parse.DocString.DocString
-import           Compile.Utils
+import           Generate.Utils
 import qualified Data.Map                      as M
 import qualified Data.Maybe                    as Maybe
 import           Infer.Type

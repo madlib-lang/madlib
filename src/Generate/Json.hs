@@ -1,4 +1,4 @@
-module Compile.Json where
+module Generate.Json where
 
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
@@ -8,13 +8,12 @@ import           Data.List                      ( intercalate
 import           Infer.Type
 import           Explain.Location
 import           Utils.Tuple                    ( lst )
-import           Debug.Trace
 import           Text.Show.Pretty
 import           Error.Error
 import           Error.Warning
 import           Error.Context
 import           Explain.Format
-import           Compile.Utils
+import           Generate.Utils
 
 
 indentSize :: Int

@@ -1,7 +1,7 @@
-module Compile.JSInternals where
+module Generate.JSInternals where
 
-import           Target
-import           Compile.Utils
+import           Run.Target
+import           Generate.Utils
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =

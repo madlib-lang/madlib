@@ -1,13 +1,34 @@
 {-# LANGUAGE LambdaCase #-}
-module Tools.CommandLine where
+module Run.CommandLine where
 
 import           Options.Applicative
 
-import           Tools.CommandLineFlags
 import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
-import           Target
+import           Run.Target
+
+
+data Command
+  = Compile
+      { compileInput :: FilePath
+      , compileOutput :: FilePath
+      , compileConfig :: FilePath
+      , compileVerbose :: Bool
+      , compileDebug :: Bool
+      , compileBundle :: Bool
+      , compileOptimize :: Bool
+      , compileTarget :: Target
+      , compileJson :: Bool
+      , compileTestFilesOnly :: Bool
+      }
+  | Test { testInput :: FilePath, coverage :: Bool }
+  | Install
+  | New { newFolder :: FilePath }
+  | Doc { docInput :: FilePath }
+  | Run { runInput :: FilePath, runArgs :: [String] }
+  deriving (Eq, Show)
+
 
 hashBar = "################################################"
 h1 = " ____    __  ____   _____   ____    ____  ______"
@@ -153,3 +174,6 @@ formattedVersion = "madlib@" <> showVersion version
 
 opts = info (parseTransform <**> helper <**> parseVersion)
             (fullDesc <> headerDoc (Just $ string (unlines [hashBar, madlibAscii])) <> progDesc formattedVersion)
+
+runCommandParser :: IO Command
+runCommandParser = execParser opts

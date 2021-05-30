@@ -38,6 +38,7 @@ data TypeError
   | NotInScope String Loc
   | SignatureTooGeneral Scheme Scheme
   | NameAlreadyExported String
+  | ShouldBeTypedOrAbove String
   | ContextTooWeak
   | FatalError
   | ASTHasNoPath

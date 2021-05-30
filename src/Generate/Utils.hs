@@ -1,6 +1,6 @@
-module Compile.Utils where
+module Generate.Utils where
 
-import           Target
+import           Run.Target
 import           Data.Aeson.Text                ( encodeToLazyText )
 import           Data.Text.Lazy                 ( unpack )
 

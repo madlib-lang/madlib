@@ -4,7 +4,7 @@
 module Canonicalize.AST where
 
 
-import           Target
+import           Run.Target
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Canonicalize.Env
@@ -17,7 +17,6 @@ import           Infer.Type
 import           Error.Error
 import           Error.Warning
 import           Error.Context
-import           Data.List
 import           Data.Maybe
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
@@ -25,7 +24,6 @@ import qualified Utils.Tuple                   as T
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Explain.Location
-import           Explain.Meta
 import           Text.Regex.TDFA
 
 
@@ -230,6 +228,7 @@ runCanonicalization tableCache target env table entrypoint = do
                                     (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "" })
   ((\(table, _, cache) -> (table, cache)) <$> canonicalized, warnings s)
 
+
 canonicalizeMany
   :: Target -> Env -> Src.Table -> [FilePath] -> (Either CompilationError Can.Table, [CompilationWarning])
 canonicalizeMany = canonicalizeMany' mempty
@@ -245,8 +244,3 @@ canonicalizeMany' tableCache target env table fps = case fps of
       in  (liftM2 (\(table', _) table'' -> table' <> table'') curr next, warnings ++ nextWarnings)
 
     (Left e, ws) -> (Left e, ws)
-
-
-    -- let (canTable , warnings    ) = runCanonicalization tableCache target env table fp
-    --     (nextTable, nextWarnings) = canonicalizeMany target env table fps'
-    -- in  (liftM2 (<>) canTable nextTable, warnings ++ nextWarnings)

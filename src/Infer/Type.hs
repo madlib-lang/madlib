@@ -45,7 +45,10 @@ tUnit :: Type
 tUnit = TCon (TC "()" Star) "prelude"
 
 tList :: Type
-tList = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "a" Star))
+tList = tListOf (TVar (TV "a" Star))
+
+tListOf :: Type -> Type
+tListOf = TApp (TCon (TC "List" (Kfun Star Star)) "prelude")
 
 tTuple2 :: Type
 tTuple2 = TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude"

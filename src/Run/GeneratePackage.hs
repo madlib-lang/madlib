@@ -1,4 +1,4 @@
-module PackageGenerator where
+module Run.GeneratePackage where
 
 import           GHC.IO.Handle
 import           GHC.IO.Handle.FD

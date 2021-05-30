@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
@@ -7,38 +6,30 @@ module Infer.Exp where
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
-import           Data.Foldable                  ( foldrM
-                                                , foldlM
-                                                )
-import qualified Parse.Madlib.AST              as AST
+import           Data.Foldable                  ( foldlM )
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
+import           Error.Error
+import           Error.Context
+import           Explain.Location
+import           Data.List                      ( (\\)
+                                                , partition
+                                                , foldl'
+                                                )
 import           Infer.Infer
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
-import           Error.Error
-import           Error.Context
-import           Explain.Location
-import           Utils.Tuple
-import           Data.List                      ( (\\)
-                                                , union
-                                                , partition
-                                                , foldl'
-                                                )
-import           Infer.Scheme                   ( quantify
-                                                , toScheme
-                                                )
-import qualified Utils.Tuple                   as T
+import           Infer.Scheme                   ( quantify )
 import           Infer.Pattern
 import           Infer.Pred
 import           Infer.Placeholder
-import qualified Control.Monad                 as CM
-import           Text.Show.Pretty               ( ppShow )
-import           Debug.Trace
+import           Infer.JSX
 import           Infer.ToSolved
+import qualified Utils.Tuple                   as T
+import qualified Control.Monad                 as CM
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -326,72 +317,7 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListItem exp -> case exp of
-    Can.Canonical _ (Can.JSXExpChild exp') -> do
-      (s1, ps, t, e) <- infer env exp'
-
-      case t of
-        (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App
-                (Can.Canonical
-                  area
-                  (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))"))
-                           (Can.Canonical area (Can.Var "text"))
-                           False
-                  )
-                )
-                exp'
-                True
-          (s1, ps, t, e) <- infer env exp''
-          s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
-          let s = s1 `compose` s2
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-
-        (TApp (TVar (TV _ (Kfun Star Star))) (TCon (TC "String" Star) "prelude")) -> do
-          let exp'' = Can.Canonical area $ Can.App
-                (Can.Canonical
-                  area
-                  (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))"))
-                           (Can.Canonical area (Can.Var "text"))
-                           False
-                  )
-                )
-                exp'
-                True
-          (s1, ps, t, e) <- infer env exp''
-          s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
-          let s = s1 `compose` s2
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-
-        (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") t') -> do
-          s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
-          let s = s1 `compose` s2
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-
-        (TApp (TVar (TV _ (Kfun Star Star))) t') -> do
-          s2 <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
-          let s = s1 `compose` s2
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
-
-        TCon (TC "String" Star) "prelude" -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) exp' True
-          (s1, ps, t, e) <- infer env exp''
-          s2             <- unify t ty
-          let s = s1 `compose` s2
-
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
-
-        t'@(TVar _) -> do
-          let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
-          (s1, ps, t, e') <- infer (extendVars env ("__tmp_jsx_children__", Forall [] $ [] :=> (t' `fn` ty))) exp''
-          s2              <- unify t ty
-          let s = s1 `compose` s2
-
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')
-
-        _ -> do
-          s2 <- unify t ty
-          let s = s1 `compose` s2
-          return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
+    Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
 
     _ -> do
       (s1, ps, t, e) <- infer env exp
@@ -434,7 +360,6 @@ inferRecord env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
   inferredFields <- mapM (inferRecordField env) fields
-  (open, maybeT) <- shouldBeOpen env fields
 
   let fieldSubsts = (\(s, _, _, _) -> s) <$> inferredFields
   let fieldTypes  = (\(_, _, t, _) -> t) <$> inferredFields
@@ -463,7 +388,6 @@ inferRecord env exp = do
   return (subst `compose` extraSubst, concat fieldPS, recordType, Slv.Solved recordType area (Slv.Record fieldEXPS))
 
 
-
 inferRecordField :: Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
 inferRecordField env (Can.Canonical area field) = case field of
   Can.Field (name, exp) -> do
@@ -480,18 +404,6 @@ inferRecordField env (Can.Canonical area field) = case field of
 
       _ -> throwError $ CompilationError (WrongSpreadType $ show t)
                                          (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
-
-shouldBeOpen :: Env -> [Can.Field] -> Infer (Bool, Maybe Type)
-shouldBeOpen env = foldrM
-  (\(Can.Canonical _ field) (r, _) -> case field of
-    Can.Field       _ -> return (r, Nothing)
-    Can.FieldSpread e -> do
-      (_, _, t, _) <- infer env e
-      case t of
-        TRecord _ _ -> return (r, Nothing)
-        TVar _      -> return (True, Just t)
-  )
-  (False, Nothing)
 
 
 
@@ -578,11 +490,11 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
     iss
 
   let ps'             = concat $ T.mid <$> pss
-  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . lst <$> pss)
+  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . T.lst <$> pss)
   
   let s''  = s' `compose` issSubstitution
 
-  let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . lst <$> pss
+  let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . T.lst <$> pss
   let wher = Slv.Solved (apply s'' tv) area $ Slv.Where (updateType e (apply s'' t)) iss
   return (s'', ps ++ ps', apply s'' tv, wher)
 
@@ -665,7 +577,8 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
 
   let fs' = ftv $ ps' :=> t'
-      sc = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
+      -- sc = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
+      sc = Forall [] $ ps' :=> t'
 
   case Can.getExpName exp of
     Just n  -> return (s'', (ds, ps'), extendVars env' (n, sc), updateType e t')
