@@ -14,7 +14,7 @@ import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
 import           Explain.Location
-import Debug.Trace
+import           Debug.Trace
 import           Text.Show.Pretty               ( ppShow )
 
 
@@ -31,7 +31,7 @@ type Dependencies = M.Map String (S.Set (String, Exp))
 
 isNotTypedYet :: Exp -> Bool
 isNotTypedYet exp = case exp of
-  Solved (TVar (TV ('N':'O':'T':'_':'T':'Y':'P':'E':'D':'_':'Y':'E':'T':_) _)) _ _ -> True
+  Solved (TVar (TV ('N' : 'O' : 'T' : '_' : 'T' : 'Y' : 'P' : 'E' : 'D' : '_' : 'Y' : 'E' : 'T' : _) _)) _ _ -> True
   _ -> False
 
 
@@ -51,11 +51,9 @@ checkExps env globalScope dependencies (e : es) = do
 
   catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
 
-  let shouldBeTypedOrAbove =
-        if isMethod env e then
-          S.empty
-        else
-          S.filter (\(name, exp) -> name `notElem` globalScope' && isNotTypedYet exp) collectedAccesses
+  let shouldBeTypedOrAbove = if isMethod env e
+        then S.empty
+        else S.filter (\(name, exp) -> name `notElem` globalScope' && isNotTypedYet exp) collectedAccesses
 
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
@@ -64,13 +62,11 @@ checkExps env globalScope dependencies (e : es) = do
 
 
 generateShouldBeTypedOrAboveErrors :: Env -> S.Set (String, Exp) -> Infer ()
-generateShouldBeTypedOrAboveErrors env =
-  foldM_
-    (\_ (name, exp) ->
-      pushError
-        $ CompilationError (ShouldBeTypedOrAbove name) (Context (envCurrentPath env) (getArea exp) (envBacktrace env))
-    )
-    ()
+generateShouldBeTypedOrAboveErrors env = foldM_
+  (\_ (name, exp) -> pushError
+    $ CompilationError (ShouldBeTypedOrAbove name) (Context (envCurrentPath env) (getArea exp) (envBacktrace env))
+  )
+  ()
 
 
 shouldSkip :: Env -> Exp -> Bool

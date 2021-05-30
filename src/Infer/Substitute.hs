@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -17,8 +16,6 @@ import           Data.List                      ( nub
                                                 , union
                                                 , intersect
                                                 )
-import           Text.Show.Pretty               ( ppShow )
-import           Debug.Trace
 
 
 class Substitutable a where
@@ -39,8 +36,8 @@ instance Substitutable Type where
   apply s t@( TVar a      ) = M.findWithDefault t a s
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields base) =
-    let appliedFields                        = apply s <$> fields
-        appliedBase                          = apply s <$> base
+    let appliedFields          = apply s <$> fields
+        appliedBase            = apply s <$> base
         (allFields', nextBase) = case appliedBase of
           Just (TRecord fields' base') -> (apply s <$> fields' <> appliedFields, base')
           _                            -> (appliedFields, appliedBase)
@@ -50,9 +47,9 @@ instance Substitutable Type where
   apply s t = t
 
   ftv TCon{}                       = []
-  ftv (TVar a            )         = [a]
-  ftv (t1 `TApp` t2      )         = ftv t1 `union` ftv t2
-  ftv (TRecord fields Nothing)     = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
+  ftv (TVar a                    ) = [a]
+  ftv (t1      `TApp` t2         ) = ftv t1 `union` ftv t2
+  ftv (TRecord fields Nothing    ) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
   ftv (TRecord fields (Just base)) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields) ++ ftv base
   ftv t                            = []
 
@@ -93,15 +90,15 @@ merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError
 
 buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
-  TVar (TV n k)     -> M.singleton (TV n Star) t
-  TCon _ _          -> mempty
-  TApp l r          -> M.union (buildVarSubsts l) (buildVarSubsts r)
-  TRecord ts base   -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
+  TVar (TV n k)   -> M.singleton (TV n Star) t
+  TCon    _  _    -> mempty
+  TApp    l  r    -> M.union (buildVarSubsts l) (buildVarSubsts r)
+  TRecord ts base -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
 
 removeRecordTypes :: Substitution -> Substitution
 removeRecordTypes = M.filter notRecord
  where
   notRecord :: Type -> Bool
   notRecord t = case t of
-    TRecord _ _   -> False
-    _             -> True
+    TRecord _ _ -> False
+    _           -> True

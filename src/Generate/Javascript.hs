@@ -428,9 +428,15 @@ instance Compilable Exp where
           compileListOrTuplePattern :: String -> [Pattern] -> String
           compileListOrTuplePattern scope [] = scope <> ".length === 0"
           compileListOrTuplePattern scope items =
-            scope <> ".length " <> lengthComparator items <> " " <> show (if containsSpread items then length items - 1 else length items) <> " && " <> intercalate
-              " && "
-              ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
+            scope
+              <> ".length "
+              <> lengthComparator items
+              <> " "
+              <> show (if containsSpread items then length items - 1 else length items)
+              <> " && "
+              <> intercalate
+                   " && "
+                   ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
            where
             lengthComparator :: [Pattern] -> String
             lengthComparator pats = if containsSpread pats then ">=" else "==="
@@ -500,15 +506,13 @@ instance Compilable Exp where
           buildFieldVar :: String -> Pattern -> String
           buildFieldVar name (Optimized _ _ pat) = case pat of
             PSpread (Optimized _ _ (PVar n)) -> "..." <> generateSafeName n
-            PVar    n                        -> if null name then generateSafeName n else name <> ": " <> generateSafeName n
+            PVar n -> if null name then generateSafeName n else name <> ": " <> generateSafeName n
             PRecord fields ->
               name
                 <> ": { "
                 <> intercalate
                      ", "
-                     (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar
-                                                                                                   fields
-                     )
+                     (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
                 <> " }"
             PCtor _ args -> if null name
               then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
@@ -518,9 +522,9 @@ instance Compilable Exp where
                 <> "{ __args: ["
                 <> intercalate ", " ((\(i, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
                 <> "] }"
-            PList pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PList  pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
             PTuple pats -> name <> ": [" <> intercalate ", " (buildListVar <$> pats) <> "]"
-            _ -> ""
+            _           -> ""
 
           buildTupleOrListVars :: String -> [Pattern] -> String
           buildTupleOrListVars scope items =
@@ -530,12 +534,12 @@ instance Compilable Exp where
           buildListVar :: Pattern -> String
           buildListVar (Optimized _ _ pat) = case pat of
             PSpread (Optimized _ _ (PVar n)) -> "..." <> generateSafeName n
-            PVar    n    -> generateSafeName n
-            PCtor _ args -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
-            PList  pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
-            PTuple pats  -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PVar    n      -> generateSafeName n
+            PCtor _ args   -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
+            PList   pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
+            PTuple  pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
             PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"
-            _            -> ""
+            _              -> ""
 
           compileRecord :: String -> Name -> Pattern -> String
           compileRecord scope n p = compilePattern (scope <> "." <> n) p

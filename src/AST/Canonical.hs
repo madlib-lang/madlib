@@ -163,7 +163,7 @@ getImportAlias imp = case imp of
 getImportTypeNames :: Import -> [Canonical Name]
 getImportTypeNames imp = case imp of
   Canonical _ (NamedImport names _ _) -> []
-  Canonical _ (TypeImport names _ _)  -> names
+  Canonical _ (TypeImport  names _ _) -> names
   Canonical _ DefaultImport{}         -> []
 
 isTypeImport :: Import -> Bool
@@ -203,7 +203,7 @@ getExportName exp = case exp of
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Canonical _ (NamedImport   _ _ n) -> n
-  Canonical _ (TypeImport   _ _ n)  -> n
+  Canonical _ (TypeImport    _ _ n) -> n
   Canonical _ (DefaultImport _ _ n) -> n
 
 isAssignment :: Exp -> Bool

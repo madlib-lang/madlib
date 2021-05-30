@@ -57,12 +57,12 @@ inferPattern env (Can.Canonical area pat) = case pat of
     return (ps, vars, t)
 
   Can.PList pats -> do
-    tv <- newTVar Star
+    tv            <- newTVar Star
 
     (ps, vars, t) <- foldlM
       (\(ps, vars, t) pat -> do
         (ps', vars', t') <- inferPListItem env tv pat
-        s <- unify t t'
+        s                <- unify t t'
         return (ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], mempty, tv)

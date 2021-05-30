@@ -173,7 +173,7 @@ isNameExport :: Exp -> Bool
 isNameExport a = case a of
   (Solved _ _ (NameExport _)) -> True
 
-  _ -> False
+  _                           -> False
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of

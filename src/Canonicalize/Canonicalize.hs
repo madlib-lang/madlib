@@ -215,11 +215,7 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
     Src.PCtor name pats -> do
-      let nameToPush =
-            if "." `L.isInfixOf` name then
-              takeWhile (/= '.') name
-            else
-              name
+      let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PCtor name pats')

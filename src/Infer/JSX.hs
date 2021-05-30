@@ -20,19 +20,16 @@ import           Infer.Unify
 type InferFunction = Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 
 buildTextListChildExp :: Area -> Can.Exp -> Can.Exp
-buildTextListChildExp area exp =
-  Can.Canonical area $ Can.App
-    (Can.Canonical
-      area
-      (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))"))
-              (Can.Canonical area (Can.Var "text"))
-              False
-      )
-    )
-    exp
-    True
+buildTextListChildExp area exp = Can.Canonical area $ Can.App
+  (Can.Canonical
+    area
+    (Can.App (Can.Canonical area (Can.JSExp "((f) => (xs) => xs.map(f))")) (Can.Canonical area (Can.Var "text")) False)
+  )
+  exp
+  True
 
-inferTextListChild :: InferFunction -> Env -> Type -> Type -> Can.Exp -> Area -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+inferTextListChild
+  :: InferFunction -> Env -> Type -> Type -> Can.Exp -> Area -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferTextListChild infer env ty t exp area = do
   let exp'' = buildTextListChildExp area exp
   (s1, ps, t, e) <- infer env exp''
@@ -66,13 +63,13 @@ inferJSXExpChild infer env ty (Can.Canonical area (Can.JSXExpChild exp')) = do
       (s1, ps, t, e) <- infer env exp''
       s2             <- unify t ty
       let s = s1 `compose` s2
-    
+
       return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
 
     t'@(TVar _) -> do
       let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
       (s1, ps, t, e') <- infer (extendVars env ("__tmp_jsx_children__", Forall [] $ [] :=> (t' `fn` ty))) exp''
-      s2             <- unify t ty
+      s2              <- unify t ty
       let s = s1 `compose` s2
 
       return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')

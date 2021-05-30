@@ -30,4 +30,4 @@ load pathUtils file = do
   content <- try $ byteStringReadFile pathUtils file :: IO (Either SomeException B.ByteString)
   case content of
     Right c -> return $ eitherDecode c :: IO (Either String MadlibDotJson)
-    Left e  -> return $ Left "File not found"
+    Left  e -> return $ Left "File not found"

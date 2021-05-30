@@ -67,11 +67,11 @@ tester optimized code =
 
 coverageTester :: String -> String
 coverageTester code =
-  let Right ast         = buildAST "path" code
-      table             = M.singleton "path" ast
+  let Right ast              = buildAST "path" code
+      table                  = M.singleton "path" ast
       (Right (table', _), _) = runCanonicalization mempty TNode Can.initialEnv table "path"
-      Right canAST      = Can.findAST table' "path"
-      inferred          = runEnv canAST >>= (`runInfer` canAST)
+      Right canAST           = Can.findAST table' "path"
+      inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
           Compile.Javascript.initialEnv
@@ -86,7 +86,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 
   let canTable = case runCanonicalization mempty TNode Can.initialEnv table path of
         (Right (table, _), _) -> table
-        (Left  err  , _) -> trace ("ERR: " <> ppShow err) mempty
+        (Left  err       , _) -> trace ("ERR: " <> ppShow err) mempty
       Right canAST = Can.findAST canTable path
       resolved     = fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
   in  case resolved of
@@ -803,12 +803,12 @@ spec = do
           , "})"
           ]
 
-        ioModule = unlines ["log :: a -> a", "export log = (a) => (#- { console.log(a); return a; } -#)"]
+        ioModule      = unlines ["log :: a -> a", "export log = (a) => (#- { console.log(a); return a; } -#)"]
 
         madlibDotJson = "{ \"main\": \"\" }"
 
 
-        files    = M.fromList
+        files         = M.fromList
           [ ("/root/project/src/Main.mad"      , mainModule)
           , ("/root/project/src/Http.mad"      , httpModule)
           , ("/root/project/src/Wish.mad"      , wishModule)
@@ -912,22 +912,21 @@ spec = do
 
 
     it "should compile and resolve files importing prelude modules" $ do
-      let
-        listModule = unlines ["map :: (a -> b) -> List a -> List b", "export map = (f, xs) => (#- xs.map(f) -#)"]
+      let listModule    = unlines ["map :: (a -> b) -> List a -> List b", "export map = (f, xs) => (#- xs.map(f) -#)"]
 
-        main          = unlines ["import L from \"List\"", "L.map((x) => (x * 2), [1, 2, 3])"]
-        madlibDotJson = "{ \"main\": \"\" }"
+          main          = unlines ["import L from \"List\"", "L.map((x) => (x * 2), [1, 2, 3])"]
+          madlibDotJson = "{ \"main\": \"\" }"
 
-        files =
-          M.fromList [ ("/root/project/prelude/__internal__/List.mad", listModule)
-                     , ("/root/project/src/Main.mad", main)
-                     , ("/root/project/madlib.json", madlibDotJson)
-                     ]
+          files         = M.fromList
+            [ ("/root/project/prelude/__internal__/List.mad", listModule)
+            , ("/root/project/src/Main.mad"                 , main)
+            , ("/root/project/madlib.json"                  , madlibDotJson)
+            ]
 
-        pathUtils = defaultPathUtils { readFile           = makeReadFile files
-                                     , byteStringReadFile = makeByteStringReadFile files
-                                     , getExecutablePath  = return "/root/project/madlib"
-                                     }
+          pathUtils = defaultPathUtils { readFile           = makeReadFile files
+                                       , byteStringReadFile = makeByteStringReadFile files
+                                       , getExecutablePath  = return "/root/project/madlib"
+                                       }
 
       let r = unsafePerformIO
             $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
@@ -941,148 +940,147 @@ spec = do
       snapshotTest "should compile and resolve files importing prelude modules" actual
 
     it "should compile and resolve files importing modules that rely on type aliases" $ do
-      let
-        wishModule = unlines
-          [ "interface Functor m {"
-          , "  map :: (a -> b) -> m a -> m b"
-          , "}"
-          , ""
-          , "interface Functor m => Applicative m {"
-          , "  ap :: m (a -> b) -> m a -> m b"
-          , "  pure :: a -> m a"
-          , "}"
-          , ""
-          , "interface Applicative m => Monad m {"
-          , "  of :: a -> m a"
-          , "  chain :: (a -> m b) -> m a -> m b"
-          , "}"
-          , ""
-          , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
-          , ""
-          , ""
-          , "instance Functor (Wish e) {"
-          , "  map = (f, m) => Wish((bad, good) =>"
-          , "    where(m)"
-          , "      is Wish run: run(bad, (x) => (good(f(x))))"
-          , "  )"
-          , "}"
-          , ""
-          , "instance Applicative (Wish e) {"
-          , "  pure = (a) => Wish((bad, good) => good(a))"
-          , ""
-          , "  ap = (mf, m) => Wish((bad, good) => where(<mf, m>)"
-          , "    is <Wish runMF, Wish runM>:"
-          , "      runM("
-          , "        bad,"
-          , "        (x) => runMF("
-          , "          bad,"
-          , "          (f) => good(f(x))"
-          , "        )"
-          , "      )"
-          , "  )"
-          , "}"
-          , ""
-          , "instance Monad (Wish e) {"
-          , "  of = pure"
-          , ""
-          , "  chain = (f, m) => Wish((bad, good) =>"
-          , "    where(m) "
-          , "      is Wish run:"
-          , "        run(bad, (x) =>"
-          , "          where(f(x))"
-          , "            is Wish r: r(bad, good)"
-          , "        )"
-          , "  )"
-          , "}"
-          , ""
-          , ""
-          , "mapRej :: (e -> f) -> Wish e a -> Wish f a"
-          , "export mapRej = (f, m) => ("
-          , "  Wish((bad, good) => ("
-          , "    where(m) {"
-          , "      is Wish run: run((x) => (bad(f(x))), good)"
-          , "    }"
-          , "  ))"
-          , ")"
-          , ""
-          , ""
-          , "chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a"
-          , "export chainRej = (f, m) => ("
-          , "  Wish((bad, good) => ("
-          , "    where(m) {"
-          , "      is Wish run: run((x) => ("
-          , "        where(f(x)) {"
-          , "          is Wish r: r(bad, good)"
-          , "        }"
-          , "      ), good)"
-          , "    }"
-          , "  ))"
-          , ")"
-          , ""
-          , ""
-          , "good :: a -> Wish e a"
-          , "export good = (a) => Wish((bad, good) => good(a))"
-          , ""
-          , "bad :: e -> Wish e a"
-          , "export bad = (e) => ("
-          , "  Wish((bad, good) => (bad(e)))"
-          , ")"
-          , ""
-          , ""
-          , "getWishFn = (w) => (where(w)"
-          , "  is Wish fn: fn"
-          , ")"
-          , ""
-          , ""
-          , "parallel :: List (Wish e a) -> Wish e (List a)"
-          , "export parallel = (wishes) => ("
-          , "  Wish((bad, good) => (#- {"
-          , "    const l = wishes.length"
-          , "    let ko = false;"
-          , "    let ok = 0;"
-          , "    const out = new Array(l);"
-          , "    const next = j => (j === l && good(out));"
-          , "    const fork = (w, j) => (getWishFn(w)("
-          , "      e => ko || (bad(e), ko = true),"
-          , "      x => ko || (out[j] = x, next(++ok))"
-          , "    ));"
-          , "    wishes.forEach(fork);"
-          , "  } -#))"
-          , ")"
-          , ""
-          , ""
-          , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
-          , "export fulfill = (bad, good, m) => {"
-          , "  where(m) {"
-          , "    is Wish run: run(bad, good)"
-          , "  }"
-          , ""
-          , "  return ()"
-          , "}"
-          ]
+      let wishModule = unlines
+            [ "interface Functor m {"
+            , "  map :: (a -> b) -> m a -> m b"
+            , "}"
+            , ""
+            , "interface Functor m => Applicative m {"
+            , "  ap :: m (a -> b) -> m a -> m b"
+            , "  pure :: a -> m a"
+            , "}"
+            , ""
+            , "interface Applicative m => Monad m {"
+            , "  of :: a -> m a"
+            , "  chain :: (a -> m b) -> m a -> m b"
+            , "}"
+            , ""
+            , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+            , ""
+            , ""
+            , "instance Functor (Wish e) {"
+            , "  map = (f, m) => Wish((bad, good) =>"
+            , "    where(m)"
+            , "      is Wish run: run(bad, (x) => (good(f(x))))"
+            , "  )"
+            , "}"
+            , ""
+            , "instance Applicative (Wish e) {"
+            , "  pure = (a) => Wish((bad, good) => good(a))"
+            , ""
+            , "  ap = (mf, m) => Wish((bad, good) => where(<mf, m>)"
+            , "    is <Wish runMF, Wish runM>:"
+            , "      runM("
+            , "        bad,"
+            , "        (x) => runMF("
+            , "          bad,"
+            , "          (f) => good(f(x))"
+            , "        )"
+            , "      )"
+            , "  )"
+            , "}"
+            , ""
+            , "instance Monad (Wish e) {"
+            , "  of = pure"
+            , ""
+            , "  chain = (f, m) => Wish((bad, good) =>"
+            , "    where(m) "
+            , "      is Wish run:"
+            , "        run(bad, (x) =>"
+            , "          where(f(x))"
+            , "            is Wish r: r(bad, good)"
+            , "        )"
+            , "  )"
+            , "}"
+            , ""
+            , ""
+            , "mapRej :: (e -> f) -> Wish e a -> Wish f a"
+            , "export mapRej = (f, m) => ("
+            , "  Wish((bad, good) => ("
+            , "    where(m) {"
+            , "      is Wish run: run((x) => (bad(f(x))), good)"
+            , "    }"
+            , "  ))"
+            , ")"
+            , ""
+            , ""
+            , "chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a"
+            , "export chainRej = (f, m) => ("
+            , "  Wish((bad, good) => ("
+            , "    where(m) {"
+            , "      is Wish run: run((x) => ("
+            , "        where(f(x)) {"
+            , "          is Wish r: r(bad, good)"
+            , "        }"
+            , "      ), good)"
+            , "    }"
+            , "  ))"
+            , ")"
+            , ""
+            , ""
+            , "good :: a -> Wish e a"
+            , "export good = (a) => Wish((bad, good) => good(a))"
+            , ""
+            , "bad :: e -> Wish e a"
+            , "export bad = (e) => ("
+            , "  Wish((bad, good) => (bad(e)))"
+            , ")"
+            , ""
+            , ""
+            , "getWishFn = (w) => (where(w)"
+            , "  is Wish fn: fn"
+            , ")"
+            , ""
+            , ""
+            , "parallel :: List (Wish e a) -> Wish e (List a)"
+            , "export parallel = (wishes) => ("
+            , "  Wish((bad, good) => (#- {"
+            , "    const l = wishes.length"
+            , "    let ko = false;"
+            , "    let ok = 0;"
+            , "    const out = new Array(l);"
+            , "    const next = j => (j === l && good(out));"
+            , "    const fork = (w, j) => (getWishFn(w)("
+            , "      e => ko || (bad(e), ko = true),"
+            , "      x => ko || (out[j] = x, next(++ok))"
+            , "    ));"
+            , "    wishes.forEach(fork);"
+            , "  } -#))"
+            , ")"
+            , ""
+            , ""
+            , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
+            , "export fulfill = (bad, good, m) => {"
+            , "  where(m) {"
+            , "    is Wish run: run(bad, good)"
+            , "  }"
+            , ""
+            , "  return ()"
+            , "}"
+            ]
 
-        main = unlines
-          [ "import W from \"Wish\""
-          , "of(3)"
-          , "  |> map((x) => (x % 2))"
-          , "  |> chain((x) => (of(x * 3)))"
-          , "  |> chain((x) => (of(`finally a string`)))"
-          , "  |> map((x) => (x ++ '!'))"
-          , "  |> W.fulfill((a) => (()), (a) => (()))"
-          ]
+          main = unlines
+            [ "import W from \"Wish\""
+            , "of(3)"
+            , "  |> map((x) => (x % 2))"
+            , "  |> chain((x) => (of(x * 3)))"
+            , "  |> chain((x) => (of(`finally a string`)))"
+            , "  |> map((x) => (x ++ '!'))"
+            , "  |> W.fulfill((a) => (()), (a) => (()))"
+            ]
 
-        madlibDotJson = "{ \"main\": \"\" }"
+          madlibDotJson = "{ \"main\": \"\" }"
 
-        files =
-          M.fromList [ ("/root/project/prelude/__internal__/Wish.mad", wishModule)
-                     , ("/root/project/src/Main.mad", main)
-                     , ("/root/project/madlib.json", madlibDotJson)
-                     ]
+          files         = M.fromList
+            [ ("/root/project/prelude/__internal__/Wish.mad", wishModule)
+            , ("/root/project/src/Main.mad"                 , main)
+            , ("/root/project/madlib.json"                  , madlibDotJson)
+            ]
 
-        pathUtils = defaultPathUtils { readFile           = makeReadFile files
-                                     , byteStringReadFile = makeByteStringReadFile files
-                                     , getExecutablePath  = return "/root/project/madlib"
-                                     }
+          pathUtils = defaultPathUtils { readFile           = makeReadFile files
+                                       , byteStringReadFile = makeByteStringReadFile files
+                                       , getExecutablePath  = return "/root/project/madlib"
+                                       }
 
       let r = unsafePerformIO
             $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"

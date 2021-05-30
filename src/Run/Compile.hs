@@ -22,7 +22,7 @@ import           System.Environment             ( getEnv )
 import           Control.Monad                  ( when
                                                 , unless
                                                 )
-import qualified Data.Map                       as M
+import qualified Data.Map                      as M
 import           Data.List                      ( isInfixOf
                                                 , isSuffixOf
                                                 , isPrefixOf
@@ -54,7 +54,7 @@ import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           MadlibDotJson.Version
 import           Utils.Path
 import qualified Utils.PathUtils               as PathUtils
-import           Paths_madlib                 ( version )
+import           Paths_madlib                   ( version )
 import           Run.Utils
 import           Run.CommandLine
 
@@ -97,9 +97,9 @@ globalChecks = do
   parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils madlibDotJsonPath
 
   case parsedMadlibDotJson of
-    Left _ -> return []  
-    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName } ->
-      case checkVersion pkgName madlibVersion version of
+    Left _ -> return []
+    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.madlibVersion = Just madlibVersion, MadlibDotJson.name = pkgName }
+      -> case checkVersion pkgName madlibVersion version of
         Just warning -> return [warning]
         Nothing      -> return []
 
@@ -109,7 +109,7 @@ globalChecks = do
 runCompilation :: Command -> Bool -> IO ()
 runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage
   = do
-    extraWarnings <- globalChecks
+    extraWarnings       <- globalChecks
 
     canonicalEntrypoint <- canonicalizePath entrypoint
     sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
@@ -118,7 +118,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
           Right table ->
             let (table', warnings) = Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
             in  (table', extraWarnings ++ warnings)
-          Left  e     -> (Left e, [])
+          Left e -> (Left e, [])
 
     unless json $ do
       formattedWarnings <- mapM (Explain.formatWarning readFile json) warnings
@@ -155,7 +155,8 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
             hasErrors = not (null errs)
         in  if json
               then do
-                formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning) warnings
+                formattedWarnings <- mapM (\warning -> (warning, ) <$> Explain.formatWarning readFile json warning)
+                                          warnings
                 formattedErrors <- mapM (\err -> (err, ) <$> Explain.format readFile json err) errs
                 putStrLn $ GenerateJson.compileASTTable formattedErrors formattedWarnings table
               else if hasErrors
@@ -196,7 +197,8 @@ runBundle entrypointCompiledPath = do
   rollupPath        <- try $ getEnv "ROLLUP_PATH"
   rollupPathChecked <- case (rollupPath :: Either IOError String) of
     Left _ -> do
-      r <- try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
+      r <-
+        try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
       case r of
         Left  _ -> return $ Left rollupNotFoundMessage
         Right _ -> return $ Right "rollup"
@@ -204,7 +206,8 @@ runBundle entrypointCompiledPath = do
       r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
       case r of
         Left _ -> do
-          r <- try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
+          r <-
+            try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
               (Either SomeException (ExitCode, String, String))
           case r of
             Left  _ -> return $ Left rollupNotFoundMessage
@@ -213,7 +216,8 @@ runBundle entrypointCompiledPath = do
 
   case rollupPathChecked of
     Right rollup -> do
-      r <- try
+      r <-
+        try
           (readProcessWithExitCode
             rollup
             [ entrypointCompiledPath
@@ -235,45 +239,44 @@ runBundle entrypointCompiledPath = do
 
 
 generate :: Command -> Bool -> FilePath -> Opt.Table -> [FilePath] -> IO ()
-generate
-  options@Compile{ compileOutput, compileBundle, compileOptimize, compileTarget }
-  coverage
-  rootPath
-  table
-  sourcesToCompile
+generate options@Compile { compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath table sourcesToCompile
   = do
     mapM_ (generateAST options coverage rootPath sourcesToCompile) $ M.elems table
     writeFile (takeDirectory compileOutput <> (if compileBundle then "/.bundle" else "") <> "/__internals__.mjs")
-        $ generateInternalsModuleContent compileTarget compileOptimize coverage
+      $ generateInternalsModuleContent compileTarget compileOptimize coverage
 
 
 computeInternalsPath :: FilePath -> FilePath -> FilePath
 computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
   Just s ->
     let dirs = splitDirectories (takeDirectory s)
-        minus | "prelude/__internal__" `isInfixOf` astPath = if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
-              | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
-              | otherwise = 1
+        minus
+          | "prelude/__internal__" `isInfixOf` astPath = if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
+          | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
+          | otherwise = 1
         dirLength = length dirs - minus
     in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
   Nothing -> "./__internals__.mjs"
 
 generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
-generateAST
-  Compile{ compileInput, compileOutput, compileBundle, compileOptimize, compileTarget }
-  coverage
-  rootPath
-  sourcesToCompile
-  ast@Opt.AST { Opt.apath = Just path }
+generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path }
   = do
     let internalsPath      = computeInternalsPath rootPath path
         entrypointPath     = if path `elem` sourcesToCompile then path else compileInput
         computedOutputPath = if compileBundle
-            then computeTargetPath (takeDirectory compileOutput <> "/.bundle") rootPath path
-            else computeTargetPath (takeDirectory compileOutput) rootPath path
+          then computeTargetPath (takeDirectory compileOutput <> "/.bundle") rootPath path
+          else computeTargetPath (takeDirectory compileOutput) rootPath path
 
     createDirectoryIfMissing True $ takeDirectory computedOutputPath
     writeFile computedOutputPath $ compile
-        GenerateJS.initialEnv
-        (CompilationConfig rootPath path entrypointPath computedOutputPath coverage compileOptimize compileTarget internalsPath)
-        ast
+      GenerateJS.initialEnv
+      (CompilationConfig rootPath
+                         path
+                         entrypointPath
+                         computedOutputPath
+                         coverage
+                         compileOptimize
+                         compileTarget
+                         internalsPath
+      )
+      ast

@@ -21,7 +21,7 @@ import           Control.Exception              ( try )
 import           Control.Monad                  ( filterM )
 import           Data.List                      ( isSuffixOf )
 
-import Run.CommandLine
+import           Run.CommandLine
 
 isCoverageEnabled :: IO Bool
 isCoverageEnabled = do

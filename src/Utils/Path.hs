@@ -17,7 +17,7 @@ import           System.FilePath                ( dropFileName
                                                 , normalise
                                                 , takeExtension
                                                 )
-import qualified MadlibDotJson.MadlibDotJson    as MadlibDotJson
+import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           Data.List                      ( isInfixOf
                                                 , isPrefixOf
                                                 , (\\)
@@ -59,21 +59,20 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
     FileSystemPath -> do
       let ext = if takeExtension path == ".json" then ".json" else ".mad"
       path' <- case path of
-        '@':rest -> do
+        '@' : rest -> do
           let pathParts = splitPath path
           let alias = case dropTrailingPathSeparator . head $ pathParts of
-                "@"       -> "."
-                '@':after -> after
+                "@"         -> "."
+                '@' : after -> after
           let afterAlias = joinPath . tail $ pathParts
           (madlibDotJsonFile, dir) <- retrieveMadlibDotJson pathUtils rootPath
           let aliasPath = case madlibDotJsonFile of
-                Just MadlibDotJson.MadlibDotJson{ MadlibDotJson.importAliases = Just ias } ->
-                  M.lookup alias ias
+                Just MadlibDotJson.MadlibDotJson { MadlibDotJson.importAliases = Just ias } -> M.lookup alias ias
                 _ -> Nothing
 
           return $ (\aliasPath' -> joinPath [dir, aliasPath', afterAlias]) <$> aliasPath
 
-        p            -> return $ Just p
+        p -> return $ Just p
 
       case path' of
         Just p  -> Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
@@ -86,10 +85,10 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
 -- Also we could read the madlib.json file and see if that is defined as
 -- a dependency ?
 getPathType :: FilePath -> ModulePath
-getPathType ('.' : _)              = FileSystemPath
-getPathType ('/' : _)              = FileSystemPath
-getPathType ('@' : _)              = FileSystemPath
-getPathType _                      = PackagePath
+getPathType ('.' : _) = FileSystemPath
+getPathType ('/' : _) = FileSystemPath
+getPathType ('@' : _) = FileSystemPath
+getPathType _         = PackagePath
 
 
 makePathForPackage :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
@@ -163,9 +162,9 @@ findPreludeModulePath' pathUtils moduleName currDir = do
 
 buildLocalPath :: FilePath -> FilePath -> FilePath -> FilePath
 buildLocalPath outputPath rootPath path =
-  let rootParts       = dropTrailingPathSeparator <$> splitPath rootPath
-      pathParts       = dropTrailingPathSeparator <$> splitPath path
-      withoutRoot     = if rootParts `isPrefixOf` pathParts
+  let rootParts   = dropTrailingPathSeparator <$> splitPath rootPath
+      pathParts   = dropTrailingPathSeparator <$> splitPath path
+      withoutRoot = if rootParts `isPrefixOf` pathParts
         then pathParts \\ rootParts -- remove the root path components
         else pathParts
   in  cleanRelativePath . joinPath $ [outputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
@@ -174,24 +173,23 @@ buildLocalPath outputPath rootPath path =
 computeTargetPath :: FilePath -> FilePath -> FilePath -> FilePath
 computeTargetPath outputPath rootPath path =
   let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
-  in case isPackage path of
-    FileSystemPath -> buildLocalPath cleanOutputPath rootPath path
+  in  case isPackage path of
+        FileSystemPath -> buildLocalPath cleanOutputPath rootPath path
 
-    PackagePath -> if isPreludePath path
-      then
-        let split           = dropTrailingPathSeparator <$> splitPath path
-            fromInternal    = tail $ dropWhile (/= "__internal__") split
-            complete        = [cleanOutputPath, ".prelude"] <> fromInternal
-        in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
-      else if rootPath `isPrefixOf` path
-        then
-          buildLocalPath cleanOutputPath rootPath path
-        else
-          let split                 = dropTrailingPathSeparator <$> splitPath path
-              fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
-              complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
-              madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
-          in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".mjs"
+        PackagePath    -> if isPreludePath path
+          then
+            let split        = dropTrailingPathSeparator <$> splitPath path
+                fromInternal = tail $ dropWhile (/= "__internal__") split
+                complete     = [cleanOutputPath, ".prelude"] <> fromInternal
+            in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
+          else if rootPath `isPrefixOf` path
+            then buildLocalPath cleanOutputPath rootPath path
+            else
+              let split                 = dropTrailingPathSeparator <$> splitPath path
+                  fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
+                  complete              = [cleanOutputPath, ".deps"] <> fromMadlibModules
+                  madlibModulesReplaced = (\p -> if p == "madlib_modules" then ".deps" else p) <$> complete
+              in  cleanRelativePath $ replaceExtension (joinPath madlibModulesReplaced) ".mjs"
 
 
 isPreludePath :: FilePath -> Bool

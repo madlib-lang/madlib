@@ -57,7 +57,7 @@ super env i = case M.lookup i (envInterfaces env) of
 insts :: Env -> Id -> [Instance]
 insts env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ _ insts) -> insts
-  Nothing                     -> []
+  Nothing                    -> []
 
 bySuper :: Env -> Pred -> [Pred]
 bySuper env p@(IsIn i ts) = p : concatMap (bySuper env) supers
@@ -98,8 +98,8 @@ specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) me
 isConcrete :: Type -> Bool
 isConcrete t = case t of
   TVar _      -> False
-  TCon _ _    -> True
-  TApp l r    -> isConcrete l
+  TCon    _ _ -> True
+  TApp    l r -> isConcrete l
   TRecord _ _ -> True
 
 

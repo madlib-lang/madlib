@@ -41,9 +41,9 @@ instance Unify Type where
       s1 <- unify tBase (TRecord fields' base)
       s2 <- unify tBase' (TRecord fields base')
 
-      let fieldsToCheck = M.intersection fields fields'
+      let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
-          z             = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
       s3 <- unifyVars M.empty z
       s4 <- unify tBase tBase'

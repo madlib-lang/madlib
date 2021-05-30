@@ -75,16 +75,26 @@ formatWarningContent _ warning = case warning of
     let start = case pkgName of
           Just n  -> "The package '" <> n <> "'"
           Nothing -> "This package"
-    in  start <> " requires the minimum version '" <> minVersion <> "' but you currently use madlib\n"
-          <> "version '" <> versionUsed <> "'.\n\n"
+    in  start
+          <> " requires the minimum version '"
+          <> minVersion
+          <> "' but you currently use madlib\n"
+          <> "version '"
+          <> versionUsed
+          <> "'.\n\n"
           <> "Hint: Update your version of madlib."
 
   MadlibVersionMajorDiffer pkgName minVersion versionUsed ->
     let start = case pkgName of
           Just n  -> "The package '" <> n <> "'"
           Nothing -> "This package"
-    in  start <> " requires the minimum version '" <> minVersion <> "' but you currently use madlib\n"
-          <> "version '" <> versionUsed <> "'. Because major versions differ it means there is a breaking\n"
+    in  start
+          <> " requires the minimum version '"
+          <> minVersion
+          <> "' but you currently use madlib\n"
+          <> "version '"
+          <> versionUsed
+          <> "'. Because major versions differ it means there is a breaking\n"
           <> "change and you may not be able to run the project.\n\n"
           <> "Hint: Update your version of madlib."
 
@@ -135,9 +145,8 @@ formatTypeError json err = case err of
 
   UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo!"
 
-  UnboundType n       ->
-    "The type '" <> n <> "' has not been declared, you might have a typo!\n\n"
-    <> "Hint: Maybe you forgot to import it?"
+  UnboundType n ->
+    "The type '" <> n <> "' has not been declared, you might have a typo!\n\n" <> "Hint: Maybe you forgot to import it?"
 
   SignatureTooGeneral scGiven scInferred ->
     "The signature given is too general\n"
@@ -282,9 +291,11 @@ formatTypeError json err = case err of
       <> "correctly."
 
   ShouldBeTypedOrAbove name ->
-    "You access the name '" <> name <> "' before it is defined. This is fine, but in that case you must\n"
-    <> "give it a type annotation.\n\n"
-    <> "Hint: Place that declaration above the place you use it, or give it a type annotation."
+    "You access the name '"
+      <> name
+      <> "' before it is defined. This is fine, but in that case you must\n"
+      <> "give it a type annotation.\n\n"
+      <> "Hint: Place that declaration above the place you use it, or give it a type annotation."
 
   _ -> ppShow err
 
@@ -448,7 +459,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
         formattedBase   = case base of
           Just b  -> "...base, "
           Nothing -> ""
-        compiled        = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
+        compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
     in  (finalVars, finalHkVars, compiled)
 
   TGen n -> (vars, hkVars, "TGen" <> show n)

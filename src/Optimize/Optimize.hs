@@ -330,16 +330,16 @@ getTypeHeadName :: Type -> String
 getTypeHeadName t = case t of
   TVar (TV n _)   -> n
   TCon (TC n _) _ -> case n of
-    "(,)"   -> "Tuple_2"
-    "(,,)"  -> "Tuple_3"
-    "(,,,)" -> "Tuple_4"
-    "(,,,,)" -> "Tuple_5"
-    "(,,,,,)" -> "Tuple_6"
-    "(,,,,,,)" -> "Tuple_7"
-    "(,,,,,,,)" -> "Tuple_8"
-    "(,,,,,,,,)" -> "Tuple_9"
+    "(,)"         -> "Tuple_2"
+    "(,,)"        -> "Tuple_3"
+    "(,,,)"       -> "Tuple_4"
+    "(,,,,)"      -> "Tuple_5"
+    "(,,,,,)"     -> "Tuple_6"
+    "(,,,,,,)"    -> "Tuple_7"
+    "(,,,,,,,)"   -> "Tuple_8"
+    "(,,,,,,,,)"  -> "Tuple_9"
     "(,,,,,,,,,)" -> "Tuple_10"
-    _       -> n
+    _             -> n
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
   TApp l _  -> getTypeHeadName l
 

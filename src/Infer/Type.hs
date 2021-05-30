@@ -99,7 +99,10 @@ tTuple11 = TCon
     "(,,,,,,,,,,)"
     (Kfun
       Star
-      (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))))))
+      (Kfun
+        Star
+        (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))))
+      )
     )
   )
   "prelude"
@@ -110,7 +113,15 @@ tTuple12 = TCon
     "(,,,,,,,,,,,)"
     (Kfun
       Star
-      (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star)))))))))))
+      (Kfun
+        Star
+        (Kfun
+          Star
+          (Kfun Star
+                (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star (Kfun Star Star))))))))
+          )
+        )
+      )
     )
   )
   "prelude"
@@ -211,10 +222,10 @@ baseToList maybeBase = case maybeBase of
 
 collectVars :: Type -> [TVar]
 collectVars t = case t of
-  TVar tv           -> [tv]
-  TApp l r          -> collectVars l `union` collectVars r
-  TRecord fs base   -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
-  _                 -> []
+  TVar tv         -> [tv]
+  TApp    l  r    -> collectVars l `union` collectVars r
+  TRecord fs base -> nub $ concat $ collectVars <$> M.elems fs <> baseToList base
+  _               -> []
 
 
 collectPredVars :: Pred -> [TVar]
@@ -223,19 +234,18 @@ collectPredVars (IsIn _ ts) = nub $ concat $ collectVars <$> ts
 
 getConstructorCon :: Type -> Type
 getConstructorCon t = case t of
-  TCon _ _      -> t
-  TApp l r      -> getConstructorCon l
-  TRecord _ _   -> t
-  _             -> t
+  TCon    _ _ -> t
+  TApp    l r -> getConstructorCon l
+  TRecord _ _ -> t
+  _           -> t
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1, TRecord fields2 base2) ->
-    TRecord (M.unionWith mergeRecords fields1 fields2) base1
+  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 
-  _                      -> t1
+  _ -> t1
 
 isFunctionType :: Type -> Bool
 isFunctionType t = case t of

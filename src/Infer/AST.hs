@@ -47,22 +47,21 @@ generateNotTypedYetType = do
 populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                             = return env
 populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
-  let
-    nextEnv = case e of
-      Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
+  let nextEnv = case e of
+        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
 
-      Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
-        safeExtendVars env (name, sc)
+        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
+          safeExtendVars env (name, sc)
 
-      (Can.Assignment name _) -> do
-        tv <- generateNotTypedYetType
-        safeExtendVars env (name, Forall [] $ [] :=> tv)
+        (Can.Assignment name _) -> do
+          tv <- generateNotTypedYetType
+          safeExtendVars env (name, Forall [] $ [] :=> tv)
 
-      (Can.Export (Can.Canonical _ (Can.Assignment name _))) -> do
-        tv <- generateNotTypedYetType
-        safeExtendVars env (name, Forall [] $ [] :=> tv)
+        (Can.Export (Can.Canonical _ (Can.Assignment name _))) -> do
+          tv <- generateNotTypedYetType
+          safeExtendVars env (name, Forall [] $ [] :=> tv)
 
-      _ -> return env
+        _ -> return env
 
   nextEnv' <- catchError
     nextEnv
@@ -184,10 +183,10 @@ solveImports previousSolved table (imp : is) = do
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
   let solvedVars         = constructorImports <> importedVars
   let solvedMethods      = envMethods solvedEnv
-  
-  let solvedInterfaces   = case imp of
+
+  let solvedInterfaces = case imp of
         Can.Canonical _ Can.TypeImport{} -> mempty
-        _                                -> envInterfaces solvedEnv
+        _ -> envInterfaces solvedEnv
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)

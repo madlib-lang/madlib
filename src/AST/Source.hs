@@ -150,18 +150,18 @@ getImportNames imp = case imp of
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
   Source _ _ (NamedImport names _ _) -> []
-  Source _ _ (TypeImport names _ _)  -> names
+  Source _ _ (TypeImport  names _ _) -> names
   Source _ _ DefaultImport{}         -> []
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Source _ _ (NamedImport   _ _ n) -> n
-  Source _ _ (TypeImport   _ _ n)  -> n
+  Source _ _ (TypeImport    _ _ n) -> n
   Source _ _ (DefaultImport _ _ n) -> n
 
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Source _ _ (NamedImport   _ p _)) = (imp, p)
-getImportPath imp@(Source _ _ (TypeImport   _ p _))  = (imp, p)
+getImportPath imp@(Source _ _ (TypeImport    _ p _)) = (imp, p)
 getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
 
 getArea :: Source a -> Area

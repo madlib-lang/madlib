@@ -271,7 +271,7 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer env' exp
   s2                <- contextualUnify env' exp currentType t1
-  let s = s2 `compose` s1
+  let s  = s2 `compose` s1
   let t2 = apply s t1
   return (s, currentPreds ++ ps1, t2, applyAssignmentSolve e name e1 t2)
 
@@ -466,12 +466,7 @@ inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
   let s = s1 `compose` s2 `compose` s3 `compose` s4 `compose` s5
   let t = apply s ttruthy
 
-  return
-    ( s
-    , ps1 ++ ps2 ++ ps3
-    , t
-    , Slv.Solved t area (Slv.If econd etruthy efalsy)
-    )
+  return (s, ps1 ++ ps2 ++ ps3, t, Slv.Solved t area (Slv.If econd etruthy efalsy))
 
 
 
@@ -489,9 +484,9 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
     ([], s)
     iss
 
-  let ps'             = concat $ T.mid <$> pss
+  let ps' = concat $ T.mid <$> pss
   s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . T.lst <$> pss)
-  
+
   let s''  = s' `compose` issSubstitution
 
   let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . T.lst <$> pss
@@ -543,16 +538,18 @@ split mustCheck env fs gs ps = do
   ps' <- reduce env ps
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
   let as       = ambiguities (fs ++ gs) rs
-  if mustCheck && not (null as) then throwError $ CompilationError (AmbiguousType (head as)) NoContext else return (ds, rs)
+  if mustCheck && not (null as)
+    then throwError $ CompilationError (AmbiguousType (head as)) NoContext
+    else return (ds, rs)
 
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   (env', tv) <- case Can.getExpName exp of
     Just n -> case M.lookup n (envVars env) of
-      Just (Forall _ (_ :=> t))  -> return (env, t)
+      Just (Forall _ (_ :=> t)) -> return (env, t)
       --  ^ if a var is already present we don't override its type with a fresh var.
-      Nothing -> do
+      Nothing                   -> do
         tv <- newTVar Star
         return (extendVars env (n, Forall [] $ [] :=> tv), tv)
     Nothing -> do
@@ -578,7 +575,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   let fs' = ftv $ ps' :=> t'
       -- sc = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
-      sc = Forall [] $ ps' :=> t'
+      sc  = Forall [] $ ps' :=> t'
 
   case Can.getExpName exp of
     Just n  -> return (s'', (ds, ps'), extendVars env' (n, sc), updateType e t')
