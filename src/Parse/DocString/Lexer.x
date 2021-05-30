@@ -31,8 +31,6 @@ import           System.Exit
 import qualified Data.Text     as T
 import           Explain.Location
 import           Text.Regex.TDFA
-import           Debug.Trace (trace)
-import           Text.Show.Pretty (ppShow)
 }
 
 %wrapper "monadUserState"

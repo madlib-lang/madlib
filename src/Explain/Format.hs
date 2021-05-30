@@ -235,9 +235,9 @@ formatTypeError json err = case err of
   UnknownType t       -> "Type Error, the type '" <> t <> "' is not found.\n\nHint: Verify that you imported it!"
 
   NameAlreadyDefined name ->
-    "Type Error, the variable '"
+    "Illegal shadowing, the variable '"
       <> name
-      <> "' is already used."
+      <> "' is already defined. Shadowing is not permitted in madlib."
       <> "\n\n"
       <> "Hint: Change the name of the variable.\n"
       <> "Also note that the variable might be defined further down. All top level assignments share the scope and using a local name\n"

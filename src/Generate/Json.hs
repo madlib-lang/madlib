@@ -50,7 +50,7 @@ compileWarning depth (warning@(CompilationWarning typeWarning ctx), formatted) =
   let area    = getCtxArea ctx
       errPath = getCtxPath ctx
       loc     = case area of
-        Just a  -> indent (depth + 1) <> "\"loc\": " <> compileArea (depth + 1) a <> "\n"
+        Just a  -> indent (depth + 1) <> "\"loc\": " <> compileArea (depth + 1) a <> ",\n"
         Nothing -> ""
       origin = case errPath of
         Just a  -> indent (depth + 1) <> "\"origin\": \"" <> a <> "\",\n"
@@ -60,12 +60,12 @@ compileWarning depth (warning@(CompilationWarning typeWarning ctx), formatted) =
         <> "\"warningType\": \""
         <> getWarningType warning
         <> "\",\n"
+        <> origin
+        <> loc
         <> indent (depth + 1)
         <> "\"message\": "
         <> escapeString formatted
-        <> ",\n"
-        <> origin
-        <> loc
+        <> "\n"
         <> indent depth
         <> "}"
 

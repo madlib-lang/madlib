@@ -104,8 +104,6 @@ globalChecks = do
         Nothing      -> return []
 
 
--- compile :: ... -> Either [CompilationError] ()
-
 runCompilation :: Command -> Bool -> IO ()
 runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle optimized target json testsOnly) coverage
   = do

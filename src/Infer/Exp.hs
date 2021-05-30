@@ -574,7 +574,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
 
   let fs' = ftv $ ps' :=> t'
-      sc = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
+      sc  = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
       -- sc  = Forall [] $ ps' :=> t'
 
   case Can.getExpName exp of

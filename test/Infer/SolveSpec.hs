@@ -67,7 +67,6 @@ tableTester table ast = do
       let errs      = errors state
           hasErrors = not (null errs)
       in  if hasErrors then Left (head errs) else Right table'
-  -- fst <$> runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
 
 spec :: Spec
 spec = do
@@ -537,78 +536,78 @@ spec = do
       snapshotTest "should fail when spreading a non spreadable type into a record" actual
 
     it "correctly infer various record transformations" $ do
-      let code   = unlines
-                 [ "ff = (record) => (["
-                 , "  ...record.x,"
-                 , "  ...record.z,"
-                 , "  ...record.y"
-                 , "])"
-                 , ""
-                 , ""
-                 , "fr1 = (x) => ({ ...x, p: 3 })"
-                 , ""
-                 , "fr2 = (r, x) => ({ ...r, p: x })"
-                 , ""
-                 , "r0 = fr1({ z: 9, p: 3 })"
-                 , "r1 = { ...fr1({ z: 9, p: 3 }), y: 5 }"
-                 , "r2 = fr2({ p: '4', g: 5 }, '5')"
-                 , ""
-                 , "fxy = (s, e) => ({"
-                 , "  ...e,"
-                 , "  c: s.x + 1,"
-                 , "  b: '3'"
-                 , "})"
-                 ]
+      let code = unlines
+            [ "ff = (record) => (["
+            , "  ...record.x,"
+            , "  ...record.z,"
+            , "  ...record.y"
+            , "])"
+            , ""
+            , ""
+            , "fr1 = (x) => ({ ...x, p: 3 })"
+            , ""
+            , "fr2 = (r, x) => ({ ...r, p: x })"
+            , ""
+            , "r0 = fr1({ z: 9, p: 3 })"
+            , "r1 = { ...fr1({ z: 9, p: 3 }), y: 5 }"
+            , "r2 = fr2({ p: '4', g: 5 }, '5')"
+            , ""
+            , "fxy = (s, e) => ({"
+            , "  ...e,"
+            , "  c: s.x + 1,"
+            , "  b: '3'"
+            , "})"
+            ]
           actual = tester code
       snapshotTest "correctly infer various record transformations" actual
 
     it "should infer complex where expressions with records" $ do
-      let code   = unlines
-                 [ "export alias ComparisonResult = Number"
-                 , ""
-                 , "export MORE = 1"
-                 , "export LESS = -1"
-                 , "export EQUAL = 1"
-                 , ""
-                 , "interface Comparable a {"
-                 , "  compare :: a -> a -> ComparisonResult"
-                 , "}"
-                 , ""
-                 , "instance Comparable Number {"
-                 , "  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS"
-                 , "}"
-                 , ""
-                 , "instance Comparable String {"
-                 , "  compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#"
-                 , "}"
-                 , ""
-                 , "interface Functor m {"
-                 , "  map :: (a -> b) -> m a -> m b"
-                 , "}"
-                 , "instance Functor List {"
-                 , "  map = (f, xs) => #- xs.map((x) => f(x)) -#"
-                 , "}"
-                 , ""
-                 , "sortBy :: (a -> a -> ComparisonResult) -> List a -> List a"
-                 , "export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#"
-                 , ""
-                 , "chain :: (a -> List b) -> List a -> List b"
-                 , "chain = #--#"
-                 , ""
-                 , "FunctionLink = where is f: 'moduleName' ++ f.name"
-                 , "generateFunctionLinks = pipe("
-                 , "  chain(.expressions),"
-                 , "  sortBy((a, b) => where(<a, b>)"
-                 , "    is <{ name: nameA }, { name: nameB }>: compare(nameA, nameB)"
-                 , "    is <{ name: nameC }, { ik: nameD }>: compare(nameC, nameD)"
-                 , "    is <{ tchouk: nameD }, { name: nameC }>: compare(nameC, nameD)"
-                 , "    is <{ name: nameC }, { lui: nameD }>: compare(nameC, nameD)"
-                 , "    is <{ name: nameC }, { po: { pi: { nameD }}}>: compare(nameC, nameD)"
-                 , "    is <{ po: { pi: { nameC }}}, { name: nameD }>: compare(nameC, nameD)"
-                 , "  ),"
-                 , "  map(FunctionLink)"
-                 , ")"
-                 ]
+      let code = unlines
+            [ "export alias ComparisonResult = Number"
+            , ""
+            , "export MORE = 1"
+            , "export LESS = -1"
+            , "export EQUAL = 1"
+            , ""
+            , "interface Comparable a {"
+            , "  compare :: a -> a -> ComparisonResult"
+            , "}"
+            , ""
+            , "instance Comparable Number {"
+            , "  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS"
+            , "}"
+            , ""
+            , "instance Comparable String {"
+            , "  compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#"
+            , "}"
+            , ""
+            , "interface Functor m {"
+            , "  map :: (a -> b) -> m a -> m b"
+            , "}"
+            , "instance Functor List {"
+            , "  map = (f, xs) => #- xs.map((x) => f(x)) -#"
+            , "}"
+            , ""
+            , "sortBy :: (a -> a -> ComparisonResult) -> List a -> List a"
+            , "export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#"
+            , ""
+            , "chain :: (a -> List b) -> List a -> List b"
+            , "chain = #--#"
+            , ""
+            , "FunctionLink = where is f: 'moduleName' ++ f.name"
+            , "generateFunctionLinks = pipe("
+            , "  chain(.expressions),"
+            , "  sortBy((a, b) => where(<a, b>)"
+            , "    is <{ name: nameA }, { name: nameB }>: compare(nameA, nameB)"
+            , "    is <{ name: nameC }, { ik: nameD }>: compare(nameC, nameD)"
+            , "    is <{ tchouk: nameD }, { name: nameC }>: compare(nameC, nameD)"
+            , "    is <{ name: nameC }, { lui: nameD }>: compare(nameC, nameD)"
+            , "    is <{ name: nameC }, { po: { pi: { nameD }}}>: compare(nameC, nameD)"
+            , "    is <{ po: { pi: { nameC }}}, { name: nameD }>: compare(nameC, nameD)"
+            , "  ),"
+            , "  map(FunctionLink)"
+            , ")"
+            ]
           actual = tester code
       snapshotTest "should infer complex where expressions with records" actual
 
@@ -1236,37 +1235,40 @@ spec = do
       let code   = unlines ["x = x + 1"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
-            Left e       -> Left e
+            Left  e      -> Left e
       snapshotTest "should figure out illegal recursive accesses" actual
 
-    it "should fail when accessing a function without typing that is defined after" $ do
-      let code   = unlines
-                 [ "f = (x) => definedAfter(x)"
-                 , "definedAfter = (x) => x + 1"
-                 ]
+    it "should figure out illegal recursive accesses within function bodies" $ do
+      let code   = unlines ["g = (x) => {", "  p = p + 1", "", "  return p", "}"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
-            Left e       -> Left e
+            Left  e      -> Left e
+      snapshotTest "should figure out illegal recursive accesses within function bodies" actual
+
+    it "should fail when accessing a function without typing that is defined after" $ do
+      let code   = unlines ["f = (x) => definedAfter(x)", "definedAfter = (x) => x + 1"]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left  e      -> Left e
       snapshotTest "should fail when accessing a function without typing that is defined after" actual
 
     it "should fail when accessing a executing an expression declared later" $ do
-      let code   = unlines
-                 [ "definedAfter(3)"
-                 , "definedAfter :: Number -> Number"
-                 , "definedAfter = (x) => x + 1"
-                 ]
+      let code   = unlines ["definedAfter(3)", "definedAfter :: Number -> Number", "definedAfter = (x) => x + 1"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
-            Left e       -> Left e
+            Left  e      -> Left e
       snapshotTest "should fail when accessing a executing an expression declared later" actual
 
-    it "should fail when exporting a name not defined yet" $ do
-      let code   = unlines
-                 [ "export definedAfter"
-                 , "definedAfter :: Number -> Number"
-                 , "definedAfter = (x) => x + 1"
-                 ]
+    it "should fail when shadowing a name even if it's defined after the function" $ do
+      let code   = unlines ["g = (x) => {", "  a = 2", "  return a", "}", "a = 4"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
-            Left e       -> Left e
+            Left  e      -> Left e
+      snapshotTest "should fail when shadowing a name even if it's defined after the function" actual
+
+    it "should fail when exporting a name not defined yet" $ do
+      let code   = unlines ["export definedAfter", "definedAfter :: Number -> Number", "definedAfter = (x) => x + 1"]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left  e      -> Left e
       snapshotTest "should fail when exporting a name not defined yet" actual

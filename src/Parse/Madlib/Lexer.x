@@ -31,8 +31,6 @@ import qualified Data.Text.Lazy     as T
 import           Data.Char
 import           Explain.Location
 import           Text.Regex.TDFA
-import           Debug.Trace (trace)
-import           Text.Show.Pretty (ppShow)
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 }

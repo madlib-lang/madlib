@@ -12,7 +12,6 @@ import           Explain.Location
 import           Explain.Meta
 import           Run.Target
 import           Text.Regex.TDFA
-import           Debug.Trace (trace)
 import           Text.Show.Pretty (ppShow)
 }
 
