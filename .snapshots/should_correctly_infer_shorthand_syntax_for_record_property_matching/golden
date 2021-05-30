@@ -11,7 +11,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
-                     (Just (TVar (TV "g6" Star)))))
+                     (Just (TVar (TV "f5" Star)))))
                (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 0 1 1) (Loc 55 5 1))
             (Assignment
@@ -25,7 +25,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) "prelude" )
                               , ( "y" , TCon (TC "Number" Star) "prelude" )
                               ])
-                           (Just (TVar (TV "g6" Star)))))
+                           (Just (TVar (TV "f5" Star)))))
                      (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 5 1 6) (Loc 55 5 1))
                   (Abs
@@ -35,7 +35,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) "prelude" )
                               , ( "y" , TCon (TC "Number" Star) "prelude" )
                               ])
-                           (Just (TVar (TV "g6" Star))))
+                           (Just (TVar (TV "f5" Star))))
                         (Area (Loc 6 1 7) (Loc 7 1 8))
                         "r")
                      [ Solved
@@ -48,7 +48,7 @@ Right
                                      [ ( "x" , TCon (TC "Number" Star) "prelude" )
                                      , ( "y" , TCon (TC "Number" Star) "prelude" )
                                      ])
-                                  (Just (TVar (TV "g6" Star))))
+                                  (Just (TVar (TV "f5" Star))))
                                (Area (Loc 22 2 9) (Loc 23 2 10))
                                (Var "r"))
                             [ Solved
@@ -60,7 +60,7 @@ Right
                                             [ ( "x" , TCon (TC "Number" Star) "prelude" )
                                             , ( "y" , TCon (TC "Number" Star) "prelude" )
                                             ])
-                                         (Just (TVar (TV "g6" Star)))))
+                                         (Just (TVar (TV "f5" Star)))))
                                    (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 31 3 5) (Loc 49 3 23))
                                 (Is
@@ -70,7 +70,7 @@ Right
                                             [ ( "x" , TCon (TC "Number" Star) "prelude" )
                                             , ( "y" , TCon (TC "Number" Star) "prelude" )
                                             ])
-                                         (Just (TVar (TV "g6" Star))))
+                                         (Just (TVar (TV "f5" Star))))
                                       (Area (Loc 34 3 8) (Loc 42 3 16))
                                       (PRecord
                                          (fromList
@@ -85,7 +85,7 @@ Right
                                                           , TCon (TC "Number" Star) "prelude"
                                                           )
                                                         ])
-                                                     (Just (TVar (TV "g6" Star))))
+                                                     (Just (TVar (TV "f5" Star))))
                                                   (Area (Loc 36 3 10) (Loc 37 3 11))
                                                   (PVar "x")
                                               )
@@ -100,7 +100,7 @@ Right
                                                           , TCon (TC "Number" Star) "prelude"
                                                           )
                                                         ])
-                                                     (Just (TVar (TV "g6" Star))))
+                                                     (Just (TVar (TV "f5" Star))))
                                                   (Area (Loc 39 3 13) (Loc 40 3 14))
                                                   (PVar "y")
                                               )

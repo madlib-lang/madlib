@@ -1,7 +1,8 @@
 import J from "Json"
 import IO from "IO"
 import { Right } from "Either"
-import { Maybe, Just, Nothing, fromMaybe } from "Maybe"
+import type { Maybe } from "Maybe"
+import { Just } from "Maybe"
 
 type Parsed = Parsed { field1 :: Maybe Parsed, field2 :: Boolean }
 

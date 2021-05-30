@@ -51,7 +51,7 @@ Right
                         [ ( "x" , TCon (TC "Number" Star) "prelude" )
                         , ( "y" , TCon (TC "Number" Star) "prelude" )
                         ])
-                     (Just (TVar (TV "j9" Star)))))
+                     (Just (TVar (TV "h7" Star)))))
                (TCon (TC "Number" Star) "prelude"))
             (Area (Loc 19 2 1) (Loc 46 2 28))
             (Assignment
@@ -65,7 +65,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) "prelude" )
                               , ( "y" , TCon (TC "Number" Star) "prelude" )
                               ])
-                           (Just (TVar (TV "j9" Star)))))
+                           (Just (TVar (TV "h7" Star)))))
                      (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 28 2 10) (Loc 46 2 28))
                   (Abs
@@ -75,7 +75,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) "prelude" )
                               , ( "y" , TCon (TC "Number" Star) "prelude" )
                               ])
-                           (Just (TVar (TV "j9" Star))))
+                           (Just (TVar (TV "h7" Star))))
                         (Area (Loc 29 2 11) (Loc 30 2 12))
                         "r")
                      [ Solved
@@ -108,7 +108,7 @@ Right
                                      (Area (Loc 36 2 18) (Loc 39 2 21))
                                      (Access
                                         (Solved
-                                           (TVar (TV "e4" Star))
+                                           (TVar (TV "c2" Star))
                                            (Area (Loc 36 2 18) (Loc 37 2 19))
                                            (Var "r"))
                                         (Solved
@@ -118,9 +118,9 @@ Right
                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                     "prelude")
                                                  (TRecord
-                                                    (fromList [ ( "x" , TVar (TV "i8" Star) ) ])
-                                                    (Just (TVar (TV "j9" Star)))))
-                                              (TVar (TV "i8" Star)))
+                                                    (fromList [ ( "x" , TVar (TV "g6" Star) ) ])
+                                                    (Just (TVar (TV "h7" Star)))))
+                                              (TVar (TV "g6" Star)))
                                            (Area (Loc 38 2 20) (Loc 39 2 21))
                                            (Var ".x"))))
                                   False))
@@ -129,7 +129,7 @@ Right
                                (Area (Loc 42 2 24) (Loc 45 2 27))
                                (Access
                                   (Solved
-                                     (TVar (TV "e4" Star))
+                                     (TVar (TV "c2" Star))
                                      (Area (Loc 42 2 24) (Loc 43 2 25))
                                      (Var "r"))
                                   (Solved
@@ -137,9 +137,9 @@ Right
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList [ ( "y" , TVar (TV "l11" Star) ) ])
-                                              (Just (TVar (TV "m12" Star)))))
-                                        (TVar (TV "l11" Star)))
+                                              (fromList [ ( "y" , TVar (TV "j9" Star) ) ])
+                                              (Just (TVar (TV "k10" Star)))))
+                                        (TVar (TV "j9" Star)))
                                      (Area (Loc 44 2 26) (Loc 45 2 27))
                                      (Var ".y"))))
                             True)
@@ -157,7 +157,7 @@ Right
                               [ ( "x" , TCon (TC "Number" Star) "prelude" )
                               , ( "y" , TCon (TC "Number" Star) "prelude" )
                               ])
-                           (Just (TVar (TV "p15" Star)))))
+                           (Just (TVar (TV "n13" Star)))))
                      (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 47 3 1) (Loc 53 3 7))
                   (Var "xPlusY"))

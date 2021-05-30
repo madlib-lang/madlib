@@ -9,6 +9,7 @@ import           Infer.Infer
 import           Infer.Type
 import qualified Data.Set                      as S
 import qualified Data.Map                      as M
+import           Data.Maybe
 import           Control.Monad
 import           Error.Error
 import           Error.Context
@@ -29,10 +30,11 @@ type Accesses = S.Set (String, Exp)
 type Dependencies = M.Map String (S.Set (String, Exp))
 
 
-isNotTypedYet :: Exp -> Bool
-isNotTypedYet exp = case exp of
-  Solved (TVar (TV ('N' : 'O' : 'T' : '_' : 'T' : 'Y' : 'P' : 'E' : 'D' : '_' : 'Y' : 'E' : 'T' : _) _)) _ _ -> True
-  _ -> False
+findAssignmentByName :: String -> [Exp] -> Maybe Exp
+findAssignmentByName _ []        = Nothing
+findAssignmentByName name (e:es) = case getExpName e of
+  Just found -> if name == found then Just e else findAssignmentByName name es
+  Nothing    -> findAssignmentByName name es
 
 
 checkAST :: Env -> AST -> Infer ()
@@ -40,25 +42,31 @@ checkAST env ast = do
   let initialNamesInScope = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env)
       exps                = aexps ast
       methods             = concat $ getInstanceMethods <$> ainstances ast
-  checkExps env initialNamesInScope M.empty (methods ++ exps)
+  checkExps env ast initialNamesInScope M.empty (methods ++ exps)
 
-checkExps :: Env -> InScope -> Dependencies -> [Exp] -> Infer ()
-checkExps _   _           _            []       = return ()
-checkExps env globalScope dependencies (e : es) = do
+checkExps :: Env -> AST -> InScope -> Dependencies -> [Exp] -> Infer ()
+checkExps _   _ _           _            []       = return ()
+checkExps env ast globalScope dependencies (e : es) = do
   let globalScope' = extendScope globalScope e
 
-  collectedAccesses <- collect env [] Nothing globalScope S.empty e
+  collectedAccesses <- collect env [] Nothing globalScope' S.empty e
 
-  catchError (verifyScope env collectedAccesses globalScope dependencies e) pushError
+  catchError (verifyScope env collectedAccesses globalScope' dependencies e) pushError
 
   let shouldBeTypedOrAbove = if isMethod env e
         then S.empty
-        else S.filter (\(name, exp) -> name `notElem` globalScope' && isNotTypedYet exp) collectedAccesses
+        else S.filter
+          (
+            \(name, exp) ->
+              let isTyped = maybe False isTypedExp (findAssignmentByName name (aexps ast))
+              in  name `notElem` globalScope' && not isTyped && not (isTypeOrNameExport exp)
+          )
+          collectedAccesses
 
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
   let dependencies' = extendDependencies collectedAccesses dependencies e
-  checkExps env globalScope' dependencies' es
+  checkExps env ast globalScope' dependencies' es
 
 
 generateShouldBeTypedOrAboveErrors :: Env -> S.Set (String, Exp) -> Infer ()
@@ -179,6 +187,8 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
       (name `S.member` globalScope && not (S.null localScope))
       (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
+    -- let nameToFind' = if isJust nameToFind then nameToFind else Just name
+    -- collect env foundNames nameToFind' globalScope localScope exp
     collect env foundNames (Just name) globalScope localScope exp
 
   TypedExp exp _              -> collect env foundNames nameToFind globalScope localScope exp
@@ -207,6 +217,10 @@ collect env foundNames nameToFind globalScope localScope solvedExp@(Solved tipe 
     return $ foldr S.union S.empty fieldAccesses
 
   Placeholder _ exp -> collect env foundNames nameToFind globalScope localScope exp
+
+  NameExport name -> if name `S.member` globalScope then return S.empty else return $ S.singleton (name, solvedExp)
+
+  TypeExport name -> if name `S.member` globalScope then return S.empty else return $ S.singleton (name, solvedExp)
 
   _                 -> return S.empty
 

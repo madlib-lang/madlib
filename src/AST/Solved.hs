@@ -175,6 +175,15 @@ isNameExport a = case a of
 
   _                           -> False
 
+isTypeExport :: Exp -> Bool
+isTypeExport a = case a of
+  (Solved _ _ (TypeExport _)) -> True
+
+  _                           -> False
+
+isTypeOrNameExport :: Exp -> Bool
+isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
+
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
   (Solved _ _ (TypedExp _ _)) -> True

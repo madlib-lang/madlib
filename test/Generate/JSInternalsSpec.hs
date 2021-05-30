@@ -1,4 +1,4 @@
-module Compile.JSInternalsSpec where
+module Generate.JSInternalsSpec where
 
 import           Test.Hspec                     ( describe
                                                 , it
@@ -11,8 +11,8 @@ import           Data.Text                      ( Text
                                                 , replace
                                                 , unpack
                                                 )
-import           Compile.JSInternals
-import           Target
+import           Generate.JSInternals
+import           Run.Target
 
 snapshotTest :: String -> String -> Golden Text
 snapshotTest name actualOutput = Golden { output        = pack actualOutput

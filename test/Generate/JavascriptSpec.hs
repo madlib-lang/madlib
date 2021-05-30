@@ -1,4 +1,4 @@
-module Compile.JavascriptSpec where
+module Generate.JavascriptSpec where
 
 import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
@@ -24,7 +24,7 @@ import           Infer.Infer
 import           Optimize.Optimize
 import           Error.Error
 import           Parse.Madlib.AST              as Parse
-import           Compile.Javascript
+import           Generate.Javascript
 import           Prelude                 hiding ( readFile )
 import           GHC.IO                         ( unsafePerformIO )
 import           Utils.PathUtils         hiding ( defaultPathUtils )
@@ -32,7 +32,7 @@ import           TestUtils
 import           Canonicalize.Canonicalize     as Can
 import           Canonicalize.AST              as Can
 import           Canonicalize.Env              as Can
-import           Target
+import           Run.Target
 import           Infer.AST
 import           Debug.Trace
 
@@ -58,7 +58,7 @@ tester optimized code =
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
-          Compile.Javascript.initialEnv
+          Generate.Javascript.initialEnv
           (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
           (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
@@ -74,7 +74,7 @@ coverageTester code =
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
         Right x -> compile
-          Compile.Javascript.initialEnv
+          Generate.Javascript.initialEnv
           (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
           (evalState (optimize False x) initialOptimizationState :: Opt.AST)
         Left e -> ppShow e
@@ -92,7 +92,7 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
   in  case resolved of
         Right x ->
           concat
-            $   compile Compile.Javascript.initialEnv
+            $   compile Generate.Javascript.initialEnv
                         (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
             .   (\a -> (evalState (optimize False a) initialOptimizationState :: Opt.AST))
             <$> M.elems x

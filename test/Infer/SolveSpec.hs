@@ -26,7 +26,7 @@ import           Infer.AST
 import           Error.Error
 import           Parse.Madlib.AST
 import           Canonicalize.Canonicalize
-import           Target
+import           Run.Target
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Data.Maybe
@@ -536,6 +536,82 @@ spec = do
           actual = tester code
       snapshotTest "should fail when spreading a non spreadable type into a record" actual
 
+    it "correctly infer various record transformations" $ do
+      let code   = unlines
+                 [ "ff = (record) => (["
+                 , "  ...record.x,"
+                 , "  ...record.z,"
+                 , "  ...record.y"
+                 , "])"
+                 , ""
+                 , ""
+                 , "fr1 = (x) => ({ ...x, p: 3 })"
+                 , ""
+                 , "fr2 = (r, x) => ({ ...r, p: x })"
+                 , ""
+                 , "r0 = fr1({ z: 9, p: 3 })"
+                 , "r1 = { ...fr1({ z: 9, p: 3 }), y: 5 }"
+                 , "r2 = fr2({ p: '4', g: 5 }, '5')"
+                 , ""
+                 , "fxy = (s, e) => ({"
+                 , "  ...e,"
+                 , "  c: s.x + 1,"
+                 , "  b: '3'"
+                 , "})"
+                 ]
+          actual = tester code
+      snapshotTest "correctly infer various record transformations" actual
+
+    it "should infer complex where expressions with records" $ do
+      let code   = unlines
+                 [ "export alias ComparisonResult = Number"
+                 , ""
+                 , "export MORE = 1"
+                 , "export LESS = -1"
+                 , "export EQUAL = 1"
+                 , ""
+                 , "interface Comparable a {"
+                 , "  compare :: a -> a -> ComparisonResult"
+                 , "}"
+                 , ""
+                 , "instance Comparable Number {"
+                 , "  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS"
+                 , "}"
+                 , ""
+                 , "instance Comparable String {"
+                 , "  compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#"
+                 , "}"
+                 , ""
+                 , "interface Functor m {"
+                 , "  map :: (a -> b) -> m a -> m b"
+                 , "}"
+                 , "instance Functor List {"
+                 , "  map = (f, xs) => #- xs.map((x) => f(x)) -#"
+                 , "}"
+                 , ""
+                 , "sortBy :: (a -> a -> ComparisonResult) -> List a -> List a"
+                 , "export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#"
+                 , ""
+                 , "chain :: (a -> List b) -> List a -> List b"
+                 , "chain = #--#"
+                 , ""
+                 , "FunctionLink = where is f: 'moduleName' ++ f.name"
+                 , "generateFunctionLinks = pipe("
+                 , "  chain(.expressions),"
+                 , "  sortBy((a, b) => where(<a, b>)"
+                 , "    is <{ name: nameA }, { name: nameB }>: compare(nameA, nameB)"
+                 , "    is <{ name: nameC }, { ik: nameD }>: compare(nameC, nameD)"
+                 , "    is <{ tchouk: nameD }, { name: nameC }>: compare(nameC, nameD)"
+                 , "    is <{ name: nameC }, { lui: nameD }>: compare(nameC, nameD)"
+                 , "    is <{ name: nameC }, { po: { pi: { nameD }}}>: compare(nameC, nameD)"
+                 , "    is <{ po: { pi: { nameC }}}, { name: nameD }>: compare(nameC, nameD)"
+                 , "  ),"
+                 , "  map(FunctionLink)"
+                 , ")"
+                 ]
+          actual = tester code
+      snapshotTest "should infer complex where expressions with records" actual
+
     it "should infer record params that are partially used in abstractions" $ do
       let code = unlines
             [ "type Maybe a = Just a | Nothing"
@@ -600,13 +676,6 @@ spec = do
             , "  inventory :: List ShopItem,"
             , "  sales :: List ShopDiscount"
             , "}"
-            -- , ""
-            -- , "buySomethingFromShop :: ShopContext -> Number -> Number -> List (Maybe String)"
-            -- , "buySomethingFromShop = (ctx, itemId, customerId) => {"
-            -- , "  item = find(propEq(itemId, 'id'), ctx.inventory)"
-            -- , "  customer = find(propEq(customerId, 'id'), ctx.customers)"
-            -- , "  return [item, customer]"
-            -- , "}"
             ]
           actual = tester code
       snapshotTest "should infer record params that are partially used in abstractions" actual
@@ -635,6 +704,11 @@ spec = do
       let code   = unlines ["[1, ...3]"]
           actual = tester code
       snapshotTest "should fail when spreading a non spreadable type into an array" actual
+
+    it "should fail when constructing a list with different types" $ do
+      let code   = unlines ["[1, false, 3, 4]"]
+          actual = tester code
+      snapshotTest "should fail when constructing a list with different types" actual
 
     -- Tuples
 
@@ -1155,3 +1229,44 @@ spec = do
       let code   = "`${4 + 3}!`"
           actual = tester code
       snapshotTest "should fail to solve template strings when interpolated expressions are not strings" actual
+
+    -- Scope
+
+    it "should figure out illegal recursive accesses" $ do
+      let code   = unlines ["x = x + 1"]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left e       -> Left e
+      snapshotTest "should figure out illegal recursive accesses" actual
+
+    it "should fail when accessing a function without typing that is defined after" $ do
+      let code   = unlines
+                 [ "f = (x) => definedAfter(x)"
+                 , "definedAfter = (x) => x + 1"
+                 ]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left e       -> Left e
+      snapshotTest "should fail when accessing a function without typing that is defined after" actual
+
+    it "should fail when accessing a executing an expression declared later" $ do
+      let code   = unlines
+                 [ "definedAfter(3)"
+                 , "definedAfter :: Number -> Number"
+                 , "definedAfter = (x) => x + 1"
+                 ]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left e       -> Left e
+      snapshotTest "should fail when accessing a executing an expression declared later" actual
+
+    it "should fail when exporting a name not defined yet" $ do
+      let code   = unlines
+                 [ "export definedAfter"
+                 , "definedAfter :: Number -> Number"
+                 , "definedAfter = (x) => x + 1"
+                 ]
+          actual = case buildAST "./Module" code of
+            Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
+            Left e       -> Left e
+      snapshotTest "should fail when exporting a name not defined yet" actual

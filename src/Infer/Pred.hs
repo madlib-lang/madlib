@@ -155,7 +155,7 @@ reduce env ps = do
   return r
 
 elimTauts :: Env -> [Pred] -> Infer [Pred]
-elimTauts env ps = filterM ((not <$>) . entail env []) ps
+elimTauts env = filterM ((not <$>) . entail env [])
 
 scEntail :: Env -> [Pred] -> Pred -> Bool
 scEntail env ps p = let supers = map (bySuper env) ps in any (p `elem`) supers

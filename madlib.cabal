@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: de29623c4cd731a5e9add9f8eaf0390c37d4f3d5078d9114897c73c9b8757d0f
+-- hash: 81cec0fe0fd3b4e0e569eb1bc56049d1bceed1ebf36bad5ee3d5c3ba7a4427ca
 
 name:           madlib
 version:        0.8.7
@@ -236,8 +236,8 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Compile.JavascriptSpec
-      Compile.JSInternalsSpec
+      Generate.JavascriptSpec
+      Generate.JSInternalsSpec
       Infer.SolveSpec
       Parse.Madlib.ASTSpec
       TestUtils

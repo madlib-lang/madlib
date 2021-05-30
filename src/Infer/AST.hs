@@ -38,11 +38,6 @@ requires an AST which is the AST of the entrypoint, where the whole compilation
 actually starts.
 -}
 
-generateNotTypedYetType :: Infer Type
-generateNotTypedYetType = do
-  tv <- newTVar Star
-  let TVar (TV n _) = tv
-  return $ TVar (TV ("NOT_TYPED_YET" ++ n) Star)
 
 populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                             = return env
@@ -54,11 +49,11 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
           safeExtendVars env (name, sc)
 
         (Can.Assignment name _) -> do
-          tv <- generateNotTypedYetType
+          tv <- newTVar Star
           safeExtendVars env (name, Forall [] $ [] :=> tv)
 
         (Can.Export (Can.Canonical _ (Can.Assignment name _))) -> do
-          tv <- generateNotTypedYetType
+          tv <- newTVar Star
           safeExtendVars env (name, Forall [] $ [] :=> tv)
 
         _ -> return env

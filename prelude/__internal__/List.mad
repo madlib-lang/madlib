@@ -23,7 +23,7 @@ import { Just, Nothing } from "Maybe"
  * map((x) => x * 2, [1, 2, 3]) // [2, 4, 6]
  */
 instance Functor List {
-  map = (f, xs) => (#- xs.map((x) => f(x)) -#)
+  map = (f, xs) => #- xs.map((x) => f(x)) -#
 }
 
 instance Applicative List {
@@ -370,7 +370,7 @@ export uniqueBy = (f) => reduce(
 
 
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-export sortBy = (fn, xs) => (#- xs.sort((a, b) => fn(a)(b)) -#)
+export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#
 
 
 sort :: Comparable a => List a -> List a
