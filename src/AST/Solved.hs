@@ -227,3 +227,16 @@ getExpName (Solved _ _ exp) = case exp of
 getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
+
+
+extractExportedExps :: AST -> M.Map Name Exp
+extractExportedExps AST { aexps, apath } = case apath of
+  Just p -> M.fromList $ bundleExports <$> filter isExport aexps
+
+bundleExports :: Exp -> (Name, Exp)
+bundleExports e'@(Solved _ _ exp) = case exp of
+  Export (Solved _ _ (Assignment n _)) -> (n, e')
+
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ -> (n, e')
+
+  NameExport n -> (n, e')

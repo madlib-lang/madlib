@@ -3,14 +3,12 @@ module Run.PackageHash where
 import           System.Directory              as Dir
 import           System.FilePath               ( joinPath )
 import qualified Data.ByteString.Lazy          as BL
-import qualified Data.ByteString.Lazy.Char8    as BLChar8
 import qualified Data.List                     as List
-import           Crypto.Hash.MD5               ( hashlazy )
-import           Data.ByteString.Builder       ( toLazyByteString, byteStringHex )
 import           System.Exit
 
 import           MadlibDotJson.MadlibDotJson    as MadlibDotJson
 import           Run.CommandLine
+import           Utils.Hash
 
 import           Utils.PathUtils
 
@@ -60,10 +58,11 @@ generatePackageHash :: FilePath -> IO String
 generatePackageHash packageFolder = do
   packageContent <- getPackageContent packageFolder
 
-  let hashed  = hashlazy packageContent
-      hexHash = toLazyByteString . byteStringHex $ hashed
+  hash packageContent
+  -- let hashed  = hashlazy packageContent
+  --     hexHash = toLazyByteString . byteStringHex $ hashed
 
-  return $ BLChar8.unpack hexHash
+  -- return $ BLChar8.unpack hexHash
 
 runGeneratePackageHash :: FilePath -> IO ()
 runGeneratePackageHash packagePath = do

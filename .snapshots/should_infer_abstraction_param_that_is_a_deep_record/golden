@@ -3,190 +3,203 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord
-                     (fromList
-                        [ ( "a"
-                          , TRecord
-                              (fromList
-                                 [ ( "b"
-                                   , TRecord
-                                       (fromList
-                                          [ ( "c"
-                                            , TRecord
-                                                (fromList
-                                                   [ ( "d"
-                                                     , TRecord
-                                                         (fromList
-                                                            [ ( "e" , TVar (TV "c2" Star) ) ])
-                                                         (Just (TVar (TV "e4" Star)))
-                                                     )
-                                                   ])
-                                                (Just (TVar (TV "h7" Star)))
-                                            )
-                                          ])
-                                       (Just (TVar (TV "k10" Star)))
-                                   )
-                                 ])
-                              (Just (TVar (TV "n13" Star)))
-                          )
-                        ])
-                     (Just (TVar (TV "q16" Star)))))
-               (TVar (TV "c2" Star)))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList
+                          [ ( "a"
+                            , TRecord
+                                (fromList
+                                   [ ( "b"
+                                     , TRecord
+                                         (fromList
+                                            [ ( "c"
+                                              , TRecord
+                                                  (fromList
+                                                     [ ( "d"
+                                                       , TRecord
+                                                           (fromList
+                                                              [ ( "e" , TVar (TV "c2" Star) ) ])
+                                                           (Just (TVar (TV "e4" Star)))
+                                                       )
+                                                     ])
+                                                  (Just (TVar (TV "h7" Star)))
+                                              )
+                                            ])
+                                         (Just (TVar (TV "k10" Star)))
+                                     )
+                                   ])
+                                (Just (TVar (TV "n13" Star)))
+                            )
+                          ])
+                       (Just (TVar (TV "q16" Star)))))
+                 (TVar (TV "c2" Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord
-                           (fromList
-                              [ ( "a"
-                                , TRecord
-                                    (fromList
-                                       [ ( "b"
-                                         , TRecord
-                                             (fromList
-                                                [ ( "c"
-                                                  , TRecord
-                                                      (fromList
-                                                         [ ( "d"
-                                                           , TRecord
-                                                               (fromList
-                                                                  [ ( "e" , TVar (TV "c2" Star) ) ])
-                                                               (Just (TVar (TV "e4" Star)))
-                                                           )
-                                                         ])
-                                                      (Just (TVar (TV "h7" Star)))
-                                                  )
-                                                ])
-                                             (Just (TVar (TV "k10" Star)))
-                                         )
-                                       ])
-                                    (Just (TVar (TV "n13" Star)))
-                                )
-                              ])
-                           (Just (TVar (TV "q16" Star)))))
-                     (TVar (TV "c2" Star)))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList
+                                [ ( "a"
+                                  , TRecord
+                                      (fromList
+                                         [ ( "b"
+                                           , TRecord
+                                               (fromList
+                                                  [ ( "c"
+                                                    , TRecord
+                                                        (fromList
+                                                           [ ( "d"
+                                                             , TRecord
+                                                                 (fromList
+                                                                    [ ( "e" , TVar (TV "c2" Star) )
+                                                                    ])
+                                                                 (Just (TVar (TV "e4" Star)))
+                                                             )
+                                                           ])
+                                                        (Just (TVar (TV "h7" Star)))
+                                                    )
+                                                  ])
+                                               (Just (TVar (TV "k10" Star)))
+                                           )
+                                         ])
+                                      (Just (TVar (TV "n13" Star)))
+                                  )
+                                ])
+                             (Just (TVar (TV "q16" Star)))))
+                       (TVar (TV "c2" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
                      (Solved
-                        (TRecord
-                           (fromList
-                              [ ( "a"
-                                , TRecord
-                                    (fromList
-                                       [ ( "b"
-                                         , TRecord
-                                             (fromList
-                                                [ ( "c"
-                                                  , TRecord
-                                                      (fromList
-                                                         [ ( "d"
-                                                           , TRecord
-                                                               (fromList
-                                                                  [ ( "e" , TVar (TV "c2" Star) ) ])
-                                                               (Just (TVar (TV "e4" Star)))
-                                                           )
-                                                         ])
-                                                      (Just (TVar (TV "h7" Star)))
-                                                  )
-                                                ])
-                                             (Just (TVar (TV "k10" Star)))
-                                         )
-                                       ])
-                                    (Just (TVar (TV "n13" Star)))
-                                )
-                              ])
-                           (Just (TVar (TV "q16" Star))))
+                        ([] :=>
+                           TRecord
+                             (fromList
+                                [ ( "a"
+                                  , TRecord
+                                      (fromList
+                                         [ ( "b"
+                                           , TRecord
+                                               (fromList
+                                                  [ ( "c"
+                                                    , TRecord
+                                                        (fromList
+                                                           [ ( "d"
+                                                             , TRecord
+                                                                 (fromList
+                                                                    [ ( "e" , TVar (TV "c2" Star) )
+                                                                    ])
+                                                                 (Just (TVar (TV "e4" Star)))
+                                                             )
+                                                           ])
+                                                        (Just (TVar (TV "h7" Star)))
+                                                    )
+                                                  ])
+                                               (Just (TVar (TV "k10" Star)))
+                                           )
+                                         ])
+                                      (Just (TVar (TV "n13" Star)))
+                                  )
+                                ])
+                             (Just (TVar (TV "q16" Star))))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
                      [ Solved
-                         (TVar (TV "c2" Star))
+                         ([] :=> TVar (TV "c2" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (Access
                             (Solved
-                               (TVar (TV "f5" Star))
+                               ([] :=> TVar (TV "f5" Star))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
                                   (Solved
-                                     (TVar (TV "i8" Star))
+                                     ([] :=> TVar (TV "i8" Star))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
                                         (Solved
-                                           (TVar (TV "l11" Star))
+                                           ([] :=> TVar (TV "l11" Star))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
                                               (Solved
-                                                 (TVar (TV "o14" Star))
+                                                 ([] :=> TVar (TV "o14" Star))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
                                                     (Solved
-                                                       (TVar (TV "b1" Star))
+                                                       ([] :=> TVar (TV "b1" Star))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x"))
                                                     (Solved
-                                                       (TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(->)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TRecord
-                                                                (fromList
-                                                                   [ ( "a" , TVar (TV "p15" Star) )
-                                                                   ])
-                                                                (Just (TVar (TV "q16" Star)))))
-                                                          (TVar (TV "p15" Star)))
+                                                       ([] :=>
+                                                          TApp
+                                                            (TApp
+                                                               (TCon
+                                                                  (TC
+                                                                     "(->)"
+                                                                     (Kfun Star (Kfun Star Star)))
+                                                                  "prelude")
+                                                               (TRecord
+                                                                  (fromList
+                                                                     [ ( "a"
+                                                                       , TVar (TV "p15" Star)
+                                                                       )
+                                                                     ])
+                                                                  (Just (TVar (TV "q16" Star)))))
+                                                            (TVar (TV "p15" Star)))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a"))))
                                               (Solved
-                                                 (TApp
-                                                    (TApp
-                                                       (TCon
-                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                          "prelude")
-                                                       (TRecord
-                                                          (fromList
-                                                             [ ( "b" , TVar (TV "m12" Star) ) ])
-                                                          (Just (TVar (TV "n13" Star)))))
-                                                    (TVar (TV "m12" Star)))
+                                                 ([] :=>
+                                                    TApp
+                                                      (TApp
+                                                         (TCon
+                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                            "prelude")
+                                                         (TRecord
+                                                            (fromList
+                                                               [ ( "b" , TVar (TV "m12" Star) ) ])
+                                                            (Just (TVar (TV "n13" Star)))))
+                                                      (TVar (TV "m12" Star)))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b"))))
                                         (Solved
-                                           (TApp
-                                              (TApp
-                                                 (TCon
-                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                    "prelude")
-                                                 (TRecord
-                                                    (fromList [ ( "c" , TVar (TV "j9" Star) ) ])
-                                                    (Just (TVar (TV "k10" Star)))))
-                                              (TVar (TV "j9" Star)))
+                                           ([] :=>
+                                              TApp
+                                                (TApp
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
+                                                   (TRecord
+                                                      (fromList [ ( "c" , TVar (TV "j9" Star) ) ])
+                                                      (Just (TVar (TV "k10" Star)))))
+                                                (TVar (TV "j9" Star)))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c"))))
                                   (Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TRecord
-                                              (fromList [ ( "d" , TVar (TV "g6" Star) ) ])
-                                              (Just (TVar (TV "h7" Star)))))
-                                        (TVar (TV "g6" Star)))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TRecord
+                                                (fromList [ ( "d" , TVar (TV "g6" Star) ) ])
+                                                (Just (TVar (TV "h7" Star)))))
+                                          (TVar (TV "g6" Star)))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d"))))
                             (Solved
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord
-                                        (fromList [ ( "e" , TVar (TV "d3" Star) ) ])
-                                        (Just (TVar (TV "e4" Star)))))
-                                  (TVar (TV "d3" Star)))
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TRecord
+                                          (fromList [ ( "e" , TVar (TV "d3" Star) ) ])
+                                          (Just (TVar (TV "e4" Star)))))
+                                    (TVar (TV "d3" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
                                (Var ".e")))
                      ])))

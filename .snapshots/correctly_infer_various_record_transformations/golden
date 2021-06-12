@@ -3,290 +3,308 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord
-                     (fromList
-                        [ ( "x"
-                          , TApp
-                              (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
-                          )
-                        , ( "y"
-                          , TApp
-                              (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
-                          )
-                        , ( "z"
-                          , TApp
-                              (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
-                          )
-                        ])
-                     (Just (TVar (TV "l11" Star)))))
-               (TApp
-                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                  (TVar (TV "i8" Star))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList
+                          [ ( "x"
+                            , TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
+                            )
+                          , ( "y"
+                            , TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
+                            )
+                          , ( "z"
+                            , TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
+                            )
+                          ])
+                       (Just (TVar (TV "l11" Star)))))
+                 (TApp
+                    (TCon (TC "List" (Kfun Star Star)) "prelude")
+                    (TVar (TV "i8" Star))))
             (Area (Loc 0 1 1) (Loc 66 5 3))
             (Assignment
                "ff"
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord
-                           (fromList
-                              [ ( "x"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              , ( "y"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              , ( "z"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              ])
-                           (Just (TVar (TV "l11" Star)))))
-                     (TApp
-                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                        (TVar (TV "i8" Star))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList
+                                [ ( "x"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                , ( "y"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                , ( "z"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                ])
+                             (Just (TVar (TV "l11" Star)))))
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "i8" Star))))
                   (Area (Loc 5 1 6) (Loc 66 5 3))
                   (Abs
                      (Solved
-                        (TRecord
-                           (fromList
-                              [ ( "x"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              , ( "y"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              , ( "z"
-                                , TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "i8" Star))
-                                )
-                              ])
-                           (Just (TVar (TV "l11" Star))))
+                        ([] :=>
+                           TRecord
+                             (fromList
+                                [ ( "x"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                , ( "y"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                , ( "z"
+                                  , TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "i8" Star))
+                                  )
+                                ])
+                             (Just (TVar (TV "l11" Star))))
                         (Area (Loc 6 1 7) (Loc 12 1 13))
                         "record")
                      [ Solved
-                         (TApp
-                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                            (TVar (TV "i8" Star)))
+                         ([] :=>
+                            TApp
+                              (TCon (TC "List" (Kfun Star Star)) "prelude")
+                              (TVar (TV "i8" Star)))
                          (Area (Loc 18 1 19) (Loc 65 5 1))
                          (ListConstructor
                             [ Solved
-                                (TVar (TV "i8" Star))
+                                ([] :=> TVar (TV "i8" Star))
                                 (Area (Loc 22 2 3) (Loc 33 2 14))
                                 (ListSpread
                                    (Solved
-                                      (TVar (TV "j9" Star))
+                                      ([] :=> TVar (TV "j9" Star))
                                       (Area (Loc 25 2 6) (Loc 33 2 14))
                                       (Access
                                          (Solved
-                                            (TVar (TV "h7" Star))
+                                            ([] :=> TVar (TV "h7" Star))
                                             (Area (Loc 25 2 6) (Loc 31 2 12))
                                             (Var "record"))
                                          (Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TRecord
-                                                     (fromList [ ( "x" , TVar (TV "k10" Star) ) ])
-                                                     (Just (TVar (TV "l11" Star)))))
-                                               (TVar (TV "k10" Star)))
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TRecord
+                                                       (fromList [ ( "x" , TVar (TV "k10" Star) ) ])
+                                                       (Just (TVar (TV "l11" Star)))))
+                                                 (TVar (TV "k10" Star)))
                                             (Area (Loc 32 2 13) (Loc 33 2 14))
                                             (Var ".x")))))
                             , Solved
-                                (TVar (TV "i8" Star))
+                                ([] :=> TVar (TV "i8" Star))
                                 (Area (Loc 37 3 3) (Loc 48 3 14))
                                 (ListSpread
                                    (Solved
-                                      (TVar (TV "m12" Star))
+                                      ([] :=> TVar (TV "m12" Star))
                                       (Area (Loc 40 3 6) (Loc 48 3 14))
                                       (Access
                                          (Solved
-                                            (TVar (TV "h7" Star))
+                                            ([] :=> TVar (TV "h7" Star))
                                             (Area (Loc 40 3 6) (Loc 46 3 12))
                                             (Var "record"))
                                          (Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TRecord
-                                                     (fromList [ ( "z" , TVar (TV "n13" Star) ) ])
-                                                     (Just (TVar (TV "o14" Star)))))
-                                               (TVar (TV "n13" Star)))
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TRecord
+                                                       (fromList [ ( "z" , TVar (TV "n13" Star) ) ])
+                                                       (Just (TVar (TV "o14" Star)))))
+                                                 (TVar (TV "n13" Star)))
                                             (Area (Loc 47 3 13) (Loc 48 3 14))
                                             (Var ".z")))))
                             , Solved
-                                (TVar (TV "i8" Star))
+                                ([] :=> TVar (TV "i8" Star))
                                 (Area (Loc 52 4 3) (Loc 63 4 14))
                                 (ListSpread
                                    (Solved
-                                      (TVar (TV "p15" Star))
+                                      ([] :=> TVar (TV "p15" Star))
                                       (Area (Loc 55 4 6) (Loc 63 4 14))
                                       (Access
                                          (Solved
-                                            (TVar (TV "h7" Star))
+                                            ([] :=> TVar (TV "h7" Star))
                                             (Area (Loc 55 4 6) (Loc 61 4 12))
                                             (Var "record"))
                                          (Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TRecord
-                                                     (fromList [ ( "y" , TVar (TV "q16" Star) ) ])
-                                                     (Just (TVar (TV "r17" Star)))))
-                                               (TVar (TV "q16" Star)))
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TRecord
+                                                       (fromList [ ( "y" , TVar (TV "q16" Star) ) ])
+                                                       (Just (TVar (TV "r17" Star)))))
+                                                 (TVar (TV "q16" Star)))
                                             (Area (Loc 62 4 13) (Loc 63 4 14))
                                             (Var ".y")))))
                             ])
                      ])))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord
-                     (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                     (Just (TVar (TV "s18" Star)))))
-               (TRecord
-                  (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                  (Just (TVar (TV "s18" Star)))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                       (Just (TVar (TV "s18" Star)))))
+                 (TRecord
+                    (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                    (Just (TVar (TV "s18" Star)))))
             (Area (Loc 69 8 1) (Loc 98 8 30))
             (Assignment
                "fr1"
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord
-                           (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                           (Just (TVar (TV "s18" Star)))))
-                     (TRecord
-                        (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                        (Just (TVar (TV "s18" Star)))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                             (Just (TVar (TV "s18" Star)))))
+                       (TRecord
+                          (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                          (Just (TVar (TV "s18" Star)))))
                   (Area (Loc 75 8 7) (Loc 98 8 30))
                   (Abs
                      (Solved
-                        (TRecord
-                           (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                           (Just (TVar (TV "s18" Star))))
+                        ([] :=>
+                           TRecord
+                             (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                             (Just (TVar (TV "s18" Star))))
                         (Area (Loc 76 8 8) (Loc 77 8 9))
                         "x")
                      [ Solved
-                         (TRecord
-                            (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                            (Just (TVar (TV "s18" Star))))
+                         ([] :=>
+                            TRecord
+                              (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                              (Just (TVar (TV "s18" Star))))
                          (Area (Loc 83 8 15) (Loc 97 8 29))
                          (Record
                             [ Solved
-                                (TVar (TV "s18" Star))
+                                ([] :=> TVar (TV "s18" Star))
                                 (Area (Loc 85 8 17) (Loc 89 8 21))
                                 (FieldSpread
                                    (Solved
-                                      (TVar (TV "s18" Star))
+                                      ([] :=> TVar (TV "s18" Star))
                                       (Area (Loc 88 8 20) (Loc 89 8 21))
                                       (Var "x")))
                             , Solved
-                                (TCon (TC "Number" Star) "prelude")
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 91 8 23) (Loc 95 8 27))
                                 (Field
                                    ( "p"
                                    , Solved
-                                       (TCon (TC "Number" Star) "prelude")
+                                       ([] :=> TCon (TC "Number" Star) "prelude")
                                        (Area (Loc 94 8 26) (Loc 95 8 27))
                                        (LNum "3")
                                    ))
                             ])
                      ])))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord
-                     (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                     (Just (TVar (TV "t19" Star)))))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "u20" Star)))
-                  (TRecord
-                     (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                     (Just (TVar (TV "t19" Star))))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                       (Just (TVar (TV "t19" Star)))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "u20" Star)))
+                    (TRecord
+                       (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                       (Just (TVar (TV "t19" Star))))))
             (Area (Loc 100 10 1) (Loc 132 10 33))
             (Assignment
                "fr2"
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord
-                           (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                           (Just (TVar (TV "t19" Star)))))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "u20" Star)))
-                        (TRecord
-                           (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                           (Just (TVar (TV "t19" Star))))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                             (Just (TVar (TV "t19" Star)))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "u20" Star)))
+                          (TRecord
+                             (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                             (Just (TVar (TV "t19" Star))))))
                   (Area (Loc 106 10 7) (Loc 132 10 33))
                   (Abs
                      (Solved
-                        (TRecord
-                           (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                           (Just (TVar (TV "t19" Star))))
+                        ([] :=>
+                           TRecord
+                             (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                             (Just (TVar (TV "t19" Star))))
                         (Area (Loc 107 10 8) (Loc 108 10 9))
                         "r")
                      [ Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "u20" Star)))
-                            (TRecord
-                               (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                               (Just (TVar (TV "t19" Star)))))
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "u20" Star)))
+                              (TRecord
+                                 (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                                 (Just (TVar (TV "t19" Star)))))
                          (Area (Loc 106 10 7) (Loc 132 10 33))
                          (Abs
                             (Solved
-                               (TVar (TV "u20" Star)) (Area (Loc 110 10 11) (Loc 111 10 12)) "x")
+                               ([] :=> TVar (TV "u20" Star))
+                               (Area (Loc 110 10 11) (Loc 111 10 12))
+                               "x")
                             [ Solved
-                                (TRecord
-                                   (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
-                                   (Just (TVar (TV "t19" Star))))
+                                ([] :=>
+                                   TRecord
+                                     (fromList [ ( "p" , TVar (TV "u20" Star) ) ])
+                                     (Just (TVar (TV "t19" Star))))
                                 (Area (Loc 117 10 18) (Loc 131 10 32))
                                 (Record
                                    [ Solved
-                                       (TVar (TV "t19" Star))
+                                       ([] :=> TVar (TV "t19" Star))
                                        (Area (Loc 119 10 20) (Loc 123 10 24))
                                        (FieldSpread
                                           (Solved
-                                             (TVar (TV "t19" Star))
+                                             ([] :=> TVar (TV "t19" Star))
                                              (Area (Loc 122 10 23) (Loc 123 10 24))
                                              (Var "r")))
                                    , Solved
-                                       (TVar (TV "u20" Star))
+                                       ([] :=> TVar (TV "u20" Star))
                                        (Area (Loc 125 10 26) (Loc 129 10 30))
                                        (Field
                                           ( "p"
                                           , Solved
-                                              (TVar (TV "u20" Star))
+                                              ([] :=> TVar (TV "u20" Star))
                                               (Area (Loc 128 10 29) (Loc 129 10 30))
                                               (Var "x")
                                           ))
@@ -294,432 +312,463 @@ Right
                             ])
                      ])))
         , Solved
-            (TRecord
-               (fromList
-                  [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                  , ( "z" , TCon (TC "Number" Star) "prelude" )
-                  ])
-               Nothing)
+            ([] :=>
+               TRecord
+                 (fromList
+                    [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                    , ( "z" , TCon (TC "Number" Star) "prelude" )
+                    ])
+                 Nothing)
             (Area (Loc 134 12 1) (Loc 158 12 25))
             (Assignment
                "r0"
                (Solved
-                  (TRecord
-                     (fromList
-                        [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                        , ( "z" , TCon (TC "Number" Star) "prelude" )
-                        ])
-                     Nothing)
+                  ([] :=>
+                     TRecord
+                       (fromList
+                          [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                          , ( "z" , TCon (TC "Number" Star) "prelude" )
+                          ])
+                       Nothing)
                   (Area (Loc 139 12 6) (Loc 158 12 25))
                   (App
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TRecord
-                                 (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                                 (Just (TVar (TV "w22" Star)))))
-                           (TRecord
-                              (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                              (Just (TVar (TV "w22" Star)))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TRecord
+                                   (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                                   (Just (TVar (TV "w22" Star)))))
+                             (TRecord
+                                (fromList [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                                (Just (TVar (TV "w22" Star)))))
                         (Area (Loc 139 12 6) (Loc 142 12 9))
                         (Var "fr1"))
                      (Solved
-                        (TRecord
-                           (fromList
-                              [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                              , ( "z" , TCon (TC "Number" Star) "prelude" )
-                              ])
-                           Nothing)
+                        ([] :=>
+                           TRecord
+                             (fromList
+                                [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                                , ( "z" , TCon (TC "Number" Star) "prelude" )
+                                ])
+                             Nothing)
                         (Area (Loc 143 12 10) (Loc 157 12 24))
                         (Record
                            [ Solved
-                               (TCon (TC "Number" Star) "prelude")
+                               ([] :=> TCon (TC "Number" Star) "prelude")
                                (Area (Loc 145 12 12) (Loc 149 12 16))
                                (Field
                                   ( "z"
                                   , Solved
-                                      (TCon (TC "Number" Star) "prelude")
+                                      ([] :=> TCon (TC "Number" Star) "prelude")
                                       (Area (Loc 148 12 15) (Loc 149 12 16))
                                       (LNum "9")
                                   ))
                            , Solved
-                               (TCon (TC "Number" Star) "prelude")
+                               ([] :=> TCon (TC "Number" Star) "prelude")
                                (Area (Loc 151 12 18) (Loc 155 12 22))
                                (Field
                                   ( "p"
                                   , Solved
-                                      (TCon (TC "Number" Star) "prelude")
+                                      ([] :=> TCon (TC "Number" Star) "prelude")
                                       (Area (Loc 154 12 21) (Loc 155 12 22))
                                       (LNum "3")
                                   ))
                            ]))
                      True)))
         , Solved
-            (TRecord
-               (fromList
-                  [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                  , ( "y" , TCon (TC "Number" Star) "prelude" )
-                  , ( "z" , TCon (TC "Number" Star) "prelude" )
-                  ])
-               Nothing)
+            ([] :=>
+               TRecord
+                 (fromList
+                    [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                    , ( "y" , TCon (TC "Number" Star) "prelude" )
+                    , ( "z" , TCon (TC "Number" Star) "prelude" )
+                    ])
+                 Nothing)
             (Area (Loc 159 13 1) (Loc 196 13 38))
             (Assignment
                "r1"
                (Solved
-                  (TRecord
-                     (fromList
-                        [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                        , ( "y" , TCon (TC "Number" Star) "prelude" )
-                        , ( "z" , TCon (TC "Number" Star) "prelude" )
-                        ])
-                     Nothing)
+                  ([] :=>
+                     TRecord
+                       (fromList
+                          [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                          , ( "y" , TCon (TC "Number" Star) "prelude" )
+                          , ( "z" , TCon (TC "Number" Star) "prelude" )
+                          ])
+                       Nothing)
                   (Area (Loc 164 13 6) (Loc 196 13 38))
                   (Record
                      [ Solved
-                         (TRecord
-                            (fromList
-                               [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                               , ( "z" , TCon (TC "Number" Star) "prelude" )
-                               ])
-                            Nothing)
+                         ([] :=>
+                            TRecord
+                              (fromList
+                                 [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                                 , ( "z" , TCon (TC "Number" Star) "prelude" )
+                                 ])
+                              Nothing)
                          (Area (Loc 166 13 8) (Loc 188 13 30))
                          (FieldSpread
                             (Solved
-                               (TRecord
-                                  (fromList
-                                     [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                                     , ( "z" , TCon (TC "Number" Star) "prelude" )
-                                     ])
-                                  Nothing)
+                               ([] :=>
+                                  TRecord
+                                    (fromList
+                                       [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                                       , ( "z" , TCon (TC "Number" Star) "prelude" )
+                                       ])
+                                    Nothing)
                                (Area (Loc 169 13 11) (Loc 188 13 30))
                                (App
                                   (Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TRecord
-                                              (fromList
-                                                 [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                                              (Just (TVar (TV "y24" Star)))))
-                                        (TRecord
-                                           (fromList
-                                              [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
-                                           (Just (TVar (TV "y24" Star)))))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TRecord
+                                                (fromList
+                                                   [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                                                (Just (TVar (TV "y24" Star)))))
+                                          (TRecord
+                                             (fromList
+                                                [ ( "p" , TCon (TC "Number" Star) "prelude" ) ])
+                                             (Just (TVar (TV "y24" Star)))))
                                      (Area (Loc 169 13 11) (Loc 172 13 14))
                                      (Var "fr1"))
                                   (Solved
-                                     (TRecord
-                                        (fromList
-                                           [ ( "p" , TCon (TC "Number" Star) "prelude" )
-                                           , ( "z" , TCon (TC "Number" Star) "prelude" )
-                                           ])
-                                        Nothing)
+                                     ([] :=>
+                                        TRecord
+                                          (fromList
+                                             [ ( "p" , TCon (TC "Number" Star) "prelude" )
+                                             , ( "z" , TCon (TC "Number" Star) "prelude" )
+                                             ])
+                                          Nothing)
                                      (Area (Loc 173 13 15) (Loc 187 13 29))
                                      (Record
                                         [ Solved
-                                            (TCon (TC "Number" Star) "prelude")
+                                            ([] :=> TCon (TC "Number" Star) "prelude")
                                             (Area (Loc 175 13 17) (Loc 179 13 21))
                                             (Field
                                                ( "z"
                                                , Solved
-                                                   (TCon (TC "Number" Star) "prelude")
+                                                   ([] :=> TCon (TC "Number" Star) "prelude")
                                                    (Area (Loc 178 13 20) (Loc 179 13 21))
                                                    (LNum "9")
                                                ))
                                         , Solved
-                                            (TCon (TC "Number" Star) "prelude")
+                                            ([] :=> TCon (TC "Number" Star) "prelude")
                                             (Area (Loc 181 13 23) (Loc 185 13 27))
                                             (Field
                                                ( "p"
                                                , Solved
-                                                   (TCon (TC "Number" Star) "prelude")
+                                                   ([] :=> TCon (TC "Number" Star) "prelude")
                                                    (Area (Loc 184 13 26) (Loc 185 13 27))
                                                    (LNum "3")
                                                ))
                                         ]))
                                   True)))
                      , Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 190 13 32) (Loc 194 13 36))
                          (Field
                             ( "y"
                             , Solved
-                                (TCon (TC "Number" Star) "prelude")
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 193 13 35) (Loc 194 13 36))
                                 (LNum "5")
                             ))
                      ])))
         , Solved
-            (TRecord
-               (fromList
-                  [ ( "g" , TCon (TC "Number" Star) "prelude" )
-                  , ( "p" , TCon (TC "String" Star) "prelude" )
-                  ])
-               Nothing)
+            ([] :=>
+               TRecord
+                 (fromList
+                    [ ( "g" , TCon (TC "Number" Star) "prelude" )
+                    , ( "p" , TCon (TC "String" Star) "prelude" )
+                    ])
+                 Nothing)
             (Area (Loc 197 14 1) (Loc 227 14 31))
             (Assignment
                "r2"
                (Solved
-                  (TRecord
-                     (fromList
-                        [ ( "g" , TCon (TC "Number" Star) "prelude" )
-                        , ( "p" , TCon (TC "String" Star) "prelude" )
-                        ])
-                     Nothing)
+                  ([] :=>
+                     TRecord
+                       (fromList
+                          [ ( "g" , TCon (TC "Number" Star) "prelude" )
+                          , ( "p" , TCon (TC "String" Star) "prelude" )
+                          ])
+                       Nothing)
                   (Area (Loc 202 14 6) (Loc 227 14 31))
                   (App
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "String" Star) "prelude"))
-                           (TRecord
-                              (fromList
-                                 [ ( "g" , TCon (TC "Number" Star) "prelude" )
-                                 , ( "p" , TCon (TC "String" Star) "prelude" )
-                                 ])
-                              Nothing))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TRecord
+                                (fromList
+                                   [ ( "g" , TCon (TC "Number" Star) "prelude" )
+                                   , ( "p" , TCon (TC "String" Star) "prelude" )
+                                   ])
+                                Nothing))
                         (Area (Loc 202 14 6) (Loc 228 14 32))
                         (App
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TRecord
-                                       (fromList [ ( "p" , TVar (TV "b27" Star) ) ])
-                                       (Just (TVar (TV "c28" Star)))))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "b27" Star)))
-                                    (TRecord
-                                       (fromList [ ( "p" , TVar (TV "b27" Star) ) ])
-                                       (Just (TVar (TV "c28" Star))))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TRecord
+                                         (fromList [ ( "p" , TVar (TV "b27" Star) ) ])
+                                         (Just (TVar (TV "c28" Star)))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "b27" Star)))
+                                      (TRecord
+                                         (fromList [ ( "p" , TVar (TV "b27" Star) ) ])
+                                         (Just (TVar (TV "c28" Star))))))
                               (Area (Loc 202 14 6) (Loc 205 14 9))
                               (Var "fr2"))
                            (Solved
-                              (TRecord
-                                 (fromList
-                                    [ ( "g" , TCon (TC "Number" Star) "prelude" )
-                                    , ( "p" , TCon (TC "String" Star) "prelude" )
-                                    ])
-                                 Nothing)
+                              ([] :=>
+                                 TRecord
+                                   (fromList
+                                      [ ( "g" , TCon (TC "Number" Star) "prelude" )
+                                      , ( "p" , TCon (TC "String" Star) "prelude" )
+                                      ])
+                                   Nothing)
                               (Area (Loc 206 14 10) (Loc 222 14 26))
                               (Record
                                  [ Solved
-                                     (TCon (TC "String" Star) "prelude")
+                                     ([] :=> TCon (TC "String" Star) "prelude")
                                      (Area (Loc 208 14 12) (Loc 214 14 18))
                                      (Field
                                         ( "p"
                                         , Solved
-                                            (TCon (TC "String" Star) "prelude")
+                                            ([] :=> TCon (TC "String" Star) "prelude")
                                             (Area (Loc 211 14 15) (Loc 214 14 18))
                                             (LStr "'4'")
                                         ))
                                  , Solved
-                                     (TCon (TC "Number" Star) "prelude")
+                                     ([] :=> TCon (TC "Number" Star) "prelude")
                                      (Area (Loc 216 14 20) (Loc 220 14 24))
                                      (Field
                                         ( "g"
                                         , Solved
-                                            (TCon (TC "Number" Star) "prelude")
+                                            ([] :=> TCon (TC "Number" Star) "prelude")
                                             (Area (Loc 219 14 23) (Loc 220 14 24))
                                             (LNum "5")
                                         ))
                                  ]))
                            False))
                      (Solved
-                        (TCon (TC "String" Star) "prelude")
+                        ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 224 14 28) (Loc 227 14 31))
                         (LStr "'5'"))
                      True)))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TRecord
-                     (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                     (Just (TVar (TV "j35" Star)))))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TRecord
-                        (fromList
-                           [ ( "b" , TCon (TC "String" Star) "prelude" )
-                           , ( "c" , TCon (TC "Number" Star) "prelude" )
-                           ])
-                        (Just (TVar (TV "e30" Star)))))
-                  (TRecord
-                     (fromList
-                        [ ( "b" , TCon (TC "String" Star) "prelude" )
-                        , ( "c" , TCon (TC "Number" Star) "prelude" )
-                        ])
-                     (Just (TVar (TV "e30" Star))))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
+                       (Just (TVar (TV "j35" Star)))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TRecord
+                          (fromList
+                             [ ( "b" , TCon (TC "String" Star) "prelude" )
+                             , ( "c" , TCon (TC "Number" Star) "prelude" )
+                             ])
+                          (Just (TVar (TV "e30" Star)))))
+                    (TRecord
+                       (fromList
+                          [ ( "b" , TCon (TC "String" Star) "prelude" )
+                          , ( "c" , TCon (TC "Number" Star) "prelude" )
+                          ])
+                       (Just (TVar (TV "e30" Star))))))
             (Area (Loc 230 16 1) (Loc 282 20 3))
             (Assignment
                "fxy"
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TRecord
-                           (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                           (Just (TVar (TV "j35" Star)))))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TRecord
-                              (fromList
-                                 [ ( "b" , TCon (TC "String" Star) "prelude" )
-                                 , ( "c" , TCon (TC "Number" Star) "prelude" )
-                                 ])
-                              (Just (TVar (TV "e30" Star)))))
-                        (TRecord
-                           (fromList
-                              [ ( "b" , TCon (TC "String" Star) "prelude" )
-                              , ( "c" , TCon (TC "Number" Star) "prelude" )
-                              ])
-                           (Just (TVar (TV "e30" Star))))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
+                             (Just (TVar (TV "j35" Star)))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TRecord
+                                (fromList
+                                   [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                   , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                   ])
+                                (Just (TVar (TV "e30" Star)))))
+                          (TRecord
+                             (fromList
+                                [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                ])
+                             (Just (TVar (TV "e30" Star))))))
                   (Area (Loc 236 16 7) (Loc 282 20 3))
                   (Abs
                      (Solved
-                        (TRecord
-                           (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                           (Just (TVar (TV "j35" Star))))
+                        ([] :=>
+                           TRecord
+                             (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
+                             (Just (TVar (TV "j35" Star))))
                         (Area (Loc 237 16 8) (Loc 238 16 9))
                         "s")
                      [ Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TRecord
-                                  (fromList
-                                     [ ( "b" , TCon (TC "String" Star) "prelude" )
-                                     , ( "c" , TCon (TC "Number" Star) "prelude" )
-                                     ])
-                                  (Just (TVar (TV "e30" Star)))))
-                            (TRecord
-                               (fromList
-                                  [ ( "b" , TCon (TC "String" Star) "prelude" )
-                                  , ( "c" , TCon (TC "Number" Star) "prelude" )
-                                  ])
-                               (Just (TVar (TV "e30" Star)))))
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TRecord
+                                    (fromList
+                                       [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                       , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                       ])
+                                    (Just (TVar (TV "e30" Star)))))
+                              (TRecord
+                                 (fromList
+                                    [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                    , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                    ])
+                                 (Just (TVar (TV "e30" Star)))))
                          (Area (Loc 236 16 7) (Loc 282 20 3))
                          (Abs
                             (Solved
-                               (TRecord
-                                  (fromList
-                                     [ ( "b" , TCon (TC "String" Star) "prelude" )
-                                     , ( "c" , TCon (TC "Number" Star) "prelude" )
-                                     ])
-                                  (Just (TVar (TV "e30" Star))))
+                               ([] :=>
+                                  TRecord
+                                    (fromList
+                                       [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                       , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                       ])
+                                    (Just (TVar (TV "e30" Star))))
                                (Area (Loc 240 16 11) (Loc 241 16 12))
                                "e")
                             [ Solved
-                                (TRecord
-                                   (fromList
-                                      [ ( "b" , TCon (TC "String" Star) "prelude" )
-                                      , ( "c" , TCon (TC "Number" Star) "prelude" )
-                                      ])
-                                   (Just (TVar (TV "e30" Star))))
+                                ([] :=>
+                                   TRecord
+                                     (fromList
+                                        [ ( "b" , TCon (TC "String" Star) "prelude" )
+                                        , ( "c" , TCon (TC "Number" Star) "prelude" )
+                                        ])
+                                     (Just (TVar (TV "e30" Star))))
                                 (Area (Loc 247 16 18) (Loc 281 20 1))
                                 (Record
                                    [ Solved
-                                       (TVar (TV "e30" Star))
+                                       ([] :=> TVar (TV "e30" Star))
                                        (Area (Loc 251 17 3) (Loc 255 17 7))
                                        (FieldSpread
                                           (Solved
-                                             (TVar (TV "e30" Star))
+                                             ([] :=> TVar (TV "e30" Star))
                                              (Area (Loc 254 17 6) (Loc 255 17 7))
                                              (Var "e")))
                                    , Solved
-                                       (TCon (TC "Number" Star) "prelude")
+                                       ([] :=> TCon (TC "Number" Star) "prelude")
                                        (Area (Loc 259 18 3) (Loc 269 18 13))
                                        (Field
                                           ( "c"
                                           , Solved
-                                              (TCon (TC "Number" Star) "prelude")
+                                              ([] :=> TCon (TC "Number" Star) "prelude")
                                               (Area (Loc 262 18 6) (Loc 269 18 13))
                                               (App
                                                  (Solved
-                                                    (TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "(->)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TCon (TC "Number" Star) "prelude"))
-                                                       (TCon (TC "Number" Star) "prelude"))
+                                                    ([] :=>
+                                                       TApp
+                                                         (TApp
+                                                            (TCon
+                                                               (TC
+                                                                  "(->)"
+                                                                  (Kfun Star (Kfun Star Star)))
+                                                               "prelude")
+                                                            (TCon (TC "Number" Star) "prelude"))
+                                                         (TCon (TC "Number" Star) "prelude"))
                                                     (Area (Loc 262 18 6) (Loc 269 18 13))
                                                     (App
                                                        (Solved
-                                                          (TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TCon (TC "Number" Star) "prelude"))
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TCon
-                                                                      (TC "Number" Star) "prelude"))
-                                                                (TCon
-                                                                   (TC "Number" Star) "prelude")))
+                                                          ([] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TCon
+                                                                     (TC "Number" Star) "prelude"))
+                                                               (TApp
+                                                                  (TApp
+                                                                     (TCon
+                                                                        (TC
+                                                                           "(->)"
+                                                                           (Kfun
+                                                                              Star
+                                                                              (Kfun Star Star)))
+                                                                        "prelude")
+                                                                     (TCon
+                                                                        (TC "Number" Star)
+                                                                        "prelude"))
+                                                                  (TCon
+                                                                     (TC "Number" Star) "prelude")))
                                                           (Area (Loc 266 18 10) (Loc 267 18 11))
                                                           (Var "+"))
                                                        (Solved
-                                                          (TCon (TC "Number" Star) "prelude")
+                                                          ([] :=> TCon (TC "Number" Star) "prelude")
                                                           (Area (Loc 262 18 6) (Loc 265 18 9))
                                                           (Access
                                                              (Solved
-                                                                (TVar (TV "d29" Star))
+                                                                ([] :=> TVar (TV "d29" Star))
                                                                 (Area (Loc 262 18 6) (Loc 263 18 7))
                                                                 (Var "s"))
                                                              (Solved
-                                                                (TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "(->)"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "prelude")
-                                                                      (TRecord
-                                                                         (fromList
-                                                                            [ ( "x"
-                                                                              , TVar (TV "i34" Star)
-                                                                              )
-                                                                            ])
-                                                                         (Just
-                                                                            (TVar
-                                                                               (TV "j35" Star)))))
-                                                                   (TVar (TV "i34" Star)))
+                                                                ([] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TRecord
+                                                                           (fromList
+                                                                              [ ( "x"
+                                                                                , TVar
+                                                                                    (TV "i34" Star)
+                                                                                )
+                                                                              ])
+                                                                           (Just
+                                                                              (TVar
+                                                                                 (TV "j35" Star)))))
+                                                                     (TVar (TV "i34" Star)))
                                                                 (Area (Loc 264 18 8) (Loc 265 18 9))
                                                                 (Var ".x"))))
                                                        False))
                                                  (Solved
-                                                    (TCon (TC "Number" Star) "prelude")
+                                                    ([] :=> TCon (TC "Number" Star) "prelude")
                                                     (Area (Loc 268 18 12) (Loc 269 18 13))
                                                     (LNum "1"))
                                                  True)
                                           ))
                                    , Solved
-                                       (TCon (TC "String" Star) "prelude")
+                                       ([] :=> TCon (TC "String" Star) "prelude")
                                        (Area (Loc 273 19 3) (Loc 279 19 9))
                                        (Field
                                           ( "b"
                                           , Solved
-                                              (TCon (TC "String" Star) "prelude")
+                                              ([] :=> TCon (TC "String" Star) "prelude")
                                               (Area (Loc 276 19 6) (Loc 279 19 9))
                                               (LStr "'3'")
                                           ))

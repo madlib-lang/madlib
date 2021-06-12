@@ -113,18 +113,6 @@ addConstructors env ctors = do
     env
     ctors
 
-extractExportedExps :: Slv.AST -> M.Map Slv.Name Slv.Exp
-extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
-  Just p -> M.fromList $ bundleExports <$> filter Slv.isExport aexps
-
-bundleExports :: Slv.Exp -> (Slv.Name, Slv.Exp)
-bundleExports e'@(Slv.Solved _ _ exp) = case exp of
-  Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)) -> (n, e')
-
-  Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
-
-  Slv.NameExport n -> (n, e')
-
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
 findASTM table path = case M.lookup path table of
@@ -143,7 +131,7 @@ extractImportedConstructors env ast imp =
 
 extractImportedVars :: Env -> Slv.AST -> Can.Import -> Infer Vars
 extractImportedVars env ast imp = do
-  let exportedNames = M.keys $ extractExportedExps ast
+  let exportedNames = M.keys $ Slv.extractExportedExps ast
   exportTuples <- mapM (\name -> (name, ) <$> lookupVar env name) exportedNames
   let exports = M.fromList exportTuples
   return $ filterExportsByImport imp exports

@@ -22,3 +22,7 @@ pushError err = do
 
 
 type Infer a = forall m . (MonadError CompilationError m, MonadState InferState m) => m a
+
+unsafeRun :: Infer a -> a
+unsafeRun i = case runExcept (runStateT i InferState { count = 0, errors = [] }) of
+  Right (a, _) -> a

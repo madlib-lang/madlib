@@ -21,6 +21,7 @@ import           Generate.Utils
 import qualified Data.Map                      as M
 import qualified Data.Maybe                    as Maybe
 import           Infer.Type
+import           Explain.Format
 import           Text.Regex.TDFA
 import Utils.Tuple
 
@@ -367,50 +368,6 @@ generateAliasDoc depth docStrings typeDecl = case typeDecl of
 
 
   _ -> ""
-
-prettyPrintConstructorTyping :: Slv.Typing -> String
-prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
-  Slv.TRComp _ ts ->
-    if not (null ts) then "(" <> prettyPrintConstructorTyping' False t <> ")" else prettyPrintConstructorTyping' False t
-  Slv.TRArr _ _ -> "(" <> prettyPrintConstructorTyping' False t <> ")"
-  _             -> prettyPrintConstructorTyping' True t
-
-prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
-prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
-  Slv.TRSingle n -> n
-  Slv.TRComp n typing' ->
-    let space = if not (null typing') then " " else ""
-    in  if paren
-          then
-            "("
-            <> n
-            <> space
-            <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
-            <> ")"
-          else n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
-  Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
-    "("
-      <> prettyPrintConstructorTyping' False l
-      <> " -> "
-      <> prettyPrintConstructorTyping' False r
-      <> ") -> "
-      <> prettyPrintConstructorTyping' False r'
-  Slv.TRArr l r -> if paren
-    then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
-    else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
-  Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
-  Slv.TRRecord ts _ ->
-    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
-        fields  = M.elems mapped
-        fields' = intercalate ", " fields
-    in  "{ " <> fields' <> " }"
-  _ -> ""
-
-isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
-isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
-  Slv.TRArr  _ _  -> True
-  Slv.TRComp _ ts -> not (null ts)
-  _               -> False
 
 
 generateExpsDoc :: Int -> [DocString] -> [(String, Slv.Exp)] -> String

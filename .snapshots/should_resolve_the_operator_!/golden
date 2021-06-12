@@ -3,19 +3,20 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "Boolean" Star) "prelude")
+            ([] :=> TCon (TC "Boolean" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 6 1 7))
             (App
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TCon (TC "Boolean" Star) "prelude"))
-                     (TCon (TC "Boolean" Star) "prelude"))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Boolean" Star) "prelude"))
+                       (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 0 1 1) (Loc 1 1 2))
                   (Var "!"))
                (Solved
-                  (TCon (TC "Boolean" Star) "prelude")
+                  ([] :=> TCon (TC "Boolean" Star) "prelude")
                   (Area (Loc 1 1 2) (Loc 6 1 7))
                   (LBool "false"))
                True)
