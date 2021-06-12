@@ -28,13 +28,13 @@ import           Run.TestRunner
 
 runRun :: FilePath -> [String] -> IO ()
 runRun input args = do
-  if ".mad" `isSuffixOf` input then runSingleModule input args else runPackage input args
+  if ".mad" `isSuffixOf` input then runSingleModule input args else runRunPackage input args
 
 runFolder :: FilePath
 runFolder = ".run/"
 
-runPackage :: FilePath -> [String] -> IO ()
-runPackage package args = do
+runRunPackage :: FilePath -> [String] -> IO ()
+runRunPackage package args = do
   currentDir <- getCurrentDirectory
   let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
 

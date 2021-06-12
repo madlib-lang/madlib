@@ -1,22 +1,28 @@
 module Run.PackageHash where
 
-import           System.Directory              ( listDirectory, doesFileExist, doesDirectoryExist, getCurrentDirectory )
+import           System.Directory              as Dir
 import           System.FilePath               ( joinPath )
 import qualified Data.ByteString.Lazy          as BL
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 import qualified Data.List                     as List
 import           Crypto.Hash.MD5               ( hashlazy )
 import           Data.ByteString.Builder       ( toLazyByteString, byteStringHex )
+import           System.Exit
+
+import           MadlibDotJson.MadlibDotJson    as MadlibDotJson
+import           Run.CommandLine
+
+import           Utils.PathUtils
 
 
 getFileOrDirContent :: FilePath -> IO BL.ByteString
 getFileOrDirContent path = do
-  fileExists   <- doesFileExist path
-  folderExists <- doesDirectoryExist path
+  fileExists   <- Dir.doesFileExist path
+  folderExists <- Dir.doesDirectoryExist path
 
   case (fileExists, folderExists) of
     (_, True) -> do
-      entries          <- List.sort <$> listDirectory path
+      entries          <- List.sort <$> Dir.listDirectory path
       processedEntries <- mapM (getFileOrDirContent . joinPath . ([path] <>) . return) entries
       return $ BL.concat processedEntries
 
@@ -41,7 +47,7 @@ filesToExclude = [ "madlib_modules"
 
 getPackageContent :: FilePath -> IO BL.ByteString
 getPackageContent packageFolder = do
-  folderExists <- doesDirectoryExist packageFolder
+  folderExists <- Dir.doesDirectoryExist packageFolder
 
   if folderExists then do
     entries          <- List.sort . filter (`notElem` filesToExclude) <$> listDirectory packageFolder
@@ -59,8 +65,14 @@ generatePackageHash packageFolder = do
 
   return $ BLChar8.unpack hexHash
 
-runGeneratePackageHash :: IO ()
-runGeneratePackageHash = do
-  currentDirectoryPath <- getCurrentDirectory
-  hash <- generatePackageHash currentDirectoryPath
-  putStrLn hash
+runGeneratePackageHash :: FilePath -> IO ()
+runGeneratePackageHash packagePath = do
+  canPath       <- Dir.canonicalizePath packagePath
+  madlibDotJson <- MadlibDotJson.load defaultPathUtils $ joinPath [canPath, "madlib.json"]
+
+  case madlibDotJson of
+    Left _  -> putStrLn "No madlib.json found!" >> exitFailure
+
+    Right _ -> do
+      hash                 <- generatePackageHash canPath
+      putStrLn hash
