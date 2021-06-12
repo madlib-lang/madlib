@@ -51,7 +51,7 @@ import           Coverage.Coverable             ( collectFromAST
                                                 , Coverable(..)
                                                 )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
-import           MadlibDotJson.Version
+import           MadlibDotJson.MadlibVersion
 import           Utils.Path
 import qualified Utils.PathUtils               as PathUtils
 import           Paths_madlib                   ( version )

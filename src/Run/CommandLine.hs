@@ -31,7 +31,7 @@ data Command
   deriving (Eq, Show)
 
 data PackageSubCommand
-  = GenerateHash
+  = GenerateHash { generateHashInput :: FilePath }
   | NoPackageSubCommand
   deriving (Eq, Show)
 
@@ -99,8 +99,13 @@ parseTarget = option
 parseInstall :: Parser Command
 parseInstall = pure Install
 
+
+parseGenerateHashInput :: Parser FilePath
+parseGenerateHashInput =
+  strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "Path to package" <> showDefault <> value ".")
+
 parseGenerateHash :: Parser PackageSubCommand
-parseGenerateHash = subparser $ command "generate-hash" (pure GenerateHash `withInfo` "generates the md5 hash for a package")
+parseGenerateHash = subparser $ command "generate-hash" ((GenerateHash <$> parseGenerateHashInput) `withInfo` "generates the md5 hash for a package")
 
 parsePackage :: Parser Command
 parsePackage = (Package <$> parseGenerateHash)
