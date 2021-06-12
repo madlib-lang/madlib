@@ -27,6 +27,12 @@ data Command
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
   | Run { runInput :: FilePath, runArgs :: [String] }
+  | Package { packageSubCommand :: PackageSubCommand }
+  deriving (Eq, Show)
+
+data PackageSubCommand
+  = GenerateHash
+  | NoPackageSubCommand
   deriving (Eq, Show)
 
 
@@ -92,6 +98,13 @@ parseTarget = option
 
 parseInstall :: Parser Command
 parseInstall = pure Install
+
+parseGenerateHash :: Parser PackageSubCommand
+parseGenerateHash = subparser $ command "generate-hash" (pure GenerateHash `withInfo` "generates the md5 hash for a package")
+
+parsePackage :: Parser Command
+parsePackage = (Package <$> parseGenerateHash)
+  <|> pure Package { packageSubCommand = NoPackageSubCommand }
 
 
 parseCompile :: Parser Command
@@ -160,6 +173,7 @@ parseCommand =
     <> command "run"     (parseRun `withInfo` "run a madlib module or package")
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")
+    <> command "package" (parsePackage `withInfo` "packages a library")
     <> command "new"     (parseNew `withInfo` "create a new project")
     <> command "doc"     (parseDoc `withInfo` "generate documentation")
 

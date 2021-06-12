@@ -92,9 +92,7 @@ generateLCovInfoForAST astPath coverables =
 
 globalChecks :: IO [CompilationWarning]
 globalChecks = do
-  currentDir <- getCurrentDirectory
-  let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
-  parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils madlibDotJsonPath
+  parsedMadlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
 
   case parsedMadlibDotJson of
     Left _ -> return []
