@@ -13,6 +13,8 @@ import           Run.Compile
 import           Run.CommandLine
 import           Run.PackageInstaller
 import           Run.TestRunner
+import           Run.Package
+import           Run.PackageHash
 
 
 main :: IO ()
@@ -31,12 +33,16 @@ run cmd = do
             Right s -> runCompilation cmd { compileOutput = s } coverage
             Left  e -> putStrLn e
 
-    Test entrypoint coverage -> runTests entrypoint coverage
+    Test entrypoint coverage                          -> runTests entrypoint coverage
 
-    Install                  -> runPackageInstaller
+    Install                                           -> runPackageInstaller
+    
+    Package{ packageSubCommand = NoPackageSubCommand } -> runBuildPackage
+    
+    Package{ packageSubCommand = GenerateHash }        -> runGeneratePackageHash
 
-    New path                 -> runPackageGenerator path
+    New path                                           -> runPackageGenerator path
 
-    Doc path                 -> runDocumentationGenerator path
+    Doc path                                           -> runDocumentationGenerator path
 
-    Run path args            -> runRun path args
+    Run path args                                      -> runRun path args

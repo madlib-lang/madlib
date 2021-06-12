@@ -9,6 +9,8 @@ import           Control.Exception              ( try
                                                 , SomeException
                                                 )
 import qualified Data.ByteString.Lazy          as B
+import           System.Directory               ( getCurrentDirectory )
+import           System.FilePath                ( joinPath )
 
 
 data MadlibDotJson
@@ -31,3 +33,9 @@ load pathUtils file = do
   case content of
     Right c -> return $ eitherDecode c :: IO (Either String MadlibDotJson)
     Left  e -> return $ Left "File not found"
+
+loadCurrentMadlibDotJson :: IO (Either String MadlibDotJson)
+loadCurrentMadlibDotJson = do
+  currentDir <- getCurrentDirectory
+  let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
+  load defaultPathUtils madlibDotJsonPath

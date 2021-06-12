@@ -15,6 +15,7 @@ import           Infer.Interface
 import           Infer.Type
 import           Infer.Exp
 import           Error.Error
+import           Error.Warning
 import           Error.Context
 import           Error.Backtrace
 import           Data.Maybe
@@ -316,6 +317,16 @@ solveManyASTs solved table fps = case fps of
       next    <- solveManyASTs (solved <> current) table fps'
       return $ M.map fst current <> next
     Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
+
+
+solveManyASTs' :: Can.Table -> [FilePath] -> (Either [CompilationError] Slv.Table, [CompilationWarning])
+solveManyASTs' canTable paths = 
+  case runExcept (runStateT (solveManyASTs mempty canTable paths) InferState { count = 0, errors = [] }) of
+    Left err -> (Left [err], [])
+
+    Right (table, InferState { errors = [] }) -> (Right table, [])
+
+    Right (_, InferState { errors }) -> (Left errors, [])
 
 
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)

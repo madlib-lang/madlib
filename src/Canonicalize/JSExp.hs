@@ -22,6 +22,7 @@ filterJSExp :: Target -> String -> String
 filterJSExp target = removeSelectors target . removeOtherTargets target
 
 removeOtherTargets :: Target -> String -> String
+removeOtherTargets TAny code   = code
 removeOtherTargets target code =
   let (startRegex, endRegex) = case target of
         TNode    -> (browserStartRegex, browserEndRegex)
@@ -34,6 +35,7 @@ removeOtherTargets target code =
   in  if found then removeOtherTargets target oneLess else before
 
 removeSelectors :: Target -> String -> String
+removeSelectors TAny code   = code
 removeSelectors target code =
   let regexCleanup = case target of
         TNode    -> "({Node}[\n]*|{/Node}[\n]*)"
