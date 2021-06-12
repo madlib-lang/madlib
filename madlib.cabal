@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3d04c6b5e94750ecf065bbba2d414e3ff277f02dccec89d59e121f4b99e29dec
+-- hash: 04fa5a2e420997db3c4c38525088d62c05914f5306e711bd6a1240156ae5929e
 
 name:           madlib
 version:        0.9.0
@@ -75,7 +75,7 @@ library
       Infer.Typing
       Infer.Unify
       MadlibDotJson.MadlibDotJson
-      MadlibDotJson.Version
+      MadlibDotJson.MadlibVersion
       Main
       Optimize.Optimize
       Parse.DocString.DocString
@@ -99,6 +99,7 @@ library
       Utils.PathUtils
       Utils.Tuple
       Utils.URL
+      VersionLock.VersionLock
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -179,7 +180,7 @@ executable madlib
       Infer.Typing
       Infer.Unify
       MadlibDotJson.MadlibDotJson
-      MadlibDotJson.Version
+      MadlibDotJson.MadlibVersion
       Optimize.Optimize
       Parse.DocString.DocString
       Parse.DocString.Grammar
@@ -202,6 +203,7 @@ executable madlib
       Utils.PathUtils
       Utils.Tuple
       Utils.URL
+      VersionLock.VersionLock
       Paths_madlib
   hs-source-dirs:
       src

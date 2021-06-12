@@ -24,6 +24,7 @@ import qualified AST.Source                         as Src
 import qualified Parse.Madlib.AST                   as Src
 import           Run.Target
 import           Run.PackageHash
+import           Run.CommandLine
 
 parse :: FilePath -> IO (Either CompilationError Src.Table)
 parse = Src.buildASTTable mempty
@@ -52,6 +53,7 @@ typeCheckMain main = do
 
 runBuildPackage :: IO ()
 runBuildPackage = do
+  putStrLn "Build package"
   madlibDotJson <- loadCurrentMadlibDotJson
 
   case madlibDotJson of
@@ -67,4 +69,10 @@ runBuildPackage = do
 
       (typeChecked, warnings) <- typeCheckMain canonicalMain
       return ()
-      -- putStrLn $ ppShow $ Map.lookup canonicalMain <$> typeChecked
+
+
+runPackage :: PackageSubCommand -> IO ()
+runPackage subCommand = case subCommand of
+  NoPackageSubCommand -> runBuildPackage
+
+  GenerateHash input  -> runGeneratePackageHash input

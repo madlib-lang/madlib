@@ -1,4 +1,4 @@
-module MadlibDotJson.Version where
+module MadlibDotJson.MadlibVersion where
 
 import           Data.Version                   ( Version(Version)
                                                 , showVersion
