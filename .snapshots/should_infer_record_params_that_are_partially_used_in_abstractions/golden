@@ -3,96 +3,102 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "c2" Star)))
-                     (TCon (TC "Boolean" Star) "prelude")))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TApp
-                        (TCon (TC "List" (Kfun Star Star)) "prelude")
-                        (TVar (TV "c2" Star))))
-                  (TApp
-                     (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                     (TVar (TV "c2" Star)))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "c2" Star)))
+                       (TCon (TC "Boolean" Star) "prelude")))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "c2" Star))))
+                    (TApp
+                       (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                       (TVar (TV "c2" Star)))))
             (Area (Loc 32 2 1) (Loc 246 11 6))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "c2" Star)))
-                           (TCon (TC "Boolean" Star) "prelude")))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TApp
-                              (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "c2" Star))))
-                        (TApp
-                           (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                           (TVar (TV "c2" Star)))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "c2" Star)))
+                             (TCon (TC "Boolean" Star) "prelude")))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TVar (TV "c2" Star))))
+                          (TApp
+                             (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                             (TVar (TV "c2" Star)))))
                   (Area (Loc 76 3 1) (Loc 246 11 6))
                   (Export
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "d3" Star)))
-                                 (TCon (TC "Boolean" Star) "prelude")))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TApp
-                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "d3" Star))))
-                              (TApp
-                                 (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                 (TVar (TV "d3" Star)))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "d3" Star)))
+                                   (TCon (TC "Boolean" Star) "prelude")))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "d3" Star))))
+                                (TApp
+                                   (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                                   (TVar (TV "d3" Star)))))
                         (Area (Loc 83 3 8) (Loc 246 11 6))
                         (Assignment
                            "find"
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "e4" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "f5" Star)))
-                                    (TVar (TV "g6" Star))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "e4" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "f5" Star)))
+                                      (TVar (TV "g6" Star))))
                               (Area (Loc 90 3 15) (Loc 246 11 6))
                               (Abs
                                  (Solved
-                                    (TVar (TV "e4" Star))
+                                    ([] :=> TVar (TV "e4" Star))
                                     (Area (Loc 91 3 16) (Loc 100 3 25))
                                     "predicate")
                                  [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "f5" Star)))
-                                        (TVar (TV "g6" Star)))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "f5" Star)))
+                                          (TVar (TV "g6" Star)))
                                      (Area (Loc 90 3 15) (Loc 246 11 6))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "f5" Star))
+                                           ([] :=> TVar (TV "f5" Star))
                                            (Area (Loc 102 3 27) (Loc 104 3 29))
                                            "xs")
                                         [ Solved
-                                            (TVar (TV "g6" Star))
+                                            ([] :=> TVar (TV "g6" Star))
                                             (Area (Loc 110 3 35) (Loc 245 11 4))
                                             (JSExp
                                                "{\n  const found = xs.find(predicate);\n  if (found === undefined) {\n    return Nothing()\n  }\n  else {\n    return Just(found)\n  }\n}")
@@ -114,168 +120,182 @@ Right
                              (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
                           (TApp (TCon (TC "Maybe" (Kfun Star Star)) "path") (TGen 0))))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "h7" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "i8" Star)))
-                        (TVar (TV "j9" Star)))))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "i8" Star)))
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "h7" Star)))
-                     (TVar (TV "j9" Star)))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "h7" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "i8" Star)))
+                          (TVar (TV "j9" Star)))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "i8" Star)))
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "h7" Star)))
+                       (TVar (TV "j9" Star)))))
             (Area (Loc 247 12 1) (Loc 334 15 1))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "h7" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "i8" Star)))
-                              (TVar (TV "j9" Star)))))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "i8" Star)))
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "h7" Star)))
-                           (TVar (TV "j9" Star)))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "h7" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "i8" Star)))
+                                (TVar (TV "j9" Star)))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "i8" Star)))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "h7" Star)))
+                             (TVar (TV "j9" Star)))))
                   (Area (Loc 286 13 1) (Loc 334 15 1))
                   (Export
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "p15" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "o14" Star)))
-                                    (TVar (TV "q16" Star)))))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "o14" Star)))
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "p15" Star)))
-                                 (TVar (TV "q16" Star)))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "p15" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "o14" Star)))
+                                      (TVar (TV "q16" Star)))))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "o14" Star)))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "p15" Star)))
+                                   (TVar (TV "q16" Star)))))
                         (Area (Loc 293 13 8) (Loc 334 15 1))
                         (Assignment
                            "flip"
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "p15" Star)))
-                                       (TApp
-                                          (TApp
-                                             (TCon
-                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "o14" Star)))
-                                          (TVar (TV "q16" Star)))))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "o14" Star)))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "p15" Star)))
-                                       (TVar (TV "q16" Star)))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "p15" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "o14" Star)))
+                                            (TVar (TV "q16" Star)))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "o14" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "p15" Star)))
+                                         (TVar (TV "q16" Star)))))
                               (Area (Loc 300 13 15) (Loc 334 15 1))
                               (Abs
                                  (Solved
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "p15" Star)))
-                                       (TApp
+                                    ([] :=>
+                                       TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "p15" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "o14" Star)))
+                                            (TVar (TV "q16" Star))))
+                                    (Area (Loc 301 13 16) (Loc 303 13 18))
+                                    "fn")
+                                 [ Solved
+                                     ([] :=>
+                                        TApp
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TVar (TV "o14" Star)))
-                                          (TVar (TV "q16" Star))))
-                                    (Area (Loc 301 13 16) (Loc 303 13 18))
-                                    "fn")
-                                 [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "o14" Star)))
-                                        (TApp
-                                           (TApp
-                                              (TCon
-                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "p15" Star)))
-                                           (TVar (TV "q16" Star))))
+                                          (TApp
+                                             (TApp
+                                                (TCon
+                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TVar (TV "p15" Star)))
+                                             (TVar (TV "q16" Star))))
                                      (Area (Loc 312 14 3) (Loc 332 14 23))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "o14" Star))
+                                           ([] :=> TVar (TV "o14" Star))
                                            (Area (Loc 313 14 4) (Loc 314 14 5))
                                            "b")
                                         [ Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TVar (TV "p15" Star)))
-                                               (TVar (TV "q16" Star)))
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TVar (TV "p15" Star)))
+                                                 (TVar (TV "q16" Star)))
                                             (Area (Loc 312 14 3) (Loc 332 14 23))
                                             (Abs
                                                (Solved
-                                                  (TVar (TV "p15" Star))
+                                                  ([] :=> TVar (TV "p15" Star))
                                                   (Area (Loc 316 14 7) (Loc 317 14 8))
                                                   "a")
                                                [ Solved
-                                                   (TVar (TV "q16" Star))
+                                                   ([] :=> TVar (TV "q16" Star))
                                                    (Area (Loc 323 14 14) (Loc 330 14 21))
                                                    (App
                                                       (Solved
-                                                         (TVar (TV "r17" Star))
+                                                         ([] :=> TVar (TV "r17" Star))
                                                          (Area (Loc 323 14 14) (Loc 331 14 22))
                                                          (App
                                                             (Solved
-                                                               (TVar (TV "n13" Star))
+                                                               ([] :=> TVar (TV "n13" Star))
                                                                (Area
                                                                   (Loc 323 14 14) (Loc 325 14 16))
                                                                (Var "fn"))
                                                             (Solved
-                                                               (TVar (TV "p15" Star))
+                                                               ([] :=> TVar (TV "p15" Star))
                                                                (Area
                                                                   (Loc 326 14 17) (Loc 327 14 18))
                                                                (Var "a"))
                                                             False))
                                                       (Solved
-                                                         (TVar (TV "o14" Star))
+                                                         ([] :=> TVar (TV "o14" Star))
                                                          (Area (Loc 329 14 20) (Loc 330 14 21))
                                                          (Var "b"))
                                                       True)
@@ -304,150 +324,163 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
                              (TGen 2))))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "s18" Star)))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "t19" Star)))
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TCon (TC "String" Star) "prelude"))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "u20" Star)))
-                        (TVar (TV "v21" Star))))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "s18" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "t19" Star)))
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "String" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "u20" Star)))
+                          (TVar (TV "v21" Star))))))
             (Area (Loc 336 17 1) (Loc 516 24 7))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "s18" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "t19" Star)))
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "String" Star) "prelude"))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "u20" Star)))
-                              (TVar (TV "v21" Star))))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "s18" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "t19" Star)))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "u20" Star)))
+                                (TVar (TV "v21" Star))))))
                   (Area (Loc 387 18 1) (Loc 516 24 7))
                   (Export
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "a26" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "b27" Star)))
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TCon (TC "String" Star) "prelude"))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "d29" Star)))
-                                    (TVar (TV "e30" Star))))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "a26" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "b27" Star)))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "String" Star) "prelude"))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "d29" Star)))
+                                      (TVar (TV "e30" Star))))))
                         (Area (Loc 394 18 8) (Loc 516 24 7))
                         (Assignment
                            "propOrWrappedDefault"
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "a26" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "b27" Star)))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "c28" Star)))
-                                       (TApp
-                                          (TApp
-                                             (TCon
-                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "d29" Star)))
-                                          (TVar (TV "e30" Star))))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "a26" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "b27" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "c28" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "d29" Star)))
+                                            (TVar (TV "e30" Star))))))
                               (Area (Loc 417 18 31) (Loc 516 24 7))
                               (Abs
                                  (Solved
-                                    (TVar (TV "a26" Star))
+                                    ([] :=> TVar (TV "a26" Star))
                                     (Area (Loc 418 18 32) (Loc 422 18 36))
                                     "Wrap")
                                  [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "b27" Star)))
-                                        (TApp
-                                           (TApp
-                                              (TCon
-                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "c28" Star)))
-                                           (TApp
-                                              (TApp
-                                                 (TCon
-                                                    (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                    "prelude")
-                                                 (TVar (TV "d29" Star)))
-                                              (TVar (TV "e30" Star)))))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "b27" Star)))
+                                          (TApp
+                                             (TApp
+                                                (TCon
+                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TVar (TV "c28" Star)))
+                                             (TApp
+                                                (TApp
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
+                                                   (TVar (TV "d29" Star)))
+                                                (TVar (TV "e30" Star)))))
                                      (Area (Loc 417 18 31) (Loc 516 24 7))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "b27" Star))
+                                           ([] :=> TVar (TV "b27" Star))
                                            (Area (Loc 424 18 38) (Loc 427 18 41))
                                            "def")
                                         [ Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TVar (TV "c28" Star)))
-                                               (TApp
-                                                  (TApp
-                                                     (TCon
-                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                        "prelude")
-                                                     (TVar (TV "d29" Star)))
-                                                  (TVar (TV "e30" Star))))
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TVar (TV "c28" Star)))
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                          "prelude")
+                                                       (TVar (TV "d29" Star)))
+                                                    (TVar (TV "e30" Star))))
                                             (Area (Loc 417 18 31) (Loc 516 24 7))
                                             (Abs
                                                (Solved
-                                                  (TVar (TV "c28" Star))
+                                                  ([] :=> TVar (TV "c28" Star))
                                                   (Area (Loc 429 18 43) (Loc 431 18 45))
                                                   "px")
                                                [ Solved
-                                                   (TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TVar (TV "d29" Star)))
-                                                      (TVar (TV "e30" Star)))
+                                                   ([] :=>
+                                                      TApp
+                                                        (TApp
+                                                           (TCon
+                                                              (TC
+                                                                 "(->)"
+                                                                 (Kfun Star (Kfun Star Star)))
+                                                              "prelude")
+                                                           (TVar (TV "d29" Star)))
+                                                        (TVar (TV "e30" Star)))
                                                    (Area (Loc 417 18 31) (Loc 516 24 7))
                                                    (Abs
                                                       (Solved
-                                                         (TVar (TV "d29" Star))
+                                                         ([] :=> TVar (TV "d29" Star))
                                                          (Area (Loc 433 18 47) (Loc 435 18 49))
                                                          "ob")
                                                       [ Solved
-                                                          (TVar (TV "e30" Star))
+                                                          ([] :=> TVar (TV "e30" Star))
                                                           (Area (Loc 442 18 56) (Loc 514 24 4))
                                                           (JSExp
                                                              "{\n  return (\n    !!ob[px] ?\n    Just(ob[px]) :\n    Wrap(def)\n  )\n}")
@@ -474,278 +507,303 @@ Right
                                    (TGen 2))
                                 (TGen 3)))))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TCon (TC "String" Star) "prelude"))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "j35" Star)))
-                  (TVar (TV "k36" Star))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "String" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "j35" Star)))
+                    (TVar (TV "k36" Star))))
             (Area (Loc 517 25 1) (Loc 563 25 47))
             (Export
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TCon (TC "String" Star) "prelude"))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "j35" Star)))
-                        (TVar (TV "k36" Star))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "String" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "j35" Star)))
+                          (TVar (TV "k36" Star))))
                   (Area (Loc 517 25 1) (Loc 563 25 47))
                   (Assignment
                      "prop"
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "String" Star) "prelude"))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "j35" Star)))
-                              (TVar (TV "k36" Star))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "j35" Star)))
+                                (TVar (TV "k36" Star))))
                         (Area (Loc 531 25 15) (Loc 563 25 47))
                         (App
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "i34" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TCon (TC "String" Star) "prelude"))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "j35" Star)))
-                                       (TVar (TV "k36" Star)))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "i34" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TCon (TC "String" Star) "prelude"))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "j35" Star)))
+                                         (TVar (TV "k36" Star)))))
                               (Area (Loc 531 25 15) (Loc 564 25 48))
                               (App
                                  (Solved
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "h33" Star)))
-                                       (TApp
-                                          (TApp
-                                             (TCon
-                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "i34" Star)))
-                                          (TApp
-                                             (TApp
-                                                (TCon
-                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                   "prelude")
-                                                (TCon (TC "String" Star) "prelude"))
-                                             (TApp
-                                                (TApp
-                                                   (TCon
-                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                      "prelude")
-                                                   (TVar (TV "j35" Star)))
-                                                (TVar (TV "k36" Star))))))
-                                    (Area (Loc 531 25 15) (Loc 551 25 35))
-                                    (Var "propOrWrappedDefault"))
-                                 (Solved
-                                    (TApp
-                                       (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                       (TVar (TV "l37" Star)))
-                                    (Area (Loc 552 25 36) (Loc 559 25 43))
-                                    (Var "Nothing"))
-                                 False))
-                           (Solved
-                              (TCon (TC "String" Star) "prelude")
-                              (Area (Loc 561 25 45) (Loc 563 25 47))
-                              (LStr "''"))
-                           True)))))
-        , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "o40" Star)))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TCon (TC "String" Star) "prelude"))
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "p41" Star)))
-                     (TVar (TV "q42" Star)))))
-            (Area (Loc 566 27 1) (Loc 608 27 43))
-            (Export
-               (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "o40" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TCon (TC "String" Star) "prelude"))
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "p41" Star)))
-                           (TVar (TV "q42" Star)))))
-                  (Area (Loc 566 27 1) (Loc 608 27 43))
-                  (Assignment
-                     "propOr"
-                     (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "o40" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TCon (TC "String" Star) "prelude"))
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "p41" Star)))
-                                 (TVar (TV "q42" Star)))))
-                        (Area (Loc 582 27 17) (Loc 608 27 43))
-                        (App
-                           (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "n39" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "o40" Star)))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TCon (TC "String" Star) "prelude"))
-                                       (TApp
-                                          (TApp
-                                             (TCon
-                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "p41" Star)))
-                                          (TVar (TV "q42" Star))))))
-                              (Area (Loc 582 27 17) (Loc 602 27 37))
-                              (Var "propOrWrappedDefault"))
-                           (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "r43" Star)))
-                                 (TApp
-                                    (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                    (TVar (TV "r43" Star))))
-                              (Area (Loc 603 27 38) (Loc 607 27 42))
-                              (Var "Just"))
-                           True)))))
-        , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "s44" Star)))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TCon (TC "String" Star) "prelude"))
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "t45" Star)))
-                     (TCon (TC "Boolean" Star) "prelude"))))
-            (Area (Loc 609 28 1) (Loc 723 31 5))
-            (TypedExp
-               (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "s44" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TCon (TC "String" Star) "prelude"))
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "t45" Star)))
-                           (TCon (TC "Boolean" Star) "prelude"))))
-                  (Area (Loc 647 29 1) (Loc 723 31 5))
-                  (Export
-                     (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "w48" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TCon (TC "String" Star) "prelude"))
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "y50" Star)))
-                                 (TCon (TC "Boolean" Star) "prelude"))))
-                        (Area (Loc 654 29 8) (Loc 723 31 5))
-                        (Assignment
-                           "propEq"
-                           (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "w48" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "x49" Star)))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "y50" Star)))
-                                       (TVar (TV "z51" Star)))))
-                              (Area (Loc 663 29 17) (Loc 723 31 5))
-                              (Abs
-                                 (Solved
-                                    (TVar (TV "w48" Star))
-                                    (Area (Loc 664 29 18) (Loc 666 29 20))
-                                    "xx")
-                                 [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "x49" Star)))
-                                        (TApp
-                                           (TApp
-                                              (TCon
-                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV "y50" Star)))
-                                           (TVar (TV "z51" Star))))
-                                     (Area (Loc 663 29 17) (Loc 723 31 5))
-                                     (Abs
-                                        (Solved
-                                           (TVar (TV "x49" Star))
-                                           (Area (Loc 668 29 22) (Loc 670 29 24))
-                                           "px")
-                                        [ Solved
+                                    ([] :=>
+                                       TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "h33" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "i34" Star)))
                                             (TApp
                                                (TApp
                                                   (TCon
                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                      "prelude")
-                                                  (TVar (TV "y50" Star)))
-                                               (TVar (TV "z51" Star)))
+                                                  (TCon (TC "String" Star) "prelude"))
+                                               (TApp
+                                                  (TApp
+                                                     (TCon
+                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                        "prelude")
+                                                     (TVar (TV "j35" Star)))
+                                                  (TVar (TV "k36" Star))))))
+                                    (Area (Loc 531 25 15) (Loc 551 25 35))
+                                    (Var "propOrWrappedDefault"))
+                                 (Solved
+                                    ([] :=>
+                                       TApp
+                                         (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                                         (TVar (TV "l37" Star)))
+                                    (Area (Loc 552 25 36) (Loc 559 25 43))
+                                    (Var "Nothing"))
+                                 False))
+                           (Solved
+                              ([] :=> TCon (TC "String" Star) "prelude")
+                              (Area (Loc 561 25 45) (Loc 563 25 47))
+                              (LStr "''"))
+                           True)))))
+        , Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "o40" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "String" Star) "prelude"))
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "p41" Star)))
+                       (TVar (TV "q42" Star)))))
+            (Area (Loc 566 27 1) (Loc 608 27 43))
+            (Export
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "o40" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "String" Star) "prelude"))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "p41" Star)))
+                             (TVar (TV "q42" Star)))))
+                  (Area (Loc 566 27 1) (Loc 608 27 43))
+                  (Assignment
+                     "propOr"
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "o40" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "p41" Star)))
+                                   (TVar (TV "q42" Star)))))
+                        (Area (Loc 582 27 17) (Loc 608 27 43))
+                        (App
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "n39" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "o40" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TCon (TC "String" Star) "prelude"))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "p41" Star)))
+                                            (TVar (TV "q42" Star))))))
+                              (Area (Loc 582 27 17) (Loc 602 27 37))
+                              (Var "propOrWrappedDefault"))
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "r43" Star)))
+                                   (TApp
+                                      (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                                      (TVar (TV "r43" Star))))
+                              (Area (Loc 603 27 38) (Loc 607 27 42))
+                              (Var "Just"))
+                           True)))))
+        , Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "s44" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "String" Star) "prelude"))
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "t45" Star)))
+                       (TCon (TC "Boolean" Star) "prelude"))))
+            (Area (Loc 609 28 1) (Loc 723 31 5))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "s44" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "String" Star) "prelude"))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "t45" Star)))
+                             (TCon (TC "Boolean" Star) "prelude"))))
+                  (Area (Loc 647 29 1) (Loc 723 31 5))
+                  (Export
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "w48" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "y50" Star)))
+                                   (TCon (TC "Boolean" Star) "prelude"))))
+                        (Area (Loc 654 29 8) (Loc 723 31 5))
+                        (Assignment
+                           "propEq"
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "w48" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "x49" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "y50" Star)))
+                                         (TVar (TV "z51" Star)))))
+                              (Area (Loc 663 29 17) (Loc 723 31 5))
+                              (Abs
+                                 (Solved
+                                    ([] :=> TVar (TV "w48" Star))
+                                    (Area (Loc 664 29 18) (Loc 666 29 20))
+                                    "xx")
+                                 [ Solved
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "x49" Star)))
+                                          (TApp
+                                             (TApp
+                                                (TCon
+                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TVar (TV "y50" Star)))
+                                             (TVar (TV "z51" Star))))
+                                     (Area (Loc 663 29 17) (Loc 723 31 5))
+                                     (Abs
+                                        (Solved
+                                           ([] :=> TVar (TV "x49" Star))
+                                           (Area (Loc 668 29 22) (Loc 670 29 24))
+                                           "px")
+                                        [ Solved
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TVar (TV "y50" Star)))
+                                                 (TVar (TV "z51" Star)))
                                             (Area (Loc 663 29 17) (Loc 723 31 5))
                                             (Abs
                                                (Solved
-                                                  (TVar (TV "y50" Star))
+                                                  ([] :=> TVar (TV "y50" Star))
                                                   (Area (Loc 672 29 26) (Loc 674 29 28))
                                                   "ob")
                                                [ Solved
-                                                   (TVar (TV "z51" Star))
+                                                   ([] :=> TVar (TV "z51" Star))
                                                    (Area (Loc 680 29 34) (Loc 722 31 3))
                                                    (JSExp
                                                       "{\n  return !!ob[px] && ob[px] === xx\n}")
@@ -767,72 +825,78 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 1))
                              (TCon (TC "Boolean" Star) "prelude"))))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TCon (TC "String" Star) "prelude"))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "a52" Star)))
-                  (TVar (TV "b53" Star))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "String" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "a52" Star)))
+                    (TVar (TV "b53" Star))))
             (Area (Loc 725 33 1) (Loc 805 34 55))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TCon (TC "String" Star) "prelude"))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "a52" Star)))
-                        (TVar (TV "b53" Star))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "String" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "a52" Star)))
+                          (TVar (TV "b53" Star))))
                   (Area (Loc 751 34 1) (Loc 805 34 55))
                   (Export
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "String" Star) "prelude"))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "f57" Star)))
-                              (TVar (TV "g58" Star))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "f57" Star)))
+                                (TVar (TV "g58" Star))))
                         (Area (Loc 758 34 8) (Loc 805 34 55))
                         (Assignment
                            "objOf"
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "e56" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "f57" Star)))
-                                    (TVar (TV "g58" Star))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "e56" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "f57" Star)))
+                                      (TVar (TV "g58" Star))))
                               (Area (Loc 766 34 16) (Loc 805 34 55))
                               (Abs
                                  (Solved
-                                    (TVar (TV "e56" Star))
+                                    ([] :=> TVar (TV "e56" Star))
                                     (Area (Loc 767 34 17) (Loc 769 34 19))
                                     "px")
                                  [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "f57" Star)))
-                                        (TVar (TV "g58" Star)))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "f57" Star)))
+                                          (TVar (TV "g58" Star)))
                                      (Area (Loc 766 34 16) (Loc 805 34 55))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "f57" Star))
+                                           ([] :=> TVar (TV "f57" Star))
                                            (Area (Loc 771 34 21) (Loc 772 34 22))
                                            "x")
                                         [ Solved
-                                            (TVar (TV "g58" Star))
+                                            ([] :=> TVar (TV "g58" Star))
                                             (Area (Loc 778 34 28) (Loc 804 34 54))
                                             (JSExp "{ return { [px]: x } }")
                                         ])
@@ -849,72 +913,78 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
                           (TGen 1)))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "h59" Star)))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "i60" Star)))
-                  (TVar (TV "j61" Star))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "h59" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "i60" Star)))
+                    (TVar (TV "j61" Star))))
             (Area (Loc 807 36 1) (Loc 884 37 57))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "h59" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "i60" Star)))
-                        (TVar (TV "j61" Star))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "h59" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "i60" Star)))
+                          (TVar (TV "j61" Star))))
                   (Area (Loc 828 37 1) (Loc 884 37 57))
                   (Export
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "n65" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "o66" Star)))
-                              (TVar (TV "p67" Star))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "n65" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "o66" Star)))
+                                (TVar (TV "p67" Star))))
                         (Area (Loc 835 37 8) (Loc 884 37 57))
                         (Assignment
                            "merge"
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "n65" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "o66" Star)))
-                                    (TVar (TV "p67" Star))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "n65" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "o66" Star)))
+                                      (TVar (TV "p67" Star))))
                               (Area (Loc 843 37 16) (Loc 884 37 57))
                               (Abs
                                  (Solved
-                                    (TVar (TV "n65" Star))
+                                    ([] :=> TVar (TV "n65" Star))
                                     (Area (Loc 844 37 17) (Loc 845 37 18))
                                     "a")
                                  [ Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "o66" Star)))
-                                        (TVar (TV "p67" Star)))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "o66" Star)))
+                                          (TVar (TV "p67" Star)))
                                      (Area (Loc 843 37 16) (Loc 884 37 57))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "o66" Star))
+                                           ([] :=> TVar (TV "o66" Star))
                                            (Area (Loc 847 37 20) (Loc 848 37 21))
                                            "b")
                                         [ Solved
-                                            (TVar (TV "p67" Star))
+                                            ([] :=> TVar (TV "p67" Star))
                                             (Area (Loc 854 37 27) (Loc 883 37 56))
                                             (JSExp "Object.assign({}, a, b)")
                                         ])
@@ -930,77 +1000,85 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 1))
                           (TGen 2)))))
         , Solved
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TVar (TV "q68" Star)))
-               (TApp
-                  (TApp
-                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                     (TVar (TV "r69" Star)))
-                  (TVar (TV "s70" Star))))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "q68" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "r69" Star)))
+                    (TVar (TV "s70" Star))))
             (Area (Loc 887 39 1) (Loc 935 40 24))
             (TypedExp
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "q68" Star)))
-                     (TApp
-                        (TApp
-                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                           (TVar (TV "r69" Star)))
-                        (TVar (TV "s70" Star))))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "q68" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "r69" Star)))
+                          (TVar (TV "s70" Star))))
                   (Area (Loc 912 40 1) (Loc 935 40 24))
                   (Assignment
                      "mergeLeft"
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "b79" Star)))
-                           (TApp
-                              (TApp
-                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                 (TVar (TV "a78" Star)))
-                              (TVar (TV "c80" Star))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "b79" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "a78" Star)))
+                                (TVar (TV "c80" Star))))
                         (Area (Loc 924 40 13) (Loc 935 40 24))
                         (App
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "x75" Star)))
-                                       (TApp
-                                          (TApp
-                                             (TCon
-                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "y76" Star)))
-                                          (TVar (TV "z77" Star)))))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "y76" Star)))
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "x75" Star)))
-                                       (TVar (TV "z77" Star)))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "x75" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "y76" Star)))
+                                            (TVar (TV "z77" Star)))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "y76" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "x75" Star)))
+                                         (TVar (TV "z77" Star)))))
                               (Area (Loc 924 40 13) (Loc 928 40 17))
                               (Var "flip"))
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "a78" Star)))
-                                 (TApp
-                                    (TApp
-                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TVar (TV "b79" Star)))
-                                    (TVar (TV "c80" Star))))
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "a78" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "b79" Star)))
+                                      (TVar (TV "c80" Star))))
                               (Area (Loc 929 40 18) (Loc 934 40 23))
                               (Var "merge"))
                            True))))

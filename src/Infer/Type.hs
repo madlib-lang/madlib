@@ -31,6 +31,9 @@ infixr `TApp`
 getTConId :: TCon -> Id
 getTConId (TC id _) = id
 
+getTVarId :: TVar -> Id
+getTVarId (TV id _) = id
+
 
 tNumber :: Type
 tNumber = TCon (TC "Number" Star) "prelude"
@@ -194,6 +197,10 @@ instance HasKind Type where
 buildKind :: Int -> Kind
 buildKind n | n > 0     = Kfun Star $ buildKind (n - 1)
             | otherwise = Star
+
+
+unqualify :: Qual a -> a
+unqualify (_ :=> a) = a
 
 
 searchVarInType :: Id -> Type -> Maybe Type

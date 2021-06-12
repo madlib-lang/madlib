@@ -8,6 +8,7 @@ import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
+import qualified AST.Solved                    as Slv
 import           Infer.Type
 import           Data.List                      ( intercalate
                                                 , foldl'
@@ -197,7 +198,7 @@ formatTypeError json err = case err of
   KindError (t, k) (t', k') ->
     "The kind of types don't match, '"
       <> prettyPrintType True t
-      <> "has kind "
+      <> "' has kind "
       <> kindToStr k
       <> " and "
       <> prettyPrintType True t'
@@ -364,7 +365,7 @@ schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
 schemeToStr (Forall _ (ps :=> t)) =
   let (vars, hkVars, predStr) = predsToStr True (mempty, mempty) ps
       (_, _, typeStr)         = prettyPrintType' True (vars, hkVars) t
-  in  
+  in
     if length ps > 1 then
       "(" <> predStr <> ")" <> " => " <> typeStr
     else
@@ -500,6 +501,51 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
   TGen n -> (vars, hkVars, "TGen" <> show n)
 
   _      -> (vars, hkVars, "")
+
+
+prettyPrintConstructorTyping :: Slv.Typing -> String
+prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
+  Slv.TRComp _ ts ->
+    if not (null ts) then "(" <> prettyPrintConstructorTyping' False t <> ")" else prettyPrintConstructorTyping' False t
+  Slv.TRArr _ _ -> "(" <> prettyPrintConstructorTyping' False t <> ")"
+  _             -> prettyPrintConstructorTyping' True t
+
+prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
+prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
+  Slv.TRSingle n -> n
+  Slv.TRComp n typing' ->
+    let space = if not (null typing') then " " else ""
+    in  if paren
+          then
+            "("
+            <> n
+            <> space
+            <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+            <> ")"
+          else n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+  Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
+    "("
+      <> prettyPrintConstructorTyping' False l
+      <> " -> "
+      <> prettyPrintConstructorTyping' False r
+      <> ") -> "
+      <> prettyPrintConstructorTyping' False r'
+  Slv.TRArr l r -> if paren
+    then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
+    else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
+  Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
+  Slv.TRRecord ts _ ->
+    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
+        fields  = M.elems mapped
+        fields' = intercalate ", " fields
+    in  "{ " <> fields' <> " }"
+  _ -> ""
+
+isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
+isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
+  Slv.TRArr  _ _  -> True
+  Slv.TRComp _ ts -> not (null ts)
+  _               -> False
 
 
 isTuple :: Type -> Bool

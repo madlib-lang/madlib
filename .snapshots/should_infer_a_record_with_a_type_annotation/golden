@@ -3,40 +3,42 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TRecord
-               (fromList
-                  [ ( "x" , TCon (TC "Number" Star) "prelude" )
-                  , ( "y" , TCon (TC "Number" Star) "prelude" )
-                  ])
-               Nothing)
+            ([] :=>
+               TRecord
+                 (fromList
+                    [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                    , ( "y" , TCon (TC "Number" Star) "prelude" )
+                    ])
+                 Nothing)
             (Area (Loc 1 1 2) (Loc 47 1 48))
             (TypedExp
                (Solved
-                  (TRecord
-                     (fromList
-                        [ ( "x" , TCon (TC "Number" Star) "prelude" )
-                        , ( "y" , TCon (TC "Number" Star) "prelude" )
-                        ])
-                     Nothing)
+                  ([] :=>
+                     TRecord
+                       (fromList
+                          [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                          , ( "y" , TCon (TC "Number" Star) "prelude" )
+                          ])
+                       Nothing)
                   (Area (Loc 1 1 2) (Loc 15 1 16))
                   (Record
                      [ Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 3 1 4) (Loc 7 1 8))
                          (Field
                             ( "x"
                             , Solved
-                                (TCon (TC "Number" Star) "prelude")
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 6 1 7) (Loc 7 1 8))
                                 (LNum "3")
                             ))
                      , Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 9 1 10) (Loc 13 1 14))
                          (Field
                             ( "y"
                             , Solved
-                                (TCon (TC "Number" Star) "prelude")
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 12 1 13) (Loc 13 1 14))
                                 (LNum "7")
                             ))

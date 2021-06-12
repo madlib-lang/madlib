@@ -3,16 +3,16 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "X" Star) "path")
+            ([] :=> TCon (TC "X" Star) "path")
             (Area (Loc 11 2 1) (Loc 22 2 12))
             (Assignment
                "x"
                (Solved
-                  (TCon (TC "X" Star) "path")
+                  ([] :=> TCon (TC "X" Star) "path")
                   (Area (Loc 16 2 6) (Loc 22 2 12))
                   (TypedExp
                      (Solved
-                        (TCon (TC "X" Star) "path")
+                        ([] :=> TCon (TC "X" Star) "path")
                         (Area (Loc 16 2 6) (Loc 17 2 7))
                         (Var "X"))
                      (Forall [] ([] :=> TCon (TC "X" Star) "path")))))

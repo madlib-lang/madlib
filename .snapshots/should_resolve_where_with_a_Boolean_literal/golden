@@ -3,43 +3,45 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "String" Star) "prelude")
+            ([] :=> TCon (TC "String" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 53 4 1))
             (Where
                (Solved
-                  (TCon (TC "Boolean" Star) "prelude")
+                  ([] :=> TCon (TC "Boolean" Star) "prelude")
                   (Area (Loc 6 1 7) (Loc 10 1 11))
                   (LBool "true"))
                [ Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "Boolean" Star) "prelude"))
-                      (TCon (TC "String" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Boolean" Star) "prelude"))
+                        (TCon (TC "String" Star) "prelude"))
                    (Area (Loc 16 2 3) (Loc 30 2 17))
                    (Is
                       (Solved
-                         (TCon (TC "Boolean" Star) "prelude")
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 19 2 6) (Loc 23 2 10))
                          (PBool "true"))
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 26 2 13) (Loc 30 2 17))
                          (LStr "\"OK\"")))
                , Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "Boolean" Star) "prelude"))
-                      (TCon (TC "String" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Boolean" Star) "prelude"))
+                        (TCon (TC "String" Star) "prelude"))
                    (Area (Loc 33 3 3) (Loc 51 3 21))
                    (Is
                       (Solved
-                         (TCon (TC "Boolean" Star) "prelude")
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 36 3 6) (Loc 41 3 11))
                          (PBool "false"))
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 43 3 13) (Loc 51 3 21))
                          (LStr "\"NOT OK\"")))
                ])

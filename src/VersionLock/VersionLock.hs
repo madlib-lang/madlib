@@ -8,6 +8,8 @@ import           Control.Exception              ( try
                                                 , SomeException
                                                 )
 import qualified Data.ByteString.Lazy           as B
+import           System.Directory               ( getCurrentDirectory )
+import           System.FilePath                ( joinPath )
 
 import           Utils.PathUtils
 
@@ -28,3 +30,12 @@ load pathUtils file = do
   case content of
     Right c -> return $ eitherDecode c :: IO (Either String VersionLock)
     Left  _ -> return $ Left "File not found"
+
+save :: FilePath -> VersionLock -> IO ()
+save filePath = B.writeFile filePath . encode
+
+loadCurrentVersionLock :: IO (Either String VersionLock)
+loadCurrentVersionLock = do
+  currentDir <- getCurrentDirectory
+  let versionLockPath = joinPath [currentDir, "version.lock"]
+  load defaultPathUtils versionLockPath
