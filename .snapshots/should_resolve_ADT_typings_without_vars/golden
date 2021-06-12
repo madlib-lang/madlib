@@ -37,44 +37,49 @@ Right
                ]
            , aexps =
                [ Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "Something" Star) "./ModuleA"))
-                      (TCon (TC "Something" Star) "./ModuleA"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Something" Star) "./ModuleA"))
+                        (TCon (TC "Something" Star) "./ModuleA"))
                    (Area (Loc 26 2 1) (Loc 81 3 23))
                    (TypedExp
                       (Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TCon (TC "Something" Star) "./ModuleA"))
-                            (TCon (TC "Something" Star) "./ModuleA"))
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Something" Star) "./ModuleA"))
+                              (TCon (TC "Something" Star) "./ModuleA"))
                          (Area (Loc 59 3 1) (Loc 81 3 23))
                          (Export
                             (Solved
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "Something" Star) "./ModuleA"))
-                                  (TCon (TC "Something" Star) "./ModuleA"))
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "Something" Star) "./ModuleA"))
+                                    (TCon (TC "Something" Star) "./ModuleA"))
                                (Area (Loc 66 3 8) (Loc 81 3 23))
                                (Assignment
                                   "fn"
                                   (Solved
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TVar (TV "a0" Star)))
-                                        (TVar (TV "a0" Star)))
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "a0" Star)))
+                                          (TVar (TV "a0" Star)))
                                      (Area (Loc 71 3 13) (Loc 81 3 23))
                                      (Abs
                                         (Solved
-                                           (TVar (TV "a0" Star))
+                                           ([] :=> TVar (TV "a0" Star))
                                            (Area (Loc 72 3 14) (Loc 73 3 15))
                                            "x")
                                         [ Solved
-                                            (TVar (TV "a0" Star))
+                                            ([] :=> TVar (TV "a0" Star))
                                             (Area (Loc 79 3 21) (Loc 80 3 22))
                                             (Var "x")
                                         ]))))))

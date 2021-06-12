@@ -3,75 +3,79 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "Number" Star) "prelude")
+            ([] :=> TCon (TC "Number" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 69 6 1))
             (Where
                (Solved
-                  (TCon (TC "String" Star) "prelude")
+                  ([] :=> TCon (TC "String" Star) "prelude")
                   (Area (Loc 6 1 7) (Loc 10 1 11))
                   (LStr "\"42\""))
                [ Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "String" Star) "prelude"))
-                      (TCon (TC "Number" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 16 2 3) (Loc 26 2 13))
                    (Is
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 19 2 6) (Loc 22 2 9))
                          (PStr "\"1\""))
                       (Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 25 2 12) (Loc 26 2 13))
                          (LNum "1")))
                , Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "String" Star) "prelude"))
-                      (TCon (TC "Number" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 29 3 3) (Loc 39 3 13))
                    (Is
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 32 3 6) (Loc 35 3 9))
                          (PStr "\"3\""))
                       (Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 38 3 12) (Loc 39 3 13))
                          (LNum "3")))
                , Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "String" Star) "prelude"))
-                      (TCon (TC "Number" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 42 4 3) (Loc 53 4 14))
                    (Is
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 45 4 6) (Loc 49 4 10))
                          (PStr "\"33\""))
                       (Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 51 4 12) (Loc 53 4 14))
                          (LNum "33")))
                , Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TCon (TC "String" Star) "prelude"))
-                      (TCon (TC "Number" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 56 5 3) (Loc 67 5 14))
                    (Is
                       (Solved
-                         (TCon (TC "String" Star) "prelude")
+                         ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 59 5 6) (Loc 63 5 10))
                          (PStr "\"42\""))
                       (Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 65 5 12) (Loc 67 5 14))
                          (LNum "42")))
                ])

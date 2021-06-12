@@ -3,30 +3,33 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TApp
-               (TCon (TC "Result" (Kfun Star Star)) "path")
-               (TCon (TC "Boolean" Star) "prelude"))
+            ([] :=>
+               TApp
+                 (TCon (TC "Result" (Kfun Star Star)) "path")
+                 (TCon (TC "Boolean" Star) "prelude"))
             (Area (Loc 38 4 1) (Loc 60 4 23))
             (Assignment
                "result"
                (Solved
-                  (TApp
-                     (TCon (TC "Result" (Kfun Star Star)) "path")
-                     (TCon (TC "Boolean" Star) "prelude"))
+                  ([] :=>
+                     TApp
+                       (TCon (TC "Result" (Kfun Star Star)) "path")
+                       (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 47 4 10) (Loc 60 4 23))
                   (App
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "c2" Star)))
-                           (TApp
-                              (TCon (TC "Result" (Kfun Star Star)) "path")
-                              (TVar (TV "c2" Star))))
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "c2" Star)))
+                             (TApp
+                                (TCon (TC "Result" (Kfun Star Star)) "path")
+                                (TVar (TV "c2" Star))))
                         (Area (Loc 47 4 10) (Loc 54 4 17))
                         (Var "Success"))
                      (Solved
-                        (TCon (TC "Boolean" Star) "prelude")
+                        ([] :=> TCon (TC "Boolean" Star) "prelude")
                         (Area (Loc 55 4 18) (Loc 59 4 22))
                         (LBool "true"))
                      True)))

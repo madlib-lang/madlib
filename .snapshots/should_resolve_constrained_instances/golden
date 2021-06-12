@@ -3,37 +3,40 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "String" Star) "prelude")
+            ([] :=> TCon (TC "String" Star) "prelude")
             (Area (Loc 296 17 1) (Loc 312 17 17))
             (App
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TVar (TV "a26" Star)))
-                     (TCon (TC "String" Star) "prelude"))
+                  ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "a26" Star)))
+                       (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 296 17 1) (Loc 300 17 5))
                   (Placeholder
                      ( ClassRef "Show" [] True False
                      , [ TCon (TC "Boolean" Star) "prelude" ]
                      )
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TVar (TV "a26" Star)))
-                           (TCon (TC "String" Star) "prelude"))
+                        ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "a26" Star)))
+                             (TCon (TC "String" Star) "prelude"))
                         (Area (Loc 296 17 1) (Loc 300 17 5))
                         (Placeholder
                            ( ClassRef "Show" [] True False
                            , [ TCon (TC "Number" Star) "prelude" ]
                            )
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TVar (TV "a26" Star)))
-                                 (TCon (TC "String" Star) "prelude"))
+                              ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "a26" Star)))
+                                   (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 296 17 1) (Loc 300 17 5))
                               (Placeholder
                                  ( MethodRef "Show" "show" False
@@ -45,27 +48,38 @@ Right
                                    ]
                                  )
                                  (Solved
-                                    (TApp
-                                       (TApp
-                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TVar (TV "a26" Star)))
-                                       (TCon (TC "String" Star) "prelude"))
+                                    ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                                       TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "a26" Star)))
+                                         (TCon (TC "String" Star) "prelude"))
                                     (Area (Loc 296 17 1) (Loc 300 17 5))
                                     (Var "show"))))))))
                (Solved
-                  (TApp
-                     (TApp
-                        (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                        (TCon (TC "Number" Star) "prelude"))
-                     (TCon (TC "Boolean" Star) "prelude"))
+                  ([ IsIn
+                       "Show"
+                       [ TApp
+                           (TApp
+                              (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                              (TCon (TC "Number" Star) "prelude"))
+                           (TCon (TC "Boolean" Star) "prelude")
+                       ]
+                   ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Number" Star) "prelude"))
+                       (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 301 17 6) (Loc 311 17 16))
                   (TupleConstructor
                      [ Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 302 17 7) (Loc 303 17 8))
                          (LNum "1")
                      , Solved
-                         (TCon (TC "Boolean" Star) "prelude")
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 305 17 10) (Loc 310 17 15))
                          (LBool "false")
                      ]))
@@ -110,40 +124,42 @@ Right
                (fromList
                   [ ( "show"
                     , ( Solved
-                          (TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "Boolean" Star) "prelude"))
-                             (TCon (TC "String" Star) "prelude"))
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Boolean" Star) "prelude"))
+                               (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 70 6 3) (Loc 104 6 37))
                           (Assignment
                              "show"
                              (Solved
-                                (TApp
-                                   (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TCon (TC "Boolean" Star) "prelude"))
-                                   (TCon (TC "String" Star) "prelude"))
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "Boolean" Star) "prelude"))
+                                     (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 77 6 10) (Loc 104 6 37))
                                 (Abs
                                    (Solved
-                                      (TCon (TC "Boolean" Star) "prelude")
+                                      ([] :=> TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 78 6 11) (Loc 79 6 12))
                                       "b")
                                    [ Solved
-                                       (TCon (TC "String" Star) "prelude")
+                                       ([] :=> TCon (TC "String" Star) "prelude")
                                        (Area (Loc 84 6 17) (Loc 104 6 37))
                                        (If
                                           (Solved
-                                             (TVar (TV "b1" Star))
+                                             ([] :=> TVar (TV "b1" Star))
                                              (Area (Loc 84 6 17) (Loc 85 6 18))
                                              (Var "b"))
                                           (Solved
-                                             (TCon (TC "String" Star) "prelude")
+                                             ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 88 6 21) (Loc 94 6 27))
                                              (LStr "'True'"))
                                           (Solved
-                                             (TCon (TC "String" Star) "prelude")
+                                             ([] :=> TCon (TC "String" Star) "prelude")
                                              (Area (Loc 97 6 30) (Loc 104 6 37))
                                              (LStr "'False'")))
                                    ])))
@@ -167,28 +183,30 @@ Right
                (fromList
                   [ ( "show"
                     , ( Solved
-                          (TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "Number" Star) "prelude"))
-                             (TCon (TC "String" Star) "prelude"))
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "Number" Star) "prelude"))
+                               (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 133 10 3) (Loc 179 10 49))
                           (Assignment
                              "show"
                              (Solved
-                                (TApp
-                                   (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TCon (TC "Number" Star) "prelude"))
-                                   (TCon (TC "String" Star) "prelude"))
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "Number" Star) "prelude"))
+                                     (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 140 10 10) (Loc 179 10 49))
                                 (Abs
                                    (Solved
-                                      (TVar (TV "d3" Star))
+                                      ([] :=> TVar (TV "d3" Star))
                                       (Area (Loc 141 10 11) (Loc 142 10 12))
                                       "n")
                                    [ Solved
-                                       (TVar (TV "e4" Star))
+                                       ([] :=> TVar (TV "e4" Star))
                                        (Area (Loc 148 10 18) (Loc 178 10 48))
                                        (JSExp "new Number(n).toString()")
                                    ])))
@@ -221,347 +239,412 @@ Right
                (fromList
                   [ ( "show"
                     , ( Solved
-                          (TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TApp
-                                   (TApp
-                                      (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TVar (TV "i8" Star)))
-                                   (TVar (TV "j9" Star))))
-                             (TCon (TC "String" Star) "prelude"))
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TApp
+                                     (TApp
+                                        (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TVar (TV "i8" Star)))
+                                     (TVar (TV "j9" Star))))
+                               (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 228 14 3) (Loc 292 14 67))
                           (Assignment
                              "show"
                              (Solved
-                                (TApp
-                                   (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TApp
-                                         (TApp
-                                            (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TVar (TV "i8" Star)))
-                                         (TVar (TV "j9" Star))))
-                                   (TCon (TC "String" Star) "prelude"))
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TVar (TV "i8" Star)))
+                                           (TVar (TV "j9" Star))))
+                                     (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 228 14 3) (Loc 292 14 67))
                                 (Placeholder
                                    ( ClassRef "Show" [] False True , [ TVar (TV "j9" Star) ] )
                                    (Solved
-                                      (TApp
-                                         (TApp
-                                            (TCon
-                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TVar (TV "i8" Star)))
-                                               (TVar (TV "j9" Star))))
-                                         (TCon (TC "String" Star) "prelude"))
+                                      ([] :=>
+                                         TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TVar (TV "i8" Star)))
+                                                 (TVar (TV "j9" Star))))
+                                           (TCon (TC "String" Star) "prelude"))
                                       (Area (Loc 228 14 3) (Loc 292 14 67))
                                       (Placeholder
                                          ( ClassRef "Show" [] False True , [ TVar (TV "i8" Star) ] )
                                          (Solved
-                                            (TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TApp
-                                                     (TApp
-                                                        (TCon
-                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                           "prelude")
-                                                        (TVar (TV "i8" Star)))
-                                                     (TVar (TV "j9" Star))))
-                                               (TCon (TC "String" Star) "prelude"))
+                                            ([ IsIn "Show" [ TVar (TV "w22" Star) ]
+                                             , IsIn "Show" [ TVar (TV "x23" Star) ]
+                                             ] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TVar (TV "i8" Star)))
+                                                       (TVar (TV "j9" Star))))
+                                                 (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 235 14 10) (Loc 292 14 67))
                                             (Abs
                                                (Solved
-                                                  (TApp
-                                                     (TApp
-                                                        (TCon
-                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
-                                                           "prelude")
-                                                        (TVar (TV "i8" Star)))
-                                                     (TVar (TV "j9" Star)))
+                                                  ([ IsIn "Show" [ TVar (TV "i8" Star) ]
+                                                   , IsIn "Show" [ TVar (TV "j9" Star) ]
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TVar (TV "i8" Star)))
+                                                       (TVar (TV "j9" Star)))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__x__")
                                                [ Solved
-                                                   (TCon (TC "String" Star) "prelude")
+                                                   ([ IsIn "Show" [ TVar (TV "p15" Star) ]
+                                                    , IsIn "Show" [ TVar (TV "v21" Star) ]
+                                                    ] :=>
+                                                      TCon (TC "String" Star) "prelude")
                                                    (Area (Loc 235 14 10) (Loc 292 14 67))
                                                    (Where
                                                       (Solved
-                                                         (TApp
-                                                            (TApp
-                                                               (TCon
-                                                                  (TC
-                                                                     "(,)"
-                                                                     (Kfun Star (Kfun Star Star)))
-                                                                  "prelude")
-                                                               (TVar (TV "i8" Star)))
-                                                            (TVar (TV "j9" Star)))
+                                                         ([] :=>
+                                                            TApp
+                                                              (TApp
+                                                                 (TCon
+                                                                    (TC
+                                                                       "(,)"
+                                                                       (Kfun Star (Kfun Star Star)))
+                                                                    "prelude")
+                                                                 (TVar (TV "i8" Star)))
+                                                              (TVar (TV "j9" Star)))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Var "__x__"))
                                                       [ Solved
-                                                          (TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "(,)"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "prelude")
-                                                                      (TVar (TV "i8" Star)))
-                                                                   (TVar (TV "j9" Star))))
-                                                             (TCon (TC "String" Star) "prelude"))
+                                                          ([ IsIn "Show" [ TVar (TV "i8" Star) ]
+                                                           , IsIn "Show" [ TVar (TV "j9" Star) ]
+                                                           ] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(,)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TVar (TV "i8" Star)))
+                                                                     (TVar (TV "j9" Star))))
+                                                               (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 241 14 16) (Loc 292 14 67))
                                                           (Is
                                                              (Solved
-                                                                (TApp
-                                                                   (TApp
-                                                                      (TCon
-                                                                         (TC
-                                                                            "(,)"
-                                                                            (Kfun
-                                                                               Star
-                                                                               (Kfun Star Star)))
-                                                                         "prelude")
-                                                                      (TVar (TV "i8" Star)))
-                                                                   (TVar (TV "j9" Star)))
+                                                                ([] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(,)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TVar (TV "i8" Star)))
+                                                                     (TVar (TV "j9" Star)))
                                                                 (Area
                                                                    (Loc 244 14 19) (Loc 250 14 25))
                                                                 (PTuple
                                                                    [ Solved
-                                                                       (TApp
-                                                                          (TApp
-                                                                             (TCon
-                                                                                (TC
-                                                                                   "(,)"
-                                                                                   (Kfun
-                                                                                      Star
-                                                                                      (Kfun
-                                                                                         Star
-                                                                                         Star)))
-                                                                                "prelude")
-                                                                             (TVar (TV "i8" Star)))
-                                                                          (TVar (TV "j9" Star)))
+                                                                       ([] :=>
+                                                                          TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(,)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TVar
+                                                                                  (TV "i8" Star)))
+                                                                            (TVar (TV "j9" Star)))
                                                                        (Area
                                                                           (Loc 245 14 20)
                                                                           (Loc 246 14 21))
                                                                        (PVar "a")
                                                                    , Solved
-                                                                       (TApp
-                                                                          (TApp
-                                                                             (TCon
-                                                                                (TC
-                                                                                   "(,)"
-                                                                                   (Kfun
-                                                                                      Star
-                                                                                      (Kfun
-                                                                                         Star
-                                                                                         Star)))
-                                                                                "prelude")
-                                                                             (TVar (TV "i8" Star)))
-                                                                          (TVar (TV "j9" Star)))
+                                                                       ([] :=>
+                                                                          TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(,)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TVar
+                                                                                  (TV "i8" Star)))
+                                                                            (TVar (TV "j9" Star)))
                                                                        (Area
                                                                           (Loc 248 14 23)
                                                                           (Loc 249 14 24))
                                                                        (PVar "b")
                                                                    ]))
                                                              (Solved
-                                                                (TCon (TC "String" Star) "prelude")
+                                                                ([ IsIn
+                                                                     "Show" [ TVar (TV "p15" Star) ]
+                                                                 , IsIn
+                                                                     "Show" [ TVar (TV "v21" Star) ]
+                                                                 ] :=>
+                                                                   TCon
+                                                                     (TC "String" Star) "prelude")
                                                                 (Area
                                                                    (Loc 252 14 27) (Loc 292 14 67))
                                                                 (App
                                                                    (Solved
-                                                                      (TApp
-                                                                         (TApp
-                                                                            (TCon
-                                                                               (TC
-                                                                                  "(->)"
-                                                                                  (Kfun
-                                                                                     Star
-                                                                                     (Kfun
-                                                                                        Star Star)))
-                                                                               "prelude")
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude"))
-                                                                         (TCon
-                                                                            (TC "String" Star)
-                                                                            "prelude"))
+                                                                      ([] :=>
+                                                                         TApp
+                                                                           (TApp
+                                                                              (TCon
+                                                                                 (TC
+                                                                                    "(->)"
+                                                                                    (Kfun
+                                                                                       Star
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          Star)))
+                                                                                 "prelude")
+                                                                              (TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude"))
+                                                                           (TCon
+                                                                              (TC "String" Star)
+                                                                              "prelude"))
                                                                       (Area
                                                                          (Loc 252 14 27)
                                                                          (Loc 292 14 67))
                                                                       (App
                                                                          (Solved
-                                                                            (TApp
-                                                                               (TApp
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "(->)"
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              Star)))
-                                                                                     "prelude")
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude"))
-                                                                               (TApp
-                                                                                  (TApp
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "(->)"
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 Star)))
-                                                                                        "prelude")
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "String"
-                                                                                           Star)
-                                                                                        "prelude"))
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude")))
+                                                                            ([] :=>
+                                                                               TApp
+                                                                                 (TApp
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "(->)"
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star)))
+                                                                                       "prelude")
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "String"
+                                                                                          Star)
+                                                                                       "prelude"))
+                                                                                 (TApp
+                                                                                    (TApp
+                                                                                       (TCon
+                                                                                          (TC
+                                                                                             "(->)"
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                (Kfun
+                                                                                                   Star
+                                                                                                   Star)))
+                                                                                          "prelude")
+                                                                                       (TCon
+                                                                                          (TC
+                                                                                             "String"
+                                                                                             Star)
+                                                                                          "prelude"))
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "String"
+                                                                                          Star)
+                                                                                       "prelude")))
                                                                             (Area
                                                                                (Loc 256 14 31)
                                                                                (Loc 258 14 33))
                                                                             (Var "++"))
                                                                          (Solved
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude")
+                                                                            ([] :=>
+                                                                               TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude")
                                                                             (Area
                                                                                (Loc 252 14 27)
                                                                                (Loc 255 14 30))
                                                                             (LStr "'<'"))
                                                                          False))
                                                                    (Solved
-                                                                      (TCon
-                                                                         (TC "String" Star)
-                                                                         "prelude")
+                                                                      ([ IsIn
+                                                                           "Show"
+                                                                           [ TVar (TV "i8" Star) ]
+                                                                       , IsIn
+                                                                           "Show"
+                                                                           [ TVar (TV "j9" Star) ]
+                                                                       ] :=>
+                                                                         TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude")
                                                                       (Area
                                                                          (Loc 259 14 34)
                                                                          (Loc 292 14 67))
                                                                       (App
                                                                          (Solved
-                                                                            (TApp
-                                                                               (TApp
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "(->)"
-                                                                                        (Kfun
-                                                                                           Star
-                                                                                           (Kfun
-                                                                                              Star
-                                                                                              Star)))
-                                                                                     "prelude")
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude"))
-                                                                               (TCon
-                                                                                  (TC "String" Star)
-                                                                                  "prelude"))
+                                                                            ([ IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "i8" Star)
+                                                                                 ]
+                                                                             ] :=>
+                                                                               TApp
+                                                                                 (TApp
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "(->)"
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star)))
+                                                                                       "prelude")
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "String"
+                                                                                          Star)
+                                                                                       "prelude"))
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "String"
+                                                                                       Star)
+                                                                                    "prelude"))
                                                                             (Area
                                                                                (Loc 259 14 34)
                                                                                (Loc 292 14 67))
                                                                             (App
                                                                                (Solved
-                                                                                  (TApp
-                                                                                     (TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "(->)"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    Star)))
-                                                                                           "prelude")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"))
-                                                                                     (TApp
-                                                                                        (TApp
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "(->)"
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       Star)))
-                                                                                              "prelude")
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "String"
-                                                                                                 Star)
-                                                                                              "prelude"))
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")))
+                                                                                  ([] :=>
+                                                                                     TApp
+                                                                                       (TApp
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "(->)"
+                                                                                                (Kfun
+                                                                                                   Star
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      Star)))
+                                                                                             "prelude")
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "String"
+                                                                                                Star)
+                                                                                             "prelude"))
+                                                                                       (TApp
+                                                                                          (TApp
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "(->)"
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      (Kfun
+                                                                                                         Star
+                                                                                                         Star)))
+                                                                                                "prelude")
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "String"
+                                                                                                   Star)
+                                                                                                "prelude"))
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "String"
+                                                                                                Star)
+                                                                                             "prelude")))
                                                                                   (Area
                                                                                      (Loc 267 14 42)
                                                                                      (Loc
                                                                                         269 14 44))
                                                                                   (Var "++"))
                                                                                (Solved
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude")
+                                                                                  ([ IsIn
+                                                                                       "Show"
+                                                                                       [ TVar
+                                                                                           (TV
+                                                                                              "i8"
+                                                                                              Star)
+                                                                                       ]
+                                                                                   ] :=>
+                                                                                     TCon
+                                                                                       (TC
+                                                                                          "String"
+                                                                                          Star)
+                                                                                       "prelude")
                                                                                   (Area
                                                                                      (Loc 259 14 34)
                                                                                      (Loc
                                                                                         266 14 41))
                                                                                   (App
                                                                                      (Solved
-                                                                                        (TApp
-                                                                                           (TApp
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "(->)"
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          Star)))
-                                                                                                 "prelude")
-                                                                                              (TVar
+                                                                                        ([ IsIn
+                                                                                             "Show"
+                                                                                             [ TVar
                                                                                                  (TV
                                                                                                     "p15"
-                                                                                                    Star)))
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "String"
-                                                                                                 Star)
-                                                                                              "prelude"))
+                                                                                                    Star)
+                                                                                             ]
+                                                                                         ] :=>
+                                                                                           TApp
+                                                                                             (TApp
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "(->)"
+                                                                                                      (Kfun
+                                                                                                         Star
+                                                                                                         (Kfun
+                                                                                                            Star
+                                                                                                            Star)))
+                                                                                                   "prelude")
+                                                                                                (TVar
+                                                                                                   (TV
+                                                                                                      "p15"
+                                                                                                      Star)))
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "String"
+                                                                                                   Star)
+                                                                                                "prelude"))
                                                                                         (Area
                                                                                            (Loc
                                                                                               259
@@ -583,26 +666,34 @@ Right
                                                                                              ]
                                                                                            )
                                                                                            (Solved
-                                                                                              (TApp
-                                                                                                 (TApp
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "(->)"
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                Star)))
-                                                                                                       "prelude")
-                                                                                                    (TVar
+                                                                                              ([ IsIn
+                                                                                                   "Show"
+                                                                                                   [ TVar
                                                                                                        (TV
                                                                                                           "p15"
-                                                                                                          Star)))
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "String"
-                                                                                                       Star)
-                                                                                                    "prelude"))
+                                                                                                          Star)
+                                                                                                   ]
+                                                                                               ] :=>
+                                                                                                 TApp
+                                                                                                   (TApp
+                                                                                                      (TCon
+                                                                                                         (TC
+                                                                                                            "(->)"
+                                                                                                            (Kfun
+                                                                                                               Star
+                                                                                                               (Kfun
+                                                                                                                  Star
+                                                                                                                  Star)))
+                                                                                                         "prelude")
+                                                                                                      (TVar
+                                                                                                         (TV
+                                                                                                            "p15"
+                                                                                                            Star)))
+                                                                                                   (TCon
+                                                                                                      (TC
+                                                                                                         "String"
+                                                                                                         Star)
+                                                                                                      "prelude"))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     259
@@ -615,10 +706,18 @@ Right
                                                                                               (Var
                                                                                                  "show"))))
                                                                                      (Solved
-                                                                                        (TVar
-                                                                                           (TV
-                                                                                              "i8"
-                                                                                              Star))
+                                                                                        ([ IsIn
+                                                                                             "Show"
+                                                                                             [ TVar
+                                                                                                 (TV
+                                                                                                    "i8"
+                                                                                                    Star)
+                                                                                             ]
+                                                                                         ] :=>
+                                                                                           TVar
+                                                                                             (TV
+                                                                                                "i8"
+                                                                                                Star))
                                                                                         (Area
                                                                                            (Loc
                                                                                               264
@@ -632,78 +731,91 @@ Right
                                                                                      True))
                                                                                False))
                                                                          (Solved
-                                                                            (TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude")
+                                                                            ([ IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "i8" Star)
+                                                                                 ]
+                                                                             , IsIn
+                                                                                 "Show"
+                                                                                 [ TVar
+                                                                                     (TV "j9" Star)
+                                                                                 ]
+                                                                             ] :=>
+                                                                               TCon
+                                                                                 (TC "String" Star)
+                                                                                 "prelude")
                                                                             (Area
                                                                                (Loc 270 14 45)
                                                                                (Loc 292 14 67))
                                                                             (App
                                                                                (Solved
-                                                                                  (TApp
-                                                                                     (TApp
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "(->)"
-                                                                                              (Kfun
-                                                                                                 Star
-                                                                                                 (Kfun
-                                                                                                    Star
-                                                                                                    Star)))
-                                                                                           "prelude")
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"))
-                                                                                     (TCon
-                                                                                        (TC
-                                                                                           "String"
-                                                                                           Star)
-                                                                                        "prelude"))
+                                                                                  ([] :=>
+                                                                                     TApp
+                                                                                       (TApp
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "(->)"
+                                                                                                (Kfun
+                                                                                                   Star
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      Star)))
+                                                                                             "prelude")
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "String"
+                                                                                                Star)
+                                                                                             "prelude"))
+                                                                                       (TCon
+                                                                                          (TC
+                                                                                             "String"
+                                                                                             Star)
+                                                                                          "prelude"))
                                                                                   (Area
                                                                                      (Loc 270 14 45)
                                                                                      (Loc
                                                                                         292 14 67))
                                                                                   (App
                                                                                      (Solved
-                                                                                        (TApp
-                                                                                           (TApp
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "(->)"
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          Star)))
-                                                                                                 "prelude")
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"))
-                                                                                           (TApp
-                                                                                              (TApp
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "(->)"
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             Star)))
-                                                                                                    "prelude")
-                                                                                                 (TCon
-                                                                                                    (TC
-                                                                                                       "String"
-                                                                                                       Star)
-                                                                                                    "prelude"))
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude")))
+                                                                                        ([] :=>
+                                                                                           TApp
+                                                                                             (TApp
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "(->)"
+                                                                                                      (Kfun
+                                                                                                         Star
+                                                                                                         (Kfun
+                                                                                                            Star
+                                                                                                            Star)))
+                                                                                                   "prelude")
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "String"
+                                                                                                      Star)
+                                                                                                   "prelude"))
+                                                                                             (TApp
+                                                                                                (TApp
+                                                                                                   (TCon
+                                                                                                      (TC
+                                                                                                         "(->)"
+                                                                                                         (Kfun
+                                                                                                            Star
+                                                                                                            (Kfun
+                                                                                                               Star
+                                                                                                               Star)))
+                                                                                                      "prelude")
+                                                                                                   (TCon
+                                                                                                      (TC
+                                                                                                         "String"
+                                                                                                         Star)
+                                                                                                      "prelude"))
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "String"
+                                                                                                      Star)
+                                                                                                   "prelude")))
                                                                                         (Area
                                                                                            (Loc
                                                                                               275
@@ -715,11 +827,12 @@ Right
                                                                                               52))
                                                                                         (Var "++"))
                                                                                      (Solved
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
+                                                                                        ([] :=>
+                                                                                           TCon
+                                                                                             (TC
+                                                                                                "String"
+                                                                                                Star)
+                                                                                             "prelude")
                                                                                         (Area
                                                                                            (Loc
                                                                                               270
@@ -733,38 +846,54 @@ Right
                                                                                            "', '"))
                                                                                      False))
                                                                                (Solved
-                                                                                  (TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude")
+                                                                                  ([ IsIn
+                                                                                       "Show"
+                                                                                       [ TVar
+                                                                                           (TV
+                                                                                              "j9"
+                                                                                              Star)
+                                                                                       ]
+                                                                                   ] :=>
+                                                                                     TCon
+                                                                                       (TC
+                                                                                          "String"
+                                                                                          Star)
+                                                                                       "prelude")
                                                                                   (Area
                                                                                      (Loc 278 14 53)
                                                                                      (Loc
                                                                                         292 14 67))
                                                                                   (App
                                                                                      (Solved
-                                                                                        (TApp
-                                                                                           (TApp
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "(->)"
-                                                                                                    (Kfun
-                                                                                                       Star
-                                                                                                       (Kfun
-                                                                                                          Star
-                                                                                                          Star)))
-                                                                                                 "prelude")
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
+                                                                                        ([ IsIn
+                                                                                             "Show"
+                                                                                             [ TVar
+                                                                                                 (TV
+                                                                                                    "j9"
                                                                                                     Star)
-                                                                                                 "prelude"))
-                                                                                           (TCon
-                                                                                              (TC
-                                                                                                 "String"
-                                                                                                 Star)
-                                                                                              "prelude"))
+                                                                                             ]
+                                                                                         ] :=>
+                                                                                           TApp
+                                                                                             (TApp
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "(->)"
+                                                                                                      (Kfun
+                                                                                                         Star
+                                                                                                         (Kfun
+                                                                                                            Star
+                                                                                                            Star)))
+                                                                                                   "prelude")
+                                                                                                (TCon
+                                                                                                   (TC
+                                                                                                      "String"
+                                                                                                      Star)
+                                                                                                   "prelude"))
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "String"
+                                                                                                   Star)
+                                                                                                "prelude"))
                                                                                         (Area
                                                                                            (Loc
                                                                                               278
@@ -776,43 +905,44 @@ Right
                                                                                               67))
                                                                                         (App
                                                                                            (Solved
-                                                                                              (TApp
-                                                                                                 (TApp
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "(->)"
-                                                                                                          (Kfun
-                                                                                                             Star
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                Star)))
-                                                                                                       "prelude")
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "String"
-                                                                                                          Star)
-                                                                                                       "prelude"))
-                                                                                                 (TApp
-                                                                                                    (TApp
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "(->)"
-                                                                                                             (Kfun
-                                                                                                                Star
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   Star)))
-                                                                                                          "prelude")
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "String"
-                                                                                                             Star)
-                                                                                                          "prelude"))
-                                                                                                    (TCon
-                                                                                                       (TC
-                                                                                                          "String"
-                                                                                                          Star)
-                                                                                                       "prelude")))
+                                                                                              ([] :=>
+                                                                                                 TApp
+                                                                                                   (TApp
+                                                                                                      (TCon
+                                                                                                         (TC
+                                                                                                            "(->)"
+                                                                                                            (Kfun
+                                                                                                               Star
+                                                                                                               (Kfun
+                                                                                                                  Star
+                                                                                                                  Star)))
+                                                                                                         "prelude")
+                                                                                                      (TCon
+                                                                                                         (TC
+                                                                                                            "String"
+                                                                                                            Star)
+                                                                                                         "prelude"))
+                                                                                                   (TApp
+                                                                                                      (TApp
+                                                                                                         (TCon
+                                                                                                            (TC
+                                                                                                               "(->)"
+                                                                                                               (Kfun
+                                                                                                                  Star
+                                                                                                                  (Kfun
+                                                                                                                     Star
+                                                                                                                     Star)))
+                                                                                                            "prelude")
+                                                                                                         (TCon
+                                                                                                            (TC
+                                                                                                               "String"
+                                                                                                               Star)
+                                                                                                            "prelude"))
+                                                                                                      (TCon
+                                                                                                         (TC
+                                                                                                            "String"
+                                                                                                            Star)
+                                                                                                         "prelude")))
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     286
@@ -825,11 +955,19 @@ Right
                                                                                               (Var
                                                                                                  "++"))
                                                                                            (Solved
-                                                                                              (TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude")
+                                                                                              ([ IsIn
+                                                                                                   "Show"
+                                                                                                   [ TVar
+                                                                                                       (TV
+                                                                                                          "j9"
+                                                                                                          Star)
+                                                                                                   ]
+                                                                                               ] :=>
+                                                                                                 TCon
+                                                                                                   (TC
+                                                                                                      "String"
+                                                                                                      Star)
+                                                                                                   "prelude")
                                                                                               (Area
                                                                                                  (Loc
                                                                                                     278
@@ -841,26 +979,34 @@ Right
                                                                                                     60))
                                                                                               (App
                                                                                                  (Solved
-                                                                                                    (TApp
-                                                                                                       (TApp
-                                                                                                          (TCon
-                                                                                                             (TC
-                                                                                                                "(->)"
-                                                                                                                (Kfun
-                                                                                                                   Star
-                                                                                                                   (Kfun
-                                                                                                                      Star
-                                                                                                                      Star)))
-                                                                                                             "prelude")
-                                                                                                          (TVar
+                                                                                                    ([ IsIn
+                                                                                                         "Show"
+                                                                                                         [ TVar
                                                                                                              (TV
                                                                                                                 "v21"
-                                                                                                                Star)))
-                                                                                                       (TCon
-                                                                                                          (TC
-                                                                                                             "String"
-                                                                                                             Star)
-                                                                                                          "prelude"))
+                                                                                                                Star)
+                                                                                                         ]
+                                                                                                     ] :=>
+                                                                                                       TApp
+                                                                                                         (TApp
+                                                                                                            (TCon
+                                                                                                               (TC
+                                                                                                                  "(->)"
+                                                                                                                  (Kfun
+                                                                                                                     Star
+                                                                                                                     (Kfun
+                                                                                                                        Star
+                                                                                                                        Star)))
+                                                                                                               "prelude")
+                                                                                                            (TVar
+                                                                                                               (TV
+                                                                                                                  "v21"
+                                                                                                                  Star)))
+                                                                                                         (TCon
+                                                                                                            (TC
+                                                                                                               "String"
+                                                                                                               Star)
+                                                                                                            "prelude"))
                                                                                                     (Area
                                                                                                        (Loc
                                                                                                           278
@@ -882,26 +1028,34 @@ Right
                                                                                                          ]
                                                                                                        )
                                                                                                        (Solved
-                                                                                                          (TApp
-                                                                                                             (TApp
-                                                                                                                (TCon
-                                                                                                                   (TC
-                                                                                                                      "(->)"
-                                                                                                                      (Kfun
-                                                                                                                         Star
-                                                                                                                         (Kfun
-                                                                                                                            Star
-                                                                                                                            Star)))
-                                                                                                                   "prelude")
-                                                                                                                (TVar
+                                                                                                          ([ IsIn
+                                                                                                               "Show"
+                                                                                                               [ TVar
                                                                                                                    (TV
                                                                                                                       "v21"
-                                                                                                                      Star)))
-                                                                                                             (TCon
-                                                                                                                (TC
-                                                                                                                   "String"
-                                                                                                                   Star)
-                                                                                                                "prelude"))
+                                                                                                                      Star)
+                                                                                                               ]
+                                                                                                           ] :=>
+                                                                                                             TApp
+                                                                                                               (TApp
+                                                                                                                  (TCon
+                                                                                                                     (TC
+                                                                                                                        "(->)"
+                                                                                                                        (Kfun
+                                                                                                                           Star
+                                                                                                                           (Kfun
+                                                                                                                              Star
+                                                                                                                              Star)))
+                                                                                                                     "prelude")
+                                                                                                                  (TVar
+                                                                                                                     (TV
+                                                                                                                        "v21"
+                                                                                                                        Star)))
+                                                                                                               (TCon
+                                                                                                                  (TC
+                                                                                                                     "String"
+                                                                                                                     Star)
+                                                                                                                  "prelude"))
                                                                                                           (Area
                                                                                                              (Loc
                                                                                                                 278
@@ -914,10 +1068,18 @@ Right
                                                                                                           (Var
                                                                                                              "show"))))
                                                                                                  (Solved
-                                                                                                    (TVar
-                                                                                                       (TV
-                                                                                                          "j9"
-                                                                                                          Star))
+                                                                                                    ([ IsIn
+                                                                                                         "Show"
+                                                                                                         [ TVar
+                                                                                                             (TV
+                                                                                                                "j9"
+                                                                                                                Star)
+                                                                                                         ]
+                                                                                                     ] :=>
+                                                                                                       TVar
+                                                                                                         (TV
+                                                                                                            "j9"
+                                                                                                            Star))
                                                                                                     (Area
                                                                                                        (Loc
                                                                                                           283
@@ -932,11 +1094,19 @@ Right
                                                                                                  True))
                                                                                            False))
                                                                                      (Solved
-                                                                                        (TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude")
+                                                                                        ([ IsIn
+                                                                                             "Show"
+                                                                                             [ TVar
+                                                                                                 (TV
+                                                                                                    "j9"
+                                                                                                    Star)
+                                                                                             ]
+                                                                                         ] :=>
+                                                                                           TCon
+                                                                                             (TC
+                                                                                                "String"
+                                                                                                Star)
+                                                                                             "prelude")
                                                                                         (Area
                                                                                            (Loc
                                                                                               289
