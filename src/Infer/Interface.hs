@@ -173,8 +173,8 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
       then throwError
         $ CompilationError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
-        let e' = updateType e t''
-        e''  <- insertClassPlaceholders env (Slv.Solved (apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
+        let e' = updateQualType e (qs :=> t'')
+        e''  <- insertClassPlaceholders env (Slv.Solved (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
         e''' <- updatePlaceholders env True s' e''
 
         return (mn, e''', sc)

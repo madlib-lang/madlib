@@ -11,7 +11,7 @@ import qualified Data.Bifunctor
 import           Explain.Format                 ( prettyPrintType
                                                 , predsToStr
                                                 , schemeToStr
-                                                , predToStr
+                                                , predToStr, prettyPrintQualType
                                                 )
 import           Data.List                      ( intercalate
                                                 , find
@@ -22,6 +22,7 @@ import qualified Data.Map                      as M
 import qualified Data.Maybe                    as Maybe
 import           Infer.Type
 import           Text.Regex.TDFA
+import Utils.Tuple
 
 
 indentSize :: Int
@@ -144,10 +145,10 @@ generateInstancesDoc depth docStrings instances =
 
 generateInstanceDoc :: Int -> [DocString] -> Slv.Instance -> String
 generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constraints declaration _)) =
-  let constraints' = case predsToStr False constraints of
+  let constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
         "()" -> ""
         or   -> or
-      declaration'     = predToStr False declaration
+      declaration'     = lst $ predToStr False (mempty, mempty) declaration
 
       docString        = findDocStringForInstanceDeclaration declaration' docStrings
 
@@ -190,7 +191,6 @@ generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constrain
         <> "}"
 
 
-
 generateInterfacesDoc :: Int -> [DocString] -> [Slv.Interface] -> String
 generateInterfacesDoc depth docStrings interfaces =
   intercalate (",\n" <> indent depth) (generateInterfaceDoc depth docStrings <$> interfaces)
@@ -198,7 +198,7 @@ generateInterfacesDoc depth docStrings interfaces =
 generateInterfaceDoc :: Int -> [DocString] -> Slv.Interface -> String
 generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
   let vars'        = unwords $ (\(TV n _) -> n) <$> vars
-      constraints' = case predsToStr False constraints of
+      constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
         "()" -> ""
         or   -> or
       methods'         = M.map (prettyPrintConstructorTyping' False) methodTypings
@@ -425,7 +425,7 @@ emptySince depth = indent depth <> "\"since\": \"\",\n"
 
 generateExpDoc :: Int -> [DocString] -> (String, Slv.Exp) -> String
 generateExpDoc depth docStrings (name, exp) =
-  let typing           = prettyPrintType True $ Slv.getType exp
+  let typing           = prettyPrintQualType True $ Slv.getQualType exp
       docString        = findDocStringForExpName name docStrings
       descriptionField = case docString of
         Just (FunctionDoc _ description _) ->
