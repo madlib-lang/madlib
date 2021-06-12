@@ -102,6 +102,7 @@ globalChecks = do
       -> case checkVersion pkgName madlibVersion version of
         Just warning -> return [warning]
         Nothing      -> return []
+    _ -> return []
 
 
 runCompilation :: Command -> Bool -> IO ()
