@@ -66,7 +66,7 @@ class Optimizable a b where
   optimize :: Bool -> a -> Optimize b
 
 instance Optimizable Slv.Exp Opt.Exp where
-  optimize enabled (Slv.Solved t area e) = case e of
+  optimize enabled (Slv.Solved qt@(_ :=> t) area e) = case e of
     Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.LNum x)
 
     Slv.LStr  x           -> return $ Opt.Optimized t area (Opt.LStr x)
@@ -190,7 +190,7 @@ instance Optimizable Slv.Typing Opt.Typing where
       return $ Opt.Untyped area $ Opt.TRConstrained constraints' typing'
 
 instance Optimizable Slv.ListItem Opt.ListItem where
-  optimize enabled (Slv.Solved t area item) = case item of
+  optimize enabled (Slv.Solved qt@(_ :=> t) area item) = case item of
     Slv.ListItem exp -> do
       exp' <- optimize enabled exp
       return $ Opt.Optimized t area $ Opt.ListItem exp'
@@ -200,7 +200,7 @@ instance Optimizable Slv.ListItem Opt.ListItem where
       return $ Opt.Optimized t area $ Opt.ListSpread exp'
 
 instance Optimizable Slv.Field Opt.Field where
-  optimize enabled (Slv.Solved t area item) = case item of
+  optimize enabled (Slv.Solved qt@(_ :=> t) area item) = case item of
     Slv.Field (name, exp) -> do
       exp' <- optimize enabled exp
       return $ Opt.Optimized t area $ Opt.Field (name, exp')
@@ -210,13 +210,13 @@ instance Optimizable Slv.Field Opt.Field where
       return $ Opt.Optimized t area $ Opt.FieldSpread exp'
 
 instance Optimizable Slv.Is Opt.Is where
-  optimize enabled (Slv.Solved t area (Slv.Is pat exp)) = do
+  optimize enabled (Slv.Solved qt@(_ :=> t) area (Slv.Is pat exp)) = do
     pat' <- optimize enabled pat
     exp' <- optimize enabled exp
     return $ Opt.Optimized t area (Opt.Is pat' exp')
 
 instance Optimizable Slv.Pattern Opt.Pattern where
-  optimize enabled (Slv.Solved t area pat) = case pat of
+  optimize enabled (Slv.Solved qt@(_ :=> t) area pat) = case pat of
     Slv.PVar name       -> return $ Opt.Optimized t area $ Opt.PVar name
 
     Slv.PAny            -> return $ Opt.Optimized t area Opt.PAny

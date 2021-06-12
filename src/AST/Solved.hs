@@ -7,7 +7,7 @@ import qualified Infer.Type                    as Ty
 import           Explain.Location
 
 data Solved a
-  = Solved Ty.Type Area a
+  = Solved (Ty.Qual Ty.Type) Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
@@ -144,7 +144,10 @@ type Table = M.Map FilePath AST
 -- Functions
 
 getType :: Solved a -> Ty.Type
-getType (Solved t _ _) = t
+getType (Solved (_ Ty.:=> t) _ _) = t
+
+getQualType :: Solved a -> Ty.Qual Ty.Type
+getQualType (Solved t _ _) = t
 
 getArea :: Solved a -> Area
 getArea (Solved _ a _) = a
