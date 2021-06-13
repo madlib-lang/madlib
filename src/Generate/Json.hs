@@ -226,6 +226,7 @@ initialExpCompilationDepth :: Int
 initialExpCompilationDepth = 4
 
 compileExp :: Int -> Slv.Exp -> String
+compileExp _ (Slv.Untyped _ _) = "{}"
 compileExp depth (Slv.Solved qt@(ps :=> t) area exp) =
   let compiledType      = if depth == initialExpCompilationDepth then prettyPrintQualType True qt else prettyPrintType True t
       compiledExpFields = compileExpFields (depth + 1) exp
@@ -268,6 +269,8 @@ compileExpFields depth exp = case exp of
       else s
 
   Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
+  
+  Slv.TypeExport _ -> indent depth <> "\"nodeType\": \"TypeExport\"\n"
 
   Slv.Abs (Slv.Solved pType@(_ :=> t) pArea pName) body ->
     indent depth
