@@ -69,6 +69,7 @@ class Compilable a where
   compile :: Env -> CompilationConfig -> a -> String
 
 instance Compilable Exp where
+  compile _ _ (Untyped _ _) = ""
   compile env config e@(Optimized expType area@(Area (Loc _ l _) _) exp) =
     let
       astPath   = ccastPath config
