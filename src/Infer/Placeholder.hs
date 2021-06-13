@@ -299,6 +299,7 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
 
 
 isMethod :: Env -> Slv.Exp -> Bool
+isMethod env (Slv.Untyped _ _)  = False
 isMethod env (Slv.Solved _ _ e) = case e of
   Slv.Var n -> Just True == (M.lookup n (envMethods env) >> return True)
   _         -> False

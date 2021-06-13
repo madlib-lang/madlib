@@ -163,6 +163,22 @@ isADTExported adt = case adt of
   Untyped _ ADT { adtexported } -> adtexported
   _                             -> False
 
+isAliasExported :: TypeDecl -> Bool
+isAliasExported alias = case alias of
+  Untyped _ Alias { aliasexported } -> aliasexported
+  _                                 -> False
+
+isAlias :: TypeDecl -> Bool
+isAlias td = case td of
+  Untyped _ Alias {} -> True
+  _                  -> False
+
+isADT :: TypeDecl -> Bool
+isADT td = case td of
+  Untyped _ ADT {} -> True
+  _                -> False
+
+
 isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
   (Solved _ _ (Export _)) -> True
@@ -180,9 +196,13 @@ isNameExport a = case a of
 
 isTypeExport :: Exp -> Bool
 isTypeExport a = case a of
-  (Solved _ _ (TypeExport _)) -> True
+  (Untyped _ (TypeExport _)) -> True
 
   _                           -> False
+
+getTypeExportName :: Exp -> Name
+getTypeExportName a = case a of
+  (Untyped _ (TypeExport name)) -> name
 
 isTypeOrNameExport :: Exp -> Bool
 isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
@@ -212,6 +232,7 @@ getValue (Solved _ _ a) = a
 getValue (Untyped _ a ) = a
 
 getExpName :: Exp -> Maybe String
+getExpName (Untyped _ _)    = Nothing
 getExpName (Solved _ _ exp) = case exp of
   Assignment name _ -> return name
 
@@ -228,6 +249,19 @@ getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
 
+extractExportedADTs :: AST -> [TypeDecl]
+extractExportedADTs ast =
+  let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)
+  in  filter
+    (\td@(Untyped _ adt) -> isADT td && (isADTExported td || adtname adt `elem` typeExports))
+    $ atypedecls ast
+
+extractExportedAliases :: AST -> [TypeDecl]
+extractExportedAliases ast =
+  let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)
+  in  filter
+    (\td@(Untyped _ alias) -> isAlias td && (isAliasExported td || aliasname alias `elem` typeExports))
+    $ atypedecls ast
 
 extractExportedExps :: AST -> M.Map Name Exp
 extractExportedExps AST { aexps, apath } = case apath of

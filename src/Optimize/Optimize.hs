@@ -66,6 +66,7 @@ class Optimizable a b where
   optimize :: Bool -> a -> Optimize b
 
 instance Optimizable Slv.Exp Opt.Exp where
+  optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
   optimize enabled (Slv.Solved qt@(_ :=> t) area e) = case e of
     Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.LNum x)
 

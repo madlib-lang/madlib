@@ -56,11 +56,11 @@ prepareExportedExps :: Slv.AST -> [(String, Slv.Exp)]
 prepareExportedExps ast =
   let exps                      = Slv.aexps ast
       exports                   = filter Slv.isExportOnly exps
+      exportsWithNames = (\export -> (Slv.getExpName export, export)) <$> (exports ++ nameExportTargetExps)
       filteredExportedWithNames = filter (isJust . fst) exportsWithNames
       nameExportNames           = Slv.getNameExportName <$> filter Slv.isNameExport exps
       nameExportTargetExps =
           Maybe.mapMaybe (\name -> find (\export -> Slv.getExpName export == Just name) exps) nameExportNames
-      exportsWithNames = (\export -> (Slv.getExpName export, export)) <$> (exports ++ nameExportTargetExps)
   in  Data.Bifunctor.first (fromMaybe "") <$> filteredExportedWithNames
 
 generateASTDoc :: Int -> (Slv.AST, String, [DocString]) -> String

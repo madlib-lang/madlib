@@ -61,11 +61,11 @@ typeCheckMain main = do
     Left err    -> return (Left [err], [])
 
 
-data PublicAPI = PublicAPI 
+data PublicAPI = PublicAPI
   { apiNames      :: Map.Map String String
   , apiInterfaces :: Map.Map String (Map.Map String String)
   , apiInstances  :: [String]
-  , apiTypes      :: Map.Map String (Map.Map String String)
+  , apiTypes      :: Map.Map String [String]
   , apiAliases    :: Map.Map String String
   }
   deriving(Eq, Show, Ord)
@@ -91,10 +91,34 @@ addInstance (Slv.Untyped _ (Slv.Instance _ supers pred _)) api =
           decl
   in  api { apiInstances = apiInstances api <> [decl'] }
 
+addADT :: Slv.TypeDecl -> PublicAPI -> PublicAPI
+addADT (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
+  let key  = name
+      key' =
+        if not (null params) then
+          key <> " " <> unwords params
+        else
+          key
+      ctors' = (\(Slv.Untyped _ (Slv.Constructor name ts _)) -> unwords $ name : (prettyPrintConstructorTyping <$> ts)) <$> ctors
+  in  api { apiTypes = Map.insert key' ctors' $ apiTypes api }
+
+addAlias :: Slv.TypeDecl -> PublicAPI -> PublicAPI
+addAlias (Slv.Untyped _ (Slv.Alias name params typing _)) api =
+  let key  = name
+      key' =
+        if not (null params) then
+          key <> " " <> unwords params
+        else
+          key
+      aliased = prettyPrintConstructorTyping typing
+  in  api { apiAliases = Map.insert key' aliased $ apiAliases api }
+
 
 buildAPI :: Slv.AST -> Slv.Table -> PublicAPI
 buildAPI ast table =
   let exports           = Slv.extractExportedExps ast
+      packageTypes      = Slv.extractExportedADTs ast
+      packageAliases    = Slv.extractExportedAliases ast
       packageASTs       = Map.filterWithKey (\path _ -> not ("node_modules" `List.isInfixOf` path) && not ("prelude/__internal__" `List.isInfixOf` path)) table
       packageInterfaces = Map.elems packageASTs >>= Slv.ainterfaces
       packageInstances  = Map.elems packageASTs >>= Slv.ainstances
@@ -108,7 +132,9 @@ buildAPI ast table =
         }
       apiWithInterfaces = foldr addInterface apiWithNames packageInterfaces
       apiWithInstances  = foldr addInstance apiWithInterfaces packageInstances
-  in  apiWithInstances
+      apiWithADTs       = foldr addADT apiWithInstances packageTypes
+      apiWithAliases    = foldr addAlias apiWithADTs packageAliases
+  in  apiWithAliases
 
 
 performBuild :: Either String VersionLock -> Maybe Version -> String -> String -> Slv.AST -> Slv.Table -> Either String (String, VersionLock)
