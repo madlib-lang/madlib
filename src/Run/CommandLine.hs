@@ -105,7 +105,10 @@ parseGenerateHashInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "Path to package" <> showDefault <> value ".")
 
 parseGenerateHash :: Parser PackageSubCommand
-parseGenerateHash = subparser $ command "generate-hash" ((GenerateHash <$> parseGenerateHashInput) `withInfo` "generates the md5 hash for a package")
+parseGenerateHash = subparser $ command
+  "generate-hash"
+  ((GenerateHash <$> parseGenerateHashInput) `withInfo` "generates the md5 hash for a package")
+  <> internal
 
 parsePackage :: Parser Command
 parsePackage = (Package <$> parseGenerateHash)

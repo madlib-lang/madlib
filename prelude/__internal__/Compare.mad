@@ -2,7 +2,7 @@ export alias ComparisonResult = Number
 
 export MORE = 1
 export LESS = -1
-export EQUAL = 1
+export EQUAL = 0
 
 interface Comparable a {
   compare :: a -> a -> ComparisonResult
@@ -22,3 +22,16 @@ instance Comparable Boolean {
     is <false, true>: LESS
     is _            : EQUAL
 }
+
+
+gt :: Comparable a => a -> a -> Boolean
+export gt = (a, b) => compare(a, b) == MORE
+
+ge :: Comparable a => a -> a -> Boolean
+export ge = (a, b) => compare(a, b) >= EQUAL
+
+lt :: Comparable a => a -> a -> Boolean
+export lt = (a, b) => compare(a, b) == LESS
+
+le :: Comparable a => a -> a -> Boolean
+export le = (a, b) => compare(a, b) <= EQUAL

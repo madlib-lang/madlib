@@ -309,6 +309,8 @@ exp :: { Src.Exp }
   | exp '.' name                                        %shift { access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
+  | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet maybeRet exp maybeRet
+      { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $14)) (Src.If $3 $7 $14) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If $3 $6 $10) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp 'ret'

@@ -23,6 +23,7 @@ class Collectable a where
   collect :: a -> [Coverable]
 
 instance Collectable Exp where
+  collect (Untyped _ _) = []
   collect (Solved (ps :=> t) (Area (Loc _ l _) _) exp) = case exp of
     Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
