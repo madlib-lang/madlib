@@ -1,0 +1,53 @@
+import type { Maybe } from "Maybe"
+import type { Dictionary } from "Dictionary"
+import type { Wish } from "Wish"
+
+import { bad } from "Wish"
+import { Just, Nothing } from "Maybe"
+import { Left, Right } from "Either"
+import J from "Json"
+
+import Version from "./Version"
+import Dependency from "./Dependency"
+
+
+
+export alias MadlibDotJson = {
+  name          :: String,
+  version       :: Version.Version,
+  dependencies  :: Maybe (List Dependency.Dependency),
+  madlibVersion :: Maybe String,
+  main          :: String,
+  bin           :: Maybe String,
+  importAliases :: Maybe (Dictionary String String)
+}
+
+
+makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency.Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
+makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, importAliases) =>
+  where(Version.parse(version)) {
+    is Just v : J.succeed({ name, version: v, madlibVersion, dependencies, main, bin, importAliases })
+    is Nothing: J.fail(`The version in the madlib.json file is not valid, you provided '${version}', but it should have the form x.y.z where x, y and z are numbers.`)
+  }
+
+parser :: J.Parser MadlibDotJson
+export parser = J.chain7(
+  makeMadlibDotJson,
+  J.field("name", J.string),
+  J.field("version", J.string),
+  J.field("madlibVersion", J.maybe(J.string)),
+  J.field("dependencies", J.maybe(Dependency.dependencyParser)),
+  J.field("main", J.string),
+  J.field("bin", J.maybe(J.string)),
+  J.field("importAliases", J.maybe(J.dict(J.string)))
+)
+
+
+parse :: String -> Wish String MadlibDotJson
+export parse = pipe(
+  J.parse(parser),
+  where {
+    is Left  e: bad(e)
+    is Right a: of(a)
+  }
+)

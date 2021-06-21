@@ -1,0 +1,46 @@
+import { assertEquals, test, Error } from "TestTools"
+import { bichain, bad } from "Wish"
+import { always } from "Function"
+import { Nothing } from "Maybe"
+
+import { Version } from "./Version"
+import { parse } from "./MadlibDotJson"
+
+
+MADLIB_DOT_JSON_MINIMAL = `{
+  "name": "SamplePackage",
+  "version": "0.1.7",
+  "main": "src/Main.mad"
+}
+`
+
+MADLIB_DOT_JSON_WRONG_VERSION = `{
+  "name": "SamplePackage",
+  "version": "0.1.a",
+  "main": "src/Main.mad"
+}
+`
+
+test("parse", (_) => pipe(
+  parse,
+  bichain(
+    always(bad(Error("Parsing should be success!"))),
+    assertEquals($, {
+      name: "SamplePackage",
+      version: Version(0, 1, 7),
+      main: "src/Main.mad",
+      bin: Nothing,
+      importAliases: Nothing,
+      madlibVersion: Nothing,
+      dependencies: Nothing
+    })
+  )
+)(MADLIB_DOT_JSON_MINIMAL))
+
+test("parse - wrong version", (_) => pipe(
+  parse,
+  bichain(
+    assertEquals($, "The version in the madlib.json file is not valid, you provided '0.1.a', but it should have the form x.y.z where x, y and z are numbers."),
+    always(bad(Error("Parsing should be failure!")))
+  )
+)(MADLIB_DOT_JSON_WRONG_VERSION))

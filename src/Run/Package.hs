@@ -12,11 +12,14 @@ import qualified Data.List                     as List
 import           Crypto.Hash.MD5               ( hashlazy )
 import           Data.ByteString.Builder
 import           Data.Version
+import           Data.Aeson
+import           Data.Aeson.Encode.Pretty
+import           Data.ByteString.Lazy.Char8    ( unpack )
 
 
-import           MadlibDotJson.MadlibDotJson
+import qualified MadlibDotJson.MadlibDotJson        as MadlibDotJson
 import qualified MadlibDotJson.MadlibVersion        as MadlibVersion
-import           VersionLock.VersionLock
+import qualified VersionLock.VersionLock            as VersionLock
 import           Error.Error
 import           Error.Warning
 import qualified AST.Canonical                      as Can
@@ -33,6 +36,7 @@ import           Run.PackageHash
 import           Run.CommandLine
 import           Utils.Hash
 import           Utils.Version
+import           VersionLock.PublicAPI
 import           Utils.Tuple
 import           Explain.Format
 
@@ -61,113 +65,63 @@ typeCheckMain main = do
     Left err    -> return (Left [err], [])
 
 
-data PublicAPI = PublicAPI
-  { apiNames      :: Map.Map String String
-  , apiInterfaces :: Map.Map String (Map.Map String String)
-  , apiInstances  :: [String]
-  , apiTypes      :: Map.Map String [String]
-  , apiAliases    :: Map.Map String String
-  }
-  deriving(Eq, Show, Ord)
+bumpVersion :: APIChange -> Version -> Version
+bumpVersion apiChange version = case apiChange of
+  Major -> Version [major version + 1, 0, 0] []
 
-addInterface :: Slv.Interface -> PublicAPI -> PublicAPI
-addInterface (Slv.Untyped _ (Slv.Interface name supers vars _ methodTypings)) api =
-  let key     = name <> " " <> unwords (getTVarId <$> vars)
-      key'   =
-        if not (null supers) then
-          lst (predsToStr False mempty supers) <> " => " <> key
-        else
-          key
-      methods = prettyPrintConstructorTyping' False <$> methodTypings
-  in  api { apiInterfaces = Map.insert key' methods $ apiInterfaces api }
+  Minor -> Version [major version, minor version + 1, 0] []
 
-addInstance :: Slv.Instance -> PublicAPI -> PublicAPI
-addInstance (Slv.Untyped _ (Slv.Instance _ supers pred _)) api =
-  let decl  = lst $ predToStr False mempty pred
-      decl' =
-        if not (null supers) then
-          lst (predsToStr False mempty supers) <> " => " <> decl
-        else
-          decl
-  in  api { apiInstances = apiInstances api <> [decl'] }
+  Patch -> Version [major version, minor version, patch version + 1] []
 
-addADT :: Slv.TypeDecl -> PublicAPI -> PublicAPI
-addADT (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
-  let key  = name
-      key' =
-        if not (null params) then
-          key <> " " <> unwords params
-        else
-          key
-      ctors' = (\(Slv.Untyped _ (Slv.Constructor name ts _)) -> unwords $ name : (prettyPrintConstructorTyping <$> ts)) <$> ctors
-  in  api { apiTypes = Map.insert key' ctors' $ apiTypes api }
-
-addAlias :: Slv.TypeDecl -> PublicAPI -> PublicAPI
-addAlias (Slv.Untyped _ (Slv.Alias name params typing _)) api =
-  let key  = name
-      key' =
-        if not (null params) then
-          key <> " " <> unwords params
-        else
-          key
-      aliased = prettyPrintConstructorTyping typing
-  in  api { apiAliases = Map.insert key' aliased $ apiAliases api }
-
-
-buildAPI :: Slv.AST -> Slv.Table -> PublicAPI
-buildAPI ast table =
-  let exports           = Slv.extractExportedExps ast
-      packageTypes      = Slv.extractExportedADTs ast
-      packageAliases    = Slv.extractExportedAliases ast
-      packageASTs       = Map.filterWithKey (\path _ -> not ("node_modules" `List.isInfixOf` path) && not ("prelude/__internal__" `List.isInfixOf` path)) table
-      packageInterfaces = Map.elems packageASTs >>= Slv.ainterfaces
-      packageInstances  = Map.elems packageASTs >>= Slv.ainstances
-
-      apiWithNames      = PublicAPI
-        { apiNames      = prettyPrintQualType True . Slv.getQualType <$> exports
-        , apiInterfaces = mempty
-        , apiInstances  = mempty
-        , apiTypes      = mempty
-        , apiAliases    = mempty
-        }
-      apiWithInterfaces = foldr addInterface apiWithNames packageInterfaces
-      apiWithInstances  = foldr addInstance apiWithInterfaces packageInstances
-      apiWithADTs       = foldr addADT apiWithInstances packageTypes
-      apiWithAliases    = foldr addAlias apiWithADTs packageAliases
-  in  apiWithAliases
-
-
-performBuild :: Either String VersionLock -> Maybe Version -> String -> String -> Slv.AST -> Slv.Table -> Either String (String, VersionLock)
+performBuild :: Either VersionLock.ReadError VersionLock.VersionLock -> Maybe Version -> String -> String -> Slv.AST -> Slv.Table -> IO (Either String (Version, VersionLock.VersionLock))
 performBuild eitherVersionLock parsedVersion hashedVersion projectHash ast table =
-  case eitherVersionLock of
-    -- Left e -> Left "Error with the version.lock file"
-    Left _ -> do
+  case (eitherVersionLock, parsedVersion) of
+    -- if there is no version.lock file we generate the initial one with version 0.0.1
+    (Left VersionLock.FileNotFound, _) -> do
+      initialVersionHash <- hash $ BLChar8.pack "0.0.1"
       let api = buildAPI ast table
-      Left $ ppShow api
+          versionLock = VersionLock.VersionLock
+            { VersionLock.versionHash = initialVersionHash
+            , VersionLock.buildHash   = projectHash
+            , VersionLock.api         = api
+            }
+      return $ Right (Version [0, 0, 1] [], versionLock)
 
-    Right VersionLock { versionHash, buildHash, api } ->
+    (Left VersionLock.ReadError, _) -> return $ Left "An error occured while reading the version.lock file"
+
+    (Right VersionLock.VersionLock { VersionLock.versionHash, VersionLock.buildHash, VersionLock.api }, Just version) ->
       if buildHash == projectHash then
-        Left "Project has not changed, nothing to do."
+        return $ Left "Project has not changed, nothing to do."
       else if hashedVersion /= versionHash then
-        Left "It seems that you modified the version in madlib.json manually"
+        return $ Left "It seems that you modified the version in madlib.json manually"
       else do
-        undefined
+        let currentAPI = buildAPI ast table
+        let nextVersion = bumpVersion (computeAPIChange api currentAPI) version
+        nextVersionHash <- hash $ BLChar8.pack $ showVersion nextVersion
+
+        let nextVersionLock = VersionLock.VersionLock
+              { VersionLock.versionHash = nextVersionHash
+              , VersionLock.buildHash   = projectHash
+              , VersionLock.api         = currentAPI
+              }
+        return $ Right (nextVersion, nextVersionLock)
+
 
 
 
 
 runBuildPackage :: IO ()
 runBuildPackage = do
-  putStrLn "Build package"
-  madlibDotJson <- loadCurrentMadlibDotJson
+  putStrLn "Building package..."
+  madlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
 
   case madlibDotJson of
     Left _ -> putStrLn "The package must have a madlib.json file"
 
-    Right MadlibDotJson { main, version = Just version } -> do
+    Right goodMadlibDotJson@MadlibDotJson.MadlibDotJson { MadlibDotJson.main, MadlibDotJson.version = Just version } -> do
       canonicalMain           <- canonicalizePath main
       currentDirectoryPath    <- getCurrentDirectory
-      versionLock             <- loadCurrentVersionLock
+      versionLock             <- VersionLock.loadCurrentVersionLock
       projectHash             <- generatePackageHash currentDirectoryPath
       hashedVersion           <- hash $ BLChar8.pack version
       (typeChecked, warnings) <- typeCheckMain canonicalMain
@@ -180,11 +134,14 @@ runBuildPackage = do
 
         Right solvedTable -> do
           let (Just mainAST) = Map.lookup canonicalMain solvedTable
-              processed      = performBuild versionLock parsedVersion hashedVersion projectHash mainAST solvedTable
+          processed <- performBuild versionLock parsedVersion hashedVersion projectHash mainAST solvedTable
           case processed of
             Left e -> putStrLn e
 
-            Right _ -> putStrLn "Built"
+            Right (version, versionLock) -> do
+              VersionLock.save "version.lock" versionLock
+              MadlibDotJson.save "madlib.json" goodMadlibDotJson { MadlibDotJson.version = Just $ showVersion version }
+              putStrLn $ "Version updated to '" <> showVersion version <> "'. Do not forget to version control the version.lock file!"
 
       return ()
 
