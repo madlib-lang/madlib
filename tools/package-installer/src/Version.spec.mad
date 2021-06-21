@@ -1,0 +1,77 @@
+import type { Maybe } from "Maybe"
+import type { Version } from "./Version"
+
+import { assertEquals, test } from "TestTools"
+import { EQUAL, LESS, MORE } from "Compare"
+import { Just, Nothing } from "Maybe"
+
+import {
+  Version,
+  isInRange,
+  VersionRange,
+  FromVersion,
+  UntilVersion
+} from "./Version"
+
+
+test("compare   - MORE", (_) => pipe(
+  compare($, Version(0, 9, 0)),
+  assertEquals($, MORE)
+)(Version(1, 0, 0)))
+
+test("compare   - EQUAL", (_) => pipe(
+  compare($, Version(1, 0, 0)),
+  assertEquals($, EQUAL)
+)(Version(1, 0, 0)))
+
+test("compare   - LESS", (_) => pipe(
+  compare($, Version(1, 0, 0)),
+  assertEquals($, LESS)
+)(Version(0, 7, 2)))
+
+test("read      - good", (_) => pipe(
+  read,
+  assertEquals($, Just(Version(2, 0, 0)))
+)("2.0.0"))
+
+test("read      - missing last number", (_) => pipe(
+  read,
+  assertEquals($, (Nothing :: Maybe Version))
+)("2.0."))
+
+
+test("isInRange - VersionRange true", (_) => pipe(
+  isInRange($, VersionRange(
+    Version(2, 0, 0),
+    Version(2, 1, 0)
+  )),
+  assertEquals($, true)
+)(Version(2, 0, 0)))
+
+test("isInRange - VersionRange false", (_) => pipe(
+  isInRange($, VersionRange(
+    Version(1, 0, 0),
+    Version(1, 9, 0)
+  )),
+  assertEquals($, false)
+)(Version(2, 0, 0)))
+
+test("isInRange - FromVersion true", (_) => pipe(
+  isInRange($, FromVersion(Version(1, 0, 0))),
+  assertEquals($, true)
+)(Version(2, 0, 0)))
+
+test("isInRange - FromVersion false", (_) => pipe(
+  isInRange($, FromVersion(Version(2, 0, 1))),
+  assertEquals($, false)
+)(Version(2, 0, 0)))
+
+test("isInRange - UntilVersion true", (_) => pipe(
+  isInRange($, UntilVersion(Version(2, 0, 1))),
+  assertEquals($, true)
+)(Version(2, 0, 0)))
+
+test("isInRange - UntilVersion false", (_) => pipe(
+  isInRange($, UntilVersion(Version(1, 3, 1))),
+  assertEquals($, false)
+)(Version(2, 0, 0)))

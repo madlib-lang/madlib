@@ -1,0 +1,31 @@
+import type { Maybe } from "Maybe"
+import type { Version, VersionRange } from "./Version"
+
+import { Just, Nothing } from "Maybe"
+import Dict from "Dictionary"
+
+import { AnyVersion } from "./Version"
+
+
+
+alias VersionConstraint = {
+  resolvedVersion :: Maybe Version,
+  range           :: VersionRange
+}
+
+alias Context = Dict.Dictionary String VersionConstraint
+
+
+findByName :: String -> Context -> VersionConstraint
+findByName = (name) => pipe(
+  Dict.get(name),
+  where {
+    is Just found: found
+    is Nothing   : {
+      resolvedVersion: Nothing,
+      range: AnyVersion
+    }
+  }
+)
+
+

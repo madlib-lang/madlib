@@ -8,11 +8,6 @@ import           Data.Maybe                     ( isJust
                                                 , fromMaybe
                                                 )
 import qualified Data.Bifunctor
-import           Explain.Format                 ( prettyPrintType
-                                                , predsToStr
-                                                , schemeToStr
-                                                , predToStr, prettyPrintQualType
-                                                )
 import           Data.List                      ( intercalate
                                                 , find
                                                 )

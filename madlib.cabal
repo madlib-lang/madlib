@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0964026f9576ba64896407059a1d9f7a9bba3740205702404cd97a331acae34a
+-- hash: 972ebeb411d9d2ca149dab6113e11ff8b0dd2f804746f0ab0fe55e2f623c0097
 
 name:           madlib
 version:        0.9.0
@@ -101,6 +101,7 @@ library
       Utils.Tuple
       Utils.URL
       Utils.Version
+      VersionLock.PublicAPI
       VersionLock.VersionLock
   other-modules:
       Paths_madlib
@@ -109,6 +110,7 @@ library
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
@@ -207,6 +209,7 @@ executable madlib
       Utils.Tuple
       Utils.URL
       Utils.Version
+      VersionLock.PublicAPI
       VersionLock.VersionLock
       Paths_madlib
   hs-source-dirs:
@@ -215,6 +218,7 @@ executable madlib
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
@@ -261,6 +265,7 @@ test-suite madlib-test
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5

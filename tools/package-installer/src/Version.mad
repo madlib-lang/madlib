@@ -1,0 +1,68 @@
+import type { Maybe } from "Maybe"
+
+import { split } from "String"
+import {} from "Number"
+import {} from "List"
+import { Just, Nothing } from "Maybe"
+import {} from "Show"
+import {} from "Read"
+import { ge, le } from "Compare"
+
+
+export type Version = Version Number Number Number
+
+export type VersionRange
+  = VersionRange Version Version
+  | FromVersion Version
+  | UntilVersion Version
+  | AnyVersion
+
+
+instance Show Version {
+  show = (version) => {
+    major = show(getMajor(version))
+    minor = show(getMinor(version))
+    patch = show(getPatch(version))
+
+    return `${major}.${minor}.${patch}`
+  }
+}
+
+instance Read Version {
+  read = parse
+}
+
+instance Comparable Version {
+  compare = (a, b) => compare(show(a), show(b))
+}
+
+
+getMajor :: Version -> Number
+getMajor = where is Version major _ _: major
+
+getMinor :: Version -> Number
+getMinor = where is Version _ minor _: minor
+
+getPatch :: Version -> Number
+getPatch = where is Version _ _ patch: patch
+
+
+parse :: String -> Maybe Version
+export parse = pipe(
+  split("."),
+  map(read),
+  where {
+    is [Just major, Just minor, Just patch]: Just(Version(major, minor, patch))
+    is _                                   : Nothing
+  }
+)
+
+isInRange :: Version -> VersionRange -> Boolean
+export isInRange = (version, range) => where(range)
+  is FromVersion start      : ge(version, start)
+
+  is UntilVersion end       : le(version, end)
+  
+  is VersionRange start end : ge(version, start) && le(version, end)
+
+  is AnyVersion             : true

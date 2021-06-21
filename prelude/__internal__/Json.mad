@@ -8,6 +8,13 @@ import { Nothing, Just } from "Maybe"
 export alias Parser r = String -> Either String r
 
 
+succeed :: a -> Parser a
+export succeed = (a) => ((_) => Right(a))
+
+fail :: String -> Parser a
+export fail = (err) => ((_) => Left(err))
+
+
 string :: Parser String
 export string = (input) => (#-
   typeof input === "string"
@@ -72,11 +79,75 @@ export list = (parser, input) => (#-{
 }-#)
 
 
+chain1 :: (a -> Parser b) -> Parser a -> Parser b
+export chain1 = (fn, parser, input) =>
+  where(parser(input))
+    is Right a: fn(a, input)
+    is Left  e: Left(e)
+
+chain2 :: (a -> b -> Parser c) -> Parser a -> Parser b -> Parser c
+export chain2 = (fn, parserA, parserB, input) =>
+  where(<parserA(input), parserB(input)>)
+    is <Right a, Right b>: fn(a, b, input)
+    is <Left e, _>       : Left(e)
+    is <_, Left e>       : Left(e)
+
+chain3 :: (a -> b -> c -> Parser d) -> Parser a -> Parser b -> Parser c -> Parser d
+export chain3 = (fn, parserA, parserB, parserC, input) =>
+  where(<parserA(input), parserB(input), parserC(input)>)
+    is <Right a, Right b, Right c>: fn(a, b, c, input)
+    is <Left e, _, _>             : Left(e)
+    is <_, Left e, _>             : Left(e)
+    is <_, _, Left e>             : Left(e)
+
+chain4 :: (a -> b -> c -> d -> Parser e) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e
+export chain4 = (fn, parserA, parserB, parserC, parserD, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input)>)
+    is <Right a, Right b, Right c, Right d>: fn(a, b, c, d, input)
+    is <Left e, _, _, _>                   : Left(e)
+    is <_, Left e, _, _>                   : Left(e)
+    is <_, _, Left e, _>                   : Left(e)
+    is <_, _, _, Left e>                   : Left(e)
+
+chain5 :: (a -> b -> c -> d -> e -> Parser f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
+export chain5 = (fn, parserA, parserB, parserC, parserD, parserE, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input)>)
+    is <Right a, Right b, Right c, Right d, Right e>: fn(a, b, c, d, e, input)
+    is <Left e, _, _, _, _>                         : Left(e)
+    is <_, Left e, _, _, _>                         : Left(e)
+    is <_, _, Left e, _, _>                         : Left(e)
+    is <_, _, _, Left e, _>                         : Left(e)
+    is <_, _, _, _, Left e>                         : Left(e)
+
+chain6 :: (a -> b -> c -> d -> e -> f -> Parser g) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g
+export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input)>)
+    is <Right a, Right b, Right c, Right d, Right e, Right f>: fn(a, b, c, d, e, f, input)
+    is <Left e, _, _, _, _, _>                               : Left(e)
+    is <_, Left e, _, _, _, _>                               : Left(e)
+    is <_, _, Left e, _, _, _>                               : Left(e)
+    is <_, _, _, Left e, _, _>                               : Left(e)
+    is <_, _, _, _, Left e, _>                               : Left(e)
+    is <_, _, _, _, _, Left e>                               : Left(e)
+
+chain7 :: (a -> b -> c -> d -> e -> f -> g -> Parser h) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h
+export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, input) =>
+  where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input)>)
+    is <Right a, Right b, Right c, Right d, Right e, Right f, Right g>: fn(a, b, c, d, e, f, g, input)
+    is <Left e, _, _, _, _, _, _>                                     : Left(e)
+    is <_, Left e, _, _, _, _, _>                                     : Left(e)
+    is <_, _, Left e, _, _, _, _>                                     : Left(e)
+    is <_, _, _, Left e, _, _, _>                                     : Left(e)
+    is <_, _, _, _, Left e, _, _>                                     : Left(e)
+    is <_, _, _, _, _, Left e, _>                                     : Left(e)
+    is <_, _, _, _, _, _, Left e>                                     : Left(e)
+
+
 map1 :: (a -> b) -> Parser a -> Parser b
 export map1 = (fn, parser, input) =>
   where(parser(input))
     is Right a: Right(fn(a))
-    is Left e : Left(e)
+    is Left  e: Left(e)
 
 
 map2 :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
