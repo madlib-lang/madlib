@@ -67,6 +67,12 @@ import           Run.Target
   'texport'   { Token _ TokenTypeExport }
   'from'      { Token _ TokenFrom }
   '|'         { Token _ TokenPipe }
+  '&'         { Token _ TokenAmpersand }
+  '^'         { Token _ TokenXor }
+  '~'         { Token _ TokenTilde }
+  '<<'        { Token _ TokenDoubleLeftChevron }
+  '>>'        { Token _ TokenDoubleRightChevron }
+  '>>>'       { Token _ TokenTripleRightChevron }
   'pipe'      { Token _ TokenPipeKeyword }
   '|>'        { Token _ TokenPipeOperator }
   '...'       { Token _ TokenSpreadOperator }
@@ -193,18 +199,19 @@ typeParams :: { [Src.Name] }
 adtConstructors :: { [Src.Constructor] }
   : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
   | adtConstructor 'ret'                      %shift { [$1] }
-  | adtConstructor                            %shift { [$1] }
+  -- | adtConstructor                            %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
-  : name adtConstructorArgs %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $2)) (Src.Constructor (strV $1) $2) }
+  : name '(' adtConstructorArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Constructor (strV $1) $3) }
   | name                    %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Constructor (strV $1) []) }
 
 adtConstructorArgs :: { [Src.Typing] }
   : typing                     %shift { [$1] }
-  | name '.' name              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1<>"."<>strV $3) [])] }
-  | '(' compositeTyping ')'    %shift { [$2] }
-  | '(' adtConstructorArgs ')' %shift { $2 }
-  | adtConstructorArgs typing  %shift { $1 <> [$2] }
+  | compositeTyping                     %shift { [$1] }
+  | typings                     %shift { [$1] }
+  | adtConstructorArgs ',' typing  %shift { $1 <> [$3] }
+  | adtConstructorArgs ',' compositeTyping  %shift { $1 <> [$3] }
+  | adtConstructorArgs ',' typings  %shift { $1 <> [$3] }
 
 
 constrainedTyping :: { Src.Typing }
@@ -409,9 +416,13 @@ nonCompositePattern :: { Src.Pattern }
 
 
 compositePattern :: { Src.Pattern }
-  : name patterns          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $2))) (Src.PCtor (strV $1) $2) }
-  | name '.' name patterns %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $4))) (Src.PCtor (strV $1 <> "." <> strV $3) $4) }
+  : name '(' compositePatternArgs ')'          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCtor (strV $1) $3) }
+  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCtor (strV $1 <> "." <> strV $3) $5) }
   | name '.' name          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCtor (strV $1 <> "." <> strV $3) []) }
+
+compositePatternArgs :: { [Src.Pattern] }
+  : pattern                          { [$1] }
+  | pattern ',' compositePatternArgs { $1:$3 }
 
 patterns :: { [Src.Pattern] }
   : nonCompositePattern          { [$1] }
@@ -553,7 +564,44 @@ operation :: { Src.Exp }
                          $1 False))) 
                       $3 True)
                    }
+  | exp '|' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "|"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '&' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "&"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '^' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "^"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '<<' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "<<"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '>>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">>"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '>>>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">>>"))
+                         $1 False))) 
+                      $3 True)
+                   }
   | '!' exp  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App (Src.Source emptyInfos (tokenToArea $1) (Src.Var "!")) $2 True) }
+  | '~' exp  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App (Src.Source emptyInfos (tokenToArea $1) (Src.Var "~")) $2 True) }
   | exp '|>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                       ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "|>")) 

@@ -7,7 +7,7 @@ import T from "Tuple"
  *
  * @since 0.0.5
  */
-export type Dictionary k v = Dictionary (List <k, v>)
+export type Dictionary k v = Dictionary(List <k, v>)
 
 
 /**
@@ -44,7 +44,7 @@ export empty = fromList([])
  */
 insert :: k -> v -> Dictionary k v -> Dictionary k v
 export insert = (k, v, m) => where(m) {
-  Dictionary items =>
+  Dictionary(items) =>
     L.reject(
       (item) => where(item) {
         <kk, _> => kk == k
@@ -65,7 +65,7 @@ export insert = (k, v, m) => where(m) {
  */
 get :: k -> Dictionary k v -> Maybe v
 export get = (k) => where {
-  Dictionary items => pipe(
+  Dictionary(items) => pipe(
     L.find((item) => where(item) {
       <kk, _> => k == kk
     }),
@@ -83,7 +83,7 @@ export get = (k) => where {
  */
 keys :: Dictionary k v -> List k
 export keys = (m) => where(m) {
-  Dictionary items => map(T.fst, items)
+  Dictionary(items) => map(T.fst, items)
 }
 
 /**
@@ -95,7 +95,7 @@ export keys = (m) => where(m) {
  */
 values :: Dictionary k v -> List v
 export values = (m) => where(m) {
-  Dictionary items => map(T.snd, items)
+  Dictionary(items) => map(T.snd, items)
 }
 
 
@@ -120,7 +120,7 @@ export len = (m) => (m |> keys |> L.len)
  */
 instance Functor (Dictionary k) {
   map = (fn) => where {
-    Dictionary items => map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+    Dictionary(items) => map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
   }
 }
 
@@ -137,7 +137,7 @@ instance Functor (Dictionary k) {
  */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where {
-  Dictionary items => map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+  Dictionary(items) => map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
 }
 
 /**
@@ -147,5 +147,5 @@ export mapWithKey = (fn) => where {
  */
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
 export merge = (a, b) => where(<a, b>) {
-  <Dictionary itemsA, Dictionary itemsB> => L.concat(itemsA, itemsB) |> fromList
+  <Dictionary(itemsA), Dictionary(itemsB)> => L.concat(itemsA, itemsB) |> fromList
 }

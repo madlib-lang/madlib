@@ -80,6 +80,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                  { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                           { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @signed @floating                  { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*                     { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "true"                             { mapToken (\_ -> (TokenBool "true")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "false"                            { mapToken (\_ -> (TokenBool "false")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "=="                               { mapToken (\_ -> TokenDoubleEq) }
@@ -99,7 +100,13 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \:                 { mapToken (\_ -> TokenColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\-\>$tail*   { mapToken (\_ -> TokenArrow) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\=\>$tail*   { mapToken (\_ -> TokenFatArrow) }
-  <0> \|                                                                                     { mapToken (\_ -> TokenPipe) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \|                 { mapToken (\_ -> TokenPipe) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \&                 { mapToken (\_ -> TokenAmpersand) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \^                 { mapToken (\_ -> TokenXor) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \~                 { mapToken (\_ -> TokenTilde) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \<\<               { mapToken (\_ -> TokenDoubleLeftChevron) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \>\>               { mapToken (\_ -> TokenDoubleRightChevron) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \>\>\>             { mapToken (\_ -> TokenTripleRightChevron) }
   <0> \;                                                                                     { mapToken (\_ -> TokenSemiColon) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> [\n]               { mapToken (\_ -> TokenReturn) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxClosingTag, instanceHeader> [$alpha \_] [$alpha $digit \_ \']* { decideTokenName }
@@ -520,6 +527,12 @@ data TokenClass
  | TokenSlash
  | TokenPercent
  | TokenDoubleEq
+ | TokenAmpersand
+ | TokenXor
+ | TokenTilde
+ | TokenDoubleLeftChevron
+ | TokenDoubleRightChevron
+ | TokenTripleRightChevron
  | TokenExclamationMarkEq
  | TokenComma
  | TokenLeftDoubleCurly

@@ -1,31 +1,31 @@
-import L from "List"
 import type { Wish } from "Wish"
+import L from "List"
 import { chainRej, mapRej, parallel, fulfill } from "Wish"
 import IO from "IO"
 import Http from "Http"
 import { readFile, writeFile, exists } from "FileSystem"
-import Dictionary from "Dictionary"
-import { Just, fromMaybe } from "Maybe"
 import J from "Json"
 import Either from "Either"
+import { Just, Nothing, fromMaybe } from "Maybe"
 import S from "System"
 import T from "Tuple"
-import { always, identity } from "Function"
+import { always, identity, ifElse } from "Function"
 import { andDo } from "Monad"
 import { BinaryData, TextData } from "Data"
 
 import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
+import type { MadlibDotJson } from "./MadlibDotJson"
+import type { ValidationResult } from "./Validate"
 import { initialContext } from "./Context"
-import { sanitizeUrl } from "./URL"
 import { dependencyParser } from "./Dependency"
-import MadlibDotJson from "./MadlibDotJson"
+import { load } from "./MadlibDotJson"
 import { validateVersion } from "./Validate"
 
 
 MADLIB_NOT_FOUND = "The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."
 MADLIB_MODULES_PATH = "./madlib_modules/"
-TEMPORARY_MODULES_PATH = ".tmp_modules"
+TEMPORARY_MODULES_PATH = ".tmp_modules/"
 
 moveToMadlibModules :: String -> Wish S.CommandError String
 moveToMadlibModules = pipe(
@@ -45,9 +45,19 @@ renameInnerFolder = pipe(
   S.exec
 )
 
-copyPackage :: String -> Wish S.CommandError String
-copyPackage = pipe(
+copyPackageToTmpRoot :: String -> Wish S.CommandError String
+copyPackageToTmpRoot = pipe(
   (url) => `cp -R ${TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${TEMPORARY_MODULES_PATH}`,
+  S.exec
+)
+
+copyPackageToMadlibModules :: Dependency -> Wish S.CommandError String
+copyPackageToMadlibModules = pipe(
+  (dependency) => ({
+    destination: `${MADLIB_MODULES_PATH}${fromMaybe("", dependency.name)}`,
+    source: `${TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
+  }),
+  (paths) => `cp -R ${paths.source} ${paths.destination}`,
   S.exec
 )
 
@@ -62,9 +72,9 @@ getDependencies :: String -> Wish String (List Dependency)
 getDependencies = pipe(
   J.parse(dependencyParser),
   where {
-    Either.Left _ => of([])
+    Either.Left(_) => of([])
 
-    Either.Right a => of(a)
+    Either.Right(a) => of(a)
   }
 )
 
@@ -81,7 +91,7 @@ extractArchive :: String -> Wish String String
 extractArchive = (url) => pipe(
   unzipPkg,
   andDo(renameInnerFolder(url)),
-  andDo(copyPackage(url)),
+  andDo(copyPackageToTmpRoot(url)),
   andDo(cleanUp(url)),
   mapRej(always("Error processing archive"))
 )(url)
@@ -100,7 +110,7 @@ installNodeModules = (url, pkgName) => pipe(
 initMadlibModulesFolder :: String -> a -> Wish String a
 initMadlibModulesFolder = (path, a) => pipe(
   (p) => S.exec(`mkdir -p ${p}`),
-  mapRej(where { S.CommandError _ msg => msg }),
+  mapRej(where { S.CommandError(_, msg) => msg }),
   andDo(of(a))
 )(path)
 
@@ -117,50 +127,67 @@ downloadPackage = (dependency) => pipe(
   .url,
   Http.get,
   map(where {
-    Http.Response { data: BinaryData d } => BinaryData(d)
+    Http.Response({ data: BinaryData(d) }) => BinaryData(d)
   }),
-  mapRej(always(`Package failed to download from "${dependency.url}"`)),
-  chain(writeFile(`${TEMPORARY_MODULES_PATH}${sanitizeUrl(dependency.url)}.zip`))
+  mapRej(always(`Package from "${dependency.url}" failed to be downloaded`)),
+  chain(writeFile(`${TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`))
 )(dependency)
 
 
+readMadlibJSON :: Dependency -> Wish String MadlibDotJson
+readMadlibJSON = (dependency) =>
+  load(`${TEMPORARY_MODULES_PATH}/${dependency.sanitizedUrl}/madlib.json`)
+
+printSuccess :: ValidationResult -> String
+printSuccess = (validationResult) => where(validationResult) {
+  { dependency: { name: Just(n) }} =>
+    IO.log(`Package ${n} was successfully installed`)
+
+  _ =>
+    IO.log(`Package downloaded from ${validationResult.dependency.url} was successfully installed`)
+}
+
+
+processPostValidation :: ValidationResult -> Wish String ValidationResult
+processPostValidation = (validationResult) => pipe(
+  ifElse(
+    .shouldCopy,
+    pipe(
+      always(copyPackageToMadlibModules(validationResult.dependency)),
+      andDo(of(validationResult))
+    ),
+    always(of(validationResult))
+  ),
+  mapRej((commandError) => pipe(
+    always(validationResult),
+    .dependency,
+    .name,
+    where {
+      Just(n) => `Failed post-processing ${n}\n${S.getCommandErrorMessage(commandError)}`
+
+      Nothing => `Failed post-processing package downloaded from "${validationResult.dependency.url}"\n${S.getCommandErrorMessage(commandError)}`
+    }
+  )(commandError))
+)(validationResult)
+
+processDependency :: Context -> Dependency -> Wish String String
+processDependency = (context, dependency) => pipe(
+  downloadPackage,
+  andDo(extractArchive(dependency.sanitizedUrl)),
+  andDo(readMadlibJSON(dependency)),
+  map(validateVersion(context, dependency)),
+  chain(processPostValidation),
+  map(IO.inspect),
+  map(printSuccess)
+)(dependency)
 
 installPackages :: Context -> Boolean -> String -> Wish String (List String)
 installPackages = (context, firstLevel, madlibDotJsonPath) => pipe(
   readFile,
-  mapRej((_) => MADLIB_NOT_FOUND),
+  mapRej(always(MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(MADLIB_MODULES_PATH)),
   chain(getDependencies),
-  chain(pipe(
-    map((dependency) => pipe(
-      IO.log,
-      downloadPackage,
-      andDo(extractArchive(sanitizeUrl(dependency.url))),
-      andDo(MadlibDotJson.load(`${TEMPORARY_MODULES_PATH}/${sanitizeUrl(dependency.url)}/madlib.json`)),
-      // map((madlibDotJson) => validateVersion(context, { ...dependency, name: madlibDotJson.name })),
-      map((madlibDotJson) => ({ ...dependency, name: madlibDotJson.name })),
-      map((dep) => validateVersion(context, dep)),
-      map(IO.log),
-      map(always(""))
-      // .url,
-      // sanitizeUrl,
-      // of
-      // <key, sanitizedUrl> => pipe(
-      //   Dictionary.get($, depMap),
-      //   where { Just p => Http.get(p) },
-      //   map(where { Http.Response { data: BinaryData d } => d }),
-      //   mapRej(always("Err fetching archive")),
-      //   map(BinaryData),
-      //   chain(writeFile(`${MADLIB_MODULES_PATH}${sanitizedUrl}.zip`)),
-      //   andDo(processArchive(sanitizedUrl)),
-      //   andDo(installNodeModules(sanitizedUrl, key)),
-      //   map(always(IO.log(`package ${key} installed`))),
-      //   mapRej((_) => `Error installing package '${key}'`),
-      //   andDo(verifyPackageAndInstallSubDeps(context, key, `${MADLIB_MODULES_PATH}${sanitizedUrl}/madlib.json`))
-      // )(key)
-    )(dependency)),
-    parallel
-  ))
+  chain(pipe(map(processDependency(context)), parallel))
 )(madlibDotJsonPath)
 
 

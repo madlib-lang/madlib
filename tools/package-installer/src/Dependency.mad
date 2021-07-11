@@ -1,25 +1,22 @@
+import type { Wish } from "Wish"
+import type { Maybe } from "Maybe"
 import J from "Json"
 import Either from "Either"
-import type { Wish } from "Wish"
 import {} from "Wish"
+import { Nothing } from "Maybe"
 
 import type { VersionRange } from "./Version"
 import { createRange, parse } from "./Version"
+import { sanitizeUrl } from "./URL"
 
 export alias Dependency = {
   description  :: String,
-  url          :: String,
-  versionRange :: VersionRange
+  url :: String,
+  sanitizedUrl :: String,
+  versionRange :: VersionRange,
+  name :: Maybe String
 }
 
-/**
- * A Dependency that has been resolved from its URL and that now contains a
- * name ( read from its madlib.json file then ).
- */
-export alias DependencyWithName = {
-  ...Dependency,
-  name :: String
-}
 
 dependencyParser :: J.Parser (List Dependency)
 export dependencyParser = J.field(
@@ -29,7 +26,9 @@ export dependencyParser = J.field(
       (url, description, maybeMinVersion, maybeMaxVersion) => ({
         url,
         description,
-        versionRange: createRange(maybeMinVersion, maybeMaxVersion)
+        versionRange: createRange(maybeMinVersion, maybeMaxVersion),
+        name: Nothing,
+        sanitizedUrl: sanitizeUrl(url)
       }),
       J.field("url", J.string),
       J.field("description", J.string),
@@ -43,8 +42,8 @@ parseDependencies :: String -> Wish String (List Dependency)
 parseDependencies = pipe(
   J.parse(dependencyParser),
   where {
-    Either.Left _ => of([])
+    Either.Left(_) => of([])
 
-    Either.Right a => of(a)
+    Either.Right(a) => of(a)
   }
 )

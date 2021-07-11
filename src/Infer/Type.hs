@@ -252,7 +252,7 @@ getConstructorCon t = case t of
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) Nothing
+  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 

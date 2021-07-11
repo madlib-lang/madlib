@@ -250,7 +250,7 @@ compileExpFields depth exp = case exp of
   Slv.LNum val ->
     let compiledVal =
             if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
-    in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": " <> compiledVal <> "\n"
+    in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": \"" <> compiledVal <> "\"\n"
 
   Slv.LBool val ->
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
