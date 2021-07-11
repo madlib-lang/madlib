@@ -159,6 +159,48 @@ instance Compilable Exp where
               astPath
               (getStartLine arg)
               (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "|")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " | " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "&")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " & " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "^")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ^ " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "~")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ~ " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "<<")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " << " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var ">>")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >> " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var ">>>")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >>> " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var ">")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " > " <> hpWrapLine
               coverage

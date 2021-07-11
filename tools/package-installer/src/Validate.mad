@@ -1,21 +1,85 @@
-import type { Either } from "Either"
-import { Left, Right } from "Either"
-import { always, ifElse } from "Function"
+import type { Maybe } from "Maybe"
+import { ifElse } from "Function"
+import { Just, Nothing } from "Maybe"
 
-import type { Context } from "./Context"
-import type { DependencyWithName } from "./Dependency"
-import { findByName } from "./Context"
-import { matchRanges } from "./Version"
+import type { Context, VersionInfo } from "./Context"
+import type { Dependency } from "./Dependency"
+import type { MadlibDotJson } from "./MadlibDotJson"
+import type { VersionRange } from "./Version"
+import { findByName, updateEntry } from "./Context"
+import { intersectRanges, isInRange } from "./Version"
 
 
-validateVersion :: Context -> DependencyWithName -> Either String ()
-export validateVersion = (context, dependency) => pipe(
+export alias ValidationResult = {
+  warning :: Maybe String,
+  context :: Context,
+  shouldCopy :: Boolean,
+  dependency :: Dependency
+}
+
+alias RangeResult = {
+  warning :: Maybe String,
+  versionInfo :: VersionInfo,
+  shouldCopy :: Boolean
+}
+
+getName :: { ...base, name :: Maybe String } -> String
+getName = pipe(
   .name,
+  where { Just(name) => name }
+)
+
+
+getCurrentVersionRange :: Context -> String -> VersionRange
+getCurrentVersionRange = (context, packageName) => pipe(
   findByName($, context),
-  .range,
-  ifElse(
-    matchRanges(dependency.versionRange),
-    always(Right(())),
-    always(Left("Version not matching"))
-  )
-)(dependency)
+  .range
+)(packageName)
+
+
+
+buildGoodRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> RangeResult
+buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => ({
+  warning: Nothing,
+  versionInfo: { version: Just(madlibDotJson.version), range: versionRange },
+  shouldCopy: Just(madlibDotJson.version) != versionInfo.version
+})
+
+buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> RangeResult
+buildBadRangeResult = (madlibDotJson, versionInfo, _) => ({
+  warning: Just("Version is not in range"),
+  versionInfo: {
+    version: versionInfo.version == Nothing
+      ? Just(madlibDotJson.version)
+      : versionInfo.version,
+    range: versionInfo.range
+  },
+  shouldCopy: versionInfo.version == Nothing
+})
+
+buildValidationResult :: Context -> MadlibDotJson -> Dependency -> RangeResult -> ValidationResult
+buildValidationResult = (context, madlibDotJson, dependency, rangeResult) => ({
+  warning: rangeResult.warning,
+  context: updateEntry(
+    madlibDotJson.name,
+    rangeResult.versionInfo,
+    context
+  ),
+  shouldCopy: rangeResult.shouldCopy,
+  dependency: { ...dependency, name: Just(madlibDotJson.name) }
+})
+
+validateVersion :: Context -> Dependency -> MadlibDotJson -> ValidationResult
+export validateVersion = (context, dependency, madlibDotJson) => {
+  versionInfo = findByName(madlibDotJson.name, context)
+
+  return pipe(
+    intersectRanges(dependency.versionRange),
+    ifElse(
+      isInRange(madlibDotJson.version),
+      buildGoodRangeResult(madlibDotJson, versionInfo),
+      buildBadRangeResult(madlibDotJson, versionInfo)
+    ),
+    buildValidationResult(context, madlibDotJson, dependency)
+  )(versionInfo.range)
+}

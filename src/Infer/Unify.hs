@@ -22,7 +22,7 @@ import qualified AST.Canonical                 as Can
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv t
-varBind tv (TRecord fields Nothing) = return $ M.singleton tv (TRecord fields (Just (TVar tv)))
+-- varBind tv (TRecord fields Nothing) = return $ M.singleton tv (TRecord fields (Just (TVar tv)))
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -49,28 +49,34 @@ instance Unify Type where
       s3 <- unifyVars M.empty z
       s4 <- unify tBase tBase'
 
-      return $ s4 `compose` s3-- `compose` s1 `compose` s2
+      return $ s4 `compose` s3 `compose` s1 `compose` s2
 
     (Just tBase, Nothing) -> do
-      s1 <- return mempty--unify tBase (TRecord fields Nothing)
+      s1 <- unify tBase (TRecord fields Nothing)
       s2 <- unify tBase (TRecord fields' Nothing)
 
-      unless (null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
+      unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
-      let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields') fields
-          z             = zip (M.elems fields) (M.elems fieldsToCheck)
+      -- let fieldsToCheck = M.mapMaybeWithKey (\k _ -> M.lookup k fields') fields
+      --     z             = zip (M.elems fields) (M.elems fieldsToCheck)
+      let fieldsToCheck  = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s3 <- unifyVars M.empty z
 
       return $ s3 `compose` s1 `compose` s2
 
     (Nothing, Just tBase') -> do
       s1 <- unify tBase' (TRecord fields Nothing)
-      s2 <- return mempty--unify tBase' (TRecord fields' Nothing)
+      s2 <- unify tBase' (TRecord fields' Nothing)
 
-      unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
+      unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
-      let fieldsToCheck = M.mapWithKey (\k _ -> fromMaybe undefined $ M.lookup k fields) fields'
-          z             = zip (M.elems fields') (M.elems fieldsToCheck)
+      -- let fieldsToCheck = M.mapMaybeWithKey (\k _ -> M.lookup k fields) fields'
+      --     z             = zip (M.elems fields') (M.elems fieldsToCheck)
+      let fieldsToCheck  = M.intersection fields fields'
+          fieldsToCheck' = M.intersection fields' fields
+          z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
       s3 <- unifyVars M.empty z
 
       return $ s3 `compose` s1 `compose` s2

@@ -391,11 +391,16 @@ inferRecord env exp = do
     (s, extraFields, newBase) <- case base of
       Just tBase -> do
         case tBase of
-          TRecord fields base -> return (mempty, fields, base)
+          TRecord fields base -> do
+            s <- unify tBase (TRecord (M.fromList fieldTypes') base)
+            return (s, fields, base)
+
           _                   -> do
             s <- unify tBase (TRecord (M.fromList fieldTypes') base)
             return (s, mempty, base)
-      Nothing -> return (mempty, mempty, base)
+
+      Nothing ->
+        return (mempty, mempty, base)
     return (TRecord (M.fromList fieldTypes' <> extraFields) newBase, s)
 
   let allPS = concat fieldPS

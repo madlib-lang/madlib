@@ -81,242 +81,242 @@ export list = (parser, input) => (#-{
 
 chain1 :: (a -> Parser b) -> Parser a -> Parser b
 export chain1 = (fn, parser, input) => where(parser(input)) {
-  Right a => fn(a, input)
+  Right(a) => fn(a, input)
 
-  Left e => Left(e)
+  Left(e) => Left(e)
 }
 
 chain2 :: (a -> b -> Parser c) -> Parser a -> Parser b -> Parser c
 export chain2 = (fn, parserA, parserB, input) =>
   where(<parserA(input), parserB(input)>) {
-    <Right a, Right b> => fn(a, b, input)
+    <Right(a), Right(b)> => fn(a, b, input)
 
-    <Left e, _> => Left(e)
+    <Left(e), _> => Left(e)
 
-    <_, Left e> => Left(e)
+    <_, Left(e)> => Left(e)
   }
 
 chain3 :: (a -> b -> c -> Parser d) -> Parser a -> Parser b -> Parser c -> Parser d
 export chain3 = (fn, parserA, parserB, parserC, input) =>
   where(<parserA(input), parserB(input), parserC(input)>) {
-    <Right a, Right b, Right c> => fn(a, b, c, input)
+    <Right(a), Right(b), Right(c)> => fn(a, b, c, input)
 
-    <Left e, _, _> => Left(e)
+    <Left(e), _, _> => Left(e)
 
-    <_, Left e, _> => Left(e)
+    <_, Left(e), _> => Left(e)
 
-    <_, _, Left e> => Left(e)
+    <_, _, Left(e)> => Left(e)
   }
 
 chain4 :: (a -> b -> c -> d -> Parser e) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e
 export chain4 = (fn, parserA, parserB, parserC, parserD, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input)>) {
-    <Right a, Right b, Right c, Right d> => fn(a, b, c, d, input)
+    <Right(a), Right(b), Right(c), Right(d)> => fn(a, b, c, d, input)
 
-    <Left e, _, _, _> => Left(e)
+    <Left(e), _, _, _> => Left(e)
 
-    <_, Left e, _, _> => Left(e)
+    <_, Left(e), _, _> => Left(e)
 
-    <_, _, Left e, _> => Left(e)
+    <_, _, Left(e), _> => Left(e)
 
-    <_, _, _, Left e> => Left(e)
+    <_, _, _, Left(e)> => Left(e)
   }
 
 chain5 :: (a -> b -> c -> d -> e -> Parser f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
 export chain5 = (fn, parserA, parserB, parserC, parserD, parserE, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input)>) {
-    <Right a, Right b, Right c, Right d, Right e> => fn(a, b, c, d, e, input)
+    <Right(a), Right(b), Right(c), Right(d), Right(e)> => fn(a, b, c, d, e, input)
 
-    <Left e, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _> => Left(e)
+    <_, Left(e), _, _, _> => Left(e)
 
-    <_, _, Left e, _, _> => Left(e)
+    <_, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, Left e, _> => Left(e)
+    <_, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, Left e> => Left(e)
+    <_, _, _, _, Left(e)> => Left(e)
   }
 
 chain6 :: (a -> b -> c -> d -> e -> f -> Parser g) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g
 export chain6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f> => fn(a, b, c, d, e, f, input)
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)> => fn(a, b, c, d, e, f, input)
 
-    <Left e, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _> => Left(e)
+    <_, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, Left(e)> => Left(e)
   }
 
 chain7 :: (a -> b -> c -> d -> e -> f -> g -> Parser h) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h
 export chain7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f, Right g> => fn(a, b, c, d, e, f, g, input)
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)> => fn(a, b, c, d, e, f, g, input)
 
-    <Left e, _, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _, _> => Left(e)
+    <_, _, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, _, Left e, _, _> => Left(e)
+    <_, _, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, _, Left(e)> => Left(e)
   }
 
 map1 :: (a -> b) -> Parser a -> Parser b
 export map1 = (fn, parser, input) => where(parser(input)) {
-  Right a => Right(fn(a))
+  Right(a) => Right(fn(a))
 
-  Left e => Left(e)
+  Left(e) => Left(e)
 }
 
 map2 :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
 export map2 = (fn, parserA, parserB, input) =>
   where(<parserA(input), parserB(input)>) {
-    <Right a, Right b> => Right(fn(a, b))
+    <Right(a), Right(b)> => Right(fn(a, b))
 
-    <Left e, _> => Left(e)
+    <Left(e), _> => Left(e)
 
-    <_, Left e> => Left(e)
+    <_, Left(e)> => Left(e)
   }
 
 map3 :: (a -> b -> c -> d) -> Parser a -> Parser b -> Parser c -> Parser d
 export map3 = (fn, parserA, parserB, parserC, input) =>
   where(<parserA(input), parserB(input), parserC(input)>) {
-    <Right a, Right b, Right c> => Right(fn(a, b, c))
+    <Right(a), Right(b), Right(c)> => Right(fn(a, b, c))
 
-    <Left e, _, _> => Left(e)
+    <Left(e), _, _> => Left(e)
 
-    <_, Left e, _> => Left(e)
+    <_, Left(e), _> => Left(e)
 
-    <_, _, Left e> => Left(e)
+    <_, _, Left(e)> => Left(e)
   }
 
 map4 :: (a -> b -> c -> d -> e) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e
 export map4 = (fn, parserA, parserB, parserC, parserD, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input)>) {
-    <Right a, Right b, Right c, Right d> => Right(fn(a, b, c, d))
+    <Right(a), Right(b), Right(c), Right(d)> => Right(fn(a, b, c, d))
 
-    <Left e, _, _, _> => Left(e)
+    <Left(e), _, _, _> => Left(e)
 
-    <_, Left e, _, _> => Left(e)
+    <_, Left(e), _, _> => Left(e)
 
-    <_, _, Left e, _> => Left(e)
+    <_, _, Left(e), _> => Left(e)
 
-    <_, _, _, Left e> => Left(e)
+    <_, _, _, Left(e)> => Left(e)
   }
 
 map5 :: (a -> b -> c -> d -> e -> f) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f
 export map5 = (fn, parserA, parserB, parserC, parserD, parserE, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input)>) {
-    <Right a, Right b, Right c, Right d, Right e> => Right(fn(a, b, c, d, e))
+    <Right(a), Right(b), Right(c), Right(d), Right(e)> => Right(fn(a, b, c, d, e))
 
-    <Left e, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _> => Left(e)
+    <_, Left(e), _, _, _> => Left(e)
 
-    <_, _, Left e, _, _> => Left(e)
+    <_, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, Left e, _> => Left(e)
+    <_, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, Left e> => Left(e)
+    <_, _, _, _, Left(e)> => Left(e)
   }
 
 map6 :: (a -> b -> c -> d -> e -> f -> g) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g
 export map6 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f> => Right(fn(a, b, c, d, e, f))
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f)> => Right(fn(a, b, c, d, e, f))
 
-    <Left e, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _> => Left(e)
+    <_, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, Left(e)> => Left(e)
   }
 
 map7 :: (a -> b -> c -> d -> e -> f -> g -> h) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h
 export map7 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f, Right g> => Right(fn(a, b, c, d, e, f, g))
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g)> => Right(fn(a, b, c, d, e, f, g))
 
-    <Left e, _, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _, _> => Left(e)
+    <_, _, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, _, Left e, _, _> => Left(e)
+    <_, _, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, _, Left(e)> => Left(e)
   }
 
 map8 :: (a -> b -> c -> d -> e -> f -> g -> h -> i) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i
 export map8 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input), parserH(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f, Right g, Right h> => Right(fn(a, b, c, d, e, f, g, h))
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h)> => Right(fn(a, b, c, d, e, f, g, h))
 
-    <Left e, _, _, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _, _, _> => Left(e)
+    <_, _, _, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, _, _, Left e, _, _, _> => Left(e)
+    <_, _, _, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, _, _, Left e, _, _> => Left(e)
+    <_, _, _, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, _, _, Left(e)> => Left(e)
   }
 
 map9 :: (a -> b -> c -> d -> e -> f -> g -> h -> i -> j) -> Parser a -> Parser b -> Parser c -> Parser d -> Parser e -> Parser f -> Parser g -> Parser h -> Parser i -> Parser j
 export map9 = (fn, parserA, parserB, parserC, parserD, parserE, parserF, parserG, parserH, parserI, input) =>
   where(<parserA(input), parserB(input), parserC(input), parserD(input), parserE(input), parserF(input), parserG(input), parserH(input), parserI(input)>) {
-    <Right a, Right b, Right c, Right d, Right e, Right f, Right g, Right h, Right i> => Right(fn(a, b, c, d, e, f, g, h, i))
+    <Right(a), Right(b), Right(c), Right(d), Right(e), Right(f), Right(g), Right(h), Right(i)> => Right(fn(a, b, c, d, e, f, g, h, i))
 
-    <Left e, _, _, _, _, _, _, _, _> => Left(e)
+    <Left(e), _, _, _, _, _, _, _, _> => Left(e)
 
-    <_, Left e, _, _, _, _, _, _, _> => Left(e)
+    <_, Left(e), _, _, _, _, _, _, _> => Left(e)
 
-    <_, _, Left e, _, _, _, _, _, _> => Left(e)
+    <_, _, Left(e), _, _, _, _, _, _> => Left(e)
 
-    <_, _, _, Left e, _, _, _, _, _> => Left(e)
+    <_, _, _, Left(e), _, _, _, _, _> => Left(e)
 
-    <_, _, _, _, Left e, _, _, _, _> => Left(e)
+    <_, _, _, _, Left(e), _, _, _, _> => Left(e)
 
-    <_, _, _, _, _, Left e, _, _, _> => Left(e)
+    <_, _, _, _, _, Left(e), _, _, _> => Left(e)
 
-    <_, _, _, _, _, _, Left e, _, _> => Left(e)
+    <_, _, _, _, _, _, Left(e), _, _> => Left(e)
 
-    <_, _, _, _, _, _, _, Left e, _> => Left(e)
+    <_, _, _, _, _, _, _, Left(e), _> => Left(e)
 
-    <_, _, _, _, _, _, _, _, Left e> => Left(e)
+    <_, _, _, _, _, _, _, _, Left(e)> => Left(e)
   }
 
 maybe :: Parser a -> Parser (Maybe a)

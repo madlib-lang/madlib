@@ -2,11 +2,12 @@ import type { Maybe } from "Maybe"
 import type { Dictionary } from "Dictionary"
 import type { Wish } from "Wish"
 
-import { bad } from "Wish"
+import { bad, mapRej } from "Wish"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import J from "Json"
 import { readFile } from "FileSystem"
+import { always } from "Function"
 
 import Version from "./Version"
 import Dependency from "./Dependency"
@@ -27,7 +28,7 @@ export alias MadlibDotJson = {
 makeMadlibDotJson :: String -> String -> Maybe String -> Maybe (List Dependency.Dependency) -> String -> Maybe String -> Maybe (Dictionary String String) -> J.Parser MadlibDotJson
 makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, importAliases) =>
   where(Version.parse(version)) {
-    Just v =>
+    Just(v) =>
       J.succeed({
         name,
         version: v,
@@ -59,14 +60,16 @@ parse :: String -> Wish String MadlibDotJson
 export parse = pipe(
   J.parse(parser),
   where {
-    Left e => bad(e)
+    Left(e) => bad(e)
 
-    Right a => of(a)
+    Right(a) => of(a)
   }
 )
 
 load :: String -> Wish String MadlibDotJson
-export load = pipe(
+export load = (path) => pipe(
   readFile,
-  chain(parse)
-)
+  mapRej(always(`madlib.json file not found at path '${path}'`)),
+  chain(parse),
+  mapRej(always(`madlib.json file at path '${path}' is malformed`))
+)(path)
