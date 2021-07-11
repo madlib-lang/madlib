@@ -22,9 +22,9 @@ Unauthorized = 401
 PaymentRequired = 402
 
 
-export type Response = Response { data :: Data, status :: Status }
+export type Response = Response({ data :: Data, status :: Status })
 
-export type Header = Header String String
+export type Header = Header(String, String)
 
 export type Method
   = GET
@@ -66,15 +66,15 @@ export methodStr = where {
 }
 
 headerKey :: Header -> String
-headerKey = where { Header key _ => key }
+headerKey = where { Header(key, _) => key }
 
 headerValue :: Header -> String
-headerValue = where { Header _ val => val }
+headerValue = where { Header(_, val) => val }
 
 bodyLength :: Data -> Number
 bodyLength = where {
-  TextData s => S.len(s)
-  BinaryData bytes => B.len(bytes)
+  TextData(s) => S.len(s)
+  BinaryData(bytes) => B.len(bytes)
 }
 
 #-

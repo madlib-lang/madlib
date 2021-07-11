@@ -3,11 +3,11 @@ import W from "Wish"
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
 
-export type CommandError = CommandError Number String
+export type CommandError = CommandError(Number, String)
 
 
 getCommandErrorMessage :: CommandError -> String
-export getCommandErrorMessage = where { CommandError _ message => message }
+export getCommandErrorMessage = where { CommandError(_, message) => message }
 
 exec :: String -> W.Wish CommandError String
 export exec = (command) => W.Wish((bad, good) => #- {
