@@ -107,3 +107,5 @@ inferPattern env (Can.Canonical area pat) = case pat of
     s           <- unify t (foldr fn tv ts)
 
     return (ps <> ps', M.map (apply s) vars, apply s tv)
+
+  _ -> undefined

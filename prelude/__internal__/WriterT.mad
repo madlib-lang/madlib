@@ -6,7 +6,7 @@ export type WriterT w m a = WriterT (m <a, w>)
 
 
 runWriterT :: WriterT w m a -> m <a, w>
-export runWriterT = where { WriterT m => m }
+export runWriterT = where { WriterT(m) => m }
 
 liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
 liftA2 = (f, x1, x2) => ap(map(f, x1), x2)

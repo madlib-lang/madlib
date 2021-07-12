@@ -272,6 +272,18 @@ getParamType :: Type -> Type
 getParamType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
 
+getParamTypes :: Type -> [Type]
+getParamTypes t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) p) n -> p : getParamTypes n
+  _ -> []
+
+getTypeVarsInType :: Type -> [Type]
+getTypeVarsInType t = case t of
+  TVar _           -> [t]
+  TApp l r         -> getTypeVarsInType l ++ getTypeVarsInType r
+  TRecord fields _ -> concat $ getTypeVarsInType <$> M.elems fields
+  _                -> []
+
 getParamTypeOrSame :: Type -> Type
 getParamTypeOrSame t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p

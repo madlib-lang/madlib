@@ -14,7 +14,8 @@ export alias ValidationResult = {
   warning :: Maybe String,
   context :: Context,
   shouldCopy :: Boolean,
-  dependency :: Dependency
+  dependency :: Dependency,
+  madlibDotJson :: MadlibDotJson
 }
 
 alias RangeResult = {
@@ -54,7 +55,7 @@ buildBadRangeResult = (madlibDotJson, versionInfo, _) => ({
       : versionInfo.version,
     range: versionInfo.range
   },
-  shouldCopy: versionInfo.version == Nothing
+  shouldCopy: versionInfo.version == Nothing,
 })
 
 buildValidationResult :: Context -> MadlibDotJson -> Dependency -> RangeResult -> ValidationResult
@@ -66,7 +67,8 @@ buildValidationResult = (context, madlibDotJson, dependency, rangeResult) => ({
     context
   ),
   shouldCopy: rangeResult.shouldCopy,
-  dependency: { ...dependency, name: Just(madlibDotJson.name) }
+  dependency: { ...dependency, name: Just(madlibDotJson.name) },
+  madlibDotJson
 })
 
 validateVersion :: Context -> Dependency -> MadlibDotJson -> ValidationResult
