@@ -1,7 +1,8 @@
 import Context from "HitPointContext"
 
-export type HitPoint = FunctionHit String String
-                     | LineHit String Number
+export type HitPoint
+  = FunctionHit(String, String)
+  | LineHit(String, Number)
 
 
 #-

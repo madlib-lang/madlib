@@ -7,6 +7,8 @@ import {} from "String"
 import Fun from "Function"
 import {} from "Compare"
 import { Just, Nothing } from "Maybe"
+import { fst, snd } from "Tuple"
+import { loop } from "Control"
 
 
 /**
@@ -272,6 +274,20 @@ export reduceL = (f, initial, xs) => (#- xs.reduce((a, b) => f(a)(b), initial) -
  */
 reduce :: (a -> b -> a) -> a -> List b -> a
 export reduce = reduceL
+
+
+reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
+export reduceM = (fn, initial, xs) => pipe(
+  loop(
+    $,
+    pipe(snd, Fun.complement(isEmpty)),
+    where {
+      <initialM, [h, ...rest]> => <chain(fn($, h), initialM), rest>
+    }
+  ),
+  fst
+)(<of(initial), xs>)
+
 
 
 /**

@@ -8,15 +8,15 @@ import Maybe from "Maybe"
  * @since v0.0.5
  */
 export type LcovLine
-  = TN String
-  | SF String
-  | FN Number String
-  | FNDA Number String
-  | FNF Number
-  | FNH Number
-  | DA Number Number
-  | LF Number
-  | LH Number
+  = TN(String)
+  | SF(String)
+  | FN(Number, String)
+  | FNDA(Number, String)
+  | FNF(Number)
+  | FNH(Number)
+  | DA(Number, Number)
+  | LF(Number)
+  | LH(Number)
 
 /**
  * LcovLine type
@@ -37,7 +37,7 @@ export alias LcovSection = {
 export alias LcovInfo = List LcovSection
 
 getPath :: LcovSection -> String
-export getPath = (section) => where(section.sf) { SF p => p }
+export getPath = (section) => where(section.sf) { SF(p) => p }
 
 emptySection :: LcovSection
 emptySection = {
@@ -103,15 +103,15 @@ export parseLcov = (content) =>
 
 stringifyLine :: LcovLine -> String
 stringifyLine = where {
-  TN arg => "TN:" ++ arg ++ "\n"
-  SF arg => "SF:" ++ arg ++ "\n"
-  FN l name => "FN:" ++ show(l) ++ "," ++ name ++ "\n"
-  FNDA count name => "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
-  FNF count => "FNF:" ++ show(count) ++ "\n"
-  FNH count => "FNH:" ++ show(count) ++ "\n"
-  DA l count => "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
-  LF count => "LF:" ++ show(count) ++ "\n"
-  LH count => "LH:" ++ show(count) ++ "\n"
+  TN(arg) => "TN:" ++ arg ++ "\n"
+  SF(arg) => "SF:" ++ arg ++ "\n"
+  FN(l, name) => "FN:" ++ show(l) ++ "," ++ name ++ "\n"
+  FNDA(count, name) => "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
+  FNF(count) => "FNF:" ++ show(count) ++ "\n"
+  FNH(count) => "FNH:" ++ show(count) ++ "\n"
+  DA(l, count) => "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
+  LF(count) => "LF:" ++ show(count) ++ "\n"
+  LH(count) => "LH:" ++ show(count) ++ "\n"
 }
 
 stringifySection :: LcovSection -> String
