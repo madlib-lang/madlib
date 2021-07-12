@@ -21,23 +21,26 @@ green = colorString("\x1b[32m")
 
 
 export type AssertionError
-  = AssertionError a a
-  | Error a
+  = AssertionError(a, a)
+  | Error(a)
 
 
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
-addFunctionHit = (astPath, name, lcov) =>
-  map((section) => Lcov.getPath(section) == astPath
-      ? map(
-          where {
-            Lcov.FNDA count n => n == name ? Lcov.FNDA(count + 1, n) : Lcov.FNDA(count, n)
-            x => x
-          },
-          section.fndas
-        ) |> (updatedFdnas) => ({ ...section, fndas: updatedFdnas })
-      : section
-    , lcov
-  )
+addFunctionHit = (astPath, name, lcov) => map(
+  (section) => Lcov.getPath(section) == astPath
+    ? map(
+        where {
+          Lcov.FNDA(count, n) =>
+            n == name ? Lcov.FNDA(count + 1, n) : Lcov.FNDA(count, n)
+
+          x =>
+            x
+        },
+        section.fndas
+      ) |> (updatedFdnas) => ({ ...section, fndas: updatedFdnas })
+    : section,
+  lcov
+)
 
 addLineHit :: String -> Number -> Lcov.LcovInfo -> Lcov.LcovInfo
 addLineHit = (astPath, line, lcov) =>
@@ -46,8 +49,11 @@ addLineHit = (astPath, line, lcov) =>
         Lcov.getPath(section) == astPath
           ? map(
               where {
-                Lcov.DA l count => l == line ? Lcov.DA(l, count + 1) : Lcov.DA(l, count)
-                x => x
+                Lcov.DA(l, count) =>
+                  l == line ? Lcov.DA(l, count + 1) : Lcov.DA(l, count)
+
+                x =>
+                  x
               },
               section.das
             ) |> (updatedDas) => ({ ...section, das: updatedDas })
@@ -58,7 +64,7 @@ addLineHit = (astPath, line, lcov) =>
 updateLh :: Lcov.LcovSection -> Lcov.LcovSection
 updateLh = (section) => (
   L.reduceR(
-    (total, da) => where(da) { Lcov.DA _ count => count > 0 ? total + 1 : total },
+    (total, da) => where(da) { Lcov.DA(_, count) => count > 0 ? total + 1 : total },
     0,
     section.das
   ) |> (counted) => ({ ...section, lh: Lcov.LH(counted) })
@@ -71,7 +77,7 @@ updateFnh :: Lcov.LcovSection -> Lcov.LcovSection
 updateFnh = (section) => (
   L.reduceR(
     (total, da) =>
-      where(da) { Lcov.FNDA count _ => count > 0 ? total + 1 : total },
+      where(da) { Lcov.FNDA(count, _) => count > 0 ? total + 1 : total },
       0,
       section.fndas
   ) |> (counted) => ({ ...section, fnh: Lcov.FNH(counted) })
@@ -84,8 +90,8 @@ collect :: List (HP.HitPoint) -> Lcov.LcovInfo -> Lcov.LcovInfo
 collect = (hps, lcov) =>
   L.reduceL(
     (currLcov) => where {
-      HP.FunctionHit astPath name => addFunctionHit(astPath, name, currLcov)
-      HP.LineHit astPath line => addLineHit(astPath, line, currLcov)
+      HP.FunctionHit(astPath, name) => addFunctionHit(astPath, name, currLcov)
+      HP.LineHit(astPath, line) => addLineHit(astPath, line, currLcov)
     },
     lcov,
     hps
@@ -108,7 +114,7 @@ allRow :: Lcov.LcovInfo -> IO.Row
 allRow = (lcov) => pipe(
   L.reduceR(
     (total, section) => where(section) {
-      { lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit } =>
+      { lf: Lcov.LF(found), lh: Lcov.LH(hit), fnf: Lcov.FNF(ffound), fnh: Lcov.FNH(fhit) } =>
         {
           lf: total.lf + found,
           lh: total.lh + hit,
@@ -132,11 +138,11 @@ generateTable = (lcov) =>
   map(
     where {
       {
-        sf: Lcov.SF path,
-        lf: Lcov.LF found,
-        lh: Lcov.LH hit,
-        fnf: Lcov.FNF ffound,
-        fnh: Lcov.FNH fhit
+        sf: Lcov.SF(path),
+        lf: Lcov.LF(found),
+        lh: Lcov.LH(hit),
+        fnf: Lcov.FNF(ffound),
+        fnh: Lcov.FNH(fhit)
       } =>
         <computePercents(hit, found), computePercents(fhit, ffound)>
           |> (t) => buildRow(path, T.fst(t), T.snd(t))
@@ -164,7 +170,7 @@ formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
 
 formatFailureOutput :: String -> AssertionError -> W.Wish String String
 formatFailureOutput = (description, result) => where(result) {
-  AssertionError expected actual =>
+  AssertionError(expected, actual) =>
     W.bad(
       red("\u00d7 " ++ description)
       ++ "\n  expected:\n    "
@@ -173,7 +179,7 @@ formatFailureOutput = (description, result) => where(result) {
       ++ #- red(JSON.stringify(actual)) -#
     )
 
-  Error msg =>
+  Error(msg) =>
     W.bad(
       red("\u00d7 " ++ description)
       ++ "\n  error: " ++ #- JSON.stringify(msg) -#

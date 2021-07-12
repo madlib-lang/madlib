@@ -104,7 +104,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \&                 { mapToken (\_ -> TokenAmpersand) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \^                 { mapToken (\_ -> TokenXor) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \~                 { mapToken (\_ -> TokenTilde) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \<\<               { mapToken (\_ -> TokenDoubleLeftChevron) }
+  -- <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \<\<               { mapToken (\_ -> TokenDoubleLeftChevron) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \>\>               { mapToken (\_ -> TokenDoubleRightChevron) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \>\>\>             { mapToken (\_ -> TokenTripleRightChevron) }
   <0> \;                                                                                     { mapToken (\_ -> TokenSemiColon) }

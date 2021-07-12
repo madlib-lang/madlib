@@ -70,7 +70,6 @@ import           Run.Target
   '&'         { Token _ TokenAmpersand }
   '^'         { Token _ TokenXor }
   '~'         { Token _ TokenTilde }
-  '<<'        { Token _ TokenDoubleLeftChevron }
   '>>'        { Token _ TokenDoubleRightChevron }
   '>>>'       { Token _ TokenTripleRightChevron }
   'pipe'      { Token _ TokenPipeKeyword }
@@ -582,11 +581,11 @@ operation :: { Src.Exp }
                          $1 False))) 
                       $3 True)
                    }
-  | exp '<<' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
-                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+  | exp '<' '<' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "<<"))
                          $1 False))) 
-                      $3 True)
+                      $4 True)
                    }
   | exp '>>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                       ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App

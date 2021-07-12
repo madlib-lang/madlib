@@ -392,7 +392,7 @@ inferRecord env exp = do
       Just tBase -> do
         case tBase of
           TRecord fields base -> do
-            s <- unify tBase (TRecord (M.fromList fieldTypes') base)
+            s <- unify (TRecord (M.intersection fields $ M.fromList fieldTypes') base) (TRecord (M.fromList fieldTypes') base)
             return (s, fields, base)
 
           _                   -> do
@@ -417,13 +417,16 @@ inferRecordField env (Can.Canonical area field) = case field of
   Can.FieldSpread exp -> do
     (s, ps, t, e) <- infer env exp
     case t of
-      TRecord tfields _ -> return (s, ps, [("...", t)], Slv.Solved (ps :=> t) area $ Slv.FieldSpread e)
-
-      TVar _            -> do
+      TRecord _ _ ->
         return (s, ps, [("...", t)], Slv.Solved (ps :=> t) area $ Slv.FieldSpread e)
 
-      _ -> throwError $ CompilationError (WrongSpreadType $ show t)
-                                         (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
+      TVar _      ->
+        return (s, ps, [("...", t)], Slv.Solved (ps :=> t) area $ Slv.FieldSpread e)
+
+      _ ->
+        throwError $ CompilationError
+          (WrongSpreadType $ show t)
+          (Context (envCurrentPath env) (Can.getArea exp) (envBacktrace env))
 
 
 
@@ -517,12 +520,15 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (ps, vars, t')     <- inferPattern env pat
-  s                  <- contextualUnify env exp t t'
+  s                  <- if isTVar t' then
+                          return M.empty
+                        else
+                          contextualUnify env exp t t'
 
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
-  let subst = s `compose` s' `compose` s''
+  let subst = s'' `compose` s' `compose` s
 
   return
     ( subst
@@ -530,7 +536,6 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
     , Slv.Solved ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
       $ Slv.Is (updatePattern (ps :=> apply subst t') pat) (updateQualType e' (ps' :=> apply subst t''))
     )
-
 
 
 

@@ -53,3 +53,14 @@ export exists = (path) => W.Wish((bad, good) => #- {
     }
   });
 } -#)
+
+readDir :: String -> W.Wish String (List String)
+export readDir = (path) => W.Wish((bad, good) => #- {
+  fs.readdir(path, (err, files) => {
+    if (err) {
+      bad(err);
+    } else {
+      good(files);
+    }
+  })
+} -#)
