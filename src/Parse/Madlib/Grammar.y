@@ -384,16 +384,13 @@ typedExp :: { Src.Exp }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
-  | 'where' '(' exp ')' maybeRet iss                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
-  | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '{' rets iss rets '}'                     %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $4)] }
-  | 'where' rets iss rets                             %shift { buildAbs (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $3)] }
 
 iss :: { [Src.Is] }
-  : 'is' pattern ':' maybeRet exp                    %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.Is $2 $5)] }
-  | 'is' pattern ':' maybeRet exp 'ret'              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.Is $2 $5)] }
-  | iss maybeRet 'is' pattern ':' maybeRet exp       %shift { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $7)) (Src.Is $4 $7)] }
-  | iss maybeRet 'is' pattern ':' maybeRet exp 'ret' %shift { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $7)) (Src.Is $4 $7)] }
+  : pattern '=>' maybeRet exp 'ret'              %shift { [Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | pattern '=>' maybeRet exp                   %shift { [Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | iss maybeRet pattern '=>' maybeRet exp       %shift { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
+  | iss maybeRet pattern '=>' maybeRet exp 'ret' %shift { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern %shift { $1 }

@@ -99,5 +99,8 @@ initialEnv = Env
 pushExpToBT :: Env -> Can.Exp -> Env
 pushExpToBT env exp = env { envBacktrace = BTExp exp : envBacktrace env }
 
+resetBT :: Env -> Env
+resetBT env = env { envBacktrace = [] }
+
 pushInstanceToBT :: Env -> Can.Instance -> Env
 pushInstanceToBT env inst = env { envBacktrace = BTInstance inst : envBacktrace env }

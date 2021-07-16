@@ -43,11 +43,15 @@ getAllTopLevelAssignments ast = S.fromList $ mapMaybe getExpName (aexps ast)
 
 checkAST :: Env -> AST -> Infer ()
 checkAST env ast = do
-  let initialNamesInScope  = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env)
-      exps                 = aexps ast
-      methods              = concat $ getInstanceMethods <$> ainstances ast
-      topLevelAssignements = getAllTopLevelAssignments ast
-  checkExps env ast topLevelAssignements initialNamesInScope M.empty (methods ++ exps)
+  errs <- getErrors
+  if not (null errs) then
+    return ()
+  else do
+    let initialNamesInScope  = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env)
+        exps                 = aexps ast
+        methods              = concat $ getInstanceMethods <$> ainstances ast
+        topLevelAssignements = getAllTopLevelAssignments ast
+    checkExps env ast topLevelAssignements initialNamesInScope M.empty (methods ++ exps)
 
 checkExps :: Env -> AST -> S.Set String -> InScope -> Dependencies -> [Exp] -> Infer ()
 checkExps _   _   _                   _           _            []       = return ()

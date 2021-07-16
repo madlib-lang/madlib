@@ -13,7 +13,6 @@ import           Data.List                      ( nub
 data TVar = TV Id Kind
   deriving (Show, Eq, Ord)
 
--- TODO: Add FilePath from origin module
 data TCon = TC Id Kind
   deriving (Show, Eq, Ord)
 
@@ -198,6 +197,11 @@ buildKind :: Int -> Kind
 buildKind n | n > 0     = Kfun Star $ buildKind (n - 1)
             | otherwise = Star
 
+kindLength :: Kind -> Int
+kindLength k = case k of
+  Star -> 1
+  Kfun k1 k2 -> kindLength k1 + kindLength k2
+
 
 unqualify :: Qual a -> a
 unqualify (_ :=> a) = a
@@ -248,7 +252,7 @@ getConstructorCon t = case t of
 
 mergeRecords :: Type -> Type -> Type
 mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) base1
+  (TRecord fields1 base1, TRecord fields2 base2) -> TRecord (M.unionWith mergeRecords fields1 fields2) Nothing
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 
@@ -267,5 +271,10 @@ getReturnType t = case t of
 getParamType :: Type -> Type
 getParamType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
+
+getParamTypeOrSame :: Type -> Type
+getParamTypeOrSame t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
+  _ -> t
 
 

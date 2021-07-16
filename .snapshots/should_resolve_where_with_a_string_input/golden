@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 0 1 1) (Loc 69 6 1))
+            (Area (Loc 0 1 1) (Loc 63 6 1))
             (Where
                (Solved
                   ([] :=> TCon (TC "String" Star) "prelude")
@@ -17,15 +17,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 16 2 3) (Loc 26 2 13))
+                   (Area (Loc 16 2 3) (Loc 24 2 11))
                    (Is
                       (Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 19 2 6) (Loc 22 2 9))
+                         (Area (Loc 16 2 3) (Loc 19 2 6))
                          (PStr "\"1\""))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 25 2 12) (Loc 26 2 13))
+                         (Area (Loc 23 2 10) (Loc 24 2 11))
                          (LNum "1")))
                , Solved
                    ([] :=>
@@ -34,15 +34,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 29 3 3) (Loc 39 3 13))
+                   (Area (Loc 27 3 3) (Loc 35 3 11))
                    (Is
                       (Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 32 3 6) (Loc 35 3 9))
+                         (Area (Loc 27 3 3) (Loc 30 3 6))
                          (PStr "\"3\""))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 38 3 12) (Loc 39 3 13))
+                         (Area (Loc 34 3 10) (Loc 35 3 11))
                          (LNum "3")))
                , Solved
                    ([] :=>
@@ -51,15 +51,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 42 4 3) (Loc 53 4 14))
+                   (Area (Loc 38 4 3) (Loc 48 4 13))
                    (Is
                       (Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 45 4 6) (Loc 49 4 10))
+                         (Area (Loc 38 4 3) (Loc 42 4 7))
                          (PStr "\"33\""))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 51 4 12) (Loc 53 4 14))
+                         (Area (Loc 46 4 11) (Loc 48 4 13))
                          (LNum "33")))
                , Solved
                    ([] :=>
@@ -68,15 +68,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 56 5 3) (Loc 67 5 14))
+                   (Area (Loc 51 5 3) (Loc 61 5 13))
                    (Is
                       (Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 59 5 6) (Loc 63 5 10))
+                         (Area (Loc 51 5 3) (Loc 55 5 7))
                          (PStr "\"42\""))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 65 5 12) (Loc 67 5 14))
+                         (Area (Loc 59 5 11) (Loc 61 5 13))
                          (LNum "42")))
                ])
         ]

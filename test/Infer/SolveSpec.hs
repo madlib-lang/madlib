@@ -188,7 +188,7 @@ spec = do
       snapshotTest "should fail if it uses an ADT not defined" actual
 
     it "should fail if it uses an ADT not defined in patterns" $ do
-      let code   = unlines ["where(3) {", "  is NotExisting: 5", "}"]
+      let code   = unlines ["where(3) {", "  NotExisting => 5", "}"]
           actual = tester code
       snapshotTest "should fail if it uses an ADT not defined in patterns" actual
 
@@ -205,8 +205,8 @@ spec = do
             , "fn :: M.Maybe Number -> Number"
             , "export fn = (x) => ("
             , "  where(x) {"
-            , "    is M.Just a : a"
-            , "    is M.Nothing: -3"
+            , "    M.Just a => a"
+            , "    M.Nothing => -3"
             , "  }"
             , ")"
             ]
@@ -237,7 +237,7 @@ spec = do
         codeA = "export type Point = Point <Number, Number>"
         astA  = buildAST "./ModuleA" codeA
         codeB = unlines
-          ["import P from \"./ModuleA\"", "p = P.Point(<2, 4>)", "where(p) {", "  is P.Point <a, b>: a + b", "}"]
+          ["import P from \"./ModuleA\"", "p = P.Point(<2, 4>)", "where(p) {", "  P.Point <a, b> => a + b", "}"]
         astB   = buildAST "./ModuleB" codeB
         actual = case (astA, astB) of
           (Right a, Right b) ->
@@ -273,16 +273,17 @@ spec = do
             , ""
             , "instance Functor (Wish e) {"
             , "  map = (f, m) => Wish((badCB, goodCB) =>"
-            , "    where(m)"
-            , "      is Wish run: run(badCB, (x) => (goodCB(f(x))))"
+            , "    where(m) {"
+            , "      Wish run => run(badCB, (x) => (goodCB(f(x))))"
+            , "    }"
             , "  )"
             , "}"
             , ""
             , "instance Applicative (Wish e) {"
             , "  pure = (a) => Wish((badCB, goodCB) => goodCB(a))"
             , ""
-            , "  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>)"
-            , "    is <Wish runMF, Wish runM>:"
+            , "  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>) {"
+            , "    <Wish runMF, Wish runM> =>"
             , "      runM("
             , "        badCB,"
             , "        (x) => runMF("
@@ -290,19 +291,21 @@ spec = do
             , "          (f) => goodCB(f(x))"
             , "        )"
             , "      )"
-            , "  )"
+            , "  })"
             , "}"
             , ""
             , "instance Monad (Wish e) {"
             , "  of = pure"
             , ""
             , "  chain = (f, m) => Wish((badCB, goodCB) =>"
-            , "    where(m) "
-            , "      is Wish run:"
+            , "    where(m) {"
+            , "      Wish run =>"
             , "        run(badCB, (x) =>"
-            , "          where(f(x))"
-            , "            is Wish r: r(badCB, goodCB)"
+            , "          where(f(x)) {"
+            , "            Wish r => r(badCB, goodCB)"
+            , "          }"
             , "        )"
+            , "    }"
             , "  )"
             , "}"
             , ""
@@ -311,7 +314,7 @@ spec = do
             , "export mapRej = (f, m) => ("
             , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
-            , "      is Wish run: run((x) => (badCB(f(x))), goodCB)"
+            , "      Wish run => run((x) => (badCB(f(x))), goodCB)"
             , "    }"
             , "  ))"
             , ")"
@@ -321,9 +324,9 @@ spec = do
             , "export chainRej = (f, m) => ("
             , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
-            , "      is Wish run: run((x) => ("
+            , "      Wish run => run((x) => ("
             , "        where(f(x)) {"
-            , "          is Wish r: r(badCB, goodCB)"
+            , "          Wish r => r(badCB, goodCB)"
             , "        }"
             , "      ), goodCB)"
             , "    }"
@@ -340,9 +343,9 @@ spec = do
             , ")"
             , ""
             , ""
-            , "getWishFn = (w) => (where(w)"
-            , "  is Wish fn: fn"
-            , ")"
+            , "getWishFn = (w) => (where(w) {"
+            , "  Wish fn => fn"
+            , "})"
             , ""
             , ""
             , "parallel :: List (Wish e a) -> Wish e (List a)"
@@ -365,7 +368,7 @@ spec = do
             , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
             , "export fulfill = (badCB, goodCB, m) => {"
             , "  where(m) {"
-            , "    is Wish run: run(badCB, goodCB)"
+            , "    Wish run => run(badCB, goodCB)"
             , "  }"
             , ""
             , "  return ()"
@@ -442,7 +445,7 @@ spec = do
             , "}"
             , ""
             , "instance (Show a, Show b) => Show <a, b> {"
-            , "  show = where is <a, b>: '<' ++ show(a) ++ ', ' ++ show(b) ++ '>'"
+            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
             , "}"
             , ""
             , "show(<1, false>)"
@@ -465,7 +468,7 @@ spec = do
             , "}"
             , ""
             , "instance Show <a, b> {"
-            , "  show = where is <a, b>: '<' ++ show(a) ++ ', ' ++ show(b) ++ '>'"
+            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
             , "}"
             , ""
             , "show(<1, false>)"
@@ -484,7 +487,7 @@ spec = do
             , "}"
             , ""
             , "instance (Show a, Show b) => Show <a, b> {"
-            , "  show = where is <a, b>: '<' ++ show(a) ++ ', ' ++ show(b) ++ '>'"
+            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
             , "}"
             , ""
             , "show(3)"
@@ -594,17 +597,17 @@ spec = do
             , "chain :: (a -> List b) -> List a -> List b"
             , "chain = #--#"
             , ""
-            , "FunctionLink = where is f: 'moduleName' ++ f.name"
+            , "FunctionLink = where { f => 'moduleName' ++ f.name }"
             , "generateFunctionLinks = pipe("
             , "  chain(.expressions),"
-            , "  sortBy((a, b) => where(<a, b>)"
-            , "    is <{ name: nameA }, { name: nameB }>: compare(nameA, nameB)"
-            , "    is <{ name: nameC }, { ik: nameD }>: compare(nameC, nameD)"
-            , "    is <{ tchouk: nameD }, { name: nameC }>: compare(nameC, nameD)"
-            , "    is <{ name: nameC }, { lui: nameD }>: compare(nameC, nameD)"
-            , "    is <{ name: nameC }, { po: { pi: { nameD }}}>: compare(nameC, nameD)"
-            , "    is <{ po: { pi: { nameC }}}, { name: nameD }>: compare(nameC, nameD)"
-            , "  ),"
+            , "  sortBy((a, b) => where(<a, b>) {"
+            , "    <{ name: nameA }, { name: nameB }> => compare(nameA, nameB)"
+            , "    <{ name: nameC }, { ik: nameD }> => compare(nameC, nameD)"
+            , "    <{ tchouk: nameD }, { name: nameC }> => compare(nameC, nameD)"
+            , "    <{ name: nameC }, { lui: nameD }> => compare(nameC, nameD)"
+            , "    <{ name: nameC }, { po: { pi: { nameD }}}> => compare(nameC, nameD)"
+            , "    <{ po: { pi: { nameC }}}, { name: nameD }> => compare(nameC, nameD)"
+            , "  }),"
             , "  map(FunctionLink)"
             , ")"
             ]
@@ -802,7 +805,7 @@ spec = do
             , "    .todos,"
             , "    nth(index),"
             , "    fromMaybe(Todo(\"Oups\", false)),"
-            , "    where is Todo txt checked: Todo(txt, !checked),"
+            , "    where { Todo txt checked => Todo(txt, !checked) },"
             , "    (toggled) => ({"
             , "      ...state,"
             , "      todos: ["
@@ -880,25 +883,25 @@ spec = do
     -- Pattern matching:
 
     it "should resolve where with a Boolean literal" $ do
-      let code   = unlines ["where(true) {", "  is true : \"OK\"", "  is false: \"NOT OK\"", "}"]
+      let code   = unlines ["where(true) {", "  true => \"OK\"", "  false => \"NOT OK\"", "}"]
           actual = tester code
       snapshotTest "should resolve where with a Boolean literal" actual
 
     it "should resolve where with a Number input" $ do
       let
         code = unlines
-          ["where(42) {", "  is 1 : \"NOPE\"", "  is 3 : \"NOPE\"", "  is 33: \"NOPE\"", "  is 42: \"YEAH\"", "}"]
+          ["where(42) {", "  1 => \"NOPE\"", "  3 => \"NOPE\"", "  33 => \"NOPE\"", "  42 => \"YEAH\"", "}"]
         actual = tester code
       snapshotTest "should resolve where with a Number input" actual
 
     it "should resolve where with a string input" $ do
       let code =
-            unlines ["where(\"42\") {", "  is \"1\" : 1", "  is \"3\" : 3", "  is \"33\": 33", "  is \"42\": 42", "}"]
+            unlines ["where(\"42\") {", "  \"1\" => 1", "  \"3\" => 3", "  \"33\" => 33", "  \"42\" => 42", "}"]
           actual = tester code
       snapshotTest "should resolve where with a string input" actual
 
     it "should resolve where with constant type constructor is cases" $ do
-      let code   = unlines ["where(\"42\") {", "  is String : 1", "}"]
+      let code   = unlines ["where(\"42\") {", "  String => 1", "}"]
           actual = tester code
       snapshotTest "should resolve where with constant type constructor is cases" actual
 
@@ -907,8 +910,8 @@ spec = do
             [ "type Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
             , "where(perhaps) {"
-            , "  is Just a: a"
-            , "  is Nothing: 0"
+            , "  Just a => a"
+            , "  Nothing => 0"
             , "}"
             ]
           actual = tester code
@@ -919,9 +922,9 @@ spec = do
             [ "type Maybe a = Just a | Nothing"
             , "perhaps = Just(4)"
             , "where(perhaps) {"
-            , "  is Just Number   : 2"
-            , "  is Nothing    : 0"
-            , "  is Just _     : 1"
+            , "  Just Number => 2"
+            , "  Nothing => 0"
+            , "  Just _ => 1"
             , "}"
             ]
           actual = tester code
@@ -933,8 +936,8 @@ spec = do
             , "type Failure = Nope"
             , "perhaps = Nope"
             , "where(perhaps) {"
-            , "  is Just a: a"
-            , "  is Nothing: 0"
+            , "  Just a => a"
+            , "  Nothing => 0"
             , "}"
             ]
           actual = tester code
@@ -945,7 +948,7 @@ spec = do
             [ "type User = LoggedIn String Number"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  is LoggedIn Number x: x"
+            , "  LoggedIn Number x => x"
             , "}"
             ]
           actual = tester code
@@ -958,42 +961,42 @@ spec = do
             [ "type User a = LoggedIn a Number"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  is LoggedIn Number x   : x"
-            , "  is LoggedIn String x   : x"
+            , "  LoggedIn Number x => x"
+            , "  LoggedIn String x => x"
             , "}"
             ]
           actual = tester code
       snapshotTest "should fail to resolve a constructor pattern with different type variables applied" actual
 
     it "should fail to resolve if the given constructor does not exist" $ do
-      let code   = unlines ["where(3) {", "  is LoggedIn Number x   : x", "  is LoggedIn String x: x", "}"]
+      let code   = unlines ["where(3) {", "  LoggedIn Number x => x", "  LoggedIn String x => x", "}"]
           actual = tester code
       snapshotTest "should fail to resolve if the given constructor does not exist" actual
 
     it "should resolve basic patterns for lists" $ do
       let code = unlines
             [ "where([1, 2, 3, 5, 8]) {"
-            , "  is [1, 2, 3]: 1"
-            , "  is [1, 2, n]: n"
-            , "  is [n, 3]   : n"
-            , "  is [x, y, z]: x + y + z"
+            , "  [1, 2, 3] => 1"
+            , "  [1, 2, n] => n"
+            , "  [n, 3] => n"
+            , "  [x, y, z] => x + y + z"
             , "}"
             ]
           actual = tester code
       snapshotTest "should resolve basic patterns for lists" actual
 
     it "should fail to resolve patterns of different types for list items" $ do
-      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  is [1, 2, 3] : 1", "  is [\"1\", n]: n", "}"]
+      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  [1, 2, 3] => 1", "  [\"1\", n] => n", "}"]
           actual = tester code
       snapshotTest "should fail to resolve patterns of different types for list items" actual
 
     it "should allow deconstruction of lists" $ do
-      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  is [1, 2, ...rest]: rest", "}"]
+      let code   = unlines ["where([1, 2, 3, 5, 8]) {", "  [1, 2, ...rest] => rest", "}"]
           actual = tester code
       snapshotTest "should allow deconstruction of lists" actual
 
     it "should correctly infer types of record pattern when the input has a variable type" $ do
-      let code   = unlines ["fn2 = (a) => (where(a) {", "  is { z: z }: z", "  is { x: x }: x", "})"]
+      let code   = unlines ["fn2 = (a) => (where(a) {", "  { z: z } => z", "  { x: x } => x", "})"]
           actual = tester code
       snapshotTest "should correctly infer types of record pattern when the input has a variable type" actual
 
@@ -1002,7 +1005,7 @@ spec = do
             [ "type Maybe a = Just a | Nothing"
             , "fn = (b) => ("
             , "  where(b) {"
-            , "    is Just x: x"
+            , "    Just x => x"
             , "  }"
             , ")"
             , "fn(Just(3))"
@@ -1011,24 +1014,24 @@ spec = do
       snapshotTest "should correctly infer constructor patterns given a var" actual
 
     it "should correctly infer shorthand syntax for record property matching" $ do
-      let code   = unlines ["fn = (r) => (", "  where(r) {", "    is { x, y }: x + y", "  }", ")"]
+      let code   = unlines ["fn = (r) => (", "  where(r) {", "    { x, y } => x + y", "  }", ")"]
           actual = tester code
       snapshotTest "should correctly infer shorthand syntax for record property matching" actual
 
     it "should resolve ADTs with 3 parameters in is" $ do
-      let code   = unlines ["export type Wish e a c = Wish e a c", "where(Wish(1, 2, 3)) {", "  is Wish _ _ c: c", "}"]
+      let code   = unlines ["export type Wish e a c = Wish e a c", "where(Wish(1, 2, 3)) {", "  Wish _ _ c => c", "}"]
           actual = tester code
       snapshotTest "should resolve ADTs with 3 parameters in is" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist" $ do
-      let code   = unlines ["might = (x) => (where(x) {", "  is M.Maybe a: a", "})"]
+      let code   = unlines ["might = (x) => (where(x) {", "  M.Maybe a => a", "})"]
           actual = tester code
       snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" $ do
       let codeA  = ""
           astA   = buildAST "./ModuleA" codeA
-          codeB  = unlines ["import M from \"./ModuleA\"", "", "might = (x) => (where(x) {", "  is M.Maybe a: a", "})"]
+          codeB  = unlines ["import M from \"./ModuleA\"", "", "might = (x) => (where(x) {", "  M.Maybe a => a", "})"]
           astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->

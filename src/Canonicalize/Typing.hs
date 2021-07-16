@@ -10,6 +10,9 @@ import           Canonicalize.CanonicalM
 import           Canonicalize.Env
 import           Infer.Type
 import           Infer.Scheme
+import           Infer.Unify
+import           Infer.Infer
+import           Infer.Instantiate
 import           Infer.Substitute
 import qualified Data.Set                      as S
 import qualified Data.Map                      as M
@@ -18,6 +21,8 @@ import           Error.Error
 import           Error.Context
 import           Control.Monad.Except
 import           Data.List
+import Debug.Trace
+import Text.Show.Pretty
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
@@ -59,11 +64,11 @@ typingToScheme env typing = do
 qualTypingToQualType :: Env -> Src.Typing -> CanonicalM (Qual Type)
 qualTypingToQualType env t@(Src.Source _ _ typing) = case typing of
   Src.TRConstrained constraints typing' -> do
-    t  <- typingToType env typing'
+    t  <- typingToType env (KindRequired Star) typing'
     ps <- mapM (constraintToPredicate env t) constraints
     return $ ps :=> t
 
-  _ -> ([] :=>) <$> typingToType env t
+  _ -> ([] :=>) <$> typingToType env (KindRequired Star) t
 
 
 constraintToPredicate :: Env -> Type -> Src.Typing -> CanonicalM Pred
@@ -74,15 +79,76 @@ constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
       Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
 
       fullTyping@(Src.Source _ _ (Src.TRComp n typings')) -> do
-        apply s <$> typingToType env fullTyping
+        apply s <$> typingToType env (KindRequired Star) fullTyping
+
+      _ -> undefined
     )
     typings
 
   return $ IsIn n ts
 
+constraintToPredicate _ _ _ = undefined
 
-typingToType :: Env -> Src.Typing -> CanonicalM Type
-typingToType env (Src.Source _ area (Src.TRSingle t))
+
+-- amountOfTypeArgs :: Type -> Int
+-- amountOfTypeArgs t = case t of
+--   TApp t1 _ -> 1 + amountOfTypeArgs t1
+--   TAlias _ _ vars _ -> length vars
+--   _         -> 0
+
+
+-- TODO: We need to wrap typingToType in a separate function, call the current one,
+-- and unify what was computed with what is in the env.
+
+-- instantiateType :: Type -> Infer Type
+-- instantiateType t = do
+--   let vars = collectVars t
+--       scheme = quantify vars ([] :=> t)
+--   (_ :=> t') <- instantiate scheme
+--   return t'
+
+-- typingToType' :: Env -> Bool -> Src.Typing -> CanonicalM Type
+-- typingToType' env forTyping fullTyping@(Src.Source _ area typing) = case typing of
+--   Src.TRComp t ts | isUpper $ head t -> do
+--     computedType <- typingToType env forTyping fullTyping
+--     adt <- lookupADT env t
+--     case adt of
+--       TAlias {} -> return computedType
+
+--       t -> case simpleRun $ instantiateType computedType >>= \computedType' -> unify t computedType' of
+--         Right _ -> return computedType
+--         Left _  -> throwError $ CompilationError TypeNotFullyDefined (Context (envCurrentPath env) area [])
+  
+--   Src.TRSingle t
+--     | isUpper (head t)
+--     && t /= "Boolean"
+--     && t /= "Number"
+--     && t /= "()"
+--     && t /= "String"
+--       -> do
+--     computedType <- typingToType env forTyping fullTyping
+--     adt <- lookupADT env t
+--     case adt of
+--       TAlias {} -> return computedType
+
+--       t -> case simpleRun $ instantiateType computedType >>= \computedType' -> unify t computedType' of
+--         Right _ -> return computedType
+--         Left _  -> throwError $ CompilationError TypeNotFullyDefined (Context (envCurrentPath env) area [])
+
+--   Src.TRArr t1 t2 -> do
+--     t1' <- typingToType' env forTyping t1
+--     t2' <- typingToType' env forTyping t2
+--     return $ t1' `fn` t2'
+  
+--   _ -> typingToType env forTyping fullTyping
+
+data KindRequirement
+  = KindRequired Kind
+  | AnyKind
+
+
+typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
+typingToType env kindNeeded (Src.Source _ area (Src.TRSingle t))
   | t == "Number" = return tNumber
   | t == "Boolean" = return tBool
   | t == "String" = return tStr
@@ -93,14 +159,28 @@ typingToType env (Src.Source _ area (Src.TRSingle t))
     h <- catchError
       (lookupADT env t)
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
-    case h of
-      (TAlias _ _ _ t) -> updateAliasVars (getConstructorCon h) []
+
+    parsedType <- case h of
+      (TAlias _ _ _ t) ->
+        updateAliasVars (getConstructorCon h) []
+
       t                -> return $ getConstructorCon t
 
+    case kindNeeded of
+      AnyKind ->
+        return parsedType
 
-typingToType env (Src.Source _ area (Src.TRComp t ts))
+      KindRequired k ->
+        if k == kind parsedType then
+          return parsedType
+        else
+          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area [])
+
+
+
+typingToType env kindNeeded (Src.Source _ area (Src.TRComp t ts))
   | isLower . head $ t = do
-    params <- mapM (typingToType env) ts
+    params <- mapM (typingToType env AnyKind) ts
     return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
   | otherwise = do
     pushTypeAccess t
@@ -119,31 +199,48 @@ typingToType env (Src.Source _ area (Src.TRComp t ts))
 
     params <- mapM
       (\(typin, k) -> do
-        pt <- typingToType env typin
+        pt <- typingToType env (KindRequired k) typin
         case pt of
           TVar (TV n _) -> return $ TVar (TV n k)
           _             -> return pt
       )
       (zip ts kargs)
-    case h of
-      (TAlias _ _ tvs t) -> updateAliasVars (getConstructorCon h) params
-      t                  -> return $ foldl' TApp (getConstructorCon t) params
+
+    parsedType <- case h of
+      TAlias _ _ tvs t ->
+        updateAliasVars (getConstructorCon h) params
+
+      t ->
+        return $ foldl' TApp (getConstructorCon t) params
+
+    case kindNeeded of
+      AnyKind ->
+        return parsedType
+
+      KindRequired k ->
+        if k == kind parsedType && length kargs >= length ts then
+          return parsedType
+        else
+          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area [])
 
 
-typingToType env (Src.Source _ _ (Src.TRArr l r)) = do
-  l' <- typingToType env l
-  r' <- typingToType env r
+typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
+  l' <- typingToType env (KindRequired Star) l
+  r' <- typingToType env (KindRequired Star) r
   return $ l' `fn` r'
 
-typingToType env (Src.Source _ _ (Src.TRRecord fields base)) = do
-  fields' <- mapM (typingToType env) fields
-  base'   <- mapM (typingToType env) base
+typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
+  fields' <- mapM (typingToType env (KindRequired Star)) fields
+  base'   <- mapM (typingToType env (KindRequired Star)) base
   return $ TRecord fields' base'
 
-typingToType env (Src.Source _ _ (Src.TRTuple elems)) = do
-  elems' <- mapM (typingToType env) elems
+typingToType env _ (Src.Source _ _ (Src.TRTuple elems)) = do
+  elems' <- mapM (typingToType env (KindRequired Star)) elems
   let tupleT = getTupleCtor (length elems)
   return $ foldl' TApp tupleT elems'
+
+-- Never happens as it's handled in the qualTypingToQualType function
+typingToType _ _ (Src.Source _ _ (Src.TRConstrained _ _)) = undefined
 
 
 getConstructorArgs :: Type -> [Type]
@@ -163,8 +260,7 @@ updateAliasVars t args = do
           update ty = case ty of
             TVar tv -> case M.lookup tv instArgs of
               Just x  -> return x
-              Nothing -> --return ty -- HERE WE NEED A FRESH TVAR?
-                         case tv of
+              Nothing -> case tv of
                 TV n k -> return $ TVar (TV "p" k)
 
             TApp l r -> do
@@ -176,6 +272,7 @@ updateAliasVars t args = do
               fs'   <- mapM update fs
               base' <- mapM update base
               return $ TRecord fs' base'
+            _ -> undefined
       in  update t'
 
     _ -> return t

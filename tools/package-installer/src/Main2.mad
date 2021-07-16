@@ -1,0 +1,197 @@
+import L from "List"
+import type { Wish } from "Wish"
+import { chainRej, mapRej, parallel, fulfill } from "Wish"
+import IO from "IO"
+import Http from "Http"
+import { readFile, writeFile, exists } from "FileSystem"
+import Dictionary from "Dictionary"
+import { Just, fromMaybe } from "Maybe"
+import J from "Json"
+import Either from "Either"
+import S from "System"
+import T from "Tuple"
+import { always, identity } from "Function"
+import { andDo } from "Monad"
+import { BinaryData, TextData } from "Data"
+
+import type { Context } from "./Context"
+import type { Dependency } from "./Dependency"
+import { initialContext } from "./Context"
+import { sanitizeUrl } from "./URL"
+import { dependencyParser } from "./Dependency"
+import MadlibDotJson from "./MadlibDotJson"
+import { validateVersion } from "./Validate"
+
+
+MADLIB_NOT_FOUND = "The madlib.json file was not found, verify that you have created one or that you run the command from the right directory."
+MADLIB_MODULES_PATH = "./madlib_modules/"
+TEMPORARY_MODULES_PATH = ".tmp_modules"
+
+moveToMadlibModules :: String -> Wish S.CommandError String
+moveToMadlibModules = pipe(
+  (archivePath) => `mv ${archivePath} ${MADLIB_MODULES_PATH}`,
+  S.exec
+)
+
+unzipPkg :: String -> Wish S.CommandError String
+unzipPkg = pipe(
+  (url) => `unzip -d ${TEMPORARY_MODULES_PATH}${url}-tmp ${TEMPORARY_MODULES_PATH}${url}.zip`,
+  S.exec
+)
+
+renameInnerFolder :: String -> Wish S.CommandError String
+renameInnerFolder = pipe(
+  (url) => `mv ${TEMPORARY_MODULES_PATH}${url}-tmp/* ${TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
+  S.exec
+)
+
+copyPackage :: String -> Wish S.CommandError String
+copyPackage = pipe(
+  (url) => `cp -R ${TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${TEMPORARY_MODULES_PATH}`,
+  S.exec
+)
+
+cleanUp :: String -> Wish S.CommandError String
+cleanUp = pipe(
+  (url) => `rm -r ${TEMPORARY_MODULES_PATH}${url}.zip ${TEMPORARY_MODULES_PATH}${url}-tmp`,
+  S.exec
+)
+
+
+getDependencies :: String -> Wish String (List Dependency)
+getDependencies = pipe(
+  J.parse(dependencyParser),
+  where {
+    Either.Left _ => of([])
+
+    Either.Right a => of(a)
+  }
+)
+
+displayPackagesToInstall :: List <String, String> -> List <String, String>
+displayPackagesToInstall = (pkgs) => pipe(
+  map(pipe(T.fst, mappend("  - "))),
+  mappend(["Packages to install:"]),
+  L.unlines,
+  (x) => L.len(pkgs) > 0 ? IO.log(x) : x,
+  always(pkgs)
+)(pkgs)
+
+extractArchive :: String -> Wish String String
+extractArchive = (url) => pipe(
+  unzipPkg,
+  andDo(renameInnerFolder(url)),
+  andDo(copyPackage(url)),
+  andDo(cleanUp(url)),
+  mapRej(always("Error processing archive"))
+)(url)
+
+
+installNodeModules :: String -> String -> Wish String String
+installNodeModules = (url, pkgName) => pipe(
+  (u) => `${MADLIB_MODULES_PATH}${u}/`,
+  (path) => exists(`${path}package.json`) |> andDo(of(path)),
+  map(mappend("npm install ")),
+  chain(pipe(S.exec, mapRej(S.getCommandErrorMessage))),
+  map((x) => IO.log(`nodejs modules installed for '${pkgName}'`) |> always(x)),
+  chainRej((_) => of(IO.log(`No node modules to install for '${pkgName}'`)))
+)(url)
+
+initMadlibModulesFolder :: String -> a -> Wish String a
+initMadlibModulesFolder = (path, a) => pipe(
+  (p) => S.exec(`mkdir -p ${p}`),
+  mapRej(where { S.CommandError _ msg => msg }),
+  andDo(of(a))
+)(path)
+
+verifyPackageAndInstallSubDeps :: Context -> String -> String -> Wish String (List String)
+verifyPackageAndInstallSubDeps = (context, pkgName, madlibDotJsonPath) => pipe(
+  exists,
+  mapRej(always(`package '${pkgName}' does not have a madlib.json file and is not a valid package!`)),
+  andDo(installPackages(context, false, madlibDotJsonPath))
+)(madlibDotJsonPath)
+
+
+downloadPackage :: Dependency -> Wish String String
+downloadPackage = (dependency) => pipe(
+  .url,
+  Http.get,
+  map(where {
+    Http.Response { data: BinaryData d } => BinaryData(d)
+  }),
+  mapRej(always(`Package failed to download from "${dependency.url}"`)),
+  chain(writeFile(`${TEMPORARY_MODULES_PATH}${sanitizeUrl(dependency.url)}.zip`))
+)(dependency)
+
+
+
+installPackages :: Context -> Boolean -> String -> Wish String (List String)
+installPackages = (context, firstLevel, madlibDotJsonPath) => pipe(
+  readFile,
+  mapRej((_) => MADLIB_NOT_FOUND),
+  chain(initMadlibModulesFolder(MADLIB_MODULES_PATH)),
+  chain(getDependencies),
+  chain(pipe(
+    map((dependency) => pipe(
+      IO.log,
+      downloadPackage,
+      andDo(extractArchive(sanitizeUrl(dependency.url))),
+      andDo(MadlibDotJson.load(`${TEMPORARY_MODULES_PATH}/${sanitizeUrl(dependency.url)}/madlib.json`)),
+      // map((madlibDotJson) => validateVersion(context, { ...dependency, name: madlibDotJson.name })),
+      map((madlibDotJson) => ({ ...dependency, name: madlibDotJson.name })),
+      map((dep) => validateVersion(context, dep)),
+      map(IO.log),
+      map(always(""))
+      // .url,
+      // sanitizeUrl,
+      // of
+      // <key, sanitizedUrl> => pipe(
+      //   Dictionary.get($, depMap),
+      //   where { Just p => Http.get(p) },
+      //   map(where { Http.Response { data: BinaryData d } => d }),
+      //   mapRej(always("Err fetching archive")),
+      //   map(BinaryData),
+      //   chain(writeFile(`${MADLIB_MODULES_PATH}${sanitizedUrl}.zip`)),
+      //   andDo(processArchive(sanitizedUrl)),
+      //   andDo(installNodeModules(sanitizedUrl, key)),
+      //   map(always(IO.log(`package ${key} installed`))),
+      //   mapRej((_) => `Error installing package '${key}'`),
+      //   andDo(verifyPackageAndInstallSubDeps(context, key, `${MADLIB_MODULES_PATH}${sanitizedUrl}/madlib.json`))
+      // )(key)
+    )(dependency)),
+    parallel
+  ))
+)(madlibDotJsonPath)
+
+
+/**
+ * prepare runs before everything and takes care of creating a temporary folder
+ * as well as reading and saving the content of the package.json file in-memory
+ * in order to restore it at it end
+ */
+prepare :: String -> Wish String String
+prepare = (packageDotJsonPath) => pipe(
+  always(S.exec(`mkdir -p ${TEMPORARY_MODULES_PATH}`)),
+  andDo(of(packageDotJsonPath)),
+  mapRej(S.getCommandErrorMessage),
+  chain(exists),
+  chain(readFile)
+)(packageDotJsonPath)
+
+
+IO.log("Installing dependencies ...")
+
+pipe(
+  prepare,
+  fulfill(
+    (_) => pipe(
+      installPackages(initialContext, true),
+      fulfill(IO.log, identity)
+    )("madlib.json"),
+    (packageDotJsonContent) => pipe(
+      installPackages(initialContext, true),
+      chain((x) => writeFile("package.json", TextData(packageDotJsonContent)) |> andDo(of(x))),
+      fulfill(IO.log, identity)
+    )("madlib.json")
+  )
+)("package.json")

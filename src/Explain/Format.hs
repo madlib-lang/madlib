@@ -299,6 +299,33 @@ formatTypeError json err = case err of
       <> "give it a type annotation.\n\n"
       <> "Hint: Place that declaration above the place you use it, or give it a type annotation."
 
+  NotCapitalizedADTName name ->
+    "The name '" <> name <> "' of this type is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  NotCapitalizedAliasName name ->
+    "The name '" <> name <> "' of this type alias is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  NotCapitalizedConstructorName name ->
+    "The name '" <> name <> "' of this type constructor is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  TypingHasWrongKind t expectedKind actualKind ->
+    "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
+      <> "expected:\n"
+      <> "    "
+      <> colorWhen (not json) Green (kindToStr expectedKind)
+      <> "\n"
+      <> "But found:\n"
+      <> "    "
+      <> colorWhen (not json) Red (kindToStr actualKind)
+
+  ContextTooWeak preds ->
+    "The context of the type annotation is too weak. The type inferred for the implementation\n"
+      <> "has the following constraints: " <> intercalate ", " (predClass <$> preds) <>".\n\n"
+      <> "Hint: Add the missing interface constraints to the type annotation."
+
   _ -> ppShow err
 
 

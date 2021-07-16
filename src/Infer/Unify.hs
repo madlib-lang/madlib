@@ -22,6 +22,7 @@ import qualified AST.Canonical                 as Can
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv t
+varBind tv (TRecord fields Nothing) = return $ M.singleton tv (TRecord fields (Just (TVar tv)))
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -48,10 +49,10 @@ instance Unify Type where
       s3 <- unifyVars M.empty z
       s4 <- unify tBase tBase'
 
-      return $ s4 `compose` s3 `compose` s1 `compose` s2
+      return $ s4 `compose` s3-- `compose` s1 `compose` s2
 
     (Just tBase, Nothing) -> do
-      s1 <- unify tBase (TRecord fields Nothing)
+      s1 <- return mempty--unify tBase (TRecord fields Nothing)
       s2 <- unify tBase (TRecord fields' Nothing)
 
       unless (null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
@@ -64,7 +65,7 @@ instance Unify Type where
 
     (Nothing, Just tBase') -> do
       s1 <- unify tBase' (TRecord fields Nothing)
-      s2 <- unify tBase' (TRecord fields' Nothing)
+      s2 <- return mempty--unify tBase' (TRecord fields' Nothing)
 
       unless (null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
@@ -150,6 +151,14 @@ contextualUnify env exp t1 t2 = catchError
   (unify t1 t2)
   (\case
     e@(CompilationError TypesHaveDifferentOrigin{} _) -> addContext env exp e
+    (CompilationError (UnificationError _ _) ctx) -> do
+      let t2' = getParamTypeOrSame t2
+          t1' = getParamTypeOrSame t1
+          hasNotChanged = t2' == t2 || t1' == t1
+          t2'' = if hasNotChanged then t2 else t2'
+          t1'' = if hasNotChanged then t1 else t1'
+      (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
+      addContext env exp (CompilationError (UnificationError t2''' t1''') ctx)
     e -> addContext env exp e
   )
 
