@@ -112,8 +112,8 @@ retrieveMadlibDotJson pathUtils dir = do
     then do
       json <- MadlibDotJson.load pathUtils path
       case json of
-        Right json' -> return $ (Just json', dir)
-        Left  _     -> return (Nothing, dir)
+        Right json' -> return (Just json', dir)
+        Left  _     ->  return (Nothing, dir)
     else if dir == "/" then return (Nothing, dir) else retrieveMadlibDotJson pathUtils $ getParentFolder dir
 
 getParentFolder :: FilePath -> FilePath
@@ -122,18 +122,13 @@ getParentFolder = joinPath . init . splitPath
 
 findMadlibPackage :: PathUtils -> FilePath -> FilePath -> MadlibDotJson.MadlibDotJson -> IO (Maybe FilePath)
 findMadlibPackage pathUtils pkgName dir madlibDotJson = do
-  let dependencies = MadlibDotJson.dependencies madlibDotJson
-  let sanitizedUrl = URL.sanitize <$> (dependencies >>= M.lookup pkgName)
-  let path = (\url -> joinPath [dir, madlibModulesFolder, url, madlibDotJsonFile]) <$> sanitizedUrl
-  case path of
-    Nothing -> return Nothing
-    Just p  -> do
-      found <- doesFileExist pathUtils p
-      if found
-        then findMadlibPackageMainPath pathUtils p
-        else if dir == "/"
-          then return Nothing
-          else (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
+  let path = joinPath [dir, madlibModulesFolder, pkgName, madlibDotJsonFile]
+  found <- doesFileExist pathUtils path
+  if found
+    then findMadlibPackageMainPath pathUtils path
+    else if dir == "/"
+      then return Nothing
+      else (findMadlibPackage pathUtils pkgName . getParentFolder) dir madlibDotJson
 
 
 findMadlibPackageMainPath :: PathUtils -> FilePath -> IO (Maybe FilePath)

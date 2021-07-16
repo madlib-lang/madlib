@@ -72,15 +72,13 @@ patternToSolved (Can.Canonical area pat) = case pat of
 
   Can.PAny            -> Slv.Solved ([] :=> tSubst) area Slv.PAny
 
-  Can.PCtor name pats -> Slv.Solved ([] :=> tSubst) area (Slv.PCtor name (patternToSolved <$> pats))
+  Can.PCon name pats  -> Slv.Solved ([] :=> tSubst) area (Slv.PCon name (patternToSolved <$> pats))
 
   Can.PNum    v       -> Slv.Solved ([] :=> tSubst) area (Slv.PNum v)
 
   Can.PStr    v       -> Slv.Solved ([] :=> tSubst) area (Slv.PStr v)
 
   Can.PBool   v       -> Slv.Solved ([] :=> tSubst) area (Slv.PBool v)
-
-  Can.PCon    name    -> Slv.Solved ([] :=> tSubst) area (Slv.PCon name)
 
   Can.PRecord fields  -> Slv.Solved ([] :=> tSubst) area (Slv.PRecord (M.map patternToSolved fields))
 

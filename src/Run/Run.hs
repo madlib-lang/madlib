@@ -34,52 +34,36 @@ runFolder :: FilePath
 runFolder = ".run/"
 
 runRunPackage :: FilePath -> [String] -> IO ()
-runRunPackage package args = do
-  currentDir <- getCurrentDirectory
-  let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
+runRunPackage package args =
+  let packagePath              = joinPath ["madlib_modules", package]
+      packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
+  in  do
+        parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils packageMadlibDotJsonPath
+        case parsedMadlibDotJson of
+          Left e -> putStrLn e
 
-  parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils madlibDotJsonPath
+          Right dotJ@MadlibDotJson.MadlibDotJson { MadlibDotJson.bin = Just bin } ->
+            let exePath = joinPath [packagePath, bin]
+            in  do
+                  let baseRunFolder  = joinPath [packagePath, runFolder]
+                      compileCommand = Compile { compileInput         = exePath
+                                                , compileOutput        = baseRunFolder
+                                                , compileConfig        = "madlib.json"
+                                                , compileVerbose       = False
+                                                , compileDebug         = False
+                                                , compileBundle        = False
+                                                , compileOptimize      = False
+                                                , compileTarget        = TNode
+                                                , compileJson          = False
+                                                , compileTestFilesOnly = False
+                                                }
 
-  case parsedMadlibDotJson of
-    Left  e -> putStrLn e
+                  runCompilation compileCommand False
+                  let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
+                  callCommand $ "node " <> target <> " " <> unwords args
 
-    Right MadlibDotJson.MadlibDotJson { MadlibDotJson.dependencies = maybeDeps } -> case maybeDeps of
-      Just dependencies -> case M.lookup package dependencies of
-        Just url ->
-          let sanitizedPackageUrl      = URL.sanitize url
-              packagePath              = joinPath ["madlib_modules", sanitizedPackageUrl]
-              packageMadlibDotJsonPath = joinPath [packagePath, "madlib.json"]
-          in  do
-                parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils packageMadlibDotJsonPath
-                case parsedMadlibDotJson of
-                  Left e -> putStrLn e
+          _ -> putStrLn "That package doesn't have any executable!"
 
-                  Right dotJ@MadlibDotJson.MadlibDotJson { MadlibDotJson.bin = Just bin } ->
-                    let exePath = joinPath [packagePath, bin]
-                    in  do
-                          let baseRunFolder  = joinPath [packagePath, runFolder]
-                              compileCommand = Compile { compileInput         = exePath
-                                                       , compileOutput        = baseRunFolder
-                                                       , compileConfig        = "madlib.json"
-                                                       , compileVerbose       = False
-                                                       , compileDebug         = False
-                                                       , compileBundle        = False
-                                                       , compileOptimize      = False
-                                                       , compileTarget        = TNode
-                                                       , compileJson          = False
-                                                       , compileTestFilesOnly = False
-                                                       }
-
-                          runCompilation compileCommand False
-                          let target = joinPath [baseRunFolder, dropExtension (takeFileName bin) <> ".mjs"]
-                          callCommand $ "node " <> target <> " " <> unwords args
-
-                  _ -> putStrLn "That package doesn't have any executable!"
-
-        Nothing ->
-          putStrLn "Package not found, install it first, or if you did, make sure that you used the right name!"
-
-      Nothing -> putStrLn "It seems that you have no dependency installed at the moment!"
 
 runSingleModule :: FilePath -> [String] -> IO ()
 runSingleModule input args = do

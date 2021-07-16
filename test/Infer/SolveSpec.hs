@@ -30,6 +30,7 @@ import           Run.Target
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Data.Maybe
+import Debug.Trace
 
 snapshotTest :: Show a => String -> a -> Golden Text
 snapshotTest name actualOutput = Golden { output        = pack $ ppShow actualOutput
@@ -122,18 +123,18 @@ spec = do
     -- ADTs:
 
     it "should infer adts" $ do
-      let code   = unlines ["type Result = Success String | Error", "result = Success(\"response\")"]
+      let code   = unlines ["type Result = Success(String) | Error", "result = Success(\"response\")"]
           actual = tester code
       snapshotTest "should infer adts" actual
 
     it "should infer adts with type parameters" $ do
-      let code   = unlines ["type Result a", "  = Success a", "  | Error", "result = Success(true)"]
+      let code   = unlines ["type Result a", "  = Success(a)", "  | Error", "result = Success(true)"]
           actual = tester code
       snapshotTest "should infer adts with type parameters" actual
 
     it "should infer application of adts" $ do
       let code = unlines
-            [ "type Result = Success String | Error"
+            [ "type Result = Success(String) | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
             , "((a, b) => (a == b))(result1, result2)"
@@ -143,7 +144,7 @@ spec = do
 
     it "should infer adt return for abstractions" $ do
       let code = unlines
-            [ "type Result a = Success a | Error"
+            [ "type Result a = Success(a) | Error"
             , "result1 = Success(\"response\")"
             , "result2 = Error"
             , "((a, b) => (a == b))(result1, result2)"
@@ -156,14 +157,14 @@ spec = do
           actual = tester code
       snapshotTest "should return an error when an ADT defines a type already existing" actual
 
-    it "should accept ADTs with constructors that have free vars" $ do
-      let code   = unlines ["type Result = Success b", ""]
+    it "should fail to infer ADTs with constructors that have free vars" $ do
+      let code   = unlines ["type Result = Success(b)", ""]
           actual = tester code
-      snapshotTest "should accept ADTs with constructors that have free vars" actual
+      snapshotTest "should fail to infer ADTs with constructors that have free vars" actual
 
     it "should infer adts with record constructors" $ do
       let code = unlines
-            [ "type Result = Success { value :: String } | Error { message :: String }"
+            [ "type Result = Success({ value :: String }) | Error({ message :: String })"
             , "result1 = Success({ value: `42` })"
             , "result2 = Error({ message: 'Err' })"
             , "((a, b) => (a == b))(result1, result2)"
@@ -173,7 +174,7 @@ spec = do
 
     it "should infer params for adts" $ do
       let code =
-            unlines ["type Result = Success { value :: String }", "r = Success { value: \"42\" }", "((a) => (a))(r)"]
+            unlines ["type Result = Success({ value :: String })", "r = Success({ value: \"42\" })", "((a) => (a))(r)"]
           actual = tester code
       snapshotTest "should infer params for adts" actual
 
@@ -198,14 +199,14 @@ spec = do
       snapshotTest "should resolve ADTs with function parameters" actual
 
     it "should resolve namespaced ADTs in patterns" $ do
-      let codeA = "export type Maybe a = Just a | Nothing"
+      let codeA = "export type Maybe a = Just(a) | Nothing"
           astA  = buildAST "./ModuleA" codeA
           codeB = unlines
             [ "import M from \"./ModuleA\""
             , "fn :: M.Maybe Number -> Number"
             , "export fn = (x) => ("
             , "  where(x) {"
-            , "    M.Just a => a"
+            , "    M.Just(a) => a"
             , "    M.Nothing => -3"
             , "  }"
             , ")"
@@ -220,10 +221,10 @@ spec = do
 
     it "should resolve namespaced ADTs in other ADTs" $ do
       let
-        codeA = "export type Maybe a = Just a | Nothing"
+        codeA = "export type Maybe a = Just(a) | Nothing"
         astA  = buildAST "./ModuleA" codeA
         codeB =
-          unlines ["import M from \"./ModuleA\"", "type MyType = MyType (M.Maybe String)", "x = MyType(M.Just(\"3\"))"]
+          unlines ["import M from \"./ModuleA\"", "type MyType = MyType(M.Maybe String)", "x = MyType(M.Just(\"3\"))"]
         astB   = buildAST "./ModuleB" codeB
         actual = case (astA, astB) of
           (Right a, Right b) ->
@@ -234,10 +235,10 @@ spec = do
 
     it "should allow ADT constructors to have record parameters" $ do
       let
-        codeA = "export type Point = Point <Number, Number>"
+        codeA = "export type Point = Point(<Number, Number>)"
         astA  = buildAST "./ModuleA" codeA
         codeB = unlines
-          ["import P from \"./ModuleA\"", "p = P.Point(<2, 4>)", "where(p) {", "  P.Point <a, b> => a + b", "}"]
+          ["import P from \"./ModuleA\"", "p = P.Point(<2, 4>)", "where(p) {", "  P.Point(<a, b>) => a + b", "}"]
         astB   = buildAST "./ModuleB" codeB
         actual = case (astA, astB) of
           (Right a, Right b) ->
@@ -268,13 +269,13 @@ spec = do
             , "  chain :: (a -> m b) -> m a -> m b"
             , "}"
             , ""
-            , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
             , ""
             , ""
             , "instance Functor (Wish e) {"
             , "  map = (f, m) => Wish((badCB, goodCB) =>"
             , "    where(m) {"
-            , "      Wish run => run(badCB, (x) => (goodCB(f(x))))"
+            , "      Wish(run) => run(badCB, (x) => (goodCB(f(x))))"
             , "    }"
             , "  )"
             , "}"
@@ -283,7 +284,7 @@ spec = do
             , "  pure = (a) => Wish((badCB, goodCB) => goodCB(a))"
             , ""
             , "  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>) {"
-            , "    <Wish runMF, Wish runM> =>"
+            , "    <Wish(runMF), Wish(runM)> =>"
             , "      runM("
             , "        badCB,"
             , "        (x) => runMF("
@@ -299,10 +300,10 @@ spec = do
             , ""
             , "  chain = (f, m) => Wish((badCB, goodCB) =>"
             , "    where(m) {"
-            , "      Wish run =>"
+            , "      Wish(run) =>"
             , "        run(badCB, (x) =>"
             , "          where(f(x)) {"
-            , "            Wish r => r(badCB, goodCB)"
+            , "            Wish(r) => r(badCB, goodCB)"
             , "          }"
             , "        )"
             , "    }"
@@ -314,7 +315,7 @@ spec = do
             , "export mapRej = (f, m) => ("
             , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
-            , "      Wish run => run((x) => (badCB(f(x))), goodCB)"
+            , "      Wish(run) => run((x) => (badCB(f(x))), goodCB)"
             , "    }"
             , "  ))"
             , ")"
@@ -324,9 +325,9 @@ spec = do
             , "export chainRej = (f, m) => ("
             , "  Wish((badCB, goodCB) => ("
             , "    where(m) {"
-            , "      Wish run => run((x) => ("
+            , "      Wish(run) => run((x) => ("
             , "        where(f(x)) {"
-            , "          Wish r => r(badCB, goodCB)"
+            , "          Wish(r) => r(badCB, goodCB)"
             , "        }"
             , "      ), goodCB)"
             , "    }"
@@ -344,7 +345,7 @@ spec = do
             , ""
             , ""
             , "getWishFn = (w) => (where(w) {"
-            , "  Wish fn => fn"
+            , "  Wish(fn) => fn"
             , "})"
             , ""
             , ""
@@ -368,7 +369,7 @@ spec = do
             , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
             , "export fulfill = (badCB, goodCB, m) => {"
             , "  where(m) {"
-            , "    Wish run => run(badCB, goodCB)"
+            , "    Wish(run) => run(badCB, goodCB)"
             , "  }"
             , ""
             , "  return ()"
@@ -616,12 +617,12 @@ spec = do
 
     it "should infer record params that are partially used in abstractions" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "find :: (a -> Boolean) -> List a -> Maybe a"
             , "export find = (predicate, xs) => (#- {"
             , "  const found = xs.find(predicate);"
             , "  if (found === undefined) {"
-            , "    return Nothing()"
+            , "    return Nothing"
             , "  }"
             , "  else {"
             , "    return Just(found)"
@@ -738,10 +739,10 @@ spec = do
 
     it "should infer applications where the abstraction results from an application" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "flip :: (a -> b -> c) -> (b -> a -> c)"
             , "export flip = (fn) => ("
-            , "  (b, a) => (fn(a, b))"
+            , "  (b, a) => fn(a, b)"
             , ")"
             , ""
             , "nth :: Number -> List a -> Maybe a"
@@ -770,12 +771,12 @@ spec = do
 
     it "should fail to infer applications when a variable is used with different types" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , ""
             , "fromMaybe :: a -> Maybe a -> a"
             , "fromMaybe = (a, maybe) => #- -#"
             , ""
-            , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
             , ""
             , "of = (a) => Wish((bad, good) => good(a))"
             , ""
@@ -791,7 +792,7 @@ spec = do
             , "export alias Action a = a -> String -> List (Wish (a -> a) (a -> a))"
             , ""
             , ""
-            , "type Todo = Todo String Boolean"
+            , "type Todo = Todo(String, Boolean)"
             , "alias State = { input :: String, todos :: List Todo }"
             , ""
             , "pipe("
@@ -805,7 +806,7 @@ spec = do
             , "    .todos,"
             , "    nth(index),"
             , "    fromMaybe(Todo(\"Oups\", false)),"
-            , "    where { Todo txt checked => Todo(txt, !checked) },"
+            , "    where { Todo(txt, checked) => Todo(txt, !checked) },"
             , "    (toggled) => ({"
             , "      ...state,"
             , "      todos: ["
@@ -900,43 +901,25 @@ spec = do
           actual = tester code
       snapshotTest "should resolve where with a string input" actual
 
-    it "should resolve where with constant type constructor is cases" $ do
-      let code   = unlines ["where(\"42\") {", "  String => 1", "}"]
-          actual = tester code
-      snapshotTest "should resolve where with constant type constructor is cases" actual
-
     it "should resolve where with an ADT that has unary constructors" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "perhaps = Just(4)"
             , "where(perhaps) {"
-            , "  Just a => a"
+            , "  Just(a) => a"
             , "  Nothing => 0"
             , "}"
             ]
           actual = tester code
       snapshotTest "should resolve where with an ADT that has unary constructors" actual
 
-    it "should resolve where with an ADT and PCon patterns" $ do
-      let code = unlines
-            [ "type Maybe a = Just a | Nothing"
-            , "perhaps = Just(4)"
-            , "where(perhaps) {"
-            , "  Just Number => 2"
-            , "  Nothing => 0"
-            , "  Just _ => 1"
-            , "}"
-            ]
-          actual = tester code
-      snapshotTest "should resolve where with an ADT and PCon patterns" actual
-
     it "should fail to resolve a pattern when the pattern constructor does not match the ADT" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "type Failure = Nope"
             , "perhaps = Nope"
             , "where(perhaps) {"
-            , "  Just a => a"
+            , "  Just(a) => a"
             , "  Nothing => 0"
             , "}"
             ]
@@ -945,10 +928,10 @@ spec = do
 
     it "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types" $ do
       let code = unlines
-            [ "type User = LoggedIn String Number"
+            [ "type User = LoggedIn(String, Number)"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  LoggedIn Number x => x"
+            , "  LoggedIn(Number, x) => x"
             , "}"
             ]
           actual = tester code
@@ -958,18 +941,18 @@ spec = do
 
     it "should fail to resolve a constructor pattern with different type variables applied" $ do
       let code = unlines
-            [ "type User a = LoggedIn a Number"
+            [ "type User a = LoggedIn(a, Number)"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  LoggedIn Number x => x"
-            , "  LoggedIn String x => x"
+            , "  LoggedIn(Number, x) => x"
+            , "  LoggedIn(String, x) => x"
             , "}"
             ]
           actual = tester code
       snapshotTest "should fail to resolve a constructor pattern with different type variables applied" actual
 
     it "should fail to resolve if the given constructor does not exist" $ do
-      let code   = unlines ["where(3) {", "  LoggedIn Number x => x", "  LoggedIn String x => x", "}"]
+      let code   = unlines ["where(3) {", "  LoggedIn(Number, x) => x", "  LoggedIn(String, x) => x", "}"]
           actual = tester code
       snapshotTest "should fail to resolve if the given constructor does not exist" actual
 
@@ -1002,10 +985,10 @@ spec = do
 
     it "should correctly infer constructor patterns given a var" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "fn = (b) => ("
             , "  where(b) {"
-            , "    Just x => x"
+            , "    Just(x) => x"
             , "  }"
             , ")"
             , "fn(Just(3))"
@@ -1019,19 +1002,19 @@ spec = do
       snapshotTest "should correctly infer shorthand syntax for record property matching" actual
 
     it "should resolve ADTs with 3 parameters in is" $ do
-      let code   = unlines ["export type Wish e a c = Wish e a c", "where(Wish(1, 2, 3)) {", "  Wish _ _ c => c", "}"]
+      let code   = unlines ["export type Wish e a c = Wish(e, a, c)", "where(Wish(1, 2, 3)) {", "  Wish(_, _, c) => c", "}"]
           actual = tester code
       snapshotTest "should resolve ADTs with 3 parameters in is" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist" $ do
-      let code   = unlines ["might = (x) => (where(x) {", "  M.Maybe a => a", "})"]
+      let code   = unlines ["might = (x) => where(x) {", "  M.Maybe(a) => a", "}"]
           actual = tester code
       snapshotTest "should fail to resolve patterns for namespaced ADTs that do not exist" actual
 
     it "should fail to resolve patterns for namespaced ADTs that do not exist when the namespace exists" $ do
       let codeA  = ""
           astA   = buildAST "./ModuleA" codeA
-          codeB  = unlines ["import M from \"./ModuleA\"", "", "might = (x) => (where(x) {", "  M.Maybe a => a", "})"]
+          codeB  = unlines ["import M from \"./ModuleA\"", "", "might = (x) => where(x) {", "  M.Maybe(a) => a", "}"]
           astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
             (Right a, Right b) ->
@@ -1065,7 +1048,7 @@ spec = do
       snapshotTest "should resolve namespaced imports" actual
 
     it "should resolve usage of exported names" $ do
-      let code   = unlines ["export inc = (a) => (a + 1)", "inc(3)"]
+      let code   = unlines ["export inc = (a) => a + 1", "inc(3)"]
           actual = tester code
       snapshotTest "should resolve usage of exported names" actual
 
@@ -1077,9 +1060,9 @@ spec = do
     it "should resolve ADT typings without vars" $ do
       let codeA  = "export type Something = Something"
           astA   = buildAST "./ModuleA" codeA
-          codeB  = unlines ["import S from \"./ModuleA\"", "fn :: S.Something -> S.Something", "export fn = (x) => (x)"]
+          codeB  = unlines ["import S from \"./ModuleA\"", "fn :: S.Something -> S.Something", "export fn = (x) => x"]
           astB   = buildAST "./ModuleB" codeB
-          actual = case (astA, astB) of
+      let actual = case (astA, astB) of
             (Right a, Right b) ->
               let astTable = M.fromList [("./ModuleA", a), ("./ModuleB", b)] in tableTester astTable b
       snapshotTest "should resolve ADT typings without vars" actual
@@ -1149,7 +1132,7 @@ spec = do
             [ "inc :: Number -> Number"
             , "inc = (a) => (a + 1)"
             , "(3 :: Number)"
-            , "type Maybe a = Just a | Nothing"
+            , "type Maybe a = Just(a) | Nothing"
             , "(Nothing :: Maybe a)"
             -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
             -- We need to split the production and reconnect it when building the canonical AST.

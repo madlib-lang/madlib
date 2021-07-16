@@ -222,17 +222,15 @@ instance Optimizable Slv.Pattern Opt.Pattern where
 
     Slv.PAny            -> return $ Opt.Optimized t area Opt.PAny
 
-    Slv.PCtor name pats -> do
+    Slv.PCon name pats -> do
       pats' <- mapM (optimize enabled) pats
-      return $ Opt.Optimized t area $ Opt.PCtor name pats'
+      return $ Opt.Optimized t area $ Opt.PCon name pats'
 
     Slv.PNum    num  -> return $ Opt.Optimized t area $ Opt.PNum num
 
     Slv.PStr    str  -> return $ Opt.Optimized t area $ Opt.PStr str
 
     Slv.PBool   boo  -> return $ Opt.Optimized t area $ Opt.PBool boo
-
-    Slv.PCon    name -> return $ Opt.Optimized t area $ Opt.PCon name
 
     Slv.PRecord pats -> do
       pats' <- mapM (optimize enabled) pats

@@ -12,13 +12,13 @@ Right
                           [ ( "x" , TCon (TC "String" Star) "prelude" )
                           , ( "y" , TVar (TV "c2" Star) )
                           ])
-                       (Just (TVar (TV "e4" Star)))))
+                       (Just (TVar (TV "b1" Star)))))
                  (TRecord
                     (fromList
                        [ ( "x" , TCon (TC "String" Star) "prelude" )
                        , ( "y" , TVar (TV "c2" Star) )
                        ])
-                    (Just (TVar (TV "e4" Star)))))
+                    (Just (TVar (TV "b1" Star)))))
             (Area (Loc 0 1 1) (Loc 55 1 56))
             (Assignment
                "addTodo"
@@ -32,13 +32,13 @@ Right
                                 [ ( "x" , TCon (TC "String" Star) "prelude" )
                                 , ( "y" , TVar (TV "c2" Star) )
                                 ])
-                             (Just (TVar (TV "e4" Star)))))
+                             (Just (TVar (TV "b1" Star)))))
                        (TRecord
                           (fromList
                              [ ( "x" , TCon (TC "String" Star) "prelude" )
                              , ( "y" , TVar (TV "c2" Star) )
                              ])
-                          (Just (TVar (TV "e4" Star)))))
+                          (Just (TVar (TV "b1" Star)))))
                   (Area (Loc 10 1 11) (Loc 55 1 56))
                   (Abs
                      (Solved
@@ -48,7 +48,7 @@ Right
                                 [ ( "x" , TCon (TC "String" Star) "prelude" )
                                 , ( "y" , TVar (TV "c2" Star) )
                                 ])
-                             (Just (TVar (TV "e4" Star))))
+                             (Just (TVar (TV "b1" Star))))
                         (Area (Loc 11 1 12) (Loc 16 1 17))
                         "state")
                      [ Solved

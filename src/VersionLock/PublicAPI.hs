@@ -119,7 +119,7 @@ buildAPI ast table =
   let exports           = Slv.extractExportedExps ast
       packageTypes      = Slv.extractExportedADTs ast
       packageAliases    = Slv.extractExportedAliases ast
-      packageASTs       = Map.filterWithKey (\path _ -> not ("node_modules" `List.isInfixOf` path) && not ("prelude/__internal__" `List.isInfixOf` path)) table
+      packageASTs       = Map.filterWithKey (\path _ -> not ("madlib_modules" `List.isInfixOf` path) && not ("prelude/__internal__" `List.isInfixOf` path)) table
       packageInterfaces = Map.elems packageASTs >>= Slv.ainterfaces
       packageInstances  = Map.elems packageASTs >>= Slv.ainstances
 

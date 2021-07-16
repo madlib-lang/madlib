@@ -15,11 +15,19 @@ import qualified Data.Text                     as Text
 import           System.Directory               ( getCurrentDirectory )
 import           System.FilePath                ( joinPath )
 
+data Dependency
+  = Dependency
+  { description :: String
+  , url :: String
+  , minVersion :: Maybe String
+  , maxVersion :: Maybe String
+  }
+  deriving (Show, Generic)
 
 data MadlibDotJson
   = MadlibDotJson { main          :: String
                   , bin           :: Maybe String
-                  , dependencies  :: Maybe (M.Map String String)
+                  , dependencies  :: Maybe [Dependency]
                   , importAliases :: Maybe (M.Map String String)
                   , version       :: Maybe String
                   , name          :: Maybe String
@@ -29,6 +37,11 @@ data MadlibDotJson
 
 instance FromJSON MadlibDotJson
 instance ToJSON MadlibDotJson where
+  toJSON = genericToJSON defaultOptions
+    { omitNothingFields = True }
+
+instance FromJSON Dependency
+instance ToJSON Dependency where
   toJSON = genericToJSON defaultOptions
     { omitNothingFields = True }
 

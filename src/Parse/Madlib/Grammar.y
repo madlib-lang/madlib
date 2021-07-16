@@ -197,7 +197,7 @@ typeParams :: { [Src.Name] }
 
 adtConstructors :: { [Src.Constructor] }
   : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
-  | adtConstructor 'ret'                      %shift { [$1] }
+  | adtConstructor maybeRet                      %shift { [$1] }
   -- | adtConstructor                            %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
@@ -415,9 +415,9 @@ nonCompositePattern :: { Src.Pattern }
 
 
 compositePattern :: { Src.Pattern }
-  : name '(' compositePatternArgs ')'          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCtor (strV $1) $3) }
-  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCtor (strV $1 <> "." <> strV $3) $5) }
-  | name '.' name          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCtor (strV $1 <> "." <> strV $3) []) }
+  : name '(' compositePatternArgs ')'          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCon (strV $1) $3) }
+  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCon (strV $1 <> "." <> strV $3) $5) }
+  | name '.' name          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCon (strV $1 <> "." <> strV $3) []) }
 
 compositePatternArgs :: { [Src.Pattern] }
   : pattern                          { [$1] }
@@ -692,10 +692,7 @@ mergeAreas (Area l _) (Area _ r) = Area l r
 
 nameToPattern :: Area -> String -> Src.Pattern
 nameToPattern area n | n == "_"      = Src.Source emptyInfos area Src.PAny
-                | n == "String"      = Src.Source emptyInfos area (Src.PCon n)
-                | n == "Boolean"     = Src.Source emptyInfos area (Src.PCon n)
-                | n == "Number"      = Src.Source emptyInfos area (Src.PCon n)
-                | (isUpper . head) n = Src.Source emptyInfos area (Src.PCtor n [])
+                | (isUpper . head) n = Src.Source emptyInfos area (Src.PCon n [])
                 | otherwise          = Src.Source emptyInfos area (Src.PVar n)
 
 access :: Src.Exp -> Src.Exp -> Src.Exp
