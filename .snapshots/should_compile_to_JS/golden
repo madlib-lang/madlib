@@ -24,36 +24,6 @@ let carResponse = ({ cars: ([]) });
   }
 })(carResponse);
 ((__x__) => {
-  if (typeof __x__ === "number") {
-    return 3;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(3);
-((__x__) => {
-  if (typeof __x__ === "string") {
-    return 3;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})("3");
-((__x__) => {
-  if (typeof __x__ === "boolean") {
-    return 3;
-  }
-  else {
-    console.log('non exhaustive patterns for value: ', __x__.toString()); 
-    console.trace(); 
-    throw 'non exhaustive patterns!';
-  }
-})(true);
-((__x__) => {
   if (__x__ === 3) {
     return 3;
   }

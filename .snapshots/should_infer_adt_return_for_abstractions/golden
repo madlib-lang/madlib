@@ -7,7 +7,7 @@ Right
                TApp
                  (TCon (TC "Result" (Kfun Star Star)) "path")
                  (TCon (TC "String" Star) "prelude"))
-            (Area (Loc 34 2 1) (Loc 63 2 30))
+            (Area (Loc 35 2 1) (Loc 64 2 30))
             (Assignment
                "result1"
                (Solved
@@ -15,7 +15,7 @@ Right
                      TApp
                        (TCon (TC "Result" (Kfun Star Star)) "path")
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 44 2 11) (Loc 63 2 30))
+                  (Area (Loc 45 2 11) (Loc 64 2 30))
                   (App
                      (Solved
                         ([] :=>
@@ -26,29 +26,29 @@ Right
                              (TApp
                                 (TCon (TC "Result" (Kfun Star Star)) "path")
                                 (TVar (TV "d3" Star))))
-                        (Area (Loc 44 2 11) (Loc 51 2 18))
+                        (Area (Loc 45 2 11) (Loc 52 2 18))
                         (Var "Success"))
                      (Solved
                         ([] :=> TCon (TC "String" Star) "prelude")
-                        (Area (Loc 52 2 19) (Loc 62 2 29))
+                        (Area (Loc 53 2 19) (Loc 63 2 29))
                         (LStr "\"response\""))
                      True)))
         , Solved
             ([] :=>
                TApp
                  (TCon (TC "Result" (Kfun Star Star)) "path") (TVar (TV "e4" Star)))
-            (Area (Loc 64 3 1) (Loc 79 3 16))
+            (Area (Loc 65 3 1) (Loc 80 3 16))
             (Assignment
                "result2"
                (Solved
                   ([] :=>
                      TApp
                        (TCon (TC "Result" (Kfun Star Star)) "path") (TVar (TV "e4" Star)))
-                  (Area (Loc 74 3 11) (Loc 79 3 16))
+                  (Area (Loc 75 3 11) (Loc 80 3 16))
                   (Var "Error")))
         , Solved
             ([] :=> TCon (TC "Boolean" Star) "prelude")
-            (Area (Loc 80 4 1) (Loc 117 4 38))
+            (Area (Loc 81 4 1) (Loc 118 4 38))
             (App
                (Solved
                   ([] :=>
@@ -59,7 +59,7 @@ Right
                              (TCon (TC "Result" (Kfun Star Star)) "path")
                              (TCon (TC "String" Star) "prelude")))
                        (TCon (TC "Boolean" Star) "prelude"))
-                  (Area (Loc 80 4 1) (Loc 118 4 39))
+                  (Area (Loc 81 4 1) (Loc 119 4 39))
                   (App
                      (Solved
                         ([] :=>
@@ -72,10 +72,10 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "j9" Star)))
                                 (TCon (TC "Boolean" Star) "prelude")))
-                        (Area (Loc 81 4 2) (Loc 99 4 20))
+                        (Area (Loc 82 4 2) (Loc 100 4 20))
                         (Abs
                            (Solved
-                              ([] :=> TVar (TV "j9" Star)) (Area (Loc 82 4 3) (Loc 83 4 4)) "a")
+                              ([] :=> TVar (TV "j9" Star)) (Area (Loc 83 4 3) (Loc 84 4 4)) "a")
                            [ Solved
                                ([] :=>
                                   TApp
@@ -83,15 +83,15 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TVar (TV "j9" Star)))
                                     (TCon (TC "Boolean" Star) "prelude"))
-                               (Area (Loc 81 4 2) (Loc 99 4 20))
+                               (Area (Loc 82 4 2) (Loc 100 4 20))
                                (Abs
                                   (Solved
                                      ([] :=> TVar (TV "j9" Star))
-                                     (Area (Loc 85 4 6) (Loc 86 4 7))
+                                     (Area (Loc 86 4 6) (Loc 87 4 7))
                                      "b")
                                   [ Solved
                                       ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                      (Area (Loc 92 4 13) (Loc 98 4 19))
+                                      (Area (Loc 93 4 13) (Loc 99 4 19))
                                       (App
                                          (Solved
                                             ([] :=>
@@ -102,7 +102,7 @@ Right
                                                        "prelude")
                                                     (TVar (TV "i8" Star)))
                                                  (TCon (TC "Boolean" Star) "prelude"))
-                                            (Area (Loc 92 4 13) (Loc 98 4 19))
+                                            (Area (Loc 93 4 13) (Loc 99 4 19))
                                             (App
                                                (Solved
                                                   ([] :=>
@@ -122,16 +122,16 @@ Right
                                                                 "prelude")
                                                              (TVar (TV "m12" Star)))
                                                           (TCon (TC "Boolean" Star) "prelude")))
-                                                  (Area (Loc 94 4 15) (Loc 96 4 17))
+                                                  (Area (Loc 95 4 15) (Loc 97 4 17))
                                                   (Var "=="))
                                                (Solved
                                                   ([] :=> TVar (TV "i8" Star))
-                                                  (Area (Loc 92 4 13) (Loc 93 4 14))
+                                                  (Area (Loc 93 4 13) (Loc 94 4 14))
                                                   (Var "a"))
                                                False))
                                          (Solved
                                             ([] :=> TVar (TV "j9" Star))
-                                            (Area (Loc 97 4 18) (Loc 98 4 19))
+                                            (Area (Loc 98 4 18) (Loc 99 4 19))
                                             (Var "b"))
                                          True)
                                   ])
@@ -141,7 +141,7 @@ Right
                            TApp
                              (TCon (TC "Result" (Kfun Star Star)) "path")
                              (TCon (TC "String" Star) "prelude"))
-                        (Area (Loc 101 4 22) (Loc 108 4 29))
+                        (Area (Loc 102 4 22) (Loc 109 4 29))
                         (Var "result1"))
                      False))
                (Solved
@@ -149,19 +149,19 @@ Right
                      TApp
                        (TCon (TC "Result" (Kfun Star Star)) "path")
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 110 4 31) (Loc 117 4 38))
+                  (Area (Loc 111 4 31) (Loc 118 4 38))
                   (Var "result2"))
                True)
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 33 1 34))
+            (Area (Loc 0 1 1) (Loc 34 1 35))
             ADT
               { adtname = "Result"
               , adtparams = [ "a" ]
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 16 1 17) (Loc 25 1 26))
+                      (Area (Loc 16 1 17) (Loc 26 1 27))
                       (Constructor
                          "Success"
                          [ Untyped (Area (Loc 24 1 25) (Loc 25 1 26)) (TRSingle "a") ]
@@ -173,7 +173,7 @@ Right
                                (TCon (TC "Result" (Kfun Star Star)) "path")
                                (TVar (TV "o14" Star)))))
                   , Untyped
-                      (Area (Loc 28 1 29) (Loc 33 1 34))
+                      (Area (Loc 29 1 30) (Loc 34 1 35))
                       (Constructor
                          "Error"
                          []

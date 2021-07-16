@@ -33,9 +33,6 @@ inferPattern env (Can.Canonical area pat) = case pat of
   Can.PBool _ -> return ([], M.empty, tBool)
   Can.PStr  _ -> return ([], M.empty, tStr)
 
-  -- TODO: these are actually primitive types and should be renamed accordingly!
-  Can.PCon  n -> return ([], M.empty, TCon (TC n Star) "prelude")
-
   Can.PVar  i -> do
     v    <- newTVar Star
     env' <- safeExtendVars env (i, toScheme v)
@@ -96,7 +93,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
       _ -> inferPattern env pat
 
-  Can.PCtor n pats -> do
+  Can.PCon n pats -> do
     (ps, vars, ts) <- inferPatterns env pats
     tv             <- newTVar Star
     sc             <- catchError

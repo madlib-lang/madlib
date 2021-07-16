@@ -48,7 +48,7 @@ buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => ({
 
 buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> RangeResult
 buildBadRangeResult = (madlibDotJson, versionInfo, _) => ({
-  warning: Just("Version is not in range"),
+  warning: Just(`Version of package '${madlibDotJson.name}' is not in range`),
   versionInfo: {
     version: versionInfo.version == Nothing
       ? Just(madlibDotJson.version)

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE TupleSections #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -86,11 +87,10 @@ updatePattern :: Qual Type -> Can.Pattern -> Slv.Pattern
 updatePattern qt (Can.Canonical area pat) = case pat of
   Can.PVar name             -> Slv.Solved qt area $ Slv.PVar name
   Can.PAny                  -> Slv.Solved qt area Slv.PAny
-  Can.PCtor name patterns   -> Slv.Solved qt area $ Slv.PCtor name (updatePattern qt <$> patterns)
+  Can.PCon name patterns    -> Slv.Solved qt area $ Slv.PCon name (updatePattern qt <$> patterns)
   Can.PNum    n             -> Slv.Solved qt area $ Slv.PNum n
   Can.PStr    n             -> Slv.Solved qt area $ Slv.PStr n
   Can.PBool   n             -> Slv.Solved qt area $ Slv.PBool n
-  Can.PCon    n             -> Slv.Solved qt area $ Slv.PCon n
   Can.PRecord fieldPatterns -> Slv.Solved qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
   Can.PList   patterns      -> Slv.Solved qt area $ Slv.PList (updatePattern qt <$> patterns)
   Can.PTuple  patterns      -> Slv.Solved qt area $ Slv.PTuple (updatePattern qt <$> patterns)
@@ -182,7 +182,7 @@ inferBody env (e : xs) = do
 -- should be applied to the env so that correct type can be inferred.
 updateBodyEnv :: Substitution -> Env -> Env
 updateBodyEnv s e =
-  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t then sc else apply s sc) (envVars e) }
+  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t || isTVar t then sc else apply s sc) (envVars e) }
 
 
 
@@ -501,7 +501,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
   tv                     <- newTVar Star
   (pss, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch (apply currSubst env) tv t is
+      r@(subst, _, _) <- inferBranch (apply (removeRecordTypes currSubst) env) tv t is
       return (res <> [r], currSubst `compose` subst)
     )
     ([], s)
@@ -520,15 +520,11 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (ps, vars, t')     <- inferPattern env pat
-  s                  <- if isTVar t' then
-                          return M.empty
-                        else
-                          contextualUnify env exp t t'
-
+  s                  <- contextualUnify env exp t t'
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
-  let subst = s'' `compose` s' `compose` s
+  let subst = s `compose` s' `compose` s''
 
   return
     ( subst

@@ -97,13 +97,13 @@ Right
             ([] :=>
                TApp
                  (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star)))
-            (Area (Loc 92 5 2) (Loc 110 5 20))
+            (Area (Loc 93 5 2) (Loc 111 5 20))
             (TypedExp
                (Solved
                   ([] :=>
                      TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star)))
-                  (Area (Loc 92 5 2) (Loc 99 5 9))
+                  (Area (Loc 93 5 2) (Loc 100 5 9))
                   (Var "Nothing"))
                (Forall
                   [ Star ]
@@ -114,14 +114,14 @@ Right
                TApp
                  (TCon (TC "Maybe" (Kfun Star Star)) "path")
                  (TCon (TC "Number" Star) "prelude"))
-            (Area (Loc 113 6 2) (Loc 136 6 25))
+            (Area (Loc 114 6 2) (Loc 137 6 25))
             (TypedExp
                (Solved
                   ([] :=>
                      TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path")
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 113 6 2) (Loc 120 6 9))
+                  (Area (Loc 114 6 2) (Loc 121 6 9))
                   (App
                      (Solved
                         ([] :=>
@@ -131,11 +131,11 @@ Right
                                 (TVar (TV "g6" Star)))
                              (TApp
                                 (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "g6" Star))))
-                        (Area (Loc 113 6 2) (Loc 117 6 6))
+                        (Area (Loc 114 6 2) (Loc 118 6 6))
                         (Var "Just"))
                      (Solved
                         ([] :=> TCon (TC "Number" Star) "prelude")
-                        (Area (Loc 118 6 7) (Loc 119 6 8))
+                        (Area (Loc 119 6 7) (Loc 120 6 8))
                         (LNum "3"))
                      True))
                (Forall
@@ -147,13 +147,13 @@ Right
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 59 4 1) (Loc 90 4 32))
+            (Area (Loc 59 4 1) (Loc 91 4 33))
             ADT
               { adtname = "Maybe"
               , adtparams = [ "a" ]
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 74 4 16) (Loc 80 4 22))
+                      (Area (Loc 74 4 16) (Loc 81 4 23))
                       (Constructor
                          "Just"
                          [ Untyped (Area (Loc 79 4 21) (Loc 80 4 22)) (TRSingle "a") ]
@@ -165,7 +165,7 @@ Right
                                (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                (TVar (TV "h7" Star)))))
                   , Untyped
-                      (Area (Loc 83 4 25) (Loc 90 4 32))
+                      (Area (Loc 84 4 26) (Loc 91 4 33))
                       (Constructor
                          "Nothing"
                          []

@@ -6,13 +6,13 @@ Right
            , aexps = []
            , atypedecls =
                [ Untyped
-                   (Area (Loc 0 1 1) (Loc 38 1 39))
+                   (Area (Loc 0 1 1) (Loc 39 1 40))
                    ADT
                      { adtname = "Maybe"
                      , adtparams = [ "a" ]
                      , adtconstructors =
                          [ Untyped
-                             (Area (Loc 22 1 23) (Loc 28 1 29))
+                             (Area (Loc 22 1 23) (Loc 29 1 30))
                              (Constructor
                                 "Just"
                                 [ Untyped (Area (Loc 27 1 28) (Loc 28 1 29)) (TRSingle "a") ]
@@ -24,7 +24,7 @@ Right
                                       (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                       (TVar (TV "a0" Star)))))
                          , Untyped
-                             (Area (Loc 31 1 32) (Loc 38 1 39))
+                             (Area (Loc 32 1 33) (Loc 39 1 40))
                              (Constructor
                                 "Nothing"
                                 []
@@ -57,12 +57,12 @@ Right
            , aexps =
                [ Solved
                    ([] :=> TCon (TC "MyType" Star) "./ModuleB")
-                   (Area (Loc 64 3 1) (Loc 87 3 24))
+                   (Area (Loc 63 3 1) (Loc 86 3 24))
                    (Assignment
                       "x"
                       (Solved
                          ([] :=> TCon (TC "MyType" Star) "./ModuleB")
-                         (Area (Loc 68 3 5) (Loc 87 3 24))
+                         (Area (Loc 67 3 5) (Loc 86 3 24))
                          (App
                             (Solved
                                ([] :=>
@@ -73,14 +73,14 @@ Right
                                           (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                           (TCon (TC "String" Star) "prelude")))
                                     (TCon (TC "MyType" Star) "./ModuleB"))
-                               (Area (Loc 68 3 5) (Loc 74 3 11))
+                               (Area (Loc 67 3 5) (Loc 73 3 11))
                                (Var "MyType"))
                             (Solved
                                ([] :=>
                                   TApp
                                     (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                     (TCon (TC "String" Star) "prelude"))
-                               (Area (Loc 75 3 12) (Loc 86 3 23))
+                               (Area (Loc 74 3 12) (Loc 85 3 23))
                                (App
                                   (Solved
                                      ([] :=>
@@ -92,11 +92,11 @@ Right
                                           (TApp
                                              (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                              (TVar (TV "f5" Star))))
-                                     (Area (Loc 75 3 12) (Loc 81 3 18))
+                                     (Area (Loc 74 3 12) (Loc 80 3 18))
                                      (Var "M.Just"))
                                   (Solved
                                      ([] :=> TCon (TC "String" Star) "prelude")
-                                     (Area (Loc 82 3 19) (Loc 85 3 22))
+                                     (Area (Loc 81 3 19) (Loc 84 3 22))
                                      (LStr "\"3\""))
                                   True))
                             True)))
@@ -113,11 +113,11 @@ Right
                              (Constructor
                                 "MyType"
                                 [ Untyped
-                                    (Area (Loc 48 2 23) (Loc 62 2 37))
+                                    (Area (Loc 47 2 22) (Loc 61 2 36))
                                     (TRComp
                                        "M.Maybe"
                                        [ Untyped
-                                           (Area (Loc 56 2 31) (Loc 62 2 37)) (TRSingle "String")
+                                           (Area (Loc 55 2 30) (Loc 61 2 36)) (TRSingle "String")
                                        ])
                                 ]
                                 (TApp

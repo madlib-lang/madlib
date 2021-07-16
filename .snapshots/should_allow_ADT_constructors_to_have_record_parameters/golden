@@ -6,13 +6,13 @@ Right
            , aexps = []
            , atypedecls =
                [ Untyped
-                   (Area (Loc 0 1 1) (Loc 42 1 43))
+                   (Area (Loc 0 1 1) (Loc 43 1 44))
                    ADT
                      { adtname = "Point"
                      , adtparams = []
                      , adtconstructors =
                          [ Untyped
-                             (Area (Loc 20 1 21) (Loc 42 1 43))
+                             (Area (Loc 20 1 21) (Loc 43 1 44))
                              (Constructor
                                 "Point"
                                 [ Untyped
@@ -98,7 +98,7 @@ Right
                             True)))
                , Solved
                    ([] :=> TCon (TC "Number" Star) "prelude")
-                   (Area (Loc 46 3 1) (Loc 84 5 1))
+                   (Area (Loc 46 3 1) (Loc 85 5 1))
                    (Where
                       (Solved
                          ([] :=> TCon (TC "Point" Star) "./ModuleA")
@@ -111,12 +111,12 @@ Right
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TCon (TC "Point" Star) "./ModuleA"))
                                (TCon (TC "Number" Star) "prelude"))
-                          (Area (Loc 59 4 3) (Loc 82 4 26))
+                          (Area (Loc 59 4 3) (Loc 83 4 27))
                           (Is
                              (Solved
                                 ([] :=> TCon (TC "Point" Star) "./ModuleA")
-                                (Area (Loc 59 4 3) (Loc 73 4 17))
-                                (PCtor
+                                (Area (Loc 59 4 3) (Loc 74 4 18))
+                                (PCon
                                    "P.Point"
                                    [ Solved
                                        ([] :=> TCon (TC "Point" Star) "./ModuleA")
@@ -134,7 +134,7 @@ Right
                                    ]))
                              (Solved
                                 ([] :=> TCon (TC "Number" Star) "prelude")
-                                (Area (Loc 77 4 21) (Loc 82 4 26))
+                                (Area (Loc 78 4 22) (Loc 83 4 27))
                                 (App
                                    (Solved
                                       ([] :=>
@@ -144,7 +144,7 @@ Right
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                               (TCon (TC "Number" Star) "prelude"))
                                            (TCon (TC "Number" Star) "prelude"))
-                                      (Area (Loc 77 4 21) (Loc 82 4 26))
+                                      (Area (Loc 78 4 22) (Loc 83 4 27))
                                       (App
                                          (Solved
                                             ([] :=>
@@ -161,16 +161,16 @@ Right
                                                           "prelude")
                                                        (TCon (TC "Number" Star) "prelude"))
                                                     (TCon (TC "Number" Star) "prelude")))
-                                            (Area (Loc 79 4 23) (Loc 80 4 24))
+                                            (Area (Loc 80 4 24) (Loc 81 4 25))
                                             (Var "+"))
                                          (Solved
                                             ([] :=> TCon (TC "Number" Star) "prelude")
-                                            (Area (Loc 77 4 21) (Loc 78 4 22))
+                                            (Area (Loc 78 4 22) (Loc 79 4 23))
                                             (Var "a"))
                                          False))
                                    (Solved
                                       ([] :=> TCon (TC "Number" Star) "prelude")
-                                      (Area (Loc 81 4 25) (Loc 82 4 26))
+                                      (Area (Loc 82 4 26) (Loc 83 4 27))
                                       (Var "b"))
                                    True)))
                       ])

@@ -246,7 +246,7 @@ Right
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TRecord
                        (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                       (Just (TVar (TV "r43" Star)))))
+                       (Just (TVar (TV "m38" Star)))))
                  (TCon (TC "String" Star) "prelude"))
             (Area (Loc 654 32 1) (Loc 706 32 53))
             (Assignment
@@ -258,7 +258,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "r43" Star)))))
+                             (Just (TVar (TV "m38" Star)))))
                        (TCon (TC "String" Star) "prelude"))
                   (Area (Loc 669 32 16) (Loc 706 32 53))
                   (Abs
@@ -266,7 +266,7 @@ Right
                         ([] :=>
                            TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                             (Just (TVar (TV "r43" Star))))
+                             (Just (TVar (TV "m38" Star))))
                         (Area (Loc 0 0 0) (Loc 0 0 0))
                         "__x__")
                      [ Solved
@@ -277,7 +277,7 @@ Right
                                ([] :=>
                                   TRecord
                                     (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                    (Just (TVar (TV "r43" Star))))
+                                    (Just (TVar (TV "m38" Star))))
                                (Area (Loc 0 0 0) (Loc 0 0 0))
                                (Var "__x__"))
                             [ Solved
@@ -288,7 +288,7 @@ Right
                                         (TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "r43" Star)))))
+                                           (Just (TVar (TV "m38" Star)))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 677 32 24) (Loc 704 32 51))
                                 (Is
@@ -297,7 +297,7 @@ Right
                                          TRecord
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                           (Just (TVar (TV "r43" Star))))
+                                           (Just (TVar (TV "m38" Star))))
                                       (Area (Loc 677 32 24) (Loc 678 32 25))
                                       (PVar "f"))
                                    (Solved
@@ -404,10 +404,10 @@ Right
                                            )
                                          , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                          ])
-                                      (Just (TVar (TV "i60" Star))))
+                                      (Just (TVar (TV "c106" Star))))
                                )
                              ])
-                          (Just (TVar (TV "e108" Star))))))
+                          (Just (TVar (TV "b105" Star))))))
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TCon (TC "String" Star) "prelude")))
@@ -460,10 +460,10 @@ Right
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "i60" Star))))
+                                            (Just (TVar (TV "c106" Star))))
                                      )
                                    ])
-                                (Just (TVar (TV "e108" Star))))))
+                                (Just (TVar (TV "b105" Star))))))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TCon (TC "String" Star) "prelude")))
@@ -512,10 +512,10 @@ Right
                                                  )
                                                , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                                ])
-                                            (Just (TVar (TV "i60" Star))))
+                                            (Just (TVar (TV "c106" Star))))
                                      )
                                    ])
-                                (Just (TVar (TV "e108" Star)))))
+                                (Just (TVar (TV "b105" Star)))))
                         (Area (Loc 731 33 25) (Loc 734 33 28))
                         "_P_")
                      [ Solved
@@ -542,7 +542,7 @@ Right
                                           (TRecord
                                              (fromList
                                                 [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
-                                             (Just (TVar (TV "y50" Star))))))
+                                             (Just (TVar (TV "w48" Star))))))
                                     (TApp
                                        (TVar (TV "v47" (Kfun Star Star)))
                                        (TCon (TC "String" Star) "prelude")))
@@ -656,7 +656,7 @@ Right
                                             )
                                           , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                           ])
-                                       (Just (TVar (TV "i60" Star)))))
+                                       (Just (TVar (TV "b53" Star)))))
                                (Area (Loc 731 33 25) (Loc 1198 42 5))
                                (App
                                   (Solved
@@ -698,7 +698,7 @@ Right
                                                         )
                                                       , ( "tchouk" , TVar (TV "h59" Star) )
                                                       ])
-                                                   (Just (TVar (TV "i60" Star))))))
+                                                   (Just (TVar (TV "b53" Star))))))
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TRecord
@@ -726,7 +726,7 @@ Right
                                                      )
                                                    , ( "tchouk" , TVar (TV "h59" Star) )
                                                    ])
-                                                (Just (TVar (TV "i60" Star))))))
+                                                (Just (TVar (TV "b53" Star))))))
                                      (Area (Loc 762 35 3) (Loc 1198 42 5))
                                      (App
                                         (Solved
@@ -780,9 +780,7 @@ Right
                                                       "prelude")
                                                    (TRecord
                                                       (fromList
-                                                         [ ( "ik" , TVar (TV "h59" Star) )
-                                                         , ( "lui" , TVar (TV "h59" Star) )
-                                                         , ( "name" , TVar (TV "h59" Star) )
+                                                         [ ( "name" , TVar (TV "h59" Star) )
                                                          , ( "po"
                                                            , TRecord
                                                                (fromList
@@ -804,7 +802,7 @@ Right
                                                            )
                                                          , ( "tchouk" , TVar (TV "h59" Star) )
                                                          ])
-                                                      (Just (TVar (TV "i60" Star)))))
+                                                      (Just (TVar (TV "c54" Star)))))
                                                 (TApp
                                                    (TApp
                                                       (TCon
@@ -839,7 +837,7 @@ Right
                                                               )
                                                             , ( "tchouk" , TVar (TV "h59" Star) )
                                                             ])
-                                                         (Just (TVar (TV "i60" Star)))))
+                                                         (Just (TVar (TV "d55" Star)))))
                                                    (TCon (TC "Number" Star) "prelude")))
                                            (Area (Loc 769 35 10) (Loc 1197 42 3))
                                            (Abs
@@ -872,7 +870,7 @@ Right
                                                            )
                                                          , ( "tchouk" , TVar (TV "h59" Star) )
                                                          ])
-                                                      (Just (TVar (TV "g58" Star))))
+                                                      (Just (TVar (TV "c54" Star))))
                                                  (Area (Loc 770 35 11) (Loc 771 35 12))
                                                  "a")
                                               [ Solved
@@ -917,7 +915,7 @@ Right
                                                                       (Just (TVar (TV "l89" Star)))
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "i60" Star)))))
+                                                             (Just (TVar (TV "d55" Star)))))
                                                        (TCon (TC "Number" Star) "prelude"))
                                                   (Area (Loc 769 35 10) (Loc 1197 42 3))
                                                   (Abs
@@ -963,7 +961,7 @@ Right
                                                                       (Just (TVar (TV "l89" Star)))
                                                                   )
                                                                 ])
-                                                             (Just (TVar (TV "i60" Star))))
+                                                             (Just (TVar (TV "d55" Star))))
                                                         (Area (Loc 773 35 14) (Loc 774 35 15))
                                                         "b")
                                                      [ Solved
@@ -1033,7 +1031,7 @@ Right
                                                                              ])
                                                                           (Just
                                                                              (TVar
-                                                                                (TV "g58" Star)))))
+                                                                                (TV "c54" Star)))))
                                                                     (TRecord
                                                                        (fromList
                                                                           [ ( "ik"
@@ -1073,7 +1071,7 @@ Right
                                                                             )
                                                                           ])
                                                                        (Just
-                                                                          (TVar (TV "i60" Star)))))
+                                                                          (TVar (TV "d55" Star)))))
                                                                (Area
                                                                   (Loc 785 35 26) (Loc 791 35 32))
                                                                (TupleConstructor
@@ -5037,7 +5035,7 @@ Right
                                                   )
                                                 , ( "tchouk" , TVar (TV "h59" Star) )
                                                 ])
-                                             (Just (TVar (TV "i60" Star)))))
+                                             (Just (TVar (TV "c106" Star)))))
                                      (Area (Loc 731 33 25) (Loc 758 34 22))
                                      (App
                                         (Solved
@@ -5059,7 +5057,7 @@ Right
                                                                   (TVar (TV "c106" Star))
                                                               )
                                                             ])
-                                                         (Just (TVar (TV "e108" Star))))))
+                                                         (Just (TVar (TV "b105" Star))))))
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TVar (TV "c106" Star))))
@@ -5143,7 +5141,7 @@ Right
                                                             (TVar (TV "c106" Star))
                                                         )
                                                       ])
-                                                   (Just (TVar (TV "e108" Star)))))
+                                                   (Just (TVar (TV "b105" Star)))))
                                            (Area (Loc 731 33 25) (Loc 734 33 28))
                                            (Var "_P_"))
                                         True))

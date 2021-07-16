@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 36 2 1) (Loc 78 4 1))
+            (Area (Loc 39 2 1) (Loc 84 4 1))
             (Where
                (Solved
                   ([] :=>
@@ -15,7 +15,7 @@ Right
                              (TCon (TC "Number" Star) "prelude"))
                           (TCon (TC "Number" Star) "prelude"))
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 42 2 7) (Loc 54 2 19))
+                  (Area (Loc 45 2 7) (Loc 57 2 19))
                   (App
                      (Solved
                         ([] :=>
@@ -32,7 +32,7 @@ Right
                                       (TCon (TC "Number" Star) "prelude"))
                                    (TCon (TC "Number" Star) "prelude"))
                                 (TVar (TV "g6" Star))))
-                        (Area (Loc 42 2 7) (Loc 51 2 16))
+                        (Area (Loc 45 2 7) (Loc 54 2 16))
                         (App
                            (Solved
                               ([] :=>
@@ -55,7 +55,7 @@ Right
                                                (TCon (TC "Number" Star) "prelude"))
                                             (TVar (TV "f5" Star)))
                                          (TVar (TV "g6" Star)))))
-                              (Area (Loc 42 2 7) (Loc 55 2 20))
+                              (Area (Loc 45 2 7) (Loc 58 2 20))
                               (App
                                  (Solved
                                     ([] :=>
@@ -88,21 +88,21 @@ Right
                                                         (TVar (TV "e4" Star)))
                                                      (TVar (TV "f5" Star)))
                                                   (TVar (TV "g6" Star))))))
-                                    (Area (Loc 42 2 7) (Loc 46 2 11))
+                                    (Area (Loc 45 2 7) (Loc 49 2 11))
                                     (Var "Wish"))
                                  (Solved
                                     ([] :=> TCon (TC "Number" Star) "prelude")
-                                    (Area (Loc 47 2 12) (Loc 48 2 13))
+                                    (Area (Loc 50 2 12) (Loc 51 2 13))
                                     (LNum "1"))
                                  False))
                            (Solved
                               ([] :=> TCon (TC "Number" Star) "prelude")
-                              (Area (Loc 50 2 15) (Loc 51 2 16))
+                              (Area (Loc 53 2 15) (Loc 54 2 16))
                               (LNum "2"))
                            False))
                      (Solved
                         ([] :=> TCon (TC "Number" Star) "prelude")
-                        (Area (Loc 53 2 18) (Loc 54 2 19))
+                        (Area (Loc 56 2 18) (Loc 57 2 19))
                         (LNum "3"))
                      True))
                [ Solved
@@ -119,7 +119,7 @@ Right
                                  (TCon (TC "Number" Star) "prelude"))
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 61 3 3) (Loc 76 3 18))
+                   (Area (Loc 64 3 3) (Loc 82 3 21))
                    (Is
                       (Solved
                          ([] :=>
@@ -131,8 +131,8 @@ Right
                                     (TCon (TC "Number" Star) "prelude"))
                                  (TCon (TC "Number" Star) "prelude"))
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 61 3 3) (Loc 71 3 13))
-                         (PCtor
+                         (Area (Loc 64 3 3) (Loc 77 3 16))
+                         (PCon
                             "Wish"
                             [ Solved
                                 ([] :=>
@@ -145,7 +145,7 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 66 3 8) (Loc 67 3 9))
+                                (Area (Loc 69 3 8) (Loc 70 3 9))
                                 PAny
                             , Solved
                                 ([] :=>
@@ -158,7 +158,7 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 68 3 10) (Loc 69 3 11))
+                                (Area (Loc 72 3 11) (Loc 73 3 12))
                                 PAny
                             , Solved
                                 ([] :=>
@@ -171,29 +171,29 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 70 3 12) (Loc 71 3 13))
+                                (Area (Loc 75 3 14) (Loc 76 3 15))
                                 (PVar "c")
                             ]))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 75 3 17) (Loc 76 3 18))
+                         (Area (Loc 81 3 20) (Loc 82 3 21))
                          (Var "c")))
                ])
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 35 1 36))
+            (Area (Loc 0 1 1) (Loc 38 1 39))
             ADT
               { adtname = "Wish"
               , adtparams = [ "e" , "a" , "c" ]
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 25 1 26) (Loc 35 1 36))
+                      (Area (Loc 25 1 26) (Loc 38 1 39))
                       (Constructor
                          "Wish"
                          [ Untyped (Area (Loc 30 1 31) (Loc 31 1 32)) (TRSingle "e")
-                         , Untyped (Area (Loc 32 1 33) (Loc 33 1 34)) (TRSingle "a")
-                         , Untyped (Area (Loc 34 1 35) (Loc 35 1 36)) (TRSingle "c")
+                         , Untyped (Area (Loc 33 1 34) (Loc 34 1 35)) (TRSingle "a")
+                         , Untyped (Area (Loc 36 1 37) (Loc 37 1 38)) (TRSingle "c")
                          ]
                          (TApp
                             (TApp

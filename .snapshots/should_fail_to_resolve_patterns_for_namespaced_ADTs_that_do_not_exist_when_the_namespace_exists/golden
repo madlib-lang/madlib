@@ -3,94 +3,94 @@ Left
      (UnboundVariable "M.Maybe")
      Context
        { ctxAstPath = "./ModuleB"
-       , ctxArea = Area (Loc 56 4 3) (Loc 65 4 12)
+       , ctxArea = Area (Loc 55 4 3) (Loc 65 4 13)
        , ctxBacktrace =
            [ BTExp
                (Canonical
-                  (Area (Loc 43 3 17) (Loc 72 5 1))
+                  (Area (Loc 42 3 16) (Loc 72 5 1))
                   (Where
-                     (Canonical (Area (Loc 49 3 23) (Loc 50 3 24)) (Var "x"))
+                     (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                      [ Canonical
-                         (Area (Loc 56 4 3) (Loc 70 4 17))
+                         (Area (Loc 55 4 3) (Loc 70 4 18))
                          (Is
                             (Canonical
-                               (Area (Loc 56 4 3) (Loc 65 4 12))
-                               (PCtor
+                               (Area (Loc 55 4 3) (Loc 65 4 13))
+                               (PCon
                                   "M.Maybe"
-                                  [ Canonical (Area (Loc 64 4 11) (Loc 65 4 12)) (PVar "a") ]))
-                            (Canonical (Area (Loc 69 4 16) (Loc 70 4 17)) (Var "a")))
+                                  [ Canonical (Area (Loc 63 4 11) (Loc 64 4 12)) (PVar "a") ]))
+                            (Canonical (Area (Loc 69 4 17) (Loc 70 4 18)) (Var "a")))
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 35 3 9) (Loc 73 5 3))
+                  (Area (Loc 35 3 9) (Loc 72 5 1))
                   (Abs
                      (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                      [ Canonical
-                         (Area (Loc 43 3 17) (Loc 72 5 1))
+                         (Area (Loc 42 3 16) (Loc 72 5 1))
                          (Where
-                            (Canonical (Area (Loc 49 3 23) (Loc 50 3 24)) (Var "x"))
+                            (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                             [ Canonical
-                                (Area (Loc 56 4 3) (Loc 70 4 17))
+                                (Area (Loc 55 4 3) (Loc 70 4 18))
                                 (Is
                                    (Canonical
-                                      (Area (Loc 56 4 3) (Loc 65 4 12))
-                                      (PCtor
+                                      (Area (Loc 55 4 3) (Loc 65 4 13))
+                                      (PCon
                                          "M.Maybe"
-                                         [ Canonical (Area (Loc 64 4 11) (Loc 65 4 12)) (PVar "a")
+                                         [ Canonical (Area (Loc 63 4 11) (Loc 64 4 12)) (PVar "a")
                                          ]))
-                                   (Canonical (Area (Loc 69 4 16) (Loc 70 4 17)) (Var "a")))
+                                   (Canonical (Area (Loc 69 4 17) (Loc 70 4 18)) (Var "a")))
                             ])
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 27 3 1) (Loc 73 5 3))
+                  (Area (Loc 27 3 1) (Loc 72 5 1))
                   (Assignment
                      "might"
                      (Canonical
-                        (Area (Loc 35 3 9) (Loc 73 5 3))
+                        (Area (Loc 35 3 9) (Loc 72 5 1))
                         (Abs
                            (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                            [ Canonical
-                               (Area (Loc 43 3 17) (Loc 72 5 1))
+                               (Area (Loc 42 3 16) (Loc 72 5 1))
                                (Where
-                                  (Canonical (Area (Loc 49 3 23) (Loc 50 3 24)) (Var "x"))
+                                  (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                                   [ Canonical
-                                      (Area (Loc 56 4 3) (Loc 70 4 17))
+                                      (Area (Loc 55 4 3) (Loc 70 4 18))
                                       (Is
                                          (Canonical
-                                            (Area (Loc 56 4 3) (Loc 65 4 12))
-                                            (PCtor
+                                            (Area (Loc 55 4 3) (Loc 65 4 13))
+                                            (PCon
                                                "M.Maybe"
                                                [ Canonical
-                                                   (Area (Loc 64 4 11) (Loc 65 4 12)) (PVar "a")
+                                                   (Area (Loc 63 4 11) (Loc 64 4 12)) (PVar "a")
                                                ]))
-                                         (Canonical (Area (Loc 69 4 16) (Loc 70 4 17)) (Var "a")))
+                                         (Canonical (Area (Loc 69 4 17) (Loc 70 4 18)) (Var "a")))
                                   ])
                            ]))))
            , BTExp
                (Canonical
-                  (Area (Loc 27 3 1) (Loc 73 5 3))
+                  (Area (Loc 27 3 1) (Loc 72 5 1))
                   (Assignment
                      "might"
                      (Canonical
-                        (Area (Loc 35 3 9) (Loc 73 5 3))
+                        (Area (Loc 35 3 9) (Loc 72 5 1))
                         (Abs
                            (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                            [ Canonical
-                               (Area (Loc 43 3 17) (Loc 72 5 1))
+                               (Area (Loc 42 3 16) (Loc 72 5 1))
                                (Where
-                                  (Canonical (Area (Loc 49 3 23) (Loc 50 3 24)) (Var "x"))
+                                  (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                                   [ Canonical
-                                      (Area (Loc 56 4 3) (Loc 70 4 17))
+                                      (Area (Loc 55 4 3) (Loc 70 4 18))
                                       (Is
                                          (Canonical
-                                            (Area (Loc 56 4 3) (Loc 65 4 12))
-                                            (PCtor
+                                            (Area (Loc 55 4 3) (Loc 65 4 13))
+                                            (PCon
                                                "M.Maybe"
                                                [ Canonical
-                                                   (Area (Loc 64 4 11) (Loc 65 4 12)) (PVar "a")
+                                                   (Area (Loc 63 4 11) (Loc 64 4 12)) (PVar "a")
                                                ]))
-                                         (Canonical (Area (Loc 69 4 16) (Loc 70 4 17)) (Var "a")))
+                                         (Canonical (Area (Loc 69 4 17) (Loc 70 4 18)) (Var "a")))
                                   ])
                            ]))))
            ]

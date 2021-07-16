@@ -3,56 +3,47 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            ([] :=>
-               TApp
-                 (TApp
-                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TRecord
-                       (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                       Nothing))
-                 (TCon (TC "Result" Star) "path"))
-            (Area (Loc 42 2 1) (Loc 53 2 12))
+            ([] :=> TCon (TC "Result" Star) "path")
+            (Area (Loc 43 2 1) (Loc 71 2 29))
             (Assignment
                "r"
                (Solved
-                  ([] :=>
-                     TApp
-                       (TApp
-                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TRecord
+                  ([] :=> TCon (TC "Result" Star) "path")
+                  (Area (Loc 47 2 5) (Loc 71 2 29))
+                  (App
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TRecord
+                                   (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
+                                   Nothing))
+                             (TCon (TC "Result" Star) "path"))
+                        (Area (Loc 47 2 5) (Loc 54 2 12))
+                        (Var "Success"))
+                     (Solved
+                        ([] :=>
+                           TRecord
                              (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                             Nothing))
-                       (TCon (TC "Result" Star) "path"))
-                  (Area (Loc 46 2 5) (Loc 53 2 12))
-                  (Var "Success")))
+                             Nothing)
+                        (Area (Loc 55 2 13) (Loc 70 2 28))
+                        (Record
+                           [ Solved
+                               ([] :=> TCon (TC "String" Star) "prelude")
+                               (Area (Loc 57 2 15) (Loc 68 2 26))
+                               (Field
+                                  ( "value"
+                                  , Solved
+                                      ([] :=> TCon (TC "String" Star) "prelude")
+                                      (Area (Loc 64 2 22) (Loc 68 2 26))
+                                      (LStr "\"42\"")
+                                  ))
+                           ]))
+                     True)))
         , Solved
-            ([] :=>
-               TRecord
-                 (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                 Nothing)
-            (Area (Loc 54 2 13) (Loc 69 2 28))
-            (Record
-               [ Solved
-                   ([] :=> TCon (TC "String" Star) "prelude")
-                   (Area (Loc 56 2 15) (Loc 67 2 26))
-                   (Field
-                      ( "value"
-                      , Solved
-                          ([] :=> TCon (TC "String" Star) "prelude")
-                          (Area (Loc 63 2 22) (Loc 67 2 26))
-                          (LStr "\"42\"")
-                      ))
-               ])
-        , Solved
-            ([] :=>
-               TApp
-                 (TApp
-                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TRecord
-                       (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                       Nothing))
-                 (TCon (TC "Result" Star) "path"))
-            (Area (Loc 70 3 1) (Loc 85 3 16))
+            ([] :=> TCon (TC "Result" Star) "path")
+            (Area (Loc 72 3 1) (Loc 87 3 16))
             (App
                (Solved
                   ([] :=>
@@ -61,37 +52,30 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "e4" Star)))
                        (TVar (TV "e4" Star)))
-                  (Area (Loc 71 3 2) (Loc 81 3 12))
+                  (Area (Loc 73 3 2) (Loc 83 3 12))
                   (Abs
                      (Solved
-                        ([] :=> TVar (TV "e4" Star)) (Area (Loc 72 3 3) (Loc 73 3 4)) "a")
+                        ([] :=> TVar (TV "e4" Star)) (Area (Loc 74 3 3) (Loc 75 3 4)) "a")
                      [ Solved
                          ([] :=> TVar (TV "e4" Star))
-                         (Area (Loc 79 3 10) (Loc 80 3 11))
+                         (Area (Loc 81 3 10) (Loc 82 3 11))
                          (Var "a")
                      ]))
                (Solved
-                  ([] :=>
-                     TApp
-                       (TApp
-                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TRecord
-                             (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                             Nothing))
-                       (TCon (TC "Result" Star) "path"))
-                  (Area (Loc 83 3 14) (Loc 84 3 15))
+                  ([] :=> TCon (TC "Result" Star) "path")
+                  (Area (Loc 85 3 14) (Loc 86 3 15))
                   (Var "r"))
                True)
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 41 1 42))
+            (Area (Loc 0 1 1) (Loc 42 1 43))
             ADT
               { adtname = "Result"
               , adtparams = []
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 14 1 15) (Loc 41 1 42))
+                      (Area (Loc 14 1 15) (Loc 42 1 43))
                       (Constructor
                          "Success"
                          [ Untyped

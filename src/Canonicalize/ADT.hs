@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
 module Canonicalize.ADT where
 
 import qualified AST.Canonical                 as Can
@@ -113,6 +114,20 @@ resolveADTConstructorParams
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
 resolveADTConstructorParams env astPath n params c@(Src.Source _ area (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env (KindRequired Star)) cparams
+
+  mapM_
+    (\case
+      TVar (TV n _) ->
+        if n `elem` params then
+          return ()
+        else
+          throwError (CompilationError (UnboundVariable n) (Context astPath area []))
+
+      _ ->
+        return ()
+    )
+    ts
+
   let s = foldl' (\s t -> buildCtorSubst t <> s) M.empty ts
 
   if isLower . head $ cname then

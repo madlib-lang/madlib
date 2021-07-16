@@ -21,7 +21,7 @@ Right
                     (TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path")
                        (TVar (TV "c2" Star)))))
-            (Area (Loc 32 2 1) (Loc 246 11 6))
+            (Area (Loc 33 2 1) (Loc 245 11 6))
             (TypedExp
                (Solved
                   ([] :=>
@@ -42,7 +42,7 @@ Right
                           (TApp
                              (TCon (TC "Maybe" (Kfun Star Star)) "path")
                              (TVar (TV "c2" Star)))))
-                  (Area (Loc 76 3 1) (Loc 246 11 6))
+                  (Area (Loc 77 3 1) (Loc 245 11 6))
                   (Export
                      (Solved
                         ([] :=>
@@ -63,7 +63,7 @@ Right
                                 (TApp
                                    (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                    (TVar (TV "d3" Star)))))
-                        (Area (Loc 83 3 8) (Loc 246 11 6))
+                        (Area (Loc 84 3 8) (Loc 245 11 6))
                         (Assignment
                            "find"
                            (Solved
@@ -77,11 +77,11 @@ Right
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV "f5" Star)))
                                       (TVar (TV "g6" Star))))
-                              (Area (Loc 90 3 15) (Loc 246 11 6))
+                              (Area (Loc 91 3 15) (Loc 245 11 6))
                               (Abs
                                  (Solved
                                     ([] :=> TVar (TV "e4" Star))
-                                    (Area (Loc 91 3 16) (Loc 100 3 25))
+                                    (Area (Loc 92 3 16) (Loc 101 3 25))
                                     "predicate")
                                  [ Solved
                                      ([] :=>
@@ -91,17 +91,17 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TVar (TV "f5" Star)))
                                           (TVar (TV "g6" Star)))
-                                     (Area (Loc 90 3 15) (Loc 246 11 6))
+                                     (Area (Loc 91 3 15) (Loc 245 11 6))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "f5" Star))
-                                           (Area (Loc 102 3 27) (Loc 104 3 29))
+                                           (Area (Loc 103 3 27) (Loc 105 3 29))
                                            "xs")
                                         [ Solved
                                             ([] :=> TVar (TV "g6" Star))
-                                            (Area (Loc 110 3 35) (Loc 245 11 4))
+                                            (Area (Loc 111 3 35) (Loc 244 11 4))
                                             (JSExp
-                                               "{\n  const found = xs.find(predicate);\n  if (found === undefined) {\n    return Nothing()\n  }\n  else {\n    return Just(found)\n  }\n}")
+                                               "{\n  const found = xs.find(predicate);\n  if (found === undefined) {\n    return Nothing\n  }\n  else {\n    return Just(found)\n  }\n}")
                                         ])
                                  ]))))))
                (Forall
@@ -142,7 +142,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "h7" Star)))
                        (TVar (TV "j9" Star)))))
-            (Area (Loc 247 12 1) (Loc 334 15 1))
+            (Area (Loc 246 12 1) (Loc 333 15 1))
             (TypedExp
                (Solved
                   ([] :=>
@@ -167,7 +167,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV "h7" Star)))
                              (TVar (TV "j9" Star)))))
-                  (Area (Loc 286 13 1) (Loc 334 15 1))
+                  (Area (Loc 285 13 1) (Loc 333 15 1))
                   (Export
                      (Solved
                         ([] :=>
@@ -192,7 +192,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "p15" Star)))
                                    (TVar (TV "q16" Star)))))
-                        (Area (Loc 293 13 8) (Loc 334 15 1))
+                        (Area (Loc 292 13 8) (Loc 333 15 1))
                         (Assignment
                            "flip"
                            (Solved
@@ -222,7 +222,7 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "p15" Star)))
                                          (TVar (TV "q16" Star)))))
-                              (Area (Loc 300 13 15) (Loc 334 15 1))
+                              (Area (Loc 299 13 15) (Loc 333 15 1))
                               (Abs
                                  (Solved
                                     ([] :=>
@@ -238,7 +238,7 @@ Right
                                                   "prelude")
                                                (TVar (TV "o14" Star)))
                                             (TVar (TV "q16" Star))))
-                                    (Area (Loc 301 13 16) (Loc 303 13 18))
+                                    (Area (Loc 300 13 16) (Loc 302 13 18))
                                     "fn")
                                  [ Solved
                                      ([] :=>
@@ -254,11 +254,11 @@ Right
                                                    "prelude")
                                                 (TVar (TV "p15" Star)))
                                              (TVar (TV "q16" Star))))
-                                     (Area (Loc 312 14 3) (Loc 332 14 23))
+                                     (Area (Loc 311 14 3) (Loc 331 14 23))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "o14" Star))
-                                           (Area (Loc 313 14 4) (Loc 314 14 5))
+                                           (Area (Loc 312 14 4) (Loc 313 14 5))
                                            "b")
                                         [ Solved
                                             ([] :=>
@@ -269,34 +269,34 @@ Right
                                                        "prelude")
                                                     (TVar (TV "p15" Star)))
                                                  (TVar (TV "q16" Star)))
-                                            (Area (Loc 312 14 3) (Loc 332 14 23))
+                                            (Area (Loc 311 14 3) (Loc 331 14 23))
                                             (Abs
                                                (Solved
                                                   ([] :=> TVar (TV "p15" Star))
-                                                  (Area (Loc 316 14 7) (Loc 317 14 8))
+                                                  (Area (Loc 315 14 7) (Loc 316 14 8))
                                                   "a")
                                                [ Solved
                                                    ([] :=> TVar (TV "q16" Star))
-                                                   (Area (Loc 323 14 14) (Loc 330 14 21))
+                                                   (Area (Loc 322 14 14) (Loc 329 14 21))
                                                    (App
                                                       (Solved
                                                          ([] :=> TVar (TV "r17" Star))
-                                                         (Area (Loc 323 14 14) (Loc 331 14 22))
+                                                         (Area (Loc 322 14 14) (Loc 330 14 22))
                                                          (App
                                                             (Solved
                                                                ([] :=> TVar (TV "n13" Star))
                                                                (Area
-                                                                  (Loc 323 14 14) (Loc 325 14 16))
+                                                                  (Loc 322 14 14) (Loc 324 14 16))
                                                                (Var "fn"))
                                                             (Solved
                                                                ([] :=> TVar (TV "p15" Star))
                                                                (Area
-                                                                  (Loc 326 14 17) (Loc 327 14 18))
+                                                                  (Loc 325 14 17) (Loc 326 14 18))
                                                                (Var "a"))
                                                             False))
                                                       (Solved
                                                          ([] :=> TVar (TV "o14" Star))
-                                                         (Area (Loc 329 14 20) (Loc 330 14 21))
+                                                         (Area (Loc 328 14 20) (Loc 329 14 21))
                                                          (Var "b"))
                                                       True)
                                                ])
@@ -342,7 +342,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "u20" Star)))
                           (TVar (TV "v21" Star))))))
-            (Area (Loc 336 17 1) (Loc 516 24 7))
+            (Area (Loc 335 17 1) (Loc 515 24 7))
             (TypedExp
                (Solved
                   ([] :=>
@@ -363,7 +363,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "u20" Star)))
                                 (TVar (TV "v21" Star))))))
-                  (Area (Loc 387 18 1) (Loc 516 24 7))
+                  (Area (Loc 386 18 1) (Loc 515 24 7))
                   (Export
                      (Solved
                         ([] :=>
@@ -384,7 +384,7 @@ Right
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV "d29" Star)))
                                       (TVar (TV "e30" Star))))))
-                        (Area (Loc 394 18 8) (Loc 516 24 7))
+                        (Area (Loc 393 18 8) (Loc 515 24 7))
                         (Assignment
                            "propOrWrappedDefault"
                            (Solved
@@ -409,11 +409,11 @@ Right
                                                   "prelude")
                                                (TVar (TV "d29" Star)))
                                             (TVar (TV "e30" Star))))))
-                              (Area (Loc 417 18 31) (Loc 516 24 7))
+                              (Area (Loc 416 18 31) (Loc 515 24 7))
                               (Abs
                                  (Solved
                                     ([] :=> TVar (TV "a26" Star))
-                                    (Area (Loc 418 18 32) (Loc 422 18 36))
+                                    (Area (Loc 417 18 32) (Loc 421 18 36))
                                     "Wrap")
                                  [ Solved
                                      ([] :=>
@@ -435,11 +435,11 @@ Right
                                                       "prelude")
                                                    (TVar (TV "d29" Star)))
                                                 (TVar (TV "e30" Star)))))
-                                     (Area (Loc 417 18 31) (Loc 516 24 7))
+                                     (Area (Loc 416 18 31) (Loc 515 24 7))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "b27" Star))
-                                           (Area (Loc 424 18 38) (Loc 427 18 41))
+                                           (Area (Loc 423 18 38) (Loc 426 18 41))
                                            "def")
                                         [ Solved
                                             ([] :=>
@@ -456,11 +456,11 @@ Right
                                                           "prelude")
                                                        (TVar (TV "d29" Star)))
                                                     (TVar (TV "e30" Star))))
-                                            (Area (Loc 417 18 31) (Loc 516 24 7))
+                                            (Area (Loc 416 18 31) (Loc 515 24 7))
                                             (Abs
                                                (Solved
                                                   ([] :=> TVar (TV "c28" Star))
-                                                  (Area (Loc 429 18 43) (Loc 431 18 45))
+                                                  (Area (Loc 428 18 43) (Loc 430 18 45))
                                                   "px")
                                                [ Solved
                                                    ([] :=>
@@ -473,15 +473,15 @@ Right
                                                               "prelude")
                                                            (TVar (TV "d29" Star)))
                                                         (TVar (TV "e30" Star)))
-                                                   (Area (Loc 417 18 31) (Loc 516 24 7))
+                                                   (Area (Loc 416 18 31) (Loc 515 24 7))
                                                    (Abs
                                                       (Solved
                                                          ([] :=> TVar (TV "d29" Star))
-                                                         (Area (Loc 433 18 47) (Loc 435 18 49))
+                                                         (Area (Loc 432 18 47) (Loc 434 18 49))
                                                          "ob")
                                                       [ Solved
                                                           ([] :=> TVar (TV "e30" Star))
-                                                          (Area (Loc 442 18 56) (Loc 514 24 4))
+                                                          (Area (Loc 441 18 56) (Loc 513 24 4))
                                                           (JSExp
                                                              "{\n  return (\n    !!ob[px] ?\n    Just(ob[px]) :\n    Wrap(def)\n  )\n}")
                                                       ])
@@ -517,7 +517,7 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TVar (TV "j35" Star)))
                     (TVar (TV "k36" Star))))
-            (Area (Loc 517 25 1) (Loc 563 25 47))
+            (Area (Loc 516 25 1) (Loc 562 25 47))
             (Export
                (Solved
                   ([] :=>
@@ -530,7 +530,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "j35" Star)))
                           (TVar (TV "k36" Star))))
-                  (Area (Loc 517 25 1) (Loc 563 25 47))
+                  (Area (Loc 516 25 1) (Loc 562 25 47))
                   (Assignment
                      "prop"
                      (Solved
@@ -544,7 +544,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "j35" Star)))
                                 (TVar (TV "k36" Star))))
-                        (Area (Loc 531 25 15) (Loc 563 25 47))
+                        (Area (Loc 530 25 15) (Loc 562 25 47))
                         (App
                            (Solved
                               ([] :=>
@@ -562,7 +562,7 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "j35" Star)))
                                          (TVar (TV "k36" Star)))))
-                              (Area (Loc 531 25 15) (Loc 564 25 48))
+                              (Area (Loc 530 25 15) (Loc 563 25 48))
                               (App
                                  (Solved
                                     ([] :=>
@@ -590,19 +590,19 @@ Right
                                                         "prelude")
                                                      (TVar (TV "j35" Star)))
                                                   (TVar (TV "k36" Star))))))
-                                    (Area (Loc 531 25 15) (Loc 551 25 35))
+                                    (Area (Loc 530 25 15) (Loc 550 25 35))
                                     (Var "propOrWrappedDefault"))
                                  (Solved
                                     ([] :=>
                                        TApp
                                          (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                          (TVar (TV "l37" Star)))
-                                    (Area (Loc 552 25 36) (Loc 559 25 43))
+                                    (Area (Loc 551 25 36) (Loc 558 25 43))
                                     (Var "Nothing"))
                                  False))
                            (Solved
                               ([] :=> TCon (TC "String" Star) "prelude")
-                              (Area (Loc 561 25 45) (Loc 563 25 47))
+                              (Area (Loc 560 25 45) (Loc 562 25 47))
                               (LStr "''"))
                            True)))))
         , Solved
@@ -620,7 +620,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "p41" Star)))
                        (TVar (TV "q42" Star)))))
-            (Area (Loc 566 27 1) (Loc 608 27 43))
+            (Area (Loc 565 27 1) (Loc 607 27 43))
             (Export
                (Solved
                   ([] :=>
@@ -637,7 +637,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV "p41" Star)))
                              (TVar (TV "q42" Star)))))
-                  (Area (Loc 566 27 1) (Loc 608 27 43))
+                  (Area (Loc 565 27 1) (Loc 607 27 43))
                   (Assignment
                      "propOr"
                      (Solved
@@ -655,7 +655,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "p41" Star)))
                                    (TVar (TV "q42" Star)))))
-                        (Area (Loc 582 27 17) (Loc 608 27 43))
+                        (Area (Loc 581 27 17) (Loc 607 27 43))
                         (App
                            (Solved
                               ([] :=>
@@ -679,7 +679,7 @@ Right
                                                   "prelude")
                                                (TVar (TV "p41" Star)))
                                             (TVar (TV "q42" Star))))))
-                              (Area (Loc 582 27 17) (Loc 602 27 37))
+                              (Area (Loc 581 27 17) (Loc 601 27 37))
                               (Var "propOrWrappedDefault"))
                            (Solved
                               ([] :=>
@@ -690,7 +690,7 @@ Right
                                    (TApp
                                       (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                       (TVar (TV "r43" Star))))
-                              (Area (Loc 603 27 38) (Loc 607 27 42))
+                              (Area (Loc 602 27 38) (Loc 606 27 42))
                               (Var "Just"))
                            True)))))
         , Solved
@@ -708,7 +708,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "t45" Star)))
                        (TCon (TC "Boolean" Star) "prelude"))))
-            (Area (Loc 609 28 1) (Loc 723 31 5))
+            (Area (Loc 608 28 1) (Loc 722 31 5))
             (TypedExp
                (Solved
                   ([] :=>
@@ -725,7 +725,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV "t45" Star)))
                              (TCon (TC "Boolean" Star) "prelude"))))
-                  (Area (Loc 647 29 1) (Loc 723 31 5))
+                  (Area (Loc 646 29 1) (Loc 722 31 5))
                   (Export
                      (Solved
                         ([] :=>
@@ -742,7 +742,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "y50" Star)))
                                    (TCon (TC "Boolean" Star) "prelude"))))
-                        (Area (Loc 654 29 8) (Loc 723 31 5))
+                        (Area (Loc 653 29 8) (Loc 722 31 5))
                         (Assignment
                            "propEq"
                            (Solved
@@ -761,11 +761,11 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "y50" Star)))
                                          (TVar (TV "z51" Star)))))
-                              (Area (Loc 663 29 17) (Loc 723 31 5))
+                              (Area (Loc 662 29 17) (Loc 722 31 5))
                               (Abs
                                  (Solved
                                     ([] :=> TVar (TV "w48" Star))
-                                    (Area (Loc 664 29 18) (Loc 666 29 20))
+                                    (Area (Loc 663 29 18) (Loc 665 29 20))
                                     "xx")
                                  [ Solved
                                      ([] :=>
@@ -781,11 +781,11 @@ Right
                                                    "prelude")
                                                 (TVar (TV "y50" Star)))
                                              (TVar (TV "z51" Star))))
-                                     (Area (Loc 663 29 17) (Loc 723 31 5))
+                                     (Area (Loc 662 29 17) (Loc 722 31 5))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "x49" Star))
-                                           (Area (Loc 668 29 22) (Loc 670 29 24))
+                                           (Area (Loc 667 29 22) (Loc 669 29 24))
                                            "px")
                                         [ Solved
                                             ([] :=>
@@ -796,15 +796,15 @@ Right
                                                        "prelude")
                                                     (TVar (TV "y50" Star)))
                                                  (TVar (TV "z51" Star)))
-                                            (Area (Loc 663 29 17) (Loc 723 31 5))
+                                            (Area (Loc 662 29 17) (Loc 722 31 5))
                                             (Abs
                                                (Solved
                                                   ([] :=> TVar (TV "y50" Star))
-                                                  (Area (Loc 672 29 26) (Loc 674 29 28))
+                                                  (Area (Loc 671 29 26) (Loc 673 29 28))
                                                   "ob")
                                                [ Solved
                                                    ([] :=> TVar (TV "z51" Star))
-                                                   (Area (Loc 680 29 34) (Loc 722 31 3))
+                                                   (Area (Loc 679 29 34) (Loc 721 31 3))
                                                    (JSExp
                                                       "{\n  return !!ob[px] && ob[px] === xx\n}")
                                                ])
@@ -835,7 +835,7 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TVar (TV "a52" Star)))
                     (TVar (TV "b53" Star))))
-            (Area (Loc 725 33 1) (Loc 805 34 55))
+            (Area (Loc 724 33 1) (Loc 804 34 55))
             (TypedExp
                (Solved
                   ([] :=>
@@ -848,7 +848,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "a52" Star)))
                           (TVar (TV "b53" Star))))
-                  (Area (Loc 751 34 1) (Loc 805 34 55))
+                  (Area (Loc 750 34 1) (Loc 804 34 55))
                   (Export
                      (Solved
                         ([] :=>
@@ -861,7 +861,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "f57" Star)))
                                 (TVar (TV "g58" Star))))
-                        (Area (Loc 758 34 8) (Loc 805 34 55))
+                        (Area (Loc 757 34 8) (Loc 804 34 55))
                         (Assignment
                            "objOf"
                            (Solved
@@ -875,11 +875,11 @@ Right
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV "f57" Star)))
                                       (TVar (TV "g58" Star))))
-                              (Area (Loc 766 34 16) (Loc 805 34 55))
+                              (Area (Loc 765 34 16) (Loc 804 34 55))
                               (Abs
                                  (Solved
                                     ([] :=> TVar (TV "e56" Star))
-                                    (Area (Loc 767 34 17) (Loc 769 34 19))
+                                    (Area (Loc 766 34 17) (Loc 768 34 19))
                                     "px")
                                  [ Solved
                                      ([] :=>
@@ -889,15 +889,15 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TVar (TV "f57" Star)))
                                           (TVar (TV "g58" Star)))
-                                     (Area (Loc 766 34 16) (Loc 805 34 55))
+                                     (Area (Loc 765 34 16) (Loc 804 34 55))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "f57" Star))
-                                           (Area (Loc 771 34 21) (Loc 772 34 22))
+                                           (Area (Loc 770 34 21) (Loc 771 34 22))
                                            "x")
                                         [ Solved
                                             ([] :=> TVar (TV "g58" Star))
-                                            (Area (Loc 778 34 28) (Loc 804 34 54))
+                                            (Area (Loc 777 34 28) (Loc 803 34 54))
                                             (JSExp "{ return { [px]: x } }")
                                         ])
                                  ]))))))
@@ -923,7 +923,7 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TVar (TV "i60" Star)))
                     (TVar (TV "j61" Star))))
-            (Area (Loc 807 36 1) (Loc 884 37 57))
+            (Area (Loc 806 36 1) (Loc 883 37 57))
             (TypedExp
                (Solved
                   ([] :=>
@@ -936,7 +936,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "i60" Star)))
                           (TVar (TV "j61" Star))))
-                  (Area (Loc 828 37 1) (Loc 884 37 57))
+                  (Area (Loc 827 37 1) (Loc 883 37 57))
                   (Export
                      (Solved
                         ([] :=>
@@ -949,7 +949,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "o66" Star)))
                                 (TVar (TV "p67" Star))))
-                        (Area (Loc 835 37 8) (Loc 884 37 57))
+                        (Area (Loc 834 37 8) (Loc 883 37 57))
                         (Assignment
                            "merge"
                            (Solved
@@ -963,11 +963,11 @@ Right
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV "o66" Star)))
                                       (TVar (TV "p67" Star))))
-                              (Area (Loc 843 37 16) (Loc 884 37 57))
+                              (Area (Loc 842 37 16) (Loc 883 37 57))
                               (Abs
                                  (Solved
                                     ([] :=> TVar (TV "n65" Star))
-                                    (Area (Loc 844 37 17) (Loc 845 37 18))
+                                    (Area (Loc 843 37 17) (Loc 844 37 18))
                                     "a")
                                  [ Solved
                                      ([] :=>
@@ -977,15 +977,15 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TVar (TV "o66" Star)))
                                           (TVar (TV "p67" Star)))
-                                     (Area (Loc 843 37 16) (Loc 884 37 57))
+                                     (Area (Loc 842 37 16) (Loc 883 37 57))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "o66" Star))
-                                           (Area (Loc 847 37 20) (Loc 848 37 21))
+                                           (Area (Loc 846 37 20) (Loc 847 37 21))
                                            "b")
                                         [ Solved
                                             ([] :=> TVar (TV "p67" Star))
-                                            (Area (Loc 854 37 27) (Loc 883 37 56))
+                                            (Area (Loc 853 37 27) (Loc 882 37 56))
                                             (JSExp "Object.assign({}, a, b)")
                                         ])
                                  ]))))))
@@ -1010,7 +1010,7 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TVar (TV "r69" Star)))
                     (TVar (TV "s70" Star))))
-            (Area (Loc 887 39 1) (Loc 935 40 24))
+            (Area (Loc 886 39 1) (Loc 934 40 24))
             (TypedExp
                (Solved
                   ([] :=>
@@ -1023,7 +1023,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV "r69" Star)))
                           (TVar (TV "s70" Star))))
-                  (Area (Loc 912 40 1) (Loc 935 40 24))
+                  (Area (Loc 911 40 1) (Loc 934 40 24))
                   (Assignment
                      "mergeLeft"
                      (Solved
@@ -1037,7 +1037,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "a78" Star)))
                                 (TVar (TV "c80" Star))))
-                        (Area (Loc 924 40 13) (Loc 935 40 24))
+                        (Area (Loc 923 40 13) (Loc 934 40 24))
                         (App
                            (Solved
                               ([] :=>
@@ -1066,7 +1066,7 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "x75" Star)))
                                          (TVar (TV "z77" Star)))))
-                              (Area (Loc 924 40 13) (Loc 928 40 17))
+                              (Area (Loc 923 40 13) (Loc 927 40 17))
                               (Var "flip"))
                            (Solved
                               ([] :=>
@@ -1079,7 +1079,7 @@ Right
                                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                          (TVar (TV "b79" Star)))
                                       (TVar (TV "c80" Star))))
-                              (Area (Loc 929 40 18) (Loc 934 40 23))
+                              (Area (Loc 928 40 18) (Loc 933 40 23))
                               (Var "merge"))
                            True))))
                (Forall
@@ -1095,13 +1095,13 @@ Right
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 31 1 32))
+            (Area (Loc 0 1 1) (Loc 32 1 33))
             ADT
               { adtname = "Maybe"
               , adtparams = [ "a" ]
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 15 1 16) (Loc 21 1 22))
+                      (Area (Loc 15 1 16) (Loc 22 1 23))
                       (Constructor
                          "Just"
                          [ Untyped (Area (Loc 20 1 21) (Loc 21 1 22)) (TRSingle "a") ]
@@ -1113,7 +1113,7 @@ Right
                                (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                (TVar (TV "d81" Star)))))
                   , Untyped
-                      (Area (Loc 24 1 25) (Loc 31 1 32))
+                      (Area (Loc 25 1 26) (Loc 32 1 33))
                       (Constructor
                          "Nothing"
                          []
@@ -1127,135 +1127,135 @@ Right
               , adtexported = False
               }
         , Untyped
-            (Area (Loc 937 42 1) (Loc 1020 46 1))
+            (Area (Loc 936 42 1) (Loc 1019 46 1))
             Alias
               { aliasname = "ShopDiscount"
               , aliasparams = []
               , aliastype =
                   Untyped
-                    (Area (Loc 958 42 22) (Loc 1020 46 1))
+                    (Area (Loc 957 42 22) (Loc 1019 46 1))
                     (TRRecord
                        (fromList
                           [ ( "id"
-                            , Untyped (Area (Loc 968 43 9) (Loc 974 43 15)) (TRSingle "String")
+                            , Untyped (Area (Loc 967 43 9) (Loc 973 43 15)) (TRSingle "String")
                             )
                           , ( "itemId"
                             , Untyped
-                                (Area (Loc 988 44 13) (Loc 994 44 19)) (TRSingle "Number")
+                                (Area (Loc 987 44 13) (Loc 993 44 19)) (TRSingle "Number")
                             )
                           , ( "multiplier"
                             , Untyped
-                                (Area (Loc 1012 45 17) (Loc 1018 45 23)) (TRSingle "Number")
+                                (Area (Loc 1011 45 17) (Loc 1017 45 23)) (TRSingle "Number")
                             )
                           ])
                        Nothing)
               , aliasexported = False
               }
         , Untyped
-            (Area (Loc 1021 47 1) (Loc 1133 52 1))
+            (Area (Loc 1020 47 1) (Loc 1132 52 1))
             Alias
               { aliasname = "ShopItem"
               , aliasparams = []
               , aliastype =
                   Untyped
-                    (Area (Loc 1038 47 18) (Loc 1133 52 1))
+                    (Area (Loc 1037 47 18) (Loc 1132 52 1))
                     (TRRecord
                        (fromList
                           [ ( "cost"
                             , Untyped
-                                (Area (Loc 1091 50 11) (Loc 1097 50 17)) (TRSingle "Number")
+                                (Area (Loc 1090 50 11) (Loc 1096 50 17)) (TRSingle "Number")
                             )
                           , ( "description"
                             , Untyped
-                                (Area (Loc 1073 49 18) (Loc 1079 49 24)) (TRSingle "String")
+                                (Area (Loc 1072 49 18) (Loc 1078 49 24)) (TRSingle "String")
                             )
                           , ( "discounts"
                             , Untyped
-                                (Area (Loc 1114 51 16) (Loc 1131 51 33))
+                                (Area (Loc 1113 51 16) (Loc 1130 51 33))
                                 (TRComp
                                    "List"
                                    [ Untyped
-                                       (Area (Loc 1119 51 21) (Loc 1131 51 33))
+                                       (Area (Loc 1118 51 21) (Loc 1130 51 33))
                                        (TRSingle "ShopDiscount")
                                    ])
                             )
                           , ( "id"
                             , Untyped
-                                (Area (Loc 1048 48 9) (Loc 1054 48 15)) (TRSingle "Number")
+                                (Area (Loc 1047 48 9) (Loc 1053 48 15)) (TRSingle "Number")
                             )
                           ])
                        Nothing)
               , aliasexported = False
               }
         , Untyped
-            (Area (Loc 1134 53 1) (Loc 1217 57 1))
+            (Area (Loc 1133 53 1) (Loc 1216 57 1))
             Alias
               { aliasname = "ShopCustomer"
               , aliasparams = []
               , aliastype =
                   Untyped
-                    (Area (Loc 1155 53 22) (Loc 1217 57 1))
+                    (Area (Loc 1154 53 22) (Loc 1216 57 1))
                     (TRRecord
                        (fromList
                           [ ( "cart"
                             , Untyped
-                                (Area (Loc 1183 55 11) (Loc 1196 55 24))
+                                (Area (Loc 1182 55 11) (Loc 1195 55 24))
                                 (TRComp
                                    "List"
                                    [ Untyped
-                                       (Area (Loc 1188 55 16) (Loc 1196 55 24))
+                                       (Area (Loc 1187 55 16) (Loc 1195 55 24))
                                        (TRSingle "ShopItem")
                                    ])
                             )
                           , ( "id"
                             , Untyped
-                                (Area (Loc 1165 54 9) (Loc 1171 54 15)) (TRSingle "String")
+                                (Area (Loc 1164 54 9) (Loc 1170 54 15)) (TRSingle "String")
                             )
                           , ( "money"
                             , Untyped
-                                (Area (Loc 1209 56 12) (Loc 1215 56 18)) (TRSingle "Number")
+                                (Area (Loc 1208 56 12) (Loc 1214 56 18)) (TRSingle "Number")
                             )
                           ])
                        Nothing)
               , aliasexported = False
               }
         , Untyped
-            (Area (Loc 1218 58 1) (Loc 1334 62 1))
+            (Area (Loc 1217 58 1) (Loc 1333 62 1))
             Alias
               { aliasname = "ShopContext"
               , aliasparams = []
               , aliastype =
                   Untyped
-                    (Area (Loc 1238 58 21) (Loc 1334 62 1))
+                    (Area (Loc 1237 58 21) (Loc 1333 62 1))
                     (TRRecord
                        (fromList
                           [ ( "customers"
                             , Untyped
-                                (Area (Loc 1255 59 16) (Loc 1272 59 33))
+                                (Area (Loc 1254 59 16) (Loc 1271 59 33))
                                 (TRComp
                                    "List"
                                    [ Untyped
-                                       (Area (Loc 1260 59 21) (Loc 1272 59 33))
+                                       (Area (Loc 1259 59 21) (Loc 1271 59 33))
                                        (TRSingle "ShopCustomer")
                                    ])
                             )
                           , ( "inventory"
                             , Untyped
-                                (Area (Loc 1289 60 16) (Loc 1302 60 29))
+                                (Area (Loc 1288 60 16) (Loc 1301 60 29))
                                 (TRComp
                                    "List"
                                    [ Untyped
-                                       (Area (Loc 1294 60 21) (Loc 1302 60 29))
+                                       (Area (Loc 1293 60 21) (Loc 1301 60 29))
                                        (TRSingle "ShopItem")
                                    ])
                             )
                           , ( "sales"
                             , Untyped
-                                (Area (Loc 1315 61 12) (Loc 1332 61 29))
+                                (Area (Loc 1314 61 12) (Loc 1331 61 29))
                                 (TRComp
                                    "List"
                                    [ Untyped
-                                       (Area (Loc 1320 61 17) (Loc 1332 61 29))
+                                       (Area (Loc 1319 61 17) (Loc 1331 61 29))
                                        (TRSingle "ShopDiscount")
                                    ])
                             )

@@ -4,12 +4,12 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Result" Star) "path")
-            (Area (Loc 37 2 1) (Loc 65 2 29))
+            (Area (Loc 38 2 1) (Loc 66 2 29))
             (Assignment
                "result"
                (Solved
                   ([] :=> TCon (TC "Result" Star) "path")
-                  (Area (Loc 46 2 10) (Loc 65 2 29))
+                  (Area (Loc 47 2 10) (Loc 66 2 29))
                   (App
                      (Solved
                         ([] :=>
@@ -18,23 +18,23 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TCon (TC "String" Star) "prelude"))
                              (TCon (TC "Result" Star) "path"))
-                        (Area (Loc 46 2 10) (Loc 53 2 17))
+                        (Area (Loc 47 2 10) (Loc 54 2 17))
                         (Var "Success"))
                      (Solved
                         ([] :=> TCon (TC "String" Star) "prelude")
-                        (Area (Loc 54 2 18) (Loc 64 2 28))
+                        (Area (Loc 55 2 18) (Loc 65 2 28))
                         (LStr "\"response\""))
                      True)))
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 36 1 37))
+            (Area (Loc 0 1 1) (Loc 37 1 38))
             ADT
               { adtname = "Result"
               , adtparams = []
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 14 1 15) (Loc 28 1 29))
+                      (Area (Loc 14 1 15) (Loc 29 1 30))
                       (Constructor
                          "Success"
                          [ Untyped (Area (Loc 22 1 23) (Loc 28 1 29)) (TRSingle "String") ]
@@ -44,7 +44,7 @@ Right
                                (TCon (TC "String" Star) "prelude"))
                             (TCon (TC "Result" Star) "path")))
                   , Untyped
-                      (Area (Loc 31 1 32) (Loc 36 1 37))
+                      (Area (Loc 32 1 33) (Loc 37 1 38))
                       (Constructor "Error" [] (TCon (TC "Result" Star) "path"))
                   ]
               , adtType = TCon (TC "Result" Star) "path"
