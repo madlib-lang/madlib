@@ -37,9 +37,7 @@ export alias LcovSection = {
 export alias LcovInfo = List LcovSection
 
 getPath :: LcovSection -> String
-export getPath = (section) =>
-  where(section.sf)
-    is SF p: p
+export getPath = (section) => where(section.sf) { SF p => p }
 
 emptySection :: LcovSection
 emptySection = {
@@ -55,17 +53,18 @@ emptySection = {
 }
 
 parseNumberString :: (Number -> String -> LcovLine) -> String -> LcovLine
-parseNumberString = (ctor, args) => where(S.split(",", args))
-  is [line, name]: ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
-
+parseNumberString = (ctor, args) => where(S.split(",", args)) {
+  [line, name] => ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
+}
 
 parseNumberNumber :: (Number -> Number -> LcovLine) -> String -> LcovLine
-parseNumberNumber = (ctor, args) => where(S.split(",", args))
-  is [line, count]: ctor(
-    Maybe.fromMaybe(0, N.fromString(line)),
-    Maybe.fromMaybe(0, N.fromString(count))
-  )
-
+parseNumberNumber = (ctor, args) => where(S.split(",", args)) {
+  [line, count] =>
+    ctor(
+      Maybe.fromMaybe(0, N.fromString(line)),
+      Maybe.fromMaybe(0, N.fromString(count))
+    )
+}
 
 parseLcovSection :: String -> LcovSection
 parseLcovSection = (content) =>
@@ -74,16 +73,25 @@ parseLcovSection = (content) =>
     |> L.reduceR(
       (section, line) =>
         S.split(":", line)
-          |> (namedLine) => where(namedLine)
-              is ["TN", arg]   : { ...section, tn: TN(arg) }
-              is ["SF", arg]   : { ...section, sf: SF(arg) }
-              is ["FN", args]  : { ...section, fns: L.append(parseNumberString(FN, args), section.fns) }
-              is ["FNDA", args]: { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
-              is ["FNF", arg]  : { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
-              is ["FNH", arg]  : { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
-              is ["DA", args]  : { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
-              is ["LF", arg]   : { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
-              is ["LH", arg]   : { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
+          |> (namedLine) => where(namedLine) {
+              ["TN", arg] => { ...section, tn: TN(arg) }
+
+              ["SF", arg] => { ...section, sf: SF(arg) }
+
+              ["FN", args] => { ...section, fns: L.append(parseNumberString(FN, args), section.fns) }
+
+              ["FNDA", args] => { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
+
+              ["FNF", arg] => { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
+
+              ["FNH", arg] => { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
+
+              ["DA", args] => { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
+
+              ["LF", arg] => { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
+
+              ["LH", arg] => { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
+            }
       , emptySection
       )
 
@@ -94,17 +102,17 @@ export parseLcov = (content) =>
     |> map(parseLcovSection)
 
 stringifyLine :: LcovLine -> String
-stringifyLine = (line) =>
-  where(line)
-    is TN arg: "TN:" ++ arg ++ "\n"
-    is SF arg: "SF:" ++ arg ++ "\n"
-    is FN l name: "FN:" ++ show(l) ++ "," ++ name ++ "\n"
-    is FNDA count name: "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
-    is FNF count: "FNF:" ++ show(count) ++ "\n"
-    is FNH count: "FNH:" ++ show(count) ++ "\n"
-    is DA l count: "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
-    is LF count: "LF:" ++ show(count) ++ "\n"
-    is LH count: "LH:" ++ show(count) ++ "\n"
+stringifyLine = where {
+  TN arg => "TN:" ++ arg ++ "\n"
+  SF arg => "SF:" ++ arg ++ "\n"
+  FN l name => "FN:" ++ show(l) ++ "," ++ name ++ "\n"
+  FNDA count name => "FNDA:" ++ show(count) ++ "," ++ name ++ "\n"
+  FNF count => "FNF:" ++ show(count) ++ "\n"
+  FNH count => "FNH:" ++ show(count) ++ "\n"
+  DA l count => "DA:" ++ show(l) ++ "," ++ show(count) ++ "\n"
+  LF count => "LF:" ++ show(count) ++ "\n"
+  LH count => "LH:" ++ show(count) ++ "\n"
+}
 
 stringifySection :: LcovSection -> String
 stringifySection = (section) =>

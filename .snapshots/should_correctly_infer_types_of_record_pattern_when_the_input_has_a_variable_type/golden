@@ -12,7 +12,7 @@ Right
                           [ ( "x" , TVar (TV "d3" Star) ) , ( "z" , TVar (TV "d3" Star) ) ])
                        (Just (TVar (TV "e4" Star)))))
                  (TVar (TV "d3" Star)))
-            (Area (Loc 0 1 1) (Loc 61 4 3))
+            (Area (Loc 0 1 1) (Loc 59 4 3))
             (Assignment
                "fn2"
                (Solved
@@ -25,7 +25,7 @@ Right
                                 [ ( "x" , TVar (TV "d3" Star) ) , ( "z" , TVar (TV "d3" Star) ) ])
                              (Just (TVar (TV "e4" Star)))))
                        (TVar (TV "d3" Star)))
-                  (Area (Loc 6 1 7) (Loc 61 4 3))
+                  (Area (Loc 6 1 7) (Loc 59 4 3))
                   (Abs
                      (Solved
                         ([] :=>
@@ -37,7 +37,7 @@ Right
                         "a")
                      [ Solved
                          ([] :=> TVar (TV "d3" Star))
-                         (Area (Loc 14 1 15) (Loc 60 4 1))
+                         (Area (Loc 14 1 15) (Loc 58 4 1))
                          (Where
                             (Solved
                                ([] :=>
@@ -61,14 +61,14 @@ Right
                                               ])
                                            (Just (TVar (TV "e4" Star)))))
                                      (TVar (TV "d3" Star)))
-                                (Area (Loc 27 2 3) (Loc 41 2 17))
+                                (Area (Loc 27 2 3) (Loc 40 2 16))
                                 (Is
                                    (Solved
                                       ([] :=>
                                          TRecord
                                            (fromList [ ( "z" , TVar (TV "d3" Star) ) ])
                                            (Just (TVar (TV "e4" Star))))
-                                      (Area (Loc 30 2 6) (Loc 38 2 14))
+                                      (Area (Loc 27 2 3) (Loc 35 2 11))
                                       (PRecord
                                          (fromList
                                             [ ( "z"
@@ -77,13 +77,13 @@ Right
                                                      TRecord
                                                        (fromList [ ( "z" , TVar (TV "d3" Star) ) ])
                                                        (Just (TVar (TV "e4" Star))))
-                                                  (Area (Loc 35 2 11) (Loc 36 2 12))
+                                                  (Area (Loc 32 2 8) (Loc 33 2 9))
                                                   (PVar "z")
                                               )
                                             ])))
                                    (Solved
                                       ([] :=> TVar (TV "d3" Star))
-                                      (Area (Loc 40 2 16) (Loc 41 2 17))
+                                      (Area (Loc 39 2 15) (Loc 40 2 16))
                                       (Var "z")))
                             , Solved
                                 ([] :=>
@@ -97,14 +97,14 @@ Right
                                               ])
                                            (Just (TVar (TV "e4" Star)))))
                                      (TVar (TV "d3" Star)))
-                                (Area (Loc 44 3 3) (Loc 58 3 17))
+                                (Area (Loc 43 3 3) (Loc 56 3 16))
                                 (Is
                                    (Solved
                                       ([] :=>
                                          TRecord
                                            (fromList [ ( "x" , TVar (TV "f5" Star) ) ])
                                            (Just (TVar (TV "g6" Star))))
-                                      (Area (Loc 47 3 6) (Loc 55 3 14))
+                                      (Area (Loc 43 3 3) (Loc 51 3 11))
                                       (PRecord
                                          (fromList
                                             [ ( "x"
@@ -113,13 +113,13 @@ Right
                                                      TRecord
                                                        (fromList [ ( "x" , TVar (TV "f5" Star) ) ])
                                                        (Just (TVar (TV "g6" Star))))
-                                                  (Area (Loc 52 3 11) (Loc 53 3 12))
+                                                  (Area (Loc 48 3 8) (Loc 49 3 9))
                                                   (PVar "x")
                                               )
                                             ])))
                                    (Solved
                                       ([] :=> TVar (TV "f5" Star))
-                                      (Area (Loc 57 3 16) (Loc 58 3 17))
+                                      (Area (Loc 55 3 15) (Loc 56 3 16))
                                       (Var "x")))
                             ])
                      ])))

@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 0 1 1) (Loc 31 3 1))
+            (Area (Loc 0 1 1) (Loc 29 3 1))
             (Where
                (Solved
                   ([] :=> TCon (TC "String" Star) "prelude")
@@ -17,15 +17,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 16 2 3) (Loc 29 2 16))
+                   (Area (Loc 16 2 3) (Loc 27 2 14))
                    (Is
                       (Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 19 2 6) (Loc 25 2 12))
+                         (Area (Loc 16 2 3) (Loc 22 2 9))
                          (PCon "String"))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 28 2 15) (Loc 29 2 16))
+                         (Area (Loc 26 2 13) (Loc 27 2 14))
                          (LNum "1")))
                ])
         ]

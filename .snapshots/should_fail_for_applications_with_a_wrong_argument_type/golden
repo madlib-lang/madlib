@@ -5,7 +5,7 @@ Left
         (TCon (TC "String" Star) "prelude"))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 24 2 1) (Loc 33 2 10)
+       , ctxArea = Area (Loc 32 2 9) (Loc 33 2 10)
        , ctxBacktrace =
            [ BTExp
                (Canonical
@@ -31,33 +31,5 @@ Left
                            False))
                      (Canonical (Area (Loc 32 2 9) (Loc 33 2 10)) (LNum "4"))
                      True))
-           , BTExp
-               (Canonical
-                  (Area (Loc 0 1 1) (Loc 23 1 24))
-                  (Assignment
-                     "fn"
-                     (Canonical
-                        (Area (Loc 5 1 6) (Loc 23 1 24))
-                        (Abs
-                           (Canonical (Area (Loc 6 1 7) (Loc 7 1 8)) "a")
-                           [ Canonical
-                               (Area (Loc 5 1 6) (Loc 23 1 24))
-                               (Abs
-                                  (Canonical (Area (Loc 9 1 10) (Loc 10 1 11)) "b")
-                                  [ Canonical
-                                      (Area (Loc 16 1 17) (Loc 22 1 23))
-                                      (App
-                                         (Canonical
-                                            (Area (Loc 16 1 17) (Loc 22 1 23))
-                                            (App
-                                               (Canonical
-                                                  (Area (Loc 18 1 19) (Loc 20 1 21)) (Var "=="))
-                                               (Canonical
-                                                  (Area (Loc 16 1 17) (Loc 17 1 18)) (Var "a"))
-                                               False))
-                                         (Canonical (Area (Loc 21 1 22) (Loc 22 1 23)) (Var "b"))
-                                         True)
-                                  ])
-                           ]))))
            ]
        })

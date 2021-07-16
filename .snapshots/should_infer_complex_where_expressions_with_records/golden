@@ -248,7 +248,7 @@ Right
                        (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                        (Just (TVar (TV "r43" Star)))))
                  (TCon (TC "String" Star) "prelude"))
-            (Area (Loc 654 32 1) (Loc 703 32 50))
+            (Area (Loc 654 32 1) (Loc 706 32 53))
             (Assignment
                "FunctionLink"
                (Solved
@@ -260,7 +260,7 @@ Right
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                              (Just (TVar (TV "r43" Star)))))
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 669 32 16) (Loc 703 32 50))
+                  (Area (Loc 669 32 16) (Loc 706 32 53))
                   (Abs
                      (Solved
                         ([] :=>
@@ -271,7 +271,7 @@ Right
                         "__x__")
                      [ Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
-                         (Area (Loc 669 32 16) (Loc 703 32 50))
+                         (Area (Loc 669 32 16) (Loc 706 32 53))
                          (Where
                             (Solved
                                ([] :=>
@@ -290,7 +290,7 @@ Right
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                                            (Just (TVar (TV "r43" Star)))))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 675 32 22) (Loc 703 32 50))
+                                (Area (Loc 677 32 24) (Loc 704 32 51))
                                 (Is
                                    (Solved
                                       ([] :=>
@@ -298,11 +298,11 @@ Right
                                            (fromList
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                                            (Just (TVar (TV "r43" Star))))
-                                      (Area (Loc 678 32 25) (Loc 679 32 26))
+                                      (Area (Loc 677 32 24) (Loc 678 32 25))
                                       (PVar "f"))
                                    (Solved
                                       ([] :=> TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 681 32 28) (Loc 703 32 50))
+                                      (Area (Loc 682 32 29) (Loc 704 32 51))
                                       (App
                                          (Solved
                                             ([] :=>
@@ -313,7 +313,7 @@ Right
                                                        "prelude")
                                                     (TCon (TC "String" Star) "prelude"))
                                                  (TCon (TC "String" Star) "prelude"))
-                                            (Area (Loc 681 32 28) (Loc 703 32 50))
+                                            (Area (Loc 682 32 29) (Loc 704 32 51))
                                             (App
                                                (Solved
                                                   ([] :=>
@@ -333,20 +333,20 @@ Right
                                                                 "prelude")
                                                              (TCon (TC "String" Star) "prelude"))
                                                           (TCon (TC "String" Star) "prelude")))
-                                                  (Area (Loc 694 32 41) (Loc 696 32 43))
+                                                  (Area (Loc 695 32 42) (Loc 697 32 44))
                                                   (Var "++"))
                                                (Solved
                                                   ([] :=> TCon (TC "String" Star) "prelude")
-                                                  (Area (Loc 681 32 28) (Loc 693 32 40))
+                                                  (Area (Loc 682 32 29) (Loc 694 32 41))
                                                   (LStr "'moduleName'"))
                                                False))
                                          (Solved
                                             ([] :=> TCon (TC "String" Star) "prelude")
-                                            (Area (Loc 697 32 44) (Loc 703 32 50))
+                                            (Area (Loc 698 32 45) (Loc 704 32 51))
                                             (Access
                                                (Solved
                                                   ([] :=> TVar (TV "m38" Star))
-                                                  (Area (Loc 697 32 44) (Loc 698 32 45))
+                                                  (Area (Loc 698 32 45) (Loc 699 32 46))
                                                   (Var "f"))
                                                (Solved
                                                   ([] :=>
@@ -362,7 +362,7 @@ Right
                                                                 ])
                                                              (Just (TVar (TV "r43" Star)))))
                                                        (TVar (TV "q42" Star)))
-                                                  (Area (Loc 699 32 46) (Loc 703 32 50))
+                                                  (Area (Loc 700 32 47) (Loc 704 32 51))
                                                   (Var ".name"))))
                                          True)))
                             ])
@@ -411,7 +411,7 @@ Right
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TCon (TC "String" Star) "prelude")))
-            (Area (Loc 704 33 1) (Loc 1221 44 1))
+            (Area (Loc 707 33 1) (Loc 1221 44 1))
             (Assignment
                "generateFunctionLinks"
                (Solved
@@ -467,7 +467,7 @@ Right
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TCon (TC "String" Star) "prelude")))
-                  (Area (Loc 728 33 25) (Loc 1221 44 1))
+                  (Area (Loc 731 33 25) (Loc 1221 44 1))
                   (Abs
                      (Solved
                         ([ IsIn "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
@@ -516,7 +516,7 @@ Right
                                      )
                                    ])
                                 (Just (TVar (TV "e108" Star)))))
-                        (Area (Loc 728 33 25) (Loc 731 33 28))
+                        (Area (Loc 731 33 25) (Loc 734 33 28))
                         "_P_")
                      [ Solved
                          ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ]
@@ -530,7 +530,7 @@ Right
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
                               (TCon (TC "String" Star) "prelude"))
-                         (Area (Loc 728 33 25) (Loc 1219 43 20))
+                         (Area (Loc 731 33 25) (Loc 1219 43 20))
                          (App
                             (Solved
                                ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ] ] :=>
@@ -657,7 +657,7 @@ Right
                                           , ( "tchouk" , TCon (TC "String" Star) "prelude" )
                                           ])
                                        (Just (TVar (TV "i60" Star)))))
-                               (Area (Loc 728 33 25) (Loc 1198 42 3))
+                               (Area (Loc 731 33 25) (Loc 1198 42 5))
                                (App
                                   (Solved
                                      ([ IsIn "Comparable" [ TVar (TV "l63" Star) ]
@@ -727,7 +727,7 @@ Right
                                                    , ( "tchouk" , TVar (TV "h59" Star) )
                                                    ])
                                                 (Just (TVar (TV "i60" Star))))))
-                                     (Area (Loc 759 35 3) (Loc 1198 42 3))
+                                     (Area (Loc 762 35 3) (Loc 1198 42 5))
                                      (App
                                         (Solved
                                            ([] :=>
@@ -763,7 +763,7 @@ Right
                                                    (TApp
                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                       (TVar (TV "b53" Star)))))
-                                           (Area (Loc 759 35 3) (Loc 765 35 9))
+                                           (Area (Loc 762 35 3) (Loc 768 35 9))
                                            (Var "sortBy"))
                                         (Solved
                                            ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
@@ -841,7 +841,7 @@ Right
                                                             ])
                                                          (Just (TVar (TV "i60" Star)))))
                                                    (TCon (TC "Number" Star) "prelude")))
-                                           (Area (Loc 766 35 10) (Loc 1193 41 72))
+                                           (Area (Loc 769 35 10) (Loc 1197 42 3))
                                            (Abs
                                               (Solved
                                                  ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
@@ -873,7 +873,7 @@ Right
                                                          , ( "tchouk" , TVar (TV "h59" Star) )
                                                          ])
                                                       (Just (TVar (TV "g58" Star))))
-                                                 (Area (Loc 767 35 11) (Loc 768 35 12))
+                                                 (Area (Loc 770 35 11) (Loc 771 35 12))
                                                  "a")
                                               [ Solved
                                                   ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
@@ -919,7 +919,7 @@ Right
                                                                 ])
                                                              (Just (TVar (TV "i60" Star)))))
                                                        (TCon (TC "Number" Star) "prelude"))
-                                                  (Area (Loc 766 35 10) (Loc 1193 41 72))
+                                                  (Area (Loc 769 35 10) (Loc 1197 42 3))
                                                   (Abs
                                                      (Solved
                                                         ([ IsIn
@@ -964,7 +964,7 @@ Right
                                                                   )
                                                                 ])
                                                              (Just (TVar (TV "i60" Star))))
-                                                        (Area (Loc 770 35 14) (Loc 771 35 15))
+                                                        (Area (Loc 773 35 14) (Loc 774 35 15))
                                                         "b")
                                                      [ Solved
                                                          ([ IsIn
@@ -981,7 +981,7 @@ Right
                                                               "Comparable" [ TVar (TV "y102" Star) ]
                                                           ] :=>
                                                             TCon (TC "Number" Star) "prelude")
-                                                         (Area (Loc 776 35 20) (Loc 1193 41 72))
+                                                         (Area (Loc 779 35 20) (Loc 1197 42 3))
                                                          (Where
                                                             (Solved
                                                                ([] :=>
@@ -1075,19 +1075,19 @@ Right
                                                                        (Just
                                                                           (TVar (TV "i60" Star)))))
                                                                (Area
-                                                                  (Loc 782 35 26) (Loc 788 35 32))
+                                                                  (Loc 785 35 26) (Loc 791 35 32))
                                                                (TupleConstructor
                                                                   [ Solved
                                                                       ([] :=> TVar (TV "c54" Star))
                                                                       (Area
-                                                                         (Loc 783 35 27)
-                                                                         (Loc 784 35 28))
+                                                                         (Loc 786 35 27)
+                                                                         (Loc 787 35 28))
                                                                       (Var "a")
                                                                   , Solved
                                                                       ([] :=> TVar (TV "d55" Star))
                                                                       (Area
-                                                                         (Loc 786 35 30)
-                                                                         (Loc 787 35 31))
+                                                                         (Loc 789 35 30)
+                                                                         (Loc 790 35 31))
                                                                       (Var "b")
                                                                   ]))
                                                             [ Solved
@@ -1217,7 +1217,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 794 36 5) (Loc 853 36 64))
+                                                                   (Loc 799 36 5) (Loc 857 36 63))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -1261,8 +1261,8 @@ Right
                                                                                        "i60"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 797 36 8)
-                                                                         (Loc 831 36 42))
+                                                                         (Loc 799 36 5)
+                                                                         (Loc 833 36 39))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -1306,8 +1306,8 @@ Right
                                                                                               "i60"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 798 36 9)
-                                                                                (Loc 813 36 24))
+                                                                                (Loc 800 36 6)
+                                                                                (Loc 815 36 21))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -1354,13 +1354,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               806
+                                                                                               808
                                                                                                36
-                                                                                               17)
+                                                                                               14)
                                                                                             (Loc
-                                                                                               811
+                                                                                               813
                                                                                                36
-                                                                                               22))
+                                                                                               19))
                                                                                          (PVar
                                                                                             "nameA")
                                                                                      )
@@ -1407,8 +1407,8 @@ Right
                                                                                               "i60"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 815 36 26)
-                                                                                (Loc 830 36 41))
+                                                                                (Loc 817 36 23)
+                                                                                (Loc 832 36 38))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -1455,13 +1455,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               823
+                                                                                               825
                                                                                                36
-                                                                                               34)
+                                                                                               31)
                                                                                             (Loc
-                                                                                               828
+                                                                                               830
                                                                                                36
-                                                                                               39))
+                                                                                               36))
                                                                                          (PVar
                                                                                             "nameB")
                                                                                      )
@@ -1476,8 +1476,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 833 36 44)
-                                                                         (Loc 853 36 64))
+                                                                         (Loc 837 36 43)
+                                                                         (Loc 857 36 63))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -1507,8 +1507,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 833 36 44)
-                                                                               (Loc 854 36 65))
+                                                                               (Loc 837 36 43)
+                                                                               (Loc 858 36 64))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -1555,9 +1555,9 @@ Right
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 833 36 44)
+                                                                                     (Loc 837 36 43)
                                                                                      (Loc
-                                                                                        840 36 51))
+                                                                                        844 36 50))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -1616,13 +1616,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              833
+                                                                                              837
                                                                                               36
-                                                                                              44)
+                                                                                              43)
                                                                                            (Loc
-                                                                                              840
+                                                                                              844
                                                                                               36
-                                                                                              51))
+                                                                                              50))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -1639,9 +1639,9 @@ Right
                                                                                           "f57"
                                                                                           Star))
                                                                                   (Area
-                                                                                     (Loc 841 36 52)
+                                                                                     (Loc 845 36 51)
                                                                                      (Loc
-                                                                                        846 36 57))
+                                                                                        850 36 56))
                                                                                   (Var "nameA"))
                                                                                False))
                                                                          (Solved
@@ -1653,8 +1653,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "h59" Star))
                                                                             (Area
-                                                                               (Loc 848 36 59)
-                                                                               (Loc 853 36 64))
+                                                                               (Loc 852 36 58)
+                                                                               (Loc 857 36 63))
                                                                             (Var "nameB"))
                                                                          True)))
                                                             , Solved
@@ -1784,7 +1784,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 859 37 5) (Loc 916 37 62))
+                                                                   (Loc 863 37 5) (Loc 919 37 61))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -1828,8 +1828,8 @@ Right
                                                                                        "p67"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 862 37 8)
-                                                                         (Loc 894 37 40))
+                                                                         (Loc 863 37 5)
+                                                                         (Loc 895 37 37))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -1873,8 +1873,8 @@ Right
                                                                                               "p67"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 863 37 9)
-                                                                                (Loc 878 37 24))
+                                                                                (Loc 864 37 6)
+                                                                                (Loc 879 37 21))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -1921,13 +1921,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               871
+                                                                                               872
                                                                                                37
-                                                                                               17)
+                                                                                               14)
                                                                                             (Loc
-                                                                                               876
+                                                                                               877
                                                                                                37
-                                                                                               22))
+                                                                                               19))
                                                                                          (PVar
                                                                                             "nameC")
                                                                                      )
@@ -1974,8 +1974,8 @@ Right
                                                                                               "p67"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 880 37 26)
-                                                                                (Loc 893 37 39))
+                                                                                (Loc 881 37 23)
+                                                                                (Loc 894 37 36))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "ik"
@@ -2022,13 +2022,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               886
+                                                                                               887
                                                                                                37
-                                                                                               32)
+                                                                                               29)
                                                                                             (Loc
-                                                                                               891
+                                                                                               892
                                                                                                37
-                                                                                               37))
+                                                                                               34))
                                                                                          (PVar
                                                                                             "nameD")
                                                                                      )
@@ -2043,8 +2043,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 896 37 42)
-                                                                         (Loc 916 37 62))
+                                                                         (Loc 899 37 41)
+                                                                         (Loc 919 37 61))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -2074,8 +2074,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 896 37 42)
-                                                                               (Loc 917 37 63))
+                                                                               (Loc 899 37 41)
+                                                                               (Loc 920 37 62))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -2122,9 +2122,9 @@ Right
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 896 37 42)
+                                                                                     (Loc 899 37 41)
                                                                                      (Loc
-                                                                                        903 37 49))
+                                                                                        906 37 48))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -2183,13 +2183,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              896
+                                                                                              899
                                                                                               37
-                                                                                              42)
+                                                                                              41)
                                                                                            (Loc
-                                                                                              903
+                                                                                              906
                                                                                               37
-                                                                                              49))
+                                                                                              48))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -2206,9 +2206,9 @@ Right
                                                                                           "m64"
                                                                                           Star))
                                                                                   (Area
-                                                                                     (Loc 904 37 50)
+                                                                                     (Loc 907 37 49)
                                                                                      (Loc
-                                                                                        909 37 55))
+                                                                                        912 37 54))
                                                                                   (Var "nameC"))
                                                                                False))
                                                                          (Solved
@@ -2220,8 +2220,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "o66" Star))
                                                                             (Area
-                                                                               (Loc 911 37 57)
-                                                                               (Loc 916 37 62))
+                                                                               (Loc 914 37 56)
+                                                                               (Loc 919 37 61))
                                                                             (Var "nameD"))
                                                                          True)))
                                                             , Solved
@@ -2351,7 +2351,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 922 38 5) (Loc 983 38 66))
+                                                                   (Loc 925 38 5) (Loc 985 38 65))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -2395,8 +2395,8 @@ Right
                                                                                        "w74"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 925 38 8)
-                                                                         (Loc 961 38 44))
+                                                                         (Loc 925 38 5)
+                                                                         (Loc 961 38 41))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -2440,8 +2440,8 @@ Right
                                                                                               "w74"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 926 38 9)
-                                                                                (Loc 943 38 26))
+                                                                                (Loc 926 38 6)
+                                                                                (Loc 943 38 23))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "tchouk"
@@ -2490,11 +2490,11 @@ Right
                                                                                             (Loc
                                                                                                936
                                                                                                38
-                                                                                               19)
+                                                                                               16)
                                                                                             (Loc
                                                                                                941
                                                                                                38
-                                                                                               24))
+                                                                                               21))
                                                                                          (PVar
                                                                                             "nameD")
                                                                                      )
@@ -2541,8 +2541,8 @@ Right
                                                                                               "w74"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 945 38 28)
-                                                                                (Loc 960 38 43))
+                                                                                (Loc 945 38 25)
+                                                                                (Loc 960 38 40))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -2591,11 +2591,11 @@ Right
                                                                                             (Loc
                                                                                                953
                                                                                                38
-                                                                                               36)
+                                                                                               33)
                                                                                             (Loc
                                                                                                958
                                                                                                38
-                                                                                               41))
+                                                                                               38))
                                                                                          (PVar
                                                                                             "nameC")
                                                                                      )
@@ -2610,8 +2610,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 963 38 46)
-                                                                         (Loc 983 38 66))
+                                                                         (Loc 965 38 45)
+                                                                         (Loc 985 38 65))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -2641,8 +2641,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 963 38 46)
-                                                                               (Loc 984 38 67))
+                                                                               (Loc 965 38 45)
+                                                                               (Loc 986 38 66))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -2689,9 +2689,9 @@ Right
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 963 38 46)
+                                                                                     (Loc 965 38 45)
                                                                                      (Loc
-                                                                                        970 38 53))
+                                                                                        972 38 52))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -2750,13 +2750,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              963
+                                                                                              965
                                                                                               38
-                                                                                              46)
+                                                                                              45)
                                                                                            (Loc
-                                                                                              970
+                                                                                              972
                                                                                               38
-                                                                                              53))
+                                                                                              52))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -2773,9 +2773,9 @@ Right
                                                                                           "v73"
                                                                                           Star))
                                                                                   (Area
-                                                                                     (Loc 971 38 54)
+                                                                                     (Loc 973 38 53)
                                                                                      (Loc
-                                                                                        976 38 59))
+                                                                                        978 38 58))
                                                                                   (Var "nameC"))
                                                                                False))
                                                                          (Solved
@@ -2787,8 +2787,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "t71" Star))
                                                                             (Area
-                                                                               (Loc 978 38 61)
-                                                                               (Loc 983 38 66))
+                                                                               (Loc 980 38 60)
+                                                                               (Loc 985 38 65))
                                                                             (Var "nameD"))
                                                                          True)))
                                                             , Solved
@@ -2918,7 +2918,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 989 39 5) (Loc 1047 39 63))
+                                                                   (Loc 991 39 5) (Loc 1048 39 62))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -2962,8 +2962,8 @@ Right
                                                                                        "d81"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 992 39 8)
-                                                                         (Loc 1025 39 41))
+                                                                         (Loc 991 39 5)
+                                                                         (Loc 1024 39 38))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -3007,8 +3007,8 @@ Right
                                                                                               "d81"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 993 39 9)
-                                                                                (Loc 1008 39 24))
+                                                                                (Loc 992 39 6)
+                                                                                (Loc 1007 39 21))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -3055,13 +3055,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1001
+                                                                                               1000
                                                                                                39
-                                                                                               17)
+                                                                                               14)
                                                                                             (Loc
-                                                                                               1006
+                                                                                               1005
                                                                                                39
-                                                                                               22))
+                                                                                               19))
                                                                                          (PVar
                                                                                             "nameC")
                                                                                      )
@@ -3108,8 +3108,8 @@ Right
                                                                                               "d81"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 1010 39 26)
-                                                                                (Loc 1024 39 40))
+                                                                                (Loc 1009 39 23)
+                                                                                (Loc 1023 39 37))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "lui"
@@ -3156,13 +3156,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1017
+                                                                                               1016
                                                                                                39
-                                                                                               33)
+                                                                                               30)
                                                                                             (Loc
-                                                                                               1022
+                                                                                               1021
                                                                                                39
-                                                                                               38))
+                                                                                               35))
                                                                                          (PVar
                                                                                             "nameD")
                                                                                      )
@@ -3177,8 +3177,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 1027 39 43)
-                                                                         (Loc 1047 39 63))
+                                                                         (Loc 1028 39 42)
+                                                                         (Loc 1048 39 62))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -3208,8 +3208,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 1027 39 43)
-                                                                               (Loc 1048 39 64))
+                                                                               (Loc 1028 39 42)
+                                                                               (Loc 1049 39 63))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -3257,9 +3257,9 @@ Right
                                                                                              "prelude")))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1027 39 43)
+                                                                                        1028 39 42)
                                                                                      (Loc
-                                                                                        1034 39 50))
+                                                                                        1035 39 49))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -3318,13 +3318,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              1027
+                                                                                              1028
                                                                                               39
-                                                                                              43)
+                                                                                              42)
                                                                                            (Loc
-                                                                                              1034
+                                                                                              1035
                                                                                               39
-                                                                                              50))
+                                                                                              49))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -3342,9 +3342,9 @@ Right
                                                                                           Star))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1035 39 51)
+                                                                                        1036 39 50)
                                                                                      (Loc
-                                                                                        1040 39 56))
+                                                                                        1041 39 55))
                                                                                   (Var "nameC"))
                                                                                False))
                                                                          (Solved
@@ -3356,8 +3356,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "c80" Star))
                                                                             (Area
-                                                                               (Loc 1042 39 58)
-                                                                               (Loc 1047 39 63))
+                                                                               (Loc 1043 39 57)
+                                                                               (Loc 1048 39 62))
                                                                             (Var "nameD"))
                                                                          True)))
                                                             , Solved
@@ -3487,7 +3487,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 1053 40 5) (Loc 1120 40 72))
+                                                                   (Loc 1054 40 5) (Loc 1120 40 71))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -3551,8 +3551,8 @@ Right
                                                                                        "m90"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 1056 40 8)
-                                                                         (Loc 1098 40 50))
+                                                                         (Loc 1054 40 5)
+                                                                         (Loc 1096 40 47))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -3616,8 +3616,8 @@ Right
                                                                                               "m90"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 1057 40 9)
-                                                                                (Loc 1072 40 24))
+                                                                                (Loc 1055 40 6)
+                                                                                (Loc 1070 40 21))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -3684,13 +3684,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1065
+                                                                                               1063
                                                                                                40
-                                                                                               17)
+                                                                                               14)
                                                                                             (Loc
-                                                                                               1070
+                                                                                               1068
                                                                                                40
-                                                                                               22))
+                                                                                               19))
                                                                                          (PVar
                                                                                             "nameC")
                                                                                      )
@@ -3757,8 +3757,8 @@ Right
                                                                                               "m90"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 1074 40 26)
-                                                                                (Loc 1097 40 49))
+                                                                                (Loc 1072 40 23)
+                                                                                (Loc 1095 40 46))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "po"
@@ -3825,13 +3825,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1080
+                                                                                               1078
                                                                                                40
-                                                                                               32)
+                                                                                               29)
                                                                                             (Loc
-                                                                                               1096
+                                                                                               1094
                                                                                                40
-                                                                                               48))
+                                                                                               45))
                                                                                          (PRecord
                                                                                             (fromList
                                                                                                [ ( "pi"
@@ -3898,13 +3898,13 @@ Right
                                                                                                                       Star)))))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           1086
+                                                                                                           1084
                                                                                                            40
-                                                                                                           38)
+                                                                                                           35)
                                                                                                         (Loc
-                                                                                                           1095
+                                                                                                           1093
                                                                                                            40
-                                                                                                           47))
+                                                                                                           44))
                                                                                                      (PRecord
                                                                                                         (fromList
                                                                                                            [ ( "nameD"
@@ -3971,13 +3971,13 @@ Right
                                                                                                                                   Star)))))
                                                                                                                  (Area
                                                                                                                     (Loc
-                                                                                                                       1088
+                                                                                                                       1086
                                                                                                                        40
-                                                                                                                       40)
+                                                                                                                       37)
                                                                                                                     (Loc
-                                                                                                                       1093
+                                                                                                                       1091
                                                                                                                        40
-                                                                                                                       45))
+                                                                                                                       42))
                                                                                                                  (PVar
                                                                                                                     "nameD")
                                                                                                              )
@@ -3996,8 +3996,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 1100 40 52)
-                                                                         (Loc 1120 40 72))
+                                                                         (Loc 1100 40 51)
+                                                                         (Loc 1120 40 71))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -4027,8 +4027,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 1100 40 52)
-                                                                               (Loc 1121 40 73))
+                                                                               (Loc 1100 40 51)
+                                                                               (Loc 1121 40 72))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -4076,9 +4076,9 @@ Right
                                                                                              "prelude")))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1100 40 52)
+                                                                                        1100 40 51)
                                                                                      (Loc
-                                                                                        1107 40 59))
+                                                                                        1107 40 58))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -4139,11 +4139,11 @@ Right
                                                                                            (Loc
                                                                                               1100
                                                                                               40
-                                                                                              52)
+                                                                                              51)
                                                                                            (Loc
                                                                                               1107
                                                                                               40
-                                                                                              59))
+                                                                                              58))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -4161,9 +4161,9 @@ Right
                                                                                           Star))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1108 40 60)
+                                                                                        1108 40 59)
                                                                                      (Loc
-                                                                                        1113 40 65))
+                                                                                        1113 40 64))
                                                                                   (Var "nameC"))
                                                                                False))
                                                                          (Solved
@@ -4175,8 +4175,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "j87" Star))
                                                                             (Area
-                                                                               (Loc 1115 40 67)
-                                                                               (Loc 1120 40 72))
+                                                                               (Loc 1115 40 66)
+                                                                               (Loc 1120 40 71))
                                                                             (Var "nameD"))
                                                                          True)))
                                                             , Solved
@@ -4306,7 +4306,7 @@ Right
                                                                         (TC "Number" Star)
                                                                         "prelude"))
                                                                 (Area
-                                                                   (Loc 1126 41 5) (Loc 1193 41 72))
+                                                                   (Loc 1126 41 5) (Loc 1192 41 71))
                                                                 (Is
                                                                    (Solved
                                                                       ([] :=>
@@ -4370,8 +4370,8 @@ Right
                                                                                        "v99"
                                                                                        Star)))))
                                                                       (Area
-                                                                         (Loc 1129 41 8)
-                                                                         (Loc 1171 41 50))
+                                                                         (Loc 1126 41 5)
+                                                                         (Loc 1168 41 47))
                                                                       (PTuple
                                                                          [ Solved
                                                                              ([] :=>
@@ -4435,8 +4435,8 @@ Right
                                                                                               "v99"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 1130 41 9)
-                                                                                (Loc 1153 41 32))
+                                                                                (Loc 1127 41 6)
+                                                                                (Loc 1150 41 29))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "po"
@@ -4503,13 +4503,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1136
+                                                                                               1133
                                                                                                41
-                                                                                               15)
+                                                                                               12)
                                                                                             (Loc
-                                                                                               1152
+                                                                                               1149
                                                                                                41
-                                                                                               31))
+                                                                                               28))
                                                                                          (PRecord
                                                                                             (fromList
                                                                                                [ ( "pi"
@@ -4576,13 +4576,13 @@ Right
                                                                                                                       Star)))))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           1142
+                                                                                                           1139
                                                                                                            41
-                                                                                                           21)
+                                                                                                           18)
                                                                                                         (Loc
-                                                                                                           1151
+                                                                                                           1148
                                                                                                            41
-                                                                                                           30))
+                                                                                                           27))
                                                                                                      (PRecord
                                                                                                         (fromList
                                                                                                            [ ( "nameC"
@@ -4649,13 +4649,13 @@ Right
                                                                                                                                   Star)))))
                                                                                                                  (Area
                                                                                                                     (Loc
-                                                                                                                       1144
+                                                                                                                       1141
                                                                                                                        41
-                                                                                                                       23)
+                                                                                                                       20)
                                                                                                                     (Loc
-                                                                                                                       1149
+                                                                                                                       1146
                                                                                                                        41
-                                                                                                                       28))
+                                                                                                                       25))
                                                                                                                  (PVar
                                                                                                                     "nameC")
                                                                                                              )
@@ -4726,8 +4726,8 @@ Right
                                                                                               "v99"
                                                                                               Star)))))
                                                                              (Area
-                                                                                (Loc 1155 41 34)
-                                                                                (Loc 1170 41 49))
+                                                                                (Loc 1152 41 31)
+                                                                                (Loc 1167 41 46))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -4794,13 +4794,13 @@ Right
                                                                                                           Star)))))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1163
+                                                                                               1160
                                                                                                41
-                                                                                               42)
+                                                                                               39)
                                                                                             (Loc
-                                                                                               1168
+                                                                                               1165
                                                                                                41
-                                                                                               47))
+                                                                                               44))
                                                                                          (PVar
                                                                                             "nameD")
                                                                                      )
@@ -4815,8 +4815,8 @@ Right
                                                                            (TC "Number" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 1173 41 52)
-                                                                         (Loc 1193 41 72))
+                                                                         (Loc 1172 41 51)
+                                                                         (Loc 1192 41 71))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -4846,8 +4846,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 1173 41 52)
-                                                                               (Loc 1194 41 73))
+                                                                               (Loc 1172 41 51)
+                                                                               (Loc 1193 41 72))
                                                                             (App
                                                                                (Solved
                                                                                   ([ IsIn
@@ -4895,9 +4895,9 @@ Right
                                                                                              "prelude")))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1173 41 52)
+                                                                                        1172 41 51)
                                                                                      (Loc
-                                                                                        1180 41 59))
+                                                                                        1179 41 58))
                                                                                   (Placeholder
                                                                                      ( MethodRef
                                                                                          "Comparable"
@@ -4956,13 +4956,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              1173
+                                                                                              1172
                                                                                               41
-                                                                                              52)
+                                                                                              51)
                                                                                            (Loc
-                                                                                              1180
+                                                                                              1179
                                                                                               41
-                                                                                              59))
+                                                                                              58))
                                                                                         (Var
                                                                                            "compare"))))
                                                                                (Solved
@@ -4980,9 +4980,9 @@ Right
                                                                                           Star))
                                                                                   (Area
                                                                                      (Loc
-                                                                                        1181 41 60)
+                                                                                        1180 41 59)
                                                                                      (Loc
-                                                                                        1186 41 65))
+                                                                                        1185 41 64))
                                                                                   (Var "nameC"))
                                                                                False))
                                                                          (Solved
@@ -4994,8 +4994,8 @@ Right
                                                                              ] :=>
                                                                                TVar (TV "u98" Star))
                                                                             (Area
-                                                                               (Loc 1188 41 67)
-                                                                               (Loc 1193 41 72))
+                                                                               (Loc 1187 41 66)
+                                                                               (Loc 1192 41 71))
                                                                             (Var "nameD"))
                                                                          True)))
                                                             ])
@@ -5038,7 +5038,7 @@ Right
                                                 , ( "tchouk" , TVar (TV "h59" Star) )
                                                 ])
                                              (Just (TVar (TV "i60" Star)))))
-                                     (Area (Loc 728 33 25) (Loc 755 34 22))
+                                     (Area (Loc 731 33 25) (Loc 758 34 22))
                                      (App
                                         (Solved
                                            ([] :=>
@@ -5063,7 +5063,7 @@ Right
                                                 (TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                    (TVar (TV "c106" Star))))
-                                           (Area (Loc 736 34 3) (Loc 755 34 22))
+                                           (Area (Loc 739 34 3) (Loc 758 34 22))
                                            (App
                                               (Solved
                                                  ([] :=>
@@ -5102,7 +5102,7 @@ Right
                                                                (TC "List" (Kfun Star Star))
                                                                "prelude")
                                                             (TVar (TV "c106" Star)))))
-                                                 (Area (Loc 736 34 3) (Loc 741 34 8))
+                                                 (Area (Loc 739 34 3) (Loc 744 34 8))
                                                  (Var "chain"))
                                               (Solved
                                                  ([] :=>
@@ -5126,7 +5126,7 @@ Right
                                                          (TCon
                                                             (TC "List" (Kfun Star Star)) "prelude")
                                                          (TVar (TV "c106" Star))))
-                                                 (Area (Loc 742 34 9) (Loc 754 34 21))
+                                                 (Area (Loc 745 34 9) (Loc 757 34 21))
                                                  (Var ".expressions"))
                                               True))
                                         (Solved
@@ -5144,7 +5144,7 @@ Right
                                                         )
                                                       ])
                                                    (Just (TVar (TV "e108" Star)))))
-                                           (Area (Loc 728 33 25) (Loc 731 33 28))
+                                           (Area (Loc 731 33 25) (Loc 734 33 28))
                                            (Var "_P_"))
                                         True))
                                   True))

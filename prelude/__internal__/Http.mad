@@ -45,27 +45,37 @@ alias Request = {
 }
 
 methodStr :: Method -> String
-export methodStr = where
-  is GET    : "GET"
-  is POST   : "POST"
-  is PUT    : "PUT"
-  is DELETE : "DELETE"
-  is PATCH  : "PATCH"
-  is HEAD   : "HEAD"
-  is OPTIONS: "OPTIONS"
-  is CONNECT: "CONNECT"
-  is TRACE  : "TRACE"
+export methodStr = where {
+  GET => "GET"
+
+  POST => "POST"
+
+  PUT => "PUT"
+
+  DELETE => "DELETE"
+
+  PATCH => "PATCH"
+
+  HEAD => "HEAD"
+
+  OPTIONS => "OPTIONS"
+
+  CONNECT => "CONNECT"
+
+  TRACE => "TRACE"
+}
 
 headerKey :: Header -> String
-headerKey = where is Header key _: key
+headerKey = where { Header key _ => key }
 
 headerValue :: Header -> String
-headerValue = where is Header _ val: val
+headerValue = where { Header _ val => val }
 
 bodyLength :: Data -> Number
-bodyLength = where
-  is TextData s      : S.len(s)
-  is BinaryData bytes: B.len(bytes)
+bodyLength = where {
+  TextData s => S.len(s)
+  BinaryData bytes => B.len(bytes)
+}
 
 #-
 const buildHeaderObj = (headerItems) => {
@@ -78,16 +88,19 @@ const buildHeaderObj = (headerItems) => {
 }
 -#
 
-isBinary = (mimeType) => where(S.split("/", mimeType))
-  is ["text", _]: false
+isBinary = (mimeType) => where(S.split("/", mimeType)) {
+  ["text", _] =>
+    false
   
-  is ["application", subType]:
+  ["application", subType] =>
     !L.includes(
       subType,
       ["json", "ld+json", "x-httpd-php", "x-sh", "x-csh", "xhtml+xml", "xml"]
     )
 
-  is _: true
+  _ =>
+    true
+}
 
 
 request :: Request -> Wish Response Response

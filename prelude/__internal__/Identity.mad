@@ -7,8 +7,7 @@ import {} from "MonadTrans"
 export type Identity a = Identity a
 
 runIdentity :: Identity a -> a
-export runIdentity = where
-  is Identity a: a
+export runIdentity = where { Identity a => a }
 
 instance Functor Identity {
   map = (f, m) => Identity(f(runIdentity(m)))
@@ -33,8 +32,7 @@ instance Monad Identity {
 export type IdentityT m a = IdentityT (m a)
 
 runIdentityT :: IdentityT m a -> m a
-export runIdentityT = where
-  is IdentityT x: x
+export runIdentityT = where { IdentityT x => x }
 
 mapIdentityT :: (m a -> n b) -> IdentityT m a -> IdentityT n b
 mapIdentityT = (f) => pipe(runIdentityT, f, IdentityT)

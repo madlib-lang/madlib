@@ -10,7 +10,7 @@ Right
                     (TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
                  (TVar (TV "d3" Star)))
-            (Area (Loc 32 2 1) (Loc 81 6 1))
+            (Area (Loc 32 2 1) (Loc 80 6 1))
             (Assignment
                "fn"
                (Solved
@@ -21,7 +21,7 @@ Right
                           (TApp
                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
                        (TVar (TV "d3" Star)))
-                  (Area (Loc 37 2 6) (Loc 81 6 1))
+                  (Area (Loc 37 2 6) (Loc 80 6 1))
                   (Abs
                      (Solved
                         ([] :=>
@@ -31,7 +31,7 @@ Right
                         "b")
                      [ Solved
                          ([] :=> TVar (TV "d3" Star))
-                         (Area (Loc 48 3 3) (Loc 79 5 3))
+                         (Area (Loc 48 3 3) (Loc 78 5 3))
                          (Where
                             (Solved
                                ([] :=>
@@ -49,14 +49,14 @@ Right
                                            (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                            (TVar (TV "d3" Star))))
                                      (TVar (TV "d3" Star)))
-                                (Area (Loc 63 4 5) (Loc 75 4 17))
+                                (Area (Loc 63 4 5) (Loc 74 4 16))
                                 (Is
                                    (Solved
                                       ([] :=>
                                          TApp
                                            (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                            (TVar (TV "d3" Star)))
-                                      (Area (Loc 66 4 8) (Loc 72 4 14))
+                                      (Area (Loc 63 4 5) (Loc 69 4 11))
                                       (PCtor
                                          "Just"
                                          [ Solved
@@ -64,18 +64,18 @@ Right
                                                 TApp
                                                   (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                                   (TVar (TV "d3" Star)))
-                                             (Area (Loc 71 4 13) (Loc 72 4 14))
+                                             (Area (Loc 68 4 10) (Loc 69 4 11))
                                              (PVar "x")
                                          ]))
                                    (Solved
                                       ([] :=> TVar (TV "d3" Star))
-                                      (Area (Loc 74 4 16) (Loc 75 4 17))
+                                      (Area (Loc 73 4 15) (Loc 74 4 16))
                                       (Var "x")))
                             ])
                      ])))
         , Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 82 7 1) (Loc 93 7 12))
+            (Area (Loc 81 7 1) (Loc 92 7 12))
             (App
                (Solved
                   ([] :=>
@@ -85,14 +85,14 @@ Right
                           (TApp
                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "i8" Star))))
                        (TVar (TV "i8" Star)))
-                  (Area (Loc 82 7 1) (Loc 84 7 3))
+                  (Area (Loc 81 7 1) (Loc 83 7 3))
                   (Var "fn"))
                (Solved
                   ([] :=>
                      TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path")
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 85 7 4) (Loc 92 7 11))
+                  (Area (Loc 84 7 4) (Loc 91 7 11))
                   (App
                      (Solved
                         ([] :=>
@@ -103,11 +103,11 @@ Right
                              (TApp
                                 (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                 (TVar (TV "k10" Star))))
-                        (Area (Loc 85 7 4) (Loc 89 7 8))
+                        (Area (Loc 84 7 4) (Loc 88 7 8))
                         (Var "Just"))
                      (Solved
                         ([] :=> TCon (TC "Number" Star) "prelude")
-                        (Area (Loc 90 7 9) (Loc 91 7 10))
+                        (Area (Loc 89 7 9) (Loc 90 7 10))
                         (LNum "3"))
                      True))
                True)

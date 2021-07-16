@@ -23,7 +23,6 @@ import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
 
 
-
 -- defined :: Maybe a -> Bool
 -- defined (Just x) = True
 -- defined Nothing  = False
@@ -171,10 +170,12 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
                                        (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
     else if not (null rs)
       then throwError
-        $ CompilationError ContextTooWeak (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
+        $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) (Can.getArea m) (envBacktrace env))
       else do
         let e' = updateQualType e (qs :=> t'')
         e''  <- insertClassPlaceholders env (Slv.Solved (apply s' ds :=> apply s' t) area $ Slv.Assignment mn e') (apply s' withParents)
         e''' <- updatePlaceholders env True s' e''
 
         return (mn, e''', sc)
+
+inferMethod' _ _ _ _ = undefined

@@ -28,10 +28,12 @@ export type AssertionError
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
 addFunctionHit = (astPath, name, lcov) =>
   map((section) => Lcov.getPath(section) == astPath
-      ? map(where
-          is Lcov.FNDA count n: n == name ? Lcov.FNDA(count + 1, n) : Lcov.FNDA(count, n)
-          is x           : x
-          , section.fndas
+      ? map(
+          where {
+            Lcov.FNDA count n => n == name ? Lcov.FNDA(count + 1, n) : Lcov.FNDA(count, n)
+            x => x
+          },
+          section.fndas
         ) |> (updatedFdnas) => ({ ...section, fndas: updatedFdnas })
       : section
     , lcov
@@ -42,10 +44,12 @@ addLineHit = (astPath, line, lcov) =>
   map(
     (section) =>
         Lcov.getPath(section) == astPath
-          ? map(where
-              is Lcov.DA l count: l == line ? Lcov.DA(l, count + 1) : Lcov.DA(l, count)
-              is x         : x
-              , section.das
+          ? map(
+              where {
+                Lcov.DA l count => l == line ? Lcov.DA(l, count + 1) : Lcov.DA(l, count)
+                x => x
+              },
+              section.das
             ) |> (updatedDas) => ({ ...section, das: updatedDas })
           : section
     , lcov
@@ -54,11 +58,9 @@ addLineHit = (astPath, line, lcov) =>
 updateLh :: Lcov.LcovSection -> Lcov.LcovSection
 updateLh = (section) => (
   L.reduceR(
-    (total, da) =>
-      where(da)
-        is Lcov.DA _ count: count > 0 ? total + 1 : total
-    , 0
-    , section.das
+    (total, da) => where(da) { Lcov.DA _ count => count > 0 ? total + 1 : total },
+    0,
+    section.das
   ) |> (counted) => ({ ...section, lh: Lcov.LH(counted) })
 )
 
@@ -69,10 +71,9 @@ updateFnh :: Lcov.LcovSection -> Lcov.LcovSection
 updateFnh = (section) => (
   L.reduceR(
     (total, da) =>
-      where(da)
-        is Lcov.FNDA count _: count > 0 ? total + 1 : total
-    , 0
-    , section.fndas
+      where(da) { Lcov.FNDA count _ => count > 0 ? total + 1 : total },
+      0,
+      section.fndas
   ) |> (counted) => ({ ...section, fnh: Lcov.FNH(counted) })
 )
 
@@ -82,9 +83,10 @@ collectFnh = (lcov) => map(updateFnh, lcov)
 collect :: List (HP.HitPoint) -> Lcov.LcovInfo -> Lcov.LcovInfo
 collect = (hps, lcov) =>
   L.reduceL(
-    (currLcov) => where
-      is HP.FunctionHit astPath name: addFunctionHit(astPath, name, currLcov)
-      is HP.LineHit astPath line: addLineHit(astPath, line, currLcov),
+    (currLcov) => where {
+      HP.FunctionHit astPath name => addFunctionHit(astPath, name, currLcov)
+      HP.LineHit astPath line => addLineHit(astPath, line, currLcov)
+    },
     lcov,
     hps
   ) |> collectLh |> collectFnh
@@ -96,19 +98,25 @@ buildRow = (name, lines, functions) => {
   formattedFunctions = N.formatDecimal(2, functions) ++ "%"
   coloredName = lines > 75 ? green(name) : red(name)
 
-  return { id: coloredName
-         , cols: [<"lines", formattedLines>, <"functions", formattedFunctions>]
-         }
+  return {
+    id: coloredName,
+    cols: [<"lines", formattedLines>, <"functions", formattedFunctions>]
+  }
 }
 
 allRow :: Lcov.LcovInfo -> IO.Row
 allRow = (lcov) => pipe(
   L.reduceR(
-    (total, section) =>
-        where(section)
-          is { lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
-            { lf: total.lf + found, lh: total.lh + hit, fnf: total.fnf + ffound, fnh: total.fnh + fhit }
-    , { lf: 0, lh: 0, fnf: 0, fnh: 0 }
+    (total, section) => where(section) {
+      { lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit } =>
+        {
+          lf: total.lf + found,
+          lh: total.lh + hit,
+          fnf: total.fnf + ffound,
+          fnh: total.fnh + fhit
+        }
+    },
+    { lf: 0, lh: 0, fnf: 0, fnh: 0 }
   ),
   (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>,
   (total) => buildRow("All", T.fst(total), T.snd(total))
@@ -121,17 +129,25 @@ computePercents = (hit, found) => found == 0
 
 generateTable :: Lcov.LcovInfo -> List IO.Row
 generateTable = (lcov) =>
-  map(where
-    is { sf: Lcov.SF path, lf: Lcov.LF found, lh: Lcov.LH hit, fnf: Lcov.FNF ffound, fnh: Lcov.FNH fhit }:
-      <computePercents(hit, found), computePercents(fhit, ffound)>
-        |> (t) => buildRow(path, T.fst(t), T.snd(t))
-    , lcov
+  map(
+    where {
+      {
+        sf: Lcov.SF path,
+        lf: Lcov.LF found,
+        lh: Lcov.LH hit,
+        fnf: Lcov.FNF ffound,
+        fnh: Lcov.FNH fhit
+      } =>
+        <computePercents(hit, found), computePercents(fhit, ffound)>
+          |> (t) => buildRow(path, T.fst(t), T.snd(t))
+    },
+    lcov
   ) |> (table) => L.concat([allRow(lcov)], table)
 
 stdoutReport :: Lcov.LcovInfo -> List IO.Row
 stdoutReport = (lcov) => generateTable(lcov)
 
-collectCoverage :: List HP.HitPoint -> W.Wish e (List IO.Row)
+collectCoverage :: List HP.HitPoint -> W.Wish String (List IO.Row)
 export collectCoverage = (hitPoints) =>
   FS.readFile(".coverage/lcov.info")
     |> map(Lcov.parseLcov)
@@ -147,21 +163,22 @@ export collectCoverage = (hitPoints) =>
 formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
 
 formatFailureOutput :: String -> AssertionError -> W.Wish String String
-formatFailureOutput = (description, result) =>
-  where(result)
-    is AssertionError expected actual:
-      W.bad(
-        red("\u00d7 " ++ description)
-        ++ "\n  expected:\n    "
-        ++ #- green(JSON.stringify(expected)) -#
-        ++ "\n  actual:\n    "
-        ++ #- red(JSON.stringify(actual)) -#
-      )
-    is Error msg:
-      W.bad(
-        red("\u00d7 " ++ description)
-        ++ "\n  error: " ++ #- JSON.stringify(msg) -#
-      )
+formatFailureOutput = (description, result) => where(result) {
+  AssertionError expected actual =>
+    W.bad(
+      red("\u00d7 " ++ description)
+      ++ "\n  expected:\n    "
+      ++ #- green(JSON.stringify(expected)) -#
+      ++ "\n  actual:\n    "
+      ++ #- red(JSON.stringify(actual)) -#
+    )
+
+  Error msg =>
+    W.bad(
+      red("\u00d7 " ++ description)
+      ++ "\n  error: " ++ #- JSON.stringify(msg) -#
+    )
+}
 
 #-
 const generateId = () => Math.random().toString().substr(2, 10)

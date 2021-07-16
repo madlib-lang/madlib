@@ -1,0 +1,21 @@
+import type { Either } from "Either"
+import { Left, Right } from "Either"
+import { always, ifElse } from "Function"
+
+import type { Context } from "./Context"
+import type { DependencyWithName } from "./Dependency"
+import { findByName } from "./Context"
+import { matchRanges } from "./Version"
+
+
+validateVersion :: Context -> DependencyWithName -> Either String ()
+export validateVersion = (context, dependency) => pipe(
+  .name,
+  findByName($, context),
+  .range,
+  ifElse(
+    matchRanges(dependency.versionRange),
+    always(Right(())),
+    always(Left("Version not matching"))
+  )
+)(dependency)

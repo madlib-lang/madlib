@@ -3,6 +3,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.AST where
 
 import qualified AST.Solved                    as Slv
@@ -27,6 +28,8 @@ import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
 import           Infer.Scope
+import Debug.Trace
+import Text.Show.Pretty
 
 {-|
 Module      : AST
@@ -308,7 +311,7 @@ solveManyASTs solved table fps = case fps of
 
 
 solveManyASTs' :: Can.Table -> [FilePath] -> (Either [CompilationError] Slv.Table, [CompilationWarning])
-solveManyASTs' canTable paths = 
+solveManyASTs' canTable paths =
   case runExcept (runStateT (solveManyASTs mempty canTable paths) InferState { count = 0, errors = [] }) of
     Left err -> (Left [err], [])
 

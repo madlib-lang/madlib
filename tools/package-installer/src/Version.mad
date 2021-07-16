@@ -9,6 +9,7 @@ import {} from "Read"
 import { ge, le } from "Compare"
 
 
+
 export type Version = Version Number Number Number
 
 export type VersionRange
@@ -37,14 +38,26 @@ instance Comparable Version {
 }
 
 
+createRange :: Maybe Version -> Maybe Version -> VersionRange
+export createRange = (maybeMin, maybeMax) => where(<maybeMin, maybeMax>) {
+  <Just minVersion, Just maxVersion> => VersionRange(minVersion, maxVersion)
+
+  <Just minVersion, Nothing> => FromVersion(minVersion)
+
+  <Nothing, Just maxVersion> => UntilVersion(maxVersion)
+
+  <Nothing, Nothing> => AnyVersion
+}
+
+
 getMajor :: Version -> Number
-getMajor = where is Version major _ _: major
+getMajor = where { Version major _ _ => major }
 
 getMinor :: Version -> Number
-getMinor = where is Version _ minor _: minor
+getMinor = where { Version _ minor _ => minor }
 
 getPatch :: Version -> Number
-getPatch = where is Version _ _ patch: patch
+getPatch = where { Version _ _ patch => patch }
 
 
 parse :: String -> Maybe Version
@@ -52,17 +65,74 @@ export parse = pipe(
   split("."),
   map(read),
   where {
-    is [Just major, Just minor, Just patch]: Just(Version(major, minor, patch))
-    is _                                   : Nothing
+    [Just major, Just minor, Just patch] =>
+      Just(Version(major, minor, patch))
+
+    _ =>
+      Nothing
   }
 )
 
 isInRange :: Version -> VersionRange -> Boolean
-export isInRange = (version, range) => where(range)
-  is FromVersion start      : ge(version, start)
+export isInRange = (version, range) => where(range) {
+  FromVersion start => ge(version, start)
 
-  is UntilVersion end       : le(version, end)
+  UntilVersion end => le(version, end)
   
-  is VersionRange start end : ge(version, start) && le(version, end)
+  VersionRange start end => ge(version, start) && le(version, end)
 
-  is AnyVersion             : true
+  AnyVersion => true
+}
+
+// TODO: complete
+matchRanges :: VersionRange -> VersionRange -> Boolean
+export matchRanges = (range1, range2) => where(<range1, range2>) {
+  <_, AnyVersion> => true
+
+  <AnyVersion, _> => true
+
+  <FromVersion start1, FromVersion start2> => ge(start1, start2)
+
+}
+
+max :: Version -> Version -> Version
+max = (v1, v2) => ge(v1, v2) ? v1 : v2
+
+min :: Version -> Version -> Version
+min = (v1, v2) => le(v1, v2) ? v1 : v2
+
+intersectRanges :: VersionRange -> VersionRange -> VersionRange
+export intersectRanges = (range1, range2) => where(<range1, range2>) {
+  <FromVersion start1, FromVersion start2> =>
+    FromVersion(max(start1, start2))
+
+  <FromVersion start1, UntilVersion end2> =>
+    VersionRange(start1, end2)
+
+  <FromVersion start1, VersionRange start2 end2> =>
+    VersionRange(max(start1, start2), end2)
+  
+  <UntilVersion end1, FromVersion start2> =>
+    VersionRange(start2, end1)
+
+  <UntilVersion end1, UntilVersion end2> =>
+    UntilVersion(min(end1, end2))
+
+  <UntilVersion end1, VersionRange start2 end2> =>
+    VersionRange(start2, min(end1, end2))
+  
+  <VersionRange start1 end1, FromVersion start2> =>
+    VersionRange(max(start1, start2), end1)
+
+  <VersionRange start1 end1, UntilVersion end2> =>
+    VersionRange(start1, min(end1, end2))
+
+  <VersionRange start1 end1, VersionRange start2 end2> =>
+    VersionRange(max(start1, start2), min(end1, end2))
+
+  <AnyVersion, range> =>
+    range
+
+  <range, AnyVersion> =>
+    range
+}

@@ -17,10 +17,11 @@ instance Comparable String {
 }
 
 instance Comparable Boolean {
-  compare = (a, b) => where(<a, b>)
-    is <true, false>: MORE
-    is <false, true>: LESS
-    is _            : EQUAL
+  compare = (a, b) => where(<a, b>) {
+    <true, false> => MORE
+    <false, true> => LESS
+    _ => EQUAL
+  }
 }
 
 

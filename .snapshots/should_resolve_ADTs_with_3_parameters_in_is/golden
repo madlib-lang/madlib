@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 36 2 1) (Loc 79 4 1))
+            (Area (Loc 36 2 1) (Loc 78 4 1))
             (Where
                (Solved
                   ([] :=>
@@ -119,7 +119,7 @@ Right
                                  (TCon (TC "Number" Star) "prelude"))
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 61 3 3) (Loc 77 3 19))
+                   (Area (Loc 61 3 3) (Loc 76 3 18))
                    (Is
                       (Solved
                          ([] :=>
@@ -131,7 +131,7 @@ Right
                                     (TCon (TC "Number" Star) "prelude"))
                                  (TCon (TC "Number" Star) "prelude"))
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 64 3 6) (Loc 74 3 16))
+                         (Area (Loc 61 3 3) (Loc 71 3 13))
                          (PCtor
                             "Wish"
                             [ Solved
@@ -145,7 +145,7 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 69 3 11) (Loc 70 3 12))
+                                (Area (Loc 66 3 8) (Loc 67 3 9))
                                 PAny
                             , Solved
                                 ([] :=>
@@ -158,7 +158,7 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 71 3 13) (Loc 72 3 14))
+                                (Area (Loc 68 3 10) (Loc 69 3 11))
                                 PAny
                             , Solved
                                 ([] :=>
@@ -171,12 +171,12 @@ Right
                                            (TCon (TC "Number" Star) "prelude"))
                                         (TCon (TC "Number" Star) "prelude"))
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 73 3 15) (Loc 74 3 16))
+                                (Area (Loc 70 3 12) (Loc 71 3 13))
                                 (PVar "c")
                             ]))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 76 3 18) (Loc 77 3 19))
+                         (Area (Loc 75 3 17) (Loc 76 3 18))
                          (Var "c")))
                ])
         ]

@@ -64,7 +64,7 @@ Right
                               (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 26 2 1) (Loc 137 8 1))
+                   (Area (Loc 26 2 1) (Loc 134 8 1))
                    (TypedExp
                       (Solved
                          ([] :=>
@@ -75,7 +75,7 @@ Right
                                     (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                     (TCon (TC "Number" Star) "prelude")))
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 57 3 1) (Loc 137 8 1))
+                         (Area (Loc 57 3 1) (Loc 134 8 1))
                          (Export
                             (Solved
                                ([] :=>
@@ -86,7 +86,7 @@ Right
                                           (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                           (TCon (TC "Number" Star) "prelude")))
                                     (TCon (TC "Number" Star) "prelude"))
-                               (Area (Loc 64 3 8) (Loc 137 8 1))
+                               (Area (Loc 64 3 8) (Loc 134 8 1))
                                (Assignment
                                   "fn"
                                   (Solved
@@ -99,7 +99,7 @@ Right
                                                 (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
                                                 (TCon (TC "Number" Star) "prelude")))
                                           (TCon (TC "Number" Star) "prelude"))
-                                     (Area (Loc 69 3 13) (Loc 137 8 1))
+                                     (Area (Loc 69 3 13) (Loc 134 8 1))
                                      (Abs
                                         (Solved
                                            ([] :=>
@@ -110,7 +110,7 @@ Right
                                            "x")
                                         [ Solved
                                             ([] :=> TCon (TC "Number" Star) "prelude")
-                                            (Area (Loc 80 4 3) (Loc 135 7 3))
+                                            (Area (Loc 80 4 3) (Loc 132 7 3))
                                             (Where
                                                (Solved
                                                   ([] :=>
@@ -135,7 +135,7 @@ Right
                                                                  "./ModuleA")
                                                               (TCon (TC "Number" Star) "prelude")))
                                                         (TCon (TC "Number" Star) "prelude"))
-                                                   (Area (Loc 95 5 5) (Loc 110 5 20))
+                                                   (Area (Loc 95 5 5) (Loc 108 5 18))
                                                    (Is
                                                       (Solved
                                                          ([] :=>
@@ -144,7 +144,7 @@ Right
                                                                  (TC "Maybe" (Kfun Star Star))
                                                                  "./ModuleA")
                                                               (TVar (TV "e4" Star)))
-                                                         (Area (Loc 98 5 8) (Loc 106 5 16))
+                                                         (Area (Loc 95 5 5) (Loc 103 5 13))
                                                          (PCtor
                                                             "M.Just"
                                                             [ Solved
@@ -155,12 +155,12 @@ Right
                                                                            "Maybe" (Kfun Star Star))
                                                                         "./ModuleA")
                                                                      (TVar (TV "e4" Star)))
-                                                                (Area (Loc 105 5 15) (Loc 106 5 16))
+                                                                (Area (Loc 102 5 12) (Loc 103 5 13))
                                                                 (PVar "a")
                                                             ]))
                                                       (Solved
                                                          ([] :=> TVar (TV "e4" Star))
-                                                         (Area (Loc 109 5 19) (Loc 110 5 20))
+                                                         (Area (Loc 107 5 17) (Loc 108 5 18))
                                                          (Var "a")))
                                                , Solved
                                                    ([] :=>
@@ -177,7 +177,7 @@ Right
                                                                  "./ModuleA")
                                                               (TCon (TC "Number" Star) "prelude")))
                                                         (TCon (TC "Number" Star) "prelude"))
-                                                   (Area (Loc 115 6 5) (Loc 131 6 21))
+                                                   (Area (Loc 113 6 5) (Loc 128 6 20))
                                                    (Is
                                                       (Solved
                                                          ([] :=>
@@ -186,11 +186,11 @@ Right
                                                                  (TC "Maybe" (Kfun Star Star))
                                                                  "./ModuleA")
                                                               (TVar (TV "i8" Star)))
-                                                         (Area (Loc 118 6 8) (Loc 127 6 17))
+                                                         (Area (Loc 113 6 5) (Loc 122 6 14))
                                                          (PCtor "M.Nothing" []))
                                                       (Solved
                                                          ([] :=> TCon (TC "Number" Star) "prelude")
-                                                         (Area (Loc 129 6 19) (Loc 131 6 21))
+                                                         (Area (Loc 126 6 18) (Loc 128 6 20))
                                                          (LNum "-3")))
                                                ])
                                         ]))))))

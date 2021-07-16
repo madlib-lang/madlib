@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -30,6 +31,8 @@ import           Infer.JSX
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
 import qualified Control.Monad                 as CM
+import Debug.Trace
+import Text.Show.Pretty
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -187,7 +190,7 @@ updateBodyEnv s e =
 -- INFER APP
 
 inferApp' :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp, [(Substitution, [Pred], Type)])
-inferApp' env app@(Can.Canonical area (Can.App abs arg final)) = do
+inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
   tv                               <- newTVar Star
   (s1, ps1, t1, eabs, skippedArgs) <- if isApp abs && not (isFinalApp abs)
     then inferApp' env abs
@@ -196,7 +199,14 @@ inferApp' env app@(Can.Canonical area (Can.App abs arg final)) = do
       return (s1, ps1, t1, eabs, [])
   (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
-  s3                  <- contextualUnify env app t1 (apply s1 t2 `fn` tv)
+
+  let expForContext =
+        if getLineFromStart argArea < getLineFromStart absArea then
+          abs
+        else
+          arg
+
+  s3                  <- contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)
 
   let t          = apply s3 tv
   let s          = s3 `compose` s2 `compose` s1
@@ -208,7 +218,7 @@ inferApp' env app@(Can.Canonical area (Can.App abs arg final)) = do
   return (s, ps1 ++ ps2, t, solved, skippedArg <> skippedArgs)
 
 inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp env app@(Can.Canonical area (Can.App abs arg final)) = do
+inferApp env app = do
   (s, ps, t, e, skipped) <- inferApp' env app
   let subst        = foldr compose s $ T.beg <$> skipped
   let preds        = concat (T.mid <$> skipped) <> ps
@@ -270,7 +280,8 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
   (s1, ps1, t1, e1) <- infer env' exp
-  s2                <- contextualUnify env' exp currentType t1
+  s2                <- catchError (contextualUnify env' e currentType t1) (const $ return M.empty)
+  --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
   let s  = s2 `compose` s1
   let t2 = apply s t1
   return (s, currentPreds ++ ps1, t2, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t2))
@@ -522,7 +533,6 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
 
 inferTypedExp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp sc)) = do
-  infer env exp
   (ps :=> t)        <- instantiate sc
 
   (s1, ps1, t1, e1) <- infer env exp
@@ -595,7 +605,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp
-  s''           <- contextualUnify env canExp t t'
+  s''           <- catchError (contextualUnify env canExp t t') (flipUnificationError . limitContextArea 2)
   let s' = s'' `compose` s `compose` s''
 
   let qs'  = apply s' qs
@@ -614,7 +624,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
   if sc /= sc' then
     throwError $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))
   else if not (null rs) then
-    throwError $ CompilationError ContextTooWeak (Context (envCurrentPath env) area (envBacktrace env))
+    throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area (envBacktrace env))
   else do
     let e'   = updateQualType e (ds :=> t''')
 
@@ -626,6 +636,8 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
 
     return (s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' sc))
 
+inferExplicitlyTyped env _ = undefined
+
 
 
 inferExps :: Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)
@@ -633,7 +645,7 @@ inferExps env []       = return ([], env)
 
 inferExps env (e : es) = do
   (e' , env'   ) <- catchError (inferExp (pushExpToBT env e) e) (recordError env e)
-  (es', nextEnv) <- inferExps env' es
+  (es', nextEnv) <- inferExps (resetBT env') es
 
   case e' of
     Just e'' -> return (e'' : es', nextEnv)
@@ -645,7 +657,9 @@ inferExp env (Can.Canonical area (Can.TypeExport name)) =
   return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
-    Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
+    Can.Canonical _ (Can.TypedExp _ _) ->
+      inferExplicitlyTyped env e
+
     _ -> do
       (s, (ds, ps), env, e) <- inferImplicitlyTyped False env e
       return (s, ps, env, e)
