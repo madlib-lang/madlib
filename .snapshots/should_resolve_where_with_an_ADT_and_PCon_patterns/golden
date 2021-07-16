@@ -34,7 +34,7 @@ Right
                      True)))
         , Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 50 3 1) (Loc 131 7 1))
+            (Area (Loc 50 3 1) (Loc 116 7 1))
             (Where
                (Solved
                   ([] :=>
@@ -52,14 +52,14 @@ Right
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 69 4 3) (Loc 89 4 23))
+                   (Area (Loc 69 4 3) (Loc 85 4 19))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 72 4 6) (Loc 83 4 17))
+                         (Area (Loc 69 4 3) (Loc 80 4 14))
                          (PCtor
                             "Just"
                             [ Solved
@@ -67,12 +67,12 @@ Right
                                    TApp
                                      (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 77 4 11) (Loc 83 4 17))
+                                (Area (Loc 74 4 8) (Loc 80 4 14))
                                 (PCon "Number")
                             ]))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 88 4 22) (Loc 89 4 23))
+                         (Area (Loc 84 4 18) (Loc 85 4 19))
                          (LNum "2")))
                , Solved
                    ([] :=>
@@ -83,18 +83,18 @@ Right
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 92 5 3) (Loc 109 5 20))
+                   (Area (Loc 88 5 3) (Loc 100 5 15))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 95 5 6) (Loc 102 5 13))
+                         (Area (Loc 88 5 3) (Loc 95 5 10))
                          (PCtor "Nothing" []))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 108 5 19) (Loc 109 5 20))
+                         (Area (Loc 99 5 14) (Loc 100 5 15))
                          (LNum "0")))
                , Solved
                    ([] :=>
@@ -105,14 +105,14 @@ Right
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude")))
                         (TCon (TC "Number" Star) "prelude"))
-                   (Area (Loc 112 6 3) (Loc 129 6 20))
+                   (Area (Loc 103 6 3) (Loc 114 6 14))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "Maybe" (Kfun Star Star)) "path")
                               (TCon (TC "Number" Star) "prelude"))
-                         (Area (Loc 115 6 6) (Loc 121 6 12))
+                         (Area (Loc 103 6 3) (Loc 109 6 9))
                          (PCtor
                             "Just"
                             [ Solved
@@ -120,12 +120,12 @@ Right
                                    TApp
                                      (TCon (TC "Maybe" (Kfun Star Star)) "path")
                                      (TCon (TC "Number" Star) "prelude"))
-                                (Area (Loc 120 6 11) (Loc 121 6 12))
+                                (Area (Loc 108 6 8) (Loc 109 6 9))
                                 PAny
                             ]))
                       (Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 128 6 19) (Loc 129 6 20))
+                         (Area (Loc 113 6 13) (Loc 114 6 14))
                          (LNum "1")))
                ])
         ]

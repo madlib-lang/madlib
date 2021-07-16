@@ -26,3 +26,8 @@ type Infer a = forall m . (MonadError CompilationError m, MonadState InferState 
 unsafeRun :: Infer a -> a
 unsafeRun i = case runExcept (runStateT i InferState { count = 0, errors = [] }) of
   Right (a, _) -> a
+
+simpleRun :: Infer a -> Either CompilationError a
+simpleRun i = case runExcept (runStateT i InferState { count = 0, errors = [] }) of
+  Right (a, _) -> Right a
+  Left e       -> Left e

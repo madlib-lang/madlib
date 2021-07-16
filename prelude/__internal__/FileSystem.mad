@@ -5,9 +5,9 @@ import { BinaryData, TextData } from "Data"
 #- import fs from "fs" -#
 
 
-writeFile :: String -> Data -> W.Wish e String
+writeFile :: String -> Data -> W.Wish String String
 export writeFile = (path, d) => where(d) {
-  is BinaryData bytes: W.Wish((bad, good) => #- {
+  BinaryData bytes => W.Wish((bad, good) => #- {
       fs.writeFile(path, bytes, (err) => {
         if (err) {
           bad(err);
@@ -17,7 +17,8 @@ export writeFile = (path, d) => where(d) {
         }
       })
     } -#)
-  is TextData content: W.Wish((bad, good) => #- {
+
+  TextData content => W.Wish((bad, good) => #- {
       fs.writeFile(path, content, (err) => {
         if (err) {
           bad(err);
@@ -30,7 +31,7 @@ export writeFile = (path, d) => where(d) {
   -#)
 }
 
-readFile :: String -> W.Wish e String
+readFile :: String -> W.Wish String String
 export readFile = (path) => W.Wish((bad, good) => #- {
   fs.readFile(path, "utf8", (err, d) => {
     if (err) {
@@ -42,7 +43,7 @@ export readFile = (path) => W.Wish((bad, good) => #- {
   })
 }-#)
 
-exists :: String -> W.Wish e String
+exists :: String -> W.Wish String String
 export exists = (path) => W.Wish((bad, good) => #- {
   fs.access(path, fs.constants.F_OK, (err) => {
     if (err) {

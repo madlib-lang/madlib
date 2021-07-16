@@ -6,55 +6,47 @@ Left
         (TCon (TC "Failure" Star) "path"))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 97 5 14) (Loc 98 5 15)
+       , ctxArea = Area (Loc 96 5 13) (Loc 97 5 14)
        , ctxBacktrace =
            [ BTExp
                (Canonical
-                  (Area (Loc 67 4 1) (Loc 116 7 1))
+                  (Area (Loc 67 4 1) (Loc 114 7 1))
                   (Where
                      (Canonical (Area (Loc 73 4 7) (Loc 80 4 14)) (Var "perhaps"))
                      [ Canonical
-                         (Area (Loc 86 5 3) (Loc 98 5 15))
+                         (Area (Loc 86 5 3) (Loc 97 5 14))
                          (Is
                             (Canonical
-                               (Area (Loc 89 5 6) (Loc 95 5 12))
+                               (Area (Loc 86 5 3) (Loc 92 5 9))
                                (PCtor
-                                  "Just"
-                                  [ Canonical (Area (Loc 94 5 11) (Loc 95 5 12)) (PVar "a") ]))
-                            (Canonical (Area (Loc 97 5 14) (Loc 98 5 15)) (Var "a")))
+                                  "Just" [ Canonical (Area (Loc 91 5 8) (Loc 92 5 9)) (PVar "a") ]))
+                            (Canonical (Area (Loc 96 5 13) (Loc 97 5 14)) (Var "a")))
                      , Canonical
-                         (Area (Loc 101 6 3) (Loc 114 6 16))
+                         (Area (Loc 100 6 3) (Loc 112 6 15))
                          (Is
                             (Canonical
-                               (Area (Loc 104 6 6) (Loc 111 6 13)) (PCtor "Nothing" []))
-                            (Canonical (Area (Loc 113 6 15) (Loc 114 6 16)) (LNum "0")))
+                               (Area (Loc 100 6 3) (Loc 107 6 10)) (PCtor "Nothing" []))
+                            (Canonical (Area (Loc 111 6 14) (Loc 112 6 15)) (LNum "0")))
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 67 4 1) (Loc 116 7 1))
+                  (Area (Loc 67 4 1) (Loc 114 7 1))
                   (Where
                      (Canonical (Area (Loc 73 4 7) (Loc 80 4 14)) (Var "perhaps"))
                      [ Canonical
-                         (Area (Loc 86 5 3) (Loc 98 5 15))
+                         (Area (Loc 86 5 3) (Loc 97 5 14))
                          (Is
                             (Canonical
-                               (Area (Loc 89 5 6) (Loc 95 5 12))
+                               (Area (Loc 86 5 3) (Loc 92 5 9))
                                (PCtor
-                                  "Just"
-                                  [ Canonical (Area (Loc 94 5 11) (Loc 95 5 12)) (PVar "a") ]))
-                            (Canonical (Area (Loc 97 5 14) (Loc 98 5 15)) (Var "a")))
+                                  "Just" [ Canonical (Area (Loc 91 5 8) (Loc 92 5 9)) (PVar "a") ]))
+                            (Canonical (Area (Loc 96 5 13) (Loc 97 5 14)) (Var "a")))
                      , Canonical
-                         (Area (Loc 101 6 3) (Loc 114 6 16))
+                         (Area (Loc 100 6 3) (Loc 112 6 15))
                          (Is
                             (Canonical
-                               (Area (Loc 104 6 6) (Loc 111 6 13)) (PCtor "Nothing" []))
-                            (Canonical (Area (Loc 113 6 15) (Loc 114 6 16)) (LNum "0")))
+                               (Area (Loc 100 6 3) (Loc 107 6 10)) (PCtor "Nothing" []))
+                            (Canonical (Area (Loc 111 6 14) (Loc 112 6 15)) (LNum "0")))
                      ]))
-           , BTExp
-               (Canonical
-                  (Area (Loc 52 3 1) (Loc 66 3 15))
-                  (Assignment
-                     "perhaps"
-                     (Canonical (Area (Loc 62 3 11) (Loc 66 3 15)) (Var "Nope"))))
            ]
        })

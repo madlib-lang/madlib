@@ -26,6 +26,10 @@ data TypeError
   | MethodDoesNotMatchInterfaceType Type Type
   | AmbiguousType (TVar, [Pred])
   | ADTAlreadyDefined Type
+  | NotCapitalizedADTName String
+  | NotCapitalizedAliasName String
+  | NotCapitalizedConstructorName String
+  | TypingHasWrongKind Type Kind Kind
   | UnknownType String
   | WrongSpreadType String
   | FieldNotExisting String
@@ -39,10 +43,21 @@ data TypeError
   | SignatureTooGeneral Scheme Scheme
   | NameAlreadyExported String
   | ShouldBeTypedOrAbove String
-  | ContextTooWeak
+  | ContextTooWeak [Pred]
   | FatalError
   | ASTHasNoPath
   | Error
   | ImportCycle [FilePath]
   deriving (Show, Eq, Ord)
 
+
+limitContextArea :: Int -> CompilationError -> CompilationError
+limitContextArea maxLines err = case err of
+  CompilationError _ NoContext ->
+    err
+
+  CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')) bt) ->
+    if l' > l + 1 then
+      CompilationError e (Context fp (Area (Loc a l c) (Loc a' (l + 2) 1)) bt)
+    else
+      CompilationError e (Context fp (Area (Loc a l c) (Loc a' l' c')) bt)

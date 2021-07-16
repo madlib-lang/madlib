@@ -8,24 +8,34 @@ import { AnyVersion } from "./Version"
 
 
 
-alias VersionConstraint = {
-  resolvedVersion :: Maybe Version,
-  range           :: VersionRange
+export alias VersionConstraint = {
+  version :: Maybe Version,
+  range   :: VersionRange
 }
 
-alias Context = Dict.Dictionary String VersionConstraint
+export alias Context = Dict.Dictionary String VersionConstraint
+
+
+initialContext :: Context
+export initialContext = Dict.empty
 
 
 findByName :: String -> Context -> VersionConstraint
-findByName = (name) => pipe(
+export findByName = (name) => pipe(
   Dict.get(name),
   where {
-    is Just found: found
-    is Nothing   : {
-      resolvedVersion: Nothing,
-      range: AnyVersion
-    }
+    Just found =>
+      found
+
+    Nothing =>
+      {
+        version: Nothing,
+        range: AnyVersion
+      }
   }
 )
+
+updateConstraint :: String -> VersionConstraint -> Context -> Context
+export updateConstraint = Dict.insert
 
 

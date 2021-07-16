@@ -43,17 +43,17 @@ export empty = fromList([])
  * insert(1, 7, fromList([<1, 2>])) // fromList([<1, 7>])
  */
 insert :: k -> v -> Dictionary k v -> Dictionary k v
-export insert = (k, v, m) => (where(m)
-  is Dictionary items:
+export insert = (k, v, m) => where(m) {
+  Dictionary items =>
     L.reject(
-      (item) => (where(item)
-        is <kk, _>: kk == k
-      )
-      , items
+      (item) => where(item) {
+        <kk, _> => kk == k
+      },
+      items
     )
     |> L.append(<k, v>)
     |> Dictionary
-)
+}
 
 /**
  * Get a value from a Dictionary given a key.
@@ -64,13 +64,15 @@ export insert = (k, v, m) => (where(m)
  * get("paul", fromList([<"john", { age: 32 }>])) // Nothing
  */
 get :: k -> Dictionary k v -> Maybe v
-export get = (k) => where
-  is Dictionary items: pipe(
-    L.find((item) => (where(item)
-      is <kk, _>: k == kk
-    )),
+export get = (k) => where {
+  Dictionary items => pipe(
+    L.find((item) => where(item) {
+      <kk, _> => k == kk
+    }),
     map(T.snd)
   )(items)
+}
+
 
 /**
  * List all keys in a Dictionary
@@ -80,9 +82,9 @@ export get = (k) => where
  * keys(fromList([<true, "Go for it">, <false, "NOGO">])) // [true, false]
  */
 keys :: Dictionary k v -> List k
-export keys = (m) => (where(m)
-  is Dictionary items: map(T.fst, items)
-)
+export keys = (m) => where(m) {
+  Dictionary items => map(T.fst, items)
+}
 
 /**
  * List all values in a Dictionary
@@ -92,9 +94,9 @@ export keys = (m) => (where(m)
  * values(fromList([<true, "Go for it">, <false, "NOGO">])) // ["Go for it", "NOGO"]
  */
 values :: Dictionary k v -> List v
-export values = (m) => (where(m)
-  is Dictionary items: map(T.snd, items)
-)
+export values = (m) => where(m) {
+  Dictionary items => map(T.snd, items)
+}
 
 
 /**
@@ -117,8 +119,9 @@ export len = (m) => (m |> keys |> L.len)
  * // fromList([<"Sidney", 1.5>, <"New York", 9>, <"London", 1>])
  */
 instance Functor (Dictionary k) {
-  map = (fn) => where
-    is Dictionary items: map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+  map = (fn) => where {
+    Dictionary items => map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+  }
 }
 
 /**
@@ -133,8 +136,9 @@ instance Functor (Dictionary k) {
  * // fromList([<"Sidney", 9>, <"New York", 9>, <"London", 1>])
  */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
-export mapWithKey = (fn) => where
-  is Dictionary items: map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+export mapWithKey = (fn) => where {
+  Dictionary items => map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+}
 
 /**
  * Combine two Dictionaries together.
@@ -142,5 +146,6 @@ export mapWithKey = (fn) => where
  * @since 0.0.5
  */
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => where(<a, b>)
-  is <Dictionary itemsA, Dictionary itemsB>: L.concat(itemsA, itemsB) |> fromList
+export merge = (a, b) => where(<a, b>) {
+  <Dictionary itemsA, Dictionary itemsB> => L.concat(itemsA, itemsB) |> fromList
+}

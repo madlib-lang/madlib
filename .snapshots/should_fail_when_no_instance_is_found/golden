@@ -3,14 +3,14 @@ Left
      (NoInstanceFound "Show" [ TCon (TC "Number" Star) "prelude" ])
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 221 13 1) (Loc 228 13 8)
+       , ctxArea = Area (Loc 224 13 1) (Loc 231 13 8)
        , ctxBacktrace =
            [ BTExp
                (Canonical
-                  (Area (Loc 221 13 1) (Loc 228 13 8))
+                  (Area (Loc 224 13 1) (Loc 231 13 8))
                   (App
-                     (Canonical (Area (Loc 221 13 1) (Loc 225 13 5)) (Var "show"))
-                     (Canonical (Area (Loc 226 13 6) (Loc 227 13 7)) (LNum "3"))
+                     (Canonical (Area (Loc 224 13 1) (Loc 228 13 5)) (Var "show"))
+                     (Canonical (Area (Loc 229 13 6) (Loc 230 13 7)) (LNum "3"))
                      True))
            ]
        })

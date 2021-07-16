@@ -36,9 +36,11 @@ export type Maybe a
  * map((x) => x + 1, Nothing) // Nothing
  */
 instance Functor Maybe {
-  map = (f) => where
-    is Just x : Just(f(x))
-    is Nothing: Nothing
+  map = (f) => where {
+    Just x => Just(f(x))
+
+    Nothing => Nothing
+  }
 }
 
 
@@ -54,9 +56,12 @@ instance Functor Maybe {
  */
 instance Applicative Maybe {
   pure = Just
-  ap = (mf, mx) => where(<mf, mx>)
-    is <Just f, Just x>: pure(f(x))
-    is _               : Nothing
+
+  ap = (mf, mx) => where(<mf, mx>) {
+    <Just f, Just x> => pure(f(x))
+
+    _ => Nothing
+  }
 }
 
 
@@ -70,9 +75,11 @@ instance Applicative Maybe {
  */
 instance Monad Maybe {
   of = pure
+
   chain = (f, m) => (where(m) {
-    is Just x : f(x)
-    is Nothing: Nothing
+    Just x => f(x)
+
+    Nothing => Nothing
   })
 }
 
@@ -86,9 +93,11 @@ instance Monad Maybe {
  * show((Nothing :: Maybe Number)) // "Nothing"
  */
 instance Show a => Show (Maybe a) {
-  show = where
-    is Just a : "Just " ++ show(a)
-    is Nothing: "Nothing"
+  show = where {
+    Just a  => "Just " ++ show(a)
+
+    Nothing => "Nothing"
+  }
 }
 
 
@@ -101,12 +110,15 @@ instance Show a => Show (Maybe a) {
  * fromMaybe(3, Nothing) // 3
  */
 fromMaybe :: a -> Maybe a -> a
-export fromMaybe = (or) => where
-  is Just a : a
-  is Nothing: or
+export fromMaybe = (or) => where {
+  Just a => a
 
+  Nothing => or
+}
 
 isJust :: Maybe a -> Boolean
-export isJust = where
-  is Just _ : true
-  is Nothing: false
+export isJust = where {
+  Just _ => true
+
+  Nothing => false
+}

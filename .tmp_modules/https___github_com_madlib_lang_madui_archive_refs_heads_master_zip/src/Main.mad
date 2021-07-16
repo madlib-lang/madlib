@@ -1,0 +1,342 @@
+import type { Wish } from "Wish"
+import { fulfill } from "Wish"
+import { fromList, get } from "Dictionary"
+import { fromMaybe } from "Maybe"
+
+#-
+import { attributesModule, h, init, propsModule, eventListenersModule } from "snabbdom"
+
+const AppEnv = {
+  patch: null,
+  currentElement: null,
+  currentState: null,
+  rootView: null,
+  onUrlChangedAction: null,
+}
+-#
+
+export type Element = Element
+
+export alias View a = a -> Element
+
+// https://keycode.info/
+export type Key
+  = KEY_ENTER
+  | KEY_BACKSPACE
+  | KEY_ANY
+
+KEY_CODE_MAPPINGS = fromList([
+  <13, KEY_ENTER>,
+  <8, KEY_BACKSPACE>,
+])
+
+getKeyFromCode :: Number -> Key
+getKeyFromCode = (keyCode) => fromMaybe(KEY_ANY, get(keyCode, KEY_CODE_MAPPINGS))
+
+export type Event
+  = AbstractEvent { eventType :: String }
+  | ClickEvent { eventType :: String }
+  | InputEvent { eventType :: String, target :: { value :: String } }
+  | KeyPressEvent { eventType :: String, key :: Key }
+  | UrlEvent { url :: String }
+
+#-
+const buildKeyPressEvent = event => {
+  const key = getKeyFromCode(event.keyCode, KEY_CODE_MAPPINGS)
+
+  return KeyPressEvent({ ...event, key })
+}
+
+const EventConstructors = Object.freeze({
+  mouseout: AbstractEvent,
+  mouseover: AbstractEvent,
+  change: AbstractEvent,
+  click: ClickEvent,
+  input: InputEvent,
+  keypress: buildKeyPressEvent,
+  transitionend: AbstractEvent
+})
+-#
+
+
+
+export alias Action a = a -> Event -> List (Wish (a -> a) (a -> a))
+export alias Subscription a = ((a -> a) -> ()) -> ()
+
+
+export type Attribute
+  = AttributeId String
+  | AttributeClass String
+  | AttributeValue String
+  | AttributePlaceholder String
+  | AttributeType String
+  | AttributeKey String
+  | AttributeHref String
+  | AttributeSrc String
+  | AttributeTitle String
+  | AttributeAlt String
+  | AttributeTo String
+  | AttributeOnClick (Action a)
+  | AttributeOnMouseOver (Action a)
+  | AttributeOnMouseOut (Action a)
+  | AttributeOnChange (Action a)
+  | AttributeOnInput (Action a)
+  | AttributeOnKeyPress (Action a)
+  | AttributeOnTransitionEnd (Action a)
+
+
+#-
+const getCurrentState = () => AppEnv.currentState
+
+const runAction = updater => {
+  AppEnv.currentState = updater(getCurrentState())
+  const newElement = AppEnv.rootView(AppEnv.currentState)
+  AppEnv.patch(AppEnv.currentElement, newElement)
+  AppEnv.currentElement = newElement
+}
+
+const wrapEventHandler = (ctor, handler) => {
+  return event => {
+    event.eventType = event.type
+    // So now calling an event handler gives us a list of wishes
+    const wishes = handler(AppEnv.currentState)(ctor(event))
+    wishes.forEach(fulfill(runAction)(runAction))
+  }
+}
+
+const getAttributeTuple = attr =>
+  [attr.__constructor.substr(9).toLowerCase(), attr.__args[0]]
+
+const ATTR_NAMES = [
+  "id",
+  "class",
+  "placeholder",
+  "type",
+  "href",
+  "src",
+  "alt",
+  "title"
+]
+const PROP_NAMES = [
+  "value"
+]
+
+const objectifyAttrs = attrs => attrs.reduce((obj, attr) => {
+  const [attrName, attrValue] = getAttributeTuple(attr)
+  if (attrName === "key") {
+    return { ...obj, key: attrValue }
+  } else if (ATTR_NAMES.includes(attrName)) {
+    return { ...obj, attrs: { ...obj.attrs, [attrName]: attrValue }}
+  } else if (PROP_NAMES.includes(attrName)) {
+    return { ...obj, props: { ...obj.props, [attrName]: attrValue }}
+  } else if (attrName.substr(0, 2) === "on") {
+    const eventName = attrName.substr(2)
+    const ctor = EventConstructors[eventName]
+    return { ...obj, on: { ...obj.on, [eventName]: wrapEventHandler(ctor, attrValue) }}
+  } else {
+    return { ...obj, [attrName]: attrValue };
+  }
+}, {})
+-#
+
+
+
+
+id :: String -> Attribute
+export id = AttributeId
+
+className :: String -> Attribute
+export className = AttributeClass
+
+key :: String -> Attribute
+export key = AttributeKey
+
+value :: String -> Attribute
+export value = AttributeValue
+
+placeholder :: String -> Attribute
+export placeholder = AttributePlaceholder
+
+inputType :: String -> Attribute
+export inputType = AttributeType
+
+to :: String -> Attribute
+export to = AttributeTo
+
+href :: String -> Attribute
+export href = AttributeHref
+
+src :: String -> Attribute
+export src = AttributeSrc
+
+title :: String -> Attribute
+export title = AttributeTitle
+
+alt :: String -> Attribute
+export alt = AttributeAlt
+
+onClick :: (Action a) -> Attribute
+export onClick = AttributeOnClick
+
+onMouseOver :: (Action a) -> Attribute
+export onMouseOver = AttributeOnMouseOver
+
+onMouseOut :: (Action a) -> Attribute
+export onMouseOut = AttributeOnMouseOut
+
+onChange :: (Action a) -> Attribute
+export onChange = AttributeOnChange
+
+onInput :: (Action a) -> Attribute
+export onInput = AttributeOnInput
+
+onKeyPress :: Action a -> Attribute
+export onKeyPress = AttributeOnKeyPress
+
+onTransitionEnd :: Action a -> Attribute
+export onTransitionEnd = AttributeOnTransitionEnd
+
+text :: String -> Element
+export text = (content) => #- content -#
+
+tag :: String -> List Attribute -> List Element -> Element
+export tag = (tagName, attrs, children) => #- h(tagName, objectifyAttrs(attrs), children) -#
+
+// TAGS - start
+
+export div = tag("div")
+
+export span = tag("span")
+
+export strong = tag("strong")
+
+export i = tag("em")
+
+export br = tag("br")
+
+export h1 = tag("h1")
+
+export h2 = tag("h2")
+
+export h3 = tag("h3")
+
+export h4 = tag("h4")
+
+export h5 = tag("h5")
+
+export h6 = tag("h6")
+
+export p = tag("p")
+
+export blockquote = tag("blockquote")
+
+export code = tag("code")
+
+export ul = tag("ul")
+
+export ol = tag("ol")
+
+export li = tag("li")
+
+export header = tag("header")
+
+export main = tag("main")
+
+export section = tag("section")
+
+export aside = tag("aside")
+
+export footer = tag("footer")
+
+export input = tag("input")
+
+export button = tag("button")
+
+export form = tag("form")
+
+export img = tag("img")
+
+export a = tag("a")
+
+// TAGS - end
+
+empty :: List Attribute -> List Element -> Element
+export empty = (attrs, children) => #- null -#
+
+link :: List Attribute -> List Element -> Element
+export link = (attrs, children) => #-{
+  const objAttrs = objectifyAttrs(attrs);
+  if (objAttrs.to) {
+    if (!objAttrs.attrs) {
+      objAttrs.attrs = {}
+    }
+    objAttrs.attrs.href = `/\#${objAttrs.to}`
+  }
+  // const clickHandler = (event) => {
+  //   // event.preventDefault();
+
+  //   if (objAttrs.to) {
+  //     const builtUrl = document.location.origin + document.location.pathname + '\#' + objAttrs.to
+
+  //     history.pushState({}, '', builtUrl);
+
+  //     if (AppEnv.onUrlChangedAction) {
+  //       const wishes = AppEnv.onUrlChangedAction(getCurrentState())(UrlEvent({ url: objAttrs.to }))
+  //       wishes.forEach(fulfill(runAction)(runAction))
+  //     }
+  //   }
+  // }
+
+  return h("a", { ...objAttrs }, children);
+  // return h("a", { ...objAttrs, on: { ...objAttrs.on, click: clickHandler }}, children);
+}-#
+
+
+onUrlChanged :: Action a -> ()
+export onUrlChanged = (action) => #-{
+  AppEnv.onUrlChangedAction = action
+
+  window.onpopstate = function(event) {
+    const path = document.location.hash.substr(1) || "/";
+    const wishes = AppEnv.onUrlChangedAction(getCurrentState())(UrlEvent({ url: path }))
+    wishes.forEach(fulfill(runAction)(runAction))
+  }
+}-#
+
+getUrl :: () -> String
+export getUrl = (_) => #- document.location.hash.substr(1) || "/" -#
+
+
+syncAction :: (a -> Event -> a) -> Action a
+export syncAction = (stateUpdate) => (
+  (state, event) => [of((_) => stateUpdate(state, event))]
+)
+
+
+/**
+ * render - boostraps the app and takes a component, and an initial state as parameters
+ */
+render :: View a -> a -> String -> ()
+export render = (view, initialState, containerId) => {
+  initialElement = view(initialState)
+  #-
+  const patch = init([attributesModule, propsModule, eventListenersModule])
+  patch(document.getElementById(containerId), initialElement)
+
+  AppEnv.patch = patch
+  AppEnv.currentElement = initialElement
+  AppEnv.rootView = view
+  AppEnv.currentState = initialState
+  -#
+
+  return ()
+}
+
+renderWithSubscriptions :: View a -> a -> List (Subscription a) -> String -> ()
+export renderWithSubscriptions = (view, initialState, subscriptions, containerId) => {
+  render(view, initialState, containerId)
+
+  #- subscriptions.forEach(sub => sub(runAction)) -#
+
+  return ()
+}
