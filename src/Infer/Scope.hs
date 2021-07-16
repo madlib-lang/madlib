@@ -353,7 +353,7 @@ collectFromIs env topLevelAssignments currentTopLevelAssignment foundNames nameT
 buildPatternScope :: Pattern -> S.Set String
 buildPatternScope (Solved _ _ pat) = case pat of
   PVar name             -> S.singleton name
-  PCtor _ pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
+  PCon _ pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PRecord fieldPatterns -> foldr S.union S.empty $ buildPatternScope <$> M.elems fieldPatterns
   PList   pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PTuple  pats          -> foldr S.union S.empty $ buildPatternScope <$> pats

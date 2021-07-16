@@ -72,15 +72,15 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
   mergeTypes t1 t2 = case (t1, t2) of
     (TRecord fields1 base1, TRecord fields2 base2) ->
       let base = case (base1, base2) of
-            (Just tBase1, _          ) -> Just tBase1
             (_          , Just tBase2) -> Just tBase2
+            (Just tBase1, _          ) -> Just tBase1
             _                          -> Nothing
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base
 
-    (TRecord fields base, TVar tv) ->
+    (TRecord fields base, TVar _) ->
       TRecord fields base
 
-    (TVar tv, TRecord fields base) ->
+    (TVar _, TRecord fields base) ->
       TRecord fields base
 
     (TApp tl tr, TApp tl' tr') ->
@@ -88,7 +88,7 @@ compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
           tr'' = mergeTypes tr tr'
       in  TApp tl'' tr''
 
-    (t, _) -> t
+    (_, t) -> t
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext

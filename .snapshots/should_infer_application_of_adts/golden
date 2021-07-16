@@ -4,12 +4,12 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "Result" Star) "path")
-            (Area (Loc 37 2 1) (Loc 66 2 30))
+            (Area (Loc 38 2 1) (Loc 67 2 30))
             (Assignment
                "result1"
                (Solved
                   ([] :=> TCon (TC "Result" Star) "path")
-                  (Area (Loc 47 2 11) (Loc 66 2 30))
+                  (Area (Loc 48 2 11) (Loc 67 2 30))
                   (App
                      (Solved
                         ([] :=>
@@ -18,25 +18,25 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TCon (TC "String" Star) "prelude"))
                              (TCon (TC "Result" Star) "path"))
-                        (Area (Loc 47 2 11) (Loc 54 2 18))
+                        (Area (Loc 48 2 11) (Loc 55 2 18))
                         (Var "Success"))
                      (Solved
                         ([] :=> TCon (TC "String" Star) "prelude")
-                        (Area (Loc 55 2 19) (Loc 65 2 29))
+                        (Area (Loc 56 2 19) (Loc 66 2 29))
                         (LStr "\"response\""))
                      True)))
         , Solved
             ([] :=> TCon (TC "Result" Star) "path")
-            (Area (Loc 67 3 1) (Loc 82 3 16))
+            (Area (Loc 68 3 1) (Loc 83 3 16))
             (Assignment
                "result2"
                (Solved
                   ([] :=> TCon (TC "Result" Star) "path")
-                  (Area (Loc 77 3 11) (Loc 82 3 16))
+                  (Area (Loc 78 3 11) (Loc 83 3 16))
                   (Var "Error")))
         , Solved
             ([] :=> TCon (TC "Boolean" Star) "prelude")
-            (Area (Loc 83 4 1) (Loc 120 4 38))
+            (Area (Loc 84 4 1) (Loc 121 4 38))
             (App
                (Solved
                   ([] :=>
@@ -45,7 +45,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Result" Star) "path"))
                        (TCon (TC "Boolean" Star) "prelude"))
-                  (Area (Loc 83 4 1) (Loc 121 4 39))
+                  (Area (Loc 84 4 1) (Loc 122 4 39))
                   (App
                      (Solved
                         ([] :=>
@@ -58,10 +58,10 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV "h7" Star)))
                                 (TCon (TC "Boolean" Star) "prelude")))
-                        (Area (Loc 84 4 2) (Loc 102 4 20))
+                        (Area (Loc 85 4 2) (Loc 103 4 20))
                         (Abs
                            (Solved
-                              ([] :=> TVar (TV "h7" Star)) (Area (Loc 85 4 3) (Loc 86 4 4)) "a")
+                              ([] :=> TVar (TV "h7" Star)) (Area (Loc 86 4 3) (Loc 87 4 4)) "a")
                            [ Solved
                                ([] :=>
                                   TApp
@@ -69,15 +69,15 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TVar (TV "h7" Star)))
                                     (TCon (TC "Boolean" Star) "prelude"))
-                               (Area (Loc 84 4 2) (Loc 102 4 20))
+                               (Area (Loc 85 4 2) (Loc 103 4 20))
                                (Abs
                                   (Solved
                                      ([] :=> TVar (TV "h7" Star))
-                                     (Area (Loc 88 4 6) (Loc 89 4 7))
+                                     (Area (Loc 89 4 6) (Loc 90 4 7))
                                      "b")
                                   [ Solved
                                       ([] :=> TCon (TC "Boolean" Star) "prelude")
-                                      (Area (Loc 95 4 13) (Loc 101 4 19))
+                                      (Area (Loc 96 4 13) (Loc 102 4 19))
                                       (App
                                          (Solved
                                             ([] :=>
@@ -88,7 +88,7 @@ Right
                                                        "prelude")
                                                     (TVar (TV "g6" Star)))
                                                  (TCon (TC "Boolean" Star) "prelude"))
-                                            (Area (Loc 95 4 13) (Loc 101 4 19))
+                                            (Area (Loc 96 4 13) (Loc 102 4 19))
                                             (App
                                                (Solved
                                                   ([] :=>
@@ -108,40 +108,40 @@ Right
                                                                 "prelude")
                                                              (TVar (TV "k10" Star)))
                                                           (TCon (TC "Boolean" Star) "prelude")))
-                                                  (Area (Loc 97 4 15) (Loc 99 4 17))
+                                                  (Area (Loc 98 4 15) (Loc 100 4 17))
                                                   (Var "=="))
                                                (Solved
                                                   ([] :=> TVar (TV "g6" Star))
-                                                  (Area (Loc 95 4 13) (Loc 96 4 14))
+                                                  (Area (Loc 96 4 13) (Loc 97 4 14))
                                                   (Var "a"))
                                                False))
                                          (Solved
                                             ([] :=> TVar (TV "h7" Star))
-                                            (Area (Loc 100 4 18) (Loc 101 4 19))
+                                            (Area (Loc 101 4 18) (Loc 102 4 19))
                                             (Var "b"))
                                          True)
                                   ])
                            ]))
                      (Solved
                         ([] :=> TCon (TC "Result" Star) "path")
-                        (Area (Loc 104 4 22) (Loc 111 4 29))
+                        (Area (Loc 105 4 22) (Loc 112 4 29))
                         (Var "result1"))
                      False))
                (Solved
                   ([] :=> TCon (TC "Result" Star) "path")
-                  (Area (Loc 113 4 31) (Loc 120 4 38))
+                  (Area (Loc 114 4 31) (Loc 121 4 38))
                   (Var "result2"))
                True)
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 36 1 37))
+            (Area (Loc 0 1 1) (Loc 37 1 38))
             ADT
               { adtname = "Result"
               , adtparams = []
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 14 1 15) (Loc 28 1 29))
+                      (Area (Loc 14 1 15) (Loc 29 1 30))
                       (Constructor
                          "Success"
                          [ Untyped (Area (Loc 22 1 23) (Loc 28 1 29)) (TRSingle "String") ]
@@ -151,7 +151,7 @@ Right
                                (TCon (TC "String" Star) "prelude"))
                             (TCon (TC "Result" Star) "path")))
                   , Untyped
-                      (Area (Loc 31 1 32) (Loc 36 1 37))
+                      (Area (Loc 32 1 33) (Loc 37 1 38))
                       (Constructor "Error" [] (TCon (TC "Result" Star) "path"))
                   ]
               , adtType = TCon (TC "Result" Star) "path"

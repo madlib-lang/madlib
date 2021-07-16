@@ -32,7 +32,7 @@ import FS from "./FileSystem.mjs";
 import Http from "./Http.mjs";
 import IO from "./IO.mjs";
 
-W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(W.map((response => ((__x__) => {
+W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(W.map((response => __x__ => ((__x__) => {
   if (__x__.__constructor === "Response" && __x__.__args[0].body.__constructor === "BinaryBody" && true) {
     let { body: { __args: [d] } } = __x__.__args[0];
     return d;
@@ -42,7 +42,7 @@ W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(response)))(Http.get("https://github.com/open-sorcerers/madlib/archive/master.zip")))));
+})(__x__)))(Http.get("https://github.com/open-sorcerers/madlib/archive/master.zip")))));
 export default {};
 // file: /root/project/src/Wish.mad
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));

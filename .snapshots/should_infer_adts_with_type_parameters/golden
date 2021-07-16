@@ -7,7 +7,7 @@ Right
                TApp
                  (TCon (TC "Result" (Kfun Star Star)) "path")
                  (TCon (TC "Boolean" Star) "prelude"))
-            (Area (Loc 38 4 1) (Loc 60 4 23))
+            (Area (Loc 39 4 1) (Loc 61 4 23))
             (Assignment
                "result"
                (Solved
@@ -15,7 +15,7 @@ Right
                      TApp
                        (TCon (TC "Result" (Kfun Star Star)) "path")
                        (TCon (TC "Boolean" Star) "prelude"))
-                  (Area (Loc 47 4 10) (Loc 60 4 23))
+                  (Area (Loc 48 4 10) (Loc 61 4 23))
                   (App
                      (Solved
                         ([] :=>
@@ -26,23 +26,23 @@ Right
                              (TApp
                                 (TCon (TC "Result" (Kfun Star Star)) "path")
                                 (TVar (TV "c2" Star))))
-                        (Area (Loc 47 4 10) (Loc 54 4 17))
+                        (Area (Loc 48 4 10) (Loc 55 4 17))
                         (Var "Success"))
                      (Solved
                         ([] :=> TCon (TC "Boolean" Star) "prelude")
-                        (Area (Loc 55 4 18) (Loc 59 4 22))
+                        (Area (Loc 56 4 18) (Loc 60 4 22))
                         (LBool "true"))
                      True)))
         ]
     , atypedecls =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 37 3 10))
+            (Area (Loc 0 1 1) (Loc 38 3 10))
             ADT
               { adtname = "Result"
               , adtparams = [ "a" ]
               , adtconstructors =
                   [ Untyped
-                      (Area (Loc 18 2 5) (Loc 27 2 14))
+                      (Area (Loc 18 2 5) (Loc 28 2 15))
                       (Constructor
                          "Success"
                          [ Untyped (Area (Loc 26 2 13) (Loc 27 2 14)) (TRSingle "a") ]
@@ -54,7 +54,7 @@ Right
                                (TCon (TC "Result" (Kfun Star Star)) "path")
                                (TVar (TV "d3" Star)))))
                   , Untyped
-                      (Area (Loc 32 3 5) (Loc 37 3 10))
+                      (Area (Loc 33 3 5) (Loc 38 3 10))
                       (Constructor
                          "Error"
                          []

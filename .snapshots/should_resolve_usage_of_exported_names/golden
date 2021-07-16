@@ -9,7 +9,7 @@ Right
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TCon (TC "Number" Star) "prelude"))
                  (TCon (TC "Number" Star) "prelude"))
-            (Area (Loc 0 1 1) (Loc 27 1 28))
+            (Area (Loc 0 1 1) (Loc 25 1 26))
             (Export
                (Solved
                   ([] :=>
@@ -18,7 +18,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Number" Star) "prelude"))
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 0 1 1) (Loc 27 1 28))
+                  (Area (Loc 0 1 1) (Loc 25 1 26))
                   (Assignment
                      "inc"
                      (Solved
@@ -28,7 +28,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TCon (TC "Number" Star) "prelude"))
                              (TCon (TC "Number" Star) "prelude"))
-                        (Area (Loc 13 1 14) (Loc 27 1 28))
+                        (Area (Loc 13 1 14) (Loc 25 1 26))
                         (Abs
                            (Solved
                               ([] :=> TCon (TC "Number" Star) "prelude")
@@ -36,7 +36,7 @@ Right
                               "a")
                            [ Solved
                                ([] :=> TCon (TC "Number" Star) "prelude")
-                               (Area (Loc 21 1 22) (Loc 26 1 27))
+                               (Area (Loc 20 1 21) (Loc 25 1 26))
                                (App
                                   (Solved
                                      ([] :=>
@@ -46,7 +46,7 @@ Right
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TCon (TC "Number" Star) "prelude"))
                                           (TCon (TC "Number" Star) "prelude"))
-                                     (Area (Loc 21 1 22) (Loc 26 1 27))
+                                     (Area (Loc 20 1 21) (Loc 25 1 26))
                                      (App
                                         (Solved
                                            ([] :=>
@@ -63,22 +63,22 @@ Right
                                                          "prelude")
                                                       (TCon (TC "Number" Star) "prelude"))
                                                    (TCon (TC "Number" Star) "prelude")))
-                                           (Area (Loc 23 1 24) (Loc 24 1 25))
+                                           (Area (Loc 22 1 23) (Loc 23 1 24))
                                            (Var "+"))
                                         (Solved
                                            ([] :=> TCon (TC "Number" Star) "prelude")
-                                           (Area (Loc 21 1 22) (Loc 22 1 23))
+                                           (Area (Loc 20 1 21) (Loc 21 1 22))
                                            (Var "a"))
                                         False))
                                   (Solved
                                      ([] :=> TCon (TC "Number" Star) "prelude")
-                                     (Area (Loc 25 1 26) (Loc 26 1 27))
+                                     (Area (Loc 24 1 25) (Loc 25 1 26))
                                      (LNum "1"))
                                   True)
                            ])))))
         , Solved
             ([] :=> TCon (TC "Number" Star) "prelude")
-            (Area (Loc 28 2 1) (Loc 34 2 7))
+            (Area (Loc 26 2 1) (Loc 32 2 7))
             (App
                (Solved
                   ([] :=>
@@ -87,11 +87,11 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Number" Star) "prelude"))
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 28 2 1) (Loc 31 2 4))
+                  (Area (Loc 26 2 1) (Loc 29 2 4))
                   (Var "inc"))
                (Solved
                   ([] :=> TCon (TC "Number" Star) "prelude")
-                  (Area (Loc 32 2 5) (Loc 33 2 6))
+                  (Area (Loc 30 2 5) (Loc 31 2 6))
                   (LNum "3"))
                True)
         ]
