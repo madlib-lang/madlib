@@ -35,7 +35,7 @@ inferTextListChild infer env ty t exp area = do
   (s1, ps, t, e) <- infer env exp''
   s2             <- unify t $ tListOf ty
   let s = s1 `compose` s2
-  return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
+  return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
 
 inferJSXExpChild :: InferFunction -> Env -> Type -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferJSXExpChild infer env ty (Can.Canonical area (Can.JSXExpChild exp')) = do
@@ -51,12 +51,12 @@ inferJSXExpChild infer env ty (Can.Canonical area (Can.JSXExpChild exp')) = do
     (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") t') -> do
       s2 <- unify t (tListOf ty)
       let s = s1 `compose` s2
-      return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
+      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
 
     (TApp (TVar (TV _ (Kfun Star Star))) t') -> do
       s2 <- unify t (tListOf ty)
       let s = s1 `compose` s2
-      return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListSpread e)
+      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
 
     TCon (TC "String" Star) "prelude" -> do
       let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) exp' True
@@ -64,7 +64,7 @@ inferJSXExpChild infer env ty (Can.Canonical area (Can.JSXExpChild exp')) = do
       s2             <- unify t ty
       let s = s1 `compose` s2
 
-      return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
+      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
 
     t'@(TVar _) -> do
       let exp'' = Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "__tmp_jsx_children__")) exp' True
@@ -72,9 +72,9 @@ inferJSXExpChild infer env ty (Can.Canonical area (Can.JSXExpChild exp')) = do
       s2              <- unify t ty
       let s = s1 `compose` s2
 
-      return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e')
+      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e')
 
     _ -> do
       s2 <- unify t ty
       let s = s1 `compose` s2
-      return (s, ps, apply s ty, Slv.Solved (apply s ty) area $ Slv.ListItem e)
+      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)

@@ -15,13 +15,18 @@ export dropTrailingPathSeparator = ifElse(
   identity
 )
 
-performSplitPath = (buffer, foundSlash, path) =>
-  where(String.firstChar(path))
-    is Nothing  : [buffer]
-    is Just "/" : performSplitPath(buffer ++ "/", true, String.drop(1, path))
-    is Just char: foundSlash
+performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
+  Nothing =>
+    [buffer]
+
+  Just "/" =>
+    performSplitPath(buffer ++ "/", true, String.drop(1, path))
+
+  Just char =>
+    foundSlash
       ? mappend([buffer], performSplitPath(char, false, String.drop(1, path)))
       : performSplitPath(buffer ++ char, false, String.drop(1, path))
+}
 
 splitPath :: FilePath -> List FilePath
 export splitPath = performSplitPath("", false)
@@ -82,12 +87,15 @@ takeFileName :: FilePath -> FilePath
 export takeFileName = pipe(
   splitPath,
   last,
-  where
-    is Just part: String.lastChar(part) == Just("/")
-      ? ""
-      : part
+  where {
+    Just part =>
+      String.lastChar(part) == Just("/")
+        ? ""
+        : part
 
-    is Nothing  : ""
+    Nothing =>
+      ""
+  }
 )
 
 takeExtension :: FilePath -> FilePath

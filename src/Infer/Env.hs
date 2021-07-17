@@ -6,6 +6,7 @@ module Infer.Env where
 import qualified AST.Canonical                 as Can
 import           Infer.Type
 import           Infer.Infer
+import           Infer.Instantiate
 import           Error.Error
 import           Error.Backtrace
 import           Error.Context
@@ -49,6 +50,17 @@ safeExtendVars env (i, sc) = case M.lookup i (envVars env) of
   Nothing -> return $ extendVars env (i, sc)
 
 
+safeExtendVarsForAbsParam :: Env -> (String, Scheme) -> Infer Env
+safeExtendVarsForAbsParam env (i, sc) = case M.lookup i (envVars env) of
+  Just sc'  -> do
+    (_ :=> t) <- instantiate sc'
+    if isTVar t then
+      throwError $ CompilationError (NameAlreadyDefined i) NoContext
+    else
+      return $ extendVars env (i, sc)
+  Nothing -> return $ extendVars env (i, sc)
+
+
 lookupInterface :: Env -> Can.Name -> Infer Interface
 lookupInterface env n = case M.lookup n (envInterfaces env) of
   Just i -> return i
@@ -87,6 +99,12 @@ initialEnv = Env
                        , ("*"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("/"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("%"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("&"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("|"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("^"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , ("~"          , Forall [] $ [] :=> (tNumber `fn` tNumber))
+                       , ("<<"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+                       , (">>"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
                        , ("|>", Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        , ("$"          , Forall [Star] $ [] :=> TGen 0)
                        ]
@@ -98,6 +116,9 @@ initialEnv = Env
 
 pushExpToBT :: Env -> Can.Exp -> Env
 pushExpToBT env exp = env { envBacktrace = BTExp exp : envBacktrace env }
+
+resetBT :: Env -> Env
+resetBT env = env { envBacktrace = [] }
 
 pushInstanceToBT :: Env -> Can.Instance -> Env
 pushInstanceToBT env inst = env { envBacktrace = BTInstance inst : envBacktrace env }

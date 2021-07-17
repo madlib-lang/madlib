@@ -1,15 +1,19 @@
 Left
   (CompilationError
      (UnificationError
-        (TCon (TC "String" Star) "prelude")
-        (TCon (TC "Number" Star) "prelude"))
+        (TApp
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TCon (TC "String" Star) "prelude"))
+        (TApp
+           (TCon (TC "List" (Kfun Star Star)) "prelude")
+           (TCon (TC "Number" Star) "prelude")))
      Context
        { ctxAstPath = "path"
-       , ctxArea = Area (Loc 59 3 16) (Loc 60 3 17)
+       , ctxArea = Area (Loc 56 3 15) (Loc 57 3 16)
        , ctxBacktrace =
            [ BTExp
                (Canonical
-                  (Area (Loc 0 1 1) (Loc 62 4 1))
+                  (Area (Loc 0 1 1) (Loc 59 4 1))
                   (Where
                      (Canonical
                         (Area (Loc 6 1 7) (Loc 21 1 22))
@@ -35,30 +39,30 @@ Left
                                   (Canonical (Area (Loc 19 1 20) (Loc 20 1 21)) (LNum "8")))
                            ]))
                      [ Canonical
-                         (Area (Loc 27 2 3) (Loc 43 2 19))
+                         (Area (Loc 27 2 3) (Loc 41 2 17))
                          (Is
                             (Canonical
-                               (Area (Loc 30 2 6) (Loc 39 2 15))
+                               (Area (Loc 27 2 3) (Loc 36 2 12))
                                (PList
-                                  [ Canonical (Area (Loc 31 2 7) (Loc 32 2 8)) (PNum "1")
-                                  , Canonical (Area (Loc 34 2 10) (Loc 35 2 11)) (PNum "2")
-                                  , Canonical (Area (Loc 37 2 13) (Loc 38 2 14)) (PNum "3")
+                                  [ Canonical (Area (Loc 28 2 4) (Loc 29 2 5)) (PNum "1")
+                                  , Canonical (Area (Loc 31 2 7) (Loc 32 2 8)) (PNum "2")
+                                  , Canonical (Area (Loc 34 2 10) (Loc 35 2 11)) (PNum "3")
                                   ]))
-                            (Canonical (Area (Loc 42 2 18) (Loc 43 2 19)) (LNum "1")))
+                            (Canonical (Area (Loc 40 2 16) (Loc 41 2 17)) (LNum "1")))
                      , Canonical
-                         (Area (Loc 46 3 3) (Loc 60 3 17))
+                         (Area (Loc 44 3 3) (Loc 57 3 16))
                          (Is
                             (Canonical
-                               (Area (Loc 49 3 6) (Loc 57 3 14))
+                               (Area (Loc 44 3 3) (Loc 52 3 11))
                                (PList
-                                  [ Canonical (Area (Loc 50 3 7) (Loc 53 3 10)) (PStr "\"1\"")
-                                  , Canonical (Area (Loc 55 3 12) (Loc 56 3 13)) (PVar "n")
+                                  [ Canonical (Area (Loc 45 3 4) (Loc 48 3 7)) (PStr "\"1\"")
+                                  , Canonical (Area (Loc 50 3 9) (Loc 51 3 10)) (PVar "n")
                                   ]))
-                            (Canonical (Area (Loc 59 3 16) (Loc 60 3 17)) (Var "n")))
+                            (Canonical (Area (Loc 56 3 15) (Loc 57 3 16)) (Var "n")))
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 0 1 1) (Loc 62 4 1))
+                  (Area (Loc 0 1 1) (Loc 59 4 1))
                   (Where
                      (Canonical
                         (Area (Loc 6 1 7) (Loc 21 1 22))
@@ -84,26 +88,26 @@ Left
                                   (Canonical (Area (Loc 19 1 20) (Loc 20 1 21)) (LNum "8")))
                            ]))
                      [ Canonical
-                         (Area (Loc 27 2 3) (Loc 43 2 19))
+                         (Area (Loc 27 2 3) (Loc 41 2 17))
                          (Is
                             (Canonical
-                               (Area (Loc 30 2 6) (Loc 39 2 15))
+                               (Area (Loc 27 2 3) (Loc 36 2 12))
                                (PList
-                                  [ Canonical (Area (Loc 31 2 7) (Loc 32 2 8)) (PNum "1")
-                                  , Canonical (Area (Loc 34 2 10) (Loc 35 2 11)) (PNum "2")
-                                  , Canonical (Area (Loc 37 2 13) (Loc 38 2 14)) (PNum "3")
+                                  [ Canonical (Area (Loc 28 2 4) (Loc 29 2 5)) (PNum "1")
+                                  , Canonical (Area (Loc 31 2 7) (Loc 32 2 8)) (PNum "2")
+                                  , Canonical (Area (Loc 34 2 10) (Loc 35 2 11)) (PNum "3")
                                   ]))
-                            (Canonical (Area (Loc 42 2 18) (Loc 43 2 19)) (LNum "1")))
+                            (Canonical (Area (Loc 40 2 16) (Loc 41 2 17)) (LNum "1")))
                      , Canonical
-                         (Area (Loc 46 3 3) (Loc 60 3 17))
+                         (Area (Loc 44 3 3) (Loc 57 3 16))
                          (Is
                             (Canonical
-                               (Area (Loc 49 3 6) (Loc 57 3 14))
+                               (Area (Loc 44 3 3) (Loc 52 3 11))
                                (PList
-                                  [ Canonical (Area (Loc 50 3 7) (Loc 53 3 10)) (PStr "\"1\"")
-                                  , Canonical (Area (Loc 55 3 12) (Loc 56 3 13)) (PVar "n")
+                                  [ Canonical (Area (Loc 45 3 4) (Loc 48 3 7)) (PStr "\"1\"")
+                                  , Canonical (Area (Loc 50 3 9) (Loc 51 3 10)) (PVar "n")
                                   ]))
-                            (Canonical (Area (Loc 59 3 16) (Loc 60 3 17)) (Var "n")))
+                            (Canonical (Area (Loc 56 3 15) (Loc 57 3 16)) (Var "n")))
                      ]))
            ]
        })

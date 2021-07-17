@@ -67,6 +67,11 @@ import           Run.Target
   'texport'   { Token _ TokenTypeExport }
   'from'      { Token _ TokenFrom }
   '|'         { Token _ TokenPipe }
+  '&'         { Token _ TokenAmpersand }
+  '^'         { Token _ TokenXor }
+  '~'         { Token _ TokenTilde }
+  '>>'        { Token _ TokenDoubleRightChevron }
+  '>>>'       { Token _ TokenTripleRightChevron }
   'pipe'      { Token _ TokenPipeKeyword }
   '|>'        { Token _ TokenPipeOperator }
   '...'       { Token _ TokenSpreadOperator }
@@ -192,19 +197,20 @@ typeParams :: { [Src.Name] }
 
 adtConstructors :: { [Src.Constructor] }
   : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
-  | adtConstructor 'ret'                      %shift { [$1] }
-  | adtConstructor                            %shift { [$1] }
+  | adtConstructor maybeRet                      %shift { [$1] }
+  -- | adtConstructor                            %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
-  : name adtConstructorArgs %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $2)) (Src.Constructor (strV $1) $2) }
+  : name '(' adtConstructorArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Constructor (strV $1) $3) }
   | name                    %shift { Src.Source emptyInfos (tokenToArea $1) (Src.Constructor (strV $1) []) }
 
 adtConstructorArgs :: { [Src.Typing] }
   : typing                     %shift { [$1] }
-  | name '.' name              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRComp (strV $1<>"."<>strV $3) [])] }
-  | '(' compositeTyping ')'    %shift { [$2] }
-  | '(' adtConstructorArgs ')' %shift { $2 }
-  | adtConstructorArgs typing  %shift { $1 <> [$2] }
+  | compositeTyping                     %shift { [$1] }
+  | typings                     %shift { [$1] }
+  | adtConstructorArgs ',' typing  %shift { $1 <> [$3] }
+  | adtConstructorArgs ',' compositeTyping  %shift { $1 <> [$3] }
+  | adtConstructorArgs ',' typings  %shift { $1 <> [$3] }
 
 
 constrainedTyping :: { Src.Typing }
@@ -309,6 +315,8 @@ exp :: { Src.Exp }
   | exp '.' name                                        %shift { access $1 (Src.Source emptyInfos (tokenToArea $3) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
+  | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet maybeRet exp maybeRet
+      { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $14)) (Src.If $3 $7 $14) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If $3 $6 $10) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp 'ret'
@@ -382,16 +390,13 @@ typedExp :: { Src.Exp }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
-  | 'where' '(' exp ')' maybeRet iss                  %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
-  | 'where' '(' exp ')' maybeRet iss 'ret'            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) (Src.Where $3 $6) }
   | 'where' '{' rets iss rets '}'                     %shift { buildAbs (mergeAreas (tokenToArea $1) (tokenToArea $6)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $4)] }
-  | 'where' rets iss rets                             %shift { buildAbs (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) [Src.Source emptyInfos emptyArea "__x__"] [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $3)) (Src.Where (Src.Source emptyInfos emptyArea (Src.Var "__x__")) $3)] }
 
 iss :: { [Src.Is] }
-  : 'is' pattern ':' maybeRet exp                    %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.Is $2 $5)] }
-  | 'is' pattern ':' maybeRet exp 'ret'              %shift { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) (Src.Is $2 $5)] }
-  | iss maybeRet 'is' pattern ':' maybeRet exp       %shift { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $7)) (Src.Is $4 $7)] }
-  | iss maybeRet 'is' pattern ':' maybeRet exp 'ret' %shift { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $7)) (Src.Is $4 $7)] }
+  : pattern '=>' maybeRet exp 'ret'              %shift { [Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | pattern '=>' maybeRet exp                   %shift { [Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | iss maybeRet pattern '=>' maybeRet exp       %shift { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
+  | iss maybeRet pattern '=>' maybeRet exp 'ret' %shift { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern %shift { $1 }
@@ -410,9 +415,13 @@ nonCompositePattern :: { Src.Pattern }
 
 
 compositePattern :: { Src.Pattern }
-  : name patterns          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $2))) (Src.PCtor (strV $1) $2) }
-  | name '.' name patterns %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $4))) (Src.PCtor (strV $1 <> "." <> strV $3) $4) }
-  | name '.' name          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCtor (strV $1 <> "." <> strV $3) []) }
+  : name '(' compositePatternArgs ')'          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCon (strV $1) $3) }
+  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCon (strV $1 <> "." <> strV $3) $5) }
+  | name '.' name          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PCon (strV $1 <> "." <> strV $3) []) }
+
+compositePatternArgs :: { [Src.Pattern] }
+  : pattern                          { [$1] }
+  | pattern ',' compositePatternArgs { $1:$3 }
 
 patterns :: { [Src.Pattern] }
   : nonCompositePattern          { [$1] }
@@ -554,7 +563,44 @@ operation :: { Src.Exp }
                          $1 False))) 
                       $3 True)
                    }
+  | exp '|' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "|"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '&' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "&"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '^' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "^"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '<' '<' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var "<<"))
+                         $1 False))) 
+                      $4 True)
+                   }
+  | exp '>>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">>"))
+                         $1 False))) 
+                      $3 True)
+                   }
+  | exp '>>>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                      ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
+                         (Src.Source emptyInfos (tokenToArea $2) (Src.Var ">>>"))
+                         $1 False))) 
+                      $3 True)
+                   }
   | '!' exp  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App (Src.Source emptyInfos (tokenToArea $1) (Src.Var "!")) $2 True) }
+  | '~' exp  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.App (Src.Source emptyInfos (tokenToArea $1) (Src.Var "~")) $2 True) }
   | exp '|>' exp  { Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                       ((Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.App
                          (Src.Source emptyInfos (tokenToArea $2) (Src.Var "|>")) 
@@ -646,10 +692,7 @@ mergeAreas (Area l _) (Area _ r) = Area l r
 
 nameToPattern :: Area -> String -> Src.Pattern
 nameToPattern area n | n == "_"      = Src.Source emptyInfos area Src.PAny
-                | n == "String"      = Src.Source emptyInfos area (Src.PCon n)
-                | n == "Boolean"     = Src.Source emptyInfos area (Src.PCon n)
-                | n == "Number"      = Src.Source emptyInfos area (Src.PCon n)
-                | (isUpper . head) n = Src.Source emptyInfos area (Src.PCtor n [])
+                | (isUpper . head) n = Src.Source emptyInfos area (Src.PCon n [])
                 | otherwise          = Src.Source emptyInfos area (Src.PVar n)
 
 access :: Src.Exp -> Src.Exp -> Src.Exp

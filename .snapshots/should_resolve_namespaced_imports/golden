@@ -5,50 +5,56 @@ Right
            { aimports = []
            , aexps =
                [ Solved
-                   (TApp
-                      (TApp
-                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                         (TVar (TV "c2" Star)))
-                      (TApp
-                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                         (TVar (TV "c2" Star))))
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TVar (TV "c2" Star)))
+                        (TApp
+                           (TCon (TC "List" (Kfun Star Star)) "prelude")
+                           (TVar (TV "c2" Star))))
                    (Area (Loc 0 1 1) (Loc 31 1 32))
                    (Export
                       (Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "c2" Star)))
-                            (TApp
-                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                               (TVar (TV "c2" Star))))
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "c2" Star)))
+                              (TApp
+                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                 (TVar (TV "c2" Star))))
                          (Area (Loc 0 1 1) (Loc 31 1 32))
                          (Assignment
                             "singleton"
                             (Solved
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "c2" Star)))
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TVar (TV "c2" Star))))
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TVar (TV "c2" Star)))
+                                    (TApp
+                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                       (TVar (TV "c2" Star))))
                                (Area (Loc 19 1 20) (Loc 31 1 32))
                                (Abs
                                   (Solved
-                                     (TVar (TV "c2" Star)) (Area (Loc 20 1 21) (Loc 21 1 22)) "a")
+                                     ([] :=> TVar (TV "c2" Star))
+                                     (Area (Loc 20 1 21) (Loc 21 1 22))
+                                     "a")
                                   [ Solved
-                                      (TApp
-                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                         (TVar (TV "c2" Star)))
+                                      ([] :=>
+                                         TApp
+                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                           (TVar (TV "c2" Star)))
                                       (Area (Loc 27 1 28) (Loc 30 1 31))
                                       (ListConstructor
                                          [ Solved
-                                             (TVar (TV "c2" Star))
+                                             ([] :=> TVar (TV "c2" Star))
                                              (Area (Loc 28 1 29) (Loc 29 1 30))
                                              (ListItem
                                                 (Solved
-                                                   (TVar (TV "b1" Star))
+                                                   ([] :=> TVar (TV "b1" Star))
                                                    (Area (Loc 28 1 29) (Loc 29 1 30))
                                                    (Var "a")))
                                          ])
@@ -72,23 +78,25 @@ Right
                ]
            , aexps =
                [ Solved
-                   (TApp
-                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                      (TCon (TC "Number" Star) "prelude"))
+                   ([] :=>
+                      TApp
+                        (TCon (TC "List" (Kfun Star Star)) "prelude")
+                        (TCon (TC "Number" Star) "prelude"))
                    (Area (Loc 26 2 1) (Loc 40 2 15))
                    (App
                       (Solved
-                         (TApp
-                            (TApp
-                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "f5" Star)))
-                            (TApp
-                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                               (TVar (TV "f5" Star))))
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TVar (TV "f5" Star)))
+                              (TApp
+                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                 (TVar (TV "f5" Star))))
                          (Area (Loc 26 2 1) (Loc 37 2 12))
                          (Var "L.singleton"))
                       (Solved
-                         (TCon (TC "Number" Star) "prelude")
+                         ([] :=> TCon (TC "Number" Star) "prelude")
                          (Area (Loc 38 2 13) (Loc 39 2 14))
                          (LNum "3"))
                       True)

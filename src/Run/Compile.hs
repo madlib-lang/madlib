@@ -51,7 +51,7 @@ import           Coverage.Coverable             ( collectFromAST
                                                 , Coverable(..)
                                                 )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
-import           MadlibDotJson.Version
+import           MadlibDotJson.MadlibVersion
 import           Utils.Path
 import qualified Utils.PathUtils               as PathUtils
 import           Paths_madlib                   ( version )
@@ -92,9 +92,7 @@ generateLCovInfoForAST astPath coverables =
 
 globalChecks :: IO [CompilationWarning]
 globalChecks = do
-  currentDir <- getCurrentDirectory
-  let madlibDotJsonPath = joinPath [currentDir, "madlib.json"]
-  parsedMadlibDotJson <- MadlibDotJson.load PathUtils.defaultPathUtils madlibDotJsonPath
+  parsedMadlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
 
   case parsedMadlibDotJson of
     Left _ -> return []
@@ -102,6 +100,7 @@ globalChecks = do
       -> case checkVersion pkgName madlibVersion version of
         Just warning -> return [warning]
         Nothing      -> return []
+    _ -> return []
 
 
 runCompilation :: Command -> Bool -> IO ()

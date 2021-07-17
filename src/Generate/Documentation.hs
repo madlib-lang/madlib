@@ -8,11 +8,6 @@ import           Data.Maybe                     ( isJust
                                                 , fromMaybe
                                                 )
 import qualified Data.Bifunctor
-import           Explain.Format                 ( prettyPrintType
-                                                , predsToStr
-                                                , schemeToStr
-                                                , predToStr
-                                                )
 import           Data.List                      ( intercalate
                                                 , find
                                                 )
@@ -21,7 +16,9 @@ import           Generate.Utils
 import qualified Data.Map                      as M
 import qualified Data.Maybe                    as Maybe
 import           Infer.Type
+import           Explain.Format
 import           Text.Regex.TDFA
+import Utils.Tuple
 
 
 indentSize :: Int
@@ -54,11 +51,11 @@ prepareExportedExps :: Slv.AST -> [(String, Slv.Exp)]
 prepareExportedExps ast =
   let exps                      = Slv.aexps ast
       exports                   = filter Slv.isExportOnly exps
+      exportsWithNames = (\export -> (Slv.getExpName export, export)) <$> (exports ++ nameExportTargetExps)
       filteredExportedWithNames = filter (isJust . fst) exportsWithNames
       nameExportNames           = Slv.getNameExportName <$> filter Slv.isNameExport exps
       nameExportTargetExps =
           Maybe.mapMaybe (\name -> find (\export -> Slv.getExpName export == Just name) exps) nameExportNames
-      exportsWithNames = (\export -> (Slv.getExpName export, export)) <$> (exports ++ nameExportTargetExps)
   in  Data.Bifunctor.first (fromMaybe "") <$> filteredExportedWithNames
 
 generateASTDoc :: Int -> (Slv.AST, String, [DocString]) -> String
@@ -144,10 +141,10 @@ generateInstancesDoc depth docStrings instances =
 
 generateInstanceDoc :: Int -> [DocString] -> Slv.Instance -> String
 generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constraints declaration _)) =
-  let constraints' = case predsToStr False constraints of
+  let constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
         "()" -> ""
         or   -> or
-      declaration'     = predToStr False declaration
+      declaration'     = lst $ predToStr False (mempty, mempty) declaration
 
       docString        = findDocStringForInstanceDeclaration declaration' docStrings
 
@@ -190,7 +187,6 @@ generateInstanceDoc depth docStrings (Slv.Untyped _ (Slv.Instance name constrain
         <> "}"
 
 
-
 generateInterfacesDoc :: Int -> [DocString] -> [Slv.Interface] -> String
 generateInterfacesDoc depth docStrings interfaces =
   intercalate (",\n" <> indent depth) (generateInterfaceDoc depth docStrings <$> interfaces)
@@ -198,7 +194,7 @@ generateInterfacesDoc depth docStrings interfaces =
 generateInterfaceDoc :: Int -> [DocString] -> Slv.Interface -> String
 generateInterfaceDoc depth docStrings (Slv.Untyped _ (Slv.Interface name constraints vars _ methodTypings)) =
   let vars'        = unwords $ (\(TV n _) -> n) <$> vars
-      constraints' = case predsToStr False constraints of
+      constraints' = case lst $ predsToStr False (mempty, mempty) constraints of
         "()" -> ""
         or   -> or
       methods'         = M.map (prettyPrintConstructorTyping' False) methodTypings
@@ -368,50 +364,6 @@ generateAliasDoc depth docStrings typeDecl = case typeDecl of
 
   _ -> ""
 
-prettyPrintConstructorTyping :: Slv.Typing -> String
-prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
-  Slv.TRComp _ ts ->
-    if not (null ts) then "(" <> prettyPrintConstructorTyping' False t <> ")" else prettyPrintConstructorTyping' False t
-  Slv.TRArr _ _ -> "(" <> prettyPrintConstructorTyping' False t <> ")"
-  _             -> prettyPrintConstructorTyping' True t
-
-prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
-prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
-  Slv.TRSingle n -> n
-  Slv.TRComp n typing' ->
-    let space = if not (null typing') then " " else ""
-    in  if paren
-          then
-            "("
-            <> n
-            <> space
-            <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
-            <> ")"
-          else n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
-  Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
-    "("
-      <> prettyPrintConstructorTyping' False l
-      <> " -> "
-      <> prettyPrintConstructorTyping' False r
-      <> ") -> "
-      <> prettyPrintConstructorTyping' False r'
-  Slv.TRArr l r -> if paren
-    then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
-    else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
-  Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
-  Slv.TRRecord ts _ ->
-    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
-        fields  = M.elems mapped
-        fields' = intercalate ", " fields
-    in  "{ " <> fields' <> " }"
-  _ -> ""
-
-isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
-isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
-  Slv.TRArr  _ _  -> True
-  Slv.TRComp _ ts -> not (null ts)
-  _               -> False
-
 
 generateExpsDoc :: Int -> [DocString] -> [(String, Slv.Exp)] -> String
 generateExpsDoc depth docStrings expInfos =
@@ -425,7 +377,7 @@ emptySince depth = indent depth <> "\"since\": \"\",\n"
 
 generateExpDoc :: Int -> [DocString] -> (String, Slv.Exp) -> String
 generateExpDoc depth docStrings (name, exp) =
-  let typing           = prettyPrintType True $ Slv.getType exp
+  let typing           = prettyPrintQualType True $ Slv.getQualType exp
       docString        = findDocStringForExpName name docStrings
       descriptionField = case docString of
         Just (FunctionDoc _ description _) ->

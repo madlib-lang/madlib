@@ -69,6 +69,7 @@ class Compilable a where
   compile :: Env -> CompilationConfig -> a -> String
 
 instance Compilable Exp where
+  compile _ _ (Untyped _ _) = ""
   compile env config e@(Optimized expType area@(Area (Loc _ l _) _) exp) =
     let
       astPath   = ccastPath config
@@ -154,6 +155,48 @@ instance Compilable Exp where
               (compile env config arg)
           Optimized _ _ (App (Optimized _ _ (Var "||")) arg' _) ->
             hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " || " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "|")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " | " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "&")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " & " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "^")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ^ " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "~")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ~ " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var "<<")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " << " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var ">>")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >> " <> hpWrapLine
+              coverage
+              astPath
+              (getStartLine arg)
+              (compile env config arg)
+          Optimized _ _ (App (Optimized _ _ (Var ">>>")) arg' _) ->
+            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >>> " <> hpWrapLine
               coverage
               astPath
               (getStartLine arg)
@@ -456,12 +499,8 @@ instance Compilable Exp where
             PNum  n -> scope <> " === " <> n
             PStr  n -> scope <> " === " <> n
             PBool n -> scope <> " === " <> n
-            PCon n | n == "String"  -> "typeof " <> scope <> " === \"string\""
-                   | n == "Boolean" -> "typeof " <> scope <> " === \"boolean\""
-                   | n == "Number"  -> "typeof " <> scope <> " === \"number\""
-                   | otherwise      -> ""
-            PCtor n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
-            PCtor n ps ->
+            PCon n [] -> scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\""
+            PCon n ps ->
               let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
               in  scope <> ".__constructor === " <> "\"" <> removeNamespace n <> "\"" <> if not (null args)
                     then " && " <> args
@@ -498,7 +537,7 @@ instance Compilable Exp where
             PList  items -> buildTupleOrListVars v items
             PTuple items -> buildTupleOrListVars v items
 
-            PCtor _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
+            PCon _ ps   -> concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
             PVar n       -> "    let " <> generateSafeName n <> " = " <> v <> ";\n"
 
             _            -> ""
@@ -514,7 +553,7 @@ instance Compilable Exp where
                      ", "
                      (filter (not . null) . ((snd <$>) . reverse . sort . M.toList) $ M.mapWithKey buildFieldVar fields)
                 <> " }"
-            PCtor _ args -> if null name
+            PCon _ args -> if null name
               then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
               else
                 name
@@ -535,7 +574,7 @@ instance Compilable Exp where
           buildListVar (Optimized _ _ pat) = case pat of
             PSpread (Optimized _ _ (PVar n)) -> "..." <> generateSafeName n
             PVar    n      -> generateSafeName n
-            PCtor _ args   -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
+            PCon _ args   -> let built = intercalate ", " $ buildListVar <$> args in "{ __args: [" <> built <> "]}"
             PList   pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
             PTuple  pats   -> "[" <> intercalate ", " (buildListVar <$> pats) <> "]"
             PRecord fields -> "{ " <> intercalate ", " (M.elems $ M.mapWithKey buildFieldVar fields) <> " }"

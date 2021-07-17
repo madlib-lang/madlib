@@ -1,0 +1,49 @@
+import type { Wish } from "Wish"
+import type { Maybe } from "Maybe"
+import J from "Json"
+import Either from "Either"
+import {} from "Wish"
+import { Nothing } from "Maybe"
+
+import type { VersionRange } from "./Version"
+import { createRange, parse } from "./Version"
+import { sanitizeUrl } from "./URL"
+
+export alias Dependency = {
+  description  :: String,
+  url :: String,
+  sanitizedUrl :: String,
+  versionRange :: VersionRange,
+  name :: Maybe String
+}
+
+
+dependencyParser :: J.Parser (List Dependency)
+export dependencyParser = J.field(
+  "dependencies",
+  J.list(
+    J.map4(
+      (url, description, maybeMinVersion, maybeMaxVersion) => ({
+        url,
+        description,
+        versionRange: createRange(maybeMinVersion, maybeMaxVersion),
+        name: Nothing,
+        sanitizedUrl: sanitizeUrl(url)
+      }),
+      J.field("url", J.string),
+      J.field("description", J.string),
+      J.map1(chain(parse), J.maybe(J.field("minVersion", J.string))),
+      J.map1(chain(parse), J.maybe(J.field("maxVersion", J.string)))
+    )
+  )
+)
+
+parseDependencies :: String -> Wish String (List Dependency)
+parseDependencies = pipe(
+  J.parse(dependencyParser),
+  where {
+    Either.Left(_) => of([])
+
+    Either.Right(a) => of(a)
+  }
+)

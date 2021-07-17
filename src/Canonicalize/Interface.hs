@@ -35,7 +35,7 @@ canonicalizeInterfaces env = foldM
 canonicalizeInterface :: Env -> Src.Interface -> CanonicalM (Env, Can.Interface)
 canonicalizeInterface env (Src.Source _ area interface) = case interface of
   Src.Interface constraints n vars ms -> do
-    ts <- mapM (typingToType env) ms
+    ts <- mapM (typingToType env AnyKind) ms
 
     let ts' = addConstraints n vars <$> ts
     let tvs = rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
@@ -88,17 +88,20 @@ canonicalizeInstances :: Env -> Target -> [Src.Instance] -> CanonicalM [Can.Inst
 canonicalizeInstances _   _      []       = return []
 canonicalizeInstances env target (i : is) = do
   next    <- canonicalizeInstances env target is
-  current <- catchError
-    (canonicalizeInstance env target i)
-    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) (Src.getArea i) []))
-
+  current <- canonicalizeInstance env target i
   return $ current : next
 
 
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
 canonicalizeInstance env target (Src.Source _ area inst) = case inst of
-  Src.Instance constraints n typing methods -> do
-    ts <- mapM (typingToType env) typing
+  Src.Instance constraints n typings methods -> do
+    ts <- case M.lookup n (envInterfaces env) of
+      Just (Interface tvs _) ->
+        zipWithM (typingToType env) (KindRequired . kind <$> tvs) typings
+
+      Nothing ->
+        throwError $
+          CompilationError (InterfaceNotExisting n) (Context (envCurrentPath env) area [])
 
     let subst = foldl' (\s t -> s `compose` buildVarSubsts t) mempty ts
 
@@ -110,7 +113,7 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
                   vars <- mapM
                     (\case
                       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
-                      (typing                         , _     ) -> typingToType env typing
+                      (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
                     )
                     (zip args tvs)
                   return $ IsIn interface' vars

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 82766db7a2a065fb2c9e1c160c3c3b88d55dbbef6b6a8084292c4dd8c2107559
+-- hash: 972ebeb411d9d2ca149dab6113e11ff8b0dd2f804746f0ab0fe55e2f623c0097
 
 name:           madlib
 version:        0.9.0
@@ -75,7 +75,7 @@ library
       Infer.Typing
       Infer.Unify
       MadlibDotJson.MadlibDotJson
-      MadlibDotJson.Version
+      MadlibDotJson.MadlibVersion
       Main
       Optimize.Optimize
       Parse.DocString.DocString
@@ -88,15 +88,21 @@ library
       Run.Compile
       Run.GenerateDocumentation
       Run.GeneratePackage
+      Run.Package
+      Run.PackageHash
       Run.PackageInstaller
       Run.Run
       Run.Target
       Run.TestRunner
       Run.Utils
+      Utils.Hash
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
       Utils.URL
+      Utils.Version
+      VersionLock.PublicAPI
+      VersionLock.VersionLock
   other-modules:
       Paths_madlib
   hs-source-dirs:
@@ -104,12 +110,14 @@ library
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
     , bytestring
     , containers ==0.6.2.1
+    , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions
@@ -176,7 +184,7 @@ executable madlib
       Infer.Typing
       Infer.Unify
       MadlibDotJson.MadlibDotJson
-      MadlibDotJson.Version
+      MadlibDotJson.MadlibVersion
       Optimize.Optimize
       Parse.DocString.DocString
       Parse.DocString.Grammar
@@ -188,15 +196,21 @@ executable madlib
       Run.Compile
       Run.GenerateDocumentation
       Run.GeneratePackage
+      Run.Package
+      Run.PackageHash
       Run.PackageInstaller
       Run.Run
       Run.Target
       Run.TestRunner
       Run.Utils
+      Utils.Hash
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
       Utils.URL
+      Utils.Version
+      VersionLock.PublicAPI
+      VersionLock.VersionLock
       Paths_madlib
   hs-source-dirs:
       src
@@ -204,12 +218,14 @@ executable madlib
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
     , bytestring
     , containers ==0.6.2.1
+    , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions
@@ -249,12 +265,14 @@ test-suite madlib-test
   build-depends:
       MissingH
     , aeson
+    , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
     , array ==0.5.4.0
     , base >=4.7 && <5
     , brittany
     , bytestring
     , containers ==0.6.2.1
+    , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions

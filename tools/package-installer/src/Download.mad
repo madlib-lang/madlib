@@ -1,0 +1,68 @@
+import type { Wish } from "Wish"
+import { bichain, mapRej } from "Wish"
+import Http from "Http"
+import { writeFile, exists } from "FileSystem"
+import System from "System"
+import { always } from "Function"
+import { andDo } from "Monad"
+
+import type { Dependency } from "./Dependency"
+import Constants from "./Constants"
+
+
+
+cleanUp :: String -> Wish System.CommandError String
+cleanUp = pipe(
+  (url) => `rm -r ${Constants.TEMPORARY_MODULES_PATH}${url}.zip ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
+  System.exec
+)
+
+
+copyPackageToTmpRoot :: String -> Wish System.CommandError String
+copyPackageToTmpRoot = pipe(
+  (url) => `cp -R ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${Constants.TEMPORARY_MODULES_PATH}`,
+  System.exec
+)
+
+
+unzipPkg :: String -> Wish System.CommandError String
+unzipPkg = pipe(
+  (url) => `unzip -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
+  System.exec
+)
+
+
+renameInnerFolder :: String -> Wish System.CommandError String
+renameInnerFolder = pipe(
+  (url) => `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
+  System.exec
+)
+
+
+extractArchive :: String -> Wish String String
+extractArchive = (url) => pipe(
+  unzipPkg,
+  andDo(renameInnerFolder(url)),
+  andDo(copyPackageToTmpRoot(url)),
+  andDo(cleanUp(url)),
+  mapRej(always("Error processing archive"))
+)(url)
+
+
+downloadPackage :: Dependency -> Wish String Dependency
+downloadPackage = (dependency) => pipe(
+  .url,
+  Http.get,
+  map(where { Http.Response({ data }) => data }),
+  mapRej(always(`Package from "${dependency.url}" failed to be downloaded`)),
+  chain(writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
+  andDo(extractArchive(dependency.sanitizedUrl)),
+  andDo(of(dependency))
+)(dependency)
+
+
+downloadIfNotCached :: Dependency -> Wish String Dependency
+export downloadIfNotCached = (dependency) => pipe(
+  (dep) => exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
+  bichain(always(downloadPackage(dependency)), always(of(dependency)))
+)(dependency)

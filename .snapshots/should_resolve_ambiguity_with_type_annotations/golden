@@ -3,34 +3,37 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            (TCon (TC "Number" Star) "prelude")
+            ([] :=> TCon (TC "Number" Star) "prelude")
             (Area (Loc 113 9 2) (Loc 132 9 21))
             (TypedExp
                (Solved
-                  (TCon (TC "Number" Star) "prelude")
+                  ([] :=> TCon (TC "Number" Star) "prelude")
                   (Area (Loc 113 9 2) (Loc 122 9 11))
                   (App
                      (Solved
-                        (TApp
-                           (TApp
-                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                              (TCon (TC "String" Star) "prelude"))
-                           (TVar (TV "e4" Star)))
+                        ([ IsIn "Read" [ TVar (TV "e4" Star) ] ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "String" Star) "prelude"))
+                             (TVar (TV "e4" Star)))
                         (Area (Loc 113 9 2) (Loc 117 9 6))
                         (Placeholder
                            ( MethodRef "Read" "read" False
                            , [ TCon (TC "Number" Star) "prelude" ]
                            )
                            (Solved
-                              (TApp
-                                 (TApp
-                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TCon (TC "String" Star) "prelude"))
-                                 (TVar (TV "e4" Star)))
+                              ([ IsIn "Read" [ TVar (TV "e4" Star) ] ] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "String" Star) "prelude"))
+                                   (TVar (TV "e4" Star)))
                               (Area (Loc 113 9 2) (Loc 117 9 6))
                               (Var "read"))))
                      (Solved
-                        (TCon (TC "String" Star) "prelude")
+                        ([ IsIn "Read" [ TVar (TV "d3" Star) ] ] :=>
+                           TCon (TC "String" Star) "prelude")
                         (Area (Loc 118 9 7) (Loc 121 9 10))
                         (LStr "'3'"))
                      True))
@@ -76,26 +79,30 @@ Right
                (fromList
                   [ ( "read"
                     , ( Solved
-                          (TApp
-                             (TApp
-                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TCon (TC "String" Star) "prelude"))
-                             (TCon (TC "Number" Star) "prelude"))
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "String" Star) "prelude"))
+                               (TCon (TC "Number" Star) "prelude"))
                           (Area (Loc 69 6 3) (Loc 108 6 42))
                           (Assignment
                              "read"
                              (Solved
-                                (TApp
-                                   (TApp
-                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                      (TCon (TC "String" Star) "prelude"))
-                                   (TCon (TC "Number" Star) "prelude"))
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "String" Star) "prelude"))
+                                     (TCon (TC "Number" Star) "prelude"))
                                 (Area (Loc 76 6 10) (Loc 108 6 42))
                                 (Abs
                                    (Solved
-                                      (TVar (TV "b1" Star)) (Area (Loc 77 6 11) (Loc 78 6 12)) "s")
+                                      ([] :=> TVar (TV "b1" Star))
+                                      (Area (Loc 77 6 11) (Loc 78 6 12))
+                                      "s")
                                    [ Solved
-                                       (TVar (TV "c2" Star))
+                                       ([] :=> TVar (TV "c2" Star))
                                        (Area (Loc 84 6 18) (Loc 107 6 41))
                                        (JSExp "parseFloat(s, 10)")
                                    ])))

@@ -7,7 +7,7 @@ import qualified Infer.Type                    as Ty
 import           Explain.Location
 
 data Solved a
-  = Solved Ty.Type Area a
+  = Solved (Ty.Qual Ty.Type) Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
@@ -76,11 +76,10 @@ type Pattern = Solved Pattern_
 data Pattern_
   = PVar Name
   | PAny
-  | PCtor Name [Pattern]
+  | PCon Name [Pattern]
   | PNum String
   | PStr String
   | PBool String
-  | PCon Name
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
   | PTuple [Pattern]
@@ -144,7 +143,10 @@ type Table = M.Map FilePath AST
 -- Functions
 
 getType :: Solved a -> Ty.Type
-getType (Solved t _ _) = t
+getType (Solved (_ Ty.:=> t) _ _) = t
+
+getQualType :: Solved a -> Ty.Qual Ty.Type
+getQualType (Solved t _ _) = t
 
 getArea :: Solved a -> Area
 getArea (Solved _ a _) = a
@@ -159,6 +161,22 @@ isADTExported :: TypeDecl -> Bool
 isADTExported adt = case adt of
   Untyped _ ADT { adtexported } -> adtexported
   _                             -> False
+
+isAliasExported :: TypeDecl -> Bool
+isAliasExported alias = case alias of
+  Untyped _ Alias { aliasexported } -> aliasexported
+  _                                 -> False
+
+isAlias :: TypeDecl -> Bool
+isAlias td = case td of
+  Untyped _ Alias {} -> True
+  _                  -> False
+
+isADT :: TypeDecl -> Bool
+isADT td = case td of
+  Untyped _ ADT {} -> True
+  _                -> False
+
 
 isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
@@ -177,9 +195,13 @@ isNameExport a = case a of
 
 isTypeExport :: Exp -> Bool
 isTypeExport a = case a of
-  (Solved _ _ (TypeExport _)) -> True
+  (Untyped _ (TypeExport _)) -> True
 
   _                           -> False
+
+getTypeExportName :: Exp -> Name
+getTypeExportName a = case a of
+  (Untyped _ (TypeExport name)) -> name
 
 isTypeOrNameExport :: Exp -> Bool
 isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
@@ -209,6 +231,7 @@ getValue (Solved _ _ a) = a
 getValue (Untyped _ a ) = a
 
 getExpName :: Exp -> Maybe String
+getExpName (Untyped _ _)    = Nothing
 getExpName (Solved _ _ exp) = case exp of
   Assignment name _ -> return name
 
@@ -224,3 +247,29 @@ getExpName (Solved _ _ exp) = case exp of
 getInstanceMethods :: Instance -> [Exp]
 getInstanceMethods inst = case inst of
   Untyped _ (Instance _ _ _ methods) -> M.elems $ M.map fst methods
+
+extractExportedADTs :: AST -> [TypeDecl]
+extractExportedADTs ast =
+  let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)
+  in  filter
+    (\td@(Untyped _ adt) -> isADT td && (isADTExported td || adtname adt `elem` typeExports))
+    $ atypedecls ast
+
+extractExportedAliases :: AST -> [TypeDecl]
+extractExportedAliases ast =
+  let typeExports = getTypeExportName <$> filter isTypeExport (aexps ast)
+  in  filter
+    (\td@(Untyped _ alias) -> isAlias td && (isAliasExported td || aliasname alias `elem` typeExports))
+    $ atypedecls ast
+
+extractExportedExps :: AST -> M.Map Name Exp
+extractExportedExps AST { aexps, apath } = case apath of
+  Just p -> M.fromList $ bundleExports <$> filter isExport aexps
+
+bundleExports :: Exp -> (Name, Exp)
+bundleExports e'@(Solved _ _ exp) = case exp of
+  Export (Solved _ _ (Assignment n _)) -> (n, e')
+
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ -> (n, e')
+
+  NameExport n -> (n, e')

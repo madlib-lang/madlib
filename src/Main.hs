@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE NamedFieldPuns   #-}
 module Main where
 
 import           GHC.IO.Encoding
@@ -13,6 +14,8 @@ import           Run.Compile
 import           Run.CommandLine
 import           Run.PackageInstaller
 import           Run.TestRunner
+import           Run.Package
+import           Run.PackageHash
 
 
 main :: IO ()
@@ -31,12 +34,14 @@ run cmd = do
             Right s -> runCompilation cmd { compileOutput = s } coverage
             Left  e -> putStrLn e
 
-    Test entrypoint coverage -> runTests entrypoint coverage
+    Test entrypoint coverage     -> runTests entrypoint coverage
 
-    Install                  -> runPackageInstaller
+    Install                      -> runPackageInstaller
 
-    New path                 -> runPackageGenerator path
+    Package{ packageSubCommand } -> runPackage packageSubCommand
 
-    Doc path                 -> runDocumentationGenerator path
+    New path                     -> runPackageGenerator path
 
-    Run path args            -> runRun path args
+    Doc path                     -> runDocumentationGenerator path
+
+    Run path args                -> runRun path args

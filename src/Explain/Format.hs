@@ -8,6 +8,7 @@ import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
+import qualified AST.Solved                    as Slv
 import           Infer.Type
 import           Data.List                      ( intercalate
                                                 , foldl'
@@ -16,6 +17,7 @@ import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
 import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
+import Debug.Trace
 
 data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
 
@@ -169,7 +171,7 @@ formatTypeError json err = case err of
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"
-      <> predToStr True (IsIn cls ts)
+      <> lst (predToStr True (mempty, mempty) (IsIn cls ts))
       <> "'. Verify that you imported the module\nwhere the "
       <> cls
       <> " instance for '"
@@ -196,7 +198,7 @@ formatTypeError json err = case err of
   KindError (t, k) (t', k') ->
     "The kind of types don't match, '"
       <> prettyPrintType True t
-      <> "has kind "
+      <> "' has kind "
       <> kindToStr k
       <> " and "
       <> prettyPrintType True t'
@@ -206,12 +208,12 @@ formatTypeError json err = case err of
 
   InstancePredicateError pInstance pWrong pCorrect ->
     "A constraint in the instance declaration '"
-      <> predToStr True pInstance
+      <> lst (predToStr True (mempty, mempty) pInstance)
       <> " is not correct.\n"
       <> "You gave the constraint '"
-      <> predToStr True pWrong
+      <> lst (predToStr True (mempty, mempty) pWrong)
       <> "' but a constraint of the form '"
-      <> predToStr True pCorrect
+      <> lst (predToStr True (mempty, mempty) pCorrect)
       <> "'\nwas expected."
 
   ImportCycle paths ->
@@ -297,6 +299,33 @@ formatTypeError json err = case err of
       <> "give it a type annotation.\n\n"
       <> "Hint: Place that declaration above the place you use it, or give it a type annotation."
 
+  NotCapitalizedADTName name ->
+    "The name '" <> name <> "' of this type is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  NotCapitalizedAliasName name ->
+    "The name '" <> name <> "' of this type alias is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  NotCapitalizedConstructorName name ->
+    "The name '" <> name <> "' of this type constructor is not capitalized. This is incorrect and all types in madlib should start with\n"
+      <> "an uppercased letter."
+
+  TypingHasWrongKind t expectedKind actualKind ->
+    "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
+      <> "expected:\n"
+      <> "    "
+      <> colorWhen (not json) Green (kindToStr expectedKind)
+      <> "\n"
+      <> "But found:\n"
+      <> "    "
+      <> colorWhen (not json) Red (kindToStr actualKind)
+
+  ContextTooWeak preds ->
+    "The context of the type annotation is too weak. The type inferred for the implementation\n"
+      <> "has the following constraints: " <> intercalate ", " (predClass <$> preds) <>".\n\n"
+      <> "Hint: Add the missing interface constraints to the type annotation."
+
   _ -> ppShow err
 
 
@@ -346,8 +375,11 @@ nthEnding n = case n of
   _ -> "th"
 
 
-letters :: [String]
-letters = [1 ..] >>= flip replicateM ['a' .. 'z']
+letters :: [Char]
+letters = ['a' ..]
+
+hkLetters :: [Char]
+hkLetters = ['m' ..]
 
 
 kindToStr :: Kind -> String
@@ -357,28 +389,59 @@ kindToStr k = case k of
 
 schemeToStr :: Scheme -> String
 schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
-schemeToStr (Forall _ (ps :=> t)) = predsToStr True ps <> " => " <> prettyPrintType True t
+schemeToStr (Forall _ (ps :=> t)) =
+  let (vars, hkVars, predStr) = predsToStr True (mempty, mempty) ps
+      (_, _, typeStr)         = prettyPrintType' True (vars, hkVars) t
+  in
+    if length ps > 1 then
+      "(" <> predStr <> ")" <> " => " <> typeStr
+    else
+      predStr <> " => " <> typeStr
 
-predsToStr :: Bool -> [Pred] -> String
-predsToStr rewrite [p] = predToStr rewrite p
-predsToStr rewrite ps  = "(" <> intercalate ", " (predToStr rewrite <$> ps) <> ")"
+
+predsToStr :: Bool -> (M.Map String Int, M.Map String Int) -> [Pred] -> (M.Map String Int, M.Map String Int, String)
+predsToStr rewrite (vars, hkVars) [] = (vars, hkVars, "")
+predsToStr rewrite (vars, hkVars) [p] = predToStr rewrite (vars, hkVars) p
+predsToStr rewrite (vars, hkVars) (p:ps)  =
+  let (vars', hkVars', predStr) = predToStr rewrite (vars, hkVars) p
+  in
+    if null ps then
+     (vars', hkVars', predStr)
+    else
+      let (vars'', hkVars'', predStr'') = predsToStr rewrite (vars', hkVars') ps
+      in  (vars'', hkVars'', predStr <> ", " <> predStr'')
 
 
-predToStr :: Bool -> Pred -> String
-predToStr rewrite (IsIn cls ts) = let types = typeToParenWrappedStr rewrite <$> ts in cls <> " " <> unwords types
+predToStr :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
+predToStr rewrite (vars, hkVars) p@(IsIn cls _) =
+  let (vars', hkVars', predStr) = predToStr' rewrite (vars, hkVars) p
+  in  (vars', hkVars', cls <> " " <> predStr)
 
-typeToParenWrappedStr :: Bool -> Type -> String
-typeToParenWrappedStr rewrite t = case t of
-  TApp _ _ -> "(" <> prettyPrintType rewrite t <> ")"
-  _        -> prettyPrintType rewrite t
+predToStr' :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
+predToStr' rewrite (vars, hkVars) (IsIn cls []) = (vars, hkVars, "")
+predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts)) =
+  let (vars', hkVars', typeStr) = typeToParenWrappedStr rewrite (vars, hkVars) t
+  in
+    if null ts then
+      (vars', hkVars', typeStr)
+    else
+      let (vars'', hkVars'', typeStr'') = predToStr' rewrite (vars', hkVars') (IsIn cls ts)
+      in  (vars'', hkVars'', typeStr <> " " <> typeStr'')
 
+typeToParenWrappedStr :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
+typeToParenWrappedStr rewrite (vars, hkVars) t =
+  let (vars', hkVars', typeStr) = prettyPrintType' rewrite (vars, hkVars) t
+  in  case t of
+    TApp _ _ -> (vars', hkVars', "(" <> typeStr <> ")")
+    _        -> (vars', hkVars', typeStr)
+
+
+prettyPrintQualType :: Bool -> Qual Type -> String
+prettyPrintQualType rewrite qt = schemeToStr (Forall [] qt)
 
 
 prettyPrintType :: Bool -> Type -> String
 prettyPrintType rewrite = lst . prettyPrintType' rewrite (mempty, mempty)
-
-hkLetters :: [Char]
-hkLetters = ['m' ..]
 
 
 prettyPrintType' :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)
@@ -389,8 +452,8 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     then (vars, hkVars, n)
     else case k of
       Star -> case M.lookup n vars of
-        Just x  -> (vars, hkVars, letters !! x)
-        Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, letters !! newIndex)
+        Just x  -> (vars, hkVars, [letters !! x])
+        Nothing -> let newIndex = M.size vars in (M.insert n newIndex vars, hkVars, [letters !! newIndex])
 
       Kfun _ _ -> case M.lookup n hkVars of
         Just x  -> (vars, hkVars, [hkLetters !! x])
@@ -422,7 +485,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     let (varsLeft, hkVarsLeft, left) = case tl of
           TApp (TApp (TCon (TC "(->)" _) _) tl') tr' ->
             let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' rewrite (vars, hkVars) tl'
-                (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', varsLeft') tr'
+                (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', hkVarsLeft') tr'
                 leftParenthesis                    = case tl' of
                   TApp (TApp (TCon (TC "(->)" _) _) _) _ -> True
                   _ -> False
@@ -465,6 +528,51 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
   TGen n -> (vars, hkVars, "TGen" <> show n)
 
   _      -> (vars, hkVars, "")
+
+
+prettyPrintConstructorTyping :: Slv.Typing -> String
+prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
+  Slv.TRComp _ ts ->
+    if not (null ts) then "(" <> prettyPrintConstructorTyping' False t <> ")" else prettyPrintConstructorTyping' False t
+  Slv.TRArr _ _ -> "(" <> prettyPrintConstructorTyping' False t <> ")"
+  _             -> prettyPrintConstructorTyping' True t
+
+prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
+prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
+  Slv.TRSingle n -> n
+  Slv.TRComp n typing' ->
+    let space = if not (null typing') then " " else ""
+    in  if paren
+          then
+            "("
+            <> n
+            <> space
+            <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+            <> ")"
+          else n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+  Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
+    "("
+      <> prettyPrintConstructorTyping' False l
+      <> " -> "
+      <> prettyPrintConstructorTyping' False r
+      <> ") -> "
+      <> prettyPrintConstructorTyping' False r'
+  Slv.TRArr l r -> if paren
+    then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
+    else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
+  Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
+  Slv.TRRecord ts _ ->
+    let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
+        fields  = M.elems mapped
+        fields' = intercalate ", " fields
+    in  "{ " <> fields' <> " }"
+  _ -> ""
+
+isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
+isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
+  Slv.TRArr  _ _  -> True
+  Slv.TRComp _ ts -> not (null ts)
+  _               -> False
 
 
 isTuple :: Type -> Bool

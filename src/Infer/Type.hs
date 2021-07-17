@@ -13,7 +13,6 @@ import           Data.List                      ( nub
 data TVar = TV Id Kind
   deriving (Show, Eq, Ord)
 
--- TODO: Add FilePath from origin module
 data TCon = TC Id Kind
   deriving (Show, Eq, Ord)
 
@@ -30,6 +29,9 @@ infixr `TApp`
 
 getTConId :: TCon -> Id
 getTConId (TC id _) = id
+
+getTVarId :: TVar -> Id
+getTVarId (TV id _) = id
 
 
 tNumber :: Type
@@ -195,6 +197,15 @@ buildKind :: Int -> Kind
 buildKind n | n > 0     = Kfun Star $ buildKind (n - 1)
             | otherwise = Star
 
+kindLength :: Kind -> Int
+kindLength k = case k of
+  Star -> 1
+  Kfun k1 k2 -> kindLength k1 + kindLength k2
+
+
+unqualify :: Qual a -> a
+unqualify (_ :=> a) = a
+
 
 searchVarInType :: Id -> Type -> Maybe Type
 searchVarInType id t = case t of
@@ -260,5 +271,22 @@ getReturnType t = case t of
 getParamType :: Type -> Type
 getParamType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
+
+getParamTypes :: Type -> [Type]
+getParamTypes t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) p) n -> p : getParamTypes n
+  _ -> []
+
+getTypeVarsInType :: Type -> [Type]
+getTypeVarsInType t = case t of
+  TVar _           -> [t]
+  TApp l r         -> getTypeVarsInType l ++ getTypeVarsInType r
+  TRecord fields _ -> concat $ getTypeVarsInType <$> M.elems fields
+  _                -> []
+
+getParamTypeOrSame :: Type -> Type
+getParamTypeOrSame t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
+  _ -> t
 
 

@@ -1,0 +1,69 @@
+import type { Maybe } from "Maybe"
+import type { Version, VersionRange } from "./Version"
+
+import { Just, Nothing } from "Maybe"
+import Dict from "Dictionary"
+import List from "List"
+import { identity, ifElse, not } from "Function"
+
+import { AnyVersion } from "./Version"
+
+
+
+export alias VersionInfo = {
+  version :: Maybe Version,
+  range   :: VersionRange
+}
+
+export alias Context = {
+  versions :: Dict.Dictionary String VersionInfo,
+  installedPackages :: List String
+}
+
+
+initialContext :: Context
+export initialContext = {
+  versions: Dict.empty,
+  installedPackages: []
+}
+
+
+findByName :: String -> Context -> VersionInfo
+export findByName = (name, context) => pipe(
+  .versions,
+  Dict.get(name),
+  where {
+    Just(found) =>
+      found
+
+    Nothing =>
+      {
+        version: Nothing,
+        range: AnyVersion
+      }
+  }
+)(context)
+
+updateEntry :: String -> VersionInfo -> Context -> Context
+export updateEntry = (name, versionInfo, context) => pipe(
+  .versions,
+  Dict.insert(name, versionInfo),
+  (versions) => ({ ...context, versions })
+)(context)
+
+addInstalledPackage :: String -> Context -> Context
+export addInstalledPackage = (sanitizedUrl, context) => pipe(
+  .installedPackages,
+  ifElse(
+    pipe(List.includes(sanitizedUrl), not),
+    List.append(sanitizedUrl),
+    identity
+  ),
+  (installedPackages) => ({ ...context, installedPackages })
+)(context)
+
+hasPackageBeenInstalled :: String -> Context -> Boolean
+export hasPackageBeenInstalled = (sanitizedUrl, context) => pipe(
+  .installedPackages,
+  List.includes(sanitizedUrl)
+)(context)

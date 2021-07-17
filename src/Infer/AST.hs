@@ -3,6 +3,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.AST where
 
 import qualified AST.Solved                    as Slv
@@ -15,6 +16,7 @@ import           Infer.Interface
 import           Infer.Type
 import           Infer.Exp
 import           Error.Error
+import           Error.Warning
 import           Error.Context
 import           Error.Backtrace
 import           Data.Maybe
@@ -26,6 +28,8 @@ import qualified Data.Set                      as S
 import           Infer.Unify
 import           Infer.Instantiate
 import           Infer.Scope
+import Debug.Trace
+import Text.Show.Pretty
 
 {-|
 Module      : AST
@@ -112,18 +116,6 @@ addConstructors env ctors = do
     env
     ctors
 
-extractExportedExps :: Slv.AST -> M.Map Slv.Name Slv.Exp
-extractExportedExps Slv.AST { Slv.aexps, Slv.apath } = case apath of
-  Just p -> M.fromList $ bundleExports <$> filter Slv.isExport aexps
-
-bundleExports :: Slv.Exp -> (Slv.Name, Slv.Exp)
-bundleExports e'@(Slv.Solved _ _ exp) = case exp of
-  Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)) -> (n, e')
-
-  Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment n _)))) _ -> (n, e')
-
-  Slv.NameExport n -> (n, e')
-
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
 findASTM table path = case M.lookup path table of
@@ -142,7 +134,7 @@ extractImportedConstructors env ast imp =
 
 extractImportedVars :: Env -> Slv.AST -> Can.Import -> Infer Vars
 extractImportedVars env ast imp = do
-  let exportedNames = M.keys $ extractExportedExps ast
+  let exportedNames = M.keys $ Slv.extractExportedExps ast
   exportTuples <- mapM (\name -> (name, ) <$> lookupVar env name) exportedNames
   let exports = M.fromList exportTuples
   return $ filterExportsByImport imp exports
@@ -316,6 +308,16 @@ solveManyASTs solved table fps = case fps of
       next    <- solveManyASTs (solved <> current) table fps'
       return $ M.map fst current <> next
     Nothing -> throwError $ CompilationError (ImportNotFound fp) NoContext
+
+
+solveManyASTs' :: Can.Table -> [FilePath] -> (Either [CompilationError] Slv.Table, [CompilationWarning])
+solveManyASTs' canTable paths =
+  case runExcept (runStateT (solveManyASTs mempty canTable paths) InferState { count = 0, errors = [] }) of
+    Left err -> (Left [err], [])
+
+    Right (table, InferState { errors = [] }) -> (Right table, [])
+
+    Right (_, InferState { errors }) -> (Left errors, [])
 
 
 -- -- TODO: Make it call inferAST so that inferAST can return an (Infer TBD)

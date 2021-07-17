@@ -100,53 +100,44 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 
 mainCompileFixture :: String
 mainCompileFixture = unlines
-  [ "export fn = (b, c) => (b + c)"
+  [ "export fn = (b, c) => b + c"
   , "inc :: Number -> Number"
-  , "inc = (x) => (x + 1)"
+  , "inc = (x) => x + 1"
   , "dec :: Number -> Number"
-  , "dec = (x) => (x - 1)"
+  , "dec = (x) => x - 1"
   , "double :: Number -> Number"
-  , "double = (x) => (x * 2)"
+  , "double = (x) => x * 2"
   , "half :: Number -> Number"
-  , "half = (x) => (x / 2)"
+  , "half = (x) => x / 2"
   , "3 |> half |> double"
   , "3 == 5"
   , "carResponse  = { cars: [] }"
   , "where(carResponse) {"
-  , "  is { cars: cs }: cs"
-  , "  is _                     : []"
+  , "  { cars: cs } => cs"
+  , "  _ => []"
   , "}"
   , "where(3) {"
-  , "  is Number: 3"
+  , "  3 => 3"
   , "}"
   , "where(\"3\") {"
-  , "  is String: 3"
+  , "  \"3\" => 3"
   , "}"
   , "where(true) {"
-  , "  is Boolean: 3"
-  , "}"
-  , "where(3) {"
-  , "  is 3: 3"
-  , "}"
-  , "where(\"3\") {"
-  , "  is \"3\": 3"
-  , "}"
-  , "where(true) {"
-  , "  is true: 3"
+  , "  true => 3"
   , "}"
   , "log :: a -> a"
   , "log = (a) => (#- { console.log(a); return a; } -#)"
   , "if (true) { \"OK\" } else { \"NOT OK\" }"
-  , "type Maybe a = Just a | Nothing"
+  , "type Maybe a = Just(a) | Nothing"
   , "mapMaybe :: (a -> b) -> Maybe a -> Maybe b"
-  , "mapMaybe = (f, m) => (where(m) {"
-  , "  is Just a : Just(f(a))"
-  , "  is Nothing: Nothing"
-  , "})"
+  , "mapMaybe = (f, m) => where(m) {"
+  , "  Just(a) => Just(f(a))"
+  , "  Nothing => Nothing"
+  , "}"
   , "might = Just(3)"
   , "q = where(might) {"
-  , "  is Just a : a"
-  , "  is Nothing: 1"
+  , "  Just(a) => a"
+  , "  Nothing => 1"
   , "}"
   , "true && false"
   , "false || true"
@@ -164,18 +155,18 @@ mainCompileFixture = unlines
   , "arr = [1, 2, 3]"
   , "all = [ ...arr, 4, 5, 6]"
   , "where([1, 2, 3, 5, 8]) {"
-  , "  is [1, 2, 3]: 1"
-  , "  is [1, 2, n]: n"
-  , "  is [n, 3]   : n"
-  , "  is [x1, y1, z1]: x1 + y1 + z1"
-  , "  is []       : 0"
+  , "  [1, 2, 3] => 1"
+  , "  [1, 2, n] => n"
+  , "  [n, 3] => n"
+  , "  [x1, y1, z1] => x1 + y1 + z1"
+  , "  [] => 0"
   , "}"
   , "map :: (a -> b) -> List a -> List b"
   , "export map = (f, xs) => (where(xs) {"
-  , "  is [a, b, c]: [f(a), ...map(f, [b, c])]"
-  , "  is [a, b]   : [f(a), ...map(f, [b])]"
-  , "  is [a]      : [f(a)]"
-  , "  is []       : []"
+  , "  [a, b, c] => [f(a), ...map(f, [b, c])]"
+  , "  [a, b]    => [f(a), ...map(f, [b])]"
+  , "  [a]       => [f(a)]"
+  , "  []        => []"
   , "})"
   , "true"
   , "  ? \"ok\""
@@ -185,23 +176,24 @@ mainCompileFixture = unlines
   , "  |> (x) => (x == \"ok\" ? 1 : 10)"
   , "  |> (x) => (x)"
   , "1 == 2 ? \"ok\" : \"not ok\""
-  , "where(3)"
-  , "  is 3: 48"
-  , "  is n: 1 |> (x) => (x + 1)"
-  , "(where(\"3\")"
-  , "  is \"3\": 48"
-  , "  is n: 1"
-  , ") |> (x) => (x + 1)"
+  , "where(3) {"
+  , "  3 => 48"
+  , "  n => 1 |> (x) => (x + 1)"
+  , "}"
+  , "(where(\"3\") {"
+  , "  \"3\" => 48"
+  , "  n => 1"
+  , "}) |> (x) => (x + 1)"
   , "where([1, 2, 3, 4, 5]) {"
-  , "  is [2, ...rest]      : rest"
-  , "  is [1, 2, 3, ...rest]: rest"
+  , "  [2, ...rest]       => rest"
+  , "  [1, 2, 3, ...rest] => rest"
   , "} |> (x) => (x)"
   , "where({ x: 4, name: \"John\" }) {"
-  , "  is { name: \"Bob\" }: \"Bob\""
+  , "  { name: \"Bob\" } => \"Bob\""
   , "}"
   , "addXAndY = (r) => ("
   , "  where(r) {"
-  , "    is { x: x1, y }: x1 + y"
+  , "    { x: x1, y } => x1 + y"
   , "  }"
   , ")"
   , "fnTCHOU = (x) => (x.a.b.c.d.e)"
@@ -211,28 +203,28 @@ mainCompileFixture = unlines
   , "<1, 2, 3> == <1, 2, 3>"
   , ""
   , "where(<1, 2>) {"
-  , "  is <a, b>: a + b"
+  , "  <a, b> => a + b"
   , "}"
   , ""
   , "fn2 :: Number -> <Number, Number>"
   , "fn2 = (a) => (<a, a>)"
   , ""
   , "fst :: <a, b> -> a"
-  , "fst = (tuple) => (where(tuple)"
-  , "  is <a, _>: a"
-  , ")"
+  , "fst = (tuple) => where(tuple) {"
+  , "  <a, _> => a"
+  , "}"
   , ""
   , "snd = (tuple) => {"
-  , "  b = where(tuple)"
-  , "    is <_, b1>: b1"
+  , "  b = where(tuple) {"
+  , "    <_, b1> => b1"
+  , "  }"
   , "  return b"
   , "}"
   , ""
   , "fst(<1, 2>)"
   , "snd(<1, 2>)"
   , ""
-  , " where(<Just(3), Just(4)>)"
-  , "   is <Just n, Just m>: n + m"
+  , " where(<Just(3), Just(4)>) { <Just(n), Just(m)> => n + m }"
   ]
 
 
@@ -254,7 +246,7 @@ jsxProgram = unlines
   , "  map = (f, xs) => (#- xs.map((x) => f(x)) -#)"
   , "}"
   , ""
-  , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+  , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
   , "good :: a -> Wish e a"
   , "export good = (a) => Wish((_, goodCB) => goodCB(a))"
   , "type Element = Element"
@@ -265,11 +257,11 @@ jsxProgram = unlines
   , ""
   , ""
   , "type Attribute"
-  , "  = AttributeId String"
-  , "  | AttributeClass String"
-  , "  | OnClick (a -> Event -> List (Wish (a -> a) (a -> a)))"
-  , "  | OnMouseOver (a -> Event -> List (Wish (a -> a) (a -> a)))"
-  , "  | OnMouseOut (a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , "  = AttributeId(String)"
+  , "  | AttributeClass(String)"
+  , "  | OnClick(a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , "  | OnMouseOver(a -> Event -> List (Wish (a -> a) (a -> a)))"
+  , "  | OnMouseOut(a -> Event -> List (Wish (a -> a) (a -> a)))"
   , ""
   , "id :: String -> Attribute"
   , "export id = AttributeId"
@@ -375,25 +367,25 @@ monadTransformersProgram = unlines
   , "export andDo = (b, a) => chain((_) => b, a)"
   , ""
   , ""
-  , "export type WriterT w m a = WriterT (m <a, w>)"
+  , "export type WriterT w m a = WriterT(m <a, w>)"
   , ""
   , ""
   , "runWriterT :: WriterT w m a -> m <a, w>"
-  , "export runWriterT = where is WriterT m: m"
+  , "export runWriterT = where { WriterT(m) => m }"
   , ""
   , "liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c"
   , "liftA2 = (f, x1, x2) => ap(map(f, x1), x2)"
   , ""
   , "instance Functor m => Functor (WriterT w m) {"
-  , "  map = (f, m) => WriterT(map(where is <a, w>: <f(a), w>, runWriterT(m)))"
+  , "  map = (f, m) => WriterT(map(where { <a, w> => <f(a), w> }, runWriterT(m)))"
   , "}"
   , ""
   , "instance (Applicative m, Monoid w) => Applicative (WriterT w m) {"
   , "  pure = (x) => WriterT(pure(<x, mempty>))"
   , ""
-  , "  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1)"
-  , "    is <a, w>: where(x2) is <b, ww>: <a(b), mappend(w, ww)>"
-  , "    , runWriterT(mf), runWriterT(mm)))"
+  , "  ap = (mf, mm) => WriterT(liftA2((x1, x2) => where(x1) {"
+  , "      <a, w> => where(x2) { <b, ww> => <a(b), mappend(w, ww)> }"
+  , "    }, runWriterT(mf), runWriterT(mm)))"
   , "}"
   , ""
   , "instance (Monoid w, Monad m) => Monad (WriterT w m) {"
@@ -401,10 +393,10 @@ monadTransformersProgram = unlines
   , ""
   , "  chain = (f, m) => WriterT("
   , "    chain("
-  , "      where is <a, w>: chain("
-  , "        where is <b, ww>: of(<b, mappend(w, ww)>)"
-  , "        , runWriterT(f(a)))"
-  , "      , runWriterT(m))"
+  , "      where { <a, w> => chain("
+  , "        where { <b, ww> => of(<b, mappend(w, ww)>)"
+  , "        }, runWriterT(f(a)))"
+  , "      }, runWriterT(m))"
   , "  )"
   , "}"
   , ""
@@ -412,12 +404,12 @@ monadTransformersProgram = unlines
   , "  lift = (m) => WriterT(chain((a) => of(<a, mempty>), m))"
   , "}"
   , ""
-  , "export type Identity a = Identity a"
+  , "export type Identity a = Identity(a)"
   , ""
   , "run :: Identity a -> a"
-  , "export runIdentity = where"
-  , "  is Identity a: a"
-  , ""
+  , "export runIdentity = where {"
+  , "  Identity(a) => a"
+  , "}"
   , "instance Functor Identity {"
   , "  map = (f, m) => Identity(f(runIdentity(m)))"
   , "}"
@@ -435,15 +427,15 @@ monadTransformersProgram = unlines
   , "}"
   , ""
   , ""
-  , "export type StateT s m a = StateT (s -> m <a, s>)"
+  , "export type StateT s m a = StateT(s -> m <a, s>)"
   , ""
   , "runStateT :: StateT s m a -> s -> m <a, s>"
-  , "export runStateT = (m) => where(m) is StateT f: (a) => f(a)"
+  , "export runStateT = (m) => where(m) { StateT(f) => (a) => f(a) }"
   , ""
   , "instance Functor m => Functor (StateT s m) {"
   , "  map = (f, m) => StateT((s) =>"
   , "    map("
-  , "      where is <a, ss>: <f(a), ss>,"
+  , "      where { <a, ss> => <f(a), ss> },"
   , "      runStateT(m, s)"
   , "    )"
   , "  )"
@@ -454,11 +446,13 @@ monadTransformersProgram = unlines
   , ""
   , "  ap = (mf, mm) => StateT("
   , "    (s) => chain("
-  , "      where is <f, ss>: chain("
-  , "        where is <m, sss>: of(<f(m), sss>),"
-  , "        runStateT(mm)(ss)"
-  , "      ),"
-  , "      runStateT(mf)(s)"
+  , "      where {"
+  , "        <f, ss> => chain("
+  , "          where { <m, sss> => of(<f(m), sss>) },"
+  , "          runStateT(mm, ss)"
+  , "        )"
+  , "      },"
+  , "      runStateT(mf, s)"
   , "    )"
   , "  )"
   , "}"
@@ -468,7 +462,7 @@ monadTransformersProgram = unlines
   , ""
   , "  chain = (f, m) => StateT("
   , "    (s) => chain("
-  , "      where is <a, ss>: runStateT(f(a), ss),"
+  , "      where { <a, ss> => runStateT(f(a), ss) },"
   , "      runStateT(m, s)"
   , "    )"
   , "  )"
@@ -560,25 +554,27 @@ spec = do
 
     it "should compile interfaces and instances" $ do
       let code = unlines
-            [ "type Maybe a = Just a | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , ""
-            , "type Either e a = Right a | Left e"
+            , "type Either e a = Right(a) | Left(e)"
             , ""
             , "interface Functor m {"
             , "  map :: (a -> b) -> m a -> m b"
             , "}"
             , ""
             , "instance Functor Maybe {"
-            , "  map = (f) => where"
-            , "    is Just x : Just(f(x))"
-            , "    is Nothing: Nothing"
+            , "  map = (f) => where {"
+            , "    Just(x) => Just(f(x))"
+            , "    Nothing => Nothing"
+            , "  }"
             , "}"
             , ""
             , "instance Functor List {"
-            , "  map = (f) => where"
-            , "    is [h, ...t]: [f(h), ...map(f, t)]"
-            , "    is [l]      : [f(l)]"
-            , "    is []       : []"
+            , "  map = (f) => where {"
+            , "    [h, ...t] => [f(h), ...map(f, t)]"
+            , "    [l] => [f(l)]"
+            , "    [] => []"
+            , "  }"
             , "}"
             , ""
             , "interface Monad m {"
@@ -587,17 +583,19 @@ spec = do
             , "}"
             , ""
             , "instance Monad Maybe {"
-            , "  chain = (f) => where"
-            , "    is Just x : f(x)"
-            , "    is Nothing: Nothing"
+            , "  chain = (f) => where {"
+            , "    Just(x) => f(x)"
+            , "    Nothing => Nothing"
+            , "  }"
             , ""
             , "  of = (x) => Just(x)"
             , "}"
             , ""
             , "instance Monad (Either e) {"
-            , "  chain = (f) => where"
-            , "    is Right x: f(x)"
-            , "    is Left e : Left(e)"
+            , "  chain = (f) => where {"
+            , "    Right(x) => f(x)"
+            , "    Left(e) => Left(e)"
+            , "  }"
             , ""
             , "  of = (x) => Right(x)"
             , "}"
@@ -621,16 +619,16 @@ spec = do
             , "fn(Just(3))"
             , "fn([4, 5, 6])"
             , ""
-            , "hideCall = (x) =>"
-            , "  where(chain((a) => Just(a + 1), x))"
-            , "    is Just 2: chain((a) => Right(a + 1), Right(2))"
+            , "hideCall = (x) => where(chain((a) => Just(a + 1), x)) {"
+            , "  Just(2) => chain((a) => Right(a + 1), Right(2))"
+            , "}"
             ]
           actual = tester False code
       snapshotTest "should compile interfaces and instances" actual
 
     it "should compile constrained instances and resolve their dictionary parameters" $ do
       let code = unlines
-            [ "type Either e a = Right a | Left e"
+            [ "type Either e a = Right(a) | Left(e)"
             , ""
             , "interface Show a {"
             , "  show :: a -> String"
@@ -645,19 +643,20 @@ spec = do
             , "}"
             , ""
             , "instance (Show a, Show b) => Show <a, b> {"
-            , "  show = where is <a, b>: '<' ++ show(a) ++ ', ' ++ show(b) ++ '>'"
+            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
             , "}"
             , ""
             , "show(<1, false>)"
             , ""
             , "instance (Show a, Show b, Show c) => Show <a, b, c> {"
-            , "  show = where is <a, b, c>: '<' ++ show(a) ++ ', ' ++ show(b) ++ ', ' ++ show(c) ++ '>'"
+            , "  show = where { <a, b, c> => '<' ++ show(a) ++ ', ' ++ show(b) ++ ', ' ++ show(c) ++ '>' }"
             , "}"
             , ""
             , "instance (Show e, Show a) => Show (Either e a) {"
-            , "  show = where"
-            , "    is Right a: 'Right ' ++ show(a)"
-            , "    is Left  e: 'Left ' ++ show(e)"
+            , "  show = where {"
+            , "    Right(a) => 'Right ' ++ show(a)"
+            , "    Left(e) => 'Left ' ++ show(e)"
+            , "  }"
             , "}"
             , ""
             , "show((Right(3) :: Either Number Number))"
@@ -693,7 +692,7 @@ spec = do
 
     it "should compile imports and exports of Namespaced ADTs" $ do
       let codeA = unlines
-            ["export type Maybe a = Just a | Nothing", "type NotExportedADT a = NotExportedADT a | StillNotExported"]
+            ["export type Maybe a = Just(a) | Nothing", "type NotExportedADT a = NotExportedADT(a) | StillNotExported"]
           astA  = buildAST "./ADTs" codeA
 
           codeB = unlines
@@ -705,7 +704,7 @@ spec = do
             , "fn2 :: ADTs.Maybe (ADTs.Maybe Number) -> Number"
             , "export fn2 = (m) => ("
             , "  where(m) {"
-            , "    is ADTs.Just (ADTs.Just n): n"
+            , "    ADTs.Just(ADTs.Just(n)) => n"
             , "  }"
             , ")"
             ]
@@ -713,6 +712,7 @@ spec = do
           actual = case (astA, astB) of
             (Right a, Right b) ->
               let astTable = M.fromList [("./Module", b), ("./ADTs", a)] in tableTester "" astTable b
+            err -> ppShow err
 
       snapshotTest "should compile imports and exports of Namespaced ADTs" actual
 
@@ -727,9 +727,9 @@ spec = do
           , "import IO from \"./IO\""
           , ""
           , "Http.get(\"https://github.com/open-sorcerers/madlib/archive/master.zip\")"
-          , "  |> W.map((response) => (where(response) {"
-          , "    is Http.Response { body: Http.BinaryBody d }: d"
-          , "  }))"
+          , "  |> W.map((response) => where {"
+          , "    Http.Response({ body: Http.BinaryBody(d) }) => d"
+          , "  })"
           , "  |> W.map(FS.BinaryData)"
           , "  |> W.chain(FS.writeFile(\"./f.zip\"))"
           , "  |> W.fulfill(IO.log, IO.log)"
@@ -740,10 +740,10 @@ spec = do
           , "import B from \"./Binary\""
           , ""
           , "export type Body"
-          , "  = TextBody String"
-          , "  | BinaryBody B.ByteArray"
+          , "  = TextBody(String)"
+          , "  | BinaryBody(B.ByteArray)"
           , ""
-          , "export type Response = Response { body :: Body }"
+          , "export type Response = Response({ body :: Body })"
           , ""
           , "get :: String -> W.Wish e Response"
           , "export get = (url) => (#- -#)"
@@ -754,8 +754,8 @@ spec = do
           , "import B from \"./Binary\""
           , ""
           , "export type Data"
-          , "  = TextData String"
-          , "  | BinaryData B.ByteArray"
+          , "  = TextData(String)"
+          , "  | BinaryData(B.ByteArray)"
           , ""
           , "writeFile :: String -> Data -> W.Wish e String"
           , "export writeFile = (path, d) => (#- -#)"
@@ -763,14 +763,14 @@ spec = do
 
         binaryModule = unlines
           [ "export type ByteWord"
-          , "  = Int8Bit a"
-          , "  | Int16Bit a"
-          , "  | Int32Bit a"
-          , "export type ByteArray = ByteArray (List ByteWord)"
+          , "  = Int8Bit(Number)"
+          , "  | Int16Bit(Number)"
+          , "  | Int32Bit(Number)"
+          , "export type ByteArray = ByteArray(List ByteWord)"
           ]
 
         wishModule = unlines
-          [ "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+          [ "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
           , ""
           , "of :: a -> Wish e a"
           , "export of = (a) => (Wish((bad, good) => (good(a))))"
@@ -779,7 +779,7 @@ spec = do
           , "export map = (f, m) => ("
           , "  Wish((bad, good) => ("
           , "    where(m) {"
-          , "      is Wish run: run(bad, (x) => (good(f(x))))"
+          , "      Wish(run) => run(bad, (x) => (good(f(x))))"
           , "    }"
           , "  ))"
           , ")"
@@ -788,9 +788,9 @@ spec = do
           , "export chain = (f, m) => ("
           , "  Wish((bad, good) => ("
           , "    where(m) {"
-          , "      is Wish run1: run1(bad, (x) => ("
+          , "      Wish(run1) => run1(bad, (x) => ("
           , "        where(f(x)) {"
-          , "          is Wish run2: run2(bad, good)"
+          , "          Wish(run2) => run2(bad, good)"
           , "        }"
           , "      ))"
           , "    }"
@@ -798,9 +798,9 @@ spec = do
           , ")"
           , ""
           , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
-          , "export fulfill = (bad, good, m) => (where(m) {"
-          , "  is Wish run: run(bad, good)"
-          , "})"
+          , "export fulfill = (bad, good, m) => where(m) {"
+          , "  Wish(run) => run(bad, good)"
+          , "}"
           ]
 
         ioModule      = unlines ["log :: a -> a", "export log = (a) => (#- { console.log(a); return a; } -#)"]
@@ -836,7 +836,7 @@ spec = do
       let
         madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
         mainMadlibDotJSON =
-          unlines ["{", "  \"main\": \"src/Main.mad\",", "  \"dependencies\": { \"random\": \"url\" }", "}"]
+          unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
         libMain   = unlines ["import R from \"./Utils/Random\"", "export random = (seed) => (R.random(seed))"]
 
@@ -845,9 +845,9 @@ spec = do
         main      = unlines ["import R from \"random\"", "R.random(3)"]
 
         files     = M.fromList
-          [ ("/madlib_modules/url/madlib.json"         , madlibDotJSON)
-          , ("/madlib_modules/url/src/Main.mad"        , libMain)
-          , ("/madlib_modules/url/src/Utils/Random.mad", libRandom)
+          [ ("/madlib_modules/random/madlib.json"         , madlibDotJSON)
+          , ("/madlib_modules/random/src/Main.mad"        , libMain)
+          , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
           , ("/src/Main.mad"                           , main)
           , ("/madlib.json"                            , mainMadlibDotJSON)
           ]
@@ -856,7 +856,7 @@ spec = do
           { readFile           = makeReadFile files
           , byteStringReadFile = makeByteStringReadFile files
           , doesFileExist      = \f ->
-            if f == "/madlib_modules/url/madlib.json" || f == "/madlib.json" then return True else return False
+            if f == "/madlib_modules/random/madlib.json" || f == "/madlib.json" then return True else return False
           }
 
       let r = unsafePerformIO $ buildASTTable' mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
@@ -864,6 +864,7 @@ spec = do
       let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/src" t a
+            err                -> ppShow err
 
       snapshotTest "should compile and resolve imported packages" actual
 
@@ -872,12 +873,12 @@ spec = do
       let
         madlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
         mainMadlibDotJSON =
-          unlines ["{", "  \"main\": \"src/Main.mad\",", "  \"dependencies\": { \"random\": \"url\" }", "}"]
+          unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
         libMain = unlines
           [ "import R from \"./Utils/Random\""
-          , "export random = (seed) => (R.random(seed))"
-          , "export type Maybe a = Just a | Nothing"
+          , "export random = (seed) => R.random(seed)"
+          , "export type Maybe a = Just(a) | Nothing"
           ]
 
         libRandom = "export random = (seed) => (seed / 2)"
@@ -885,18 +886,18 @@ spec = do
         main      = unlines ["import R from \"random\"", "R.random(3)"]
 
         files     = M.fromList
-          [ ("/root/project/madlib_modules/url/madlib.json"         , madlibDotJSON)
-          , ("/root/project/madlib_modules/url/src/Main.mad"        , libMain)
-          , ("/root/project/madlib_modules/url/src/Utils/Random.mad", libRandom)
-          , ("/root/project/src/Main.mad"                           , main)
-          , ("/root/project/madlib.json"                            , mainMadlibDotJSON)
+          [ ("/root/project/madlib_modules/random/madlib.json"         , madlibDotJSON)
+          , ("/root/project/madlib_modules/random/src/Main.mad"        , libMain)
+          , ("/root/project/madlib_modules/random/src/Utils/Random.mad", libRandom)
+          , ("/root/project/src/Main.mad"                              , main)
+          , ("/root/project/madlib.json"                               , mainMadlibDotJSON)
           ]
 
         pathUtils = defaultPathUtils
           { readFile           = makeReadFile files
           , byteStringReadFile = makeByteStringReadFile files
           , doesFileExist      = \f ->
-                                   if f == "/root/project/madlib_modules/url/madlib.json" || f == "/root/project/madlib.json"
+                                   if f == "/root/project/madlib_modules/random/madlib.json" || f == "/root/project/madlib.json"
                                      then return True
                                      else return False
           }
@@ -955,21 +956,22 @@ spec = do
             , "  chain :: (a -> m b) -> m a -> m b"
             , "}"
             , ""
-            , "export type Wish e a = Wish ((e -> f) -> (a -> b) -> ())"
+            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
             , ""
             , ""
             , "instance Functor (Wish e) {"
             , "  map = (f, m) => Wish((bad, good) =>"
-            , "    where(m)"
-            , "      is Wish run: run(bad, (x) => (good(f(x))))"
+            , "    where(m) {"
+            , "      Wish(run) => run(bad, (x) => (good(f(x))))"
+            , "    }"
             , "  )"
             , "}"
             , ""
             , "instance Applicative (Wish e) {"
             , "  pure = (a) => Wish((bad, good) => good(a))"
             , ""
-            , "  ap = (mf, m) => Wish((bad, good) => where(<mf, m>)"
-            , "    is <Wish runMF, Wish runM>:"
+            , "  ap = (mf, m) => Wish((bad, good) => where(<mf, m>) {"
+            , "    <Wish(runMF), Wish(runM)> =>"
             , "      runM("
             , "        bad,"
             , "        (x) => runMF("
@@ -977,19 +979,21 @@ spec = do
             , "          (f) => good(f(x))"
             , "        )"
             , "      )"
-            , "  )"
+            , "  })"
             , "}"
             , ""
             , "instance Monad (Wish e) {"
             , "  of = pure"
             , ""
             , "  chain = (f, m) => Wish((bad, good) =>"
-            , "    where(m) "
-            , "      is Wish run:"
+            , "    where(m) {"
+            , "      Wish(run) =>"
             , "        run(bad, (x) =>"
-            , "          where(f(x))"
-            , "            is Wish r: r(bad, good)"
+            , "          where(f(x)) {"
+            , "            Wish(r) => r(bad, good)"
+            , "          }"
             , "        )"
+            , "    }"
             , "  )"
             , "}"
             , ""
@@ -998,7 +1002,7 @@ spec = do
             , "export mapRej = (f, m) => ("
             , "  Wish((bad, good) => ("
             , "    where(m) {"
-            , "      is Wish run: run((x) => (bad(f(x))), good)"
+            , "      Wish(run) => run((x) => (bad(f(x))), good)"
             , "    }"
             , "  ))"
             , ")"
@@ -1008,9 +1012,9 @@ spec = do
             , "export chainRej = (f, m) => ("
             , "  Wish((bad, good) => ("
             , "    where(m) {"
-            , "      is Wish run: run((x) => ("
+            , "      Wish(run) => run((x) => ("
             , "        where(f(x)) {"
-            , "          is Wish r: r(bad, good)"
+            , "          Wish(r) => r(bad, good)"
             , "        }"
             , "      ), good)"
             , "    }"
@@ -1027,9 +1031,9 @@ spec = do
             , ")"
             , ""
             , ""
-            , "getWishFn = (w) => (where(w)"
-            , "  is Wish fn: fn"
-            , ")"
+            , "getWishFn = (w) => where(w) {"
+            , "  Wish(fn) => fn"
+            , "}"
             , ""
             , ""
             , "parallel :: List (Wish e a) -> Wish e (List a)"
@@ -1052,7 +1056,7 @@ spec = do
             , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
             , "export fulfill = (bad, good, m) => {"
             , "  where(m) {"
-            , "    is Wish run: run(bad, good)"
+            , "    Wish(run) => run(bad, good)"
             , "  }"
             , ""
             , "  return ()"
@@ -1096,33 +1100,33 @@ spec = do
 
     it "should compile and resolve imported packages that also rely on packages" $ do
       let mainMadlibDotJSON =
-            unlines ["{", "  \"main\": \"src/Main.mad\",", "  \"dependencies\": { \"random\": \"urlrandom\" }", "}"]
+            unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
           mathMadlibDotJSON = unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
           mathMain          = unlines ["export avg = (a, b) => ((a + b) / 2)"]
 
           randomMadlibDotJSON =
-            unlines ["{", "  \"main\": \"src/Main.mad\",", "  \"dependencies\": { \"math\": \"urlmath\" }", "}"]
+            unlines ["{", "  \"main\": \"src/Main.mad\"", "}"]
 
           randomMain = unlines
             [ "import R from \"./Utils/Random\""
             , "import M from \"math\""
-            , "export random = (seed) => (R.random(seed) + M.avg(seed, seed))"
+            , "export random = (seed) => R.random(seed) + M.avg(seed, seed)"
             ]
 
-          libRandom = "export random = (seed) => (seed / 2)"
+          libRandom = "export random = (seed) => seed / 2"
 
           main      = unlines ["import R from \"random\"", "R.random(3)"]
 
           files     = M.fromList
-            [ ("/madlib_modules/urlmath/madlib.json"   , mathMadlibDotJSON)
-            , ("/madlib_modules/urlmath/src/Main.mad"  , mathMain)
-            , ("/madlib_modules/urlrandom/madlib.json" , randomMadlibDotJSON)
-            , ("/madlib_modules/urlrandom/src/Main.mad", randomMain)
-            , ("/madlib_modules/urlrandom/src/Utils/Random.mad", libRandom)
-            , ("/src/Main.mad"                         , main)
-            , ("/madlib.json"                          , mainMadlibDotJSON)
+            [ ("/madlib_modules/math/madlib.json"           , mathMadlibDotJSON)
+            , ("/madlib_modules/math/src/Main.mad"          , mathMain)
+            , ("/madlib_modules/random/madlib.json"         , randomMadlibDotJSON)
+            , ("/madlib_modules/random/src/Main.mad"        , randomMain)
+            , ("/madlib_modules/random/src/Utils/Random.mad", libRandom)
+            , ("/src/Main.mad"                              , main)
+            , ("/madlib.json"                               , mainMadlibDotJSON)
             ]
 
           pathUtils = defaultPathUtils
@@ -1130,9 +1134,9 @@ spec = do
             , byteStringReadFile = makeByteStringReadFile files
             , doesFileExist      = \f ->
                                      if f
-                                        == "/madlib_modules/urlrandom/madlib.json"
+                                        == "/madlib_modules/random/madlib.json"
                                         || f
-                                        == "/madlib_modules/urlmath/madlib.json"
+                                        == "/madlib_modules/math/madlib.json"
                                         || f
                                         == "/madlib.json"
                                      then

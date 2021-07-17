@@ -77,11 +77,10 @@ type Pattern = Source Pattern_
 data Pattern_
   = PVar Name
   | PAny
-  | PCtor Name [Pattern]
+  | PCon Name [Pattern]
   | PNum String
   | PStr String
   | PBool String
-  | PCon Name
   | PRecord (M.Map Name Pattern)
   | PList [Pattern]
   | PTuple [Pattern]
