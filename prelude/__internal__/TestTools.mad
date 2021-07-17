@@ -20,7 +20,7 @@ red = colorString("\x1b[31m")
 green = colorString("\x1b[32m")
 
 
-export type AssertionError
+export type AssertionError a
   = AssertionError(a, a)
   | Error(a)
 
@@ -168,7 +168,7 @@ export collectCoverage = (hitPoints) =>
 
 formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
 
-formatFailureOutput :: String -> AssertionError -> W.Wish String String
+formatFailureOutput :: String -> AssertionError a -> W.Wish String String
 formatFailureOutput = (description, result) => where(result) {
   AssertionError(expected, actual) =>
     W.bad(
@@ -190,7 +190,7 @@ formatFailureOutput = (description, result) => where(result) {
 const generateId = () => Math.random().toString().substr(2, 10)
 -#
 
-test :: String -> (String -> W.Wish AssertionError String) -> ()
+test :: String -> (String -> W.Wish (AssertionError a) String) -> ()
 export test = (description, testImpl) => {
   id = #- generateId() -#
   #-
@@ -240,7 +240,7 @@ reportGood = (id, good) => #-{
   })
 }-#
 
-assertEquals :: a -> a -> W.Wish AssertionError String
+assertEquals :: a -> a -> W.Wish (AssertionError a) String
 export assertEquals = (actual, expected) => actual == expected
   ? of("")
   : W.bad(AssertionError(expected, actual))
