@@ -1,4 +1,6 @@
 import type { Wish } from "Wish"
+import type { Maybe } from "Maybe"
+
 import List from "List"
 import { bichain, chainRej, mapRej, parallel, fulfill } from "Wish"
 import IO from "IO"
@@ -12,16 +14,28 @@ import { always, identity, ifElse, not } from "Function"
 import { andDo } from "Monad"
 import { TextData } from "Data"
 
+
 import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
-import type { ValidationResult } from "./Validate"
+import type { VersionDotLock } from "./VersionDotLock"
+import type { ValidationInput, ValidationOutput, ValidationResult, Warning } from "./Validate"
+
 import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "./Context"
 import { dependencyParser } from "./Dependency"
-import { load } from "./MadlibDotJson"
-import { validateVersion } from "./Validate"
+import MadlibDotJson from "./MadlibDotJson"
+import VersionDotLock from "./VersionDotLock"
+import {
+  validate,
+  Validated,
+  NotGood,
+  OutOfRangeVersion,
+  InvalidVersionHash,
+  InvalidBuildHash
+} from "./Validate"
 import Constants from "./Constants"
 import { downloadIfNotCached } from "./Download"
+import { hashVersion } from "./Hash"
 
 
 
@@ -66,74 +80,145 @@ initMadlibModulesFolder = (path, a) => pipe(
 )(path)
 
 
-readMadlibJSON :: Dependency -> Wish String MadlibDotJson
-readMadlibJSON = (dependency) =>
-  load(`${Constants.TEMPORARY_MODULES_PATH}/${dependency.sanitizedUrl}/madlib.json`)
+projectBaseUrl :: Dependency -> String
+projectBaseUrl = (dependency) =>
+  `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
 
 
-printSuccess :: ValidationResult -> ValidationResult
-printSuccess = (validationResult) => {
-  where(validationResult) {
+readMadlibDotJson :: Dependency -> Wish String MadlibDotJson
+readMadlibDotJson = (dependency) => MadlibDotJson.load(
+  `${projectBaseUrl(dependency)}/madlib.json`
+)
+
+
+readVersionDotLock :: Dependency -> Wish String (Maybe VersionDotLock)
+readVersionDotLock = (dependency) => pipe(
+  (d) => VersionDotLock.load(
+    `${projectBaseUrl(d)}/version.lock`
+  ),
+  map(Just),
+  chainRej((err) => {
+    IO.log(err)
+    IO.log(`The package downloaded from ${dependency.url} has not been packaged correctly and I do not recommend using it.`)
+    return of(Nothing)
+  })
+)(dependency)
+
+
+computeBuildHash :: Dependency -> Wish String String
+computeBuildHash = (dependency) => pipe(
+  (dep) => System.exec(
+    `madlib package generate-hash -i ${projectBaseUrl(dep)}`
+  ),
+  mapRej(System.getCommandErrorMessage)
+)(dependency)
+
+
+prepareValidationInput :: Dependency -> Wish String ValidationInput
+prepareValidationInput = (dependency) => pipe(
+  readVersionDotLock,
+  map((versionDotLock, computedBuildHash, madlibDotJson) => ({
+    madlibDotJson,
+    versionDotLock,
+    computedVersionHash: hashVersion(madlibDotJson.version),
+    computedBuildHash
+  })),
+  ap($, computeBuildHash(dependency)),
+  ap($, readMadlibDotJson(dependency))
+)(dependency)
+
+
+printSuccess :: ValidationOutput -> ValidationOutput
+printSuccess = (validationOutput) => {
+  where(validationOutput) {
     { dependency: { name: Just(n) }} =>
       IO.log(`Package ${n} was successfully installed`)
 
     _ =>
-      IO.log(`Package downloaded from ${validationResult.dependency.url} was successfully installed`)
+      IO.log(`Package downloaded from ${validationOutput.dependency.url} was successfully installed`)
   }
 
-  return validationResult
+  return validationOutput
 }
 
 
-processPostValidation :: ValidationResult -> Wish String ValidationResult
-processPostValidation = (validationResult) => pipe(
+copyPackageFromTmp :: ValidationOutput -> Wish String ValidationOutput
+copyPackageFromTmp = (validationOutput) => pipe(
   ifElse(
     .shouldCopy,
     pipe(
-      always(copyPackageToMadlibModules(validationResult.dependency)),
-      andDo(of(validationResult))
+      always(copyPackageToMadlibModules(validationOutput.dependency)),
+      andDo(of(validationOutput))
     ),
-    always(of(validationResult))
+    always(of(validationOutput))
   ),
   mapRej((commandError) => pipe(
-    always(validationResult),
+    always(validationOutput),
     .dependency,
     .name,
     where {
       Just(n) => `Failed post-processing ${n}\n${System.getCommandErrorMessage(commandError)}`
 
-      Nothing => `Failed post-processing package downloaded from "${validationResult.dependency.url}"\n${System.getCommandErrorMessage(commandError)}`
+      Nothing => `Failed post-processing package downloaded from "${validationOutput.dependency.url}"\n${System.getCommandErrorMessage(commandError)}`
     }
   )(commandError))
-)(validationResult)
+)(validationOutput)
+
+
+printWarning :: a -> Warning -> a
+printWarning = (a, warning) => where(warning) {
+  OutOfRangeVersion =>
+    IO.logAndPass(IO.yellow("Package version does not match constraints"), a)
+
+  InvalidVersionHash =>
+    IO.logAndPass(IO.yellow("Package version hash is corrupted"), a)
+
+  InvalidBuildHash(pkgName) =>
+    IO.logAndPass(
+      IO.yellow(`Build hash is corrupted for package '${pkgName}'`),
+      a
+    )
+}
+
+
+processValidationResult :: ValidationResult ValidationOutput -> ValidationOutput
+processValidationResult = where {
+  Validated(a) =>
+    a
+
+  NotGood(warnings, a) =>
+    List.reduce(printWarning, a, warnings)
+}
 
 
 processDependency :: <Context, List Dependency> -> Dependency -> Wish String <Context, List Dependency>
 processDependency = (contextAndNextDeps, dependency) => pipe(
-  readMadlibJSON,
-  map(validateVersion(Tuple.fst(contextAndNextDeps), dependency)),
-  chain(processPostValidation),
-  map((validationResult) => where(validationResult) {
-    { warning: Just(x) } => IO.log(x) |> always(validationResult)
-
-    _ => validationResult
-  }),
-  map(pipe(
-    printSuccess,
-    (validationResult) => ({
-      ...validationResult,
-      context: addInstalledPackage(dependency.sanitizedUrl, validationResult.context)
-    }),
-    (validationResult) => validationResult.shouldCopy
-      ? <
-          validationResult.context,
-          mappend(
-            Tuple.snd(contextAndNextDeps),
-            fromMaybe([], validationResult.madlibDotJson.dependencies)
-          )
-        >
-      : <validationResult.context, Tuple.snd(contextAndNextDeps)>
-  ))
+  prepareValidationInput,
+  chain(
+    pipe(
+      validate(Tuple.fst(contextAndNextDeps), dependency),
+      processValidationResult,
+      copyPackageFromTmp
+    )
+  ),
+  map(
+    pipe(
+      printSuccess,
+      (validationResult) => ({
+        ...validationResult,
+        context: addInstalledPackage(dependency.sanitizedUrl, validationResult.context)
+      }),
+      (validationResult) => validationResult.shouldCopy
+        ? <
+            validationResult.context,
+            mappend(
+              Tuple.snd(contextAndNextDeps),
+              fromMaybe([], validationResult.madlibDotJson.dependencies)
+            )
+          >
+        : <validationResult.context, Tuple.snd(contextAndNextDeps)>
+    )
+  )
 )(dependency)
 
 

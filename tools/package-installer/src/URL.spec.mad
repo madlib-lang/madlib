@@ -1,0 +1,26 @@
+import { test, assertEquals } from "TestTools"
+
+import { sanitizeUrl } from "./URL"
+
+
+test("sanitizeUrl", (_) =>
+  assertEquals(sanitizeUrl("https://url.tld"), "https___url_tld")
+)
+
+test("sanitizeUrl - #", (_) =>
+  assertEquals(sanitizeUrl("https://url.tld#anchor"), "https___url_tld_anchor")
+)
+
+test("sanitizeUrl - ? and =", (_) =>
+  assertEquals(
+    sanitizeUrl("https://url.tld?param=value"),
+    "https___url_tld_param_value"
+  )
+)
+
+test("sanitizeUrl - -", (_) =>
+  assertEquals(
+    sanitizeUrl("https://dom-ain.tld"),
+    "https___dom_ain_tld"
+  )
+)

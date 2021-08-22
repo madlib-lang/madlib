@@ -44,7 +44,7 @@ makeMadlibDotJson = (name, version, madlibVersion, dependencies, main, bin, impo
   }
 
 parser :: J.Parser MadlibDotJson
-export parser = J.chain7(
+parser = J.chain7(
   makeMadlibDotJson,
   J.field("name", J.string),
   J.field("version", J.string),

@@ -1,78 +1,121 @@
 import type { Maybe } from "Maybe"
-import { ifElse } from "Function"
+import { equals, ifElse, not, always } from "Function"
 import { Just, Nothing } from "Maybe"
+import IO from "IO"
 
 import type { Context, VersionInfo } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
+import type { VersionDotLock } from "./VersionDotLock"
 import type { VersionRange } from "./Version"
 import { findByName, updateEntry } from "./Context"
 import { intersectRanges, isInRange } from "./Version"
 
 
-export alias ValidationResult = {
-  warning :: Maybe String,
+export alias ValidationInput = {
+  madlibDotJson :: MadlibDotJson,
+  versionDotLock :: Maybe VersionDotLock,
+  computedBuildHash :: String,
+  computedVersionHash :: String
+}
+
+export alias ValidationOutput = {
   context :: Context,
   shouldCopy :: Boolean,
   dependency :: Dependency,
   madlibDotJson :: MadlibDotJson
 }
 
-alias RangeResult = {
-  warning :: Maybe String,
+export type Warning
+  = OutOfRangeVersion
+  | InvalidVersionHash
+  | InvalidBuildHash(String)
+
+export type ValidationResult a
+  = Validated(a)
+  | NotGood(List Warning, a)
+
+
+alias RangeOutput = {
   versionInfo :: VersionInfo,
   shouldCopy :: Boolean
 }
 
-getName :: { ...base, name :: Maybe String } -> String
-getName = pipe(
-  .name,
-  where { Just(name) => name }
-)
+
+combineResults :: ValidationResult a -> ValidationResult b -> ValidationResult b
+combineResults = (a, b) => where(<a, b>) {
+  <Validated(_), _> =>
+    b
+
+  <NotGood(warnings, _), Validated(x)> =>
+    NotGood(warnings, x)
+
+  <NotGood(warningsA, _), NotGood(warningsB, x)> =>
+    NotGood(mappend(warningsA, warningsB), x)
+}
 
 
-getCurrentVersionRange :: Context -> String -> VersionRange
-getCurrentVersionRange = (context, packageName) => pipe(
-  findByName($, context),
-  .range
-)(packageName)
+setValidationResultValue :: b -> ValidationResult a -> ValidationResult b
+setValidationResultValue = (value) => where {
+  Validated(_) =>
+    Validated(value)
+
+  NotGood(warnings, _) =>
+    NotGood(warnings, value)
+}
 
 
+getValidationResultValue :: ValidationResult a -> a
+export getValidationResultValue = where {
+  Validated(a) => a
+  NotGood(_, a) => a
+}
 
-buildGoodRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> RangeResult
-buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => ({
-  warning: Nothing,
+
+buildGoodRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> ValidationResult RangeOutput
+buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => Validated({
   versionInfo: { version: Just(madlibDotJson.version), range: versionRange },
   shouldCopy: Just(madlibDotJson.version) != versionInfo.version
 })
 
-buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> RangeResult
-buildBadRangeResult = (madlibDotJson, versionInfo, _) => ({
-  warning: Just(`Version of package '${madlibDotJson.name}' is not in range`),
+
+buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> ValidationResult RangeOutput
+buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotGood([OutOfRangeVersion], {
   versionInfo: {
     version: versionInfo.version == Nothing
       ? Just(madlibDotJson.version)
       : versionInfo.version,
-    range: versionInfo.range
+    range: versionRange
   },
   shouldCopy: versionInfo.version == Nothing,
 })
 
-buildValidationResult :: Context -> MadlibDotJson -> Dependency -> RangeResult -> ValidationResult
-buildValidationResult = (context, madlibDotJson, dependency, rangeResult) => ({
-  warning: rangeResult.warning,
-  context: updateEntry(
-    madlibDotJson.name,
-    rangeResult.versionInfo,
-    context
-  ),
-  shouldCopy: rangeResult.shouldCopy,
-  dependency: { ...dependency, name: Just(madlibDotJson.name) },
-  madlibDotJson
-})
 
-validateVersion :: Context -> Dependency -> MadlibDotJson -> ValidationResult
-export validateVersion = (context, dependency, madlibDotJson) => {
+buildValidationOutput :: Context -> MadlibDotJson -> Dependency -> ValidationResult RangeOutput -> ValidationResult ValidationOutput
+buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
+  rangeOutput = getValidationResultValue(rangeResult)
+
+  validationOutput = {
+    context: updateEntry(
+      madlibDotJson.name,
+      rangeOutput.versionInfo,
+      context
+    ),
+    shouldCopy: rangeOutput.shouldCopy,
+    dependency: { ...dependency, name: Just(madlibDotJson.name) },
+    madlibDotJson
+  }
+
+  return where(rangeResult) {
+    Validated(_) => Validated(validationOutput)
+    NotGood(warnings, _) => NotGood(warnings, validationOutput)
+  }
+}
+
+
+validateVersion :: Context -> Dependency -> ValidationInput -> ValidationResult ValidationOutput
+validateVersion = (context, dependency, validationInput) => {
+  madlibDotJson = validationInput.madlibDotJson
   versionInfo = findByName(madlibDotJson.name, context)
 
   return pipe(
@@ -82,6 +125,49 @@ export validateVersion = (context, dependency, madlibDotJson) => {
       buildGoodRangeResult(madlibDotJson, versionInfo),
       buildBadRangeResult(madlibDotJson, versionInfo)
     ),
-    buildValidationResult(context, madlibDotJson, dependency)
+    buildValidationOutput(context, madlibDotJson, dependency)
   )(versionInfo.range)
+}
+
+
+validateHashes :: ValidationInput -> ValidationResult ValidationInput
+validateHashes = (validationInput) => {
+  validatedBuildHash = where(validationInput.versionDotLock) {
+    Just(versionDotLock) =>
+      ifElse(
+        pipe(equals(validationInput.computedBuildHash), not),
+        always(NotGood([IO.logAndPass(`computed: ${validationInput.computedBuildHash} - version.lock: ${versionDotLock.buildHash}`, InvalidBuildHash(validationInput.madlibDotJson.name))], ())),
+        always(Validated(())),
+        versionDotLock.buildHash
+      )
+
+    Nothing =>
+      Validated(())
+  }
+
+  validatedVersionHash = where(validationInput.versionDotLock) {
+    Just(versionDotLock) =>
+      ifElse(
+        pipe(equals(validationInput.computedVersionHash), not),
+        always(NotGood([InvalidVersionHash], ())),
+        always(Validated(())),
+        versionDotLock.versionHash
+      )
+
+    Nothing =>
+      Validated(())
+  }
+
+  return setValidationResultValue(
+    validationInput,
+    combineResults(validatedBuildHash, validatedVersionHash)
+  )
+}
+
+validate :: Context -> Dependency -> ValidationInput -> ValidationResult ValidationOutput
+export validate = (context, dependency, validationInput) => {
+  validatedHashes = validateHashes(validationInput)
+  validatedVersion = validateVersion(context, dependency, validationInput)
+
+  return combineResults(validatedHashes, validatedVersion)
 }

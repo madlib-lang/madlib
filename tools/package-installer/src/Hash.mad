@@ -1,0 +1,10 @@
+import type { Version } from "./Version"
+import {} from "./Version"
+
+#- import { createHash } from "crypto" -#
+
+hash :: String -> String
+hash = (input) => #- createHash("md5").update(input).digest("hex") -#
+
+hashVersion :: Version -> String
+export hashVersion = (version) => pipe(show, hash)(version)

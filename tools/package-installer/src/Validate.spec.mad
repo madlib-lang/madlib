@@ -1,0 +1,82 @@
+import { assertEquals, test } from "TestTools"
+import { Nothing, Just } from "Maybe"
+
+import { Version, AnyVersion, FromVersion } from "./Version"
+import { initialContext, updateEntry } from "./Context"
+import { validateVersion } from "./Validate"
+
+MADLIBDOTJSON = {
+  name: "package-name",
+  version: Version(1, 0, 0),
+  dependencies: Nothing,
+  madlibVersion: Nothing,
+  main: "src/Main.mad",
+  bin: Nothing,
+  importAliases: Nothing
+}
+
+DEFAULT_DEPENDENCY = {
+  description: "some dependency",
+  url: "http://url.tld",
+  sanitizedUrl: "http___url_tld",
+  versionRange: AnyVersion,
+  name: Nothing
+}
+
+DEFAULT_INPUT = {
+  madlibDotJson: MADLIBDOTJSON,
+  versionDotLock: Nothing,
+  computedVersionHash: "",
+  computedBuildHash: ""
+}
+
+
+test("validateVersion", (_) => {
+  expected = {
+    warning: Nothing,
+    context: updateEntry(
+      "package-name",
+      {
+        version: Just(Version(1, 0, 0)),
+        range: AnyVersion
+      },
+      initialContext
+    ),
+    shouldCopy: true,
+    dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
+    madlibDotJson: MADLIBDOTJSON
+  }
+
+  actual = validateVersion(initialContext, DEFAULT_DEPENDENCY, DEFAULT_INPUT)
+
+  return assertEquals(actual, expected)
+})
+
+test("validateVersion - fail", (_) => {
+  expected = {
+    warning: Just("Version of package 'package-name' is not in range"),
+    context: updateEntry(
+      "package-name",
+      {
+        version: Just(Version(1, 0, 0)),
+        range: FromVersion(Version(2, 0, 0))
+      },
+      initialContext
+    ),
+    shouldCopy: true,
+    dependency: {
+      ...DEFAULT_DEPENDENCY,
+      name: Just("package-name"),
+      versionRange: FromVersion(Version(2, 0, 0))
+    },
+    madlibDotJson: MADLIBDOTJSON
+  }
+
+  actual = validateVersion(
+    initialContext,
+    { ...DEFAULT_DEPENDENCY, versionRange: FromVersion(Version(2, 0, 0)) },
+    DEFAULT_INPUT
+  )
+
+  return assertEquals(actual, expected)
+})

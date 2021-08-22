@@ -1,4 +1,4 @@
-import { test, assertEquals, Error } from "TestTools"
+import { test, assertEquals, ErrorWithMessage } from "TestTools"
 import { bad, mapRej, bichain } from "Wish"
 import { always } from "Function"
 import { TextData } from "Data"
@@ -7,23 +7,23 @@ import { get, Response } from "./Http"
 
 
 test("get should return a good Wish containing the response when the server responds with 200", (_) => pipe(
-  mapRej(Error),
+  mapRej(ErrorWithMessage),
   map(always("http://localhost:8000/")),
   chain(pipe(
     get,
-    mapRej(always(Error("get should have worked"))),
+    mapRej(always(ErrorWithMessage("get should have worked"))),
     chain(assertEquals($, Response({ data: TextData("Success"), status: 200 })))
   ))
 )(createMockRequest(defaultConfig)))
 
 test("get should return a bad Wish containing the error response when the server responds with 404", (_) => pipe(
-  mapRej(Error),
+  mapRej(ErrorWithMessage),
   map(always("http://localhost:8001/")),
   chain(pipe(
     get,
     bichain(
       assertEquals($, Response({ data: TextData("Not found"), status: 404 })),
-      always(bad(Error("get should not be successful when the request fails")))
+      always(bad(ErrorWithMessage("get should not be successful when the request fails")))
     )
   ))
 )(createMockRequest({

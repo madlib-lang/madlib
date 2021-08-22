@@ -50,25 +50,37 @@ instance Collectable Exp where
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [Line { line = l' }] <> collect e
 
-    App fn arg _        -> collect fn <> collect arg
-    Abs    _   body     -> concat (collect <$> body)
-    Access rec field    -> collect rec <> collect field
-    Export e            -> collect e
-    TypedExp e _        -> collect e
-    TupleConstructor es -> concat $ collect <$> es
-    If cond good bad    -> collect cond <> collect good <> collect bad
-    Where       e iss   -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
-    Placeholder _ e     -> collect e
-    JSExp _             -> []
-    Var   n             -> [Line { line = l }]
-    _                   -> []
+    App fn arg _          -> collect fn <> collect arg
+    Abs    _   body       -> concat (collect <$> body)
+    Access rec field      -> collect rec <> collect field
+    Export e              -> collect e
+    TypedExp e _          -> collect e
+    TupleConstructor es   -> concat $ collect <$> es
+    If cond good bad      -> collect cond <> collect good <> collect bad
+    Where       e iss     -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
+    Placeholder _ e       -> collect e
+    JSExp _               -> []
+    Var   n               -> [Line { line = l }]
+    Record fields         -> concat $ collect <$> fields
+    ListConstructor items -> concat $ collect <$> items
+    _                     -> []
 
 isOperator :: String -> Bool
 isOperator n = "|>" == n || "==" == n || ">=" == n || "<=" == n || "&&" == n || "||" == n || "!=" == n
 
 instance Collectable Is where
   collect (Solved _ (Area (Loc _ l _) _) (Is _ e)) = [Line { line = l }] <> collect e
+  collect _ = []
 
+instance Collectable Field where
+  collect (Solved _ _ (Field (name, exp))) = collect exp
+  collect (Solved _ _ (FieldSpread exp))   = collect exp
+  collect _                                = []
+
+instance Collectable ListItem where
+  collect (Solved _ _ (ListItem exp))   = collect exp
+  collect (Solved _ _ (ListSpread exp)) = collect exp
+  collect _                             = []
 
 isFunction :: Coverable -> Bool
 isFunction Function{} = True

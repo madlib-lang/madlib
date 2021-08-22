@@ -1,0 +1,71 @@
+import type { Dictionary } from "Dictionary"
+import type { Wish } from "Wish"
+
+import J from "Json"
+import { Left, Right } from "Either"
+import { bad, mapRej, bichain } from "Wish"
+import { always } from "Function"
+import { readFile } from "FileSystem"
+
+
+export alias PublicAPI = {
+  apiNames :: Dictionary String String,
+  apiInstances :: List String,
+  apiAliases :: Dictionary String String,
+  apiTypes :: Dictionary String (List String),
+  apiInterfaces :: Dictionary String (Dictionary String String)
+}
+
+export alias VersionDotLock = {
+  buildHash :: String,
+  versionHash :: String,
+  api :: PublicAPI
+}
+
+
+buildHashParser :: J.Parser String
+export buildHashParser = J.field("buildHash", J.string)
+
+versionHashParser :: J.Parser String
+export versionHashParser = J.field("versionHash", J.string)
+
+apiParser :: J.Parser PublicAPI
+apiParser = J.map5(
+  (apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces) =>
+    ({ apiNames, apiInstances, apiAliases, apiTypes, apiInterfaces }),
+  J.field("apiNames", J.dict(J.string)),
+  J.field("apiInstances", J.list(J.string)),
+  J.field("apiAliases", J.dict(J.string)),
+  J.field("apiTypes", J.dict(J.list(J.string))),
+  J.field("apiInterfaces", J.dict(J.dict(J.string)))
+)
+
+parser :: J.Parser VersionDotLock
+parser = J.map3(
+  (buildHash, versionHash, api) => ({ buildHash, versionHash, api }),
+  J.field("buildHash", J.string),
+  J.field("versionHash", J.string),
+  J.field("api", apiParser)
+)
+
+parse :: String -> Wish String VersionDotLock
+export parse = pipe(
+  J.parse(parser),
+  where {
+    Left(e) => bad(e)
+
+    Right(a) => of(a)
+  }
+)
+
+load :: String -> Wish String VersionDotLock
+export load = (path) => pipe(
+  readFile,
+  bichain(
+    always(bad(`version.lock file not found at path '${path}'`)),
+    pipe(
+      parse,
+      mapRej(always(`version.lock file at path '${path}' is malformed`))
+    )
+  )
+)(path)
