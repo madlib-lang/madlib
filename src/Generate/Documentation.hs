@@ -375,9 +375,18 @@ emptyExample depth = indent depth <> "\"example\": \"\",\n"
 emptySince :: Int -> String
 emptySince depth = indent depth <> "\"since\": \"\",\n"
 
+formatType :: Slv.Exp -> String
+formatType (Slv.Solved t _ exp) = case exp of
+  Slv.TypedExp _ typing _ ->
+    prettyPrintConstructorTyping' False typing
+
+  _ ->
+    prettyPrintQualType True t
+
+
 generateExpDoc :: Int -> [DocString] -> (String, Slv.Exp) -> String
 generateExpDoc depth docStrings (name, exp) =
-  let typing           = prettyPrintQualType True $ Slv.getQualType exp
+  let typing           = formatType exp
       docString        = findDocStringForExpName name docStrings
       descriptionField = case docString of
         Just (FunctionDoc _ description _) ->

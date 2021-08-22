@@ -108,7 +108,7 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     Slv.Var        name     -> return $ Opt.Optimized t area (Opt.Var name)
 
-    Slv.TypedExp exp scheme -> do
+    Slv.TypedExp exp _ scheme -> do
       exp' <- optimize enabled exp
       return $ Opt.Optimized t area (Opt.TypedExp exp' scheme)
 

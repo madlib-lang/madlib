@@ -57,6 +57,16 @@ Left
                                                True)
                                         ])
                                  ]))))
+                     (Canonical
+                        (Area (Loc 6 1 7) (Loc 33 1 34))
+                        (TRArr
+                           (Canonical (Area (Loc 6 1 7) (Loc 12 1 13)) (TRSingle "String"))
+                           (Canonical
+                              (Area (Loc 16 1 17) (Loc 33 1 34))
+                              (TRArr
+                                 (Canonical (Area (Loc 16 1 17) (Loc 22 1 23)) (TRSingle "Number"))
+                                 (Canonical
+                                    (Area (Loc 26 1 27) (Loc 33 1 34)) (TRSingle "Boolean"))))))
                      (Forall
                         []
                         ([] :=>

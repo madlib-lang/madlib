@@ -47,9 +47,10 @@ populateTopLevelTypings :: Env -> [Can.Exp] -> Infer Env
 populateTopLevelTypings env []                             = return env
 populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
   let nextEnv = case e of
-        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) sc -> safeExtendVars env (name, sc)
+        Can.TypedExp (Can.Canonical _ (Can.Assignment name _)) _ sc ->
+          safeExtendVars env (name, sc)
 
-        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) sc ->
+        Can.TypedExp (Can.Canonical _ (Can.Export (Can.Canonical _ (Can.Assignment name _)))) _ sc ->
           safeExtendVars env (name, sc)
 
         (Can.Assignment name _) -> do

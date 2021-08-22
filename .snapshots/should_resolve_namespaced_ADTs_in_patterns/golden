@@ -194,6 +194,16 @@ Right
                                                          (LNum "-3")))
                                                ])
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 32 2 7) (Loc 56 2 31))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 32 2 7) (Loc 46 2 21))
+                               (TRComp
+                                  "M.Maybe"
+                                  [ Untyped (Area (Loc 40 2 15) (Loc 46 2 21)) (TRSingle "Number")
+                                  ]))
+                            (Untyped (Area (Loc 50 2 25) (Loc 56 2 31)) (TRSingle "Number"))))
                       (Forall
                          []
                          ([] :=>

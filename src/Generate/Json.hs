@@ -313,7 +313,7 @@ compileExpFields depth exp = case exp of
       <> compileExp depth arg
       <> "\n"
 
-  Slv.TypedExp exp scheme ->
+  Slv.TypedExp exp typing scheme ->
     indent depth
       <> "\"nodeType\": \"TypedExpression\",\n"
       <> indent depth

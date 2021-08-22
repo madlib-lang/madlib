@@ -21,6 +21,7 @@ import           Data.List                      ( (\\)
 import           Infer.Infer
 import           Infer.Type
 import           Infer.Env
+import           Infer.Typing
 import           Infer.Substitute
 import           Infer.Unify
 import           Infer.Instantiate
@@ -54,7 +55,7 @@ infer env lexp = do
     Can.Where      _ _        -> inferWhere env' lexp
     Can.Record _              -> inferRecord env' lexp
     Can.Access   _ _          -> inferAccess env' lexp
-    Can.TypedExp _ _          -> inferTypedExp env' lexp
+    Can.TypedExp{}            -> inferTypedExp env' lexp
     Can.ListConstructor  _    -> inferListConstructor env' lexp
     Can.TupleConstructor _    -> inferTupleConstructor env' lexp
     Can.Export           _    -> inferExport env' lexp
@@ -164,7 +165,7 @@ inferBody env [e] = do
 
 inferBody env (e : xs) = do
   (s, ps, env', e') <- case e of
-    Can.Canonical _ (Can.TypedExp _ _) -> inferExplicitlyTyped env e
+    Can.Canonical _ Can.TypedExp{} -> inferExplicitlyTyped env e
     _ -> do
       (s, (_, ps), env, e') <- inferImplicitlyTyped True env e
       return (s, ps, env, e')
@@ -541,13 +542,13 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
 -- INFER TYPEDEXP
 
 inferTypedExp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp sc)) = do
+inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   (ps :=> t)        <- instantiate sc
 
   (s1, ps1, t1, e1) <- infer env exp
   s2                <- contextualUnify env e t t1
 
-  return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) sc))
+  return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
 
 
@@ -606,7 +607,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
-inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
+inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   qt@(qs :=> t') <- instantiate sc
 
   let env' = case Can.getExpName exp of
@@ -643,7 +644,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
           Just n  -> extendVars env' (n, sc'')
           Nothing -> env'
 
-    return (s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' sc))
+    return (s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped env _ = undefined
 
@@ -666,7 +667,7 @@ inferExp env (Can.Canonical area (Can.TypeExport name)) =
   return (Just (Slv.Untyped area (Slv.TypeExport name)), env)
 inferExp env e = do
   (s, ps, env', e') <- upgradeContext env (Can.getArea e) $ case e of
-    Can.Canonical _ (Can.TypedExp _ _) ->
+    Can.Canonical _ Can.TypedExp{} ->
       inferExplicitlyTyped env e
 
     _ -> do

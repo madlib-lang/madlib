@@ -3,6 +3,7 @@ module Infer.ToSolved where
 import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
 import           Infer.Type
+import           Infer.Typing
 import qualified Data.Map                      as M
 
 
@@ -29,7 +30,7 @@ toSolved (Can.Canonical area exp) = case exp of
 
   Can.Assignment name exp    -> Slv.Solved ([] :=> tSubst) area (Slv.Assignment name (toSolved exp))
 
-  Can.TypedExp   exp  sc     -> Slv.Solved ([] :=> tSubst) area (Slv.TypedExp (toSolved exp) sc)
+  Can.TypedExp exp typing sc -> Slv.Solved ([] :=> tSubst) area (Slv.TypedExp (toSolved exp) (updateTyping typing) sc)
 
   Can.Record fields          -> Slv.Solved ([] :=> tSubst) area (Slv.Record (fieldToSolved <$> fields))
 

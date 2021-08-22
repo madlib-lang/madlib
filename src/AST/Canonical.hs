@@ -130,7 +130,7 @@ data Exp_ = LNum String
           | Export Exp
           | NameExport Name
           | TypeExport Name
-          | TypedExp Exp Ty.Scheme
+          | TypedExp Exp Typing Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | JSExp String
@@ -191,13 +191,17 @@ getTypeExportName exp = case exp of
 
 getExportName :: Exp -> Maybe Name
 getExportName exp = case exp of
-  Canonical _ (NameExport name) -> return name
+  Canonical _ (NameExport name) ->
+    return name
 
-  Canonical _ (Export (Canonical _ (Assignment name _))) -> return name
+  Canonical _ (Export (Canonical _ (Assignment name _))) ->
+    return name
 
-  Canonical _ (TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _) -> return name
+  Canonical _ (TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ _) ->
+    return name
 
-  _ -> Nothing
+  _ ->
+    Nothing
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
@@ -219,21 +223,29 @@ getCanonicalContent (Canonical _ a) = a
 
 getExpName :: Exp -> Maybe String
 getExpName (Canonical _ exp) = case exp of
-  Assignment name _ -> return name
+  Assignment name _ ->
+    return name
 
-  TypedExp (Canonical _ (Assignment name _)) _ -> return name
+  TypedExp (Canonical _ (Assignment name _)) _ _ ->
+    return name
 
-  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ -> return name
+  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ _ ->
+    return name
 
-  Export (Canonical _ (Assignment name _)) -> return name
+  Export (Canonical _ (Assignment name _)) ->
+    return name
 
-  _                 -> Nothing
+  _                 ->
+    Nothing
 
 
 getExportNameAndScheme :: Exp -> (Maybe String, Maybe Ty.Scheme)
 getExportNameAndScheme (Canonical _ exp) = case exp of
-  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) sc -> (Just name, Just sc)
+  TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ sc ->
+    (Just name, Just sc)
 
-  Export (Canonical _ (Assignment name _)) -> (Just name, Nothing)
+  Export (Canonical _ (Assignment name _)) ->
+    (Just name, Nothing)
 
-  _ -> (Nothing, Nothing)
+  _ ->
+    (Nothing, Nothing)

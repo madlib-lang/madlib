@@ -183,6 +183,27 @@ Right
                                                ])
                                         ])
                                  ]))))))
+               (Untyped
+                  (Area (Loc 42 2 10) (Loc 70 2 38))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 42 2 10) (Loc 53 2 21))
+                        (TRArr
+                           (Untyped (Area (Loc 42 2 10) (Loc 43 2 11)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 47 2 15) (Loc 53 2 21))
+                              (TRArr
+                                 (Untyped (Area (Loc 47 2 15) (Loc 48 2 16)) (TRSingle "b"))
+                                 (Untyped (Area (Loc 52 2 20) (Loc 53 2 21)) (TRSingle "c"))))))
+                     (Untyped
+                        (Area (Loc 59 2 27) (Loc 70 2 38))
+                        (TRArr
+                           (Untyped (Area (Loc 59 2 27) (Loc 60 2 28)) (TRSingle "b"))
+                           (Untyped
+                              (Area (Loc 64 2 32) (Loc 70 2 38))
+                              (TRArr
+                                 (Untyped (Area (Loc 64 2 32) (Loc 65 2 33)) (TRSingle "a"))
+                                 (Untyped (Area (Loc 69 2 37) (Loc 70 2 38)) (TRSingle "c"))))))))
                (Forall
                   [ Star , Star , Star ]
                   ([] :=>
@@ -293,6 +314,24 @@ Right
                                             (JSExp
                                                "{\n  const x = xs[i];\n  return x === undefined\n    ? Nothing()\n    : Just(x);\n}")
                                         ])
+                                 ]))))))
+               (Untyped
+                  (Area (Loc 127 7 8) (Loc 154 7 35))
+                  (TRArr
+                     (Untyped (Area (Loc 127 7 8) (Loc 133 7 14)) (TRSingle "Number"))
+                     (Untyped
+                        (Area (Loc 137 7 18) (Loc 154 7 35))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 137 7 18) (Loc 143 7 24))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 142 7 23) (Loc 143 7 24)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 147 7 28) (Loc 154 7 35))
+                              (TRComp
+                                 "Maybe"
+                                 [ Untyped (Area (Loc 153 7 34) (Loc 154 7 35)) (TRSingle "a")
                                  ]))))))
                (Forall
                   [ Star ]
@@ -518,6 +557,17 @@ Right
                                          True)
                                   ])
                            ]))))
+               (Untyped
+                  (Area (Loc 422 19 9) (Loc 448 19 35))
+                  (TRArr
+                     (Untyped (Area (Loc 422 19 9) (Loc 428 19 15)) (TRSingle "String"))
+                     (Untyped
+                        (Area (Loc 432 19 19) (Loc 448 19 35))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 432 19 19) (Loc 438 19 25)) (TRSingle "String"))
+                           (Untyped
+                              (Area (Loc 442 19 29) (Loc 448 19 35)) (TRSingle "String"))))))
                (Forall
                   []
                   ([] :=>

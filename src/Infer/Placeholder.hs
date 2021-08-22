@@ -51,7 +51,7 @@ insertClassPlaceholders env exp (p : ps) = do
                   (Slv.Solved a t $ Slv.Placeholder (Slv.ClassRef (predClass p) [] False True, predTypes p) e)
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Assignment n e)) _) ->
+      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Assignment n e)) _ _) ->
         let exp' = Slv.Solved a t
               $ Slv.Assignment
                   n
@@ -70,7 +70,7 @@ insertClassPlaceholders env exp (p : ps) = do
               )
         in  insertClassPlaceholders env exp' ps
 
-      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Export (Slv.Solved a'' t'' (Slv.Assignment n e)))) _) ->
+      Slv.Solved a t (Slv.TypedExp (Slv.Solved a' t' (Slv.Export (Slv.Solved a'' t'' (Slv.Assignment n e)))) _ _) ->
         let exp' = Slv.Solved
               a
               t
@@ -220,9 +220,9 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
     li' <- mapM (updateListItem s) li
     return $ Slv.Solved qt a $ Slv.ListConstructor li'
 
-  Slv.TypedExp exp typing -> do
+  Slv.TypedExp exp typing sc -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved qt a $ Slv.TypedExp exp' typing
+    return $ Slv.Solved qt a $ Slv.TypedExp exp' typing sc
 
   Slv.Export exp -> do
     exp' <- updatePlaceholders env push s exp

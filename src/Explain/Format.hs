@@ -127,7 +127,7 @@ analyzeBacktrace json err exps = case exps of
     then "The " <> underlineWhen (not json) "condition" <> " of the following if/else expression is not correct:\n"
     else "\nThe error occured in the following if/else expression:\n"
 
-  (BTExp (Can.Canonical _ (Can.TypedExp _ _)) : ex) -> case err of
+  (BTExp (Can.Canonical _ (Can.TypedExp _ _ _)) : ex) -> case err of
     UnificationError _ _ ->
       "The " <> underlineWhen (not json) "type declaration" <> " does not match the inferred type:\n"
     _ -> ""
