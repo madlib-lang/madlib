@@ -1,0 +1,43 @@
+import type { Wish } from "Wish"
+
+import { good, Wish } from "Wish"
+
+
+#-
+let logs = "";
+
+const hook_stream = (_stream, fn) => {
+  // Reference default write method
+  var old_write = _stream.write;
+  // _stream now write with our shiny function
+  _stream.write = fn;
+
+  return () => {
+      // reset to the default write method
+      _stream.write = old_write;
+  };
+}
+
+let unhook_stdout = () => {}
+-#
+
+
+startStdOutRecording :: a -> Wish e a
+export startStdOutRecording = (a) => #-{
+  logs = ""
+
+  unhook_stdout = hook_stream(process.stdout, function(string, encoding, fd) {
+    logs = logs + string;
+  });
+
+  return good(a)
+}-#
+
+
+getRecordedStdOut :: Wish e String
+export getRecordedStdOut = Wish((_, goodCB) => #-{
+  unhook_stdout()
+  const tmp = logs
+  logs = ""
+  goodCB(tmp)
+}-#)

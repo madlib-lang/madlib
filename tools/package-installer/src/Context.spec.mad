@@ -1,0 +1,98 @@
+import { assertEquals, test } from "TestTools"
+import Dict from "Dictionary"
+import { Just, Nothing } from "Maybe"
+
+import { AnyVersion, Version, VersionRange } from "./Version"
+import {
+  addInstalledPackage,
+  hasPackageBeenInstalled,
+  findByName,
+  initialContext,
+  updateEntry
+} from "./Context"
+
+
+CONTEXT_POPULATED = {
+  versions: Dict.fromList([
+    <"MadDoc", {
+      version: Just(Version(1, 0, 0)),
+      range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
+    }>
+  ]),
+  installedPackages: ["http___url_from_maddoc"]
+}
+
+test("findByName - found", (_) => {
+  expected = {
+    version: Just(Version(1, 0, 0)),
+    range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
+  }
+  actual = findByName("MadDoc", CONTEXT_POPULATED)
+  return assertEquals(actual, expected)
+})
+
+test("findByName - not found", (_) => {
+  expected = {
+    version: Nothing,
+    range: AnyVersion
+  }
+  actual = findByName("MadDoc", initialContext)
+  return assertEquals(actual, expected)
+})
+
+test("updateEntry", (_) => {
+  expected = {
+    versions: Dict.fromList([
+      <"MadDoc", {
+        version: Just(Version(1, 0, 0)),
+        range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
+      }>
+    ]),
+    installedPackages: []
+  }
+  actual = updateEntry(
+    "MadDoc",
+    {
+      version: Just(Version(1, 0, 0)),
+      range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
+    },
+    initialContext
+  )
+  return assertEquals(actual, expected)
+})
+
+test("addInstalledPackage - first time", (_) => {
+  expected = {
+    versions: Dict.empty,
+    installedPackages: ["http___url_from_maddoc"]
+  }
+  actual = addInstalledPackage("http___url_from_maddoc", initialContext)
+  return assertEquals(actual, expected)
+})
+
+test("addInstalledPackage - second time", (_) => {
+  context = {
+    versions: Dict.empty,
+    installedPackages: ["http___url_from_maddoc"]
+  }
+  expected = {
+    versions: Dict.empty,
+    installedPackages: ["http___url_from_maddoc"]
+  }
+  actual = addInstalledPackage("http___url_from_maddoc", context)
+  return assertEquals(actual, expected)
+})
+
+test("hasPackageBeenInstalled - not installed", (_) => {
+  actual = hasPackageBeenInstalled("http___url_from_maddoc", initialContext)
+  return assertEquals(actual, false)
+})
+
+test("hasPackageBeenInstalled - installed", (_) => {
+  context = {
+    versions: Dict.empty,
+    installedPackages: ["http___url_from_maddoc"]
+  }
+  actual = hasPackageBeenInstalled("http___url_from_maddoc", context)
+  return assertEquals(actual, true)
+})

@@ -1,0 +1,28 @@
+import type { Wish } from "Wish"
+import type { Data } from "Data"
+import type { CommandError } from "System"
+import type { Response } from "Http"
+
+import { exists, readFile, writeFile, readDir } from "FileSystem"
+import { exec } from "System"
+import { get } from "Http"
+
+
+export alias Config = {
+  readFile :: String -> Wish String String,
+  writeFile :: String -> Data -> Wish String String,
+  readDir :: String -> Wish String (List String),
+  exec :: String -> Wish CommandError String,
+  exists :: String -> Wish String String,
+  get :: String -> Wish Response Response
+}
+
+defaultConfig :: Config
+export defaultConfig = {
+  readFile,
+  writeFile,
+  readDir,
+  exec,
+  exists,
+  get
+}

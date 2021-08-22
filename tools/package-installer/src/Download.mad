@@ -1,16 +1,17 @@
 import type { Wish } from "Wish"
 import type { SideEffect } from "SideEffect"
 import type { Data } from "Data"
+import type { CommandError } from "System"
 
 import { mapRej } from "Wish"
 import { fromWish } from "SideEffect"
-import Http from "Http"
-import { writeFile, exists } from "FileSystem"
-import System from "System"
 import { always } from "Function"
 import { andDo } from "Monad"
+import { Response } from "Http"
 
 import type { Dependency } from "./Dependency"
+import type { Config } from "./Config"
+
 import Constants from "./Constants"
 
 
@@ -21,71 +22,71 @@ export type DownloadResult
 
 
 
-cleanUp :: String -> Wish System.CommandError String
-cleanUp = pipe(
+cleanUp :: Config -> String -> Wish CommandError String
+cleanUp = (config, sanitizedUrl) => pipe(
   (url) => `rm -r ${Constants.TEMPORARY_MODULES_PATH}${url}.zip ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
-  System.exec
-)
+  config.exec
+)(sanitizedUrl)
 
 
-copyPackageToTmpRoot :: String -> Wish System.CommandError String
-copyPackageToTmpRoot = pipe(
+copyPackageToTmpRoot :: Config -> String -> Wish CommandError String
+copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
   (url) => `cp -R ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${Constants.TEMPORARY_MODULES_PATH}`,
-  System.exec
-)
+  config.exec
+)(sanitizedUrl)
 
 
-unzipPkg :: String -> Wish System.CommandError String
-unzipPkg = pipe(
+unzipPkg :: Config -> String -> Wish CommandError String
+unzipPkg = (config, sanitizedUrl) => pipe(
   (url) => `unzip -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
-  System.exec
-)
+  config.exec
+)(sanitizedUrl)
 
 
-renameInnerFolder :: String -> Wish System.CommandError String
-renameInnerFolder = pipe(
+renameInnerFolder :: Config -> String -> Wish CommandError String
+renameInnerFolder = (config, sanitizedUrl) => pipe(
   (url) => `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
-  System.exec
-)
+  config.exec
+)(sanitizedUrl)
 
 
-extractArchive :: String -> Wish String String
-extractArchive = (url) => pipe(
-  unzipPkg,
-  andDo(renameInnerFolder(url)),
-  andDo(copyPackageToTmpRoot(url)),
-  andDo(cleanUp(url)),
+extractArchive :: Config -> String -> Wish String String
+extractArchive = (config, sanitizedUrl) => pipe(
+  unzipPkg(config),
+  andDo(renameInnerFolder(config, sanitizedUrl)),
+  andDo(copyPackageToTmpRoot(config, sanitizedUrl)),
+  andDo(cleanUp(config, sanitizedUrl)),
   mapRej(always("Error processing archive"))
+)(sanitizedUrl)
+
+
+getPackageData :: Config -> String -> Wish String Data
+getPackageData = (config, url) => pipe(
+  config.get,
+  map(where { Response({ data }) => data }),
+  mapRej(always("Could not download package"))
 )(url)
 
 
-getPackageData :: String -> Wish String Data
-getPackageData = pipe(
-  Http.get,
-  map(where { Http.Response({ data }) => data }),
-  mapRej(always("Could not download package"))
-)
-
-
-downloadPackage :: Dependency -> SideEffect DownloadResult
-downloadPackage = (dependency) => pipe(
+downloadPackage :: Config -> Dependency -> SideEffect DownloadResult
+downloadPackage = (config, dependency) => pipe(
   .url,
-  getPackageData,
-  chain(writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
-  andDo(extractArchive(dependency.sanitizedUrl)),
+  getPackageData(config),
+  chain(config.writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
+  andDo(extractArchive(config, dependency.sanitizedUrl)),
   andDo(of(Downloaded(dependency))),
   fromWish(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
 )(dependency)
 
 
-downloadIfNotCached :: Dependency -> SideEffect DownloadResult
-export downloadIfNotCached = (dependency) => pipe(
-  (dep) => exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
+downloadIfNotCached :: Config -> Dependency -> SideEffect DownloadResult
+export downloadIfNotCached = (config, dependency) => pipe(
+  (dep) => config.exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
   map(always(true)),
   fromWish(always(false)),
   chain(
     (alreadyDownloaded) => alreadyDownloaded
       ? of(Downloaded(dependency))
-      : downloadPackage(dependency)
+      : downloadPackage(config, dependency)
   )
 )(dependency)

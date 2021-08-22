@@ -6,8 +6,9 @@ import { bad, mapRej } from "Wish"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import J from "Json"
-import { readFile } from "FileSystem"
 import { always } from "Function"
+
+import type { Config } from "./Config"
 
 import Version from "./Version"
 import Dependency from "./Dependency"
@@ -67,9 +68,9 @@ export parse = pipe(
 )
 
 
-load :: String -> Wish String MadlibDotJson
-export load = (path) => pipe(
-  readFile,
+load :: Config -> String -> Wish String MadlibDotJson
+export load = (config, path) => pipe(
+  config.readFile,
   mapRej(always(`madlib.json file not found at path '${path}'`)),
   chain(parse),
   mapRej(always(`madlib.json file at path '${path}' is malformed`))

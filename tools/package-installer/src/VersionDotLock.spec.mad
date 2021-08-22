@@ -1,0 +1,118 @@
+import { test, assertEquals, ErrorWithMessage } from "TestTools"
+import Dict from "Dictionary"
+import { bad, bichain, good } from "Wish"
+import { always } from "Function"
+import { OK, Response } from "Http"
+import { ByteArray } from "Binary"
+import { BinaryData } from "Data"
+
+import { load, parse } from "./VersionDotLock"
+
+
+VERSION_DOT_LOCK = `{
+  "buildHash": "754c55d6a844efcf4e706b9fa561eb6e",
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0",
+  "api": {
+    "apiNames": {
+      "defaultConfig": "{ linkView :: String -> String -> Element }",
+      "setLinkView": "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }",
+      "renderMarkdownWithConfig": "{ linkView :: String -> String -> Element } -> String -> Element",
+      "renderMarkdown": "String -> Element"
+    },
+    "apiInstances": [],
+    "apiAliases": {},
+    "apiTypes": {},
+    "apiInterfaces": {}
+  }
+}
+`
+
+BAD_VERSION_DOT_LOCK = `{
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0",
+  "api": {
+    "apiNames": {},
+    "apiInstances": [],
+    "apiAliases": {},
+    "apiTypes": {},
+    "apiInterfaces": {}
+  }
+}
+`
+
+test("parse - success", (_) => {
+  expected = {
+    buildHash: "754c55d6a844efcf4e706b9fa561eb6e",
+    versionHash: "25e64aa754c310d45c1e084d574c1bb0",
+    api: {
+      apiNames: Dict.fromList([
+        <"defaultConfig", "{ linkView :: String -> String -> Element }">,
+        <"setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }">,
+        <"renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element">,
+        <"renderMarkdown", "String -> Element">
+      ]),
+      apiInstances: [],
+      apiAliases: Dict.empty,
+      apiTypes: Dict.empty,
+      apiInterfaces: Dict.empty
+    }
+  }
+
+  return pipe(
+    parse,
+    bichain(
+      always(bad(ErrorWithMessage("Parse should be success"))),
+      assertEquals($, expected)
+    )
+  )(VERSION_DOT_LOCK)
+})
+
+test("parse - failure", (_) => {
+  expected = "version.lock file is malformed"
+
+  return pipe(
+    parse,
+    bichain(
+      assertEquals($, expected),
+      always(bad(ErrorWithMessage("Parse should be failure")))
+    )
+  )(BAD_VERSION_DOT_LOCK)
+})
+
+test("load - success", (_) => {
+  config = {
+    readFile: always(good(VERSION_DOT_LOCK)),
+    writeFile: (path, data) => good("OK"),
+    readDir: always(good([])),
+    exists: always(good("OK")),
+    exec: always(good("OK")),
+    get: always(good(Response({
+      data: BinaryData(ByteArray),
+      status: OK
+    })))
+  }
+
+  expected = {
+    buildHash: "754c55d6a844efcf4e706b9fa561eb6e",
+    versionHash: "25e64aa754c310d45c1e084d574c1bb0",
+    api: {
+      apiNames: Dict.fromList([
+        <"defaultConfig", "{ linkView :: String -> String -> Element }">,
+        <"setLinkView", "(String -> String -> Element) -> { linkView :: String -> String -> Element } -> { linkView :: String -> String -> Element }">,
+        <"renderMarkdownWithConfig", "{ linkView :: String -> String -> Element } -> String -> Element">,
+        <"renderMarkdown", "String -> Element">
+      ]),
+      apiInstances: [],
+      apiAliases: Dict.empty,
+      apiTypes: Dict.empty,
+      apiInterfaces: Dict.empty
+    }
+  }
+
+  return pipe(
+    load(config),
+    bichain(
+      always(bad(ErrorWithMessage("Parse should be success"))),
+      assertEquals($, expected)
+    )
+  )("version.lock")
+})
