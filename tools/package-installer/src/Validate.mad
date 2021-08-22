@@ -1,23 +1,18 @@
 import type { Maybe } from "Maybe"
+
 import { equals, ifElse, not, always } from "Function"
 import { Just, Nothing } from "Maybe"
 import { append } from "List"
+import IO from "IO"
 
 import type { Context, VersionInfo } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
 import type { VersionRange } from "./Version"
-import type { Warning } from "./Warning"
-import type { Error } from "./Error"
 
 import { findByName, updateEntry } from "./Context"
 import { intersectRanges, isInRange } from "./Version"
-import {
-  InvalidBuildHash,
-  OutOfRangeVersion,
-  InvalidVersionHash
-} from "./Warning"
 
 
 export alias ValidationInput = {
@@ -36,10 +31,30 @@ export alias ValidationOutput = {
 }
 
 
+export type Warning
+  = OutOfRangeVersion
+  | InvalidVersionHash
+  | InvalidBuildHash(String)
+  | VersionDotLockMissing
+  | BuildHashCouldNotBeGenerated
+
+
+export type Error
+  = CopyToMadlibModulesFailed(ValidationOutput, String)
+  | MadlibDotJsonCouldNotBeLoaded(String)
+
+
 export type Validate a
   = Valid(a)
   | NotValid(List Warning, a)
   | FatalError(Error)
+
+
+// Proposal 
+// export type Validate a
+//   = Valid(a)
+//   | NotValid(List Warning, a)
+//   | FatalError(List Warning, Error, Maybe a)
 
 
 alias RangeOutput = {
@@ -108,6 +123,42 @@ instance Monad Validate {
 
 
 
+printError :: a -> Error -> a
+export printError = (a, error) => where(error) {
+  CopyToMadlibModulesFailed(_, msg) =>
+    IO.logAndPass(`  - ${IO.red(msg)}`, a)
+}
+
+
+printWarning :: a -> Warning -> a
+export printWarning = (a, warning) => where(warning) {
+  OutOfRangeVersion =>
+    IO.logAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
+
+  InvalidVersionHash =>
+    IO.logAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
+
+  InvalidBuildHash(pkgName) =>
+    IO.logAndPass(
+      `  - ${IO.yellow("Build hash is corrupted for package '" ++ pkgName ++ "'")}`,
+      a
+    )
+
+  VersionDotLockMissing =>
+    IO.logAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
+}
+
+
+mapFatalError :: (Error -> Error) -> Validate a -> Validate a
+export mapFatalError = (f, v) => where(v) {
+  FatalError(e) =>
+    FatalError(f(e))
+
+  _ =>
+    v
+}
+
+
 combine :: Validate a -> Validate b -> Validate b
 combine = (a, b) => where(<a, b>) {
   <Valid(_), _> =>
@@ -154,9 +205,8 @@ setValidationResultValue = (value) => where {
     NotValid(warnings, value)
 }
 
-
-getValidationValue :: Validate a -> a
-export getValidationValue = where {
+unsafeGetValidationValue :: Validate a -> a
+export unsafeGetValidationValue = where {
   Valid(a) => a
   NotValid(_, a) => a
 }
@@ -186,7 +236,7 @@ buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotValid(
 
 buildValidationOutput :: Context -> MadlibDotJson -> Dependency -> Validate RangeOutput -> Validate ValidationOutput
 buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
-  rangeOutput = getValidationValue(rangeResult)
+  rangeOutput = unsafeGetValidationValue(rangeResult)
 
   validationOutput = {
     context: updateEntry(

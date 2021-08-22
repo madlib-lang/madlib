@@ -20,6 +20,9 @@ export log = (a) => (#- { console.log(a); return a; } -#)
 logAndPass :: String -> a -> a
 export logAndPass = (v, a) => (#- { console.log(v); return a; } -#)
 
+newLine :: a -> a
+export newLine = logAndPass("")
+
 trace :: String -> a -> a
 export trace = (v, a) => (#- { console.log(v, a); return a; } -#)
 
