@@ -22,7 +22,7 @@ jobs:
 
       - run: madlib install
 
-      - run: madlib run MadDocCli ../../src
+      - run: madlib run MadDocCli ../../prelude/__internal__
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@4.1.1
