@@ -17,6 +17,9 @@ import           Data.List                      ( nub
                                                 , intersect
                                                 )
 
+import Debug.Trace
+import Text.Show.Pretty
+
 
 class Substitutable a where
   apply :: Substitution -> a -> a
@@ -34,14 +37,37 @@ instance Substitutable t => Substitutable (Qual t) where
 instance Substitutable Type where
   apply _ tc@(TCon a fp   ) = tc
   apply s t@( TVar a      ) = case M.findWithDefault t a s of
-    TRecord fields (Just _) -> TRecord fields (Just t)
+
+    TRecord fields (Just t'@(TVar tv)) ->
+      let deepUpdateRecord initialFields base tyvar = 
+            case M.findWithDefault base tyvar s of
+              TRecord fields' newBase ->
+                TRecord (M.union initialFields fields') newBase
+                -- if newBase == t' then
+                -- else
+                --   deepUpdateRecord (M.union initialFields fields') newBase
+
+              t'' ->
+                TRecord fields (Just t'')
+
+      in  deepUpdateRecord fields t' tv
+      -- in  case M.findWithDefault t' tv s of
+      --   TRecord fields' newBase ->
+      --     TRecord (M.union fields fields') newBase
+
+      --   t'' ->
+      --     TRecord fields (Just t'')
+
+    TRecord fields (Just base) -> TRecord fields (Just base)
+
     t'               -> t'
+
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields base) =
     let appliedFields          = apply s <$> fields
         appliedBase            = apply s <$> base
         (allFields', nextBase) = case appliedBase of
-          Just (TRecord fields' base') -> (apply s <$> fields' <> appliedFields, base')
+          Just (TRecord fields' base') -> (M.union appliedFields (apply s <$> fields'), base')
           _                            -> (appliedFields, appliedBase)
 
         applied = TRecord allFields' nextBase
@@ -68,22 +94,22 @@ instance Substitutable Env where
   ftv env = ftv $ M.elems $ envVars env
 
 compose :: Substitution -> Substitution -> Substitution
-compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, s1]
+compose s1 s2 = M.map (apply s1) $ M.unionsWith mergeTypes [s2, apply s1 <$> s1]
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
     (TRecord fields1 base1, TRecord fields2 base2) ->
       let base = case (base1, base2) of
-            (_          , Just tBase2) -> Just tBase2
             (Just tBase1, _          ) -> Just tBase1
+            (_          , Just tBase2) -> Just tBase2
             _                          -> Nothing
       in  TRecord (M.unionWith mergeTypes fields1 fields2) base
 
     (TRecord fields base, TVar _) ->
-      TRecord fields base
+      TRecord fields (Just t2)
 
     (TVar _, TRecord fields base) ->
-      TRecord fields base
+      TRecord fields (Just t1)
 
     (TApp tl tr, TApp tl' tr') ->
       let tl'' = mergeTypes tl tl'

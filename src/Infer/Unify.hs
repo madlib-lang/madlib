@@ -21,7 +21,8 @@ import qualified AST.Canonical                 as Can
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv (TRecord fields (Just $ TVar tv))
+varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv (TRecord fields (Just base))
+-- varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv (TRecord fields (Just $ TVar tv))
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -38,43 +39,40 @@ instance Unify Type where
 
   unify l@(TRecord fields base) r@(TRecord fields' base') = case (base, base') of
     (Just tBase, Just tBase') -> do
-      s1 <- unify tBase (TRecord fields' base)
-      s2 <- unify tBase' (TRecord fields base')
+      s1 <- unify tBase' (TRecord (M.union fields fields') base)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
           z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
 
-      s3 <- unifyVars M.empty z
-      s4 <- unify tBase tBase'
+      s2 <- unifyVars M.empty z
+      s3 <- unify tBase tBase'
 
-      return $ s4 `compose` s3 `compose` s1 `compose` s2
+      return $ s3 `compose` s2 `compose` s1
 
     (Just tBase, Nothing) -> do
-      s1 <- unify tBase (TRecord fields base)
-      s2 <- unify tBase (TRecord fields' Nothing)
+      s1 <- unify tBase (TRecord fields' base)
 
       unless (M.null (M.difference fields fields')) $ throwError (CompilationError (UnificationError r l) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
           z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s3 <- unifyVars M.empty z
+      s2 <- unifyVars M.empty z
 
-      return $ s3 `compose` s1 `compose` s2
+      return $ s2 `compose` s1
 
     (Nothing, Just tBase') -> do
-      s1 <- unify tBase' (TRecord fields Nothing)
-      s2 <- unify tBase' (TRecord fields' base')
+      s1 <- unify tBase' (TRecord fields base')
 
       unless (M.null (M.difference fields' fields)) $ throwError (CompilationError (UnificationError r l) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
           z              = zip (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      s3 <- unifyVars M.empty z
+      s2 <- unifyVars M.empty z
 
-      return $ s3 `compose` s1 `compose` s2
+      return $ s2 `compose` s1
 
     _ -> do
       let extraFields  = M.difference fields fields'

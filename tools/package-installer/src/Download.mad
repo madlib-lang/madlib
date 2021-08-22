@@ -1,5 +1,9 @@
 import type { Wish } from "Wish"
-import { bichain, mapRej } from "Wish"
+import type { SideEffect } from "SideEffect"
+import type { Data } from "Data"
+
+import { mapRej } from "Wish"
+import { fromWish } from "SideEffect"
 import Http from "Http"
 import { writeFile, exists } from "FileSystem"
 import System from "System"
@@ -51,25 +55,33 @@ extractArchive = (url) => pipe(
 )(url)
 
 
-downloadPackage :: Dependency -> Wish () DownloadResult
-downloadPackage = (dependency) => pipe(
-  .url,
+getPackageData :: String -> Wish String Data
+getPackageData = pipe(
   Http.get,
   map(where { Http.Response({ data }) => data }),
-  bichain(
-    always(of(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
-    pipe(
-      writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
-      andDo(extractArchive(dependency.sanitizedUrl)),
-      andDo(of(Downloaded(dependency)))
-    )
-  ),
-  mapRej(always(()))
+  mapRej(always("Could not download package"))
+)
+
+
+downloadPackage :: Dependency -> SideEffect DownloadResult
+downloadPackage = (dependency) => pipe(
+  .url,
+  getPackageData,
+  chain(writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
+  andDo(extractArchive(dependency.sanitizedUrl)),
+  andDo(of(Downloaded(dependency))),
+  fromWish(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
 )(dependency)
 
 
-downloadIfNotCached :: Dependency -> Wish () DownloadResult
+downloadIfNotCached :: Dependency -> SideEffect DownloadResult
 export downloadIfNotCached = (dependency) => pipe(
   (dep) => exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
-  bichain(always(downloadPackage(dependency)), always(of(Downloaded(dependency))))
+  map(always(true)),
+  fromWish(always(false)),
+  chain(
+    (alreadyDownloaded) => alreadyDownloaded
+      ? of(Downloaded(dependency))
+      : downloadPackage(dependency)
+  )
 )(dependency)

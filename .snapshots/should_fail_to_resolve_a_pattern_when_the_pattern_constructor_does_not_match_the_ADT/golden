@@ -1,9 +1,9 @@
 Left
   (CompilationError
      (UnificationError
+        (TCon (TC "Failure" Star) "path")
         (TApp
-           (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star)))
-        (TCon (TC "Failure" Star) "path"))
+           (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 98 5 14) (Loc 99 5 15)

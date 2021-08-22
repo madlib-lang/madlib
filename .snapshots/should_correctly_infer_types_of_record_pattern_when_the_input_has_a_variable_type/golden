@@ -10,7 +10,7 @@ Right
                     (TRecord
                        (fromList
                           [ ( "x" , TVar (TV "d3" Star) ) , ( "z" , TVar (TV "d3" Star) ) ])
-                       (Just (TVar (TV "b1" Star)))))
+                       (Just (TVar (TV "e4" Star)))))
                  (TVar (TV "d3" Star)))
             (Area (Loc 0 1 1) (Loc 59 4 3))
             (Assignment
@@ -23,7 +23,7 @@ Right
                           (TRecord
                              (fromList
                                 [ ( "x" , TVar (TV "d3" Star) ) , ( "z" , TVar (TV "d3" Star) ) ])
-                             (Just (TVar (TV "b1" Star)))))
+                             (Just (TVar (TV "e4" Star)))))
                        (TVar (TV "d3" Star)))
                   (Area (Loc 6 1 7) (Loc 59 4 3))
                   (Abs
@@ -32,7 +32,7 @@ Right
                            TRecord
                              (fromList
                                 [ ( "x" , TVar (TV "d3" Star) ) , ( "z" , TVar (TV "d3" Star) ) ])
-                             (Just (TVar (TV "b1" Star))))
+                             (Just (TVar (TV "e4" Star))))
                         (Area (Loc 7 1 8) (Loc 8 1 9))
                         "a")
                      [ Solved
@@ -46,7 +46,7 @@ Right
                                        [ ( "x" , TVar (TV "d3" Star) )
                                        , ( "z" , TVar (TV "d3" Star) )
                                        ])
-                                    (Just (TVar (TV "b1" Star))))
+                                    (Just (TVar (TV "e4" Star))))
                                (Area (Loc 20 1 21) (Loc 21 1 22))
                                (Var "a"))
                             [ Solved
@@ -95,7 +95,7 @@ Right
                                               [ ( "x" , TVar (TV "d3" Star) )
                                               , ( "z" , TVar (TV "d3" Star) )
                                               ])
-                                           (Just (TVar (TV "g6" Star)))))
+                                           (Just (TVar (TV "e4" Star)))))
                                      (TVar (TV "d3" Star)))
                                 (Area (Loc 43 3 3) (Loc 56 3 16))
                                 (Is
