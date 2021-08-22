@@ -4,7 +4,7 @@ import type { Maybe } from "Maybe"
 
 import List from "List"
 import String from "String"
-import { bichain, chainRej, mapRej, fulfill } from "Wish"
+import { bichain, mapRej, fulfill } from "Wish"
 import { parallel, fromWish, toWish } from "SideEffect"
 import IO from "IO"
 import { readFile, writeFile, exists, readDir } from "FileSystem"
@@ -38,7 +38,7 @@ import {
   NotValid,
   FatalError
 } from "./Validate"
-import { printWarning } from "./Warning"
+import { printWarning, BuildHashCouldNotBeGenerated, VersionDotLockMissing } from "./Warning"
 import { printError, CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "./Error"
 import Constants from "./Constants"
 import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
@@ -92,42 +92,49 @@ projectBaseUrl = (dependency) =>
   `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
 
 
-readMadlibDotJson :: Dependency -> Wish String MadlibDotJson
-readMadlibDotJson = (dependency) => MadlibDotJson.load(
-  `${projectBaseUrl(dependency)}/madlib.json`
-)
+readMadlibDotJson :: Dependency -> SideEffect (Validate MadlibDotJson)
+readMadlibDotJson = (dependency) => pipe(
+  MadlibDotJson.load,
+  map(Valid),
+  fromWish(pipe(MadlibDotJsonCouldNotBeLoaded, FatalError))
+)(`${projectBaseUrl(dependency)}/madlib.json`)
 
 
-readVersionDotLock :: Dependency -> Wish String (Maybe VersionDotLock)
+readVersionDotLock :: Dependency -> SideEffect (Validate (Maybe VersionDotLock))
 readVersionDotLock = (dependency) => pipe(
   (d) => VersionDotLock.load(`${projectBaseUrl(d)}/version.lock`),
-  map(Just),
-  chainRej(always(of(Nothing)))
+  map(pipe(Just, Valid)),
+  fromWish(always(NotValid([VersionDotLockMissing], [], Nothing)))
 )(dependency)
 
 
-computeBuildHash :: Dependency -> Wish String String
+computeBuildHash :: Dependency -> SideEffect (Validate String)
 computeBuildHash = (dependency) => pipe(
   (dep) => System.exec(
     `madlib package generate-hash -i ${projectBaseUrl(dep)}`
   ),
-  mapRej(System.getCommandErrorMessage)
+  map(Valid),
+  fromWish(always(NotValid([BuildHashCouldNotBeGenerated], [], "")))
 )(dependency)
 
 
 prepareValidationInput :: Dependency -> SideEffect (Validate ValidationInput)
 prepareValidationInput = (dependency) => pipe(
   readVersionDotLock,
-  map((versionDotLock, computedBuildHash, madlibDotJson) => ({
-    madlibDotJson,
-    versionDotLock,
-    computedVersionHash: hashVersion(madlibDotJson.version),
-    computedBuildHash
-  })),
+  map((vdl, cbh, mdj) =>
+    pipe(
+      map((versionDotLock, computedBuildHash, madlibDotJson) => ({
+        madlibDotJson,
+        versionDotLock,
+        computedVersionHash: hashVersion(madlibDotJson.version),
+        computedBuildHash
+      })),
+      ap($, cbh),
+      ap($, mdj)
+    )(vdl)
+  ),
   ap($, computeBuildHash(dependency)),
-  ap($, readMadlibDotJson(dependency)),
-  map(Valid),
-  fromWish(pipe(MadlibDotJsonCouldNotBeLoaded, FatalError))
+  ap($, readMadlibDotJson(dependency))
 )(dependency)
 
 

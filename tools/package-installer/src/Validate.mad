@@ -16,7 +16,6 @@ import { intersectRanges, isInRange } from "./Version"
 import {
   InvalidBuildHash,
   OutOfRangeVersion,
-  VersionDotLockMissing,
   InvalidVersionHash
 } from "./Warning"
 
@@ -239,7 +238,7 @@ validateHashes = (validationInput) => {
       )
 
     Nothing =>
-      NotValid([VersionDotLockMissing], [], ())
+      NotValid([], [], ())
   }
 
   validatedVersionHash = where(validationInput.versionDotLock) {
