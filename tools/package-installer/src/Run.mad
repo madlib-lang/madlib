@@ -23,7 +23,7 @@ import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
-import type { ValidationInput, ValidationOutput, Validate, Error, Warning } from "./Validate"
+import type { ValidationInput, ValidationOutput, Validate } from "./Validate"
 
 import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "./Context"
 import { dependencyParser } from "./Dependency"
@@ -36,12 +36,10 @@ import {
   getValidationValue,
   Valid,
   NotValid,
-  OutOfRangeVersion,
-  InvalidVersionHash,
-  InvalidBuildHash,
-  VersionDotLockMissing,
-  CopyToMadlibModulesFailed
+  FatalError
 } from "./Validate"
+import { printWarning } from "./Warning"
+import { printError, CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "./Error"
 import Constants from "./Constants"
 import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
 import { hashVersion } from "./Hash"
@@ -117,8 +115,7 @@ computeBuildHash = (dependency) => pipe(
 )(dependency)
 
 
-// TODO: should return SideEffect (Validate ValidationInput)
-prepareValidationInput :: Dependency -> SideEffect (Maybe ValidationInput)
+prepareValidationInput :: Dependency -> SideEffect (Validate ValidationInput)
 prepareValidationInput = (dependency) => pipe(
   readVersionDotLock,
   map((versionDotLock, computedBuildHash, madlibDotJson) => ({
@@ -129,8 +126,8 @@ prepareValidationInput = (dependency) => pipe(
   })),
   ap($, computeBuildHash(dependency)),
   ap($, readMadlibDotJson(dependency)),
-  map(Just),
-  fromWish(always(Nothing))
+  map(Valid),
+  fromWish(pipe(MadlibDotJsonCouldNotBeLoaded, FatalError))
 )(dependency)
 
 
@@ -185,32 +182,6 @@ copyPackageFromTmp = (validationResult) => {
 }
 
 
-printWarning :: ValidationOutput -> Warning -> ValidationOutput
-printWarning = (a, warning) => where(warning) {
-  OutOfRangeVersion =>
-    IO.logAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
-
-  InvalidVersionHash =>
-    IO.logAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
-
-  InvalidBuildHash(pkgName) =>
-    IO.logAndPass(
-      `  - ${IO.yellow("Build hash is corrupted for package '" ++ pkgName ++ "'")}`,
-      a
-    )
-
-  VersionDotLockMissing =>
-    IO.logAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
-}
-
-
-printError :: ValidationOutput -> Error -> ValidationOutput
-printError = (a, error) => where(error) {
-  CopyToMadlibModulesFailed(msg) =>
-    IO.logAndPass(`  - ${IO.red(msg)}`, a)
-}
-
-
 processValidationResult :: Validate ValidationOutput -> ValidationOutput
 processValidationResult = (validation) => {
   validationOutput = getValidationValue(validation)
@@ -219,25 +190,20 @@ processValidationResult = (validation) => {
 
   IO.log(`Installing ${name} version ${version}`)
 
-  where(validation) {
-    Valid(a) =>
-      a
-
-    NotValid(warnings, _, a) =>
-      List.reduce(printWarning, a, warnings)
-  }
-
-  where(validation) {
+  return where(validation) {
     Valid(a) =>
       IO.logAndPass(`  - ${IO.green("installed!")}`, a)
 
-    NotValid(_, errors, a) =>
-      hasErrors(validation)
-        ? List.reduce(printError, a, errors)
-        : IO.logAndPass(`  - ${IO.green("installed!")}`, a)
+    NotValid(warnings, errors, a) =>
+      pipe(
+        List.reduce(printWarning, a),
+        ifElse(
+          always(hasErrors(validation)),
+          List.reduce(printError, $, errors),
+          IO.logAndPass(`  - ${IO.green("installed!")}`)
+        )
+      )(warnings)
   }
-
-  return validationOutput
 }
 
 
