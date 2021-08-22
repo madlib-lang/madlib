@@ -18,17 +18,16 @@ jobs:
 
       - run: npm install -g @madlib-lang/madlib
 
-      - run: cd .github/workflows
-
       - run: |
-          ls
-          pwd
+          cd .github/workflows
           madlib install
 
-      - run: madlib run MadDocCli ../../prelude/__internal__
+      - run: |
+          cd .github/workflows
+          madlib run MadDocCli ../../prelude/__internal__
 
       - name: Publish documentation
         uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
           branch: gh-pages
-          folder: .docs
+          folder: cd .github/workflows/.docs
