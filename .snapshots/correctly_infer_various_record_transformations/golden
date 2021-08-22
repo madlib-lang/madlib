@@ -22,7 +22,7 @@ Right
                                 (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV "i8" Star))
                             )
                           ])
-                       (Just (TVar (TV "h7" Star)))))
+                       (Just (TVar (TV "l11" Star)))))
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TVar (TV "i8" Star))))
@@ -52,7 +52,7 @@ Right
                                       (TVar (TV "i8" Star))
                                   )
                                 ])
-                             (Just (TVar (TV "h7" Star)))))
+                             (Just (TVar (TV "l11" Star)))))
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TVar (TV "i8" Star))))
@@ -78,7 +78,7 @@ Right
                                       (TVar (TV "i8" Star))
                                   )
                                 ])
-                             (Just (TVar (TV "h7" Star))))
+                             (Just (TVar (TV "l11" Star))))
                         (Area (Loc 6 1 7) (Loc 12 1 13))
                         "record")
                      [ Solved
@@ -318,7 +318,7 @@ Right
                     [ ( "p" , TCon (TC "Number" Star) "prelude" )
                     , ( "z" , TCon (TC "Number" Star) "prelude" )
                     ])
-                 (Just (TVar (TV "d3" Star))))
+                 (Just (TVar (TV "w22" Star))))
             (Area (Loc 134 12 1) (Loc 158 12 25))
             (Assignment
                "r0"
@@ -329,7 +329,7 @@ Right
                           [ ( "p" , TCon (TC "Number" Star) "prelude" )
                           , ( "z" , TCon (TC "Number" Star) "prelude" )
                           ])
-                       (Just (TVar (TV "v21" Star))))
+                       (Just (TVar (TV "w22" Star))))
                   (Area (Loc 139 12 6) (Loc 158 12 25))
                   (App
                      (Solved
@@ -385,7 +385,7 @@ Right
                     , ( "y" , TCon (TC "Number" Star) "prelude" )
                     , ( "z" , TCon (TC "Number" Star) "prelude" )
                     ])
-                 (Just (TVar (TV "e4" Star))))
+                 (Just (TVar (TV "y24" Star))))
             (Area (Loc 159 13 1) (Loc 196 13 38))
             (Assignment
                "r1"
@@ -397,7 +397,7 @@ Right
                           , ( "y" , TCon (TC "Number" Star) "prelude" )
                           , ( "z" , TCon (TC "Number" Star) "prelude" )
                           ])
-                       (Just (TVar (TV "x23" Star))))
+                       (Just (TVar (TV "y24" Star))))
                   (Area (Loc 164 13 6) (Loc 196 13 38))
                   (Record
                      [ Solved
@@ -407,7 +407,7 @@ Right
                                  [ ( "p" , TCon (TC "Number" Star) "prelude" )
                                  , ( "z" , TCon (TC "Number" Star) "prelude" )
                                  ])
-                              (Just (TVar (TV "x23" Star))))
+                              (Just (TVar (TV "y24" Star))))
                          (Area (Loc 166 13 8) (Loc 188 13 30))
                          (FieldSpread
                             (Solved
@@ -417,7 +417,7 @@ Right
                                        [ ( "p" , TCon (TC "Number" Star) "prelude" )
                                        , ( "z" , TCon (TC "Number" Star) "prelude" )
                                        ])
-                                    (Just (TVar (TV "x23" Star))))
+                                    (Just (TVar (TV "y24" Star))))
                                (Area (Loc 169 13 11) (Loc 188 13 30))
                                (App
                                   (Solved
@@ -486,7 +486,7 @@ Right
                     [ ( "g" , TCon (TC "Number" Star) "prelude" )
                     , ( "p" , TCon (TC "String" Star) "prelude" )
                     ])
-                 (Just (TVar (TV "f5" Star))))
+                 (Just (TVar (TV "c28" Star))))
             (Area (Loc 197 14 1) (Loc 227 14 31))
             (Assignment
                "r2"
@@ -497,7 +497,7 @@ Right
                           [ ( "g" , TCon (TC "Number" Star) "prelude" )
                           , ( "p" , TCon (TC "String" Star) "prelude" )
                           ])
-                       (Just (TVar (TV "z25" Star))))
+                       (Just (TVar (TV "c28" Star))))
                   (Area (Loc 202 14 6) (Loc 227 14 31))
                   (App
                      (Solved
@@ -575,7 +575,7 @@ Right
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                     (TRecord
                        (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                       (Just (TVar (TV "d29" Star)))))
+                       (Just (TVar (TV "j35" Star)))))
                  (TApp
                     (TApp
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -601,7 +601,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TRecord
                              (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                             (Just (TVar (TV "d29" Star)))))
+                             (Just (TVar (TV "j35" Star)))))
                        (TApp
                           (TApp
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -623,7 +623,7 @@ Right
                         ([] :=>
                            TRecord
                              (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
-                             (Just (TVar (TV "d29" Star))))
+                             (Just (TVar (TV "j35" Star))))
                         (Area (Loc 237 16 8) (Loc 238 16 9))
                         "s")
                      [ Solved

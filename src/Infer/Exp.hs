@@ -172,8 +172,10 @@ inferBody env (e : xs) = do
   e''               <- insertClassPlaceholders env' e' ps
   e'''              <- updatePlaceholders env' True s e''
 
+  -- (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
-  return (s `compose` sb, ps', tb, e''' : eb)
+  -- (sb, ps', tb, eb) <- inferBody (updateBodyEnv (trace ("POS:"<>ppShow (Slv.getArea e'')<>"\nPS: "<>ppShow ps<>"\nS: "<>ppShow s) (removeRecordTypes s)) env') xs
+  return (s `compose` sb, ps ++ ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,
@@ -197,7 +199,8 @@ inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg
     else do
       (s1, ps1, t1, eabs) <- infer env abs
       return (s1, ps1, t1, eabs, [])
-  (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
+  (s2, ps2, t2, earg) <- infer (apply s1 env) arg
+  -- (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
 
 
   let expForContext =
@@ -462,12 +465,12 @@ inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re)
   = do
     tv                  <- newTVar Star
     (s1, _  , t1, eabs) <- infer env abs
-    (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) rec
+    (s2, ps2, t2, earg) <- infer env rec
 
-    s3                  <- contextualUnify env fa t1 (apply s1 t2 `fn` tv)
+    s3                  <- contextualUnify env fa t1 (t2 `fn` tv)
 
-    let t      = apply s3 tv
     let s      = s3 `compose` s2 `compose` s1
+    let t      = apply s tv
 
     let solved = Slv.Solved (ps2 :=> t) area (Slv.Access earg eabs)
 
@@ -501,7 +504,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
   tv                     <- newTVar Star
   (pss, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch (apply (removeRecordTypes currSubst) env) tv t is
+      r@(subst, _, _) <- inferBranch (apply currSubst env) tv t is
       return (res <> [r], currSubst `compose` subst)
     )
     ([], s)
@@ -520,7 +523,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (ps, vars, t')     <- inferPattern env pat
-  s                  <- contextualUnify env exp t t'
+  s                  <- contextualUnify env exp t' t
   (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
   s''                <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
@@ -616,7 +619,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp sc)) = do
 
   let qs'  = apply s' qs
       t''  = apply s' t
-      t''' = mergeRecords t'' (apply s' t')
+      t''' = mergeRecords (apply s' t') t''
       fs   = ftv (apply s' env)
       gs   = ftv t''' \\ fs
       sc'  = quantify gs (qs' :=> t''')

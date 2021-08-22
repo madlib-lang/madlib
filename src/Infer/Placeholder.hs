@@ -184,6 +184,7 @@ buildClassRefPreds env cls ts = do
 
 
 updatePlaceholders :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
+updatePlaceholders env push s fullExp@(Slv.Untyped _ _)   = return fullExp
 updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
   Slv.Placeholder (ref, t) exp -> case ref of
     Slv.MethodRef{} -> updateMethodPlaceholder env push s fullExp
@@ -195,13 +196,14 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
     return $ Slv.Solved qt a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
-    es' <- if push || length es == 1
-      then mapM (updatePlaceholders env push s) es
-      else do
-        let start = init es
-        let l     = last es
-        l' <- updatePlaceholders env push s l
-        return $ start <> [l']
+    es' <- mapM (updatePlaceholders env push s) es
+    -- es' <- if push || length es == 1
+    --   then mapM (updatePlaceholders env push s) es
+    --   else do
+    --     let start = init es
+    --     let l     = last es
+    --     l' <- updatePlaceholders env push s l
+    --     return $ start <> [l']
     let param' = Slv.Solved paramType paramArea param
     return $ Slv.Solved qt a $ Slv.Abs param' es'
 
