@@ -12,6 +12,7 @@ import { ge, le } from "Compare"
 
 export type Version = Version(Number, Number, Number)
 
+
 export type VersionRange
   = VersionRange(Version, Version)
   | FromVersion(Version)
@@ -29,13 +30,16 @@ instance Show Version {
   }
 }
 
+
 instance Read Version {
   read = parse
 }
 
+
 instance Comparable Version {
   compare = (a, b) => compare(show(a), show(b))
 }
+
 
 
 createRange :: Maybe Version -> Maybe Version -> VersionRange
@@ -73,6 +77,7 @@ export parse = pipe(
   }
 )
 
+
 isInRange :: Version -> VersionRange -> Boolean
 export isInRange = (version, range) => where(range) {
   FromVersion(start) => ge(version, start)
@@ -83,6 +88,7 @@ export isInRange = (version, range) => where(range) {
 
   AnyVersion => true
 }
+
 
 // TODO: complete
 matchRanges :: VersionRange -> VersionRange -> Boolean
@@ -100,11 +106,13 @@ export matchRanges = (range1, range2) => where(<range1, range2>) {
     ge(start1, start2) && le(end1, end2)
 }
 
+
 max :: Version -> Version -> Version
 max = (v1, v2) => ge(v1, v2) ? v1 : v2
 
 min :: Version -> Version -> Version
 min = (v1, v2) => le(v1, v2) ? v1 : v2
+
 
 intersectRanges :: VersionRange -> VersionRange -> VersionRange
 export intersectRanges = (range1, range2) => where(<range1, range2>) {

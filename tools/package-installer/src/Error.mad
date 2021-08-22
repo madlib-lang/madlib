@@ -1,8 +1,11 @@
 import IO from "IO"
 
+
 export type Error
   = CopyToMadlibModulesFailed(String)
   | MadlibDotJsonCouldNotBeLoaded(String)
+
+
 
 printError :: a -> Error -> a
 export printError = (a, error) => where(error) {

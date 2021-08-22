@@ -1,7 +1,7 @@
 import type { Maybe } from "Maybe"
 import { equals, ifElse, not, always } from "Function"
 import { Just, Nothing } from "Maybe"
-import { append, isEmpty } from "List"
+import { append } from "List"
 
 import type { Context, VersionInfo } from "./Context"
 import type { Dependency } from "./Dependency"
@@ -38,7 +38,7 @@ export alias ValidationOutput = {
 
 export type Validate a
   = Valid(a)
-  | NotValid(List Warning, List Error, a)
+  | NotValid(List Warning, a)
   | FatalError(Error)
 
 
@@ -48,18 +48,20 @@ alias RangeOutput = {
 }
 
 
+
 instance Functor Validate {
   map = (fn, m) => where(m) {
     Valid(a) =>
       Valid(fn(a))
 
-    NotValid(warnings, errors, a) =>
-      NotValid(warnings, errors, fn(a))
+    NotValid(warnings, a) =>
+      NotValid(warnings, fn(a))
 
     FatalError(e) =>
       FatalError(e)
   }
 }
+
 
 instance Applicative Validate {
   pure = (a) => Valid(a)
@@ -68,14 +70,14 @@ instance Applicative Validate {
     <Valid(f), Valid(a)> =>
       Valid(f(a))
 
-    <NotValid(warnings, errors, f), Valid(a)> =>
-      NotValid(warnings, errors, f(a))
+    <NotValid(warnings, f), Valid(a)> =>
+      NotValid(warnings, f(a))
 
-    <Valid(f), NotValid(warnings, errors, a)> =>
-      NotValid(warnings, errors, f(a))
+    <Valid(f), NotValid(warnings, a)> =>
+      NotValid(warnings, f(a))
 
-    <NotValid(warningsA, errorsA, f), NotValid(warningsB, errorsB, a)> =>
-      NotValid(mappend(warningsA, warningsB), mappend(errorsA, errorsB), f(a))
+    <NotValid(warningsA, f), NotValid(warningsB, a)> =>
+      NotValid(mappend(warningsA, warningsB), f(a))
 
     <FatalError(err), _> =>
       FatalError(err)
@@ -85,6 +87,7 @@ instance Applicative Validate {
   }
 }
 
+
 instance Monad Validate {
   of = pure
 
@@ -92,7 +95,7 @@ instance Monad Validate {
     Valid(a) =>
       fn(a)
 
-    NotValid(_, _, a) =>
+    NotValid(_, a) =>
       pipe(
         fn,
         combine(m)
@@ -104,43 +107,38 @@ instance Monad Validate {
 }
 
 
+
 combine :: Validate a -> Validate b -> Validate b
 combine = (a, b) => where(<a, b>) {
   <Valid(_), _> =>
     b
 
-  <NotValid(warnings, errors, _), Valid(x)> =>
-    NotValid(warnings, errors, x)
+  <NotValid(warnings, _), Valid(x)> =>
+    NotValid(warnings, x)
 
-  <NotValid(warningsA, errorsA, _), NotValid(warningsB, errorsB, x)> =>
-    NotValid(mappend(warningsA, warningsB), mappend(errorsA, errorsB), x)
+  <NotValid(warningsA, _), NotValid(warningsB, x)> =>
+    NotValid(mappend(warningsA, warningsB), x)
 }
 
 
 addWarning :: Warning -> Validate a -> Validate a
 export addWarning = (warning, validationResult) => where(validationResult) {
   Valid(a) =>
-    NotValid([warning], [], a)
+    NotValid([warning], a)
 
-  NotValid(warnings, errors, a) =>
-    NotValid(append(warning, warnings), errors, a)
+  NotValid(warnings, a) =>
+    NotValid(append(warning, warnings), a)
 }
 
 
-addError :: Error -> Validate a -> Validate a
-export addError = (error, validationResult) => where(validationResult) {
-  Valid(a) =>
-    NotValid([], [error], a)
-
-  NotValid(warnings, errors, a) =>
-    NotValid(warnings, append(error, errors), a)
-}
+fail :: Error -> Validate a -> Validate a
+export fail = (error, _) => FatalError(error)
 
 
-hasErrors :: Validate a -> Boolean
-export hasErrors = where {
-  NotValid(_, errors, _) =>
-    !isEmpty(errors)
+hasFailed :: Validate a -> Boolean
+export hasFailed = where {
+  FatalError(_) =>
+    true
 
   _ =>
     false
@@ -152,15 +150,15 @@ setValidationResultValue = (value) => where {
   Valid(_) =>
     Valid(value)
 
-  NotValid(warnings, errors, _) =>
-    NotValid(warnings, errors, value)
+  NotValid(warnings, _) =>
+    NotValid(warnings, value)
 }
 
 
 getValidationValue :: Validate a -> a
 export getValidationValue = where {
   Valid(a) => a
-  NotValid(_, _, a) => a
+  NotValid(_, a) => a
 }
 
 
@@ -174,7 +172,6 @@ buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => Valid({
 buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> Validate RangeOutput
 buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotValid(
   [OutOfRangeVersion],
-  [],
   {
     versionInfo: {
       version: versionInfo.version == Nothing
@@ -204,7 +201,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
 
   return where(rangeResult) {
     Valid(_) => Valid(validationOutput)
-    NotValid(warnings, errors, _) => NotValid(warnings, errors, validationOutput)
+    NotValid(warnings, _) => NotValid(warnings, validationOutput)
   }
 }
 
@@ -232,20 +229,20 @@ validateHashes = (validationInput) => {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedBuildHash), not),
-        always(NotValid([InvalidBuildHash(validationInput.madlibDotJson.name)], [], ())),
+        always(NotValid([InvalidBuildHash(validationInput.madlibDotJson.name)], ())),
         always(Valid(())),
         versionDotLock.buildHash
       )
 
     Nothing =>
-      NotValid([], [], ())
+      NotValid([], ())
   }
 
   validatedVersionHash = where(validationInput.versionDotLock) {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedVersionHash), not),
-        always(NotValid([InvalidVersionHash], [], ())),
+        always(NotValid([InvalidVersionHash], ())),
         always(Valid(())),
         versionDotLock.versionHash
       )
@@ -259,6 +256,7 @@ validateHashes = (validationInput) => {
     combine(validatedBuildHash, validatedVersionHash)
   )
 }
+
 
 validate :: Context -> Dependency -> Validate ValidationInput -> Validate ValidationOutput
 export validate = (context, dependency, validationInput) => pipe(

@@ -66,6 +66,7 @@ export parse = pipe(
   }
 )
 
+
 load :: String -> Wish String MadlibDotJson
 export load = (path) => pipe(
   readFile,

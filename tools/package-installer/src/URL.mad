@@ -1,5 +1,7 @@
 import { mapChars } from "String"
 
+
+
 replaceSpecialChar :: String -> String
 replaceSpecialChar = where {
   ":" => "_"
@@ -12,6 +14,7 @@ replaceSpecialChar = where {
   "-" => "_"
   char => char
 }
+
 
 sanitizeUrl :: String -> String
 export sanitizeUrl = mapChars(replaceSpecialChar)

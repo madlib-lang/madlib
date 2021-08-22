@@ -6,5 +6,22 @@ interface Functor m => Applicative m {
   pure :: a -> m a
 }
 
+
+
 apL :: Applicative m => m a -> m b -> m a
 export apL = (a, b) => ap(map(always, a), b)
+
+
+liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+export liftA2 = (f, x1, x2) => pipe(
+  map(f),
+  ap($, x2)
+)(x1)
+
+
+liftA3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+export liftA3 = (f, x1, x2, x3) => pipe(
+  map(f),
+  ap($, x2),
+  ap($, x3)
+)(x1)

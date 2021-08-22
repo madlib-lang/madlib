@@ -8,6 +8,7 @@ import { always } from "Function"
 import { readFile } from "FileSystem"
 
 
+
 export alias PublicAPI = {
   apiNames :: Dictionary String String,
   apiInstances :: List String,
@@ -16,6 +17,7 @@ export alias PublicAPI = {
   apiInterfaces :: Dictionary String (Dictionary String String)
 }
 
+
 export alias VersionDotLock = {
   buildHash :: String,
   versionHash :: String,
@@ -23,11 +25,14 @@ export alias VersionDotLock = {
 }
 
 
+
 buildHashParser :: J.Parser String
 export buildHashParser = J.field("buildHash", J.string)
 
+
 versionHashParser :: J.Parser String
 export versionHashParser = J.field("versionHash", J.string)
+
 
 apiParser :: J.Parser PublicAPI
 apiParser = J.map5(
@@ -40,6 +45,7 @@ apiParser = J.map5(
   J.field("apiInterfaces", J.dict(J.dict(J.string)))
 )
 
+
 parser :: J.Parser VersionDotLock
 parser = J.map3(
   (buildHash, versionHash, api) => ({ buildHash, versionHash, api }),
@@ -47,6 +53,7 @@ parser = J.map3(
   J.field("versionHash", J.string),
   J.field("api", apiParser)
 )
+
 
 parse :: String -> Wish String VersionDotLock
 export parse = pipe(
@@ -57,6 +64,7 @@ export parse = pipe(
     Right(a) => of(a)
   }
 )
+
 
 load :: String -> Wish String VersionDotLock
 export load = (path) => pipe(
