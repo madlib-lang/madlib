@@ -33,13 +33,17 @@ import VersionDotLock from "./VersionDotLock"
 import {
   fail,
   validate,
-  getValidationValue,
+  unsafeGetValidationValue,
   Valid,
   NotValid,
-  FatalError
+  FatalError,
+  printWarning,
+  BuildHashCouldNotBeGenerated,
+  VersionDotLockMissing,
+  printError,
+  CopyToMadlibModulesFailed,
+  MadlibDotJsonCouldNotBeLoaded
 } from "./Validate"
-import { printWarning, BuildHashCouldNotBeGenerated, VersionDotLockMissing } from "./Warning"
-import { printError, CopyToMadlibModulesFailed, MadlibDotJsonCouldNotBeLoaded } from "./Error"
 import Constants from "./Constants"
 import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
 import { hashVersion } from "./Hash"
@@ -138,7 +142,7 @@ formatCopyError :: String -> String
 formatCopyError = (err) => pipe(
   String.lines,
   ifElse(
-    pipe(List.len, gt(5)),
+    pipe(List.len, gt($, 5)),
     pipe(List.slice(0, 5), mappend($, ["..."])),
     identity
   ),
@@ -147,65 +151,102 @@ formatCopyError = (err) => pipe(
 )(err)
 
 copyPackageFromTmp :: Validate ValidationOutput -> SideEffect (Validate ValidationOutput)
-copyPackageFromTmp = (validationResult) => {
-  validationOutput = getValidationValue(validationResult)
+copyPackageFromTmp = (validationResult) => where(validationResult) {
+  FatalError(_) =>
+    of(validationResult)
 
-  return pipe(
-    ifElse(
-      .shouldCopy,
-      pipe(
-        always(copyPackageToMadlibModules(validationOutput.dependency)),
-        andDo(of(validationResult))
+  _ =>
+    pipe(
+      unsafeGetValidationValue,
+      ifElse(
+        .shouldCopy,
+        pipe(
+          .dependency,
+          copyPackageToMadlibModules,
+          andDo(of(validationResult))
+        ),
+        always(of(validationResult))
       ),
-      always(of(validationResult))
-    ),
-    fromWish((commandError) => pipe(
-      always(validationOutput),
-      .dependency,
-      .name,
-      where {
-        Just(n) =>
-          fail(
-            CopyToMadlibModulesFailed(
-              `Failed to copy '${n}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
-            ),
-            validationResult
-          )
-    
-        Nothing =>
-          fail(
-            CopyToMadlibModulesFailed(
-              `Failed to copy package downloaded from '${validationOutput.dependency.url}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
-            ),
-            validationResult
-          )
-      }
-    )(commandError))
-  )(validationOutput)
+      fromWish((commandError) => pipe(
+        unsafeGetValidationValue,
+        .madlibDotJson,
+        .name,
+        (n) => fail(
+          CopyToMadlibModulesFailed(
+            unsafeGetValidationValue(validationResult),
+            `Failed to copy '${n}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
+          ),
+          validationResult
+        )
+      )(validationResult))
+    )(validationResult)
 }
 
 
-processValidationResult :: Validate ValidationOutput -> ValidationOutput
-processValidationResult = (validation) => {
-  validationOutput = getValidationValue(validation)
+displayInstalling :: Validate ValidationOutput -> Validate ValidationOutput
+displayInstalling = (validation) => {
+  validationOutput = unsafeGetValidationValue(validation)
   name = validationOutput.madlibDotJson.name
   version = show(validationOutput.madlibDotJson.version)
 
   IO.log(`Installing ${name} version ${version}`)
 
-  return where(validation) {
-    Valid(a) =>
-      IO.logAndPass(`  - ${IO.green("installed!")}`, a)
+  return validation
+}
 
-    NotValid(warnings, a) =>
-      pipe(
-        List.reduce(printWarning, a),
-        IO.logAndPass(`  - ${IO.green("installed!")}`)
-      )(warnings)
 
-    FatalError(err) =>
-      printError(validationOutput, err)
-  }
+displayResult :: Validate ValidationOutput -> Validate ValidationOutput
+displayResult = (validation) => where(validation) {
+  Valid(a) =>
+    pipe(
+      displayInstalling,
+      IO.logAndPass(`  - ${IO.green("installed!")}`)
+    )(validation)
+
+  NotValid(warnings, a) =>
+    pipe(
+      displayInstalling,
+      List.reduce(printWarning, $, warnings),
+      IO.logAndPass(`  - ${IO.green("installed!")}`)
+    )(validation)
+
+  FatalError(err) =>
+    printError(validation, err)
+}
+
+
+tryRecovery :: Validate ValidationOutput -> Validate ValidationOutput
+tryRecovery = (validation) => where(validation) {
+  FatalError(CopyToMadlibModulesFailed(recover, _)) =>
+    pure(recover)
+
+  _ =>
+    validation
+}
+
+
+postProcess :: <Context, List Dependency> -> Dependency -> Validate ValidationOutput -> <Context, List Dependency>
+postProcess = (previousContextAndDeps, processedDependency, validation) => where(validation) {
+  FatalError(_) =>
+    previousContextAndDeps
+
+  v =>
+    pipe(
+      unsafeGetValidationValue,
+      (validationResult) => ({
+        ...validationResult,
+        context: addInstalledPackage(processedDependency.sanitizedUrl, validationResult.context)
+      }),
+      (validationResult) => validationResult.shouldCopy
+        ? <
+            validationResult.context,
+            mappend(
+              Tuple.snd(previousContextAndDeps),
+              fromMaybe([], validationResult.madlibDotJson.dependencies)
+            )
+          >
+        : <validationResult.context, Tuple.snd(previousContextAndDeps)>
+    )(v)
 }
 
 
@@ -214,25 +255,14 @@ processDependency = (contextAndNextDeps, dependency) => pipe(
   prepareValidationInput,
   map(validate(Tuple.fst(contextAndNextDeps), dependency)),
   chain(copyPackageFromTmp),
-  map(processValidationResult),
   map(
     pipe(
-      (validationResult) => ({
-        ...validationResult,
-        context: addInstalledPackage(dependency.sanitizedUrl, validationResult.context)
-      }),
-      (validationResult) => validationResult.shouldCopy
-        ? <
-            validationResult.context,
-            mappend(
-              Tuple.snd(contextAndNextDeps),
-              fromMaybe([], validationResult.madlibDotJson.dependencies)
-            )
-          >
-        : <validationResult.context, Tuple.snd(contextAndNextDeps)>
+      displayResult,
+      tryRecovery,
+      postProcess(contextAndNextDeps, dependency),
+      IO.newLine
     )
-  ),
-  map(IO.logAndPass(""))
+  )
 )(dependency)
 
 
