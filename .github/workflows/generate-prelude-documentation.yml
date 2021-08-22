@@ -1,0 +1,33 @@
+name: 'Generate prelude documentation'
+
+on:
+  workflow_dispatch
+env:
+  node-version: 14.x
+
+name: documentation
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.node-version }}
+
+      - run: npm install -g @madlib-lang/madlib
+
+      - run: cd .github/workflows
+
+      - run: madlib install
+
+      - run: madlib run MadDocCli ../../src
+
+      - name: Publish documentation
+        uses: JamesIves/github-pages-deploy-action@4.1.1
+        with:
+          branch: gh-pages
+          folder: .docs
