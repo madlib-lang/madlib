@@ -3,6 +3,7 @@ import type { SideEffect } from "SideEffect"
 import type { Maybe } from "Maybe"
 
 import List from "List"
+import String from "String"
 import { bichain, chainRej, mapRej, fulfill } from "Wish"
 import { parallel, fromWish, toWish } from "SideEffect"
 import IO from "IO"
@@ -21,14 +22,14 @@ import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
-import type { ValidationInput, ValidationOutput, Validation, Warning } from "./Validate"
+import type { ValidationInput, ValidationOutput, Validation, Error, Warning } from "./Validate"
 
 import { addInstalledPackage, hasPackageBeenInstalled, initialContext } from "./Context"
 import { dependencyParser } from "./Dependency"
 import MadlibDotJson from "./MadlibDotJson"
 import VersionDotLock from "./VersionDotLock"
 import {
-  addWarning,
+  addError,
   validate,
   getValidationValue,
   Validated,
@@ -36,6 +37,7 @@ import {
   OutOfRangeVersion,
   InvalidVersionHash,
   InvalidBuildHash,
+  VersionDotLockMissing,
   CopyToMadlibModulesFailed
 } from "./Validate"
 import Constants from "./Constants"
@@ -73,8 +75,7 @@ installNodeModules = (pkgName) => pipe(
   map(mappend("npm install ")),
   chain(pipe(System.exec, mapRej(System.getCommandErrorMessage))),
   map((x) => IO.log(`nodejs modules installed for '${pkgName}'`) |> always(x)),
-  fromWish(always(IO.log(`No node modules to install for '${pkgName}'`)))
-  // chainRej((_) => of(IO.log(`No node modules to install for '${pkgName}'`)))
+  fromWish((_) =>IO.log(`No node modules to install for '${pkgName}'`))
 )(pkgName)
 
 
@@ -101,10 +102,7 @@ readVersionDotLock :: Dependency -> Wish String (Maybe VersionDotLock)
 readVersionDotLock = (dependency) => pipe(
   (d) => VersionDotLock.load(`${projectBaseUrl(d)}/version.lock`),
   map(Just),
-  chainRej((err) => {
-    IO.log(`The package downloaded from: '${IO.grey(dependency.url)}' does not contain a version.lock file. I do not recommend using it as it means that it has not been packaged correctly and version information is corrupted. You should try to contact the package author or find another package that provides a similar affordance.`)
-    return of(Nothing)
-  })
+  chainRej(always(of(Nothing)))
 )(dependency)
 
 
@@ -133,6 +131,18 @@ prepareValidationInput = (dependency) => pipe(
 )(dependency)
 
 
+formatCopyError :: String -> String
+formatCopyError = (err) => pipe(
+  String.lines,
+  ifElse(
+    pipe(List.len, (x) => x > 5),
+    pipe(List.slice(0, 5), mappend($, ["..."])),
+    identity
+  ),
+  map((line) => `    ${line}`),
+  List.unlines
+)(err)
+
 copyPackageFromTmp :: Validation ValidationOutput -> SideEffect (Validation ValidationOutput)
 copyPackageFromTmp = (validationResult) => {
   validationOutput = getValidationValue(validationResult)
@@ -152,17 +162,17 @@ copyPackageFromTmp = (validationResult) => {
       .name,
       where {
         Just(n) =>
-          addWarning(
+          addError(
             CopyToMadlibModulesFailed(
-              `Failed post-processing ${n}\n${System.getCommandErrorMessage(commandError)}`
+              `Failed to copy '${n}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
             ),
             validationResult
           )
     
         Nothing =>
-          addWarning(
+          addError(
             CopyToMadlibModulesFailed(
-              `Failed post-processing package downloaded from '${validationOutput.dependency.url}'\n${System.getCommandErrorMessage(commandError)}`
+              `Failed to copy package downloaded from '${validationOutput.dependency.url}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
             ),
             validationResult
           )
@@ -171,19 +181,39 @@ copyPackageFromTmp = (validationResult) => {
   )(validationOutput)
 }
 
+
 printWarning :: ValidationOutput -> Warning -> ValidationOutput
 printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>
-    IO.logAndPass(IO.yellow("Package version does not match constraints"), a)
+    IO.logAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
 
   InvalidVersionHash =>
-    IO.logAndPass(IO.yellow("Package version hash is corrupted"), a)
+    IO.logAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
 
   InvalidBuildHash(pkgName) =>
     IO.logAndPass(
-      IO.yellow(`Build hash is corrupted for package '${pkgName}'`),
+      `  - ${IO.yellow("Build hash is corrupted for package '" ++ pkgName ++ "'")}`,
       a
     )
+
+  VersionDotLockMissing =>
+    IO.logAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
+}
+
+
+printError :: ValidationOutput -> Error -> ValidationOutput
+printError = (a, error) => where(error) {
+  CopyToMadlibModulesFailed(msg) =>
+    IO.logAndPass(`  - ${IO.red(msg)}`, a)
+}
+
+hasErrors :: Validation a -> Boolean
+hasErrors = where {
+  NotGood(_, errors, _) =>
+    !List.isEmpty(errors)
+
+  _ =>
+    false
 }
 
 
@@ -193,17 +223,27 @@ processValidationResult = (validation) => {
   name = validationOutput.madlibDotJson.name
   version = show(validationOutput.madlibDotJson.version)
 
-  IO.log(`Installing ${name} version ${version}...`)
+  IO.log(`Installing ${name} version ${version}`)
 
   where(validation) {
     Validated(a) =>
       a
 
-    NotGood(warnings, a) =>
+    NotGood(warnings, _, a) =>
       List.reduce(printWarning, a, warnings)
   }
 
-  return IO.logAndPass(IO.green("installed!"), validationOutput)
+  where(validation) {
+    Validated(a) =>
+      IO.logAndPass(`  - ${IO.green("installed!")}`, a)
+
+    NotGood(_, errors, a) =>
+      hasErrors(validation)
+        ? List.reduce(printError, a, errors)
+        : IO.logAndPass(`  - ${IO.green("installed!")}`, a)
+  }
+
+  return validationOutput
 }
 
 processDependency :: <Context, List Dependency> -> Dependency -> SideEffect <Context, List Dependency>

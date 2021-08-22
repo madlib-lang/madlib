@@ -30,12 +30,14 @@ export type Warning
   = OutOfRangeVersion
   | InvalidVersionHash
   | InvalidBuildHash(String)
-  | CopyToMadlibModulesFailed(String)
-// = OutOfRangeVersion(String, VersionInfo, VersionRange)
+  | VersionDotLockMissing
+
+export type Error
+  = CopyToMadlibModulesFailed(String)
 
 export type Validation a
   = Validated(a)
-  | NotGood(List Warning, a)
+  | NotGood(List Warning, List Error, a)
 
 
 alias RangeOutput = {
@@ -49,21 +51,31 @@ combineResults = (a, b) => where(<a, b>) {
   <Validated(_), _> =>
     b
 
-  <NotGood(warnings, _), Validated(x)> =>
-    NotGood(warnings, x)
+  <NotGood(warnings, errors, _), Validated(x)> =>
+    NotGood(warnings, errors, x)
 
-  <NotGood(warningsA, _), NotGood(warningsB, x)> =>
-    NotGood(mappend(warningsA, warningsB), x)
+  <NotGood(warningsA, errorsA, _), NotGood(warningsB, errorsB, x)> =>
+    NotGood(mappend(warningsA, warningsB), mappend(errorsA, errorsB), x)
 }
 
 
 addWarning :: Warning -> Validation a -> Validation a
 export addWarning = (warning, validationResult) => where(validationResult) {
   Validated(a) =>
-    NotGood([warning], a)
+    NotGood([warning], [], a)
 
-  NotGood(warnings, a) =>
-    NotGood(append(warning, warnings), a)
+  NotGood(warnings, errors, a) =>
+    NotGood(append(warning, warnings), errors, a)
+}
+
+
+addError :: Error -> Validation a -> Validation a
+export addError = (error, validationResult) => where(validationResult) {
+  Validated(a) =>
+    NotGood([], [error], a)
+
+  NotGood(warnings, errors, a) =>
+    NotGood(warnings, append(error, errors), a)
 }
 
 
@@ -72,15 +84,15 @@ setValidationResultValue = (value) => where {
   Validated(_) =>
     Validated(value)
 
-  NotGood(warnings, _) =>
-    NotGood(warnings, value)
+  NotGood(warnings, errors, _) =>
+    NotGood(warnings, errors, value)
 }
 
 
 getValidationValue :: Validation a -> a
 export getValidationValue = where {
   Validated(a) => a
-  NotGood(_, a) => a
+  NotGood(_, _, a) => a
 }
 
 
@@ -94,6 +106,7 @@ buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => Validated({
 buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> Validation RangeOutput
 buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotGood(
   [OutOfRangeVersion],
+  [],
   {
     versionInfo: {
       version: versionInfo.version == Nothing
@@ -123,7 +136,7 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
 
   return where(rangeResult) {
     Validated(_) => Validated(validationOutput)
-    NotGood(warnings, _) => NotGood(warnings, validationOutput)
+    NotGood(warnings, errors, _) => NotGood(warnings, errors, validationOutput)
   }
 }
 
@@ -151,20 +164,20 @@ validateHashes = (validationInput) => {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedBuildHash), not),
-        always(NotGood([InvalidBuildHash(validationInput.madlibDotJson.name)], ())),
+        always(NotGood([InvalidBuildHash(validationInput.madlibDotJson.name)], [], ())),
         always(Validated(())),
         versionDotLock.buildHash
       )
 
     Nothing =>
-      Validated(())
+      NotGood([VersionDotLockMissing], [], ())
   }
 
   validatedVersionHash = where(validationInput.versionDotLock) {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedVersionHash), not),
-        always(NotGood([InvalidVersionHash], ())),
+        always(NotGood([InvalidVersionHash], [], ())),
         always(Validated(())),
         versionDotLock.versionHash
       )
