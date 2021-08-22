@@ -17,10 +17,10 @@ import http from "http"
 -#
 
 alias Status = Number
-BadRequest = 400
-Unauthorized = 401
-PaymentRequired = 402
-
+export BadRequest = 400
+export Unauthorized = 401
+export PaymentRequired = 402
+export OK = 200
 
 export type Response = Response({ data :: Data, status :: Status })
 

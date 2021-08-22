@@ -39,16 +39,16 @@ instance Collectable Exp where
 
     Assignment name e -> if isFunctionType t
       then [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else [Line { line = l }] <> collect e
+      else [] <> collect e
     Export (Solved _ _ (Assignment name e)) -> if isFunctionType t
       then [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else [Line { line = l }] <> collect e
+      else [] <> collect e
     TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else [Line { line = l' }] <> collect e
+      else [] <> collect e
     TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else [Line { line = l' }] <> collect e
+      else [] <> collect e
 
     App fn arg _          -> collect fn <> collect arg
     Abs    _   body       -> concat (collect <$> body)

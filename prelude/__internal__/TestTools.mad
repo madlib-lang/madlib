@@ -24,6 +24,7 @@ export type AssertionError a
   = AssertionError(a, a)
   | Error(a)
   | ErrorWithMessage(String)
+  | NotImplemented
 
 
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
@@ -185,6 +186,15 @@ formatFailureOutput = (description, result) => where(result) {
       red("\u00d7 " ++ description)
       ++ "\n  error: " ++ #- JSON.stringify(msg) -#
     )
+
+  ErrorWithMessage(msg) =>
+    W.bad(
+      red("\u00d7 " ++ description)
+      ++ "\n  error: " ++ #- JSON.stringify(msg) -#
+    )
+
+  NotImplemented =>
+    W.bad(red("\u00d7 " ++ description) ++ "\n  error: not implemented")
 }
 
 #-
@@ -202,6 +212,7 @@ export test = (description, testImpl) => {
     context.id = id;
     context.__HIT_POINTS = []
     context.__CACHE = {}
+
   -#
 
   pipe(
@@ -211,7 +222,10 @@ export test = (description, testImpl) => {
     W.fulfill(reportBad(id), reportGood(id))
   )(testImpl)
 
-  #-})-#
+  #-
+
+  })
+  -#
 
   return ()
 }

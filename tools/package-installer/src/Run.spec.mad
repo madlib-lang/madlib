@@ -1,0 +1,139 @@
+import { assertEquals, test, ErrorWithMessage } from "TestTools"
+import { startStdOutRecording, getRecordedStdOut } from "TestUtils"
+import { bad, bichain, good } from "Wish"
+import { Response, OK } from "Http"
+import { BinaryData } from "Data"
+import { ByteArray } from "Binary"
+import { always } from "Function"
+import { andDo } from "Monad"
+
+
+import type { Config } from "./Config"
+
+import { run } from "./Run"
+
+
+
+LOCAL_MADLIB_DOT_JSON = `{
+  "name": "LocalPackage",
+  "main": "src/Main.mad",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "url": "http://repo.com/test-package.zip",
+      "minVersion": "0.0.1",
+      "description": "madparser"
+    }
+  ]
+}`
+
+
+TEST_PACKAGE_MADLIB_DOT_JSON = `{
+  "name": "TestPackage",
+  "version": "0.0.1",
+  "main": "src/Main.mad"
+}`
+
+
+TEST_PACKAGE_VERSION_DOT_LOCK = `{
+  "buildHash": "089869a0fed9efb61ca8e6954f458623",
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0",
+  "api": {
+    "apiNames": {},
+    "apiInstances": [],
+    "apiAliases": {},
+    "apiTypes": {},
+    "apiInterfaces": {}
+  }
+}`
+
+
+BASE_CONFIG :: Config
+BASE_CONFIG = {
+  readFile: where {
+    "madlib.json" =>
+      of(LOCAL_MADLIB_DOT_JSON)
+
+    ".module_cache/http___repo_com_test_package_zip/madlib.json" =>
+      of(TEST_PACKAGE_MADLIB_DOT_JSON)
+
+    ".module_cache/http___repo_com_test_package_zip/version.lock" =>
+      of(TEST_PACKAGE_VERSION_DOT_LOCK)
+
+    path =>
+      bad(`file '${path}' does not exist`)
+  },
+  writeFile: (path, data) => where(path) {
+    ".module_cache/http___repo_com_test_package_zip.zip" =>
+      good("OK")
+  },
+  readDir: where {
+    "./madlib_modules/" =>
+      good(["TestPackage"])
+  },
+  exec: (command) => where(command) {
+    "madlib package generate-hash -i .module_cache/http___repo_com_test_package_zip" =>
+      good("089869a0fed9efb61ca8e6954f458623")
+
+    _ =>
+      good("OK")
+  },
+  exists: (_) => good("OK"),
+  get: where {
+    "http://repo.com/test-package.zip" =>
+      good(Response({
+        data: BinaryData(ByteArray),
+        status: OK
+      }))
+  }
+}
+
+
+
+test("run - success", (_) => {
+  expected = `Installing dependencies ...
+Installing TestPackage version 0.0.1
+  - \u001b[32minstalled!\u001b[0m
+
+nodejs modules installed for 'TestPackage'
+`
+
+  return pipe(
+    startStdOutRecording,
+    chain(run),
+    andDo(getRecordedStdOut),
+    bichain(
+      always(bad(ErrorWithMessage("should not fail"))),
+      assertEquals($, expected)
+    )
+  )(BASE_CONFIG)
+})
+
+test("run - not in cache", (_) => {
+  config = {
+    ...BASE_CONFIG,
+    exists: (path) => where(path) {
+      ".module_cache/http___repo_com_test_package_zip" =>
+        bad("nope")
+
+      _ =>
+        good("OK")
+    }
+  }
+  expected = `Installing dependencies ...
+Installing TestPackage version 0.0.1
+  - \u001b[32minstalled!\u001b[0m
+
+nodejs modules installed for 'TestPackage'
+`
+
+  return pipe(
+    startStdOutRecording,
+    chain(run),
+    andDo(getRecordedStdOut),
+    bichain(
+      always(bad(ErrorWithMessage("should not fail"))),
+      assertEquals($, expected)
+    )
+  )(config)
+})

@@ -1,4 +1,11 @@
+import { fulfill } from "Wish"
+import { identity } from "Function"
+import IO from "IO"
+
 import { run } from "./Run"
+import { defaultConfig } from "./Config"
 
-
-run(())
+pipe(
+  run,
+  fulfill(IO.log, identity)
+)(defaultConfig)

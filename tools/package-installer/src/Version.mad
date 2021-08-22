@@ -90,23 +90,6 @@ export isInRange = (version, range) => where(range) {
 }
 
 
-// TODO: complete
-matchRanges :: VersionRange -> VersionRange -> Boolean
-export matchRanges = (range1, range2) => where(<range1, range2>) {
-  <_, AnyVersion> =>
-    true
-
-  <AnyVersion, _> =>
-    true
-
-  <FromVersion(start1), FromVersion(start2)> =>
-    ge(start1, start2)
-
-  <VersionRange(start1, end1), VersionRange(start2, end2)> =>
-    ge(start1, start2) && le(end1, end2)
-}
-
-
 max :: Version -> Version -> Version
 max = (v1, v2) => ge(v1, v2) ? v1 : v2
 

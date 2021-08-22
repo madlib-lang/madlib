@@ -3,7 +3,19 @@ import { Nothing, Just } from "Maybe"
 
 import { Version, AnyVersion, FromVersion } from "./Version"
 import { initialContext, updateEntry } from "./Context"
-import { validateVersion } from "./Validate"
+import {
+  combine,
+  validate,
+  Valid,
+  NotValid,
+  ValidationError,
+  InvalidBuildHash,
+  InvalidVersionHash,
+  OutOfRangeVersion,
+  MadlibDotJsonCouldNotBeLoaded
+} from "./Validate"
+
+
 
 MADLIBDOTJSON = {
   name: "package-name",
@@ -31,9 +43,8 @@ DEFAULT_INPUT = {
 }
 
 
-test("validateVersion", (_) => {
-  expected = {
-    warning: Nothing,
+test("validate", (_) => {
+  expected = Valid({
     context: updateEntry(
       "package-name",
       {
@@ -45,38 +56,239 @@ test("validateVersion", (_) => {
     shouldCopy: true,
     dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
     madlibDotJson: MADLIBDOTJSON
-  }
+  })
 
-  actual = validateVersion(initialContext, DEFAULT_DEPENDENCY, DEFAULT_INPUT)
+  actual = validate(initialContext, DEFAULT_DEPENDENCY, DEFAULT_INPUT)
 
   return assertEquals(actual, expected)
 })
 
-test("validateVersion - fail", (_) => {
-  expected = {
-    warning: Just("Version of package 'package-name' is not in range"),
-    context: updateEntry(
-      "package-name",
-      {
-        version: Just(Version(1, 0, 0)),
-        range: FromVersion(Version(2, 0, 0))
-      },
-      initialContext
-    ),
-    shouldCopy: true,
-    dependency: {
-      ...DEFAULT_DEPENDENCY,
-      name: Just("package-name"),
-      versionRange: FromVersion(Version(2, 0, 0))
-    },
-    madlibDotJson: MADLIBDOTJSON
-  }
 
-  actual = validateVersion(
+test("validate - fail", (_) => {
+  expected = NotValid(
+    [OutOfRangeVersion],
+    {
+      context: updateEntry(
+        "package-name",
+        {
+          version: Just(Version(1, 0, 0)),
+          range: FromVersion(Version(2, 0, 0))
+        },
+        initialContext
+      ),
+      shouldCopy: true,
+      dependency: {
+        ...DEFAULT_DEPENDENCY,
+        name: Just("package-name"),
+        versionRange: FromVersion(Version(2, 0, 0))
+      },
+      madlibDotJson: MADLIBDOTJSON
+    }
+  )
+
+  actual = validate(
     initialContext,
     { ...DEFAULT_DEPENDENCY, versionRange: FromVersion(Version(2, 0, 0)) },
     DEFAULT_INPUT
   )
 
+  return assertEquals(actual, expected)
+})
+
+
+test("map - Valid", (_) => {
+  expected = Valid(3)
+
+  actual = map((x) => x + 1, Valid(2))
+
+  return assertEquals(actual, expected)
+})
+
+test("map - NotValid", (_) => {
+  expected = NotValid([OutOfRangeVersion], 3)
+
+  actual = map((x) => x + 1, NotValid([OutOfRangeVersion], 2))
+
+  return assertEquals(actual, expected)
+})
+
+test("map - ValidationError not recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
+
+  actual = map((x) => x + 1, expected)
+
+  return assertEquals(actual, expected)
+})
+
+test("map - ValidationError recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(3))
+
+  actual = map(
+    (x) => x + 1,
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(2))
+  )
+
+  return assertEquals(actual, expected)
+})
+
+test("pure", (_) => assertEquals(pure(2), Valid(2)))
+
+test("ap - Valid", (_) => {
+  expected = Valid(3)
+
+  actual = ap(pure((x) => x + 1), Valid(2))
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - NotValid", (_) => {
+  expected = NotValid([OutOfRangeVersion], 3)
+
+  actual = ap(pure((x) => x + 1), NotValid([OutOfRangeVersion], 2))
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - ValidationError not recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
+
+  actual = ap(pure((x) => x + 1), expected)
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - ValidationError recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(3))
+
+  actual = ap(
+    pure((x) => x + 1),
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(2))
+  )
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - fn NotValid", (_) => {
+  expected = NotValid([OutOfRangeVersion], 3)
+
+  actual = ap(NotValid([OutOfRangeVersion], (x) => x + 1), pure(2))
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - fn ValidationError recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(3))
+
+  actual = ap(
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just((x) => x + 1)),
+    pure(2)
+  )
+
+  return assertEquals(actual, expected)
+})
+
+test("ap - fn ValidationError not recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
+
+  actual = ap(
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing),
+    pure(2)
+  )
+
+  return assertEquals(actual, expected)
+})
+
+
+test("combine - Valid and Valid", (_) => {
+  expected = Valid(1)
+  actual = combine(Valid(2), Valid(1))
+  return assertEquals(actual, expected)
+})
+
+test("combine - Valid and NotValid", (_) => {
+  expected = NotValid([OutOfRangeVersion], 1)
+  actual = combine(Valid(2), NotValid([OutOfRangeVersion], 1))
+  return assertEquals(actual, expected)
+})
+
+test("combine - Valid and ValidationError", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just("ok"))
+  actual = combine(
+    Valid(1),
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just("ok"))
+  )
+  return assertEquals(actual, expected)
+})
+
+test("combine - NotValid and Valid", (_) => {
+  expected = NotValid([OutOfRangeVersion], 1)
+  actual = combine(NotValid([OutOfRangeVersion], 2), Valid(1))
+  return assertEquals(actual, expected)
+})
+
+test("combine - NotValid and NotValid", (_) => {
+  expected = NotValid([OutOfRangeVersion, InvalidVersionHash], 1)
+  actual = combine(
+    NotValid([OutOfRangeVersion], 2),
+    NotValid([InvalidVersionHash], 1)
+  )
+  return assertEquals(actual, expected)
+})
+
+test("combine - NotValid and ValidationError", (_) => {
+  expected = ValidationError(
+    [OutOfRangeVersion, InvalidVersionHash],
+    MadlibDotJsonCouldNotBeLoaded(""),
+    Just(1)
+  )
+  actual = combine(
+    NotValid([OutOfRangeVersion], 2),
+    ValidationError(
+      [InvalidVersionHash],
+      MadlibDotJsonCouldNotBeLoaded(""),
+      Just(1)
+    )
+  )
+  return assertEquals(actual, expected)
+})
+
+test("combine - ValidationError and Valid", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing)
+  actual = combine(
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing),
+    Valid(1)
+  )
+  return assertEquals(actual, expected)
+})
+
+test("combine - ValidationError and NotValid", (_) => {
+  expected = ValidationError(
+    [InvalidBuildHash],
+    MadlibDotJsonCouldNotBeLoaded(""),
+    Nothing
+  )
+  actual = combine(
+    ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing),
+    NotValid([InvalidBuildHash], 1)
+  )
+  return assertEquals(actual, expected)
+})
+
+test("combine - ValidationError and ValidationError", (_) => {
+  expected = ValidationError(
+    [InvalidBuildHash, OutOfRangeVersion],
+    MadlibDotJsonCouldNotBeLoaded(""),
+    Just(4)
+  )
+  actual = combine(
+    ValidationError(
+      [InvalidBuildHash],
+      MadlibDotJsonCouldNotBeLoaded(""), Nothing
+    ),
+    ValidationError(
+      [OutOfRangeVersion],
+      MadlibDotJsonCouldNotBeLoaded(""), Just(4)
+    )
+  )
   return assertEquals(actual, expected)
 })

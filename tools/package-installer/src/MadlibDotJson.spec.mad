@@ -1,10 +1,13 @@
 import { assertEquals, test, ErrorWithMessage } from "TestTools"
-import { bichain, bad } from "Wish"
+import { bichain, bad, good } from "Wish"
 import { always } from "Function"
 import { Nothing } from "Maybe"
+import { OK, Response } from "Http"
+import { ByteArray } from "Binary"
+import { BinaryData } from "Data"
 
 import { Version } from "./Version"
-import { parse } from "./MadlibDotJson"
+import { load, parse } from "./MadlibDotJson"
 
 
 MADLIB_DOT_JSON_MINIMAL = `{
@@ -44,3 +47,35 @@ test("parse - wrong version", (_) => pipe(
     always(bad(ErrorWithMessage("Parsing should be failure!")))
   )
 )(MADLIB_DOT_JSON_WRONG_VERSION))
+
+test("load - success", (_) => {
+  config = {
+    readFile: always(good(MADLIB_DOT_JSON_MINIMAL)),
+    writeFile: (path, data) => good("OK"),
+    readDir: always(good([])),
+    exists: always(good("OK")),
+    exec: always(good("OK")),
+    get: always(good(Response({
+      data: BinaryData(ByteArray),
+      status: OK
+    })))
+  }
+
+  expected = {
+    name: "SamplePackage",
+    version: Version(0, 1, 7),
+    main: "src/Main.mad",
+    bin: Nothing,
+    importAliases: Nothing,
+    madlibVersion: Nothing,
+    dependencies: Nothing
+  }
+
+  return pipe(
+    load(config),
+    bichain(
+      always(bad(ErrorWithMessage("Parsing should be success!"))),
+      assertEquals($, expected)
+    )
+  )("madlib.json")
+})
