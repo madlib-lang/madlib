@@ -41,7 +41,10 @@ filesToExclude = [ "madlib_modules"
                  , "version.lock"
                  , "madlib.json"
                  , ".git"
+                 , ".DS_Store"
                  , "package-lock.json"
+                 , "."
+                 , ".."
                  ]
 
 getPackageContent :: FilePath -> IO BL.ByteString
@@ -60,10 +63,6 @@ generatePackageHash packageFolder = do
   packageContent <- getPackageContent packageFolder
 
   hash packageContent
-  -- let hashed  = hashlazy packageContent
-  --     hexHash = toLazyByteString . byteStringHex $ hashed
-
-  -- return $ BLChar8.unpack hexHash
 
 runGeneratePackageHash :: FilePath -> IO ()
 runGeneratePackageHash packagePath = do
@@ -75,4 +74,4 @@ runGeneratePackageHash packagePath = do
 
     Right _ -> do
       hash                 <- generatePackageHash canPath
-      putStrLn hash
+      putStr hash

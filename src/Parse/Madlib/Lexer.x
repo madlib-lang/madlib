@@ -145,7 +145,7 @@ tokens :-
   <jsxText> $jsxTextPopOut                        { jsxTextPopOut }
 {
 blackList :: Regex
-blackList = toRegex "\\`[\ \t \n]*(where|if|else|is|data|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
+blackList = toRegex "\\`[\ \t \n]*(where|if|else|is|type|alias|export|}|[a-zA-Z0-9]+[\ \t \n]*[=]+|[a-zA-Z0-9]+[\ \t \n]*(::)+).*"
 
 
 whiteList :: Regex

@@ -182,7 +182,7 @@ inferBody env (e : xs) = do
 -- should be applied to the env so that correct type can be inferred.
 updateBodyEnv :: Substitution -> Env -> Env
 updateBodyEnv s e =
-  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t || isTVar t then sc else apply s sc) (envVars e) }
+  e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t then sc else apply s sc) (envVars e) }
 
 
 

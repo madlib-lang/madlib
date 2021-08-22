@@ -4,8 +4,20 @@ import util from "util"
 {/Node}
 -#
 
+
+withColor :: String -> String -> String
+withColor = (color, v) => color ++ v ++"\x1b[0m"
+
+export red = withColor("\x1b[31m")
+export green = withColor("\x1b[32m")
+export yellow = withColor("\x1b[33m")
+
+
 log :: a -> a
 export log = (a) => (#- { console.log(a); return a; } -#)
+
+logAndPass :: String -> a -> a
+export logAndPass = (v, a) => (#- { console.log(v); return a; } -#)
 
 trace :: String -> a -> a
 export trace = (v, a) => (#- { console.log(v, a); return a; } -#)

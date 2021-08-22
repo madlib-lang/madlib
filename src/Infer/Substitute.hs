@@ -33,7 +33,9 @@ instance Substitutable t => Substitutable (Qual t) where
 
 instance Substitutable Type where
   apply _ tc@(TCon a fp   ) = tc
-  apply s t@( TVar a      ) = M.findWithDefault t a s
+  apply s t@( TVar a      ) = case M.findWithDefault t a s of
+    TRecord fields (Just _) -> TRecord fields (Just t)
+    t'               -> t'
   apply s (   t1 `TApp` t2) = apply s t1 `TApp` apply s t2
   apply s rec@(TRecord fields base) =
     let appliedFields          = apply s <$> fields

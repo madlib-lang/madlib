@@ -23,6 +23,8 @@ const areAllTestsDone = (testsToRun) => Object.values(testsToRun).reduce((all, c
 const areAllTestsSuccess = () => testCount() === successCount;
 
 const runTestSuite = (madlibFile, done) => {
+  let closed = false;
+
   testSuiteCount = testSuiteCount + 1;
   console.log(madlibFile);
 
@@ -40,6 +42,14 @@ const runTestSuite = (madlibFile, done) => {
 
 
   const forked = fork(jsFile)
+
+  forked.on("close", () => {
+    if (!closed) {
+      console.log("no test found!")
+      console.log("Test suite finished\n")
+      done()
+    }
+  })
 
   forked.on("message", msg => {
     switch(msg.reportType) {
@@ -62,6 +72,7 @@ const runTestSuite = (madlibFile, done) => {
           globalHitPoints = []
           console.log("Test suite finished\n")
           if (done) {
+            closed = true
             done()
           }
         }
@@ -72,7 +83,7 @@ const runTestSuite = (madlibFile, done) => {
 }
 
 
-const BLACKLIST_FOLDERS = ["node_modules", "madlib_modules"]
+const BLACKLIST_FOLDERS = ["node_modules", "madlib_modules", ".module_cache"]
 
 const isDirectory = source => fs.lstat(source).then(s => s.isDirectory())
 const getDirectories = source =>

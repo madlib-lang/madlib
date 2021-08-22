@@ -23,6 +23,7 @@ green = colorString("\x1b[32m")
 export type AssertionError a
   = AssertionError(a, a)
   | Error(a)
+  | ErrorWithMessage(String)
 
 
 addFunctionHit :: String -> String -> Lcov.LcovInfo -> Lcov.LcovInfo
