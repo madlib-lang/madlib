@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 972ebeb411d9d2ca149dab6113e11ff8b0dd2f804746f0ab0fe55e2f623c0097
+-- hash: 0fffb12676cebe8c498fe77a3c5a81dea7c5e6f50ac3d20111a58300421b0b2d
 
 name:           madlib
 version:        0.9.0
@@ -108,7 +108,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      MissingH
+      Glob
+    , MissingH
     , aeson
     , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
@@ -216,7 +217,8 @@ executable madlib
       src
   ghc-options: -threaded -funbox-strict-fields -O2 -optc-O2
   build-depends:
-      MissingH
+      Glob
+    , MissingH
     , aeson
     , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9
@@ -263,7 +265,8 @@ test-suite madlib-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      MissingH
+      Glob
+    , MissingH
     , aeson
     , aeson-pretty ==0.8.8
     , ansi-wl-pprint ==0.6.9

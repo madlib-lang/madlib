@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Run.PackageHash where
 
 import           System.Directory              as Dir
@@ -5,6 +6,7 @@ import           System.FilePath               ( joinPath )
 import qualified Data.ByteString.Lazy          as BL
 import qualified Data.List                     as List
 import           System.Exit
+import           System.FilePath.Glob
 
 import           MadlibDotJson.MadlibDotJson    as MadlibDotJson
 import           Run.CommandLine
@@ -13,25 +15,30 @@ import           Utils.Hash
 import           Utils.PathUtils
 
 
-getFileOrDirContent :: FilePath -> IO BL.ByteString
-getFileOrDirContent path = do
-  fileExists   <- Dir.doesFileExist path
-  folderExists <- Dir.doesDirectoryExist path
+getFileOrDirContent :: [FilePath] -> FilePath -> IO BL.ByteString
+getFileOrDirContent blackList path = do
+  canPath <- Dir.canonicalizePath path
+  if path `elem` blackList then
+    return BL.empty
+  else do
+    fileExists   <- Dir.doesFileExist path
+    folderExists <- Dir.doesDirectoryExist path
 
-  case (fileExists, folderExists) of
-    (_, True) -> do
-      entries          <- List.sort <$> Dir.listDirectory path
-      processedEntries <- mapM (getFileOrDirContent . joinPath . ([path] <>) . return) entries
-      return $ BL.concat processedEntries
+    case (fileExists, folderExists) of
+      (_, True) -> do
+        entries          <- List.sort <$> Dir.listDirectory path
+        processedEntries <- mapM (getFileOrDirContent blackList . joinPath . ([path] <>) . return) entries
+        return $ BL.concat processedEntries
 
-    (True, _) -> BL.readFile path
+      (True, _) -> BL.readFile path
 
-    _         -> return BL.empty
+      _         -> return BL.empty
 
 
 filesToExclude :: [FilePath]
 filesToExclude = [ "madlib_modules"
                  , "node_modules"
+                 , ".module_cache"
                  , ".run"
                  , ".docs"
                  , "build"
@@ -43,17 +50,38 @@ filesToExclude = [ "madlib_modules"
                  , ".git"
                  , ".DS_Store"
                  , "package-lock.json"
-                 , "."
-                 , ".."
                  ]
+
+dotMadlibIgnore :: FilePath
+dotMadlibIgnore = ".madlibignore"
+
+loadIgnoredPathsFromDotMadlibIgnore :: FilePath -> IO [FilePath]
+loadIgnoredPathsFromDotMadlibIgnore packageFolder = do
+  let dotMadlibIgnorePath = joinPath [packageFolder, dotMadlibIgnore]
+  fileExists   <- Dir.doesFileExist dotMadlibIgnorePath
+  if fileExists then do
+    dotMadlibIgnoreContent <- Prelude.readFile dotMadlibIgnorePath
+    let entries = filter (not . ("#" `List.isPrefixOf`)) $ lines dotMadlibIgnoreContent
+    return entries
+  else
+    return []
 
 getPackageContent :: FilePath -> IO BL.ByteString
 getPackageContent packageFolder = do
   folderExists <- Dir.doesDirectoryExist packageFolder
 
   if folderExists then do
-    entries          <- List.sort . filter (`notElem` filesToExclude) <$> listDirectory packageFolder
-    processedEntries <- mapM (getFileOrDirContent . joinPath . ([packageFolder] <>) . return) entries
+    filesToExcludeFromDotMadlibIgnore <- loadIgnoredPathsFromDotMadlibIgnore packageFolder
+    let filesToExcludeFromDotMadlibIgnore' =
+          (\case
+            '/':rest -> rest
+            path -> "**/" <> path
+          ) <$> filesToExcludeFromDotMadlibIgnore
+    let patterns = compile <$> (filesToExclude <> filesToExcludeFromDotMadlibIgnore')
+    excludedFiles <- concat <$> globDir patterns packageFolder
+
+    entries          <- List.sort <$> listDirectory packageFolder
+    processedEntries <- mapM (getFileOrDirContent excludedFiles . joinPath . ([packageFolder] <>) . return) entries
     return $ BL.concat processedEntries
   else
     return BL.empty
