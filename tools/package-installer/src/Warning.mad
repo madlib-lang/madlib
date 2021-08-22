@@ -6,6 +6,7 @@ export type Warning
   | InvalidVersionHash
   | InvalidBuildHash(String)
   | VersionDotLockMissing
+  | BuildHashCouldNotBeGenerated
 
 
 printWarning :: a -> Warning -> a
