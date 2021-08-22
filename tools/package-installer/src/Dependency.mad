@@ -9,6 +9,8 @@ import type { VersionRange } from "./Version"
 import { createRange, parse } from "./Version"
 import { sanitizeUrl } from "./URL"
 
+
+
 export alias Dependency = {
   description  :: String,
   url :: String,
@@ -16,6 +18,7 @@ export alias Dependency = {
   versionRange :: VersionRange,
   name :: Maybe String
 }
+
 
 
 dependencyParser :: J.Parser (List Dependency)
@@ -37,6 +40,7 @@ export dependencyParser = J.field(
     )
   )
 )
+
 
 parseDependencies :: String -> Wish String (List Dependency)
 parseDependencies = pipe(

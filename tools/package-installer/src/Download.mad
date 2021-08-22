@@ -13,9 +13,13 @@ import { andDo } from "Monad"
 import type { Dependency } from "./Dependency"
 import Constants from "./Constants"
 
+
+
 export type DownloadResult
   = Downloaded(Dependency)
   | DownloadError(String)
+
+
 
 cleanUp :: String -> Wish System.CommandError String
 cleanUp = pipe(

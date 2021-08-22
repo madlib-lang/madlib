@@ -17,6 +17,7 @@ import { always, identity, ifElse, not } from "Function"
 import { andDo } from "Monad"
 import { TextData } from "Data"
 import { gt } from "Compare"
+import { liftA3 } from "Applicative"
 
 
 import type { Context } from "./Context"
@@ -30,8 +31,7 @@ import { dependencyParser } from "./Dependency"
 import MadlibDotJson from "./MadlibDotJson"
 import VersionDotLock from "./VersionDotLock"
 import {
-  addError,
-  hasErrors,
+  fail,
   validate,
   getValidationValue,
   Valid,
@@ -104,7 +104,7 @@ readVersionDotLock :: Dependency -> SideEffect (Validate (Maybe VersionDotLock))
 readVersionDotLock = (dependency) => pipe(
   (d) => VersionDotLock.load(`${projectBaseUrl(d)}/version.lock`),
   map(pipe(Just, Valid)),
-  fromWish(always(NotValid([VersionDotLockMissing], [], Nothing)))
+  fromWish(always(NotValid([VersionDotLockMissing], Nothing)))
 )(dependency)
 
 
@@ -114,24 +114,20 @@ computeBuildHash = (dependency) => pipe(
     `madlib package generate-hash -i ${projectBaseUrl(dep)}`
   ),
   map(Valid),
-  fromWish(always(NotValid([BuildHashCouldNotBeGenerated], [], "")))
+  fromWish(always(NotValid([BuildHashCouldNotBeGenerated], "")))
 )(dependency)
 
 
 prepareValidationInput :: Dependency -> SideEffect (Validate ValidationInput)
 prepareValidationInput = (dependency) => pipe(
   readVersionDotLock,
-  map((vdl, cbh, mdj) =>
-    pipe(
-      map((versionDotLock, computedBuildHash, madlibDotJson) => ({
-        madlibDotJson,
-        versionDotLock,
-        computedVersionHash: hashVersion(madlibDotJson.version),
-        computedBuildHash
-      })),
-      ap($, cbh),
-      ap($, mdj)
-    )(vdl)
+  map(
+    liftA3((versionDotLock, computedBuildHash, madlibDotJson) => ({
+      madlibDotJson,
+      versionDotLock,
+      computedVersionHash: hashVersion(madlibDotJson.version),
+      computedBuildHash
+    }))
   ),
   ap($, computeBuildHash(dependency)),
   ap($, readMadlibDotJson(dependency))
@@ -169,7 +165,7 @@ copyPackageFromTmp = (validationResult) => {
       .name,
       where {
         Just(n) =>
-          addError(
+          fail(
             CopyToMadlibModulesFailed(
               `Failed to copy '${n}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
             ),
@@ -177,7 +173,7 @@ copyPackageFromTmp = (validationResult) => {
           )
     
         Nothing =>
-          addError(
+          fail(
             CopyToMadlibModulesFailed(
               `Failed to copy package downloaded from '${validationOutput.dependency.url}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
             ),
@@ -201,15 +197,14 @@ processValidationResult = (validation) => {
     Valid(a) =>
       IO.logAndPass(`  - ${IO.green("installed!")}`, a)
 
-    NotValid(warnings, errors, a) =>
+    NotValid(warnings, a) =>
       pipe(
         List.reduce(printWarning, a),
-        ifElse(
-          always(hasErrors(validation)),
-          List.reduce(printError, $, errors),
-          IO.logAndPass(`  - ${IO.green("installed!")}`)
-        )
+        IO.logAndPass(`  - ${IO.green("installed!")}`)
       )(warnings)
+
+    FatalError(err) =>
+      printError(validationOutput, err)
   }
 }
 
