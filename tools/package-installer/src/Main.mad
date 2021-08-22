@@ -1,8 +1,10 @@
 import type { Wish } from "Wish"
+import type { SideEffect } from "SideEffect"
 import type { Maybe } from "Maybe"
 
 import List from "List"
-import { bichain, chainRej, mapRej, parallel, fulfill } from "Wish"
+import { bad, bichain, chainRej, mapRej, parallel, fulfill } from "Wish"
+import { execute, fromWish, toWish } from "SideEffect"
 import IO from "IO"
 import { readFile, writeFile, exists, readDir } from "FileSystem"
 import Json from "Json"
@@ -34,7 +36,7 @@ import {
   InvalidBuildHash
 } from "./Validate"
 import Constants from "./Constants"
-import { downloadIfNotCached } from "./Download"
+import { downloadIfNotCached, Downloaded, DownloadError } from "./Download"
 import { hashVersion } from "./Hash"
 
 
@@ -50,7 +52,7 @@ copyPackageToMadlibModules = pipe(
 )
 
 
-getDependencies :: String -> Wish String (List Dependency)
+getDependencies :: String -> Wish () (List Dependency)
 getDependencies = pipe(
   Json.parse(dependencyParser),
   where {
@@ -61,7 +63,7 @@ getDependencies = pipe(
 )
 
 
-installNodeModules :: String -> Wish String String
+installNodeModules :: String -> Wish () String
 installNodeModules = (pkgName) => pipe(
   (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
   (path) => exists(`${path}package.json`) |> andDo(of(path)),
@@ -93,13 +95,10 @@ readMadlibDotJson = (dependency) => MadlibDotJson.load(
 
 readVersionDotLock :: Dependency -> Wish String (Maybe VersionDotLock)
 readVersionDotLock = (dependency) => pipe(
-  (d) => VersionDotLock.load(
-    `${projectBaseUrl(d)}/version.lock`
-  ),
+  (d) => VersionDotLock.load(`${projectBaseUrl(d)}/version.lock`),
   map(Just),
   chainRej((err) => {
-    IO.log(err)
-    IO.log(`The package downloaded from ${dependency.url} has not been packaged correctly and I do not recommend using it.`)
+    IO.log(`The package downloaded from: '${IO.grey(dependency.url)}' does not contain a version.lock file. I do not recommend using it as it means that it has not been packaged correctly and version information is corrupted. You should try to contact the package author or find another package that provides a similar affordance.`)
     return of(Nothing)
   })
 )(dependency)
@@ -132,10 +131,10 @@ printSuccess :: ValidationOutput -> ValidationOutput
 printSuccess = (validationOutput) => {
   where(validationOutput) {
     { dependency: { name: Just(n) }} =>
-      IO.log(`Package ${n} was successfully installed`)
+      IO.log(IO.green(`Package ${n} was successfully installed`))
 
     _ =>
-      IO.log(`Package downloaded from ${validationOutput.dependency.url} was successfully installed`)
+      IO.log(IO.green(`Package downloaded from ${validationOutput.dependency.url} was successfully installed`))
   }
 
   return validationOutput
@@ -191,7 +190,7 @@ processValidationResult = where {
 }
 
 
-processDependency :: <Context, List Dependency> -> Dependency -> Wish String <Context, List Dependency>
+processDependency :: <Context, List Dependency> -> Dependency -> Wish () <Context, List Dependency>
 processDependency = (contextAndNextDeps, dependency) => pipe(
   prepareValidationInput,
   chain(
@@ -218,7 +217,9 @@ processDependency = (contextAndNextDeps, dependency) => pipe(
           >
         : <validationResult.context, Tuple.snd(contextAndNextDeps)>
     )
-  )
+  ),
+  map(IO.logAndPass("")),
+  chainRej(pipe(IO.red, IO.logAndPass($, of(contextAndNextDeps))))
 )(dependency)
 
 
@@ -232,10 +233,25 @@ filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
 )(dependencies)
 
 
-processDependencies :: Context -> List Dependency -> Wish String <Context, List Dependency>
+processDependencies :: Context -> List Dependency -> Wish () <Context, List Dependency>
 processDependencies = (context, dependencies) => pipe(
   filterAlreadyInstalledDependencies(context),
-  pipe(map(downloadIfNotCached), parallel),
+  pipe(
+    map(downloadIfNotCached),
+    parallel
+  ),
+  map(
+    pipe(
+      List.filter(where {
+        DownloadError(err) => IO.logAndPass(IO.red(`${err}\n`), false)
+
+        Downloaded(_) => true
+      }),
+      map(where {
+        Downloaded(a) => a
+      })
+    )
+  ),
   chain(List.reduceM(processDependency, <context, []>)),
   chain(
     where {
@@ -249,16 +265,25 @@ processDependencies = (context, dependencies) => pipe(
 )(dependencies)
 
 
-installPackages :: Context -> String -> Wish String (List String)
+installedDependencyFolders :: Wish () (List String)
+installedDependencyFolders = pipe(
+  readDir,
+  mapRej(always(()))
+)(Constants.MADLIB_MODULES_PATH)
+
+
+installPackages :: Context -> String -> SideEffect (List String)
 installPackages = (context, madlibDotJsonPath) => pipe(
   readFile,
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(Constants.MADLIB_MODULES_PATH)),
-  chain(getDependencies),
-  chain(processDependencies(context)),
-  andDo(readDir(Constants.MADLIB_MODULES_PATH)),
-  chain(pipe(map(installNodeModules), parallel)),
-  map(always([""]))
+  bichain(always(bad(())), pipe(
+    getDependencies,
+    chain(processDependencies(context)),
+    andDo(installedDependencyFolders),
+    chain(pipe(map(installNodeModules), parallel))
+  )),
+  fromWish(always([]))
 )(madlibDotJsonPath)
 
 
@@ -282,15 +307,23 @@ prepare = (packageDotJsonPath) => pipe(
 )(packageDotJsonPath)
 
 
+restorePackageDotJson :: String -> Wish () String
+restorePackageDotJson = pipe(
+  (content) => writeFile("package.json", TextData(content)),
+  mapRej(always(()))
+)
+
+
 IO.log("Installing dependencies ...")
 
 pipe(
   prepare,
   bichain(
-    pipe(always("madlib.json"), installPackages(initialContext)),
+    pipe(always("madlib.json"), installPackages(initialContext), toWish),
     (packageDotJsonContent) => pipe(
       installPackages(initialContext),
-      chain((x) => writeFile("package.json", TextData(packageDotJsonContent)) |> andDo(of(x)))
+      toWish,
+      chain((x) => restorePackageDotJson(packageDotJsonContent) |> andDo(of(x)))
     )("madlib.json")
   ),
   fulfill(IO.log, identity)

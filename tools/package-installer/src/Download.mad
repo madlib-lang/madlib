@@ -9,7 +9,9 @@ import { andDo } from "Monad"
 import type { Dependency } from "./Dependency"
 import Constants from "./Constants"
 
-
+export type DownloadResult
+  = Downloaded(Dependency)
+  | DownloadError(String)
 
 cleanUp :: String -> Wish System.CommandError String
 cleanUp = pipe(
@@ -49,20 +51,25 @@ extractArchive = (url) => pipe(
 )(url)
 
 
-downloadPackage :: Dependency -> Wish String Dependency
+downloadPackage :: Dependency -> Wish () DownloadResult
 downloadPackage = (dependency) => pipe(
   .url,
   Http.get,
   map(where { Http.Response({ data }) => data }),
-  mapRej(always(`Package from "${dependency.url}" failed to be downloaded`)),
-  chain(writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
-  andDo(extractArchive(dependency.sanitizedUrl)),
-  andDo(of(dependency))
+  bichain(
+    always(of(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
+    pipe(
+      writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
+      andDo(extractArchive(dependency.sanitizedUrl)),
+      andDo(of(Downloaded(dependency)))
+    )
+  ),
+  mapRej(always(()))
 )(dependency)
 
 
-downloadIfNotCached :: Dependency -> Wish String Dependency
+downloadIfNotCached :: Dependency -> Wish () DownloadResult
 export downloadIfNotCached = (dependency) => pipe(
   (dep) => exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
-  bichain(always(downloadPackage(dependency)), always(of(dependency)))
+  bichain(always(downloadPackage(dependency)), always(of(Downloaded(dependency))))
 )(dependency)

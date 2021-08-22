@@ -1,7 +1,6 @@
 import type { Maybe } from "Maybe"
 import { equals, ifElse, not, always } from "Function"
 import { Just, Nothing } from "Maybe"
-import IO from "IO"
 
 import type { Context, VersionInfo } from "./Context"
 import type { Dependency } from "./Dependency"
@@ -30,6 +29,7 @@ export type Warning
   = OutOfRangeVersion
   | InvalidVersionHash
   | InvalidBuildHash(String)
+// = OutOfRangeVersion(String, VersionInfo, VersionRange)
 
 export type ValidationResult a
   = Validated(a)
@@ -80,15 +80,18 @@ buildGoodRangeResult = (madlibDotJson, versionInfo, versionRange) => Validated({
 
 
 buildBadRangeResult :: MadlibDotJson -> VersionInfo -> VersionRange -> ValidationResult RangeOutput
-buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotGood([OutOfRangeVersion], {
-  versionInfo: {
-    version: versionInfo.version == Nothing
-      ? Just(madlibDotJson.version)
-      : versionInfo.version,
-    range: versionRange
-  },
-  shouldCopy: versionInfo.version == Nothing,
-})
+buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotGood(
+  [OutOfRangeVersion],
+  {
+    versionInfo: {
+      version: versionInfo.version == Nothing
+        ? Just(madlibDotJson.version)
+        : versionInfo.version,
+      range: versionRange
+    },
+    shouldCopy: versionInfo.version == Nothing,
+  }
+)
 
 
 buildValidationOutput :: Context -> MadlibDotJson -> Dependency -> ValidationResult RangeOutput -> ValidationResult ValidationOutput
@@ -136,7 +139,7 @@ validateHashes = (validationInput) => {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedBuildHash), not),
-        always(NotGood([IO.logAndPass(`computed: ${validationInput.computedBuildHash} - version.lock: ${versionDotLock.buildHash}`, InvalidBuildHash(validationInput.madlibDotJson.name))], ())),
+        always(NotGood([InvalidBuildHash(validationInput.madlibDotJson.name)], ())),
         always(Validated(())),
         versionDotLock.buildHash
       )

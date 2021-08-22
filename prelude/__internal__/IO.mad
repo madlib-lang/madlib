@@ -11,6 +11,7 @@ withColor = (color, v) => color ++ v ++"\x1b[0m"
 export red = withColor("\x1b[31m")
 export green = withColor("\x1b[32m")
 export yellow = withColor("\x1b[33m")
+export grey = withColor("\x1b[90m")
 
 
 log :: a -> a

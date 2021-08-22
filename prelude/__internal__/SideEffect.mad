@@ -1,0 +1,99 @@
+import {} from "Monad"
+import type { Wish } from "Wish"
+import { Wish } from "Wish"
+
+
+/**
+ * Wish represents an async computation that needs to be fulfilled. It is
+ * cold and will only be run when fulfilled.
+ */
+
+export type SideEffect a = SideEffect((a -> b) -> ())
+
+/**
+ * The functor instance of SideEffect provides a way to map over the value it contains.
+ *
+ * @since 0.10.0
+ * @example
+ * map((x) => x + 1, of(3)) // good(4)
+ */
+instance Functor SideEffect {
+  map = (f, m) => SideEffect((goodCB) =>
+    where(m) { SideEffect(run) => run((x) => (goodCB(f(x)))) }
+  )
+}
+
+
+instance Applicative SideEffect {
+  pure = (a) => SideEffect((goodCB) => goodCB(a))
+
+  ap = (mf, m) => SideEffect((goodCB) => where(<mf, m>) {
+    <SideEffect(runMF), SideEffect(runM)> =>
+      runM(
+        (x) => runMF(
+          (f) => goodCB(f(x))
+        )
+      )
+    }
+  )
+}
+
+instance Monad SideEffect {
+  of = pure
+
+  chain = (f, m) => SideEffect((goodCB) => where(m) {
+    SideEffect(run) => run((x) => where(f(x)) { SideEffect(r) => r(goodCB) })
+  })
+}
+
+fromWish :: (e -> a) -> Wish e a -> SideEffect a
+export fromWish = (recover, wish) => SideEffect((cb) => where(wish) {
+  Wish(run) => run(pipe(recover, cb), cb)
+})
+
+toWish :: SideEffect a -> Wish e a
+export toWish = (sideEffect) => Wish((bad, good) => where(sideEffect) {
+  SideEffect(run) => run(good)
+})
+
+fail :: (a -> e) -> SideEffect a -> Wish e b
+export fail = (err, sideEffect) => Wish((bad, good) => where(sideEffect) {
+  SideEffect(run) => run(pipe(err, bad))
+})
+
+
+getSideEffectCB = where { SideEffect(run) => run }
+
+parallel :: List (SideEffect a) -> SideEffect (List a)
+export parallel = (effects) => (
+  SideEffect((cb) => (#- {
+    const l = effects.length
+    let ok = 0;
+    const out = new Array(l);
+    const next = j => (j === l && cb(out))
+    const fork = (w, j) => (getSideEffectCB(w)
+      (x => (out[j] = x, next(++ok))
+    ));
+    effects.forEach(fork);
+
+    if (l === 0) {
+      cb([])
+    }
+  } -#))
+)
+
+
+execute :: (a -> b) -> SideEffect a -> ()
+export execute = (goodCB, m) => {
+  where(m) {
+    SideEffect(run) => #- setTimeout(() => run(goodCB), 0); -#
+  }
+
+  return ()
+}
+
+
+after :: Number -> a -> SideEffect a
+export after = (time, a) => SideEffect((goodCB) => #- {
+  setTimeout(() => goodCB(a), time);
+} -#)

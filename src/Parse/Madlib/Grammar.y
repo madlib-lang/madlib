@@ -12,6 +12,8 @@ import qualified AST.Source           as Src
 import           Explain.Location
 import           Explain.Meta
 import           Run.Target
+import Debug.Trace
+import Text.Show.Pretty
 }
 
 %name parseMadlib ast
@@ -186,10 +188,10 @@ rComa :: { [TokenClass] }
 
 
 typedecl :: { Src.TypeDecl }
-  : 'type' name typeParams rEq adtConstructors          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $5)) Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $5, Src.adtexported = False } }
-  | 'export' 'type' name typeParams rEq adtConstructors %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $6, Src.adtexported = True } }
-  | 'alias' name typeParams rEq typings                 %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $5)) Src.Alias { Src.aliasname = strV $2, Src.aliasparams = $3, Src.aliastype = $5, Src.aliasexported = False } }
-  | 'export' 'alias' name typeParams rEq typings        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $6)) Src.Alias { Src.aliasname = strV $3, Src.aliasparams = $4, Src.aliastype = $6, Src.aliasexported = True } }
+  : 'type' name typeParams rets '=' adtConstructors          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $6)) Src.ADT { Src.adtname = strV $2, Src.adtparams = $3, Src.adtconstructors = $6, Src.adtexported = False } }
+  | 'export' 'type' name typeParams rets '=' adtConstructors %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $ last $7)) Src.ADT { Src.adtname = strV $3, Src.adtparams = $4, Src.adtconstructors = $7, Src.adtexported = True } }
+  | 'alias' name typeParams rets '=' typings                 %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $6)) Src.Alias { Src.aliasname = strV $2, Src.aliasparams = $3, Src.aliastype = $6, Src.aliasexported = False } }
+  | 'export' 'alias' name typeParams rets '=' typings        %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $7)) Src.Alias { Src.aliasname = strV $3, Src.aliasparams = $4, Src.aliastype = $7, Src.aliasexported = True } }
 
 typeParams :: { [Src.Name] }
   : name typeParams %shift { strV $1 : $2 }
