@@ -87,12 +87,24 @@ generateShouldBeTypedOrAboveErrors env = foldM_
 
 shouldSkip :: Env -> Exp -> Bool
 shouldSkip env e = isMethod env e || case e of
-  Untyped _ _ -> True
-  Solved _ _ (Assignment _ shouldHaveAbs) -> hasAbs shouldHaveAbs
-  Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs))) -> hasAbs shouldHaveAbs
-  Solved _ _ (TypedExp (Solved _ _ (Assignment _ shouldHaveAbs)) _) -> hasAbs shouldHaveAbs
-  Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs)))) _) -> hasAbs shouldHaveAbs
-  _ -> False
+  Untyped _ _ ->
+    True
+
+  Solved _ _ (Assignment _ shouldHaveAbs) ->
+    hasAbs shouldHaveAbs
+
+  Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs))) ->
+    hasAbs shouldHaveAbs
+
+  Solved _ _ (TypedExp (Solved _ _ (Assignment _ shouldHaveAbs)) _ _) ->
+    hasAbs shouldHaveAbs
+
+  Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs)))) _ _) ->
+    hasAbs shouldHaveAbs
+
+  _ ->
+    False
+
 
 hasAbs :: Exp -> Bool
 hasAbs e = case e of
@@ -264,7 +276,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
       collect env topLevelAssignments currentTopLevelAssignment foundNames (Just name) globalScope localScope exp
 
-    (Solved tipe area (TypedExp exp _)) ->
+    (Solved tipe area (TypedExp exp _ _)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
     (Solved tipe area (Export exp)) ->

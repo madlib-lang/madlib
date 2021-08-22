@@ -88,6 +88,11 @@ Right
                                            (LNum "1"))
                                         True)
                                  ]))))))
+               (Untyped
+                  (Area (Loc 7 1 8) (Loc 23 1 24))
+                  (TRArr
+                     (Untyped (Area (Loc 7 1 8) (Loc 13 1 14)) (TRSingle "Number"))
+                     (Untyped (Area (Loc 17 1 18) (Loc 23 1 24)) (TRSingle "Number"))))
                (Forall
                   []
                   ([] :=>

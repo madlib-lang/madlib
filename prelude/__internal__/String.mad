@@ -36,6 +36,9 @@ export lines = split("\n")
 mapChars :: (String -> String) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
 
+reduceChars :: (a -> String -> a) -> a -> String -> a
+export reduceChars = (f, initial, s) => #- s.split("").reduce((a, b) => f(a)(b), initial) -#
+
 slice :: Number -> Number -> String -> String
 export slice = (start, end, s) => #- s.slice(start, end) -#
 
@@ -59,6 +62,15 @@ export drop = (n, s) => slice(n, len(s), s)
 
 dropLast :: Number -> String -> String
 export dropLast = (n, s) => slice(0, -n, s)
+
+trim :: String -> String
+export trim = (s) => #- s.trim() -#
+
+trimStart :: String -> String
+export trimStart = (s) => #- s.trimStart() -#
+
+trimEnd :: String -> String
+export trimEnd = (s) => #- s.trimEnd() -#
 
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the

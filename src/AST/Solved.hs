@@ -123,7 +123,7 @@ data Exp_ = LNum String
           | NameExport Name
           | TypeExport Name
           | Var Name
-          | TypedExp Exp Ty.Scheme
+          | TypedExp Exp Typing Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | Record [Field]
@@ -182,7 +182,7 @@ isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
   (Solved _ _ (Export _)) -> True
 
-  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) -> True
 
   _ -> False
 
@@ -208,7 +208,7 @@ isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
-  (Solved _ _ (TypedExp _ _)) -> True
+  (Solved _ _ (TypedExp _ _ _)) -> True
   _                           -> False
 
 getNameExportName :: Exp -> Name
@@ -220,7 +220,7 @@ isExport :: Exp -> Bool
 isExport a = case a of
   (Solved _ _ (Export _)) -> True
 
-  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _)) -> True
+  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) -> True
 
   (Solved _ _ (NameExport _)) -> True
 
@@ -233,15 +233,20 @@ getValue (Untyped _ a ) = a
 getExpName :: Exp -> Maybe String
 getExpName (Untyped _ _)    = Nothing
 getExpName (Solved _ _ exp) = case exp of
-  Assignment name _ -> return name
+  Assignment name _ ->
+    return name
 
-  TypedExp (Solved _ _ (Assignment name _)) _ -> return name
+  TypedExp (Solved _ _ (Assignment name _)) _ _ ->
+    return name
 
-  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ -> return name
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ _ ->
+    return name
 
-  Export (Solved _ _ (Assignment name _)) -> return name
+  Export (Solved _ _ (Assignment name _)) ->
+    return name
 
-  _                 -> Nothing
+  _                 ->
+    Nothing
 
 
 getInstanceMethods :: Instance -> [Exp]
@@ -270,6 +275,6 @@ bundleExports :: Exp -> (Name, Exp)
 bundleExports e'@(Solved _ _ exp) = case exp of
   Export (Solved _ _ (Assignment n _)) -> (n, e')
 
-  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ -> (n, e')
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ _ -> (n, e')
 
   NameExport n -> (n, e')

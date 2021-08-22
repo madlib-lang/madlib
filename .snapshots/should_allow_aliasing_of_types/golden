@@ -813,6 +813,36 @@ Right
                                                       True)
                                                ])
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 1005 57 12) (Loc 1036 57 43))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 1005 57 12) (Loc 1011 57 18))
+                               (TRArr
+                                  (Untyped (Area (Loc 1005 57 12) (Loc 1006 57 13)) (TRSingle "e"))
+                                  (Untyped
+                                     (Area (Loc 1010 57 17) (Loc 1011 57 18)) (TRSingle "f"))))
+                            (Untyped
+                               (Area (Loc 1016 57 23) (Loc 1036 57 43))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 1016 57 23) (Loc 1024 57 31))
+                                     (TRComp
+                                        "Wish"
+                                        [ Untyped
+                                            (Area (Loc 1021 57 28) (Loc 1022 57 29)) (TRSingle "e")
+                                        , Untyped
+                                            (Area (Loc 1023 57 30) (Loc 1024 57 31)) (TRSingle "a")
+                                        ]))
+                                  (Untyped
+                                     (Area (Loc 1028 57 35) (Loc 1036 57 43))
+                                     (TRComp
+                                        "Wish"
+                                        [ Untyped
+                                            (Area (Loc 1033 57 40) (Loc 1034 57 41)) (TRSingle "f")
+                                        , Untyped
+                                            (Area (Loc 1035 57 42) (Loc 1036 57 43)) (TRSingle "a")
+                                        ]))))))
                       (Forall
                          [ Star , Star , Star ]
                          ([] :=>
@@ -1994,6 +2024,43 @@ Right
                                                       True)
                                                ])
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 1189 67 14) (Loc 1227 67 52))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 1189 67 14) (Loc 1202 67 27))
+                               (TRArr
+                                  (Untyped (Area (Loc 1189 67 14) (Loc 1190 67 15)) (TRSingle "e"))
+                                  (Untyped
+                                     (Area (Loc 1194 67 19) (Loc 1202 67 27))
+                                     (TRComp
+                                        "Wish"
+                                        [ Untyped
+                                            (Area (Loc 1199 67 24) (Loc 1200 67 25)) (TRSingle "f")
+                                        , Untyped
+                                            (Area (Loc 1201 67 26) (Loc 1202 67 27)) (TRSingle "a")
+                                        ]))))
+                            (Untyped
+                               (Area (Loc 1207 67 32) (Loc 1227 67 52))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 1207 67 32) (Loc 1215 67 40))
+                                     (TRComp
+                                        "Wish"
+                                        [ Untyped
+                                            (Area (Loc 1212 67 37) (Loc 1213 67 38)) (TRSingle "e")
+                                        , Untyped
+                                            (Area (Loc 1214 67 39) (Loc 1215 67 40)) (TRSingle "a")
+                                        ]))
+                                  (Untyped
+                                     (Area (Loc 1219 67 44) (Loc 1227 67 52))
+                                     (TRComp
+                                        "Wish"
+                                        [ Untyped
+                                            (Area (Loc 1224 67 49) (Loc 1225 67 50)) (TRSingle "f")
+                                        , Untyped
+                                            (Area (Loc 1226 67 51) (Loc 1227 67 52)) (TRSingle "a")
+                                        ]))))))
                       (Forall
                          [ Star , Star , Star ]
                          ([] :=>
@@ -2256,6 +2323,17 @@ Right
                                                      ]))
                                                True)
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 1443 81 9) (Loc 1456 81 22))
+                         (TRArr
+                            (Untyped (Area (Loc 1443 81 9) (Loc 1444 81 10)) (TRSingle "a"))
+                            (Untyped
+                               (Area (Loc 1448 81 14) (Loc 1456 81 22))
+                               (TRComp
+                                  "Wish"
+                                  [ Untyped (Area (Loc 1453 81 19) (Loc 1454 81 20)) (TRSingle "e")
+                                  , Untyped (Area (Loc 1455 81 21) (Loc 1456 81 22)) (TRSingle "a")
+                                  ]))))
                       (Forall
                          [ Star , Star ]
                          ([] :=>
@@ -2487,6 +2565,17 @@ Right
                                                      ]))
                                                True)
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 1521 84 8) (Loc 1534 84 21))
+                         (TRArr
+                            (Untyped (Area (Loc 1521 84 8) (Loc 1522 84 9)) (TRSingle "e"))
+                            (Untyped
+                               (Area (Loc 1526 84 13) (Loc 1534 84 21))
+                               (TRComp
+                                  "Wish"
+                                  [ Untyped (Area (Loc 1531 84 18) (Loc 1532 84 19)) (TRSingle "e")
+                                  , Untyped (Area (Loc 1533 84 20) (Loc 1534 84 21)) (TRSingle "a")
+                                  ]))))
                       (Forall
                          [ Star , Star ]
                          ([] :=>
@@ -2932,6 +3021,36 @@ Right
                                                      ]))
                                                True)
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 1662 95 13) (Loc 1695 95 46))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 1662 95 13) (Loc 1676 95 27))
+                               (TRComp
+                                  "List"
+                                  [ Untyped
+                                      (Area (Loc 1668 95 19) (Loc 1676 95 27))
+                                      (TRComp
+                                         "Wish"
+                                         [ Untyped
+                                             (Area (Loc 1673 95 24) (Loc 1674 95 25)) (TRSingle "e")
+                                         , Untyped
+                                             (Area (Loc 1675 95 26) (Loc 1676 95 27)) (TRSingle "a")
+                                         ])
+                                  ]))
+                            (Untyped
+                               (Area (Loc 1681 95 32) (Loc 1695 95 46))
+                               (TRComp
+                                  "Wish"
+                                  [ Untyped (Area (Loc 1686 95 37) (Loc 1687 95 38)) (TRSingle "e")
+                                  , Untyped
+                                      (Area (Loc 1689 95 40) (Loc 1695 95 46))
+                                      (TRComp
+                                         "List"
+                                         [ Untyped
+                                             (Area (Loc 1694 95 45) (Loc 1695 95 46)) (TRSingle "a")
+                                         ])
+                                  ]))))
                       (Forall
                          [ Star , Star ]
                          ([] :=>
@@ -3467,6 +3586,45 @@ Right
                                                       ])
                                                ])
                                         ]))))))
+                      (Untyped
+                         (Area (Loc 2086 112 13) (Loc 2123 112 50))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 2086 112 13) (Loc 2092 112 19))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 2086 112 13) (Loc 2087 112 14)) (TRSingle "e"))
+                                  (Untyped
+                                     (Area (Loc 2091 112 18) (Loc 2092 112 19)) (TRSingle "f"))))
+                            (Untyped
+                               (Area (Loc 2098 112 25) (Loc 2123 112 50))
+                               (TRArr
+                                  (Untyped
+                                     (Area (Loc 2098 112 25) (Loc 2104 112 31))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 2098 112 25) (Loc 2099 112 26))
+                                           (TRSingle "a"))
+                                        (Untyped
+                                           (Area (Loc 2103 112 30) (Loc 2104 112 31))
+                                           (TRSingle "b"))))
+                                  (Untyped
+                                     (Area (Loc 2109 112 36) (Loc 2123 112 50))
+                                     (TRArr
+                                        (Untyped
+                                           (Area (Loc 2109 112 36) (Loc 2117 112 44))
+                                           (TRComp
+                                              "Wish"
+                                              [ Untyped
+                                                  (Area (Loc 2114 112 41) (Loc 2115 112 42))
+                                                  (TRSingle "e")
+                                              , Untyped
+                                                  (Area (Loc 2116 112 43) (Loc 2117 112 44))
+                                                  (TRSingle "a")
+                                              ]))
+                                        (Untyped
+                                           (Area (Loc 2121 112 48) (Loc 2123 112 50))
+                                           (TRSingle "()"))))))))
                       (Forall
                          [ Star , Star , Star , Star ]
                          ([] :=>

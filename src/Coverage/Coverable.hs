@@ -31,10 +31,10 @@ instance Collectable Exp where
     Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    TypedExp (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) _ ->
+    TypedExp (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) _ _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))))) _ ->
+    TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))))) _ _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
     Assignment name e -> if isFunctionType t
@@ -43,10 +43,10 @@ instance Collectable Exp where
     Export (Solved _ _ (Assignment name e)) -> if isFunctionType t
       then [Function { line = l, name = name }, Line { line = l }] <> collect e
       else [] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ -> if isFunctionType t
+    TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ -> if isFunctionType t
+    TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [] <> collect e
 
@@ -54,7 +54,7 @@ instance Collectable Exp where
     Abs    _   body       -> concat (collect <$> body)
     Access rec field      -> collect rec <> collect field
     Export e              -> collect e
-    TypedExp e _          -> collect e
+    TypedExp e _ _        -> collect e
     TupleConstructor es   -> concat $ collect <$> es
     If cond good bad      -> collect cond <> collect good <> collect bad
     Where       e iss     -> [Line { line = l }] <> collect e <> concat (collect <$> iss)

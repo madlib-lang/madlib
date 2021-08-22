@@ -8,6 +8,7 @@ import           Run.Target
 import qualified AST.Canonical                 as Can
 import qualified AST.Source                    as Src
 import           Canonicalize.JSExp
+import           Canonicalize.Typing
 import           Canonicalize.CanonicalM
 import qualified Canonicalize.Env              as E
 import           Canonicalize.Typing
@@ -86,7 +87,8 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.TypedExp exp typing -> do
       exp'   <- canonicalize env target exp
       scheme <- typingToScheme env typing
-      return $ Can.Canonical area (Can.TypedExp exp' scheme)
+      typing' <- canonicalizeTyping typing
+      return $ Can.Canonical area (Can.TypedExp exp' typing' scheme)
 
     Src.ListConstructor items -> do
       items' <- mapM (canonicalize env target) items

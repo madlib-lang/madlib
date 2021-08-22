@@ -154,6 +154,34 @@ Right
                                             (JSExp "xs.sort((a, b) => fn(a)(b))")
                                         ])
                                  ]))))))
+               (Untyped
+                  (Area (Loc 486 26 12) (Loc 533 26 59))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 486 26 12) (Loc 512 26 38))
+                        (TRArr
+                           (Untyped (Area (Loc 486 26 12) (Loc 487 26 13)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 491 26 17) (Loc 512 26 38))
+                              (TRArr
+                                 (Untyped (Area (Loc 491 26 17) (Loc 492 26 18)) (TRSingle "a"))
+                                 (Untyped
+                                    (Area (Loc 496 26 22) (Loc 512 26 38))
+                                    (TRSingle "ComparisonResult"))))))
+                     (Untyped
+                        (Area (Loc 517 26 43) (Loc 533 26 59))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 517 26 43) (Loc 523 26 49))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 522 26 48) (Loc 523 26 49)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 527 26 53) (Loc 533 26 59))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 532 26 58) (Loc 533 26 59)) (TRSingle "a")
+                                 ]))))))
                (Forall
                   [ Star ]
                   ([] :=>
@@ -224,6 +252,33 @@ Right
                         ([] :=> TVar (TV "j35" Star))
                         (Area (Loc 648 30 9) (Loc 652 30 13))
                         (JSExp ""))))
+               (Untyped
+                  (Area (Loc 607 29 11) (Loc 639 29 43))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 607 29 11) (Loc 618 29 22))
+                        (TRArr
+                           (Untyped (Area (Loc 607 29 11) (Loc 608 29 12)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 612 29 16) (Loc 618 29 22))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 617 29 21) (Loc 618 29 22)) (TRSingle "b")
+                                 ]))))
+                     (Untyped
+                        (Area (Loc 623 29 27) (Loc 639 29 43))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 623 29 27) (Loc 629 29 33))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 628 29 32) (Loc 629 29 33)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 633 29 37) (Loc 639 29 43))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 638 29 42) (Loc 639 29 43)) (TRSingle "b")
+                                 ]))))))
                (Forall
                   [ Star , Star ]
                   ([] :=>
