@@ -8,8 +8,17 @@ import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
 import type { VersionRange } from "./Version"
+import type { Warning } from "./Warning"
+import type { Error } from "./Error"
+
 import { findByName, updateEntry } from "./Context"
 import { intersectRanges, isInRange } from "./Version"
+import {
+  InvalidBuildHash,
+  OutOfRangeVersion,
+  VersionDotLockMissing,
+  InvalidVersionHash
+} from "./Warning"
 
 
 export alias ValidationInput = {
@@ -19,6 +28,7 @@ export alias ValidationInput = {
   computedVersionHash :: String
 }
 
+
 export alias ValidationOutput = {
   context :: Context,
   shouldCopy :: Boolean,
@@ -26,20 +36,11 @@ export alias ValidationOutput = {
   madlibDotJson :: MadlibDotJson
 }
 
-export type Warning
-  = OutOfRangeVersion
-  | InvalidVersionHash
-  | InvalidBuildHash(String)
-  | VersionDotLockMissing
-
-
-export type Error
-  = CopyToMadlibModulesFailed(String)
-
 
 export type Validate a
   = Valid(a)
   | NotValid(List Warning, List Error, a)
+  | FatalError(Error)
 
 
 alias RangeOutput = {
@@ -48,8 +49,64 @@ alias RangeOutput = {
 }
 
 
-combineResults :: Validate a -> Validate b -> Validate b
-combineResults = (a, b) => where(<a, b>) {
+instance Functor Validate {
+  map = (fn, m) => where(m) {
+    Valid(a) =>
+      Valid(fn(a))
+
+    NotValid(warnings, errors, a) =>
+      NotValid(warnings, errors, fn(a))
+
+    FatalError(e) =>
+      FatalError(e)
+  }
+}
+
+instance Applicative Validate {
+  pure = (a) => Valid(a)
+
+  ap = (fn, m) => where(<fn, m>) {
+    <Valid(f), Valid(a)> =>
+      Valid(f(a))
+
+    <NotValid(warnings, errors, f), Valid(a)> =>
+      NotValid(warnings, errors, f(a))
+
+    <Valid(f), NotValid(warnings, errors, a)> =>
+      NotValid(warnings, errors, f(a))
+
+    <NotValid(warningsA, errorsA, f), NotValid(warningsB, errorsB, a)> =>
+      NotValid(mappend(warningsA, warningsB), mappend(errorsA, errorsB), f(a))
+
+    <FatalError(err), _> =>
+      FatalError(err)
+
+    <_, FatalError(err)> =>
+      FatalError(err)
+  }
+}
+
+instance Monad Validate {
+  of = pure
+
+  chain = (fn, m) => where(m) {
+    Valid(a) =>
+      fn(a)
+
+    NotValid(_, _, a) =>
+      pipe(
+        fn,
+        combine(m)
+      )(a)
+
+    FatalError(e) =>
+      FatalError(e)
+  }
+}
+
+
+combine :: Validate a -> Validate b -> Validate b
+combine = (a, b) => where(<a, b>) {
   <Valid(_), _> =>
     b
 
@@ -200,23 +257,12 @@ validateHashes = (validationInput) => {
 
   return setValidationResultValue(
     validationInput,
-    combineResults(validatedBuildHash, validatedVersionHash)
+    combine(validatedBuildHash, validatedVersionHash)
   )
 }
 
-validate :: Context -> Dependency -> Maybe ValidationInput -> Validate ValidationOutput
-export validate = (context, dependency, validationInput) => where(validationInput) {
-  Just(vi) =>
-    _validate(context, dependency, vi)
-  
-  // Nothing =>
-    
-}
-
-_validate :: Context -> Dependency -> ValidationInput -> Validate ValidationOutput
-_validate = (context, dependency, validationInput) => {
-  validatedHashes = validateHashes(validationInput)
-  validatedVersion = validateVersion(context, dependency, validationInput)
-
-  return combineResults(validatedHashes, validatedVersion)
-}
+validate :: Context -> Dependency -> Validate ValidationInput -> Validate ValidationOutput
+export validate = (context, dependency, validationInput) => pipe(
+  chain(validateHashes),
+  chain(validateVersion(context, dependency))
+)(validationInput)

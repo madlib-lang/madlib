@@ -1,0 +1,27 @@
+import IO from "IO"
+
+
+export type Warning
+  = OutOfRangeVersion
+  | InvalidVersionHash
+  | InvalidBuildHash(String)
+  | VersionDotLockMissing
+
+
+printWarning :: a -> Warning -> a
+export printWarning = (a, warning) => where(warning) {
+  OutOfRangeVersion =>
+    IO.logAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
+
+  InvalidVersionHash =>
+    IO.logAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
+
+  InvalidBuildHash(pkgName) =>
+    IO.logAndPass(
+      `  - ${IO.yellow("Build hash is corrupted for package '" ++ pkgName ++ "'")}`,
+      a
+    )
+
+  VersionDotLockMissing =>
+    IO.logAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
+}
