@@ -2276,25 +2276,10 @@
       if (!objAttrs.attrs) {
         objAttrs.attrs = {};
       }
-      objAttrs.attrs.href = `/\#${objAttrs.to}`;
+      objAttrs.attrs.href = `\#${objAttrs.to}`;
     }
-    // const clickHandler = (event) => {
-    //   // event.preventDefault();
-
-    //   if (objAttrs.to) {
-    //     const builtUrl = document.location.origin + document.location.pathname + '\#' + objAttrs.to
-
-    //     history.pushState({}, '', builtUrl);
-
-    //     if (AppEnv.onUrlChangedAction) {
-    //       const wishes = AppEnv.onUrlChangedAction(getCurrentState())(UrlEvent({ url: objAttrs.to }))
-    //       wishes.forEach(fulfill(runAction)(runAction))
-    //     }
-    //   }
-    // }
 
     return h("a", { ...objAttrs }, children);
-    // return h("a", { ...objAttrs, on: { ...objAttrs.on, click: clickHandler }}, children);
   });
   let onUrlChanged = (action => {
     AppEnv.onUrlChangedAction = action;
