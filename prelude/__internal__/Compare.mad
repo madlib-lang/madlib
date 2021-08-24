@@ -4,6 +4,24 @@ export MORE = 1
 export LESS = -1
 export EQUAL = 0
 
+
+/**
+ * The interface comparable allows a type to be compared. It contains only one method
+ * compare that can return one of 3 values:
+ *   - 1 if the first parameter is greater than the second
+ *   - -1 if the first parameter is less than the second
+ *   - 0 if the two parameters are equal
+ * For convenience, the 3 values above have corresponding constants:
+ *   - MORE
+ *   - LESS
+ *   - EQUAL
+ *
+ * @since 0.8.0
+ * @example
+ * compare(1, 2) // -1
+ * compare(2, 1) // 1
+ * compare(2, 2) // 0
+ */
 interface Comparable a {
   compare :: a -> a -> ComparisonResult
 }
@@ -25,14 +43,57 @@ instance Comparable Boolean {
 }
 
 
+/**
+ * Takes two comparable values of the same type that implements Comparable and
+ * return true if the first parameter is strictly greater than the second.
+ *
+ * @since 0.8.0
+ * @example
+ * gt(3, 2) // true
+ * gt(3, 3) // false
+ */
 gt :: Comparable a => a -> a -> Boolean
 export gt = (a, b) => compare(a, b) == MORE
 
+
+/**
+ * Takes two comparable values of the same type that implements Comparable and
+ * return true if the first parameter is greater than the second or if they are
+ * equal.
+ *
+ * @since 0.8.0
+ * @example
+ * gt(3, 2) // true
+ * gt(3, 3) // true
+ */
 ge :: Comparable a => a -> a -> Boolean
 export ge = (a, b) => compare(a, b) >= EQUAL
 
+
+/**
+ * Takes two comparable values of the same type that implements Comparable and
+ * return true if the first parameter is strictly less than the second.
+ *
+ * @since 0.8.0
+ * @example
+ * gt(3, 2) // false
+ * gt(3, 4) // true
+ * gt(3, 3) // false
+ */
 lt :: Comparable a => a -> a -> Boolean
 export lt = (a, b) => compare(a, b) == LESS
 
+
+/**
+ * Takes two comparable values of the same type that implements Comparable and
+ * return true if the first parameter is less than the second or if they are
+ * equal.
+ *
+ * @since 0.8.0
+ * @example
+ * gt(3, 2) // false
+ * gt(3, 4) // true
+ * gt(3, 3) // true
+ */
 le :: Comparable a => a -> a -> Boolean
 export le = (a, b) => compare(a, b) <= EQUAL

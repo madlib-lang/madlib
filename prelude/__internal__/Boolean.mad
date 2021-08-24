@@ -1,5 +1,14 @@
 import {} from "Show"
 
+/**
+ * Show instance for Boolean. The method show returns a string representation of
+ * a boolean value.
+ *
+ * @since 0.7.0
+ * @example
+ * show(true)  // "true"
+ * show(false) // "false"
+ */
 instance Show Boolean {
   show = (x) => x
     ? "true"

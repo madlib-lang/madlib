@@ -12,6 +12,7 @@ import qualified AST.Solved                    as Slv
 import           Infer.Type
 import           Data.List                      ( intercalate
                                                 , foldl'
+                                                , isInfixOf
                                                 )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
@@ -127,7 +128,7 @@ analyzeBacktrace json err exps = case exps of
     then "The " <> underlineWhen (not json) "condition" <> " of the following if/else expression is not correct:\n"
     else "\nThe error occured in the following if/else expression:\n"
 
-  (BTExp (Can.Canonical _ (Can.TypedExp _ _ _)) : ex) -> case err of
+  (BTExp (Can.Canonical _ Can.TypedExp{}) : ex) -> case err of
     UnificationError _ _ ->
       "The " <> underlineWhen (not json) "type declaration" <> " does not match the inferred type:\n"
     _ -> ""
@@ -530,6 +531,15 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
   _      -> (vars, hkVars, "")
 
 
+removeNamespace :: String -> String
+removeNamespace name =
+  if "." `isInfixOf` name then
+    reverse . takeWhile (/= '.') . reverse $ name
+  else
+    name
+
+
+
 prettyPrintConstructorTyping :: Slv.Typing -> String
 prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
   Slv.TRComp _ ts ->
@@ -539,17 +549,19 @@ prettyPrintConstructorTyping t@(Slv.Untyped _ typing) = case typing of
 
 prettyPrintConstructorTyping' :: Bool -> Slv.Typing -> String
 prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
-  Slv.TRSingle n -> n
+  Slv.TRSingle n -> removeNamespace n
   Slv.TRComp n typing' ->
     let space = if not (null typing') then " " else ""
-    in  if paren
-          then
-            "("
-            <> n
-            <> space
-            <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
-            <> ")"
-          else n <> space <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+    in  if paren then
+      "("
+      <> removeNamespace n
+      <> space
+      <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
+      <> ")"
+    else
+      removeNamespace n
+      <> space
+      <> unwords ((\t -> prettyPrintConstructorTyping' (isTRArrOrTRCompWithArgs t) t) <$> typing')
   Slv.TRArr (Slv.Untyped _ (Slv.TRArr l r)) r' ->
     "("
       <> prettyPrintConstructorTyping' False l

@@ -2,6 +2,17 @@ import type { Maybe } from "Maybe"
 import { isJust } from "Maybe"
 
 
+/**
+ * A function to perform loops. Might be useful as an alternative to recursion
+ * when the stack size might be a concern.
+ * It takes an initial value, a predicate function that stops the loop whenever
+ * it returns false, and a transformation function that takes the value returned
+ * by the previous iteration.
+ *
+ * @since 0.7.0
+ * @example
+ * loop(1, (x) => x < 10, (x) => x * 2) // 16
+ */
 loop :: a -> (a -> Boolean) -> (a -> a) -> a
 export loop = (start, pred, evaluate) => {
   s = start
@@ -13,6 +24,24 @@ export loop = (start, pred, evaluate) => {
   return s
 }
 
+
+/**
+ * A function to perform loops. Might be useful as an alternative to recursion
+ * when the stack size might be a concern.
+ * It takes an initial value, a transformation function that must return a Maybe.
+ * It returns the value contained in the Just in the last iteration before a
+ * Nothing was returned.
+ *
+ * @since 0.7.0
+ * @example
+ * maybeLoop(
+ *   1,
+ *   (x) => x < 10
+ *     ? Just(x * 2)
+ *     : Nothing
+ * )
+ * // 16
+ */
 maybeLoop :: a -> (a -> Maybe a) -> a
 export maybeLoop = (start, evaluate) => {
   s = start

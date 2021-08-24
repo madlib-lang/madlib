@@ -8,12 +8,20 @@ import { complement, equals, identity, ifElse } from "Function"
 export alias FilePath = String
 
 
+/**
+ * Drops the trailing slash of a path.
+ *
+ * @since 0.8.0
+ * @example
+ * dropTrailingPathSeparator("/path/") // "/path"
+ */
 dropTrailingPathSeparator :: FilePath -> FilePath
 export dropTrailingPathSeparator = ifElse(
   (path) => path != "/" && String.lastChar(path) == Just("/"),
   String.dropLast(1),
   identity
 )
+
 
 performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
   Nothing =>
@@ -28,9 +36,25 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
       : performSplitPath(buffer ++ char, false, String.drop(1, path))
 }
 
+
+/**
+ * Splits all segments of a path in a list.
+ *
+ * @since 0.8.0
+ * @example
+ * splitPath("/root/path") // ["/", "root/", "path"]
+ */
 splitPath :: FilePath -> List FilePath
 export splitPath = performSplitPath("", false)
 
+
+/**
+ * Joins a list of path segments.
+ *
+ * @since 0.8.0
+ * @example
+ * joinPath(["/", "root/", "path"]) // "/root/path"
+ */
 joinPath :: List FilePath -> FilePath
 export joinPath = pipe(
   filter(complement(String.isEmpty)),
@@ -41,6 +65,14 @@ export joinPath = pipe(
   )
 )
 
+
+/**
+ * Removes all extra slashes from a path.
+ *
+ * @since 0.8.0
+ * @example
+ * canonicalizePath("/root//path") // "/root/path"
+ */
 canonicalizePath :: FilePath -> FilePath
 export canonicalizePath = pipe(
   splitPath,
@@ -54,6 +86,15 @@ export canonicalizePath = pipe(
   joinPath
 )
 
+
+/**
+ * Drops the given amount of segments from the beginning of the path.
+ * Note that a leading / is considered as a path segment.
+ *
+ * @since 0.8.0
+ * @example
+ * dropPathSegments(2, "/root/path/extra") // "path/extra"
+ */
 dropPathSegments :: Number -> FilePath -> FilePath
 export dropPathSegments = (howMany) => pipe(
   splitPath,
@@ -61,6 +102,14 @@ export dropPathSegments = (howMany) => pipe(
   joinPath
 )
 
+
+/**
+ * Returns the parent path of the given path.
+ *
+ * @since 0.8.0
+ * @example
+ * parentPath("/root/path") // "/root"
+ */
 parentPath :: FilePath -> FilePath
 export parentPath = pipe(
   splitPath,
@@ -68,6 +117,15 @@ export parentPath = pipe(
   joinPath
 )
 
+
+/**
+ * Returns true if the first path is a parent path of the second path.
+ *
+ * @since 0.8.0
+ * @example
+ * isRootPathOf("/root/path", "/root/path/child")      // true
+ * isRootPathOf("/root/different", "/root/path/child") // false
+ */
 isRootPathOf :: FilePath -> FilePath -> Boolean
 export isRootPathOf = (root, path) => {
   rootParts = splitPath(root)
@@ -83,6 +141,15 @@ export isRootPathOf = (root, path) => {
     : false
 }
 
+
+/**
+ * Extracts the filename part of a path if there is one, returns an empty string otherwise.
+ *
+ * @since 0.8.0
+ * @example
+ * takeFileName("/path/filename.ext") // "filename.ext"
+ * takeFileName("/path/folder/")      // ""
+ */
 takeFileName :: FilePath -> FilePath
 export takeFileName = pipe(
   splitPath,
@@ -98,6 +165,15 @@ export takeFileName = pipe(
   }
 )
 
+
+/**
+ * Extracts the extension of a path if there's one, returns an empty string otherwise.
+ *
+ * @since 0.8.0
+ * @example
+ * takeExtension("/path/file.ext") // "ext"
+ * takeExtension("/path/file")     // ""
+ */
 takeExtension :: FilePath -> FilePath
 export takeExtension = pipe(
   takeFileName,

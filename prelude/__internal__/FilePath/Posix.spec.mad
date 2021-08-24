@@ -1,6 +1,15 @@
 import { assertEquals, test } from "TestTools"
 
-import { canonicalizePath, splitPath, isRootPathOf, joinPath, takeExtension, takeFileName, parentPath } from "./Posix"
+import {
+  canonicalizePath,
+  splitPath,
+  dropPathSegments,
+  isRootPathOf,
+  joinPath,
+  takeExtension,
+  takeFileName,
+  parentPath
+} from "./Posix"
 
 test("splitPath             - '/some/path/file.ext'", (_) => pipe(
   splitPath,
@@ -102,3 +111,9 @@ test("canonicalizePath      - '/root/path//child/'", (_) => pipe(
   canonicalizePath,
   assertEquals($, "/root/path/child")
 )("/root/path//child/"))
+
+
+test("dropPathSegments      - '/root/path/child/'", (_) => pipe(
+  dropPathSegments(2),
+  assertEquals($, "path/child")
+)("/root/path/child/"))

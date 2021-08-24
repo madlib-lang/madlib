@@ -1,4 +1,15 @@
+/**
+ * An array of bytes.
+ *
+ * @since 0.7.0
+ */
 export type ByteArray = ByteArray
 
+
+/**
+ * Returns the length of a ByteArray.
+ *
+ * @since 0.7.0
+ */
 len :: ByteArray -> Number
 export len = (byteArray) => #- byteArray.length -#
