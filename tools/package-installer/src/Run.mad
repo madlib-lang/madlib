@@ -61,13 +61,21 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
 )(dependency)
 
 
-getDependencies :: String -> SideEffect (List Dependency)
+getDependencies :: String -> SideEffect (Either.Either String (List Dependency))
 getDependencies = pipe(
   Json.parse(dependencyParser),
   where {
-    Either.Left(_) => of([])
+    Either.Left(e) =>
+      of(
+        Either.Left(
+          IO.red(
+            `The 'madlib.json' file from your project could not be loaded. It is either malformed or inexistant.\nHere is the error I found: '${e}'.`
+          )
+        )
+      )
 
-    Either.Right(a) => of(a)
+    Either.Right(a) =>
+      of(of(a))
   }
 )
 
@@ -329,12 +337,23 @@ installPackages = (config, context, madlibDotJsonPath) => pipe(
   config.readFile,
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
   chain(initMadlibModulesFolder(config, Constants.MADLIB_MODULES_PATH)),
-  fromWish(always("")),
+  fromWish(identity),
   chain(pipe(
     getDependencies,
-    chain(processDependencies(config, context)),
-    andDo(installedDependencyFolders(config)),
-    chain(pipe(map(installNodeModules(config)), parallel))
+    chain(
+      where {
+        Either.Right(dependencies) => pipe(
+          processDependencies(config, context),
+          andDo(installedDependencyFolders(config)),
+          chain(pipe(map(installNodeModules(config)), parallel))
+        )(dependencies)
+
+        Either.Left(e) => pipe(
+          IO.log,
+          always(of([]))
+        )(e)
+      }
+    )
   ))
 )(madlibDotJsonPath)
 

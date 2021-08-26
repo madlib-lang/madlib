@@ -7,6 +7,7 @@ module Infer.Exp where
 
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
+import           Data.Maybe
 import           Control.Monad.Except
 import           Data.Foldable                  ( foldlM )
 import qualified AST.Canonical                 as Can
@@ -303,6 +304,116 @@ inferExport env (Can.Canonical area (Can.Export exp)) = do
 
 -- INFER LISTCONSTRUCTOR
 
+-- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+-- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
+--   [] -> do
+--     tv <- newTVar Star
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
+--     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
+
+--   elems -> do
+--     tv               <- newTVar Star
+
+--     (s', ps, ts, es) <- foldlM
+--       (\(s, pss, ts, lis) elem -> do
+--         (s', ps', t, li) <- inferListItem (apply s env) tv elem
+--         return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
+--       )
+--       (mempty, [], [], [])
+--       elems
+
+--     s <- contextualUnifyElems env (zip elems ts)
+--     let s'' = s `compose` s'
+
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
+
+--     return (s'', ps, t, Slv.Solved ((apply s'' <$> ps) :=> t) area (Slv.ListConstructor es))
+-- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+-- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
+--   [] -> do
+--     tv <- newTVar Star
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
+--     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
+
+--   elems -> do
+--     tv               <- newTVar Star
+
+--     (s', ps, t', es) <- foldlM
+--       (\(s, pss, t, lis) elem -> do
+--         (s', ps', t'', li) <- inferListItem (apply s env) t elem
+--         let s'' = s `compose` s'
+--         return (s'', pss ++ ps', t'', lis ++ [li])
+--       )
+--       (mempty, [], tv, [])
+--       elems
+
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s' t')
+
+--     return (s', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
+
+
+-- inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+-- inferListItem env ty (Can.Canonical area li) = case li of
+--   Can.ListItem exp -> case exp of
+--     Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
+
+--     _ -> do
+--       (s1, ps, t, e) <- infer env exp
+--       s2             <- contextualUnify env (Can.Canonical area li) ty t
+--       -- s2             <- unify ty t
+--       let s = s1 `compose` s2
+--       return (s, ps, apply s2 ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
+
+--   Can.ListSpread exp -> do
+--     (s1, ps, t, e) <- infer env exp
+--     s2             <- contextualUnify env (Can.Canonical area li) (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty) t
+--     let s = s1 `compose` s2
+
+--     return (s, ps, apply s2 ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
+
+-- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+-- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
+--   [] -> do
+--     tv <- newTVar Star
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
+--     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
+
+--   elems -> do
+--     tv               <- newTVar Star
+
+--     (s', ps, t', es) <- foldlM
+--       (\(s, pss, t, lis) elem -> do
+--         (s', ps', t'', li) <- inferListItem env t elem
+--         let s'' = s `compose` s'
+--         return (s'', pss ++ ps', t'', lis ++ [li])
+--       )
+--       (mempty, [], tv, [])
+--       elems
+
+--     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s' t')
+
+--     return (s', apply s' ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
+
+
+-- inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+-- inferListItem env ty (Can.Canonical area li) = case li of
+--   Can.ListItem exp -> case exp of
+--     Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
+
+--     _ -> do
+--       (s1, ps, t, e) <- infer env exp
+--       s2             <- contextualUnify env (Can.Canonical area li) ty t
+--       let s = s1 `compose` s2
+--       return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
+
+--   Can.ListSpread exp -> do
+--     (s1, ps, t, e) <- infer env exp
+--     s2             <- contextualUnify env (Can.Canonical area li) (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty) t
+--     let s = s1 `compose` s2
+
+--     return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
+
+
 inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
   [] -> do
@@ -313,39 +424,50 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
   elems -> do
     tv               <- newTVar Star
 
-    (s', ps, ts, es) <- foldlM
-      (\(s, pss, ts, lis) elem -> do
-        (s', ps', t, li) <- inferListItem env tv elem
-        return (s' `compose` s, pss ++ ps', ts ++ [t], lis ++ [li])
+    (s', ps, t', es) <- foldlM
+      (\(s, pss, t, lis) elem -> do
+        (s', ps', t'', li) <- inferListItem (apply s env) (fromMaybe tv t) elem
+        s'' <- case t of
+          Nothing ->
+            return mempty
+
+          Just t''' ->
+            contextualUnify env elem (apply s' t''') t''
+
+        let s''' = s `compose` s' `compose` s''
+        return (s''', pss ++ ps', Just t'', lis ++ [li])
       )
-      (mempty, [], [], [])
+      (mempty, [], Nothing, [])
       elems
 
-    s <- contextualUnifyElems env (zip elems ts)
-    let s'' = s `compose` s'
+    let (Just t'') = t'
 
-    let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
+    s'' <- unify tv t''
+    let s''' = s' `compose` s''
 
-    return (s'', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
+    let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s''' tv)
+
+    return (s''', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
 
 
 inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListItem exp -> case exp of
-    Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
+    Can.Canonical _ (Can.JSXExpChild _) ->
+      inferJSXExpChild infer env ty exp
 
     _ -> do
       (s1, ps, t, e) <- infer env exp
-      s2             <- unify t ty
-      let s = s1 `compose` s2
-      return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
+      return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
-    s2             <- unify t (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty)
+    tv <- newTVar Star
+    s2 <- unify (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv) t
+
     let s = s1 `compose` s2
 
-    return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
+    return (s, ps, apply s tv, Slv.Solved (apply s ps :=> apply s tv) area $ Slv.ListSpread e)
 
 
 

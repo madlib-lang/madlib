@@ -12,7 +12,7 @@ import { sanitizeUrl } from "./URL"
 
 
 export alias Dependency = {
-  description  :: String,
+  description  :: Maybe String,
   url :: String,
   sanitizedUrl :: String,
   versionRange :: VersionRange,
@@ -34,7 +34,7 @@ export dependencyParser = J.field(
         sanitizedUrl: sanitizeUrl(url)
       }),
       J.field("url", J.string),
-      J.field("description", J.string),
+      J.field("description", J.maybe(J.string)),
       J.map1(chain(parse), J.maybe(J.field("minVersion", J.string))),
       J.map1(chain(parse), J.maybe(J.field("maxVersion", J.string)))
     )
