@@ -23,6 +23,7 @@ data Type
   | TApp Type Type              -- Arrow type
   | TRecord (M.Map Id Type) (Maybe Type) -- Maybe Type is the extended record type, most likely a type variable
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
+  -- | TJsxChild Type
   deriving (Show, Eq, Ord)
 
 infixr `TApp`

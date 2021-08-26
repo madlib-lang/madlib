@@ -55,7 +55,7 @@ export dict = (parser, input) => (#- {
 
     return Right(result);
   } catch(e) {
-    return Left("Mapping failed!");
+    return Left("An error occured while parsing a dictionary!");
   }
 } -#)
 
@@ -74,7 +74,7 @@ export list = (parser, input) => (#-{
     })
     return Right(result);
   } catch(e) {
-    return Left("Mapping failed!");
+    return Left("An error occured while parsing a list!");
   }
 }-#)
 
