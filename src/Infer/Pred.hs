@@ -14,20 +14,22 @@ import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
 import qualified Data.Map                      as M
+import Debug.Trace
+import Text.Show.Pretty
 
 
 getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
 getAllParentPreds env ps = concat <$> mapM (getParentPreds env) ps
 
 getParentPreds :: Env -> Pred -> Infer [Pred]
-getParentPreds env p@(IsIn cls ts) = do
+getParentPreds env p@(IsIn cls ts maybeArea) = do
   (Interface tvs ps _) <- case M.lookup cls (envInterfaces env) of
     Just x  -> return x
     Nothing -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   s <- unify (TVar <$> tvs) ts
 
-  let ps' = (\(IsIn cls ts') -> IsIn cls (apply s ts')) <$> ps
+  let ps' = (\(IsIn cls ts' _) -> IsIn cls (apply s ts') maybeArea) <$> ps
 
   nextPreds <- mapM (getParentPreds env) ps'
 
@@ -35,8 +37,8 @@ getParentPreds env p@(IsIn cls ts) = do
 
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
-liftPred m (IsIn i ts) (IsIn i' ts') | i == i'   = m ts ts'
-                                     | otherwise = throwError $ CompilationError FatalError NoContext
+liftPred m (IsIn i ts _) (IsIn i' ts' _) | i == i'   = m ts ts'
+                                         | otherwise = throwError $ CompilationError FatalError NoContext
 
 instance Unify Pred where
   unify = liftPred unify
@@ -60,31 +62,37 @@ insts env i = case M.lookup i (envInterfaces env) of
   Nothing                    -> []
 
 bySuper :: Env -> Pred -> [Pred]
-bySuper env p@(IsIn i ts) = p : concatMap (bySuper env) supers
- where
-  supers = apply s (super env i)
-  s      = M.fromList $ zip (sig env i) ts
+bySuper env p@(IsIn i ts maybeArea) =
+  p : ((\(IsIn c ts' _) -> IsIn c ts' maybeArea) <$> concatMap (bySuper env) supers)
+  where
+    supers = apply s (super env i)
+    s      = M.fromList $ zip (sig env i) ts
 
 findInst :: Env -> Pred -> Infer (Maybe Instance)
-findInst env p@(IsIn interface t) = do
+findInst env p@(IsIn interface t _) = do
   catchError (Just <$> tryInsts (insts env interface)) (const $ return Nothing)
  where
   tryInst i@(Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
     return i
-  tryInsts []          = throwError $ CompilationError (NoInstanceFound interface t) NoContext
+  tryInsts []          =
+    case p of
+        IsIn _ _ (Just area) ->
+          throwError $ CompilationError (NoInstanceFound interface t) (Context (envCurrentPath env) area (envBacktrace env))
+        _ ->
+          throwError $ CompilationError (NoInstanceFound interface t) NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
 
 
 removeInstanceVars :: Pred -> Pred -> (Pred, Pred)
-removeInstanceVars ip@(IsIn cls ts) p@(IsIn cls' ts') =
+removeInstanceVars ip@(IsIn cls ts maybeArea) p@(IsIn cls' ts' maybeArea') =
   let groupped = zip ts ts'
       filtered = filter (not . isTVar . fst) groupped
-  in  (IsIn cls (fst <$> filtered), IsIn cls' (snd <$> filtered))
+  in  (IsIn cls (fst <$> filtered) maybeArea, IsIn cls' (snd <$> filtered) maybeArea')
 
 
 specialMatch :: Pred -> Pred -> Infer Substitution
-specialMatch p@(IsIn cls ts) p'@(IsIn cls' ts') = do
+specialMatch p@(IsIn cls ts _) p'@(IsIn cls' ts' _) = do
   if cls == cls'
     then do
       let zipped = zip ts ts'
@@ -104,26 +112,32 @@ isConcrete t = case t of
 
 
 isInstanceOf :: Pred -> Pred -> Infer Substitution
-isInstanceOf p@(IsIn interface ts) p'@(IsIn interface' ts') = do
+isInstanceOf p@(IsIn interface ts _) p'@(IsIn interface' ts' _) = do
   if interface == interface'
     then do
       let r  = filter (\(t1, t2) -> not (isTVar t1)) (zip ts ts')
       let r' = filter (\(t1, t2) -> isTVar t1) (zip ts ts')
-      s1 <- unify (IsIn interface (fst <$> r')) (IsIn interface (snd <$> r'))
-      s2 <- match (IsIn interface (fst <$> r)) (IsIn interface (snd <$> r))
+      s1 <- unify (IsIn interface (fst <$> r') Nothing) (IsIn interface (snd <$> r') Nothing)
+      s2 <- match (IsIn interface (fst <$> r) Nothing) (IsIn interface (snd <$> r) Nothing)
       return $ s1 <> s2
     else throwError $ CompilationError FatalError NoContext
 
 byInst :: Env -> Pred -> Infer [Pred]
-byInst env p@(IsIn interface ts) = tryInsts (insts env interface)
+byInst env p@(IsIn interface ts maybeArea) = tryInsts (insts env interface)
  where
   tryInst (Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
     let ps' = apply u <$> ps
     return ps'
-  tryInsts [] = if all isConcrete $ predTypes p
-    then throwError $ CompilationError (NoInstanceFound interface ts) NoContext
-    else throwError $ CompilationError FatalError NoContext
+  tryInsts [] =
+    if all isConcrete $ predTypes p then
+      case (trace (ppShow maybeArea) maybeArea) of
+        Just area ->
+          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area (envBacktrace env))
+        _ ->
+          throwError $ CompilationError (NoInstanceFound interface ts) NoContext
+    else
+      throwError $ CompilationError FatalError NoContext
 
   tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 

@@ -8,6 +8,7 @@ import           AST.Source                     ( Exp )
 import           Data.List                      ( nub
                                                 , union
                                                 )
+import           Explain.Location
 
 
 data TVar = TV Id Kind
@@ -23,7 +24,6 @@ data Type
   | TApp Type Type              -- Arrow type
   | TRecord (M.Map Id Type) (Maybe Type) -- Maybe Type is the extended record type, most likely a type variable
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
-  -- | TJsxChild Type
   deriving (Show, Eq, Ord)
 
 infixr `TApp`
@@ -152,11 +152,11 @@ a `fn` b = TApp (TApp tArrow a) b
 
 
 predClass :: Pred -> Id
-predClass (IsIn i _) = i
+predClass (IsIn i _ _) = i
 
 
 predTypes :: Pred -> [Type]
-predTypes (IsIn _ ts) = ts
+predTypes (IsIn _ ts _) = ts
 
 
 type Id = String
@@ -164,8 +164,11 @@ type Id = String
 data Kind  = Star | Kfun Kind Kind
              deriving (Eq, Show, Ord)
 
-data Pred   = IsIn Id [Type]
-              deriving (Eq, Show, Ord)
+data Pred   = IsIn Id [Type] (Maybe Area)
+              deriving (Show, Ord)
+
+instance Eq Pred where
+  (==) (IsIn id ts _) (IsIn id' ts' _) = id == id' && ts == ts'
 
 data Qual t = [Pred] :=> t
               deriving (Eq, Show, Ord)
@@ -241,7 +244,7 @@ collectVars t = case t of
 
 
 collectPredVars :: Pred -> [TVar]
-collectPredVars (IsIn _ ts) = nub $ concat $ collectVars <$> ts
+collectPredVars (IsIn _ ts _) = nub $ concat $ collectVars <$> ts
 
 
 getConstructorCon :: Type -> Type

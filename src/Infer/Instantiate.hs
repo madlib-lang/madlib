@@ -43,4 +43,4 @@ instance Instantiate t => Instantiate (Qual t) where
   inst ts (ps :=> t) = inst ts ps :=> inst ts t
 
 instance Instantiate Pred where
-  inst ts (IsIn c t) = IsIn c (inst ts t)
+  inst ts (IsIn c t maybeArea) = IsIn c (inst ts t) maybeArea

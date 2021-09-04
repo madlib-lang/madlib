@@ -25,7 +25,7 @@ insertVarPlaceholders env exp@(Slv.Solved t a e) (p : ps) = do
   if isMethod env exp
     then case e of
       Slv.Var n -> do
-        var <- shouldInsert env $ IsIn (predClass p) (predTypes p)
+        var <- shouldInsert env $ IsIn (predClass p) (predTypes p) Nothing
         return $ Slv.Solved t a $ Slv.Placeholder (Slv.MethodRef (predClass p) n var, ts) exp
       _ -> return exp
     else do
@@ -90,34 +90,34 @@ shouldInsert :: Env -> Pred -> Infer Bool
 shouldInsert env p = do
   let cls = predClass p
       ts  = predTypes p
-  inst <- findInst env $ IsIn cls ts
+  inst <- findInst env $ IsIn cls ts Nothing
 
   let insert = case inst of
         Just (Instance (_ :=> p') _) ->
-          let (_, IsIn _ withoutVars) = removeInstanceVars p' p in any isTVar withoutVars
+          let (_, IsIn _ withoutVars _) = removeInstanceVars p' p in any isTVar withoutVars
         Nothing -> True
   return insert
 
 
 getCanonicalPlaceholderTypes :: Env -> Pred -> Infer [Type]
-getCanonicalPlaceholderTypes env p@(IsIn cls ts) = do
+getCanonicalPlaceholderTypes env p@(IsIn cls ts _) = do
   inst <- findInst env p
   return $ case inst of
-    Just (Instance (_ :=> (IsIn _ ts'')) _) -> ts''
+    Just (Instance (_ :=> (IsIn _ ts'' _)) _) -> ts''
     Nothing -> ts
 
 updateMethodPlaceholder :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
 updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Solved qt' a' exp)))
   = do
     let instanceTypes' = apply s instanceTypes
-    types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes')
-    var'  <- shouldInsert env $ IsIn cls instanceTypes' -- Reconsider if the instance is fully resolved
+    types <- getCanonicalPlaceholderTypes env (IsIn cls instanceTypes' Nothing)
+    var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing -- Reconsider if the instance is fully resolved
 
     -- The following block serves to check that the inferred type for a method
     -- which was unified in type check with the class' scheme, is actually a
     -- type that is correct, given the actual instance's specific type.
     ss    <- do
-      maybeInst <- findInst env (IsIn cls instanceTypes')
+      maybeInst <- findInst env (IsIn cls instanceTypes' Nothing)
       case maybeInst of
         Just (Instance _ methods) -> case M.lookup method methods of
           Just methodScheme -> do
@@ -130,7 +130,7 @@ updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholde
           Nothing -> return mempty
         Nothing -> return mempty
 
-    ps  <- catchError (byInst env $ IsIn cls instanceTypes') (const $ return [])
+    ps  <- catchError (byInst env $ IsIn cls instanceTypes' Nothing) (const $ return [])
     ps' <- getAllParentPreds env ps
     pushPlaceholders env
                      (Slv.Solved qt a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved qt' a' exp)))
@@ -138,8 +138,8 @@ updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholde
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 pushPlaceholders _   exp                    []                     = return exp
-pushPlaceholders env exp@(Slv.Solved qt a _) (p@(IsIn cls ts) : ps) = do
-  var <- shouldInsert env $ IsIn cls ts
+pushPlaceholders env exp@(Slv.Solved qt a _) (p@(IsIn cls ts _) : ps) = do
+  var <- shouldInsert env $ IsIn cls ts Nothing
   ps' <- buildClassRefPreds env cls ts
   ts' <- getCanonicalPlaceholderTypes env p
   let ph = Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
@@ -150,8 +150,8 @@ updateClassPlaceholder :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Ex
 updateClassPlaceholder env push s ph = case ph of
   Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call _, instanceTypes) exp) -> do
     let instanceTypes' = apply s instanceTypes
-    types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes'
-    var   <- shouldInsert env $ IsIn cls instanceTypes'
+    types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
+    var   <- shouldInsert env $ IsIn cls instanceTypes' Nothing
     exp'  <- updatePlaceholders env push s exp
     ps'   <- buildClassRefPreds env cls instanceTypes'
 
@@ -164,20 +164,20 @@ updateClassPlaceholder env push s ph = case ph of
 
 buildClassRefPreds :: Env -> String -> [Type] -> Infer [Slv.ClassRefPred]
 buildClassRefPreds env cls ts = do
-  maybeInst <- findInst env $ IsIn cls ts
+  maybeInst <- findInst env $ IsIn cls ts Nothing
   instTypes <- case maybeInst of
-    Just (Instance (_ :=> (IsIn _ x)) _) -> return x
+    Just (Instance (_ :=> (IsIn _ x _)) _) -> return x
     Nothing                              -> return ts
 
   s    <- unify instTypes ts
-  ps   <- catchError (byInst env $ IsIn cls ts) (const $ return [])
+  ps   <- catchError (byInst env $ IsIn cls ts Nothing) (const $ return [])
   pps' <- mapM (getParentPreds env) (reverse (apply s ps))
   let ps' = concat $ reverse <$> pps'
   mapM
-    (\(IsIn cls' ts') -> do
+    (\(IsIn cls' ts' _) -> do
       next <- buildClassRefPreds env cls' ts'
-      ts'' <- getCanonicalPlaceholderTypes env $ IsIn cls' ts'
-      var  <- shouldInsert env (IsIn cls' ts')
+      ts'' <- getCanonicalPlaceholderTypes env $ IsIn cls' ts' Nothing
+      var  <- shouldInsert env (IsIn cls' ts' Nothing)
       return $ Slv.CRPNode cls' ts'' var next
     )
     ps'
@@ -197,13 +197,6 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    -- es' <- if push || length es == 1
-    --   then mapM (updatePlaceholders env push s) es
-    --   else do
-    --     let start = init es
-    --     let l     = last es
-    --     l' <- updatePlaceholders env push s l
-    --     return $ start <> [l']
     let param' = Slv.Solved paramType paramArea param
     return $ Slv.Solved qt a $ Slv.Abs param' es'
 
@@ -261,37 +254,11 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
 
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
   updateListItem s (Slv.Solved t area li) = case li of
-    Slv.ListItem e -> do
-      updated <- updatePlaceholders env push s e
-      case updated of
-        Slv.Solved _ area (Slv.App (Slv.Solved qtAbs@(_ :=> tAbs) _ (Slv.Var "__tmp_jsx_children__")) elem _) -> case apply s tAbs of
-          TApp (TApp (TCon (TC "(->)" _) _) (TCon (TC "String" Star) "prelude")) _ ->
-            return $ Slv.Solved t area $ Slv.ListItem
-              (Slv.Solved t area (Slv.App (Slv.Solved qtAbs area (Slv.Var "text")) elem True))
+    Slv.ListItem e ->
+      Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env push s e
 
-          TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") (TCon (TC "String" Star) "prelude"))) _
-            -> return $ Slv.Solved t area $ Slv.ListSpread
-              (Slv.Solved t area (Slv.App (Slv.Solved qtAbs area (Slv.Var "text")) elem True))
-
-          TApp (TApp (TCon (TC "(->)" _) _) (TApp (TCon (TC "List" _) "prelude") tSpread)) tElem -> do
-            catchError
-              (unify tElem tSpread)
-              (\(CompilationError err _) ->
-                throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
-              )
-            return $ Slv.Solved t area $ Slv.ListSpread elem
-
-          TApp (TApp (TCon (TC "(->)" _) _) tSingleChild) tElem -> do
-            catchError
-              (unify tElem tSingleChild)
-              (\(CompilationError err _) ->
-                throwError $ CompilationError err (Context (envCurrentPath env) area (envBacktrace env))
-              )
-            return $ Slv.Solved t area $ Slv.ListItem elem
-
-        _ -> Slv.Solved t area . Slv.ListItem <$> updatePlaceholders env push s e
-
-    Slv.ListSpread e -> Slv.Solved t area . Slv.ListSpread <$> updatePlaceholders env push s e
+    Slv.ListSpread e ->
+      Slv.Solved t area . Slv.ListSpread <$> updatePlaceholders env push s e
 
   updateField :: Substitution -> Slv.Field -> Infer Slv.Field
   updateField s (Slv.Solved t area field) = case field of

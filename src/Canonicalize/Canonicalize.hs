@@ -8,7 +8,6 @@ import           Run.Target
 import qualified AST.Canonical                 as Can
 import qualified AST.Source                    as Src
 import           Canonicalize.JSExp
-import           Canonicalize.Typing
 import           Canonicalize.CanonicalM
 import qualified Canonicalize.Env              as E
 import           Canonicalize.Typing
@@ -20,6 +19,7 @@ import           Explain.Location
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
+import           Infer.Type
 
 
 
@@ -139,7 +139,17 @@ instance Canonicalizable Src.Exp Can.Exp where
       let childrenArea = composeArea 0 area children'
 
       let props'       = Can.Canonical propArea (Can.ListConstructor propFns)
-      let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
+      let children''   =
+            if null children' then
+              Can.Canonical
+                childrenArea
+                (Can.TypedExp
+                  (Can.Canonical childrenArea (Can.ListConstructor children'))
+                  (Can.Canonical childrenArea (Can.TRComp "List" [Can.Canonical childrenArea (Can.TRSingle "Element")]))
+                  (Forall [] ([] :=> tListOf (TCon (TC "Element" Star) "JSX")))
+                )
+            else
+              Can.Canonical childrenArea (Can.ListConstructor children')
 
       return $ Can.Canonical
         area
@@ -151,16 +161,9 @@ instance Canonicalizable Src.Exp Can.Exp where
         else Area (Loc 0 l (c + offset)) (Loc 0 l (c + offset))
 
       canonicalizeJsxChild :: Src.Exp -> CanonicalM Can.Exp
-      canonicalizeJsxChild e@(Src.Source _ area exp) = case exp of
-        Src.TemplateString _ -> do
-          e' <- canonicalize env target e
-          return $ Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) e' True
-        Src.LStr _ -> do
-          e' <- canonicalize env target e
-          return $ Can.Canonical area $ Can.App (Can.Canonical area (Can.Var "text")) e' True
-        _ -> do
-          e' <- canonicalize env target e
-          return $ Can.Canonical area $ Can.JSXExpChild e'
+      canonicalizeJsxChild e@(Src.Source _ area exp) = do
+        e' <- canonicalize env target e
+        return $ Can.Canonical area $ Can.JSXExpChild e'
 
     Src.Pipe exps -> do
       let (Area (Loc x l c) _) = area

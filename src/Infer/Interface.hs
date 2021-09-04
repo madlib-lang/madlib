@@ -37,17 +37,17 @@ addInterface env id tvs ps = case M.lookup id (envInterfaces env) of
 
 
 verifyInstancePredicates :: Env -> Pred -> Pred -> Infer Bool
-verifyInstancePredicates env p' p@(IsIn cls ts) = do
+verifyInstancePredicates env p' p@(IsIn cls ts _) = do
   case M.lookup cls (envInterfaces env) of
     Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
     Just (Interface tvs ps' is) -> catchError
       (unify (TVar <$> tvs) ts >> return True)
-      (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs))) NoContext)
+      (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env
-addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
+addInstance env ps p@(IsIn cls ts _) = case M.lookup cls (envInterfaces env) of
   Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
@@ -62,7 +62,7 @@ addInstance env ps p@(IsIn cls ts) = case M.lookup cls (envInterfaces env) of
                }
 
 addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
-addInstanceMethod env ps p@(IsIn cls ts) (methodName, methodScheme) = case M.lookup cls (envInterfaces env) of
+addInstanceMethod env ps p@(IsIn cls ts _) (methodName, methodScheme) = case M.lookup cls (envInterfaces env) of
   Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
@@ -74,7 +74,7 @@ addInstanceMethod env ps p@(IsIn cls ts) (methodName, methodScheme) = case M.loo
         return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance qp methods' : is)) (envInterfaces env) }
 
 setInstanceMethods :: Env -> Pred -> Vars -> Infer Env
-setInstanceMethods env p@(IsIn cls ts) methods = case M.lookup cls (envInterfaces env) of
+setInstanceMethods env p@(IsIn cls ts _) methods = case M.lookup cls (envInterfaces env) of
   Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
   Just (Interface tvs ps' is) -> do
@@ -89,10 +89,10 @@ findM :: Monad m => (a -> m (Maybe b)) -> [a] -> m (Maybe b)
 findM f = runMaybeT . msum . map (MaybeT . f)
 
 isInstanceDefined :: Env -> Substitution -> Pred -> Infer Bool
-isInstanceDefined env subst (IsIn id ts) = do
+isInstanceDefined env subst (IsIn id ts _) = do
   let is = insts env id
   found <- findM
-    (\(Instance (_ :=> (IsIn _ ts')) _) ->
+    (\(Instance (_ :=> (IsIn _ ts' _)) _) ->
       catchError (match ts' (apply subst ts) >>= \_ -> return $ Just True) (const $ return Nothing)
     )
     is
@@ -123,7 +123,7 @@ resolveInstance env inst@(Can.Canonical area (Can.Instance name constraintPreds 
   let instanceTypes = predTypes pred
   let subst = foldl' (\s t -> s `compose` buildVarSubsts t) mempty instanceTypes
   (Interface _ ps _) <- catchError (lookupInterface env name) (addContext env inst)
-  let instancePreds = apply subst $ [IsIn name instanceTypes] <> ps
+  let instancePreds = apply subst $ [IsIn name instanceTypes Nothing] <> ps
   let psTypes       = concat $ predTypes <$> constraintPreds
   let subst'        = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
   inferredMethods <- mapM
