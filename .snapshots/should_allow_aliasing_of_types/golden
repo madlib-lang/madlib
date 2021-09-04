@@ -3748,7 +3748,7 @@ Right
                          [ ( "map"
                            , Forall
                                [ Kfun Star Star , Star , Star ]
-                               ([ IsIn "Functor" [ TGen 0 ] ] :=>
+                               ([ IsIn "Functor" [ TGen 0 ] Nothing ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3799,13 +3799,15 @@ Right
                    (Area (Loc 57 5 1) (Loc 149 8 1))
                    (Interface
                       "Applicative"
-                      [ IsIn "Functor" [ TVar (TV "m" (Kfun Star Star)) ] ]
+                      [ IsIn "Functor" [ TVar (TV "m" (Kfun Star Star)) ] Nothing ]
                       [ TV "m" (Kfun Star Star) ]
                       (fromList
                          [ ( "ap"
                            , Forall
                                [ Kfun Star Star , Star , Star ]
-                               ([ IsIn "Applicative" [ TGen 0 ] , IsIn "Functor" [ TGen 0 ] ] :=>
+                               ([ IsIn "Applicative" [ TGen 0 ] Nothing
+                                , IsIn "Functor" [ TGen 0 ] Nothing
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3827,7 +3829,9 @@ Right
                          , ( "pure"
                            , Forall
                                [ Kfun Star Star , Star ]
-                               ([ IsIn "Applicative" [ TGen 0 ] , IsIn "Functor" [ TGen 0 ] ] :=>
+                               ([ IsIn "Applicative" [ TGen 0 ] Nothing
+                                , IsIn "Functor" [ TGen 0 ] Nothing
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3892,13 +3896,15 @@ Right
                    (Area (Loc 151 10 1) (Loc 242 13 1))
                    (Interface
                       "Monad"
-                      [ IsIn "Applicative" [ TVar (TV "m" (Kfun Star Star)) ] ]
+                      [ IsIn "Applicative" [ TVar (TV "m" (Kfun Star Star)) ] Nothing ]
                       [ TV "m" (Kfun Star Star) ]
                       (fromList
                          [ ( "chain"
                            , Forall
                                [ Kfun Star Star , Star , Star ]
-                               ([ IsIn "Monad" [ TGen 0 ] , IsIn "Applicative" [ TGen 0 ] ] :=>
+                               ([ IsIn "Monad" [ TGen 0 ] Nothing
+                                , IsIn "Applicative" [ TGen 0 ] Nothing
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3917,7 +3923,9 @@ Right
                          , ( "of"
                            , Forall
                                [ Kfun Star Star , Star ]
-                               ([ IsIn "Monad" [ TGen 0 ] , IsIn "Applicative" [ TGen 0 ] ] :=>
+                               ([ IsIn "Monad" [ TGen 0 ] Nothing
+                                , IsIn "Applicative" [ TGen 0 ] Nothing
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -3989,7 +3997,8 @@ Right
                          [ TApp
                              (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                              (TVar (TV "e" Star))
-                         ])
+                         ]
+                         Nothing)
                       (fromList
                          [ ( "map"
                            , ( Solved
@@ -4809,7 +4818,8 @@ Right
                          [ TApp
                              (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                              (TVar (TV "e" Star))
-                         ])
+                         ]
+                         Nothing)
                       (fromList
                          [ ( "ap"
                            , ( Solved
@@ -6587,7 +6597,8 @@ Right
                          [ TApp
                              (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                              (TVar (TV "e" Star))
-                         ])
+                         ]
+                         Nothing)
                       (fromList
                          [ ( "chain"
                            , ( Solved
@@ -7789,7 +7800,11 @@ Right
                                              ([ IsIn
                                                   "Applicative"
                                                   [ TVar (TV "k114" (Kfun Star Star)) ]
-                                              , IsIn "Functor" [ TVar (TV "k114" (Kfun Star Star)) ]
+                                                  Nothing
+                                              , IsIn
+                                                  "Functor"
+                                                  [ TVar (TV "k114" (Kfun Star Star)) ]
+                                                  Nothing
                                               ] :=>
                                                 TApp
                                                   (TApp
@@ -7834,7 +7849,8 @@ Right
                ]
            , aexps =
                [ Solved
-                   ([ IsIn "Functor" [ TVar (TV "u254" (Kfun Star Star)) ] ] :=>
+                   ([ IsIn "Functor" [ TVar (TV "u254" (Kfun Star Star)) ] Nothing
+                    ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -7848,7 +7864,8 @@ Right
                    (Assignment
                       "double"
                       (Solved
-                         ([ IsIn "Functor" [ TVar (TV "u254" (Kfun Star Star)) ] ] :=>
+                         ([ IsIn "Functor" [ TVar (TV "u254" (Kfun Star Star)) ] Nothing
+                          ] :=>
                             TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -7864,7 +7881,11 @@ Right
                             , [ TVar (TV "u254" (Kfun Star Star)) ]
                             )
                             (Solved
-                               ([ IsIn "Functor" [ TVar (TV "x257" (Kfun Star Star)) ] ] :=>
+                               ([ IsIn
+                                    "Functor"
+                                    [ TVar (TV "x257" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 80 4 10) (Loc 83 4 13)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -7877,7 +7898,8 @@ Right
                                (Area (Loc 80 4 10) (Loc 97 4 27))
                                (App
                                   (Solved
-                                     ([ IsIn "Functor" [ TVar (TV "x257" (Kfun Star Star)) ] ] :=>
+                                     ([ IsIn "Functor" [ TVar (TV "x257" (Kfun Star Star)) ] Nothing
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon
@@ -7906,7 +7928,10 @@ Right
                                         , [ TVar (TV "u254" (Kfun Star Star)) ]
                                         )
                                         (Solved
-                                           ([ IsIn "Functor" [ TVar (TV "x257" (Kfun Star Star)) ]
+                                           ([ IsIn
+                                                "Functor"
+                                                [ TVar (TV "x257" (Kfun Star Star)) ]
+                                                Nothing
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -7934,7 +7959,11 @@ Right
                                            (Area (Loc 80 4 10) (Loc 83 4 13))
                                            (Var "map"))))
                                   (Solved
-                                     ([ IsIn "Functor" [ TVar (TV "x257" (Kfun Star Star)) ] ] :=>
+                                     ([ IsIn
+                                          "Functor"
+                                          [ TVar (TV "x257" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 80 4 10) (Loc 83 4 13)))
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon
@@ -8004,13 +8033,34 @@ Right
                    (Area (Loc 99 6 1) (Loc 200 9 40))
                    (App
                       (Solved
-                         ([ IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Functor" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                          , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
+                         ([ IsIn
+                              "Monad"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                          , IsIn
+                              "Applicative"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                          , IsIn
+                              "Functor"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
+                          , IsIn
+                              "Monad"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                          , IsIn
+                              "Applicative"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                          , IsIn
+                              "Monad"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
+                          , IsIn
+                              "Applicative"
+                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                              (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                           ] :=>
                             TApp
                               (TApp
@@ -8045,13 +8095,34 @@ Right
                                (Area (Loc 163 9 2) (Loc 165 9 4))
                                (Var "|>"))
                             (Solved
-                               ([ IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Functor" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
+                               ([ IsIn
+                                    "Monad"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                , IsIn
+                                    "Applicative"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                , IsIn
+                                    "Functor"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
+                                , IsIn
+                                    "Monad"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                                , IsIn
+                                    "Applicative"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                                , IsIn
+                                    "Monad"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
+                                , IsIn
+                                    "Applicative"
+                                    [ TVar (TV "g292" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                 ] :=>
                                   TApp
                                     (TVar (TV "g292" (Kfun Star Star)))
@@ -8059,9 +8130,18 @@ Right
                                (Area (Loc 99 6 1) (Loc 160 8 31))
                                (App
                                   (Solved
-                                     ([ IsIn "Monad" [ TVar (TV "u280" (Kfun Star Star)) ]
-                                      , IsIn "Applicative" [ TVar (TV "u280" (Kfun Star Star)) ]
-                                      , IsIn "Functor" [ TVar (TV "u280" (Kfun Star Star)) ]
+                                     ([ IsIn
+                                          "Monad"
+                                          [ TVar (TV "u280" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                      , IsIn
+                                          "Applicative"
+                                          [ TVar (TV "u280" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                      , IsIn
+                                          "Functor"
+                                          [ TVar (TV "u280" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
                                       ] :=>
                                         TApp
                                           (TApp
@@ -8105,10 +8185,18 @@ Right
                                            (Area (Loc 132 8 2) (Loc 134 8 4))
                                            (Var "|>"))
                                         (Solved
-                                           ([ IsIn "Monad" [ TVar (TV "u280" (Kfun Star Star)) ]
+                                           ([ IsIn
+                                                "Monad"
+                                                [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                             , IsIn
-                                                "Applicative" [ TVar (TV "u280" (Kfun Star Star)) ]
-                                            , IsIn "Functor" [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                "Applicative"
+                                                [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                            , IsIn
+                                                "Functor"
+                                                [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
                                             ] :=>
                                               TApp
                                                 (TVar (TV "u280" (Kfun Star Star)))
@@ -8117,10 +8205,13 @@ Right
                                            (App
                                               (Solved
                                                  ([ IsIn
-                                                      "Monad" [ TVar (TV "r277" (Kfun Star Star)) ]
+                                                      "Monad"
+                                                      [ TVar (TV "r277" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                   , IsIn
                                                       "Applicative"
                                                       [ TVar (TV "r277" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                   ] :=>
                                                     TApp
                                                       (TApp
@@ -8179,9 +8270,11 @@ Right
                                                        ([ IsIn
                                                             "Monad"
                                                             [ TVar (TV "r277" (Kfun Star Star)) ]
+                                                            (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                         , IsIn
                                                             "Applicative"
                                                             [ TVar (TV "r277" (Kfun Star Star)) ]
+                                                            (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                         ] :=>
                                                           TApp
                                                             (TVar (TV "r277" (Kfun Star Star)))
@@ -8194,11 +8287,13 @@ Right
                                                                   [ TVar
                                                                       (TV "r277" (Kfun Star Star))
                                                                   ]
+                                                                  Nothing
                                                               , IsIn
                                                                   "Applicative"
                                                                   [ TVar
                                                                       (TV "r277" (Kfun Star Star))
                                                                   ]
+                                                                  Nothing
                                                               ] :=>
                                                                 TApp
                                                                   (TApp
@@ -8237,6 +8332,7 @@ Right
                                                                                "r277"
                                                                                (Kfun Star Star))
                                                                         ]
+                                                                        Nothing
                                                                     , IsIn
                                                                         "Applicative"
                                                                         [ TVar
@@ -8244,6 +8340,7 @@ Right
                                                                                "r277"
                                                                                (Kfun Star Star))
                                                                         ]
+                                                                        Nothing
                                                                     ] :=>
                                                                       TApp
                                                                         (TApp
@@ -8270,11 +8367,17 @@ Right
                                                                   [ TVar
                                                                       (TV "r277" (Kfun Star Star))
                                                                   ]
+                                                                  (Just
+                                                                     (Area
+                                                                        (Loc 99 6 1) (Loc 101 6 3)))
                                                               , IsIn
                                                                   "Applicative"
                                                                   [ TVar
                                                                       (TV "r277" (Kfun Star Star))
                                                                   ]
+                                                                  (Just
+                                                                     (Area
+                                                                        (Loc 99 6 1) (Loc 101 6 3)))
                                                               ] :=>
                                                                 TCon (TC "Number" Star) "prelude")
                                                              (Area (Loc 102 6 4) (Loc 103 6 5))
@@ -8283,13 +8386,17 @@ Right
                                                     False))
                                               (Solved
                                                  ([ IsIn
-                                                      "Monad" [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                      "Monad"
+                                                      [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                   , IsIn
                                                       "Applicative"
                                                       [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                                                   , IsIn
                                                       "Functor"
                                                       [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
                                                   ] :=>
                                                     TApp
                                                       (TApp
@@ -8308,6 +8415,7 @@ Right
                                                        ([ IsIn
                                                             "Functor"
                                                             [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                            Nothing
                                                         ] :=>
                                                           TApp
                                                             (TApp
@@ -8362,6 +8470,7 @@ Right
                                                                   [ TVar
                                                                       (TV "u280" (Kfun Star Star))
                                                                   ]
+                                                                  Nothing
                                                               ] :=>
                                                                 TApp
                                                                   (TApp
@@ -8411,6 +8520,8 @@ Right
                                                        ([ IsIn
                                                             "Functor"
                                                             [ TVar (TV "u280" (Kfun Star Star)) ]
+                                                            (Just
+                                                               (Area (Loc 110 7 6) (Loc 113 7 9)))
                                                         ] :=>
                                                           TApp
                                                             (TApp
@@ -8523,13 +8634,34 @@ Right
                                               True))
                                         False))
                                   (Solved
-                                     ([ IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Functor" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                      , IsIn "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                     ([ IsIn
+                                          "Monad"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                      , IsIn
+                                          "Applicative"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
+                                      , IsIn
+                                          "Functor"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
+                                      , IsIn
+                                          "Monad"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                                      , IsIn
+                                          "Applicative"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
+                                      , IsIn
+                                          "Monad"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
+                                      , IsIn
+                                          "Applicative"
+                                          [ TVar (TV "g292" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                       ] :=>
                                         TApp
                                           (TApp
@@ -8544,9 +8676,14 @@ Right
                                      (Area (Loc 135 8 6) (Loc 160 8 31))
                                      (App
                                         (Solved
-                                           ([ IsIn "Monad" [ TVar (TV "b287" (Kfun Star Star)) ]
+                                           ([ IsIn
+                                                "Monad"
+                                                [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                Nothing
                                             , IsIn
-                                                "Applicative" [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                "Applicative"
+                                                [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                Nothing
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -8585,10 +8722,13 @@ Right
                                               )
                                               (Solved
                                                  ([ IsIn
-                                                      "Monad" [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                      "Monad"
+                                                      [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                      Nothing
                                                   , IsIn
                                                       "Applicative"
                                                       [ TVar (TV "b287" (Kfun Star Star)) ]
+                                                      Nothing
                                                   ] :=>
                                                     TApp
                                                       (TApp
@@ -8622,12 +8762,22 @@ Right
                                                  (Area (Loc 135 8 6) (Loc 140 8 11))
                                                  (Var "chain"))))
                                         (Solved
-                                           ([ IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                           ([ IsIn
+                                                "Monad"
+                                                [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
                                             , IsIn
-                                                "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
-                                            , IsIn "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                "Applicative"
+                                                [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
                                             , IsIn
-                                                "Applicative" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                "Monad"
+                                                [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
+                                            , IsIn
+                                                "Applicative"
+                                                [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -8642,20 +8792,26 @@ Right
                                            (Abs
                                               (Solved
                                                  ([ IsIn
-                                                      "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                      "Monad"
+                                                      [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                                   , IsIn
                                                       "Applicative"
                                                       [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                      (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                                   ] :=>
                                                     TCon (TC "Number" Star) "prelude")
                                                  (Area (Loc 142 8 13) (Loc 143 8 14))
                                                  "x")
                                               [ Solved
                                                   ([ IsIn
-                                                       "Monad" [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                       "Monad"
+                                                       [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                       (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                                    , IsIn
                                                        "Applicative"
                                                        [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                       (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                                                    ] :=>
                                                      TApp
                                                        (TVar (TV "g292" (Kfun Star Star)))
@@ -8666,9 +8822,11 @@ Right
                                                         ([ IsIn
                                                              "Monad"
                                                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                             Nothing
                                                          , IsIn
                                                              "Applicative"
                                                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                             Nothing
                                                          ] :=>
                                                            TApp
                                                              (TApp
@@ -8699,11 +8857,13 @@ Right
                                                                    [ TVar
                                                                        (TV "g292" (Kfun Star Star))
                                                                    ]
+                                                                   Nothing
                                                                , IsIn
                                                                    "Applicative"
                                                                    [ TVar
                                                                        (TV "g292" (Kfun Star Star))
                                                                    ]
+                                                                   Nothing
                                                                ] :=>
                                                                  TApp
                                                                    (TApp
@@ -8727,9 +8887,15 @@ Right
                                                         ([ IsIn
                                                              "Monad"
                                                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 149 8 20) (Loc 151 8 22)))
                                                          , IsIn
                                                              "Applicative"
                                                              [ TVar (TV "g292" (Kfun Star Star)) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 149 8 20) (Loc 151 8 22)))
                                                          ] :=>
                                                            TCon (TC "Number" Star) "prelude")
                                                         (Area (Loc 152 8 23) (Loc 157 8 28))
@@ -8816,42 +8982,49 @@ Right
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                           , IsIn
                               "Applicative"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 99 6 1) (Loc 101 6 3)))
                           , IsIn
                               "Functor"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 110 7 6) (Loc 113 7 9)))
                           , IsIn
                               "Monad"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
                           , IsIn
                               "Applicative"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 135 8 6) (Loc 140 8 11)))
                           , IsIn
                               "Monad"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                           , IsIn
                               "Applicative"
                               [ TApp
                                   (TCon (TC "Wish" (Kfun Star (Kfun Star Star))) "./ModuleA")
                                   (TVar (TV "q302" Star))
                               ]
+                              (Just (Area (Loc 149 8 20) (Loc 151 8 22)))
                           ] :=>
                             TApp
                               (TApp

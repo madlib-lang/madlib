@@ -11,7 +11,7 @@ Right
                   (Area (Loc 113 9 2) (Loc 122 9 11))
                   (App
                      (Solved
-                        ([ IsIn "Read" [ TVar (TV "e4" Star) ] ] :=>
+                        ([ IsIn "Read" [ TVar (TV "e4" Star) ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -23,7 +23,7 @@ Right
                            , [ TCon (TC "Number" Star) "prelude" ]
                            )
                            (Solved
-                              ([ IsIn "Read" [ TVar (TV "e4" Star) ] ] :=>
+                              ([ IsIn "Read" [ TVar (TV "e4" Star) ] Nothing ] :=>
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -32,7 +32,11 @@ Right
                               (Area (Loc 113 9 2) (Loc 117 9 6))
                               (Var "read"))))
                      (Solved
-                        ([ IsIn "Read" [ TVar (TV "d3" Star) ] ] :=>
+                        ([ IsIn
+                             "Read"
+                             [ TVar (TV "d3" Star) ]
+                             (Just (Area (Loc 113 9 2) (Loc 117 9 6)))
+                         ] :=>
                            TCon (TC "String" Star) "prelude")
                         (Area (Loc 118 9 7) (Loc 121 9 10))
                         (LStr "'3'"))
@@ -52,7 +56,7 @@ Right
                   [ ( "read"
                     , Forall
                         [ Star ]
-                        ([ IsIn "Read" [ TGen 0 ] ] :=>
+                        ([ IsIn "Read" [ TGen 0 ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -76,7 +80,7 @@ Right
             (Instance
                "Read"
                []
-               (IsIn "Read" [ TCon (TC "Number" Star) "prelude" ])
+               (IsIn "Read" [ TCon (TC "Number" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "read"
                     , ( Solved

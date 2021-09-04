@@ -1,7 +1,13 @@
 Left
   (CompilationError
      (AmbiguousType
-        ( TV "-" Star , [ IsIn "Read" [ TVar (TV "e4" Star) ] ] ))
+        ( TV "-" Star
+        , [ IsIn
+              "Read"
+              [ TVar (TV "e4" Star) ]
+              (Just (Area (Loc 112 9 1) (Loc 116 9 5)))
+          ]
+        ))
      Context
        { ctxAstPath = "path"
        , ctxArea = Area (Loc 112 9 1) (Loc 121 9 10)

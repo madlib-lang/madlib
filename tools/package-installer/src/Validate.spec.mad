@@ -28,7 +28,7 @@ MADLIBDOTJSON = {
 }
 
 DEFAULT_DEPENDENCY = {
-  description: "some dependency",
+  description: Just("some dependency"),
   url: "http://url.tld",
   sanitizedUrl: "http___url_tld",
   versionRange: AnyVersion,
@@ -194,6 +194,15 @@ test("ap - fn ValidationError not recoverable", (_) => {
     ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Nothing),
     pure(2)
   )
+
+  return assertEquals(actual, expected)
+})
+
+
+test("chain - ValidationError recoverable", (_) => {
+  expected = ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(2))
+
+  actual = chain((x) => Valid(x + 1), ValidationError([], MadlibDotJsonCouldNotBeLoaded(""), Just(1)))
 
   return assertEquals(actual, expected)
 })

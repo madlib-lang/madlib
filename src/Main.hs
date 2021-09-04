@@ -38,7 +38,7 @@ run cmd = do
 
     Install                      -> runPackageInstaller
 
-    Package{ packageSubCommand } -> runPackage packageSubCommand
+    Package{ packageSubCommand, rebuild } -> runPackage packageSubCommand rebuild
 
     New path                     -> runPackageGenerator path
 

@@ -120,8 +120,7 @@ instance Canonicalizable Src.Exp Can.Exp where
       let tagFnArea = Area (Loc 0 l c) (Loc 0 l (c + length name + 2))
       let tagFnVar = Can.Canonical tagFnArea (Can.Var name)
 
-      children' <-
-        ((\e@(Can.Canonical a _) -> Can.Canonical a (Can.ListItem e)) <$>) <$> mapM canonicalizeJsxChild children
+      children' <- mapM canonicalizeJsxChild children
       propFns <- mapM
         (\(Src.Source _ a (Src.JsxProp name' exp)) -> do
           pushNameAccess name'
@@ -143,10 +142,11 @@ instance Canonicalizable Src.Exp Can.Exp where
             if null children' then
               Can.Canonical
                 childrenArea
+-- TODO: Maybe just use a type of: JSXChildren a => List a
                 (Can.TypedExp
                   (Can.Canonical childrenArea (Can.ListConstructor children'))
-                  (Can.Canonical childrenArea (Can.TRComp "List" [Can.Canonical childrenArea (Can.TRSingle "Element")]))
-                  (Forall [] ([] :=> tListOf (TCon (TC "Element" Star) "JSX")))
+                  (Can.Canonical childrenArea (Can.TRComp "List" [Can.Canonical childrenArea (Can.TRSingle "()")]))
+                  (Forall [] ([] :=> tListOf tUnit))
                 )
             else
               Can.Canonical childrenArea (Can.ListConstructor children')
@@ -160,10 +160,22 @@ instance Canonicalizable Src.Exp Can.Exp where
         then mergeAreas (getArea $ head cans) (getArea $ last cans)
         else Area (Loc 0 l (c + offset)) (Loc 0 l (c + offset))
 
-      canonicalizeJsxChild :: Src.Exp -> CanonicalM Can.Exp
-      canonicalizeJsxChild e@(Src.Source _ area exp) = do
-        e' <- canonicalize env target e
-        return $ Can.Canonical area $ Can.JSXExpChild e'
+      canonicalizeJsxChild :: Src.JSXChild -> CanonicalM Can.ListItem
+      canonicalizeJsxChild child = case child of
+        Src.JSXChild exp -> do
+          e' <- canonicalize env target exp
+          return $ Can.Canonical area (Can.ListItem (Can.Canonical area (Can.App (Can.Canonical area (Can.Var "toElement")) e' True)))
+
+        Src.JSXSpreadChild exp -> do
+          e' <- canonicalize env target exp
+          return $ Can.Canonical area (Can.ListSpread (Can.Canonical area (
+            Can.App
+              (Can.Canonical area
+                (Can.App (Can.Canonical area (Can.Var "map")) (Can.Canonical area (Can.Var "toElement")) True)
+              )
+              e'
+              True))
+            )
 
     Src.Pipe exps -> do
       let (Area (Loc x l c) _) = area

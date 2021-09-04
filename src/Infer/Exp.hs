@@ -31,7 +31,6 @@ import           Infer.Scheme                   ( quantify )
 import           Infer.Pattern
 import           Infer.Pred
 import           Infer.Placeholder
-import           Infer.JSX
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
 import qualified Control.Monad                 as CM
@@ -176,10 +175,8 @@ inferBody env (e : xs) = do
 
   e''               <- insertClassPlaceholders env' e' ps
   e'''              <- updatePlaceholders env' True s e''
-
-  -- (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
-  -- (sb, ps', tb, eb) <- inferBody (updateBodyEnv (trace ("POS:"<>ppShow (Slv.getArea e'')<>"\nPS: "<>ppShow ps<>"\nS: "<>ppShow s) (removeRecordTypes s)) env') xs
+
   return (s `compose` sb, ps ++ ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
@@ -347,13 +344,9 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
 inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferListItem env ty (Can.Canonical area li) = case li of
-  Can.ListItem exp -> case exp of
-    Can.Canonical _ (Can.JSXExpChild _) ->
-      inferJSXExpChild infer env ty exp
-
-    _ -> do
-      (s1, ps, t, e) <- infer env exp
-      return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListItem e)
+  Can.ListItem exp -> do
+    (s1, ps, t, e) <- infer env exp
+    return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
@@ -522,8 +515,8 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
   tv                     <- newTVar Star
   (pss, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch (apply currSubst env) tv t is
-      return (res <> [r], currSubst `compose` subst)
+      r@(subst, _, _) <- inferBranch (apply currSubst env) (apply currSubst tv) t is
+      return (res <> [r], subst `compose` currSubst)
     )
     ([], s)
     iss

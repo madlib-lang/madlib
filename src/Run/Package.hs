@@ -65,16 +65,29 @@ typeCheckMain main = do
     Left err    -> return (Left [err], [])
 
 
-bumpVersion :: APIChange -> Version -> Version
-bumpVersion apiChange version = case apiChange of
-  Major -> Version [major version + 1, 0, 0] []
+bumpVersion :: Bool -> APIChange -> Version -> Version
+bumpVersion rebuild apiChange version = case (apiChange, version) of
+  (Major, Version [major, minor, patch] _) | rebuild && minor == 0 && patch == 0 ->
+    version
 
-  Minor -> Version [major version, minor version + 1, 0] []
+  (Major, Version [major, _, _] _) ->
+    Version [major + 1, 0, 0] []
 
-  Patch -> Version [major version, minor version, patch version + 1] []
+  (Minor, Version [major, minor, patch] _) | rebuild && patch == 0 ->
+    version
 
-performBuild :: Either VersionLock.ReadError VersionLock.VersionLock -> Maybe Version -> String -> String -> Slv.AST -> Slv.Table -> IO (Either String (Version, VersionLock.VersionLock))
-performBuild eitherVersionLock parsedVersion hashedVersion projectHash ast table =
+  (Minor, Version [major, minor, _] _) ->
+    Version [major, minor + 1, 0] []
+
+  (Patch, Version [major, minor, patch] _) | rebuild ->
+    version
+
+  (Patch, Version [major, minor, patch] _) ->
+    Version [major, minor, patch + 1] []
+
+
+performBuild :: Bool -> Either VersionLock.ReadError VersionLock.VersionLock -> Maybe Version -> String -> String -> Slv.AST -> Slv.Table -> IO (Either String (Version, VersionLock.VersionLock))
+performBuild rebuild eitherVersionLock parsedVersion hashedVersion projectHash ast table =
   case (eitherVersionLock, parsedVersion) of
     -- if there is no version.lock file we generate the initial one with version 0.0.1
     (Left VersionLock.FileNotFound, _) -> do
@@ -96,7 +109,7 @@ performBuild eitherVersionLock parsedVersion hashedVersion projectHash ast table
         return $ Left "It seems that you modified the version in madlib.json manually"
       else do
         let currentAPI = buildAPI ast table
-        let nextVersion = bumpVersion (computeAPIChange api currentAPI) version
+        let nextVersion = bumpVersion rebuild (computeAPIChange api currentAPI) version
         nextVersionHash <- hash $ BLChar8.pack $ showVersion nextVersion
 
         let nextVersionLock = VersionLock.VersionLock
@@ -107,11 +120,8 @@ performBuild eitherVersionLock parsedVersion hashedVersion projectHash ast table
         return $ Right (nextVersion, nextVersionLock)
 
 
-
-
-
-runBuildPackage :: IO ()
-runBuildPackage = do
+runBuildPackage :: Bool -> IO ()
+runBuildPackage rebuild = do
   putStrLn "Building package..."
   madlibDotJson <- MadlibDotJson.loadCurrentMadlibDotJson
 
@@ -134,7 +144,7 @@ runBuildPackage = do
 
         Right solvedTable -> do
           let (Just mainAST) = Map.lookup canonicalMain solvedTable
-          processed <- performBuild versionLock parsedVersion hashedVersion projectHash mainAST solvedTable
+          processed <- performBuild rebuild versionLock parsedVersion hashedVersion projectHash mainAST solvedTable
           case processed of
             Left e -> putStrLn e
 
@@ -146,8 +156,8 @@ runBuildPackage = do
       return ()
 
 
-runPackage :: PackageSubCommand -> IO ()
-runPackage subCommand = case subCommand of
-  NoPackageSubCommand -> runBuildPackage
+runPackage :: PackageSubCommand -> Bool -> IO ()
+runPackage subCommand rebuild = case subCommand of
+  NoPackageSubCommand -> runBuildPackage rebuild
 
   GenerateHash input  -> runGeneratePackageHash input

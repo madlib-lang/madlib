@@ -32,7 +32,10 @@ insertVarPlaceholders env exp@(Slv.Solved t a e) (p : ps) = do
       insert <- shouldInsert env p
 
       let exp' =
-            if insert then Slv.Solved t a $ Slv.Placeholder (Slv.ClassRef (predClass p) [] True insert, ts) exp else exp
+            if insert then
+              Slv.Solved t a $ Slv.Placeholder (Slv.ClassRef (predClass p) [] True insert, ts) exp
+            else
+              exp
       insertVarPlaceholders env exp' ps
 
 
@@ -136,28 +139,31 @@ updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholde
                      (Slv.Solved qt a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved qt' a' exp)))
                      ps'
 
+
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 pushPlaceholders _   exp                    []                     = return exp
 pushPlaceholders env exp@(Slv.Solved qt a _) (p@(IsIn cls ts _) : ps) = do
   var <- shouldInsert env $ IsIn cls ts Nothing
   ps' <- buildClassRefPreds env cls ts
   ts' <- getCanonicalPlaceholderTypes env p
+
   let ph = Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls ps' True var, ts') exp)
   pushPlaceholders env ph ps
 
 
 updateClassPlaceholder :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
 updateClassPlaceholder env push s ph = case ph of
-  Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call _, instanceTypes) exp) -> do
+  Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes) exp) -> do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
-    var   <- shouldInsert env $ IsIn cls instanceTypes' Nothing
+    var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
     exp'  <- updatePlaceholders env push s exp
     ps'   <- buildClassRefPreds env cls instanceTypes'
 
-    if not var && not call
-      then return ph
-      else return $ Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls ps' call var, types) exp')
+    if not call then
+      return $ Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes) exp')
+    else
+      return $ Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
   _ -> return ph
 
