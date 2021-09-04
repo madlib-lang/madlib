@@ -42,13 +42,14 @@ toSolved (Can.Canonical area exp) = case exp of
 
   Can.NameExport       name  -> Slv.Solved ([] :=> tSubst) area (Slv.NameExport name)
 
+  Can.TypeExport       name  -> Slv.Solved ([] :=> tSubst) area (Slv.TypeExport name)
+
   Can.ListConstructor  items -> Slv.Solved ([] :=> tSubst) area (Slv.ListConstructor (liToSolved <$> items))
 
   Can.TupleConstructor exps  -> Slv.Solved ([] :=> tSubst) area (Slv.TupleConstructor (toSolved <$> exps))
 
   Can.JSExp            code  -> Slv.Solved ([] :=> tSubst) area (Slv.JSExp code)
 
-  Can.JSXExpChild      exp   -> toSolved exp
 
 
 liToSolved :: Can.ListItem -> Slv.ListItem

@@ -1,8 +1,14 @@
 Left
   (CompilationError
      (ContextTooWeak
-        [ IsIn "Show" [ TVar (TV "j9" Star) ]
-        , IsIn "Show" [ TVar (TV "i8" Star) ]
+        [ IsIn
+            "Show"
+            [ TVar (TV "j9" Star) ]
+            (Just (Area (Loc 259 14 54) (Loc 263 14 58)))
+        , IsIn
+            "Show"
+            [ TVar (TV "i8" Star) ]
+            (Just (Area (Loc 240 14 35) (Loc 244 14 39)))
         ])
      Context
        { ctxAstPath = "path"
@@ -21,7 +27,8 @@ Left
                                (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                                (TVar (TV "a" Star)))
                             (TVar (TV "b" Star))
-                        ])
+                        ]
+                        Nothing)
                      (fromList
                         [ ( "show"
                           , Canonical

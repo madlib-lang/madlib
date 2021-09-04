@@ -7,7 +7,7 @@ Right
             (Area (Loc 299 17 1) (Loc 315 17 17))
             (App
                (Solved
-                  ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                  ([ IsIn "Show" [ TVar (TV "a26" Star) ] Nothing ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -19,7 +19,7 @@ Right
                      , [ TCon (TC "Boolean" Star) "prelude" ]
                      )
                      (Solved
-                        ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                        ([ IsIn "Show" [ TVar (TV "a26" Star) ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -31,7 +31,7 @@ Right
                            , [ TCon (TC "Number" Star) "prelude" ]
                            )
                            (Solved
-                              ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                              ([ IsIn "Show" [ TVar (TV "a26" Star) ] Nothing ] :=>
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -48,7 +48,7 @@ Right
                                    ]
                                  )
                                  (Solved
-                                    ([ IsIn "Show" [ TVar (TV "a26" Star) ] ] :=>
+                                    ([ IsIn "Show" [ TVar (TV "a26" Star) ] Nothing ] :=>
                                        TApp
                                          (TApp
                                             (TCon
@@ -66,6 +66,7 @@ Right
                               (TCon (TC "Number" Star) "prelude"))
                            (TCon (TC "Boolean" Star) "prelude")
                        ]
+                       (Just (Area (Loc 299 17 1) (Loc 303 17 5)))
                    ] :=>
                      TApp
                        (TApp
@@ -97,7 +98,7 @@ Right
                   [ ( "show"
                     , Forall
                         [ Star ]
-                        ([ IsIn "Show" [ TGen 0 ] ] :=>
+                        ([ IsIn "Show" [ TGen 0 ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
@@ -120,7 +121,7 @@ Right
             (Instance
                "Show"
                []
-               (IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ])
+               (IsIn "Show" [ TCon (TC "Boolean" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "show"
                     , ( Solved
@@ -179,7 +180,7 @@ Right
             (Instance
                "Show"
                []
-               (IsIn "Show" [ TCon (TC "Number" Star) "prelude" ])
+               (IsIn "Show" [ TCon (TC "Number" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "show"
                     , ( Solved
@@ -225,8 +226,8 @@ Right
             (Area (Loc 183 13 1) (Loc 297 15 1))
             (Instance
                "Show"
-               [ IsIn "Show" [ TVar (TV "a" Star) ]
-               , IsIn "Show" [ TVar (TV "b" Star) ]
+               [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
+               , IsIn "Show" [ TVar (TV "b" Star) ] Nothing
                ]
                (IsIn
                   "Show"
@@ -235,7 +236,8 @@ Right
                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                          (TVar (TV "a" Star)))
                       (TVar (TV "b" Star))
-                  ])
+                  ]
+                  Nothing)
                (fromList
                   [ ( "show"
                     , ( Solved
@@ -285,8 +287,8 @@ Right
                                       (Placeholder
                                          ( ClassRef "Show" [] False True , [ TVar (TV "i8" Star) ] )
                                          (Solved
-                                            ([ IsIn "Show" [ TVar (TV "w22" Star) ]
-                                             , IsIn "Show" [ TVar (TV "x23" Star) ]
+                                            ([ IsIn "Show" [ TVar (TV "w22" Star) ] Nothing
+                                             , IsIn "Show" [ TVar (TV "x23" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -304,8 +306,14 @@ Right
                                             (Area (Loc 235 14 10) (Loc 295 14 70))
                                             (Abs
                                                (Solved
-                                                  ([ IsIn "Show" [ TVar (TV "i8" Star) ]
-                                                   , IsIn "Show" [ TVar (TV "j9" Star) ]
+                                                  ([ IsIn
+                                                       "Show"
+                                                       [ TVar (TV "i8" Star) ]
+                                                       (Just (Area (Loc 260 14 35) (Loc 264 14 39)))
+                                                   , IsIn
+                                                       "Show"
+                                                       [ TVar (TV "j9" Star) ]
+                                                       (Just (Area (Loc 279 14 54) (Loc 283 14 58)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -317,8 +325,16 @@ Right
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__x__")
                                                [ Solved
-                                                   ([ IsIn "Show" [ TVar (TV "p15" Star) ]
-                                                    , IsIn "Show" [ TVar (TV "v21" Star) ]
+                                                   ([ IsIn
+                                                        "Show"
+                                                        [ TVar (TV "p15" Star) ]
+                                                        (Just
+                                                           (Area (Loc 260 14 35) (Loc 264 14 39)))
+                                                    , IsIn
+                                                        "Show"
+                                                        [ TVar (TV "v21" Star) ]
+                                                        (Just
+                                                           (Area (Loc 279 14 54) (Loc 283 14 58)))
                                                     ] :=>
                                                       TCon (TC "String" Star) "prelude")
                                                    (Area (Loc 235 14 10) (Loc 295 14 70))
@@ -337,8 +353,20 @@ Right
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Var "__x__"))
                                                       [ Solved
-                                                          ([ IsIn "Show" [ TVar (TV "i8" Star) ]
-                                                           , IsIn "Show" [ TVar (TV "j9" Star) ]
+                                                          ([ IsIn
+                                                               "Show"
+                                                               [ TVar (TV "i8" Star) ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 260 14 35)
+                                                                     (Loc 264 14 39)))
+                                                           , IsIn
+                                                               "Show"
+                                                               [ TVar (TV "j9" Star) ]
+                                                               (Just
+                                                                  (Area
+                                                                     (Loc 279 14 54)
+                                                                     (Loc 283 14 58)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -421,9 +449,19 @@ Right
                                                                    ]))
                                                              (Solved
                                                                 ([ IsIn
-                                                                     "Show" [ TVar (TV "p15" Star) ]
+                                                                     "Show"
+                                                                     [ TVar (TV "p15" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 260 14 35)
+                                                                           (Loc 264 14 39)))
                                                                  , IsIn
-                                                                     "Show" [ TVar (TV "v21" Star) ]
+                                                                     "Show"
+                                                                     [ TVar (TV "v21" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 279 14 54)
+                                                                           (Loc 283 14 58)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
@@ -510,9 +548,17 @@ Right
                                                                       ([ IsIn
                                                                            "Show"
                                                                            [ TVar (TV "i8" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 260 14 35)
+                                                                                 (Loc 264 14 39)))
                                                                        , IsIn
                                                                            "Show"
                                                                            [ TVar (TV "j9" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 279 14 54)
+                                                                                 (Loc 283 14 58)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
@@ -527,6 +573,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "i8" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          260 14 35)
+                                                                                       (Loc
+                                                                                          264
+                                                                                          14
+                                                                                          39)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -605,6 +659,16 @@ Right
                                                                                               "i8"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                260
+                                                                                                14
+                                                                                                35)
+                                                                                             (Loc
+                                                                                                264
+                                                                                                14
+                                                                                                39)))
                                                                                    ] :=>
                                                                                      TCon
                                                                                        (TC
@@ -624,6 +688,7 @@ Right
                                                                                                     "p15"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -673,6 +738,7 @@ Right
                                                                                                           "p15"
                                                                                                           Star)
                                                                                                    ]
+                                                                                                   Nothing
                                                                                                ] :=>
                                                                                                  TApp
                                                                                                    (TApp
@@ -713,6 +779,16 @@ Right
                                                                                                     "i8"
                                                                                                     Star)
                                                                                              ]
+                                                                                             (Just
+                                                                                                (Area
+                                                                                                   (Loc
+                                                                                                      260
+                                                                                                      14
+                                                                                                      35)
+                                                                                                   (Loc
+                                                                                                      264
+                                                                                                      14
+                                                                                                      39)))
                                                                                          ] :=>
                                                                                            TVar
                                                                                              (TV
@@ -736,11 +812,27 @@ Right
                                                                                  [ TVar
                                                                                      (TV "i8" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          260 14 35)
+                                                                                       (Loc
+                                                                                          264
+                                                                                          14
+                                                                                          39)))
                                                                              , IsIn
                                                                                  "Show"
                                                                                  [ TVar
                                                                                      (TV "j9" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          279 14 54)
+                                                                                       (Loc
+                                                                                          283
+                                                                                          14
+                                                                                          58)))
                                                                              ] :=>
                                                                                TCon
                                                                                  (TC "String" Star)
@@ -853,6 +945,16 @@ Right
                                                                                               "j9"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                279
+                                                                                                14
+                                                                                                54)
+                                                                                             (Loc
+                                                                                                283
+                                                                                                14
+                                                                                                58)))
                                                                                    ] :=>
                                                                                      TCon
                                                                                        (TC
@@ -872,6 +974,16 @@ Right
                                                                                                     "j9"
                                                                                                     Star)
                                                                                              ]
+                                                                                             (Just
+                                                                                                (Area
+                                                                                                   (Loc
+                                                                                                      279
+                                                                                                      14
+                                                                                                      54)
+                                                                                                   (Loc
+                                                                                                      283
+                                                                                                      14
+                                                                                                      58)))
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -962,6 +1074,16 @@ Right
                                                                                                           "j9"
                                                                                                           Star)
                                                                                                    ]
+                                                                                                   (Just
+                                                                                                      (Area
+                                                                                                         (Loc
+                                                                                                            279
+                                                                                                            14
+                                                                                                            54)
+                                                                                                         (Loc
+                                                                                                            283
+                                                                                                            14
+                                                                                                            58)))
                                                                                                ] :=>
                                                                                                  TCon
                                                                                                    (TC
@@ -986,6 +1108,7 @@ Right
                                                                                                                 "v21"
                                                                                                                 Star)
                                                                                                          ]
+                                                                                                         Nothing
                                                                                                      ] :=>
                                                                                                        TApp
                                                                                                          (TApp
@@ -1035,6 +1158,7 @@ Right
                                                                                                                       "v21"
                                                                                                                       Star)
                                                                                                                ]
+                                                                                                               Nothing
                                                                                                            ] :=>
                                                                                                              TApp
                                                                                                                (TApp
@@ -1075,6 +1199,16 @@ Right
                                                                                                                 "j9"
                                                                                                                 Star)
                                                                                                          ]
+                                                                                                         (Just
+                                                                                                            (Area
+                                                                                                               (Loc
+                                                                                                                  279
+                                                                                                                  14
+                                                                                                                  54)
+                                                                                                               (Loc
+                                                                                                                  283
+                                                                                                                  14
+                                                                                                                  58)))
                                                                                                      ] :=>
                                                                                                        TVar
                                                                                                          (TV
@@ -1101,6 +1235,16 @@ Right
                                                                                                     "j9"
                                                                                                     Star)
                                                                                              ]
+                                                                                             (Just
+                                                                                                (Area
+                                                                                                   (Loc
+                                                                                                      279
+                                                                                                      14
+                                                                                                      54)
+                                                                                                   (Loc
+                                                                                                      283
+                                                                                                      14
+                                                                                                      58)))
                                                                                          ] :=>
                                                                                            TCon
                                                                                              (TC
@@ -1126,7 +1270,9 @@ Right
                                                ])))))))
                       , Forall
                           [ Star , Star ]
-                          ([ IsIn "Show" [ TGen 0 ] , IsIn "Show" [ TGen 1 ] ] :=>
+                          ([ IsIn "Show" [ TGen 0 ] Nothing
+                           , IsIn "Show" [ TGen 1 ] Nothing
+                           ] :=>
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")

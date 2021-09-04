@@ -7,6 +7,7 @@ import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
+import Options.Applicative (showDefault)
 
 
 data Command
@@ -27,7 +28,7 @@ data Command
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
   | Run { runInput :: FilePath, runArgs :: [String] }
-  | Package { packageSubCommand :: PackageSubCommand }
+  | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   deriving (Eq, Show)
 
 data PackageSubCommand
@@ -110,9 +111,19 @@ parseGenerateHash = subparser $ command
   ((GenerateHash <$> parseGenerateHashInput) `withInfo` "generates the md5 hash for a package")
   <> internal
 
+parseRebuild :: Parser Bool
+parseRebuild = switch
+  (  long "rebuild"
+  <> short 'r'
+  <> help "Rebuilds a package for an already built version and only bumps if there's a bigger change than the initial one"
+  <> showDefault
+  )
+
 parsePackage :: Parser Command
-parsePackage = (Package <$> parseGenerateHash)
-  <|> pure Package { packageSubCommand = NoPackageSubCommand }
+parsePackage =
+    (Package <$> parseGenerateHash <*> pure False)
+    <|> Package NoPackageSubCommand <$> parseRebuild
+
 
 
 parseCompile :: Parser Command

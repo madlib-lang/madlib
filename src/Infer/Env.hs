@@ -108,8 +108,8 @@ initialEnv = Env
                        , ("|>", Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        , ("$"          , Forall [Star] $ [] :=> TGen 0)
                        ]
-  , envInterfaces  = mempty
-  , envMethods     = mempty
+  , envInterfaces = mempty
+  , envMethods = mempty
   , envCurrentPath = ""
   , envBacktrace   = mempty
   }

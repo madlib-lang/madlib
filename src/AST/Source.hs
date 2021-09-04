@@ -100,6 +100,11 @@ data ListItem_
   | ListSpread Exp
   deriving(Eq, Show)
 
+data JSXChild
+  = JSXChild Exp
+  | JSXSpreadChild Exp
+  deriving(Eq, Show)
+
 
 type Exp = Source Exp_
 data Exp_ = LNum String
@@ -123,7 +128,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | Pipe [Exp]
           | JSExp String
-          | JsxTag Name [JsxProp] [Exp]
+          | JsxTag Name [JsxProp] [JSXChild]
           deriving(Eq, Show)
 
 

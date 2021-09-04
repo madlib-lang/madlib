@@ -470,13 +470,34 @@ Right
             (Assignment
                "generateFunctionLinks"
                (Solved
-                  ([ IsIn "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                   , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
+                  ([ IsIn
+                       "Functor"
+                       [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                       (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                   , IsIn
+                       "Comparable"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                    ] :=>
                      TApp
                        (TApp
@@ -525,13 +546,34 @@ Right
                   (Area (Loc 731 33 25) (Loc 1221 44 1))
                   (Abs
                      (Solved
-                        ([ IsIn "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                         , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
+                        ([ IsIn
+                             "Functor"
+                             [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                             (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                         , IsIn
+                             "Comparable"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                          ] :=>
                            TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -574,13 +616,34 @@ Right
                         (Area (Loc 731 33 25) (Loc 734 33 28))
                         "_P_")
                      [ Solved
-                         ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ]
-                          , IsIn "Comparable" [ TVar (TV "l63" Star) ]
-                          , IsIn "Comparable" [ TVar (TV "s70" Star) ]
-                          , IsIn "Comparable" [ TVar (TV "z77" Star) ]
-                          , IsIn "Comparable" [ TVar (TV "g84" Star) ]
-                          , IsIn "Comparable" [ TVar (TV "p93" Star) ]
-                          , IsIn "Comparable" [ TVar (TV "y102" Star) ]
+                         ([ IsIn
+                              "Functor"
+                              [ TVar (TV "v47" (Kfun Star Star)) ]
+                              (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "l63" Star) ]
+                              (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "s70" Star) ]
+                              (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "z77" Star) ]
+                              (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "g84" Star) ]
+                              (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "p93" Star) ]
+                              (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                          , IsIn
+                              "Comparable"
+                              [ TVar (TV "y102" Star) ]
+                              (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                           ] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -588,7 +651,11 @@ Right
                          (Area (Loc 731 33 25) (Loc 1219 43 20))
                          (App
                             (Solved
-                               ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ] ] :=>
+                               ([ IsIn
+                                    "Functor"
+                                    [ TVar (TV "v47" (Kfun Star Star)) ]
+                                    (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -604,7 +671,8 @@ Right
                                (Area (Loc 1202 43 3) (Loc 1219 43 20))
                                (App
                                   (Solved
-                                     ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ] ] :=>
+                                     ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ] Nothing
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon
@@ -633,7 +701,10 @@ Right
                                         , [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
                                         )
                                         (Solved
-                                           ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ]
+                                           ([ IsIn
+                                                "Functor"
+                                                [ TVar (TV "v47" (Kfun Star Star)) ]
+                                                Nothing
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -661,7 +732,11 @@ Right
                                            (Area (Loc 1202 43 3) (Loc 1205 43 6))
                                            (Var "map"))))
                                   (Solved
-                                     ([ IsIn "Functor" [ TVar (TV "v47" (Kfun Star Star)) ] ] :=>
+                                     ([ IsIn
+                                          "Functor"
+                                          [ TVar (TV "v47" (Kfun Star Star)) ]
+                                          (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon
@@ -676,13 +751,34 @@ Right
                                      (Var "FunctionLink"))
                                   True))
                             (Solved
-                               ([ IsIn "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
-                                , IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ]
+                               ([ IsIn
+                                    "Functor"
+                                    [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                                    (Just (Area (Loc 1202 43 3) (Loc 1205 43 6)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "String" Star) "prelude" ]
+                                    (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                 ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -715,12 +811,30 @@ Right
                                (Area (Loc 731 33 25) (Loc 1198 42 5))
                                (App
                                   (Solved
-                                     ([ IsIn "Comparable" [ TVar (TV "l63" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "s70" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "z77" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "g84" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "p93" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "y102" Star) ]
+                                     ([ IsIn
+                                          "Comparable"
+                                          [ TVar (TV "l63" Star) ]
+                                          (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "s70" Star) ]
+                                          (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "z77" Star) ]
+                                          (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "g84" Star) ]
+                                          (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "p93" Star) ]
+                                          (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "y102" Star) ]
+                                          (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                       ] :=>
                                         TApp
                                           (TApp
@@ -821,12 +935,30 @@ Right
                                            (Area (Loc 762 35 3) (Loc 768 35 9))
                                            (Var "sortBy"))
                                         (Solved
-                                           ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                            , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                            , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                            , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                            , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                            , IsIn "Comparable" [ TVar (TV "h59" Star) ]
+                                           ([ IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                            , IsIn
+                                                "Comparable"
+                                                [ TVar (TV "h59" Star) ]
+                                                (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -899,12 +1031,33 @@ Right
                                            (Area (Loc 769 35 10) (Loc 1197 42 3))
                                            (Abs
                                               (Solved
-                                                 ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                  , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                  , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                  , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                  , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                  , IsIn "Comparable" [ TVar (TV "h59" Star) ]
+                                                 ([ IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just
+                                                         (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just
+                                                         (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                                  , IsIn
+                                                      "Comparable"
+                                                      [ TVar (TV "h59" Star) ]
+                                                      (Just
+                                                         (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                                   ] :=>
                                                     TRecord
                                                       (fromList
@@ -931,12 +1084,33 @@ Right
                                                  (Area (Loc 770 35 11) (Loc 771 35 12))
                                                  "a")
                                               [ Solved
-                                                  ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                   , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                   , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                   , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                   , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                                   , IsIn "Comparable" [ TVar (TV "h59" Star) ]
+                                                  ([ IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                                   , IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                                   , IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                                   , IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just
+                                                          (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                                   , IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just
+                                                          (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                                   , IsIn
+                                                       "Comparable"
+                                                       [ TVar (TV "h59" Star) ]
+                                                       (Just
+                                                          (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -978,17 +1152,44 @@ Right
                                                   (Abs
                                                      (Solved
                                                         ([ IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 837 36 43) (Loc 844 36 50)))
                                                          , IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 899 37 41) (Loc 906 37 48)))
                                                          , IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 965 38 45) (Loc 972 38 52)))
                                                          , IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 1028 39 42)
+                                                                   (Loc 1035 39 49)))
                                                          , IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 1100 40 51)
+                                                                   (Loc 1107 40 58)))
                                                          , IsIn
-                                                             "Comparable" [ TVar (TV "h59" Star) ]
+                                                             "Comparable"
+                                                             [ TVar (TV "h59" Star) ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 1172 41 51)
+                                                                   (Loc 1179 41 58)))
                                                          ] :=>
                                                            TRecord
                                                              (fromList
@@ -1023,17 +1224,47 @@ Right
                                                         "b")
                                                      [ Solved
                                                          ([ IsIn
-                                                              "Comparable" [ TVar (TV "l63" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "l63" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 837 36 43)
+                                                                    (Loc 844 36 50)))
                                                           , IsIn
-                                                              "Comparable" [ TVar (TV "s70" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "s70" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 899 37 41)
+                                                                    (Loc 906 37 48)))
                                                           , IsIn
-                                                              "Comparable" [ TVar (TV "z77" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "z77" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 965 38 45)
+                                                                    (Loc 972 38 52)))
                                                           , IsIn
-                                                              "Comparable" [ TVar (TV "g84" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "g84" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 1028 39 42)
+                                                                    (Loc 1035 39 49)))
                                                           , IsIn
-                                                              "Comparable" [ TVar (TV "p93" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "p93" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 1100 40 51)
+                                                                    (Loc 1107 40 58)))
                                                           , IsIn
-                                                              "Comparable" [ TVar (TV "y102" Star) ]
+                                                              "Comparable"
+                                                              [ TVar (TV "y102" Star) ]
+                                                              (Just
+                                                                 (Area
+                                                                    (Loc 1172 41 51)
+                                                                    (Loc 1179 41 58)))
                                                           ] :=>
                                                             TCon (TC "Number" Star) "prelude")
                                                          (Area (Loc 779 35 20) (Loc 1197 42 3))
@@ -1149,6 +1380,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 837 36 43)
+                                                                           (Loc 844 36 50)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -1526,6 +1761,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "l63" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 837 36 43)
+                                                                                 (Loc 844 36 50)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -1540,6 +1779,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "f57" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          837 36 43)
+                                                                                       (Loc
+                                                                                          844
+                                                                                          36
+                                                                                          50)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -1573,6 +1820,7 @@ Right
                                                                                               "l63"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -1633,6 +1881,7 @@ Right
                                                                                                     "l63"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1688,6 +1937,16 @@ Right
                                                                                               "f57"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                837
+                                                                                                36
+                                                                                                43)
+                                                                                             (Loc
+                                                                                                844
+                                                                                                36
+                                                                                                50)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -1705,6 +1964,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "h59" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          837 36 43)
+                                                                                       (Loc
+                                                                                          844
+                                                                                          36
+                                                                                          50)))
                                                                              ] :=>
                                                                                TVar (TV "h59" Star))
                                                                             (Area
@@ -1716,6 +1983,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 899 37 41)
+                                                                           (Loc 906 37 48)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -2093,6 +2364,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "s70" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 899 37 41)
+                                                                                 (Loc 906 37 48)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -2107,6 +2382,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "m64" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          899 37 41)
+                                                                                       (Loc
+                                                                                          906
+                                                                                          37
+                                                                                          48)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -2140,6 +2423,7 @@ Right
                                                                                               "s70"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -2200,6 +2484,7 @@ Right
                                                                                                     "s70"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -2255,6 +2540,16 @@ Right
                                                                                               "m64"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                899
+                                                                                                37
+                                                                                                41)
+                                                                                             (Loc
+                                                                                                906
+                                                                                                37
+                                                                                                48)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -2272,6 +2567,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "o66" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          899 37 41)
+                                                                                       (Loc
+                                                                                          906
+                                                                                          37
+                                                                                          48)))
                                                                              ] :=>
                                                                                TVar (TV "o66" Star))
                                                                             (Area
@@ -2283,6 +2586,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 965 38 45)
+                                                                           (Loc 972 38 52)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -2660,6 +2967,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "z77" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 965 38 45)
+                                                                                 (Loc 972 38 52)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -2674,6 +2985,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "v73" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          965 38 45)
+                                                                                       (Loc
+                                                                                          972
+                                                                                          38
+                                                                                          52)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -2707,6 +3026,7 @@ Right
                                                                                               "z77"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -2767,6 +3087,7 @@ Right
                                                                                                     "z77"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -2822,6 +3143,16 @@ Right
                                                                                               "v73"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                965
+                                                                                                38
+                                                                                                45)
+                                                                                             (Loc
+                                                                                                972
+                                                                                                38
+                                                                                                52)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -2839,6 +3170,14 @@ Right
                                                                                  [ TVar
                                                                                      (TV "t71" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          965 38 45)
+                                                                                       (Loc
+                                                                                          972
+                                                                                          38
+                                                                                          52)))
                                                                              ] :=>
                                                                                TVar (TV "t71" Star))
                                                                             (Area
@@ -2850,6 +3189,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 1028 39 42)
+                                                                           (Loc 1035 39 49)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -3227,6 +3570,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "g84" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 1028 39 42)
+                                                                                 (Loc 1035 39 49)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -3241,6 +3588,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "a78" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1028
+                                                                                          39
+                                                                                          42)
+                                                                                       (Loc
+                                                                                          1035
+                                                                                          39
+                                                                                          49)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -3274,6 +3631,7 @@ Right
                                                                                               "g84"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -3335,6 +3693,7 @@ Right
                                                                                                     "g84"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -3390,6 +3749,16 @@ Right
                                                                                               "a78"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                1028
+                                                                                                39
+                                                                                                42)
+                                                                                             (Loc
+                                                                                                1035
+                                                                                                39
+                                                                                                49)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -3408,6 +3777,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "c80" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1028
+                                                                                          39
+                                                                                          42)
+                                                                                       (Loc
+                                                                                          1035
+                                                                                          39
+                                                                                          49)))
                                                                              ] :=>
                                                                                TVar (TV "c80" Star))
                                                                             (Area
@@ -3419,6 +3798,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 1100 40 51)
+                                                                           (Loc 1107 40 58)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -4046,6 +4429,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "p93" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 1100 40 51)
+                                                                                 (Loc 1107 40 58)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -4060,6 +4447,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "h85" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1100
+                                                                                          40
+                                                                                          51)
+                                                                                       (Loc
+                                                                                          1107
+                                                                                          40
+                                                                                          58)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -4093,6 +4490,7 @@ Right
                                                                                               "p93"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -4154,6 +4552,7 @@ Right
                                                                                                     "p93"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -4209,6 +4608,16 @@ Right
                                                                                               "h85"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                1100
+                                                                                                40
+                                                                                                51)
+                                                                                             (Loc
+                                                                                                1107
+                                                                                                40
+                                                                                                58)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -4227,6 +4636,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "j87" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1100
+                                                                                          40
+                                                                                          51)
+                                                                                       (Loc
+                                                                                          1107
+                                                                                          40
+                                                                                          58)))
                                                                              ] :=>
                                                                                TVar (TV "j87" Star))
                                                                             (Area
@@ -4238,6 +4657,10 @@ Right
                                                                 ([ IsIn
                                                                      "Comparable"
                                                                      [ TVar (TV "h59" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 1172 41 51)
+                                                                           (Loc 1179 41 58)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -4865,6 +5288,10 @@ Right
                                                                       ([ IsIn
                                                                            "Comparable"
                                                                            [ TVar (TV "y102" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 1172 41 51)
+                                                                                 (Loc 1179 41 58)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "Number" Star)
@@ -4879,6 +5306,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "q94" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1172
+                                                                                          41
+                                                                                          51)
+                                                                                       (Loc
+                                                                                          1179
+                                                                                          41
+                                                                                          58)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -4912,6 +5349,7 @@ Right
                                                                                               "y102"
                                                                                               Star)
                                                                                        ]
+                                                                                       Nothing
                                                                                    ] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -4973,6 +5411,7 @@ Right
                                                                                                     "y102"
                                                                                                     Star)
                                                                                              ]
+                                                                                             Nothing
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -5028,6 +5467,16 @@ Right
                                                                                               "q94"
                                                                                               Star)
                                                                                        ]
+                                                                                       (Just
+                                                                                          (Area
+                                                                                             (Loc
+                                                                                                1172
+                                                                                                41
+                                                                                                51)
+                                                                                             (Loc
+                                                                                                1179
+                                                                                                41
+                                                                                                58)))
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
@@ -5046,6 +5495,16 @@ Right
                                                                                  [ TVar
                                                                                      (TV "u98" Star)
                                                                                  ]
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          1172
+                                                                                          41
+                                                                                          51)
+                                                                                       (Loc
+                                                                                          1179
+                                                                                          41
+                                                                                          58)))
                                                                              ] :=>
                                                                                TVar (TV "u98" Star))
                                                                             (Area
@@ -5058,12 +5517,30 @@ Right
                                               ]))
                                         True))
                                   (Solved
-                                     ([ IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "h59" Star) ]
-                                      , IsIn "Comparable" [ TVar (TV "h59" Star) ]
+                                     ([ IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 837 36 43) (Loc 844 36 50)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 899 37 41) (Loc 906 37 48)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 965 38 45) (Loc 972 38 52)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 1028 39 42) (Loc 1035 39 49)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 1100 40 51) (Loc 1107 40 58)))
+                                      , IsIn
+                                          "Comparable"
+                                          [ TVar (TV "h59" Star) ]
+                                          (Just (Area (Loc 1172 41 51) (Loc 1179 41 58)))
                                       ] :=>
                                         TApp
                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -5228,7 +5705,7 @@ Right
                   [ ( "compare"
                     , Forall
                         [ Star ]
-                        ([ IsIn "Comparable" [ TGen 0 ] ] :=>
+                        ([ IsIn "Comparable" [ TGen 0 ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
@@ -5264,7 +5741,7 @@ Right
                   [ ( "map"
                     , Forall
                         [ Kfun Star Star , Star , Star ]
-                        ([ IsIn "Functor" [ TGen 0 ] ] :=>
+                        ([ IsIn "Functor" [ TGen 0 ] Nothing ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -5316,7 +5793,7 @@ Right
             (Instance
                "Comparable"
                []
-               (IsIn "Comparable" [ TCon (TC "Number" Star) "prelude" ])
+               (IsIn "Comparable" [ TCon (TC "Number" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "compare"
                     , ( Solved
@@ -5537,7 +6014,7 @@ Right
             (Instance
                "Comparable"
                []
-               (IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ])
+               (IsIn "Comparable" [ TCon (TC "String" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "compare"
                     , ( Solved
@@ -5612,7 +6089,8 @@ Right
             (Instance
                "Functor"
                []
-               (IsIn "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ])
+               (IsIn
+                  "Functor" [ TCon (TC "List" (Kfun Star Star)) "prelude" ] Nothing)
                (fromList
                   [ ( "map"
                     , ( Solved

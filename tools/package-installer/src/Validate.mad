@@ -120,7 +120,7 @@ instance Monad Validate {
       )(a)
 
     ValidationError(warnings, err, maybeA) =>
-      ValidationError(warnings, err, chain(fn, maybeA))
+      ValidationError(warnings, err, chain(pipe(fn, getValidationValue), maybeA))
   }
 }
 
@@ -262,6 +262,18 @@ unsafeGetValidationValue :: Validate a -> a
 export unsafeGetValidationValue = where {
   Valid(a) => a
   NotValid(_, a) => a
+}
+
+getValidationValue :: Validate a -> Maybe a
+getValidationValue = where {
+  Valid(a) =>
+    Just(a)
+
+  NotValid(_, a) =>
+    Just(a)
+
+  ValidationError(_, _, maybeA) =>
+    maybeA
 }
 
 

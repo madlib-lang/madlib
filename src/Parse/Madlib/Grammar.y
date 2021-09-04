@@ -353,15 +353,17 @@ jsxProps :: { [Src.JsxProp] }
   | jsxProps rets jsxProp rets { $1 <> [$3] }
   | {- empty -}                { [] }
 
-jsxChildren :: { [Src.Exp] }
-  : jsxTag                        { [$1] }
-  | jsxChildren rets jsxTag       { $1 <> [$3] }
-  | '{' exp '}'                   %shift { [$2] }
-  | jsxChildren rets '{' exp '}'  %shift { $1 <> [$4] }
-  | rets names                    %shift { [Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $2 <> "\"")] }
-  | jsxChildren rets names        %shift { $1 <> [Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $3 <> "\"")] }
-  | rets                          %shift { [] }
-  | {- empty -}                   %shift { [] }
+jsxChildren :: { [Src.JSXChild] }
+  : jsxTag                             { [Src.JSXChild $1] }
+  | jsxChildren rets jsxTag            { $1 <> [Src.JSXChild $3] }
+  | '{' exp '}'                        %shift { [Src.JSXChild $2] }
+  | jsxChildren rets '{' exp '}'       %shift { $1 <> [Src.JSXChild $4] }
+  | '{' '...' exp '}'                  %shift { [Src.JSXSpreadChild $3] }
+  | jsxChildren rets '{' '...' exp '}' %shift { $1 <> [Src.JSXSpreadChild $5] }
+  | rets names                         %shift { [Src.JSXChild (Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $2 <> "\""))] }
+  | jsxChildren rets names             %shift { $1 <> [Src.JSXChild (Src.Source emptyInfos emptyArea (Src.LStr $ "\"" <> unwords $3 <> "\""))] }
+  | rets                               %shift { [] }
+  | {- empty -}                        %shift { [] }
 
 
 templateString :: { Src.Exp }
