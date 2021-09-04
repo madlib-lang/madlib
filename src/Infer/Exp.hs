@@ -3,6 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 module Infer.Exp where
 
 import qualified Data.Map                      as M
@@ -115,7 +116,9 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
     let e = Slv.Solved (ps :=> t) area $ Slv.Var n
     e' <- insertVarPlaceholders env e ps
 
-    return (M.empty, ps, t, e')
+    let ps' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps
+
+    return (M.empty, ps', t, e')
 
 enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
 enhanceVarError env exp area (CompilationError e _) =
@@ -202,8 +205,6 @@ inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg
       (s1, ps1, t1, eabs) <- infer env abs
       return (s1, ps1, t1, eabs, [])
   (s2, ps2, t2, earg) <- infer (apply s1 env) arg
-  -- (s2, ps2, t2, earg) <- infer (apply (removeRecordTypes s1) env) arg
-
 
   let expForContext =
         if getLineFromStart argArea < getLineFromStart absArea then
@@ -229,6 +230,10 @@ inferApp env app = do
   let preds        = concat (T.mid <$> skipped) <> ps
   let skippedTypes = T.lst <$> skipped
   let realType     = apply subst $ foldr fn t skippedTypes
+
+
+  let appArea = Can.getArea app
+  let preds' = (\(IsIn c ts _) -> IsIn c ts (Just appArea)) <$> preds
 
   return (subst, preds, realType, updateQualType e (preds :=> realType))
 
@@ -303,116 +308,6 @@ inferExport env (Can.Canonical area (Can.Export exp)) = do
 
 
 -- INFER LISTCONSTRUCTOR
-
--- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
--- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
---   [] -> do
---     tv <- newTVar Star
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
---     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
-
---   elems -> do
---     tv               <- newTVar Star
-
---     (s', ps, ts, es) <- foldlM
---       (\(s, pss, ts, lis) elem -> do
---         (s', ps', t, li) <- inferListItem (apply s env) tv elem
---         return (s `compose` s', pss ++ ps', ts ++ [t], lis ++ [li])
---       )
---       (mempty, [], [], [])
---       elems
-
---     s <- contextualUnifyElems env (zip elems ts)
---     let s'' = s `compose` s'
-
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s'' tv)
-
---     return (s'', ps, t, Slv.Solved ((apply s'' <$> ps) :=> t) area (Slv.ListConstructor es))
--- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
--- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
---   [] -> do
---     tv <- newTVar Star
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
---     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
-
---   elems -> do
---     tv               <- newTVar Star
-
---     (s', ps, t', es) <- foldlM
---       (\(s, pss, t, lis) elem -> do
---         (s', ps', t'', li) <- inferListItem (apply s env) t elem
---         let s'' = s `compose` s'
---         return (s'', pss ++ ps', t'', lis ++ [li])
---       )
---       (mempty, [], tv, [])
---       elems
-
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s' t')
-
---     return (s', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
-
-
--- inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
--- inferListItem env ty (Can.Canonical area li) = case li of
---   Can.ListItem exp -> case exp of
---     Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
-
---     _ -> do
---       (s1, ps, t, e) <- infer env exp
---       s2             <- contextualUnify env (Can.Canonical area li) ty t
---       -- s2             <- unify ty t
---       let s = s1 `compose` s2
---       return (s, ps, apply s2 ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
-
---   Can.ListSpread exp -> do
---     (s1, ps, t, e) <- infer env exp
---     s2             <- contextualUnify env (Can.Canonical area li) (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty) t
---     let s = s1 `compose` s2
-
---     return (s, ps, apply s2 ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
-
--- inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
--- inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
---   [] -> do
---     tv <- newTVar Star
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
---     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
-
---   elems -> do
---     tv               <- newTVar Star
-
---     (s', ps, t', es) <- foldlM
---       (\(s, pss, t, lis) elem -> do
---         (s', ps', t'', li) <- inferListItem env t elem
---         let s'' = s `compose` s'
---         return (s'', pss ++ ps', t'', lis ++ [li])
---       )
---       (mempty, [], tv, [])
---       elems
-
---     let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (apply s' t')
-
---     return (s', apply s' ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
-
-
--- inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
--- inferListItem env ty (Can.Canonical area li) = case li of
---   Can.ListItem exp -> case exp of
---     Can.Canonical _ (Can.JSXExpChild _) -> inferJSXExpChild infer env ty exp
-
---     _ -> do
---       (s1, ps, t, e) <- infer env exp
---       s2             <- contextualUnify env (Can.Canonical area li) ty t
---       let s = s1 `compose` s2
---       return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListItem e)
-
---   Can.ListSpread exp -> do
---     (s1, ps, t, e) <- infer env exp
---     s2             <- contextualUnify env (Can.Canonical area li) (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") ty) t
---     let s = s1 `compose` s2
-
---     return (s, ps, apply s ty, Slv.Solved (apply s ps :=> apply s ty) area $ Slv.ListSpread e)
-
 
 inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
@@ -684,9 +579,15 @@ split mustCheck env fs gs ps = do
   ps' <- reduce env ps
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
   let as       = ambiguities (fs ++ gs) rs
-  if mustCheck && not (null as)
-    then throwError $ CompilationError (AmbiguousType (head as)) NoContext
-    else return (ds, rs)
+  if mustCheck && not (null as) then
+    case head as of
+      (_, IsIn c ts (Just area):_) ->
+        throwError $ CompilationError (AmbiguousType (head as)) (Context (envCurrentPath env) area (envBacktrace env))
+
+      _ ->
+        throwError $ CompilationError (AmbiguousType (head as)) NoContext
+  else
+    return (ds, rs)
 
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
@@ -712,7 +613,10 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       gs  = vs \\ fs
   (ds, rs) <- catchError
     (split False env' fs vs ps')
-    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
+    (\case
+      (CompilationError e NoContext) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+      (CompilationError e c) -> throwError $ CompilationError e c
+    )
 
   CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ CompilationError
     (AmbiguousType (TV "-" Star, rs ++ ds))
@@ -749,7 +653,10 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' ps)
   (ds, rs) <- catchError
     (split True env' fs gs ps')
-    (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env)))
+    (\case
+      (CompilationError e NoContext) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+      (CompilationError e c) -> throwError $ CompilationError e c
+    )
 
   qs'' <- getAllParentPreds env qs'
 

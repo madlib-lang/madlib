@@ -85,62 +85,10 @@ constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
     )
     typings
 
-  return $ IsIn n ts
+  return $ IsIn n ts Nothing
 
 constraintToPredicate _ _ _ = undefined
 
-
--- amountOfTypeArgs :: Type -> Int
--- amountOfTypeArgs t = case t of
---   TApp t1 _ -> 1 + amountOfTypeArgs t1
---   TAlias _ _ vars _ -> length vars
---   _         -> 0
-
-
--- TODO: We need to wrap typingToType in a separate function, call the current one,
--- and unify what was computed with what is in the env.
-
--- instantiateType :: Type -> Infer Type
--- instantiateType t = do
---   let vars = collectVars t
---       scheme = quantify vars ([] :=> t)
---   (_ :=> t') <- instantiate scheme
---   return t'
-
--- typingToType' :: Env -> Bool -> Src.Typing -> CanonicalM Type
--- typingToType' env forTyping fullTyping@(Src.Source _ area typing) = case typing of
---   Src.TRComp t ts | isUpper $ head t -> do
---     computedType <- typingToType env forTyping fullTyping
---     adt <- lookupADT env t
---     case adt of
---       TAlias {} -> return computedType
-
---       t -> case simpleRun $ instantiateType computedType >>= \computedType' -> unify t computedType' of
---         Right _ -> return computedType
---         Left _  -> throwError $ CompilationError TypeNotFullyDefined (Context (envCurrentPath env) area [])
-  
---   Src.TRSingle t
---     | isUpper (head t)
---     && t /= "Boolean"
---     && t /= "Number"
---     && t /= "()"
---     && t /= "String"
---       -> do
---     computedType <- typingToType env forTyping fullTyping
---     adt <- lookupADT env t
---     case adt of
---       TAlias {} -> return computedType
-
---       t -> case simpleRun $ instantiateType computedType >>= \computedType' -> unify t computedType' of
---         Right _ -> return computedType
---         Left _  -> throwError $ CompilationError TypeNotFullyDefined (Context (envCurrentPath env) area [])
-
---   Src.TRArr t1 t2 -> do
---     t1' <- typingToType' env forTyping t1
---     t2' <- typingToType' env forTyping t2
---     return $ t1' `fn` t2'
-  
---   _ -> typingToType env forTyping fullTyping
 
 data KindRequirement
   = KindRequired Kind

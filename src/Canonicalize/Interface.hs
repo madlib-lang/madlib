@@ -42,11 +42,11 @@ canonicalizeInterface env (Src.Source _ area interface) = case interface of
 
     let supers = mapMaybe
           (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
-            (\tv -> IsIn interface' [tv]) <$> findTypeVar tvs v
+            (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs v
           )
           constraints
 
-    let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> supers
+    let psTypes = concat $ (\(IsIn _ ts _) -> ts) <$> supers
     let subst   = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
     let scs =
@@ -79,7 +79,7 @@ addConstraints :: Id -> [Id] -> Type -> Qual Type
 addConstraints n tvs t =
   let tvs'  = (`searchVarInType` t) <$> tvs
       tvs'' = catMaybes tvs'
-      ps    = [IsIn n tvs'']
+      ps    = [IsIn n tvs'' Nothing]
       vars  = collectVars t
   in  ps :=> t
 
@@ -116,18 +116,18 @@ canonicalizeInstance env target (Src.Source _ area inst) = case inst of
                       (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
                     )
                     (zip args tvs)
-                  return $ IsIn interface' vars
+                  return $ IsIn interface' vars Nothing
 
                 Nothing -> throwError
                   $ CompilationError (InterfaceNotExisting interface') (Context (envCurrentPath env) area [])
               )
               constraints
 
-    let psTypes = concat $ (\(IsIn _ ts) -> ts) <$> ps
+    let psTypes = concat $ (\(IsIn _ ts _) -> ts) <$> ps
     let subst' = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
 
     let ps'     = apply subst' ps
-    let p       = IsIn n (apply subst' ts)
+    let p       = IsIn n (apply subst' ts) Nothing
     methods' <- mapM (canonicalize env target) methods
 
     return $ Can.Canonical area $ Can.Instance n ps' p methods'

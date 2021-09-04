@@ -27,8 +27,8 @@ class Substitutable a where
 
 
 instance Substitutable Pred where
-  apply s (IsIn i ts) = IsIn i (apply s ts)
-  ftv (IsIn i ts) = ftv ts
+  apply s (IsIn i ts maybeArea) = IsIn i (apply s ts) maybeArea
+  ftv (IsIn i ts _) = ftv ts
 
 instance Substitutable t => Substitutable (Qual t) where
   apply s (ps :=> t) = apply s ps :=> apply s t

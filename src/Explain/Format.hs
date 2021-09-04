@@ -172,7 +172,7 @@ formatTypeError json err = case err of
 
   NoInstanceFound cls ts ->
     "I could not find any instance for '"
-      <> lst (predToStr True (mempty, mempty) (IsIn cls ts))
+      <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing))
       <> "'. Verify that you imported the module\nwhere the "
       <> cls
       <> " instance for '"
@@ -181,7 +181,7 @@ formatTypeError json err = case err of
       <> "\n\nNB: remember that instance methods are automatically imported when the module\n"
       <> "is imported, directly, or indirectly."
 
-  AmbiguousType (TV n _, IsIn cls _ : _) ->
+  AmbiguousType (TV n _, IsIn cls _ _ : _) ->
     "An ambiguity could not be resolved! I am\n"
       <> "looking for an instance of '"
       <> cls
@@ -414,19 +414,19 @@ predsToStr rewrite (vars, hkVars) (p:ps)  =
 
 
 predToStr :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
-predToStr rewrite (vars, hkVars) p@(IsIn cls _) =
+predToStr rewrite (vars, hkVars) p@(IsIn cls _ _) =
   let (vars', hkVars', predStr) = predToStr' rewrite (vars, hkVars) p
   in  (vars', hkVars', cls <> " " <> predStr)
 
 predToStr' :: Bool -> (M.Map String Int, M.Map String Int) -> Pred -> (M.Map String Int, M.Map String Int, String)
-predToStr' rewrite (vars, hkVars) (IsIn cls []) = (vars, hkVars, "")
-predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts)) =
+predToStr' rewrite (vars, hkVars) (IsIn cls [] _) = (vars, hkVars, "")
+predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts) _) =
   let (vars', hkVars', typeStr) = typeToParenWrappedStr rewrite (vars, hkVars) t
   in
     if null ts then
       (vars', hkVars', typeStr)
     else
-      let (vars'', hkVars'', typeStr'') = predToStr' rewrite (vars', hkVars') (IsIn cls ts)
+      let (vars'', hkVars'', typeStr'') = predToStr' rewrite (vars', hkVars') (IsIn cls ts Nothing)
       in  (vars'', hkVars'', typeStr <> " " <> typeStr'')
 
 typeToParenWrappedStr :: Bool -> (M.Map String Int, M.Map String Int) -> Type -> (M.Map String Int, M.Map String Int, String)

@@ -89,11 +89,14 @@ instance Unify Type where
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
-  unify t1@(TCon a fpa) t2@(TCon b fpb)
+  unify t1@(TCon a@(TC tNameA _) fpa) t2@(TCon b@(TC tNameB _) fpb)
     | a == b && fpa == fpb = return M.empty
+    | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
   unify t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
+
+
 
 
 instance (Unify t, Show t, Substitutable t) => Unify [t] where
@@ -136,6 +139,7 @@ instance Match Type where
   match (TVar u) t | kind u == kind t = return $ M.singleton u t
   match (TCon tc1 fp1) (TCon tc2 fp2)
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
+    | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
   match t1 t2 = throwError $ CompilationError (UnificationError t1 t2) NoContext
 
