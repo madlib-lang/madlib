@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
 
-      - uses: docker-practice/actions-setup-docker@v1
+      - uses: docker-practice/actions-setup-docker@35d02684c20c8ec61ccecaa6a01c03770c12d0e8
 
       - run: npm i -g rollup @rollup/plugin-node-resolve
       - run: stack install alex happy
