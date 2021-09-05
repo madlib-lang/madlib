@@ -50,7 +50,14 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
 
-      - uses: docker-practice/actions-setup-docker@35d02684c20c8ec61ccecaa6a01c03770c12d0e8
+      # - uses: docker-practice/actions-setup-docker@35d02684c20c8ec61ccecaa6a01c03770c12d0e8
+      - name: Setup docker
+        run: |
+          brew install docker docker-machine
+          brew cask install virtualbox
+          docker-machine create --driver virtualbox default
+          docker-machine env default
+          eval "$(docker-machine env default)"
 
       - run: npm i -g rollup @rollup/plugin-node-resolve
       - run: stack install alex happy
