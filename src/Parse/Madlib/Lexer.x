@@ -131,7 +131,7 @@ tokens :-
   <0, jsxOpeningTag> \#\- ([$alpha $digit \" \_ \' \` \$ \ \+ \- \* \. \, \( \) \; \: \{ \} \[ \] \! \? \| \& \n \= \< \> \\ \/\^]|\\\#)* \-\#
     { mapToken (\s -> TokenJSBlock (sanitizeJSBlock s)) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $empty+               ;
-  <0, jsxOpeningTag, jsxAutoClosed> `                                           { beginStringTemplate }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> `                                           { beginStringTemplate }
   <stringTemplate, jsxOpeningTag, jsxAutoClosed> \$\{                           { beginStringTemplateMadlib }
   <stringTemplateMadlib> \{                       { stringTemplateMadlibLeftCurly }
   <stringTemplateMadlib> \}                       { stringTemplateMadlibRightCurly }
@@ -154,13 +154,13 @@ toRegex :: String -> Regex
 toRegex = makeRegexOpts defaultCompOpt { multiline = True, newSyntax = True } defaultExecOpt
 
 jsxTagOpen :: Regex
-jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
+jsxTagOpen = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{(.|\n|\t)*}))*[ \n\t]*>"
 
 jsxTagSingle :: Regex
-jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*\\/>"
+jsxTagSingle = toRegex "\\`<[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{(.|\n|\t)*}))*[ \n\t]*\\/>"
 
 jsxTagClose :: Regex
-jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+([ \n\t]+[a-zA-Z]+=(\"[^\"]*\"|{.*}))*[ \n\t]*>"
+jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+[ \n\t]*>"
 
 constraintRegex :: Regex
 constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
@@ -335,8 +335,17 @@ pushStringToTemplate i@(posn, prevChar, pending, input) len = do
 
 jsxTextPopOut :: AlexInput -> Int -> Alex Token
 jsxTextPopOut i@(posn, prevChar, pending, input) len = do
-  popStartCode
-  return $ (Token (makeArea posn (take len input)) (TokenEOF))
+  -- popStartCode
+  -- jsxTagOpened
+
+  token <-
+        if take len input == ">" then do
+          pushStartCode jsxText
+          return TokenRightChevron
+        else
+          return TokenEOF
+
+  return $ (Token (makeArea posn (take len input)) token)
 
 
 decideTokenExport :: AlexInput -> Int -> Alex Token

@@ -50,9 +50,6 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
 
-      - name: Brew update
-        run: brew update
-
       - uses: docker-practice/actions-setup-docker@35d02684c20c8ec61ccecaa6a01c03770c12d0e8
         with:
           docker_version: "20.10"

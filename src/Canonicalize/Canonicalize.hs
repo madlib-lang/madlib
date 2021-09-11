@@ -138,18 +138,7 @@ instance Canonicalizable Src.Exp Can.Exp where
       let childrenArea = composeArea 0 area children'
 
       let props'       = Can.Canonical propArea (Can.ListConstructor propFns)
-      let children''   =
-            if null children' then
-              Can.Canonical
-                childrenArea
--- TODO: Maybe just use a type of: JSXChildren a => List a
-                (Can.TypedExp
-                  (Can.Canonical childrenArea (Can.ListConstructor children'))
-                  (Can.Canonical childrenArea (Can.TRComp "List" [Can.Canonical childrenArea (Can.TRSingle "()")]))
-                  (Forall [] ([] :=> tListOf tUnit))
-                )
-            else
-              Can.Canonical childrenArea (Can.ListConstructor children')
+      let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
 
       return $ Can.Canonical
         area
@@ -164,18 +153,11 @@ instance Canonicalizable Src.Exp Can.Exp where
       canonicalizeJsxChild child = case child of
         Src.JSXChild exp -> do
           e' <- canonicalize env target exp
-          return $ Can.Canonical area (Can.ListItem (Can.Canonical area (Can.App (Can.Canonical area (Can.Var "toElement")) e' True)))
+          return $ Can.Canonical area (Can.ListItem e')
 
         Src.JSXSpreadChild exp -> do
           e' <- canonicalize env target exp
-          return $ Can.Canonical area (Can.ListSpread (Can.Canonical area (
-            Can.App
-              (Can.Canonical area
-                (Can.App (Can.Canonical area (Can.Var "map")) (Can.Canonical area (Can.Var "toElement")) True)
-              )
-              e'
-              True))
-            )
+          return $ Can.Canonical area (Can.ListSpread e')
 
     Src.Pipe exps -> do
       let (Area (Loc x l c) _) = area

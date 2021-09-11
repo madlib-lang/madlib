@@ -11,6 +11,7 @@ import           Infer.Unify
 import           Infer.Substitute
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
@@ -22,7 +23,7 @@ insertVarPlaceholders _   exp                    []       = return exp
 
 insertVarPlaceholders env exp@(Slv.Solved t a e) (p : ps) = do
   ts <- getCanonicalPlaceholderTypes env p
-  if isMethod env exp
+  if isMethod env exp (p:ps)
     then case e of
       Slv.Var n -> do
         var <- shouldInsert env $ IsIn (predClass p) (predTypes p) Nothing
@@ -273,8 +274,21 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
 
 
 
-isMethod :: Env -> Slv.Exp -> Bool
-isMethod env (Slv.Untyped _ _)  = False
-isMethod env (Slv.Solved _ _ e) = case e of
-  Slv.Var n -> Just True == (M.lookup n (envMethods env) >> return True)
-  _         -> False
+getPredClassNames :: [Pred] -> S.Set String
+getPredClassNames ps =
+  let clsNames = predClass <$> ps
+  in  S.fromList clsNames
+
+isMethod :: Env -> Slv.Exp -> [Pred] -> Bool
+isMethod env (Slv.Untyped _ _) _  = False
+isMethod env (Slv.Solved _ _ e) ps = case e of
+  Slv.Var n -> --Just True == (M.lookup n (envMethods env) >> return True)
+    case M.lookup n (envMethods env) of
+      Nothing ->
+        False
+
+      Just (Forall _ (ps' :=> _)) ->
+        getPredClassNames ps' == getPredClassNames ps
+
+  _         ->
+    False

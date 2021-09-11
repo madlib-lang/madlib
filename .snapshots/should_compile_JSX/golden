@@ -7,19 +7,12 @@ let AttributeClass = (a => ({ __constructor: "AttributeClass", __args: [ a ] }))
 let OnClick = (a => ({ __constructor: "OnClick", __args: [ a ] }));
 let OnMouseOver = (a => ({ __constructor: "OnMouseOver", __args: [ a ] }));
 let OnMouseOut = (a => ({ __constructor: "OnMouseOut", __args: [ a ] }));
-global.JSXChildren = {};
 global.Show = {};
 global.Functor = {};
-JSXChildren['Element'] = {};
-JSXChildren['Element']['toElement'] = () => (x => x);
-JSXChildren['String'] = {};
-JSXChildren['String']['toElement'] = () => text;
 Show['Number'] = {};
 Show['Number']['show'] = () => (x => new Number(x).toString());
 Functor['List'] = {};
 Functor['List']['map'] = () => (f => xs => xs.map((x) => f(x)));
-JSXChildren['Unit'] = {};
-JSXChildren['Unit']['toElement'] = () => (_ => null);
 export let good = (a => Wish((_ => goodCB => goodCB(a))));
 export let id = AttributeId;
 export let className = AttributeClass;
@@ -27,42 +20,17 @@ export let onClick = OnClick;
 export let onMouseOver = OnMouseOver;
 export let onMouseOut = OnMouseOut;
 export let text = (content => content);
-export let div = (JSXChildren_r43) => {
-  global.JSXChildren_r43 = JSXChildren_r43
-
-  return div__ND__()
-};
-let div__ND__ = __once__(() => (attrs => children => h('div', objectifyAttrs(attrs), children)));
-export let span = (JSXChildren_w48) => {
-  global.JSXChildren_w48 = JSXChildren_w48
-
-  return span__ND__()
-};
-let span__ND__ = __once__(() => (attrs => children => h('span', objectifyAttrs(attrs), children)));
-export let p = (JSXChildren_b53) => {
-  global.JSXChildren_b53 = JSXChildren_b53
-
-  return p__ND__()
-};
-let p__ND__ = __once__(() => (attrs => children => h('p', objectifyAttrs(attrs), children)));
-export let input = (JSXChildren_g58) => {
-  global.JSXChildren_g58 = JSXChildren_g58
-
-  return input__ND__()
-};
-let input__ND__ = __once__(() => (attrs => children => h('input', objectifyAttrs(attrs), children)));
-export let button = (JSXChildren_l63) => {
-  global.JSXChildren_l63 = JSXChildren_l63
-
-  return button__ND__()
-};
-let button__ND__ = __once__(() => (attrs => children => h('button', objectifyAttrs(attrs), children)));
+export let div = (attrs => children => h('div', objectifyAttrs(attrs), children));
+export let span = (attrs => children => h('span', objectifyAttrs(attrs), children));
+export let p = (attrs => children => h('p', objectifyAttrs(attrs), children));
+export let input = (attrs => children => h('input', objectifyAttrs(attrs), children));
+export let button = (attrs => children => h('button', objectifyAttrs(attrs), children));
 let initialState = 0;
-let MyApp = (count => div(JSXChildren.Element)(([id("id"), className("class")]))(([JSXChildren.Element.toElement()(div(JSXChildren.Element)(([]))(([JSXChildren.String.toElement()(`Current count is ${Show.Number.show()(count)}`)]))), JSXChildren.Element.toElement()(div(JSXChildren.Element)(([]))(([JSXChildren.Element.toElement()(button(JSXChildren.Element)(([onClick((state => event => ([good((s => s + 1))])))]))(([JSXChildren.String.toElement()("increment")])))])))])));
-div(JSXChildren.Element)(([]))(([JSXChildren.String.toElement()("Some text!")]));
-div(JSXChildren.Element)(([]))(([JSXChildren.Element.toElement()(div(JSXChildren.Element)(([]))(([JSXChildren.Element.toElement()(span(JSXChildren.Unit)(([]))(([])))]))), JSXChildren.Element.toElement()(div(JSXChildren.Element)(([]))(([JSXChildren.Element.toElement()(span(JSXChildren.Unit)(([]))(([])))])))]));
+let MyApp = (count => div(([id("id"), className("class")]))(([div(([]))(([`Current count is ${Show.Number.show()(count)}`])), div(([]))(([button(([onClick((state => event => ([good((s => s + 1))])))]))((["increment"]))]))])));
+div(([]))((["Some text!"]));
+div(([]))(([div(([]))(([span(([]))(([]))])), div(([]))(([span(([]))(([]))]))]));
 let methods = (['1', '2', '3']);
-let childElems = Functor.List.map()((method => div(JSXChildren.Element)(([]))(([JSXChildren.String.toElement()(method)]))))(methods);
-div(JSXChildren.Element)(([]))(([ ...Functor.List.map()(JSXChildren.String.toElement())(methods)]));
-div(JSXChildren.Element)(([]))(([ ...Functor.List.map()(JSXChildren.Element.toElement())(childElems)]));
+let childElems = Functor.List.map()((method => div(([]))(([method]))))(methods);
+div(([]))(([ ...methods]));
+div(([]))(([ ...childElems]));
 export default { good, id, className, onClick, onMouseOver, onMouseOut, text, div, span, p, input, button, Wish };
