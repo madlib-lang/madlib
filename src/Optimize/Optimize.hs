@@ -294,6 +294,7 @@ instance Optimizable Slv.Import Opt.Import where
     Slv.DefaultImport namespace relPath absPath ->
       return $ Opt.Untyped area $ Opt.DefaultImport (optimizeImportName namespace) relPath absPath
 
+
 optimizeImportName :: Slv.Solved Slv.Name -> Opt.Optimized Opt.Name
 optimizeImportName (Slv.Untyped area name) = Opt.Untyped area name
 

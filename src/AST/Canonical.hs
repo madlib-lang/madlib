@@ -33,6 +33,7 @@ data Import_
   = NamedImport [Canonical Name] FilePath FilePath
   | TypeImport [Canonical Name] FilePath FilePath
   | DefaultImport (Canonical Name) FilePath FilePath
+  | ImportAll FilePath FilePath
   deriving(Eq, Show)
 
 type Constructor = Canonical Constructor_
@@ -151,18 +152,21 @@ getImportNames imp = case imp of
   Canonical _ (NamedImport names _ _) -> names
   Canonical _ TypeImport{}            -> []
   Canonical _ DefaultImport{}         -> []
+  Canonical _ ImportAll{}             -> []
 
 getImportAlias :: Import -> Maybe (Canonical Name)
 getImportAlias imp = case imp of
   Canonical _ NamedImport{}             -> Nothing
   Canonical _ TypeImport{}              -> Nothing
   Canonical _ (DefaultImport alias _ _) -> Just alias
+  Canonical _ (ImportAll _ _)           -> Nothing
 
 getImportTypeNames :: Import -> [Canonical Name]
 getImportTypeNames imp = case imp of
   Canonical _ (NamedImport names _ _) -> []
   Canonical _ (TypeImport  names _ _) -> names
   Canonical _ DefaultImport{}         -> []
+  Canonical _ ImportAll{}             -> []
 
 isTypeImport :: Import -> Bool
 isTypeImport imp = case imp of
@@ -207,6 +211,7 @@ getImportAbsolutePath imp = case imp of
   Canonical _ (NamedImport   _ _ n) -> n
   Canonical _ (TypeImport    _ _ n) -> n
   Canonical _ (DefaultImport _ _ n) -> n
+  Canonical _ (ImportAll _ n)       -> n
 
 isAssignment :: Exp -> Bool
 isAssignment exp = case exp of

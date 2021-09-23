@@ -162,6 +162,7 @@ setImportAbsolutePath imp fp = case imp of
   Source i a (NamedImport   s p _) -> Source i a (NamedImport s p fp)
   Source i a (TypeImport   s p _)  -> Source i a (TypeImport s p fp)
   Source i a (DefaultImport s p _) -> Source i a (DefaultImport s p fp)
+  Source i a (ImportAll p _)       -> Source i a (ImportAll p fp)
 
 
 findAST :: Table -> FilePath -> Either CompilationError AST
