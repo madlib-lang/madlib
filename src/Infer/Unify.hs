@@ -15,15 +15,14 @@ import           Control.Monad.Except
 import           Data.Maybe
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
-import           Debug.Trace
-import           Text.Show.Pretty
 import qualified AST.Canonical                 as Can
 
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv (TRecord fields (Just base))
--- varBind tv t@(TRecord fields (Just base)) = return $ M.singleton tv (TRecord fields (Just $ TVar tv))
+varBind tv t@(TRecord fields (Just base))
+  | tv `elem` concat (ftv <$> fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | otherwise                         = return $ M.singleton tv (TRecord fields (Just base))
 varBind tv t | t == TVar tv      = return M.empty
              | tv `elem` ftv t   = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext

@@ -128,6 +128,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | Record [Field]
           | If Exp Exp Exp
+          | Do [Exp]
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           deriving(Eq, Show, Ord)

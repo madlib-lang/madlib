@@ -53,7 +53,7 @@ let carResponse = ({ cars: __hpLineWrap('path', 12, ([])) });
     throw 'non exhaustive patterns!';
   }
 })(__hpLineWrap('path', 23, true));
-let log = __hpFnWrap('path', 27, 'log')((a => { console.log(a); return a; }));
+let log = __hpFnWrap('path', 27, 'log')((a =>  { console.log(a); return a; } ));
 (__hpLineWrap('path', 28, true) ? __hpLineWrap('path', 28, "OK") : __hpLineWrap('path', 28, "NOT OK"));
 let mapMaybe = __hpFnWrap('path', 31, 'mapMaybe')((f => m => ((__x__) => {
   if (__hp('path', 'line', 32, 32) || __x__.__constructor === "Just" && true) {

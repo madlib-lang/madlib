@@ -7,7 +7,7 @@ Left
        , ctxBacktrace =
            [ BTExp
                (Canonical
-                  (Area (Loc 42 3 16) (Loc 72 5 1))
+                  (Area (Loc 42 3 16) (Loc 72 5 2))
                   (Where
                      (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                      [ Canonical
@@ -22,11 +22,11 @@ Left
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 35 3 9) (Loc 72 5 1))
+                  (Area (Loc 35 3 9) (Loc 72 5 2))
                   (Abs
                      (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                      [ Canonical
-                         (Area (Loc 42 3 16) (Loc 72 5 1))
+                         (Area (Loc 42 3 16) (Loc 72 5 2))
                          (Where
                             (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                             [ Canonical
@@ -43,15 +43,15 @@ Left
                      ]))
            , BTExp
                (Canonical
-                  (Area (Loc 27 3 1) (Loc 72 5 1))
+                  (Area (Loc 27 3 1) (Loc 72 5 2))
                   (Assignment
                      "might"
                      (Canonical
-                        (Area (Loc 35 3 9) (Loc 72 5 1))
+                        (Area (Loc 35 3 9) (Loc 72 5 2))
                         (Abs
                            (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                            [ Canonical
-                               (Area (Loc 42 3 16) (Loc 72 5 1))
+                               (Area (Loc 42 3 16) (Loc 72 5 2))
                                (Where
                                   (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                                   [ Canonical
@@ -69,15 +69,15 @@ Left
                            ]))))
            , BTExp
                (Canonical
-                  (Area (Loc 27 3 1) (Loc 72 5 1))
+                  (Area (Loc 27 3 1) (Loc 72 5 2))
                   (Assignment
                      "might"
                      (Canonical
-                        (Area (Loc 35 3 9) (Loc 72 5 1))
+                        (Area (Loc 35 3 9) (Loc 72 5 2))
                         (Abs
                            (Canonical (Area (Loc 36 3 10) (Loc 37 3 11)) "x")
                            [ Canonical
-                               (Area (Loc 42 3 16) (Loc 72 5 1))
+                               (Area (Loc 42 3 16) (Loc 72 5 2))
                                (Where
                                   (Canonical (Area (Loc 48 3 22) (Loc 49 3 23)) (Var "x"))
                                   [ Canonical

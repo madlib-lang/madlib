@@ -53,6 +53,7 @@ infer env lexp = do
     Can.Abs _ _               -> inferAbs env' lexp
     Can.App{}                 -> inferApp env' lexp
     Can.Assignment _ _        -> inferAssignment env' lexp
+    Can.Do _                  -> inferDo env' lexp
     Can.Where      _ _        -> inferWhere env' lexp
     Can.Record _              -> inferRecord env' lexp
     Can.Access   _ _          -> inferAccess env' lexp
@@ -513,6 +514,15 @@ inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
 
   return (s, ps1 ++ ps2 ++ ps3, t, Slv.Solved ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
 
+
+
+-- INFER DEFINE IN
+
+inferDo :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferDo env (Can.Canonical area (Can.Do exps)) = do
+  (s, ps, t, exps') <- inferBody env exps
+
+  return (s, ps, t, Slv.Solved (ps :=> t) area (Slv.Do exps'))
 
 
 -- INFER WHERE

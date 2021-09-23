@@ -17,7 +17,9 @@ import qualified Data.Map                      as M
 import           Control.Monad.Except
 import           Data.List
 import           Data.Char
-
+import Debug.Trace
+import Text.Show.Pretty
+import Explain.Location
 
 
 canonicalizeTypeDecls :: Env -> FilePath -> [Src.TypeDecl] -> CanonicalM (Env, [Can.TypeDecl])
@@ -31,14 +33,27 @@ canonicalizeTypeDecls env astPath (typeDecl : tds) = do
   return (env'', tds' <> tds'')
 
 
+verifyTypeVars :: Area -> FilePath -> Name -> [Name] -> CanonicalM ()
+verifyTypeVars area astPath adtname ps = do
+  mapM_
+    (\case
+      f:rest | isUpper f ->
+        throwError $ CompilationError (CapitalizedADTTVar adtname (f:rest)) (Context astPath area [])
+      _ ->
+        return ()
+    )
+    ps
+
 canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl of
+canonicalizeTypeDecl env astPath td@(Src.Source area typeDecl) = case typeDecl of
   adt@Src.ADT{} ->
     if isLower . head $ Src.adtname adt then
       throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area [])
     else case M.lookup (Src.adtname adt) (envTypeDecls env) of
       Just t  -> throwError $ CompilationError (ADTAlreadyDefined t) (Context astPath area [])
       Nothing -> do
+        verifyTypeVars area astPath (Src.adtname adt) (Src.adtparams adt)
+
         let t    = TCon (TC (Src.adtname adt) (buildKind (length $ Src.adtparams adt))) astPath
             vars = (\n -> TVar (TV n Star)) <$> Src.adtparams adt
             t'   = foldl1 TApp (t : vars)
@@ -46,6 +61,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
         canonicalizeConstructors env' astPath td
 
   alias@Src.Alias{} -> do
+    verifyTypeVars area astPath (Src.aliasname alias) (Src.aliasparams alias)
     let name   = Src.aliasname alias
     let params = (`TV` Star) <$> Src.aliasparams alias
     let typing = Src.aliastype alias
@@ -66,7 +82,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source _ area typeDecl) = case typeDecl
 
 
 canonicalizeConstructors :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
+canonicalizeConstructors env astPath (Src.Source area adt@Src.ADT{}) = do
   let name   = Src.adtname adt
       ctors  = Src.adtconstructors adt
       params = Src.adtparams adt
@@ -77,7 +93,7 @@ canonicalizeConstructors env astPath (Src.Source _ area adt@Src.ADT{}) = do
                   (TCon (TC name (buildKind $ length params)) astPath)
                   ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
-    (\(n, ts, _, Src.Source _ area (Src.Constructor name typings)) -> do
+    (\(n, ts, _, Src.Source area (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]
           sc = quantify (collectVars (apply s cf)) ([] :=> apply s cf)
       typings' <- mapM canonicalizeTyping typings
@@ -112,7 +128,7 @@ resolveADTConstructorParams
   -> [Src.Name]
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
-resolveADTConstructorParams env astPath n params c@(Src.Source _ area (Src.Constructor cname cparams)) = do
+resolveADTConstructorParams env astPath n params c@(Src.Source area (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
   mapM_

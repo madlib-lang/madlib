@@ -1,12 +1,10 @@
 module AST.Source where
 
-
-import           Explain.Meta
 import           Explain.Location
 import qualified Data.Map                      as M
 
--- TODO: remove infos
-data Source a = Source (Infos a) Area a deriving(Eq, Show)
+
+data Source a = Source Area a deriving(Eq, Show)
 
 data AST =
   AST
@@ -57,10 +55,10 @@ data Constructor_
   deriving(Eq, Show)
 
 
-type Typing = Source Typing_
 
 type Constraints = [Typing]
 
+type Typing = Source Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -72,26 +70,34 @@ data Typing_
 
 
 type Is = Source Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_ = Is Pattern Symbol Exp deriving(Eq, Show)
+
+
+data PatternField
+  = PatternField (Source Name) Pattern
+  | PatternFieldShorthand (Source Name)
+  deriving(Eq, Show)
 
 
 type Pattern = Source Pattern_
 data Pattern_
   = PVar Name
-  | PAny
-  | PCon Name [Pattern]
   | PNum String
   | PStr String
   | PBool String
-  | PRecord (M.Map Name Pattern)
-  | PList [Pattern]
-  | PTuple [Pattern]
-  | PSpread Pattern
+  | PAny
+  | PCon (Source Name) Symbol [Pattern] Symbol
+  | PNullaryCon (Source Name)
+  | PRecord Symbol [PatternField] Symbol
+  | PList Symbol [Pattern] Symbol
+  | PTuple Symbol [Pattern] Symbol
+  | PSpread Symbol Pattern
   deriving(Eq, Show)
 
 type Field = Source Field_
 data Field_
   = Field (Name, Exp)
+  | FieldShorthand Name
   | FieldSpread Exp
   deriving(Eq, Show)
 
@@ -105,38 +111,58 @@ data ListItem_
 type DictItem = Source DictItem_
 data DictItem_ = DictItem Exp Exp deriving(Eq, Show)
 
-data JSXChild
-  = JSXChild Exp
-  | JSXSpreadChild Exp
+data Keyword
+  = Keyword String Area
+  deriving(Eq, Show)
+
+data Symbol
+  = Symbol String Area
+  deriving(Eq, Show)
+
+type Exp = Source Exp_
+data Exp_
+  = LNum String
+  | LStr String
+  | LBool String
+  | LUnit
+  | TemplateString [Exp]
+  | Var Name
+  | UnOp Exp Exp
+  | BinOp Exp Exp Exp
+  | App Exp [Exp]
+  | Abs [Source Name] [Exp]
+  | AbsWithMultilineBody [Source Name] [Exp]
+  | Return Exp
+  | Access Exp Exp
+  | Assignment Name Symbol Exp
+  | Record [Field]
+  | If Keyword Exp Exp Keyword Exp
+  | Ternary Exp Symbol Exp Symbol Exp
+  | Where Keyword Exp Symbol [Is] Symbol
+  | WhereAbs Keyword Symbol [Is] Symbol
+  | Do [Exp]
+  | DoAssignment Name Exp
+  | Export Exp
+  | NameExport Name
+  | TypeExport Name
+  | TypedExp Exp Typing
+  | NamedTypedExp Name Exp Typing
+  | ListConstructor [ListItem]
+  | Dictionary [DictItem]
+  | TupleConstructor [Exp]
+  | Pipe [Exp]
+  | JSExp String
+  | JsxTag Name [JsxProp] [JsxChild]
+  | JsxAutoClosedTag Name [JsxProp]
+  | Parenthesized Area Exp Area
   deriving(Eq, Show)
 
 
-type Exp = Source Exp_
-data Exp_ = LNum String
-          | LStr String
-          | LBool String
-          | LUnit
-          | TemplateString [Exp]
-          | Var Name
-          | App Exp Exp Bool
-          | Abs (Source Name) [Exp]
-          | Access Exp Exp
-          | Assignment Name Exp
-          | Record [Field]
-          | If Exp Exp Exp
-          | Where Exp [Is]
-          | Export Exp
-          | NameExport Name
-          | TypeExport Name
-          | TypedExp Exp Typing
-          | ListConstructor [ListItem]
-          | Dictionary [DictItem]
-          | TupleConstructor [Exp]
-          | Pipe [Exp]
-          | JSExp String
-          | JsxTag Name [JsxProp] [JSXChild]
-          deriving(Eq, Show)
-
+data JsxChild
+  = JsxChild Exp
+  | JsxExpChild Exp
+  | JsxSpreadChild Exp
+  deriving(Eq, Show)
 
 type JsxProp = Source JsxProp_
 data JsxProp_ = JsxProp Name Exp deriving(Eq, Show)
@@ -153,33 +179,33 @@ type Table = M.Map FilePath AST
 
 getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
-  Source _ _ (NamedImport names _ n) -> names
-  Source _ _ DefaultImport{}         -> []
-  Source _ _ TypeImport{}            -> []
-  Source _ _ ImportAll{}             -> []
+  Source _ (NamedImport names _ n) -> names
+  Source _ DefaultImport{}         -> []
+  Source _ TypeImport{}            -> []
+  Source _ ImportAll{}             -> []
 
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
-  Source _ _ (NamedImport names _ _) -> []
-  Source _ _ (TypeImport  names _ _) -> names
-  Source _ _ DefaultImport{}         -> []
-  Source _ _ ImportAll{}             -> []
+  Source _ (NamedImport names _ _) -> []
+  Source _ (TypeImport  names _ _) -> names
+  Source _ DefaultImport{}         -> []
+  Source _ ImportAll{}             -> []
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
-  Source _ _ (NamedImport   _ _ n) -> n
-  Source _ _ (TypeImport    _ _ n) -> n
-  Source _ _ (DefaultImport _ _ n) -> n
-  Source _ _ (ImportAll _ n) -> n
+  Source _ (NamedImport   _ _ n) -> n
+  Source _ (TypeImport    _ _ n) -> n
+  Source _ (DefaultImport _ _ n) -> n
+  Source _ (ImportAll _ n) -> n
 
 getImportPath :: Import -> (Import, FilePath)
-getImportPath imp@(Source _ _ (NamedImport   _ p _)) = (imp, p)
-getImportPath imp@(Source _ _ (TypeImport    _ p _)) = (imp, p)
-getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
-getImportPath imp@(Source _ _ (ImportAll p _)) = (imp, p)
+getImportPath imp@(Source _ (NamedImport   _ p _)) = (imp, p)
+getImportPath imp@(Source _ (TypeImport    _ p _)) = (imp, p)
+getImportPath imp@(Source _ (DefaultImport _ p _)) = (imp, p)
+getImportPath imp@(Source _ (ImportAll p _)) = (imp, p)
 
 getArea :: Source a -> Area
-getArea (Source _ a _) = a
+getArea (Source a _) = a
 
 getSourceContent :: Source a -> a
-getSourceContent (Source _ _ a) = a
+getSourceContent (Source _ a) = a

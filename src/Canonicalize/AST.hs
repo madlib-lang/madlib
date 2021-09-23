@@ -24,6 +24,7 @@ import           Control.Monad.Except
 import           Control.Monad.State
 import           Explain.Location
 import           Text.Regex.TDFA
+import AST.Solved (Import_(NamedImport))
 
 
 type TableCache = M.Map FilePath (Env, Can.AST)
@@ -69,8 +70,8 @@ canonicalizeImportedAST tableCache target originAstPath table imp = do
   envTds <- mapImportToEnvTypeDecls env imp ast
 
   let interfaces = case imp of
-        Src.Source _ _ Src.TypeImport{} -> mempty
-        _                               -> envInterfaces env
+        Src.Source _ Src.TypeImport{} -> mempty
+        _                             -> envInterfaces env
 
   let env' = (initialWithPath path) { envTypeDecls = envTds, envInterfaces = interfaces }
   return (table', env', tableCache <> cache)
@@ -82,16 +83,16 @@ mapImportToEnvTypeDecls env imp ast = do
 
 fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
 fromExportToImport imp exports = case imp of
-  Src.Source _ _ (Src.TypeImport    names _ _) ->
+  Src.Source _ (Src.TypeImport    names _ _) ->
     M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
 
-  Src.Source _ _ (Src.NamedImport   names _ _) ->
+  Src.Source _ (Src.NamedImport   names _ _) ->
     mempty
 
-  Src.Source _ _ (Src.DefaultImport name  _ _) ->
+  Src.Source _ (Src.DefaultImport name  _ _) ->
     M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
 
-  Src.Source _ _ (Src.ImportAll _ _) ->
+  Src.Source _ (Src.ImportAll _ _) ->
     mempty
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
@@ -218,10 +219,10 @@ performExportCheck env area exportedNames name = do
     else return $ name : exportedNames
 
 verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]
-verifyExport env exportedNames (Src.Source _ area exp) = case exp of
+verifyExport env exportedNames (Src.Source area exp) = case exp of
   Src.NameExport name -> performExportCheck env area exportedNames name
 
-  Src.Export (Src.Source _ _ (Src.Assignment name _)) -> performExportCheck env area exportedNames name
+  Src.Export (Src.Source _ (Src.Assignment name _ _)) -> performExportCheck env area exportedNames name
 
   _                   -> return exportedNames
 

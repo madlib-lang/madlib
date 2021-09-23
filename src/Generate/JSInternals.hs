@@ -5,77 +5,14 @@ import           Generate.Utils
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
-  curryFn target optimized
+  eqFn target optimized
     <> "\n"
-    <> eqFn target optimized
+    <> dictCtorFn target optimized
     <> "\n"
     <> applyDictsFn target optimized
     <> "\n"
     <> onceFn target optimized
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
-
-
-curryFnName :: Bool -> String
-curryFnName optimized = if optimized then "λ1" else "__curry__"
-
-curryFn :: Target -> Bool -> String
-curryFn target optimized =
-  let fnName = curryFnName optimized
-  in  unlines
-        [ getGlobalForTarget target <> ".$ = '__$__'"
-        , "const PLACEHOLDER = '__$__'"
-        , getGlobalForTarget target <> "." <> fnName <> " = fn => {"
-        , "  const test = x => x === PLACEHOLDER;"
-        , "  return function curried() {"
-        , "    const argLength = arguments.length;"
-        , "    let args = new Array(argLength);"
-        , ""
-        , "    for (let i = 0; i < argLength; ++i) {"
-        , "      args[i] = arguments[i];"
-        , "    }"
-        , "    const countNonPlaceholders = toCount => {"
-        , "      let count = toCount.length;"
-        , "      while (!test(toCount[count])) {"
-        , "        count--;"
-        , "      }"
-        , "      return count;"
-        , "    };"
-        , "    const length = as => (as.some(test) ? countNonPlaceholders(as) : as.length);"
-        , "    function saucy() {"
-        , "      const arg2Length = arguments.length;"
-        , "      const args2 = new Array(arg2Length);"
-        , "      for (let j = 0; j < arg2Length; ++j) {"
-        , "        args2[j] = arguments[j];"
-        , "      }"
-        , ""
-        , "      return curried.apply("
-        , "        this,"
-        , "        args"
-        , "          .map(y =>"
-        , "            test(y) && args2[0]"
-        , "              ? args2.shift()"
-        , "              : y"
-        , "          )"
-        , "          .concat(args2)"
-        , "      );"
-        , "    }"
-        , ""
-        , "    if (length(args) >= fn.length) {"
-        , "      const currentArgs = args.slice(0, fn.length);"
-        , "      const result = fn.apply(this, currentArgs);"
-        , "      const nextArgs = args.slice(fn.length);"
-        , ""
-        , "      if (typeof result === \"function\" && length(nextArgs) > 0) {"
-        , "        return result.apply(this, nextArgs);"
-        , "      } else {"
-        , "        return result;"
-        , "      }"
-        , "    } else {"
-        , "      return saucy;"
-        , "    }"
-        , "  };"
-        , "};"
-        ]
 
 
 hpFnWrap :: String
@@ -93,6 +30,28 @@ hpFnWrap = unlines
 hpLineWrap :: String
 hpLineWrap =
   unlines ["global.__hpLineWrap = (astPath, line, x) => {", "  __hp(astPath, 'line', line, line)", "  return x", "}"]
+
+dictCtorFn :: Target -> Bool -> String
+dictCtorFn target optimized =
+  let fnName = "__dict_ctor__"
+      eqFn   = eqFnName optimized
+  in  unlines
+        [ getGlobalForTarget target <> "." <> fnName <> " = (items) => {"
+        , "  let addedItems = [];"
+        , "  for(const item of items) {"
+        , "    if (addedItems.find(([key, _]) => " ++ eqFn ++ "(key, item[0])) === undefined) {"
+        , "      addedItems.push(item);"
+        , "    }"
+        , "  }"
+        , "  return { __constructor: \"Dictionary\", __args: [addedItems] };"
+        , "}"
+        ]
+
+-- fromList :: List (<k, v>) -> Dictionary k v
+-- export fromList = pipe(
+--   L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
+--   Dictionary
+-- )
 
 eqFnName :: Bool -> String
 eqFnName optimized = if optimized then "λ2" else "__eq__"

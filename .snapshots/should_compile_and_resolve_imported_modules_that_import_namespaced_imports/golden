@@ -10,7 +10,7 @@ import B from "./Binary.mjs";
 
 export let TextData = (a => ({ __constructor: "TextData", __args: [ a ] }));
 export let BinaryData = (a => ({ __constructor: "BinaryData", __args: [ a ] }));
-export let writeFile = (path => d => );
+export let writeFile = (path => d =>  );
 export default { writeFile, TextData, BinaryData };
 // file: /root/project/src/Http.mad
 import W from "./Wish.mjs";
@@ -19,10 +19,10 @@ import B from "./Binary.mjs";
 export let TextBody = (a => ({ __constructor: "TextBody", __args: [ a ] }));
 export let BinaryBody = (a => ({ __constructor: "BinaryBody", __args: [ a ] }));
 export let Response = (a => ({ __constructor: "Response", __args: [ a ] }));
-export let get = (url => );
+export let get = (url =>  );
 export default { get, TextBody, BinaryBody, Response };
 // file: /root/project/src/IO.mad
-export let log = (a => { console.log(a); return a; });
+export let log = (a =>  { console.log(a); return a; } );
 export default { log };
 // file: /root/project/src/Main.mad
 import {} from "./__internals__.mjs"

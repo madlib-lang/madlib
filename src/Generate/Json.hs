@@ -268,7 +268,19 @@ compileExpFields depth exp = case exp of
       then init . init . tail . tail $ s
       else s
 
-  Slv.LUnit -> indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
+  Slv.LUnit ->
+    indent depth <> "\"nodeType\": \"LiteralUnit\"\n"
+
+  Slv.Do exps ->
+    indent depth
+      <> "\"nodeType\": \"Do\",\n"
+      <> indent depth
+      <> "\"exps\": [\n"
+      <> indent (depth + 1)
+      <> intercalate (",\n" <> indent (depth + 1)) (compileExp (depth + 1) <$> exps)
+      <> "\n"
+      <> indent depth
+      <> "]\n"
   
   Slv.TypeExport _ -> indent depth <> "\"nodeType\": \"TypeExport\"\n"
 

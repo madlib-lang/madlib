@@ -96,7 +96,7 @@ let getWishFn = (w => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(w));
-export let parallel = (wishes => Wish((bad => good => {
+export let parallel = (wishes => Wish((bad => good =>  {
     const l = wishes.length
     let ko = false;
     let ok = 0;
@@ -107,7 +107,7 @@ export let parallel = (wishes => Wish((bad => good => {
       x => ko || (out[j] = x, next(++ok))
     ));
     wishes.forEach(fork);
-  })));
+  } )));
 export let fulfill = (bad => good => m => {
     ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
