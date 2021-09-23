@@ -10,7 +10,7 @@ Right
                     (TApp
                        (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
                  (TVar (TV "d3" Star)))
-            (Area (Loc 33 2 1) (Loc 82 6 1))
+            (Area (Loc 33 2 1) (Loc 82 6 2))
             (Assignment
                "fn"
                (Solved
@@ -21,7 +21,7 @@ Right
                           (TApp
                              (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "d3" Star))))
                        (TVar (TV "d3" Star)))
-                  (Area (Loc 38 2 6) (Loc 82 6 1))
+                  (Area (Loc 38 2 6) (Loc 82 6 2))
                   (Abs
                      (Solved
                         ([] :=>
@@ -31,7 +31,7 @@ Right
                         "b")
                      [ Solved
                          ([] :=> TVar (TV "d3" Star))
-                         (Area (Loc 49 3 3) (Loc 80 5 3))
+                         (Area (Loc 49 3 3) (Loc 80 5 4))
                          (Where
                             (Solved
                                ([] :=>

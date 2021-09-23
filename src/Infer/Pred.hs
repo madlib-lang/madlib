@@ -131,7 +131,7 @@ byInst env p@(IsIn interface ts maybeArea) = tryInsts (insts env interface)
     return ps'
   tryInsts [] =
     if all isConcrete $ predTypes p then
-      case (trace (ppShow maybeArea) maybeArea) of
+      case maybeArea of
         Just area ->
           throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area (envBacktrace env))
         _ ->

@@ -4,6 +4,7 @@ module Run.PackageHash where
 import           System.Directory              as Dir
 import           System.FilePath               ( joinPath )
 import qualified Data.ByteString.Lazy          as BL
+import qualified Data.ByteString.Lazy.Char8    as Char8
 import qualified Data.List                     as List
 import           System.Exit
 import           System.FilePath.Glob
@@ -13,6 +14,14 @@ import           Run.CommandLine
 import           Utils.Hash
 
 import           Utils.PathUtils
+
+
+isIn :: BL.ByteString -> BL.ByteString -> Bool
+isIn search inBS
+  | search `Char8.isPrefixOf` inBS = True
+  | Char8.length search > 0        = isIn (Char8.init search) inBS
+  | otherwise                      = False
+
 
 
 getFileOrDirContent :: [FilePath] -> FilePath -> IO BL.ByteString
@@ -30,7 +39,14 @@ getFileOrDirContent blackList path = do
         processedEntries <- mapM (getFileOrDirContent blackList . joinPath . ([path] <>) . return) entries
         return $ BL.concat processedEntries
 
-      (True, _) -> BL.readFile path
+      (True, _) -> do
+        fileContent <- BL.readFile path
+        
+        if "madlib.json" `List.isInfixOf` canPath then do
+          let filteredLines = filter (not . ("\"version\":" `List.isInfixOf`)) (List.lines (Char8.unpack fileContent))
+          return $ Char8.pack (List.unlines filteredLines)
+        else
+          return fileContent
 
       _         -> return BL.empty
 
@@ -46,7 +62,6 @@ filesToExclude = [ "madlib_modules"
                  , ".coverage"
                  , "coverage"
                  , "version.lock"
-                 , "madlib.json"
                  , ".git"
                  , ".DS_Store"
                  , "package-lock.json"

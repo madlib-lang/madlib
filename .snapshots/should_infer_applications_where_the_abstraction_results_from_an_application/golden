@@ -25,7 +25,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "d3" Star)))
                        (TVar (TV "f5" Star)))))
-            (Area (Loc 33 2 1) (Loc 118 5 1))
+            (Area (Loc 33 2 1) (Loc 118 5 2))
             (TypedExp
                (Solved
                   ([] :=>
@@ -50,7 +50,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV "d3" Star)))
                              (TVar (TV "f5" Star)))))
-                  (Area (Loc 72 3 1) (Loc 118 5 1))
+                  (Area (Loc 72 3 1) (Loc 118 5 2))
                   (Export
                      (Solved
                         ([] :=>
@@ -75,7 +75,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "l11" Star)))
                                    (TVar (TV "m12" Star)))))
-                        (Area (Loc 79 3 8) (Loc 118 5 1))
+                        (Area (Loc 79 3 8) (Loc 118 5 2))
                         (Assignment
                            "flip"
                            (Solved
@@ -105,7 +105,7 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "l11" Star)))
                                          (TVar (TV "m12" Star)))))
-                              (Area (Loc 86 3 15) (Loc 118 5 1))
+                              (Area (Loc 86 3 15) (Loc 118 5 2))
                               (Abs
                                  (Solved
                                     ([] :=>
@@ -137,7 +137,7 @@ Right
                                                    "prelude")
                                                 (TVar (TV "l11" Star)))
                                              (TVar (TV "m12" Star))))
-                                     (Area (Loc 98 4 3) (Loc 115 4 20))
+                                     (Area (Loc 98 4 3) (Loc 116 4 21))
                                      (Abs
                                         (Solved
                                            ([] :=> TVar (TV "k10" Star))
@@ -152,7 +152,7 @@ Right
                                                        "prelude")
                                                     (TVar (TV "l11" Star)))
                                                  (TVar (TV "m12" Star)))
-                                            (Area (Loc 98 4 3) (Loc 115 4 20))
+                                            (Area (Loc 98 4 3) (Loc 116 4 21))
                                             (Abs
                                                (Solved
                                                   ([] :=> TVar (TV "l11" Star))
@@ -310,9 +310,9 @@ Right
                                            "xs")
                                         [ Solved
                                             ([] :=> TVar (TV "s18" Star))
-                                            (Area (Loc 180 8 26) (Loc 264 13 4))
+                                            (Area (Loc 180 8 26) (Loc 264 13 5))
                                             (JSExp
-                                               "{\n  const x = xs[i];\n  return x === undefined\n    ? Nothing()\n    : Just(x);\n}")
+                                               " {\n  const x = xs[i];\n  return x === undefined\n    ? Nothing()\n    : Just(x);\n} ")
                                         ])
                                  ]))))))
                (Untyped
@@ -350,7 +350,7 @@ Right
                TApp
                  (TCon (TC "List" (Kfun Star Star)) "prelude")
                  (TCon (TC "String" Star) "prelude"))
-            (Area (Loc 267 15 1) (Loc 362 17 1))
+            (Area (Loc 267 15 1) (Loc 362 17 2))
             (Assignment
                "names"
                (Solved
@@ -358,7 +358,7 @@ Right
                      TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 275 15 9) (Loc 362 17 1))
+                  (Area (Loc 275 15 9) (Loc 362 17 2))
                   (ListConstructor
                      [ Solved
                          ([] :=> TCon (TC "String" Star) "prelude")
@@ -451,7 +451,7 @@ Right
                      [ Solved
                          ([] :=> TVar (TV "v21" Star))
                          (Area (Loc 377 18 15) (Loc 412 18 50))
-                         (JSExp "{ console.log(a); return a; }")
+                         (JSExp " { console.log(a); return a; } ")
                      ])))
         , Solved
             ([] :=>

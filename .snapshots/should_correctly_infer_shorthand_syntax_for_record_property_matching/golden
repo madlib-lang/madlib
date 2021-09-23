@@ -14,7 +14,7 @@ Right
                           ])
                        (Just (TVar (TV "f5" Star)))))
                  (TCon (TC "Number" Star) "prelude"))
-            (Area (Loc 0 1 1) (Loc 54 5 1))
+            (Area (Loc 0 1 1) (Loc 54 5 2))
             (Assignment
                "fn"
                (Solved
@@ -29,7 +29,7 @@ Right
                                 ])
                              (Just (TVar (TV "f5" Star)))))
                        (TCon (TC "Number" Star) "prelude"))
-                  (Area (Loc 5 1 6) (Loc 54 5 1))
+                  (Area (Loc 5 1 6) (Loc 54 5 2))
                   (Abs
                      (Solved
                         ([] :=>
@@ -43,7 +43,7 @@ Right
                         "r")
                      [ Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 16 2 3) (Loc 52 4 3))
+                         (Area (Loc 16 2 3) (Loc 52 4 4))
                          (Where
                             (Solved
                                ([] :=>

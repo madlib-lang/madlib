@@ -37,7 +37,6 @@ instance Substitutable t => Substitutable (Qual t) where
 instance Substitutable Type where
   apply _ tc@(TCon a fp   ) = tc
   apply s t@( TVar a      ) = case M.findWithDefault t a s of
-
     TRecord fields (Just t'@(TVar tv)) ->
       let deepUpdateRecord initialFields base tyvar = 
             case M.findWithDefault base tyvar s of

@@ -22,7 +22,7 @@ export complement = (fn) => ((x) => (!fn(x)))
  * map(always(true), [1, 2 ,3]) // [true, true, true]
  */
 always :: a -> b -> a
-export always = (a, b) => (a)
+export always = (a, b) => a
 
 /**
  * Returns exactly what you give it.
@@ -33,7 +33,7 @@ export always = (a, b) => (a)
  * identity(Just(3)) // Just(3)
  */
 identity :: a -> a
-export identity = (a) => (a)
+export identity = (a) => a
 
 /**
  * Compares two values and returns true if they are equal, false otherwise.
@@ -130,35 +130,3 @@ const nativeMemoize = (fn) => {
 
 memoize :: (a -> b) -> (a -> b)
 export memoize = (fn) => #- nativeMemoize(fn) -#
-
-#-
-const nativeMemoize2 = (fn) => {
-  let cache = {};
-  return __curry__((a, b) => {
-    const key = JSON.stringify([a, b])
-    if (!cache[key]) {
-      cache[key] = fn.apply(this, [a, b])
-    }
-    return cache[key]
-  })
-}
--#
-
-memoize2 :: (a -> b -> c) -> (a -> b -> c)
-export memoize2 = (fn) => #- nativeMemoize2((a, b) => fn(a)(b)) -#
-
-#-
-const nativeMemoize3 = (fn) => {
-  let cache = {};
-  return __curry__((a, b, c) => {
-    const key = JSON.stringify([a, b, c])
-    if (!cache[key]) {
-      cache[key] = fn.apply(this, [a, b, c])
-    }
-    return cache[key]
-  })
-}
--#
-
-memoize3 :: (a -> b -> c -> d) -> (a -> b -> c -> d)
-export memoize3 = (fn) => #- nativeMemoize3(fn) -#

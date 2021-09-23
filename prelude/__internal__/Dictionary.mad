@@ -7,8 +7,13 @@ import T from "Tuple"
  *
  * @since 0.0.5
  */
-export type Dictionary k v = Dictionary(List <k, v>)
 
+
+Dictionary :: List <k, v> -> Dictionary k v
+Dictionary = (items) => #- ({
+  __constructor: "Dictionary",
+  __args: [items],
+}) -#
 
 /**
  * Creates a Dictionary from a list of <key, value> tuples
