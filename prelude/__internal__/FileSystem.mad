@@ -2,12 +2,20 @@ import type { Data } from "Data"
 import W from "Wish"
 import { BinaryData, TextData } from "Data"
 
+
+
 #- import fs from "fs" -#
 
 
 writeFile :: String -> Data -> W.Wish String String
-export writeFile = (path, d) => where(d) {
-  BinaryData(bytes) => W.Wish((bad, good) => #- {
+export writeFile = (path, d) => where (d) {
+  BinaryData(bytes) =>
+    W
+      .Wish(
+        (
+          bad,
+          good
+        ) => #- {
       fs.writeFile(path, bytes, (err) => {
         if (err) {
           bad(err);
@@ -16,9 +24,16 @@ export writeFile = (path, d) => where(d) {
           good(path)
         }
       })
-    } -#)
+    } -#
+      )
 
-  TextData(content) => W.Wish((bad, good) => #- {
+  TextData(content) =>
+    W
+      .Wish(
+        (
+          bad,
+          good
+        ) => #- {
       fs.writeFile(path, content, (err) => {
         if (err) {
           bad(err);
@@ -28,11 +43,18 @@ export writeFile = (path, d) => where(d) {
         }
       })
     }
-  -#)
+  -#
+      )
 }
 
+
 readFile :: String -> W.Wish String String
-export readFile = (path) => W.Wish((bad, good) => #- {
+export readFile = (path) => W
+  .Wish(
+    (
+      bad,
+      good
+    ) => #- {
   fs.readFile(path, "utf8", (err, d) => {
     if (err) {
       bad(err);
@@ -41,10 +63,17 @@ export readFile = (path) => W.Wish((bad, good) => #- {
       good(d)
     }
   })
-}-#)
+}-#
+  )
+
 
 exists :: String -> W.Wish String String
-export exists = (path) => W.Wish((bad, good) => #- {
+export exists = (path) => W
+  .Wish(
+    (
+      bad,
+      good
+    ) => #- {
   fs.access(path, fs.constants.F_OK, (err) => {
     if (err) {
       bad(err);
@@ -52,10 +81,17 @@ export exists = (path) => W.Wish((bad, good) => #- {
       good(path);
     }
   });
-} -#)
+} -#
+  )
+
 
 readDir :: String -> W.Wish String (List String)
-export readDir = (path) => W.Wish((bad, good) => #- {
+export readDir = (path) => W
+  .Wish(
+    (
+      bad,
+      good
+    ) => #- {
   fs.readdir(path, (err, files) => {
     if (err) {
       bad(err);
@@ -63,4 +99,5 @@ export readDir = (path) => W.Wish((bad, good) => #- {
       good(files);
     }
   })
-} -#)
+} -#
+  )

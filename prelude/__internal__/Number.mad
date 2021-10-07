@@ -3,19 +3,24 @@ import {} from "Read"
 import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
+
+
 instance Show Number {
   show = (x) => #- x.toString() -#
 }
 
+
 instance Read Number {
   read = fromString
 }
+
 
 fromString :: String -> Maybe Number
 export fromString = (str) => (#- {
   const n = parseFloat(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
+
 
 /**
  * Formats a a number given as the first parameter to a string containing the
@@ -30,8 +35,12 @@ export formatDecimal = (a, x) => #-{
   return isNaN(n) ? "0" : n
 }-#
 
+
 range :: Number -> Number -> List Number
-export range = (a, b) => #-{
+export range = (
+  a,
+  b
+) => #-{
   const out = []
   let x = a
   while (x < b) {

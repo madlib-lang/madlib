@@ -1,5 +1,7 @@
 import {} from "Show"
 
+
+
 /**
  * Show instance for Boolean. The method show returns a string representation of
  * a boolean value.
@@ -10,7 +12,5 @@ import {} from "Show"
  * show(false) // "false"
  */
 instance Show Boolean {
-  show = (x) => x
-    ? "true"
-    : "false"
+  show = (x) => x ? "true" : "false"
 }

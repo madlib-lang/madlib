@@ -2,12 +2,15 @@ import {} from "Monad"
 import {} from "Bifunctor"
 
 
+
 /**
  * Wish represents an async computation that needs to be fulfilled. It is
  * cold and will only be run when fulfilled.
  */
 
+
 export type Wish e a = Wish((e -> f) -> (a -> b) -> ())
+
 
 /**
  * The functor instance of Wish provides a way to map over the value it contains.
@@ -18,42 +21,49 @@ export type Wish e a = Wish((e -> f) -> (a -> b) -> ())
  * map((x) => x + 1, bad(3))  // bad(3)
  */
 instance Functor (Wish e) {
-  map = (f, m) => Wish((badCB, goodCB) =>
-    where(m) { Wish(run) => run(badCB, (x) => (goodCB(f(x)))) }
+  map = (f, m) => Wish(
+    (badCB, goodCB) => where (m) {
+      Wish(run) =>
+        run(badCB, (x) => (goodCB(f(x))))
+    }
   )
 }
 
 
 instance Applicative (Wish e) {
-  pure = (a) => Wish((_, goodCB) => goodCB(a))
-
-  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>) {
-    <Wish(runMF), Wish(runM)> =>
-      runM(
-        badCB,
-        (x) => runMF(
-          badCB,
-          (f) => goodCB(f(x))
-        )
-      )
+  ap = (mf, m) => Wish(
+    (badCB, goodCB) => where (<mf, m>) {
+      <Wish(runMF), Wish(runM)> =>
+        runM(badCB, (x) => runMF(badCB, (f) => goodCB(f(x))))
     }
   )
+
+  pure = (a) => Wish((_, goodCB) => goodCB(a))
 }
+
 
 instance Monad (Wish e) {
-  of = pure
+  chain = (f, m) => Wish(
+    (badCB, goodCB) => where (m) {
+      Wish(run) =>
+        run(badCB, (x) => where (f(x)) { Wish(r) => r(badCB, goodCB) })
+    }
+  )
 
-  chain = (f, m) => Wish((badCB, goodCB) => where(m) {
-    Wish(run) => run(badCB, (x) => where(f(x)) { Wish(r) => r(badCB, goodCB) })
-  })
+  of = pure
 }
 
+
 instance Bifunctor Wish {
-  bimap = (leftF, rightF, m) => Wish((badCB, goodCB) => where(m) {
-    Wish(run) => run(pipe(leftF, badCB), pipe(rightF, goodCB))
-  })
+  bimap = (leftF, rightF, m) => Wish(
+    (badCB, goodCB) => where (m) {
+      Wish(run) =>
+        run(pipe(leftF, badCB), pipe(rightF, goodCB))
+    }
+  )
 
   mapFirst = mapRej
+
   mapSecond = map
 }
 
@@ -67,11 +77,13 @@ instance Bifunctor Wish {
  * mapRej((x) => x + 1, good(3)) // good(3)
  */
 mapRej :: (e -> f) -> Wish e a -> Wish f a
-export mapRej = (f, m) => (
-  Wish((badCB, goodCB) => (
-    where(m) { Wish(run) => run((x) => (badCB(f(x))), goodCB) }
-  ))
-)
+export mapRej = (f, m) => (Wish(
+  (badCB, goodCB) => (where (m) {
+    Wish(run) =>
+      run((x) => (badCB(f(x))), goodCB)
+  })
+))
+
 
 /**
  * Chains over the rejected value.
@@ -81,25 +93,27 @@ export mapRej = (f, m) => (
  * chainRej((x) => good(x + 1), bad(3)) // good(4)
  */
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
-export chainRej = (f, m) => (
-  Wish((badCB, goodCB) => (
-    where(m) {
-      Wish(run) => run((x) => (
-        where(f(x)) {
-          Wish(r) => r(badCB, goodCB)
-        }
-      ), goodCB)
-    }
-  ))
-)
+export chainRej = (f, m) => (Wish(
+  (badCB, goodCB) => (where (m) {
+    Wish(run) =>
+      run((x) => (where (f(x)) { Wish(r) => r(badCB, goodCB) }), goodCB)
+  })
+))
+
 
 bichain :: (a -> Wish c d) -> (b -> Wish c d) -> Wish a b -> Wish c d
-export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
-  where(m) {
+export bichain = (badF, goodF, m) => Wish(
+  (badCB, goodCB) => where (m) {
     Wish(run) =>
       run(
-        (x) => where(badF(x)) { Wish(r) => r(badCB, goodCB) },
-        (x) => where(goodF(x)) { Wish(r) => r(badCB, goodCB) }
+        (x) => where (badF(x)) {
+          Wish(r) =>
+            r(badCB, goodCB)
+        },
+        (x) => where (goodF(x)) {
+          Wish(r) =>
+            r(badCB, goodCB)
+        }
       )
   }
 )
@@ -108,16 +122,23 @@ export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
 good :: a -> Wish e a
 export good = (a) => Wish((_, goodCB) => goodCB(a))
 
+
 bad :: e -> Wish e a
 export bad = (e) => Wish((badCB, _) => badCB(e))
 
 
+getWishFn = where {
+  Wish(run) =>
+    run
+}
 
-getWishFn = where { Wish(run) => run }
 
 parallel :: List (Wish e a) -> Wish e (List a)
-export parallel = (wishes) => (
-  Wish((badCB, goodCB) => (#- {
+export parallel = (wishes) => (Wish(
+  (
+    badCB,
+    goodCB
+  ) => (#- {
     const l = wishes.length
     let ko = false;
     let ok = 0;
@@ -132,16 +153,16 @@ export parallel = (wishes) => (
     if (l === 0) {
       goodCB([])
     }
-  } -#))
-)
+  } -#)
+))
 
 
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
 export fulfill = (badCB, goodCB, m) => {
-  where(m) {
-    Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
+  where (m) {
+    Wish(run) =>
+      #- setTimeout(() => run(badCB)(goodCB), 0); -#
   }
-
   return ()
 }
 

@@ -19,6 +19,8 @@ async_hooks.createHook({
 }).enable();
 
 -#
+
+
 export initContext = (fn) => #-{
   // We force the initialization of a new Async Resource
   const asyncResource = new async_hooks.AsyncResource('REQUEST_CONTEXT');
@@ -31,6 +33,8 @@ export initContext = (fn) => #-{
   });
 }
 -#
+
+
 export getContext = #-() => {
   const asyncId = async_hooks.executionAsyncId();
   // We try to get the context object linked to our current asyncId

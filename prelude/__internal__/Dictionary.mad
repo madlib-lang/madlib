@@ -2,6 +2,8 @@ import type { Maybe } from "Maybe"
 import L from "List"
 import T from "Tuple"
 
+
+
 /**
  * Dictionary represents a key - value data structure.
  *
@@ -15,6 +17,7 @@ Dictionary = (items) => #- ({
   __args: [items],
 }) -#
 
+
 /**
  * Creates a Dictionary from a list of <key, value> tuples
  *
@@ -23,11 +26,12 @@ Dictionary = (items) => #- ({
  * fromList([<"one", 2>, <"two", 2>])
  * fromList([<"a", 2>, <"b", 2>, <"c", 3>])
  */
-fromList :: List (<k, v>) -> Dictionary k v
+fromList :: List <k, v> -> Dictionary k v
 export fromList = pipe(
   L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
   Dictionary
 )
+
 
 /**
  * The empty Dictionary
@@ -48,17 +52,11 @@ export empty = fromList([])
  * insert(1, 7, fromList([<1, 2>])) // fromList([<1, 7>])
  */
 insert :: k -> v -> Dictionary k v -> Dictionary k v
-export insert = (k, v, m) => where(m) {
+export insert = (k, v, m) => where (m) {
   Dictionary(items) =>
-    L.reject(
-      (item) => where(item) {
-        <kk, _> => kk == k
-      },
-      items
-    )
-    |> L.append(<k, v>)
-    |> Dictionary
+    L.reject((item) => where (item) { <kk, _> => kk == k }, items) |> L.append(<k, v>) |> Dictionary
 }
+
 
 /**
  * Get a value from a Dictionary given a key.
@@ -70,12 +68,11 @@ export insert = (k, v, m) => where(m) {
  */
 get :: k -> Dictionary k v -> Maybe v
 export get = (k) => where {
-  Dictionary(items) => pipe(
-    L.find((item) => where(item) {
-      <kk, _> => k == kk
-    }),
-    map(T.snd)
-  )(items)
+  Dictionary(items) =>
+    pipe(
+      L.find((item) => where (item) { <kk, _> => k == kk }),
+      map(T.snd)
+    )(items)
 }
 
 
@@ -87,9 +84,11 @@ export get = (k) => where {
  * keys(fromList([<true, "Go for it">, <false, "NOGO">])) // [true, false]
  */
 keys :: Dictionary k v -> List k
-export keys = (m) => where(m) {
-  Dictionary(items) => map(T.fst, items)
+export keys = (m) => where (m) {
+  Dictionary(items) =>
+    map(T.fst, items)
 }
+
 
 /**
  * List all values in a Dictionary
@@ -99,8 +98,9 @@ export keys = (m) => where(m) {
  * values(fromList([<true, "Go for it">, <false, "NOGO">])) // ["Go for it", "NOGO"]
  */
 values :: Dictionary k v -> List v
-export values = (m) => where(m) {
-  Dictionary(items) => map(T.snd, items)
+export values = (m) => where (m) {
+  Dictionary(items) =>
+    map(T.snd, items)
 }
 
 
@@ -125,9 +125,11 @@ export len = (m) => (m |> keys |> L.len)
  */
 instance Functor (Dictionary k) {
   map = (fn) => where {
-    Dictionary(items) => map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+    Dictionary(items) =>
+      map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
   }
 }
+
 
 /**
  * Map over a Dictionary with a function that takes the key and value and returns the new value. 
@@ -142,8 +144,10 @@ instance Functor (Dictionary k) {
  */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where {
-  Dictionary(items) => map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+  Dictionary(items) =>
+    map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
 }
+
 
 /**
  * Combine two Dictionaries together.
@@ -151,6 +155,7 @@ export mapWithKey = (fn) => where {
  * @since 0.0.5
  */
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => where(<a, b>) {
-  <Dictionary(itemsA), Dictionary(itemsB)> => L.concat(itemsA, itemsB) |> fromList
+export merge = (a, b) => where (<a, b>) {
+  <Dictionary(itemsA), Dictionary(itemsB)> =>
+    L.concat(itemsA, itemsB) |> fromList
 }

@@ -23,16 +23,16 @@ export dropTrailingPathSeparator = ifElse(
 )
 
 
-performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
+performSplitPath = (buffer, foundSlash, path) => where (String.firstChar(path)) {
   Nothing =>
-    [buffer]
+    [buffer,]
 
   Just("/") =>
     performSplitPath(buffer ++ "/", true, String.drop(1, path))
 
   Just(char) =>
     foundSlash
-      ? mappend([buffer], performSplitPath(char, false, String.drop(1, path)))
+      ? mappend([buffer,], performSplitPath(char, false, String.drop(1, path)))
       : performSplitPath(buffer ++ char, false, String.drop(1, path))
 }
 
@@ -59,9 +59,20 @@ joinPath :: List FilePath -> FilePath
 export joinPath = pipe(
   filter(complement(String.isEmpty)),
   ifElse(
-    pipe(first, equals(Just("/"))),
-    pipe(drop(1), map(dropTrailingPathSeparator), join("/"), mappend("/")),
-    pipe(map(dropTrailingPathSeparator), join("/"))
+    pipe(
+      first,
+      equals(Just("/"))
+    ),
+    pipe(
+      drop(1),
+      map(dropTrailingPathSeparator),
+      join("/"),
+      mappend("/")
+    ),
+    pipe(
+      map(dropTrailingPathSeparator),
+      join("/")
+    )
   )
 )
 
@@ -77,11 +88,7 @@ canonicalizePath :: FilePath -> FilePath
 export canonicalizePath = pipe(
   splitPath,
   map(
-    ifElse(
-      pipe(String.lastChar, equals(Just("/"))),
-      String.replace("([^/]*)/*", "$1/"),
-      identity
-    )
+    ifElse(pipe(String.lastChar, equals(Just("/"))), String.replace("([^/]*)/*", "$1/"), identity)
   ),
   joinPath
 )
@@ -130,14 +137,10 @@ isRootPathOf :: FilePath -> FilePath -> Boolean
 export isRootPathOf = (root, path) => {
   rootParts = splitPath(root)
   pathParts = splitPath(path)
-
   rootStart = dropTrailingPathSeparator(fromMaybe("", first(rootParts)))
   pathStart = dropTrailingPathSeparator(fromMaybe("", first(pathParts)))
-
   return rootStart == pathStart || rootStart == ""
-    ? rootStart == ""
-      ? true
-      : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
+    ? rootStart == "" ? true : isRootPathOf(dropPathSegments(1, root), dropPathSegments(1, path))
     : false
 }
 
@@ -156,9 +159,7 @@ export takeFileName = pipe(
   last,
   where {
     Just(part) =>
-      String.lastChar(part) == Just("/")
-        ? ""
-        : part
+      String.lastChar(part) == Just("/") ? "" : part
 
     Nothing =>
       ""

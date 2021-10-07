@@ -3,73 +3,92 @@ import { always } from "Function"
 import { bad, good, bichain, mapRej, parallel } from "./Wish"
 
 
-test("map should map over a value if it's a good Wish", (_) => pipe(
-  map((x) => x + 1),
-  chain(assertEquals($, 4))
-)(good(3)))
 
-test("map should be identity if it's a bad Wish", (_) => pipe(
-  map((x) => x + 1),
-  bichain(
-    assertEquals($, 3),
-    always(bad(ErrorWithMessage("Wish should be bad")))
-  )
-)(bad(3)))
+test(
+  "map should map over a value if it's a good Wish",
+  (_) => pipe(
+    map((x) => x + 1),
+    chain(assertEquals($, 4))
+  )(good(3))
+)
 
-test("mapRej should map over a value if it's a bad Wish", (_) => pipe(
-  mapRej((x) => x + 1),
-  bichain(
-    assertEquals($, 4),
-    always(bad(ErrorWithMessage("Wish should be bad")))
-  )
-)(bad(3)))
 
-test("mapRej should be identity if it's a good Wish", (_) => pipe(
-  mapRej((x) => x + 1),
-  bichain(
-    always(bad(ErrorWithMessage("Wish should be good"))),
-    assertEquals($, 3)
-  )
-)(good(3)))
+test(
+  "map should be identity if it's a bad Wish",
+  (_) => pipe(
+    map((x) => x + 1),
+    bichain(assertEquals($, 3), always(bad(ErrorWithMessage("Wish should be bad"))))
+  )(bad(3))
+)
 
-test("ap should apply a function wrapped in a good Wish to a good Wish", (_) => pipe(
-  ap(good((x) => x + 1)),
-  chain(assertEquals($, 4))
-)(good(3)))
 
-test("ap should not apply a function wrapped in a good Wish to a bad Wish", (_) => pipe(
-  ap(good((x) => x + 1)),
-  bichain(
-    assertEquals($, 3),
-    always(bad(ErrorWithMessage("Wish should be bad")))
-  )
-)(bad(3)))
+test(
+  "mapRej should map over a value if it's a bad Wish",
+  (_) => pipe(
+    mapRej((x) => x + 1),
+    bichain(assertEquals($, 4), always(bad(ErrorWithMessage("Wish should be bad"))))
+  )(bad(3))
+)
 
-test("bimap should map over the bad value if given a bad wish", (_) => pipe(
-  bimap((x) => x + 1, (x) => x * 2),
-  bichain(
-    assertEquals($, 4),
-    always(bad(ErrorWithMessage("wish should be bad")))
-  )
-)(bad(3)))
 
-test("bimap should map over the good value if given a good wish", (_) => pipe(
-  bimap((x) => x + 1, (x) => x * 2),
-  bichain(
-    always(bad(ErrorWithMessage("wish should be good"))),
-    assertEquals($, 6)
-  )
-)(good(3)))
+test(
+  "mapRej should be identity if it's a good Wish",
+  (_) => pipe(
+    mapRej((x) => x + 1),
+    bichain(always(bad(ErrorWithMessage("Wish should be good"))), assertEquals($, 3))
+  )(good(3))
+)
 
-test("parallel should return the result of all given wishes in a list", (_) => pipe(
-  parallel,
-  chain(assertEquals($, [1, 2, 3]))
-)([good(1), good(2), good(3)]))
 
-test("parallel should return a bad Wish if one of the given wishes is bad", (_) => pipe(
-  parallel,
-  bichain(
-    assertEquals($, 2),
-    always(bad(ErrorWithMessage("Wish should be bad")))
-  )
-)([good(1), bad(2), good(3), bad(4)]))
+test(
+  "ap should apply a function wrapped in a good Wish to a good Wish",
+  (_) => pipe(
+    ap(good((x) => x + 1)),
+    chain(assertEquals($, 4))
+  )(good(3))
+)
+
+
+test(
+  "ap should not apply a function wrapped in a good Wish to a bad Wish",
+  (_) => pipe(
+    ap(good((x) => x + 1)),
+    bichain(assertEquals($, 3), always(bad(ErrorWithMessage("Wish should be bad"))))
+  )(bad(3))
+)
+
+
+test(
+  "bimap should map over the bad value if given a bad wish",
+  (_) => pipe(
+    bimap((x) => x + 1, (x) => x * 2),
+    bichain(assertEquals($, 4), always(bad(ErrorWithMessage("wish should be bad"))))
+  )(bad(3))
+)
+
+
+test(
+  "bimap should map over the good value if given a good wish",
+  (_) => pipe(
+    bimap((x) => x + 1, (x) => x * 2),
+    bichain(always(bad(ErrorWithMessage("wish should be good"))), assertEquals($, 6))
+  )(good(3))
+)
+
+
+test(
+  "parallel should return the result of all given wishes in a list",
+  (_) => pipe(
+    parallel,
+    chain(assertEquals($, [1, 2, 3,]))
+  )([good(1), good(2), good(3),])
+)
+
+
+test(
+  "parallel should return a bad Wish if one of the given wishes is bad",
+  (_) => pipe(
+    parallel,
+    bichain(assertEquals($, 2), always(bad(ErrorWithMessage("Wish should be bad"))))
+  )([good(1), bad(2), good(3), bad(4),])
+)

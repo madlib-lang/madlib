@@ -1,5 +1,4 @@
 import { assertEquals, test } from "TestTools"
-
 import {
   canonicalizePath,
   splitPath,
@@ -11,109 +10,186 @@ import {
   parentPath
 } from "./Posix"
 
-test("splitPath             - '/some/path/file.ext'", (_) => pipe(
-  splitPath,
-  assertEquals($, ["/", "some/", "path/", "file.ext"])
-)("/some/path/file.ext"))
-
-test("splitPath             - '/some/path/file'", (_) => pipe(
-  splitPath,
-  assertEquals($, ["/", "some/", "path/", "file"])
-)("/some/path/file"))
-
-test("splitPath             - '/root/path'", (_) => pipe(
-  splitPath,
-  assertEquals($, ["/", "root/", "path"])
-)("/root/path"))
-
-test("splitPath             - '/root///path'", (_) => pipe(
-  splitPath,
-  assertEquals($, ["/", "root///", "path"])
-)("/root///path"))
-
-test("joinPath              - ['/', 'root/', 'path']", (_) => pipe(
-  joinPath,
-  assertEquals($, "/root/path")
-)(["/", "root/", "path"]))
-
-test("joinPath              - ['/', 'root', 'path', 'file.ext']", (_) => pipe(
-  joinPath,
-  assertEquals($, "/root/path/file.ext")
-)(["/", "root", "path", "file.ext"]))
-
-test("joinPath              - ['folder/', 'path']", (_) => pipe(
-  joinPath,
-  assertEquals($, "folder/path")
-)(["folder/", "path"]))
-
-test("joinPath              - ['///', 'folder/', 'path']", (_) => pipe(
-  joinPath,
-  assertEquals($, "///folder/path")
-)(["///", "folder/", "path"]))
-
-test("joinPath              - ['', '/']", (_) => pipe(
-  joinPath,
-  assertEquals($, "/")
-)(["", "/"]))
-
-test("isRootPathOf should return true if the first path is a parent of the second path", (_) => pipe(
-  isRootPathOf($, "/root/path/child"),
-  assertEquals($, true)
-)("/root/path"))
-
-test("isRootPathOf should return false if the first path is not a parent of the second path", (_) => pipe(
-  isRootPathOf($, "/other-root/path/child"),
-  assertEquals($, false)
-)("/root/path"))
-
-test("isRootPathOf          - '/root/path/' '/root/path'", (_) => pipe(
-  isRootPathOf($, "/root/path"),
-  assertEquals($, true)
-)("/root/path/"))
-
-test("takeFileName          - '/path/filename'", (_) => pipe(
-  takeFileName,
-  assertEquals($, "filename")
-)("/path/filename"))
-
-test("takeFileName          - '/path/folder/'", (_) => pipe(
-  takeFileName,
-  assertEquals($, "")
-)("/path/folder/"))
-
-test("takeFileName          - '/path/folder/'", (_) => pipe(
-  takeFileName,
-  assertEquals($, "")
-)("/path/folder/"))
-
-test("takeFileName          - '/path/folder/.hidden'", (_) => pipe(
-  takeFileName,
-  assertEquals($, ".hidden")
-)("/path/folder/.hidden"))
-
-test("takeFileName          - '/path/folder/file.ext'", (_) => pipe(
-  takeFileName,
-  assertEquals($, "file.ext")
-)("/path/folder/file.ext"))
-
-test("takeExtension         - '/path/folder/file.ext'", (_) => pipe(
-  takeExtension,
-  assertEquals($, ".ext")
-)("/path/folder/file.ext"))
-
-test("parentPath            - '/root/path/child'", (_) => pipe(
-  parentPath,
-  assertEquals($, "/root/path")
-)("/root/path/child"))
 
 
-test("canonicalizePath      - '/root/path//child/'", (_) => pipe(
-  canonicalizePath,
-  assertEquals($, "/root/path/child")
-)("/root/path//child/"))
+test(
+  "splitPath             - '/some/path/file.ext'",
+  (_) => pipe(
+    splitPath,
+    assertEquals($, ["/", "some/", "path/", "file.ext",])
+  )("/some/path/file.ext")
+)
 
 
-test("dropPathSegments      - '/root/path/child/'", (_) => pipe(
-  dropPathSegments(2),
-  assertEquals($, "path/child")
-)("/root/path/child/"))
+test(
+  "splitPath             - '/some/path/file'",
+  (_) => pipe(
+    splitPath,
+    assertEquals($, ["/", "some/", "path/", "file",])
+  )("/some/path/file")
+)
+
+
+test(
+  "splitPath             - '/root/path'",
+  (_) => pipe(
+    splitPath,
+    assertEquals($, ["/", "root/", "path",])
+  )("/root/path")
+)
+
+
+test(
+  "splitPath             - '/root///path'",
+  (_) => pipe(
+    splitPath,
+    assertEquals($, ["/", "root///", "path",])
+  )("/root///path")
+)
+
+
+test(
+  "joinPath              - ['/', 'root/', 'path']",
+  (_) => pipe(
+    joinPath,
+    assertEquals($, "/root/path")
+  )(["/", "root/", "path",])
+)
+
+
+test(
+  "joinPath              - ['/', 'root', 'path', 'file.ext']",
+  (_) => pipe(
+    joinPath,
+    assertEquals($, "/root/path/file.ext")
+  )(["/", "root", "path", "file.ext",])
+)
+
+
+test(
+  "joinPath              - ['folder/', 'path']",
+  (_) => pipe(
+    joinPath,
+    assertEquals($, "folder/path")
+  )(["folder/", "path",])
+)
+
+
+test(
+  "joinPath              - ['///', 'folder/', 'path']",
+  (_) => pipe(
+    joinPath,
+    assertEquals($, "///folder/path")
+  )(["///", "folder/", "path",])
+)
+
+
+test("joinPath              - ['', '/']", (_) => pipe(joinPath, assertEquals($, "/"))(["", "/",]))
+
+
+test(
+  "isRootPathOf should return true if the first path is a parent of the second path",
+  (_) => pipe(
+    isRootPathOf($, "/root/path/child"),
+    assertEquals($, true)
+  )("/root/path")
+)
+
+
+test(
+  "isRootPathOf should return false if the first path is not a parent of the second path",
+  (_) => pipe(
+    isRootPathOf($, "/other-root/path/child"),
+    assertEquals($, false)
+  )("/root/path")
+)
+
+
+test(
+  "isRootPathOf          - '/root/path/' '/root/path'",
+  (_) => pipe(
+    isRootPathOf($, "/root/path"),
+    assertEquals($, true)
+  )("/root/path/")
+)
+
+
+test(
+  "takeFileName          - '/path/filename'",
+  (_) => pipe(
+    takeFileName,
+    assertEquals($, "filename")
+  )("/path/filename")
+)
+
+
+test(
+  "takeFileName          - '/path/folder/'",
+  (_) => pipe(
+    takeFileName,
+    assertEquals($, "")
+  )("/path/folder/")
+)
+
+
+test(
+  "takeFileName          - '/path/folder/'",
+  (_) => pipe(
+    takeFileName,
+    assertEquals($, "")
+  )("/path/folder/")
+)
+
+
+test(
+  "takeFileName          - '/path/folder/.hidden'",
+  (_) => pipe(
+    takeFileName,
+    assertEquals($, ".hidden")
+  )("/path/folder/.hidden")
+)
+
+
+test(
+  "takeFileName          - '/path/folder/file.ext'",
+  (_) => pipe(
+    takeFileName,
+    assertEquals($, "file.ext")
+  )("/path/folder/file.ext")
+)
+
+
+test(
+  "takeExtension         - '/path/folder/file.ext'",
+  (_) => pipe(
+    takeExtension,
+    assertEquals($, ".ext")
+  )("/path/folder/file.ext")
+)
+
+
+test(
+  "parentPath            - '/root/path/child'",
+  (_) => pipe(
+    parentPath,
+    assertEquals($, "/root/path")
+  )("/root/path/child")
+)
+
+
+test(
+  "canonicalizePath      - '/root/path//child/'",
+  (_) => pipe(
+    canonicalizePath,
+    assertEquals($, "/root/path/child")
+  )("/root/path//child/")
+)
+
+
+test(
+  "dropPathSegments      - '/root/path/child/'",
+  (_) => pipe(
+    dropPathSegments(2),
+    assertEquals($, "path/child")
+  )("/root/path/child/")
+)

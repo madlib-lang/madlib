@@ -1,70 +1,110 @@
 import type { Either } from "./Either"
 import { assertEquals, test } from "TestTools"
-import {
-  Right,
-  Left,
-  mapRight,
-  mapLeft,
-  isLeft,
-  isRight,
-  fromRight
-} from "./Either"
+import { Right, Left, mapRight, mapLeft, isLeft, isRight, fromRight } from "./Either"
 import {} from "Number"
 
 
+
 test("map - Right", (_) => assertEquals(map((x) => x + 1, Right(3)), Right(4)))
+
+
 test("map - Left", (_) => assertEquals(map((x) => x + 1, Left("error")), Left("error")))
 
+
 test("pure", (_) => assertEquals(pure(3), Right(3)))
+
+
 test("ap - Right Right", (_) => assertEquals(ap(Right((x) => x + 1), Right(2)), Right(3)))
+
+
 test("ap - Left Right", (_) => assertEquals(ap(Left("oups"), Right(2)), Left("oups")))
+
+
 test("ap - Right Left", (_) => assertEquals(ap(Right((x) => x + 1), Left("oups")), Left("oups")))
 
+
 test("of", (_) => assertEquals(of(3), Right(3)))
+
+
 test("chain - Right", (_) => assertEquals(chain((x) => Right(x + 1), Right(1)), Right(2)))
+
+
 test("chain - Left", (_) => assertEquals(chain((x) => Right(x + 1), Left("no")), Left("no")))
 
-test("bimap should map the left if the Either is a Left", (_) =>
-  assertEquals(bimap((x) => x * 2, (x) => x + 1, Left(3)), Left(6))
+
+test(
+  "bimap should map the left if the Either is a Left",
+  (_) => assertEquals(bimap((x) => x * 2, (x) => x + 1, Left(3)), Left(6))
 )
 
-test("bimap should map the right if the Either is a Right", (_) =>
-  assertEquals(bimap((x) => x * 2, (x) => x + 1, Right(3)), Right(4))
+
+test(
+  "bimap should map the right if the Either is a Right",
+  (_) => assertEquals(bimap((x) => x * 2, (x) => x + 1, Right(3)), Right(4))
 )
 
-test("mapFirst should map over the value in a Left", (_) =>
-  assertEquals(mapFirst((x) => x * 2, Left(3)), Left(6))
+
+test(
+  "mapFirst should map over the value in a Left",
+  (_) => assertEquals(mapFirst((x) => x * 2, Left(3)), Left(6))
 )
 
-test("mapFirst should not alter a Right", (_) =>
-  assertEquals(mapFirst((x) => x * 2, Right(3)), Right(3))
+
+test(
+  "mapFirst should not alter a Right",
+  (_) => assertEquals(mapFirst((x) => x * 2, Right(3)), Right(3))
 )
 
-test("mapSecond should map over the value in a Right", (_) =>
-  assertEquals(mapSecond((x) => x * 2, Right(3)), Right(6))
+
+test(
+  "mapSecond should map over the value in a Right",
+  (_) => assertEquals(mapSecond((x) => x * 2, Right(3)), Right(6))
 )
 
-test("mapSecond should not alter a Left", (_) =>
-  assertEquals(mapSecond((x) => x * 2, Left(3)), Left(3))
+
+test(
+  "mapSecond should not alter a Left",
+  (_) => assertEquals(mapSecond((x) => x * 2, Left(3)), Left(3))
 )
+
 
 test("show - Right", (_) => assertEquals(show((Right(3) :: Either Number Number)), "Right 3"))
+
+
 test("show - Left", (_) => assertEquals(show((Left(3) :: Either Number Number)), "Left 3"))
 
+
 test("mapRight - Right", (_) => assertEquals(mapRight((x) => x + 1, Right(3)), Right(4)))
+
+
 test("mapRight - Left", (_) => assertEquals(mapRight((x) => x + 1, Left("error")), Left("error")))
 
+
 test("mapLeft - Right", (_) => assertEquals(mapLeft((x) => x + 1, Right(3)), Right(3)))
+
+
 test("mapLeft - Left", (_) => assertEquals(mapLeft((x) => x + 1, Left(1)), Left(2)))
 
-test("isLeft - Left", (_) => assertEquals(isLeft(Left(1)), true))
-test("isLeft - Right", (_) => assertEquals(isLeft(Right(1)), false))
 
 test("isLeft - Left", (_) => assertEquals(isLeft(Left(1)), true))
+
+
 test("isLeft - Right", (_) => assertEquals(isLeft(Right(1)), false))
+
+
+test("isLeft - Left", (_) => assertEquals(isLeft(Left(1)), true))
+
+
+test("isLeft - Right", (_) => assertEquals(isLeft(Right(1)), false))
+
 
 test("isRight - Left", (_) => assertEquals(isRight(Left(1)), false))
+
+
 test("isRight - Right", (_) => assertEquals(isRight(Right(1)), true))
 
+
 test("fromRight - Right", (_) => assertEquals(fromRight(1, Right(4)), 4))
+
+
 test("fromRight - Left", (_) => assertEquals(fromRight(1, Left(4)), 1))

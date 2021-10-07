@@ -3,47 +3,62 @@ import {} from "Show"
 import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
+
+
 instance Semigroup String {
   assoc = (a, b) => a ++ b
 }
 
+
 instance Monoid String {
-  mempty = ""
   mappend = (a, b) => a ++ b
+
+  mempty = ""
 }
+
 
 instance Show String {
   show = (a) => a
 }
 
+
 toLower :: String -> String
 export toLower = (s) => #- s.toLowerCase() -#
 
+
 toUpper :: String -> String
 export toUpper = (s) => #- s.toUpperCase() -#
+
 
 replace :: String -> String -> String -> String
 export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex), replacing)
 -#)
 
+
 split :: String -> String -> List String
 export split = (separator, str) => (#- str.split(separator) -#)
+
 
 lines :: String -> List String
 export lines = split("\n")
 
+
 mapChars :: (String -> String) -> String -> String
 export mapChars = (f, s) => #- s.split("").map(f).join("") -#
+
 
 reduceChars :: (a -> String -> a) -> a -> String -> a
 export reduceChars = (f, initial, s) => #- s.split("").reduce((a, b) => f(a)(b), initial) -#
 
+
 slice :: Number -> Number -> String -> String
 export slice = (start, end, s) => #- s.slice(start, end) -#
 
+
 isEmpty :: String -> Boolean
 export isEmpty = (s) => #- !s -#
+
 
 nthChar :: Number -> String -> Maybe String
 export nthChar = (n, s) => #-{
@@ -51,26 +66,34 @@ export nthChar = (n, s) => #-{
   return !!c ? Just(c) : Nothing
 }-#
 
+
 firstChar :: String -> Maybe String
 export firstChar = nthChar(0)
+
 
 lastChar :: String -> Maybe String
 export lastChar = (s) => nthChar(len(s) - 1, s)
 
+
 drop :: Number -> String -> String
 export drop = (n, s) => slice(n, len(s), s)
+
 
 dropLast :: Number -> String -> String
 export dropLast = (n, s) => slice(0, -n, s)
 
+
 trim :: String -> String
 export trim = (s) => #- s.trim() -#
+
 
 trimStart :: String -> String
 export trimStart = (s) => #- s.trimStart() -#
 
+
 trimEnd :: String -> String
 export trimEnd = (s) => #- s.trimEnd() -#
+
 
 /**
  * Returns true if the character is a letter, false otherwise. Note that if the
@@ -85,8 +108,10 @@ export isLetter = (s) => #-{
   return RegExp(/^\p{L}/,'u').test(s)
 }-#
 
+
 len :: String -> Number
 export len = (s) => #- s.length -#
+
 
 /**
  * Returns true if the character is a digit, false otherwise. Note that if the
@@ -95,19 +120,31 @@ export len = (s) => #- s.length -#
 isDigit :: String -> Boolean
 export isDigit = (s) => len(s) != 1
   ? false
-  : s == "0" ||
-    s == "1" ||
-    s == "2" ||
-    s == "3" ||
-    s == "4" ||
-    s == "5" ||
-    s == "6" ||
-    s == "7" ||
-    s == "8" ||
-    s == "9"
+  : s
+    == "0"
+    || s
+    == "1"
+    || s
+    == "2"
+    || s
+    == "3"
+    || s
+    == "4"
+    || s
+    == "5"
+    || s
+    == "6"
+    || s
+    == "7"
+    || s
+    == "8"
+    || s
+    == "9"
+
 
 repeat :: Number -> String -> String
 export repeat = (n, s) => #- s.repeat(n) -#
+
 
 match :: String -> String -> Boolean
 export match = (regex, input) => #- input.match(regex) -#

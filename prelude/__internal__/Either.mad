@@ -2,6 +2,8 @@ import {} from "Monad"
 import {} from "Bifunctor"
 import {} from "Show"
 
+
+
 /**
  * An Either is a type which allows for modeling a disjoint union ("a" or "b", but in a safe way).
  * An Either can be a Right: a successful computation, or a Left: an unsuccessful one.
@@ -10,9 +12,7 @@ import {} from "Show"
  *
  * @since 0.0.5
  */
-export type Either e a
-  = Left(e)
-  | Right(a)
+export type Either e a = Left(e) | Right(a)
 
 
 /**
@@ -27,9 +27,11 @@ export type Either e a
  */
 instance Functor (Either e) {
   map = (f) => where {
-    Right(a) => Right(f(a))
+    Right(a) =>
+      Right(f(a))
 
-    Left(e) => Left(e)
+    Left(e) =>
+      Left(e)
   }
 }
 
@@ -46,13 +48,15 @@ instance Functor (Either e) {
  * ap(Right((x) => x + 1), Left("oups")) // Left("oups")
  */
 instance Applicative (Either e) {
-  pure = Right
+  ap = (mf, m) => where (mf) {
+    Left(e) =>
+      Left(e)
 
-  ap = (mf, m) => where(mf) {
-    Left(e) => Left(e)
-
-    Right(f) => map(f, m)
+    Right(f) =>
+      map(f, m)
   }
+
+  pure = Right
 }
 
 
@@ -67,24 +71,29 @@ instance Applicative (Either e) {
  * chain((x) => Right(x + 1), Left("no")) // Left("no")
  */
 instance Monad (Either e) {
-  of = pure
-
   chain = (f) => where {
-    Right(a) => f(a)
+    Right(a) =>
+      f(a)
 
-    Left(e) => Left(e)
+    Left(e) =>
+      Left(e)
   }
+
+  of = pure
 }
 
 
 instance Bifunctor Either {
   bimap = (leftF, rightF) => where {
-    Right(a) => Right(rightF(a))
+    Right(a) =>
+      Right(rightF(a))
 
-    Left(e) => Left(leftF(e))
+    Left(e) =>
+      Left(leftF(e))
   }
 
   mapFirst = mapLeft
+
   mapSecond = map
 }
 
@@ -99,9 +108,11 @@ instance Bifunctor Either {
  */
 instance (Show e, Show a) => Show (Either e a) {
   show = where {
-    Right(a) => "Right " ++ show(a)
+    Right(a) =>
+      "Right " ++ show(a)
 
-    Left(e) => "Left " ++ show(e)
+    Left(e) =>
+      "Left " ++ show(e)
   }
 }
 
@@ -127,10 +138,12 @@ export mapRight = map
  * mapLeft((x) => x + 1, Right(3)) // Right(3)
  */
 mapLeft :: (e -> f) -> Either e a -> Either f a
-export mapLeft = (f, m) => where(m) {
-  Right(a) => Right(a)
+export mapLeft = (f, m) => where (m) {
+  Right(a) =>
+    Right(a)
 
-  Left(e) => Left(f(e))
+  Left(e) =>
+    Left(f(e))
 }
 
 
@@ -143,10 +156,12 @@ export mapLeft = (f, m) => where(m) {
  * isLeft(Right(1)) // false
  */
 isLeft :: Either e a -> Boolean
-export isLeft = (either) => where(either) {
-  Left(_) => true
+export isLeft = (either) => where (either) {
+  Left(_) =>
+    true
 
-  _ => false
+  _ =>
+    false
 }
 
 
@@ -159,10 +174,12 @@ export isLeft = (either) => where(either) {
  * isRight(Right(1)) // true
  */
 isRight :: Either e a -> Boolean
-export isRight = (either) => where(either) {
-  Right(_) => true
+export isRight = (either) => where (either) {
+  Right(_) =>
+    true
 
-  _ => false
+  _ =>
+    false
 }
 
 
@@ -176,8 +193,10 @@ export isRight = (either) => where(either) {
  * fromRight(1, Left(4))  // 1
  */
 fromRight :: a -> Either e a -> a
-export fromRight = (a, either) => where(either) {
-  Right(x) => x
+export fromRight = (a, either) => where (either) {
+  Right(x) =>
+    x
 
-  _ => a
+  _ =>
+    a
 }

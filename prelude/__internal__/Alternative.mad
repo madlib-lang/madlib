@@ -1,5 +1,7 @@
 import {} from "Applicative"
 
+
+
 /**
  * Alternative instance brings retry mechanism. It tries the first computation and
  * if it fails it tries the second one.
@@ -7,6 +9,7 @@ import {} from "Applicative"
  * @since 0.8.0
  */
 interface Applicative f => Alternative f {
+  alt :: f a -> f a -> f a
+
   empty :: f a
-  alt   :: f a -> f a -> f a
 }

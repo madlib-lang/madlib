@@ -19,9 +19,9 @@ import { always } from "Function"
  */
 interface Functor m => Applicative m {
   ap :: m (a -> b) -> m a -> m b
+
   pure :: a -> m a
 }
-
 
 
 /**

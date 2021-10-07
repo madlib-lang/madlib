@@ -1,14 +1,22 @@
 import {} from "Show"
 
+
+
 instance (Show a, Show b) => Show <a, b> {
-  show = where { <a, b> => "<" ++ show(a) ++ ", " ++ show(b) ++ ">" }
+  show = where {
+    <a, b> =>
+      "<" ++ show(a) ++ ", " ++ show(b) ++ ">"
+  }
 }
+
 
 instance (Show a, Show b, Show c) => Show <a, b, c> {
   show = where {
-    <a, b, c> => "<" ++ show(a) ++ ", " ++ show(b) ++ ", " ++ show(c) ++ ">"
+    <a, b, c> =>
+      "<" ++ show(a) ++ ", " ++ show(b) ++ ", " ++ show(c) ++ ">"
   }
 }
+
 
 instance (Show a, Show b, Show c, Show d) => Show <a, b, c, d> {
   show = where {
@@ -19,7 +27,14 @@ instance (Show a, Show b, Show c, Show d) => Show <a, b, c, d> {
 
 
 fst :: <a, b> -> a
-export fst = (tuple) => where(tuple) { <a, _> => a }
+export fst = (tuple) => where (tuple) {
+  <a, _> =>
+    a
+}
+
 
 snd :: <a, b> -> b
-export snd = (tuple) => where(tuple) { <_, b> => b }
+export snd = (tuple) => where (tuple) {
+  <_, b> =>
+    b
+}

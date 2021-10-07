@@ -1,23 +1,21 @@
 import type { Method } from "Http"
 import type { Wish } from "Wish"
 import type { Data } from "Data"
-
 import { methodStr, GET } from "Http"
 import { good, Wish } from "Wish"
 import { TextData } from "Data"
 
+
+
 unit :: ()
 unit = ()
 
+
 #- import http from "http" -#
 
-export alias MockRequestConfig = {
-  path       :: String,
-  port       :: Number,
-  method     :: Method,
-  response   :: Data,
-  statusCode :: Number
-}
+
+export alias MockRequestConfig = { method :: Method, path :: String, port :: Number, response :: Data, statusCode :: Number, }
+
 
 defaultConfig :: MockRequestConfig
 export defaultConfig = {
@@ -25,11 +23,16 @@ export defaultConfig = {
   port: 8000,
   method: GET,
   response: TextData("Success"),
-  statusCode: 200
+  statusCode: 200,
 }
 
+
 createMockRequest :: MockRequestConfig -> Wish String ()
-export createMockRequest = (config) => Wish((badCB, goodCB) => #-{
+export createMockRequest = (config) => Wish(
+  (
+    badCB,
+    goodCB
+  ) => #-{
   const host = 'localhost'
   const port = config.port
   const method = methodStr(config.method)
@@ -61,4 +64,5 @@ export createMockRequest = (config) => Wish((badCB, goodCB) => #-{
 
   server.listen(port, host, () => goodCB(unit))
 
-}-#)
+}-#
+)

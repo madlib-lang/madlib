@@ -1,24 +1,24 @@
 import { assertEquals, test } from "TestTools"
 import { Just, Nothing } from "Maybe"
-
 import { loop, maybeLoop } from "./Control"
 
 
-test("loop", (_) => {
-  expected = 16
-  actual = loop(1, (x) => x < 10, (x) => x * 2)
 
-  return assertEquals(actual, expected)
-})
+test(
+  "loop",
+  (_) => {
+    expected = 16
+    actual = loop(1, (x) => x < 10, (x) => x * 2)
+    return assertEquals(actual, expected)
+  }
+)
 
-test("maybeLoop", (_) => {
-  expected = 16
-  actual = maybeLoop(
-    1,
-    (x) => x < 10
-      ? Just(x * 2)
-      : Nothing
-  )
 
-  return assertEquals(actual, expected)
-})
+test(
+  "maybeLoop",
+  (_) => {
+    expected = 16
+    actual = maybeLoop(1, (x) => x < 10 ? Just(x * 2) : Nothing)
+    return assertEquals(actual, expected)
+  }
+)

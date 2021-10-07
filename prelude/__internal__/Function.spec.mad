@@ -14,114 +14,106 @@ import {
   when
 } from "./Function"
 
+
+
 divide :: Number -> Number -> Number
 divide = (a, b) => a / b
 
 
-test("identity should return whatever it is given", (_) => pipe(
-  identity,
-  assertEquals($, 3)
-)(3))
+test("identity should return whatever it is given", (_) => pipe(identity, assertEquals($, 3))(3))
 
-test("equals - two equal numbers", (_) => pipe(
-  equals($, 3),
-  assertEquals($, true)
-)(3))
 
-test("equals - two different numbers", (_) => pipe(
-  equals($, 4),
-  assertEquals($, false)
-)(3))
+test("equals - two equal numbers", (_) => pipe(equals($, 3), assertEquals($, true))(3))
 
-test("equals - two equal lists", (_) => pipe(
-  equals($, [1, 2, 3]),
-  assertEquals($, true)
-)([1, 2, 3]))
 
-test("notEquals - two equal numbers", (_) => pipe(
-  notEquals($, 3),
-  assertEquals($, false)
-)(3))
+test("equals - two different numbers", (_) => pipe(equals($, 4), assertEquals($, false))(3))
 
-test("ifElse - truthy", (_) => pipe(
-  ifElse(equals(4), (x) => x + 1, (x) => x * 2),
-  assertEquals($, 5)
-)(4))
 
-test("ifElse - falsy", (_) => pipe(
-  ifElse(equals(4), (x) => x + 1, (x) => x * 2),
-  assertEquals($, 10)
-)(5))
+test(
+  "equals - two equal lists",
+  (_) => pipe(
+    equals($, [1, 2, 3,]),
+    assertEquals($, true)
+  )([1, 2, 3,])
+)
 
-test("when - truthy", (_) => pipe(
-  when(equals(4), (x) => x * 2),
-  assertEquals($, 8)
-)(4))
 
-test("when - falsy", (_) => pipe(
-  when(equals(4), (x) => x * 2),
-  assertEquals($, 5)
-)(5))
+test("notEquals - two equal numbers", (_) => pipe(notEquals($, 3), assertEquals($, false))(3))
 
-test("not - true", (_) => pipe(
-  not,
-  assertEquals($, false)
-)(true))
 
-test("not - false", (_) => pipe(
-  not,
-  assertEquals($, true)
-)(false))
+test(
+  "ifElse - truthy",
+  (_) => pipe(
+    ifElse(equals(4), (x) => x + 1, (x) => x * 2),
+    assertEquals($, 5)
+  )(4)
+)
 
-test("flip", (_) => pipe(
-  flip,
-  (flipped) => flipped(4, 2),
-  assertEquals($, 0.5)
-)(divide))
 
-test("complement", (_) => {
-  isEven = (x) => x % 2 == 0
-  isOdd  = complement(isEven)
+test(
+  "ifElse - falsy",
+  (_) => pipe(
+    ifElse(equals(4), (x) => x + 1, (x) => x * 2),
+    assertEquals($, 10)
+  )(5)
+)
 
-  return assertEquals(isOdd(2), false)
-})
+
+test("when - truthy", (_) => pipe(when(equals(4), (x) => x * 2), assertEquals($, 8))(4))
+
+
+test("when - falsy", (_) => pipe(when(equals(4), (x) => x * 2), assertEquals($, 5))(5))
+
+
+test("not - true", (_) => pipe(not, assertEquals($, false))(true))
+
+
+test("not - false", (_) => pipe(not, assertEquals($, true))(false))
+
+
+test("flip", (_) => pipe(flip, (flipped) => flipped(4, 2), assertEquals($, 0.5))(divide))
+
+
+test(
+  "complement",
+  (_) => {
+    isEven = (x) => x % 2 == 0
+    isOdd = complement(isEven)
+    return assertEquals(isOdd(2), false)
+  }
+)
+
 
 test("always", (_) => assertEquals(always(true, "1"), true))
-test("always - map", (_) => assertEquals(
-  map(always(true), [1, 2 ,3]),
-  [true, true, true]
-))
 
 
-test("memoize - should not called the memoized function if called with the same argument", (_) => {
-  count = 0
+test("always - map", (_) => assertEquals(map(always(true), [1, 2, 3,]), [true, true, true,]))
 
-  f = memoize((x) => {
-    count = count + 1
-    return x
-  })
 
-  f(1)
-  f(1)
-  f(1)
+test(
+  "memoize - should not called the memoized function if called with the same argument",
+  (_) => {
+    count = 0
+    f = memoize((x) => { count = count + 1 return x })
+    f(1)
+    f(1)
+    f(1)
+    return assertEquals(count, 1)
+  }
+)
 
-  return assertEquals(count, 1)
-})
 
-test("memoize - should call the function again once per different arg", (_) => {
-  count = 0
-
-  f = memoize((x) => {
-    count = count + 1
-    return x
-  })
-
-  f(1)
-  f(1)
-  f(2)
-  f(2)
-  f(3)
-  f(3)
-
-  return assertEquals(count, 3)
-})
+test(
+  "memoize - should call the function again once per different arg",
+  (_) => {
+    count = 0
+    f = memoize((x) => { count = count + 1 return x })
+    f(1)
+    f(1)
+    f(2)
+    f(2)
+    f(3)
+    f(3)
+    return assertEquals(count, 3)
+  }
+)

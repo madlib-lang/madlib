@@ -1,6 +1,6 @@
 import type { Wish } from "Wish"
-
 import { good, Wish } from "Wish"
+
 
 
 #-
@@ -35,9 +35,11 @@ export startStdOutRecording = (a) => #-{
 
 
 getRecordedStdOut :: Wish e String
-export getRecordedStdOut = Wish((_, goodCB) => #-{
+export getRecordedStdOut = Wish(
+  (_, goodCB) => #-{
   unhook_stdout()
   const tmp = logs
   logs = ""
   goodCB(tmp)
-}-#)
+}-#
+)

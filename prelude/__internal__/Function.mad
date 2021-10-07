@@ -7,7 +7,7 @@
  * @example
  * complement((x) => x % 2 == 0)(2) // false
  */
-complement :: (a -> Boolean) -> (a -> Boolean)
+complement :: (a -> Boolean) -> a -> Boolean
 export complement = (fn) => ((x) => (!fn(x)))
 
 
@@ -24,6 +24,7 @@ export complement = (fn) => ((x) => (!fn(x)))
 always :: a -> b -> a
 export always = (a, b) => a
 
+
 /**
  * Returns exactly what you give it.
  *
@@ -34,6 +35,7 @@ export always = (a, b) => a
  */
 identity :: a -> a
 export identity = (a) => a
+
 
 /**
  * Compares two values and returns true if they are equal, false otherwise.
@@ -47,6 +49,7 @@ export identity = (a) => a
 equals :: a -> a -> Boolean
 export equals = (val, a) => val == a
 
+
 /**
  * Complement of equals, it returns false if the values are equal, true otherwise.
  *
@@ -58,6 +61,7 @@ export equals = (val, a) => val == a
  */
 notEquals :: a -> a -> Boolean
 export notEquals = (val, a) => val != a
+
 
 /**
  * It models branching and allows to run different transformation based
@@ -71,9 +75,8 @@ export notEquals = (val, a) => val != a
  * ifElse(equals(4), (x) => x + 1, (x) => x * 2, 5) // 10
  */
 ifElse :: (a -> Boolean) -> (a -> b) -> (a -> b) -> a -> b
-export ifElse = (predicate, truthy, falsy, value) => predicate(value)
-  ? truthy(value)
-  : falsy(value)
+export ifElse = (predicate, truthy, falsy, value) => predicate(value) ? truthy(value) : falsy(value)
+
 
 /**
  * It runs a transformation only if the predicate returns true, otherwise it
@@ -85,8 +88,8 @@ export ifElse = (predicate, truthy, falsy, value) => predicate(value)
  * when(equals(4), (x) => x * 2, 5) // 5
  */
 when :: (a -> Boolean) -> (a -> a) -> a -> a
-export when = (predicate, truthy, value) =>
-  ifElse(predicate, truthy, always(value), value)
+export when = (predicate, truthy, value) => ifElse(predicate, truthy, always(value), value)
+
 
 /**
  * Returns the complement of the given Boolean value.
@@ -99,17 +102,19 @@ export when = (predicate, truthy, value) =>
 not :: Boolean -> Boolean
 export not = (b) => !b
 
+
 /**
  * Inverts the parameters of a binary function.
  *
  * @since 0.5.0
  */
-flip :: (a -> b -> c) -> (b -> a -> c)
+flip :: (a -> b -> c) -> b -> a -> c
 export flip = (f) => ((b, a) => f(a, b))
 
 
 any :: (a -> Boolean) -> List a -> Boolean
 export any = (predicate, xs) => #- xs.some(predicate) -#
+
 
 all :: (a -> Boolean) -> List a -> Boolean
 export all = (predicate, xs) => #- xs.every(predicate) -#
@@ -128,5 +133,6 @@ const nativeMemoize = (fn) => {
 }
 -#
 
-memoize :: (a -> b) -> (a -> b)
+
+memoize :: (a -> b) -> a -> b
 export memoize = (fn) => #- nativeMemoize(fn) -#

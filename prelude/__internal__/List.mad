@@ -11,6 +11,7 @@ import { fst, snd } from "Tuple"
 import { loop } from "Control"
 
 
+
 /**
  * List utility functions.
  * In this module you'll find everything that is related to List and make working with lists convenient.
@@ -28,32 +29,38 @@ instance Functor List {
   map = (f, xs) => #- xs.map((x) => f(x)) -#
 }
 
-instance Applicative List {
-  pure = (x) => [x]
 
+instance Applicative List {
   ap = (mf, ma) => pipe(
     map((f) => map(f, ma)),
     flatten
   )(mf)
+
+  pure = (x) => [x,]
 }
 
-instance Monad List {
-  of = pure
 
+instance Monad List {
   chain = (f, xs) => pipe(
     map(f),
     flatten
   )(xs)
+
+  of = pure
 }
+
 
 instance Semigroup (List a) {
   assoc = (xs1, xs2) => (#- xs1.concat(xs2) -#)
 }
 
+
 instance Monoid (List a) {
-  mempty = []
   mappend = assoc
+
+  mempty = []
 }
+
 
 instance Show a => Show (List a) {
   show = pipe(
@@ -76,6 +83,7 @@ instance Show a => Show (List a) {
 singleton :: a -> List a
 export singleton = pure
 
+
 /**
  * Transform a List of Strings into a single String,
  * by adding newlines between each item in the List.
@@ -90,6 +98,7 @@ export unlines = pipe(
   reduce(mappend, "")
 )
 
+
 /**
  * Inserts a value between all elements of a list.
  *
@@ -98,24 +107,40 @@ export unlines = pipe(
  * intercalate("and", ["cats", "dogs"]) // ["cats", "and", "dogs"]
  */
 intercalate :: a -> List a -> List a
-export intercalate = (a, xs) => where(xs) {
-  [,] => []
-  [one,] => [one]
-  [one, two] => [one, a, two]
-  [one, ...rest] => [one, a, ...intercalate(a, rest)]
+export intercalate = (a, xs) => where (xs) {
+  [,] =>
+    []
+
+  [one,] =>
+    [one,]
+
+  [one, two,] =>
+    [one, a, two,]
+
+  [one, ...rest,] =>
+    [one, a, ...intercalate(a, rest),]
 }
 
 
 _intercalateWithIndex :: Number -> (Number -> a) -> List a -> List a
-_intercalateWithIndex = (i, f, xs) => where(xs) {
-  [] => []
-  [one] => [one]
-  [one, two] => [one, f(i), two]
-  [one, ...rest] => [one, f(i), ..._intercalateWithIndex(i + 1, f, rest)]
+_intercalateWithIndex = (i, f, xs) => where (xs) {
+  [,] =>
+    []
+
+  [one,] =>
+    [one,]
+
+  [one, two,] =>
+    [one, f(i), two,]
+
+  [one, ...rest,] =>
+    [one, f(i), ..._intercalateWithIndex(i + 1, f, rest),]
 }
+
 
 intercalateWithIndex :: (Number -> a) -> List a -> List a
 export intercalateWithIndex = _intercalateWithIndex(0)
+
 
 /**
  * Joins a list with a separator and returns a String.
@@ -187,6 +212,7 @@ export last = (xs) => #-{
   return item ? Just(item) : Nothing;
 }-#
 
+
 /**
  * Safely access the first value in a List (wrapped in Just), or Nothing if the array is empty.
  *
@@ -201,6 +227,7 @@ export first = (xs) => #-{
   return item ? Just(item) : Nothing;
 }-#
 
+
 /**
  * Returns a List minus its last item.
  *
@@ -211,6 +238,7 @@ export first = (xs) => #-{
  */
 init :: List a -> List a
 export init = (xs) => (#- xs.slice(0, -1) -#)
+
 
 tail :: List a -> List a
 export tail = (xs) => (#- xs.slice(1) -#)
@@ -225,7 +253,10 @@ export tail = (xs) => (#- xs.slice(1) -#)
  * nth(3, [1, 2, 3]) // Nothing
  */
 nth :: Number -> List a -> Maybe a
-export nth = (i, xs) => (#- {
+export nth = (
+  i,
+  xs
+) => (#- {
   const x = xs[i];
   return x === undefined
     ? Nothing
@@ -280,14 +311,17 @@ reduceM :: Monad m => (b -> a -> m b) -> b -> List a -> m b
 export reduceM = (fn, initial, xs) => pipe(
   loop(
     $,
-    pipe(snd, Fun.complement(isEmpty)),
+    pipe(
+      snd,
+      Fun.complement(isEmpty)
+    ),
     where {
-      <initialM, [h, ...rest]> => <chain(fn($, h), initialM), rest>
+      <initialM, [h, ...rest,]> =>
+        <chain(fn($, h), initialM), rest>
     }
   ),
   fst
 )(<of(initial), xs>)
-
 
 
 /**
@@ -309,8 +343,8 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
  * @example
  * reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [1, 3, 5]
  */
- reject :: (a -> Boolean) -> List a -> List a
- export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
+reject :: (a -> Boolean) -> List a -> List a
+export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
 
 
 /**
@@ -323,7 +357,10 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
  * find((a) => a == 0, [1, 2, 3, 4, 5, 6])     // Nothing
  */
 find :: (a -> Boolean) -> List a -> Maybe a
-export find = (predicate, xs) => (#- {
+export find = (
+  predicate,
+  xs
+) => (#- {
   const found = xs.find(predicate);
   if (found === undefined) {
     return Nothing
@@ -380,10 +417,12 @@ export isEmpty = (xs) => len(xs) == 0
  */
 uniqueBy :: (a -> a -> Boolean) -> List a -> List a
 export uniqueBy = (f) => reduce(
-  (result, elem) => where(find(f(elem), result)) {
-    Just(_) => result
+  (result, elem) => where (find(f(elem), result)) {
+    Just(_) =>
+      result
 
-    Nothing => [...result, elem]
+    Nothing =>
+      [...result, elem,]
   },
   []
 )
@@ -396,8 +435,10 @@ export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#
 sort :: Comparable a => List a -> List a
 export sort = sortBy(compare)
 
+
 sortAsc :: Comparable a => List a -> List a
 export sortAsc = sort
+
 
 sortDesc :: Comparable a => List a -> List a
 export sortDesc = sortBy((a, b) => compare(a, b) * -1)
@@ -421,11 +462,17 @@ export flatten = reduceL(concat, [])
  * zip(["a", "b", "c"], [1, 2, 3]) // [<"a", 1>, <"b", 2>, <"c", 3>]
  */
 zip :: List a -> List b -> List <a, b>
-export zip = (as, bs) => where(<as, bs>) {
-  <[a, ...aa], [b, ...bb]> => mappend([<a, b>], zip(aa, bb))
-  <[a], [b]> => [<a, b>]
-  <[], []> => []
+export zip = (as, bs) => where (<as, bs>) {
+  <[a, ...aa,], [b, ...bb,]> =>
+    mappend([<a, b>,], zip(aa, bb))
+
+  <[a,], [b,]> =>
+    [<a, b>,]
+
+  <[,], [,]> =>
+    []
 }
+
 
 /**
  * Test a given List to see whether it contains a given static value.
@@ -439,11 +486,16 @@ export includes = (x, xs) => (#- xs.includes(x) -#)
 drop :: Number -> List a -> List a
 export drop = (amount, xs) => slice(amount, len(xs), xs)
 
+
 dropLast :: Number -> List a -> List a
 export dropLast = (amount, xs) => slice(0, len(xs) - amount, xs)
 
+
 dropWhile :: (a -> Boolean) -> List a -> List a
-export dropWhile = (pred, xs) => #-{
+export dropWhile = (
+  pred,
+  xs
+) => #-{
   const n = xs.length
   let i = 0
 

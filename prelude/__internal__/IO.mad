@@ -6,31 +6,44 @@ import util from "util"
 
 
 withColor :: String -> String -> String
-withColor = (color, v) => color ++ v ++"\x1b[0m"
+withColor = (color, v) => color ++ v ++ "\x1b[0m"
+
 
 export red = withColor("\x1b[31m")
+
+
 export green = withColor("\x1b[32m")
+
+
 export yellow = withColor("\x1b[33m")
+
+
 export grey = withColor("\x1b[90m")
 
 
 log :: a -> a
 export log = (a) => (#- { console.log(a); return a; } -#)
 
+
 logAndPass :: String -> a -> a
 export logAndPass = (v, a) => (#- { console.log(v); return a; } -#)
+
 
 newLine :: a -> a
 export newLine = logAndPass("")
 
+
 trace :: String -> a -> a
 export trace = (v, a) => (#- { console.log(v, a); return a; } -#)
+
 
 err :: a -> a
 export err = (e) => (#- { console.log(e); return e; } -#)
 
+
 warn :: a -> a
 export warn = (w) => (#- { console.warn(w); return w; } -#)
+
 
 inspect :: a -> a
 export inspect = (a) => (#-{
@@ -70,16 +83,22 @@ const stringify = (x) => {
 }
 -#
 
+
 prettyPrint :: a -> a
 export prettyPrint = (a) => #-{
   console.log(stringify(a))
   return a
 }-#
 
-export alias Row = { id :: String, cols :: List <String, String> }
+
+export alias Row = { cols :: List <String, String>, id :: String, }
+
 
 table :: List Row -> a -> a
-export table = (rows, a) => (#- {
+export table = (
+  rows,
+  a
+) => (#- {
   const xSpaces = x => new Array(x).fill(' ').join('')
 
   const longestId = rows.map(x => x.id.length).reduce((a, b) => Math.max(a, b), 0)

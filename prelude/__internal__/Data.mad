@@ -1,10 +1,9 @@
 import type { ByteArray } from "Binary"
 
 
+
 /**
  * The type Data represents any Data that you may deal with when doing things
  * such as IO.
  */
-export type Data
-  = TextData(String)
-  | BinaryData(ByteArray)
+export type Data = TextData(String) | BinaryData(ByteArray)

@@ -2,6 +2,7 @@ import {} from "Monad"
 import {} from "Show"
 
 
+
 /**
  * Maybe is one of the major data types in functional programming and serves to
  * represent and encapsulate values which may not exist.
@@ -21,9 +22,7 @@ import {} from "Show"
  * Just(false) // Just(false) :: Maybe Boolean
  * Nothing     // Nothing :: Maybe a
  */
-export type Maybe a
-  = Just(a)
-  | Nothing
+export type Maybe a = Just(a) | Nothing
 
 
 /**
@@ -37,9 +36,11 @@ export type Maybe a
  */
 instance Functor Maybe {
   map = (f) => where {
-    Just(x) => Just(f(x))
+    Just(x) =>
+      Just(f(x))
 
-    Nothing => Nothing
+    Nothing =>
+      Nothing
   }
 }
 
@@ -55,13 +56,15 @@ instance Functor Maybe {
  * ap(Nothing, Just(3))            // Nothing
  */
 instance Applicative Maybe {
-  pure = Just
+  ap = (mf, mx) => where (<mf, mx>) {
+    <Just(f), Just(x)> =>
+      pure(f(x))
 
-  ap = (mf, mx) => where(<mf, mx>) {
-    <Just(f), Just(x)> => pure(f(x))
-
-    _ => Nothing
+    _ =>
+      Nothing
   }
+
+  pure = Just
 }
 
 
@@ -74,13 +77,15 @@ instance Applicative Maybe {
  * chain((x) => Just(x + 1), Just(1)) // Just(2)
  */
 instance Monad Maybe {
-  of = pure
+  chain = (f, m) => (where (m) {
+    Just(x) =>
+      f(x)
 
-  chain = (f, m) => (where(m) {
-    Just(x) => f(x)
-
-    Nothing => Nothing
+    Nothing =>
+      Nothing
   })
+
+  of = pure
 }
 
 
@@ -94,9 +99,11 @@ instance Monad Maybe {
  */
 instance Show a => Show (Maybe a) {
   show = where {
-    Just(a)  => "Just " ++ show(a)
+    Just(a) =>
+      "Just " ++ show(a)
 
-    Nothing => "Nothing"
+    Nothing =>
+      "Nothing"
   }
 }
 
@@ -111,14 +118,19 @@ instance Show a => Show (Maybe a) {
  */
 fromMaybe :: a -> Maybe a -> a
 export fromMaybe = (or) => where {
-  Just(a) => a
+  Just(a) =>
+    a
 
-  Nothing => or
+  Nothing =>
+    or
 }
+
 
 isJust :: Maybe a -> Boolean
 export isJust = where {
-  Just(_) => true
+  Just(_) =>
+    true
 
-  Nothing => false
+  Nothing =>
+    false
 }

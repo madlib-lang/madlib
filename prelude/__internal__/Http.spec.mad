@@ -6,29 +6,43 @@ import { createMockRequest, defaultConfig } from "MockRequest"
 import { get, Response } from "./Http"
 
 
-test("get should return a good Wish containing the response when the server responds with 200", (_) => pipe(
-  mapRej(ErrorWithMessage),
-  map(always("http://localhost:8000/")),
-  chain(pipe(
-    get,
-    mapRej(always(ErrorWithMessage("get should have worked"))),
-    chain(assertEquals($, Response({ data: TextData("Success"), status: 200 })))
-  ))
-)(createMockRequest(defaultConfig)))
 
-test("get should return a bad Wish containing the error response when the server responds with 404", (_) => pipe(
-  mapRej(ErrorWithMessage),
-  map(always("http://localhost:8001/")),
-  chain(pipe(
-    get,
-    bichain(
-      assertEquals($, Response({ data: TextData("Not found"), status: 404 })),
-      always(bad(ErrorWithMessage("get should not be successful when the request fails")))
+test(
+  "get should return a good Wish containing the response when the server responds with 200",
+  (_) => pipe(
+    mapRej(ErrorWithMessage),
+    map(always("http://localhost:8000/")),
+    chain(
+      pipe(
+        get,
+        mapRej(always(ErrorWithMessage("get should have worked"))),
+        chain(assertEquals($, Response({ data: TextData("Success"), status: 200, })))
+      )
     )
-  ))
-)(createMockRequest({
-  ...defaultConfig,
-  port: 8001,
-  statusCode: 404,
-  response: TextData("Not found")
-})))
+  )(createMockRequest(defaultConfig))
+)
+
+
+test(
+  "get should return a bad Wish containing the error response when the server responds with 404",
+  (_) => pipe(
+    mapRej(ErrorWithMessage),
+    map(always("http://localhost:8001/")),
+    chain(
+      pipe(
+        get,
+        bichain(
+          assertEquals($, Response({ data: TextData("Not found"), status: 404, })),
+          always(bad(ErrorWithMessage("get should not be successful when the request fails")))
+        )
+      )
+    )
+  )(
+    createMockRequest({
+      ...defaultConfig,
+      port: 8001,
+      statusCode: 404,
+      response: TextData("Not found"),
+    })
+  )
+)

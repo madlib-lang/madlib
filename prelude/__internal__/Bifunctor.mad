@@ -1,5 +1,7 @@
 interface Bifunctor f {
-  bimap     :: (a -> b) -> (c -> d) -> f a c -> f b d
-  mapFirst  :: (a -> b) -> f a c -> f b c
+  bimap :: (a -> b) -> (c -> d) -> f a c -> f b d
+
+  mapFirst :: (a -> b) -> f a c -> f b c
+
   mapSecond :: (c -> d) -> f a c -> f a d
 }

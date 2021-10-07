@@ -3,24 +3,36 @@ import { StateT } from "StateT"
 import type { WriterT } from "WriterT"
 import {} from "WriterT"
 
+
+
 interface Monad m => MonadState s m {
-  put :: s -> m ()
   get :: m s
+
   modify :: (s -> s) -> m ()
+
+  put :: s -> m ()
 }
 
-instance Monad m => MonadState s (StateT s m) {
-  put = (s) => StateT((_) => of(<(), s>))
 
+instance Monad m => MonadState s (StateT s m) {
   get = StateT((s) => of(<s, s>))
 
   modify = (f) => StateT((s) => of(<(), f(s)>))
+
+  put = (s) => StateT((_) => of(<(), s>))
 }
 
+
 instance (Monoid w, Monad m, MonadState s m) => MonadState s (WriterT w m) {
-  put = pipe(put, lift)
-  
   get = lift(get)
-  
-  modify = pipe(modify, lift)
+
+  modify = pipe(
+    modify,
+    lift
+  )
+
+  put = pipe(
+    put,
+    lift
+  )
 }
