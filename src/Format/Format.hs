@@ -7,7 +7,10 @@ import           Data.Maybe
 import           Text.Show.Pretty
 import           Debug.Trace
 
-import qualified Text.PrettyPrint.Leijen as PP
+-- import qualified Prettyprinter as PP
+import           Data.Text.Prettyprint.Doc as PP
+import           Data.Text.Prettyprint.Doc.Render.String as PP
+-- import qualified Text.PrettyPrint.Leijen as PP
 
 import AST.Source as Src
 import Explain.Location
@@ -66,7 +69,7 @@ sortASTNodes = sortOn getNodeArea
 indentSize :: Int
 indentSize = 2
 
-argsToDoc :: [Comment] -> [Exp] -> (PP.Doc, [Comment])
+argsToDoc :: [Comment] -> [Exp] -> (PP.Doc ann, [Comment])
 argsToDoc comments args = case args of
   [exp] ->
     expToDoc comments exp
@@ -74,64 +77,64 @@ argsToDoc comments args = case args of
   (exp : more) ->
     let (arg, comments')    = expToDoc comments exp
         (more', comments'') = argsToDoc comments' more
-    in  (arg <> PP.text "," <> PP.line <> more', comments'')
+    in  (arg <> PP.pretty "," <> PP.line <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-paramsToDoc :: [Comment] -> [Source String] -> (PP.Doc, [Comment])
+paramsToDoc :: [Comment] -> [Source String] -> (PP.Doc ann, [Comment])
 paramsToDoc comments nodes = case nodes of
   [Source area name] ->
     let (commentsDoc, comments') = insertComments False area comments
-    in  (commentsDoc <> PP.text name, comments')
+    in  (commentsDoc <> PP.pretty name, comments')
 
   (Source area name : more) ->
     let (commentsDoc, comments') = insertComments False area comments
-        param                    = PP.text name <> PP.text ","
+        param                    = PP.pretty name <> PP.pretty ","
         (more', comments'')      = paramsToDoc comments' more
     in  (commentsDoc <> param <> PP.line <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-listItemsToDoc :: [Comment] -> [ListItem] -> (PP.Doc, [Comment])
+listItemsToDoc :: [Comment] -> [ListItem] -> (PP.Doc ann, [Comment])
 listItemsToDoc comments nodes = case nodes of
   (Source _ (ListItem exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
         line =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
-    in  (item <> PP.text "," <> line <> more', comments'')
+    in  (item <> PP.pretty "," <> line <> more', comments'')
 
   (Source _ (ListSpread exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
         line =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
-    in  (PP.text "..." <> item <> PP.text "," <> line <> more', comments'')
+    in  (PP.pretty "..." <> item <> PP.pretty "," <> line <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-fieldsToDoc :: [Comment] -> [Field] -> (PP.Doc, [Comment])
+fieldsToDoc :: [Comment] -> [Field] -> (PP.Doc ann, [Comment])
 fieldsToDoc comments fields = case fields of
   (Source area (Field (name, exp)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
-        name'                    = PP.text name
+        name'                    = PP.pretty name
         (value, comments'')      = expToDoc comments' exp
         line  =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
         (more', comments''') = fieldsToDoc comments' more
-    in  ( commentsDoc <> name' <> PP.text ": " <> value <> PP.text "," <> line <> more'
+    in  ( commentsDoc <> name' <> PP.pretty ": " <> value <> PP.pretty "," <> line <> more'
         , comments'''
         )
 
@@ -140,31 +143,31 @@ fieldsToDoc comments fields = case fields of
         (item, comments'')       = expToDoc comments' exp
         line =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
         (more', comments''') = fieldsToDoc comments'' more
-    in  ( commentsDoc <> PP.text "..." <> item <> PP.text "," <> line <> more'
+    in  ( commentsDoc <> PP.pretty "..." <> item <> PP.pretty "," <> line <> more'
         , comments'''
         )
 
   (Source area (FieldShorthand name) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
-        item = PP.text name
+        item = PP.pretty name
         line =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
         (more', comments'') = fieldsToDoc comments' more
-    in  ( commentsDoc <> item <> PP.text "," <> line <> more'
+    in  ( commentsDoc <> item <> PP.pretty "," <> line <> more'
         , comments''
         )
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-dictItemsToDoc :: [Comment] -> [DictItem] -> (PP.Doc, [Comment])
+dictItemsToDoc :: [Comment] -> [DictItem] -> (PP.Doc ann, [Comment])
 dictItemsToDoc comments fields = case fields of
   (Source area (DictItem key value) : more) ->
     let (key', comments')    = expToDoc comments key
@@ -172,22 +175,22 @@ dictItemsToDoc comments fields = case fields of
         (more', comments''') = dictItemsToDoc comments'' more
         line =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
-    in  ( value' <> PP.text ": " <> key' <> PP.text "," <> line <> more'
+    in  ( value' <> PP.pretty ": " <> key' <> PP.pretty "," <> line <> more'
         , comments'''
         )
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-jsxPropsToDoc :: [Comment] -> [JsxProp] -> (PP.Doc, [Comment])
+jsxPropsToDoc :: [Comment] -> [JsxProp] -> (PP.Doc ann, [Comment])
 jsxPropsToDoc comments fields = case fields of
   (Source area (JsxProp key value) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
-        key'                     = PP.text key
+        key'                     = PP.pretty key
         (value', comments'')     = expToDoc comments' value
         value'' = case value of
           Source _ (LStr _) ->
@@ -197,7 +200,7 @@ jsxPropsToDoc comments fields = case fields of
             PP.lbrace <> value' <> PP.rbrace
         line  =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
         (more', comments''') = jsxPropsToDoc comments' more
@@ -206,9 +209,9 @@ jsxPropsToDoc comments fields = case fields of
         )
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-jsxChildrenToDoc :: [Comment] -> [JsxChild] -> (PP.Doc, [Comment])
+jsxChildrenToDoc :: [Comment] -> [JsxChild] -> (PP.Doc ann, [Comment])
 jsxChildrenToDoc comments children = case children of
   (JsxChild (Source area (LStr s)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
@@ -216,9 +219,9 @@ jsxChildrenToDoc comments children = case children of
         s'                       = init (tail s)
         exp' =
           if last s' == ' ' then
-            commentsDoc <> PP.text (init s') <> PP.line
+            commentsDoc <> PP.pretty (init s') <> PP.line
           else
-            commentsDoc <> PP.text s'
+            commentsDoc <> PP.pretty s'
         (more', comments'') = jsxChildrenToDoc comments' more
     in  (exp' <> more', comments'')
 
@@ -230,7 +233,7 @@ jsxChildrenToDoc comments children = case children of
   (JsxSpreadChild exp : more) ->
     let (exp', comments')   = expToDoc comments exp
         (more', comments'') = jsxChildrenToDoc comments' more
-    in  (PP.lbrace <> PP.text "..." <> exp' <> PP.rbrace <> more', comments'')
+    in  (PP.lbrace <> PP.pretty "..." <> exp' <> PP.rbrace <> more', comments'')
 
   (JsxExpChild exp : more) ->
     let (exp', comments')   = expToDoc comments exp
@@ -238,73 +241,73 @@ jsxChildrenToDoc comments children = case children of
     in  (PP.lbrace <> exp' <> PP.rbrace <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-patternFieldToDoc :: PatternField -> PP.Doc
+patternFieldToDoc :: PatternField -> PP.Doc ann
 patternFieldToDoc field = case field of
   PatternField (Source _ n) pat ->
-    PP.text n <> PP.text ": " <> patternToDoc pat
+    PP.pretty n <> PP.pretty ": " <> patternToDoc pat
 
   PatternFieldShorthand (Source _ n) ->
-    PP.text n
+    PP.pretty n
 
-patternToDoc :: Pattern -> PP.Doc
+patternToDoc :: Pattern -> PP.Doc ann
 patternToDoc (Source _ pat) = case pat of
   PVar name ->
-    PP.text name
+    PP.pretty name
 
   PNum n ->
-    PP.text n
+    PP.pretty n
 
   PStr s ->
-    PP.text s
+    PP.pretty s
 
   PBool b ->
-    PP.text b
+    PP.pretty b
 
   PAny ->
-    PP.text "_"
+    PP.pretty "_"
 
   PNullaryCon (Source _ name) ->
-    PP.text name
+    PP.pretty name
 
   PCon (Source _ name) _ args _ ->
-    let name' = PP.text name
-        args' = PP.hcat $ PP.punctuate (PP.text ", ") (patternToDoc <$> args)
+    let name' = PP.pretty name
+        args' = PP.hcat $ PP.punctuate (PP.pretty ", ") (patternToDoc <$> args)
     in  name' <> PP.lparen <> args' <> PP.rparen
 
   PList _ ps _ ->
     PP.group
       (
-        PP.text "["
-        <> PP.nest indentSize (PP.linebreak <> PP.hcat (PP.punctuate (PP.text "," <> PP.line) (patternToDoc <$> ps)) <> PP.comma)
-        <> PP.linebreak
-        <> PP.text "]"
+        PP.pretty "["
+        <> PP.nest indentSize (PP.line' <> PP.hcat (PP.punctuate (PP.pretty "," <> PP.line) (patternToDoc <$> ps)) <> PP.comma)
+        <> PP.line'
+        <> PP.pretty "]"
       )
 
   PTuple _ ps _ ->
     PP.group
       (
-        PP.text "<"
-        <> PP.nest indentSize (PP.linebreak <> PP.hcat (PP.punctuate (PP.text "," <> PP.line) (patternToDoc <$> ps)))
-        <> PP.linebreak
-        <> PP.text ">"
+        PP.pretty "<"
+        <> PP.nest indentSize (PP.line' <> PP.hcat (PP.punctuate (PP.pretty "," <> PP.line) (patternToDoc <$> ps)))
+        <> PP.line'
+        <> PP.pretty ">"
       )
 
   PRecord _ fields _ ->
     PP.group
       (
-        PP.text "{"
-        <> PP.nest indentSize (PP.line <> PP.hcat (PP.punctuate (PP.text "," <> PP.line) (patternFieldToDoc <$> fields)) <> PP.comma)
+        PP.pretty "{"
+        <> PP.nest indentSize (PP.line <> PP.hcat (PP.punctuate (PP.pretty "," <> PP.line) (patternFieldToDoc <$> fields)) <> PP.comma)
         <> PP.line
-        <> PP.text "}"
+        <> PP.pretty "}"
       )
 
   PSpread _ p ->
-    PP.text "..." <> patternToDoc p
+    PP.pretty "..." <> patternToDoc p
 
-issToDoc :: [Comment] -> [Is] -> (PP.Doc, [Comment])
+issToDoc :: [Comment] -> [Is] -> (PP.Doc ann, [Comment])
 issToDoc comments iss = case iss of
   (Source area (Is pat _ exp) : more) ->
     let pat'                           = patternToDoc pat
@@ -313,21 +316,21 @@ issToDoc comments iss = case iss of
         (next, comments''')            = issToDoc comments'' more
         breaks =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.nesting (\i -> PP.nest (-i) PP.linebreak) <> PP.linebreak
+            PP.nesting (\i -> PP.nest (-i) PP.line') <> PP.line'
     in  ( commentsBeforePat
             <> pat'
-            <> PP.text " =>"
+            <> PP.pretty " =>"
             <> PP.nest indentSize (PP.line <> exp') <> breaks <> next
         , comments'''
         )
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-bodyToDoc :: [Comment] -> [Exp] -> (PP.Doc, [Comment])
+bodyToDoc :: [Comment] -> [Exp] -> (PP.Doc ann, [Comment])
 bodyToDoc comments exps = case exps of
   [exp] ->
     expToDoc comments exp
@@ -338,10 +341,10 @@ bodyToDoc comments exps = case exps of
     in  (exp' <> PP.line <> next', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-binOpToDocs :: [Comment] -> Exp -> ([PP.Doc], [Comment])
+binOpToDocs :: [Comment] -> Exp -> ([PP.Doc ann], [Comment])
 binOpToDocs comments exp = case exp of
   Source _ (BinOp operandL operator operandR) ->
     let (operandL', comments')   = binOpToDocs comments operandL
@@ -360,19 +363,19 @@ binOpToDocs comments exp = case exp of
     let (e', comments') = expToDoc comments e
     in  ([e'], comments')
 
-accessToDocs :: [Comment] -> Exp -> ([PP.Doc], [Comment])
+accessToDocs :: [Comment] -> Exp -> ([PP.Doc ann], [Comment])
 accessToDocs comments exp = case exp of
   Source _ (Access rec field) ->
     let (rec', comments')    = accessToDocs comments rec
         (field', comments'') = expToDoc comments' field
-    in  (rec' <> [PP.linebreak <> field'], comments'')
+    in  (rec' <> [PP.line' <> field'], comments'')
 
   Source _ (App fn args) ->
     let (fn', comments')    = accessToDocs comments fn
         (args', comments'') = argsToDoc comments' args
         args'' =
           if shouldNestApp args then
-            PP.group (PP.lparen <> PP.nest indentSize (PP.linebreak <> args') <> PP.linebreak <> PP.rparen)
+            PP.group (PP.lparen <> PP.nest indentSize (PP.line' <> args') <> PP.line' <> PP.rparen)
           else
             PP.lparen <> args' <> PP.rparen
         fn'' = case fn of
@@ -387,13 +390,13 @@ accessToDocs comments exp = case exp of
     let (e', comments') = expToDoc comments e
     in  ([e'], comments')
 
-accessAsFNToDoc :: [Comment] -> Exp -> [Exp] -> (PP.Doc, [Comment])
+accessAsFNToDoc :: [Comment] -> Exp -> [Exp] -> (PP.Doc ann, [Comment])
 accessAsFNToDoc comments access args =
   let (access', comments') = accessToDocs comments access
       (args', comments'')  = argsToDoc comments' args
       args'' =
         if shouldNestApp args then
-          PP.group (PP.lparen <> PP.nest indentSize (PP.linebreak <> args') <> PP.linebreak <> PP.rparen)
+          PP.group (PP.lparen <> PP.nest indentSize (PP.line' <> args') <> PP.line' <> PP.rparen)
         else
           PP.lparen <> args' <> PP.rparen
   in  ( PP.group (PP.nest indentSize (PP.hcat access' <> args''))
@@ -401,7 +404,7 @@ accessAsFNToDoc comments access args =
       )
 
 
-typingArgsToDoc :: [Comment] -> [Typing] -> (PP.Doc, [Comment])
+typingArgsToDoc :: [Comment] -> [Typing] -> (PP.Doc ann, [Comment])
 typingArgsToDoc comments typings = case typings of
   (typing : more) ->
     let (typing', comments') = typingToDoc comments typing
@@ -417,31 +420,31 @@ typingArgsToDoc comments typings = case typings of
         (more', comments'') = typingArgsToDoc comments' more
         space =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
             PP.space
     in  (typing'' <> space <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-typingListToDoc :: [Comment] -> [Typing] -> (PP.Doc, [Comment])
+typingListToDoc :: [Comment] -> [Typing] -> (PP.Doc ann, [Comment])
 typingListToDoc comments typings = case typings of
   (typing : more) ->
     let (typing', comments') = typingToDoc comments typing
         (more', comments'')  = typingListToDoc comments' more
         comma =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.text ", "
+            PP.pretty ", "
     in  (typing' <> comma <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-recordFieldTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (PP.Doc, [Comment])
+recordFieldTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (PP.Doc ann, [Comment])
 recordFieldTypingsToDoc comments fields = case fields of
   ((name, typing) : more) ->
     let (typing', comments') = typingToDoc comments typing
@@ -450,36 +453,36 @@ recordFieldTypingsToDoc comments fields = case fields of
           if null more then
             PP.comma
           else
-            PP.text ", "
-    in  (PP.text name <> PP.text " :: " <> typing' <> comma <> more', comments'')
+            PP.pretty ", "
+    in  (PP.pretty name <> PP.pretty " :: " <> typing' <> comma <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-methodTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (PP.Doc, [Comment])
+methodTypingsToDoc :: [Comment] -> [(Src.Name, Typing)] -> (PP.Doc ann, [Comment])
 methodTypingsToDoc comments methods = case methods of
   ((name, typing) : more) ->
     let (typing', comments') = typingToDoc comments typing
         (more', comments'')  = methodTypingsToDoc comments' more
         after =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.nesting (\i -> PP.nest (-i) PP.linebreak) <> PP.linebreak
-    in  (PP.text name <> PP.text " :: " <> typing' <> after <> more', comments'')
+            PP.nesting (\i -> PP.nest (-i) PP.line') <> PP.line'
+    in  (PP.pretty name <> PP.pretty " :: " <> typing' <> after <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-typingToDoc :: [Comment] -> Typing -> (PP.Doc, [Comment])
+typingToDoc :: [Comment] -> Typing -> (PP.Doc ann, [Comment])
 typingToDoc comments typing = case typing of
   Source _ (TRSingle n) ->
-    (PP.text n, comments)
+    (PP.pretty n, comments)
 
   Source _ (TRComp n args) ->
     let (args', comments') = typingArgsToDoc comments args
-    in  (PP.text n <> PP.space <> args', comments')
+    in  (PP.pretty n <> PP.space <> args', comments')
 
   Source _ (TRArr left right) ->
     let (left', comments')   = typingToDoc comments left
@@ -490,22 +493,22 @@ typingToDoc comments typing = case typing of
 
           _ ->
             left'
-    in  (left'' <> PP.text " -> " <> right', comments'')
+    in  (left'' <> PP.pretty " -> " <> right', comments'')
 
   Source _ (TRTuple typings) ->
     let (typings', comments') = typingListToDoc comments typings
-    in  (PP.text "<" <> typings' <> PP.text ">", comments')
+    in  (PP.pretty "<" <> typings' <> PP.pretty ">", comments')
 
   Source _ (TRRecord fields maybeExt) ->
     let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList fields)
         (maybeExt', comments'') = case maybeExt of
           Just ext ->
             let (ext', comments''') = typingToDoc comments' ext
-            in  (PP.text "..." <> ext' <> PP.text ", ", comments''')
+            in  (PP.pretty "..." <> ext' <> PP.pretty ", ", comments''')
 
           Nothing ->
-            (PP.empty, comments')
-    in  (PP.text "{ " <> maybeExt' <> typings' <> PP.text " }", comments'')
+            (PP.emptyDoc, comments')
+    in  (PP.pretty "{ " <> maybeExt' <> typings' <> PP.pretty " }", comments'')
 
   Source _ (TRConstrained constraints typing) ->
     let (constraints', comments') = typingListToDoc comments constraints
@@ -515,10 +518,10 @@ typingToDoc comments typing = case typing of
           else
             constraints'
         (typing', comments'') = typingToDoc comments' typing
-    in  (constraints'' <> PP.text " => " <> typing', comments'')
+    in  (constraints'' <> PP.pretty " => " <> typing', comments'')
 
 
-templateStringExpsToDoc :: [Comment] -> [Exp] -> (PP.Doc, [Comment])
+templateStringExpsToDoc :: [Comment] -> [Exp] -> (PP.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
   (e@(Source _ LStr{}) : more) ->
     let (e', comments')     = expToDoc comments e
@@ -528,10 +531,10 @@ templateStringExpsToDoc comments exps = case exps of
   (e : more) ->
     let (e', comments')     = expToDoc comments e
         (more', comments'') = templateStringExpsToDoc comments' more
-    in  (PP.group (PP.text "${" <> PP.nest indentSize (PP.linebreak <> e') <> PP.linebreak <> PP.text "}") <> more', comments'')
+    in  (PP.group (PP.pretty "${" <> PP.nest indentSize (PP.line' <> e') <> PP.line' <> PP.pretty "}") <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
 shouldNestApp :: [Exp] -> Bool
@@ -552,7 +555,7 @@ shouldNestApp args = case args of
     True
 
 
-formatParams :: Bool -> PP.Doc -> PP.Doc
+formatParams :: Bool -> PP.Doc ann -> PP.Doc ann
 formatParams isSingle paramsDoc =
   if isSingle then
     PP.lparen <> paramsDoc <> PP.rparen
@@ -560,12 +563,12 @@ formatParams isSingle paramsDoc =
     PP.group
       (
         PP.lparen
-        <> PP.nest indentSize (PP.linebreak <> paramsDoc)
-        <> PP.linebreak
+        <> PP.nest indentSize (PP.line' <> paramsDoc)
+        <> PP.line'
       )
     <> PP.rparen
 
-expToDoc :: [Comment] -> Exp -> (PP.Doc, [Comment])
+expToDoc :: [Comment] -> Exp -> (PP.Doc ann, [Comment])
 expToDoc comments exp = 
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
       (exp', comments'') = case exp of
@@ -577,7 +580,7 @@ expToDoc comments exp =
               (args', comments''') = argsToDoc comments'' args
               args'' =
                 if shouldNestApp args then
-                  PP.group (PP.lparen <> PP.nest indentSize (PP.linebreak <> args') <> PP.linebreak <> PP.rparen)
+                  PP.group (PP.lparen <> PP.nest indentSize (PP.line' <> args') <> PP.line' <> PP.rparen)
                 else
                   PP.lparen <> args' <> PP.rparen
           in  ( fn' <> args''
@@ -590,10 +593,10 @@ expToDoc comments exp =
               params''              = formatParams (length params == 1) params'
               arrowAndBody          = case body of
                 [Source _ BinOp{}] ->
-                  PP.text " =>" <> PP.nest indentSize (PP.softline <> body')
+                  PP.pretty " =>" <> PP.nest indentSize (PP.softline <> body')
 
                 _ ->
-                  PP.text " => " <> body'
+                  PP.pretty " => " <> body'
           in  ( params'' <> arrowAndBody, comments''')
 
         Source _ (AbsWithMultilineBody params body) ->
@@ -601,7 +604,7 @@ expToDoc comments exp =
               (body', comments''') = bodyToDoc comments'' body
               params'' = formatParams (length params == 1) params'
           in  ( params''
-                <> PP.text " => "
+                <> PP.pretty " => "
                 <> PP.lbrace
                 <> PP.nest indentSize (PP.line <> body')
                 <> PP.line
@@ -611,7 +614,7 @@ expToDoc comments exp =
 
         Source _ (Do exps) ->
           let (exps', comments'') = bodyToDoc comments' exps
-          in  ( PP.text "do "
+          in  ( PP.pretty "do "
                 <> PP.lbrace
                 <> PP.nest indentSize (PP.line <> exps')
                 <> PP.line
@@ -621,17 +624,17 @@ expToDoc comments exp =
 
         Source _ (Return exp) ->
           let (exp', comments'') = expToDoc comments' exp
-          in  (PP.text "return " <> exp', comments'')
+          in  (PP.pretty "return " <> exp', comments'')
 
         Source _ (Assignment name _ exp) ->
-          let name'             = PP.text name
+          let name'             = PP.pretty name
               (exp', comments'') = expToDoc comments' exp
-          in  (name' <> PP.text " = " <> exp', comments'')
+          in  (name' <> PP.pretty " = " <> exp', comments'')
 
         Source _ (DoAssignment name exp) ->
-          let name'             = PP.text name
+          let name'             = PP.pretty name
               (exp', comments'') = expToDoc comments' exp
-          in  (name' <> PP.text " <- " <> exp', comments'')
+          in  (name' <> PP.pretty " <- " <> exp', comments'')
 
         Source _ (If _ cond truthy _ falsy) ->
           let (cond', comments'')    = expToDoc comments' cond
@@ -639,17 +642,17 @@ expToDoc comments exp =
               (falsy', comments'''') = expToDoc comments''' falsy
           in  ( PP.group
                 (
-                  PP.text "if ("
-                  <> PP.nest indentSize (PP.linebreak <> cond') <> PP.linebreak
+                  PP.pretty "if ("
+                  <> PP.nest indentSize (PP.line' <> cond') <> PP.line'
                 )
               <> PP.group
                   (
-                    PP.text ") {"
+                    PP.pretty ") {"
                     <> PP.nest indentSize (PP.line <> truthy') <> PP.line <> PP.rbrace
                   )
               <> PP.group
                   (
-                    PP.text " else {"
+                    PP.pretty " else {"
                     <> PP.nest indentSize (PP.line <> falsy') <> PP.line <> PP.rbrace
                   )
               , comments''''
@@ -665,8 +668,8 @@ expToDoc comments exp =
                   PP.nest indentSize
                     (
                       PP.line
-                      <> PP.text "? " <> truthy'
-                      <> PP.line <> PP.text ": " <> falsy'
+                      <> PP.pretty "? " <> truthy'
+                      <> PP.line <> PP.pretty ": " <> falsy'
                     )
                 )
               , comments''''
@@ -688,11 +691,11 @@ expToDoc comments exp =
           let (fields', comments'') = dictItemsToDoc comments' items
           in  ( PP.group
                   (
-                    PP.text "{{"
+                    PP.pretty "{{"
                     <> PP.nest indentSize (PP.line <> fields')
                     <> PP.line
                   )
-                <> PP.text "}}"
+                <> PP.pretty "}}"
               , comments''
               )
 
@@ -702,9 +705,9 @@ expToDoc comments exp =
           in  ( PP.group
                   (
                     PP.lbracket
-                    <> PP.nest indentSize (PP.linebreak <> items')
+                    <> PP.nest indentSize (PP.line' <> items')
                     <> commentsDoc
-                    <> PP.linebreak
+                    <> PP.line'
                   )
                 <> PP.rbracket
               , comments'''
@@ -715,21 +718,21 @@ expToDoc comments exp =
               (commentsDoc, comments'') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'
           in  ( PP.group
                   (
-                    PP.text "<"
-                    <> PP.nest indentSize (PP.linebreak <> items')
+                    PP.pretty "<"
+                    <> PP.nest indentSize (PP.line' <> items')
                     <> commentsDoc
-                    <> PP.linebreak
+                    <> PP.line'
                   )
-                <> PP.text ">"
+                <> PP.pretty ">"
               , comments''
               )
 
         Source _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
-          in  ( PP.text "pipe("
-                  <> PP.nest indentSize (PP.linebreak <> exps')
-                  <> PP.linebreak
-                  <> PP.text ")"
+          in  ( PP.pretty "pipe("
+                  <> PP.nest indentSize (PP.hardline <> exps')
+                  <> PP.hardline
+                  <> PP.pretty ")"
               , comments''
               )
 
@@ -739,12 +742,12 @@ expToDoc comments exp =
               exp'' =
                 if shouldNestApp [exp] then
                   PP.lparen
-                  <> PP.nest indentSize (PP.linebreak <> exp')
-                  <> PP.linebreak
+                  <> PP.nest indentSize (PP.line' <> exp')
+                  <> PP.line'
                 else
                   PP.lparen <> exp'
-          in  ( PP.group (PP.text "where " <> exp'')
-                <> PP.text ") {"
+          in  ( PP.group (PP.pretty "where " <> exp'')
+                <> PP.pretty ") {"
                 <> PP.nest indentSize (PP.line <> iss')
                 <> PP.line <> PP.rbrace
               , comments'''
@@ -752,8 +755,8 @@ expToDoc comments exp =
 
         Source _ (WhereAbs _ _ iss _) ->
           let (iss', comments'') = issToDoc comments' iss
-          in  ( PP.text "where"
-                <> PP.text " {"
+          in  ( PP.pretty "where"
+                <> PP.pretty " {"
                 <> PP.nest indentSize (PP.line <> iss')
                 <> PP.line
                 <> PP.rbrace
@@ -761,16 +764,16 @@ expToDoc comments exp =
               )
 
         Source _ (LNum n) ->
-          (PP.text n, comments')
+          (PP.pretty n, comments')
 
         Source _ (LStr s) ->
-          (PP.text s, comments')
+          (PP.pretty s, comments')
 
         Source _ (LBool b) ->
-          (PP.text b, comments')
+          (PP.pretty b, comments')
 
         Source _ LUnit ->
-          (PP.text "()", comments')
+          (PP.pretty "()", comments')
 
         Source _ (Var n) ->
           let n' =
@@ -780,7 +783,7 @@ expToDoc comments exp =
 
                   a ->
                     a
-          in (PP.text n', comments')
+          in (PP.pretty n', comments')
 
         Source _ (Parenthesized _ exp _) ->
           let (exp', comments'') = expToDoc comments' exp
@@ -805,49 +808,49 @@ expToDoc comments exp =
 
         Source _ (TemplateString exps) ->
           let (content, comments'') = templateStringExpsToDoc comments' exps
-          in  (PP.text "`" <> content <> PP.text "`", comments'')
+          in  (PP.pretty "`" <> content <> PP.pretty "`", comments'')
 
         Source _ (Export exp) ->
           let (exp', comments'') = expToDoc comments' exp
-          in  (PP.text "export " <> exp', comments'')
+          in  (PP.pretty "export " <> exp', comments'')
 
         Source _ (NameExport n) ->
-          (PP.text "export " <> PP.text n, comments')
+          (PP.pretty "export " <> PP.pretty n, comments')
 
         Source _ (TypeExport n) ->
-          (PP.text "export type " <> PP.text n, comments')
+          (PP.pretty "export type " <> PP.pretty n, comments')
 
         Source _ (JSExp js) ->
           let lines' = lines js
-              -- js' = PP.vcat (PP.text . Text.unpack . Text.strip . Text.pack <$> lines')
-              js' = PP.text js
+              -- js' = PP.vcat (PP.pretty . Text.unpack . Text.strip . Text.pack <$> lines')
+              js' = PP.pretty js
           in
             if length lines' > 1 then
-              (PP.text "#-" <> js' <> PP.text "-#", comments')
+              (PP.pretty "#-" <> js' <> PP.pretty "-#", comments')
             else
-              (PP.group (PP.text "#-" <> js' <> PP.text "-#"), comments')
-              -- (PP.group (PP.text "#-" <> PP.line <> js' <> PP.line <> PP.text "-#"), comments')
+              (PP.group (PP.pretty "#-" <> js' <> PP.pretty "-#"), comments')
+              -- (PP.group (PP.pretty "#-" <> PP.line <> js' <> PP.line <> PP.pretty "-#"), comments')
 
         Source _ (JsxTag name props children) ->
           let (props', comments'')     = jsxPropsToDoc comments' props
               (children', comments''') = jsxChildrenToDoc comments'' children
               lineAfterName           =
                 if null props then
-                  PP.linebreak
+                  PP.line'
                 else
                   PP.line
           in  ( PP.group
                   (
                     PP.group
                       (
-                        PP.text "<" <> PP.text name
+                        PP.pretty "<" <> PP.pretty name
                         <> PP.nest indentSize (lineAfterName <> props')
-                        <> PP.linebreak
-                        <> PP.text ">"
+                        <> PP.line'
+                        <> PP.pretty ">"
                       )
-                    <> PP.nest indentSize (PP.linebreak <> children')
-                    <> PP.linebreak
-                    <> PP.text "</" <> PP.text name <> PP.text ">"
+                    <> PP.nest indentSize (PP.line' <> children')
+                    <> PP.line'
+                    <> PP.pretty "</" <> PP.pretty name <> PP.pretty ">"
                   )
               , comments'''
               )
@@ -856,10 +859,10 @@ expToDoc comments exp =
           let (props', comments'')     = jsxPropsToDoc comments' props
           in  ( PP.group
                   (
-                    PP.text "<" <> PP.text name
+                    PP.pretty "<" <> PP.pretty name
                     <> PP.nest indentSize (PP.line <> props')
                     <> PP.line
-                    <> PP.text "/>"
+                    <> PP.pretty "/>"
                   )
               , comments''
               )
@@ -867,186 +870,186 @@ expToDoc comments exp =
         Source _ (TypedExp exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
               (typing', comments''') = typingToDoc comments'' typing
-          in  (PP.lparen <> exp' <> PP.text " :: " <> typing' <> PP.rparen, comments''')
+          in  (PP.lparen <> exp' <> PP.pretty " :: " <> typing' <> PP.rparen, comments''')
 
         Source _ (NamedTypedExp name exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
               (typing', comments''') = typingToDoc comments'' typing
-          in  (PP.text name <> PP.text " :: " <> typing' <> PP.linebreak <> exp', comments''')
+          in  (PP.pretty name <> PP.pretty " :: " <> typing' <> PP.line' <> exp', comments''')
   in  (commentsDoc <> exp', comments'')
 
 
-importToDoc :: [Comment] -> Import -> (PP.Doc, [Comment])
+importToDoc :: [Comment] -> Import -> (PP.Doc ann, [Comment])
 importToDoc comments imp = case imp of
   Source _ (NamedImport names path _) ->
-    let nameDocs = PP.text . getSourceContent <$> names
+    let nameDocs = PP.pretty . getSourceContent <$> names
         namesDoc = PP.vsep (PP.punctuate PP.comma nameDocs)
         lineDoc  =
           if null names then
-            PP.empty
+            PP.emptyDoc
           else
             PP.line
     in  ( PP.group
             (
-              PP.text "import " <> PP.lbrace
+              PP.pretty "import " <> PP.lbrace
               <> PP.nest indentSize (lineDoc <> namesDoc)
               <> lineDoc <> PP.rbrace
-              <> PP.text " from " <> PP.text ("\"" ++ path ++ "\"")
+              <> PP.pretty " from " <> PP.pretty ("\"" ++ path ++ "\"")
             )
         , comments
         )
 
   Source _ (TypeImport names path _) ->
-    let nameDocs = PP.text . getSourceContent <$> names
+    let nameDocs = PP.pretty . getSourceContent <$> names
         namesDoc = PP.vsep (PP.punctuate PP.comma nameDocs)
     in  ( PP.group
             (
-              PP.text "import type " <> PP.lbrace
+              PP.pretty "import type " <> PP.lbrace
               <> PP.nest indentSize (PP.line <> namesDoc)
               <> PP.line <> PP.rbrace
-              <> PP.text " from " <> PP.text ("\"" ++ path ++ "\"")
+              <> PP.pretty " from " <> PP.pretty ("\"" ++ path ++ "\"")
             )
         , comments
         )
 
   Source _ (DefaultImport name path _) ->
-    let nameDoc = (PP.text . getSourceContent) name
-    in  ( PP.text "import "
+    let nameDoc = (PP.pretty . getSourceContent) name
+    in  ( PP.pretty "import "
           <> nameDoc
-          <> PP.text " from "
-          <> PP.text ("\"" ++ path ++ "\"")
+          <> PP.pretty " from "
+          <> PP.pretty ("\"" ++ path ++ "\"")
         , comments
         )
 
   Source _ (ImportAll path _) ->
-    (PP.text "import " <> PP.text ("\"" ++ path ++ "\""), comments)
+    (PP.pretty "import " <> PP.pretty ("\"" ++ path ++ "\""), comments)
 
 
-constructorsToDoc :: [Comment] -> [Constructor] -> (PP.Doc, [Comment])
+constructorsToDoc :: [Comment] -> [Constructor] -> (PP.Doc ann, [Comment])
 constructorsToDoc comments ctors = case ctors of
   (Source _ (Constructor name args) : more) ->
-    let name' = PP.text name
+    let name' = PP.pretty name
         (args', comments')  = typingListToDoc comments args
         args''              =
           if null args then
-            PP.empty
+            PP.emptyDoc
           else
             PP.lparen <> args' <> PP.rparen
         (more', comments'') = constructorsToDoc comments' more
         end =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.line <> PP.text "|" <> PP.space
+            PP.line <> PP.pretty "|" <> PP.space
     in  (name' <> args'' <> end <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-typeDeclToDoc :: [Comment] -> TypeDecl -> (PP.Doc, [Comment])
+typeDeclToDoc :: [Comment] -> TypeDecl -> (PP.Doc ann, [Comment])
 typeDeclToDoc comments td = case td of
   Source _ adt@ADT{} ->
-    let name   = PP.text (adtname adt)
+    let name   = PP.pretty (adtname adt)
         export =
           if adtexported adt then
-            PP.text "export "
+            PP.pretty "export "
           else
-            PP.empty
-        params = PP.hcat (PP.punctuate PP.space (PP.text <$> adtparams adt))
+            PP.emptyDoc
+        params = PP.hcat (PP.punctuate PP.space (PP.pretty <$> adtparams adt))
         equals =
           if null (adtparams adt) then
-            PP.linebreak <> PP.text "= "
+            PP.line' <> PP.pretty "= "
           else
-            PP.line <> PP.text "= "
+            PP.line <> PP.pretty "= "
         (constructors, comments') = constructorsToDoc comments (adtconstructors adt)
-    in  ( export <> PP.text "type " <> name <> PP.space <> params
+    in  ( export <> PP.pretty "type " <> name <> PP.space <> params
           <> PP.group (PP.nest indentSize (equals <> constructors))
         , comments'
         )
 
   Source _ alias@Alias{} ->
-    let name = PP.text (aliasname alias)
+    let name = PP.pretty (aliasname alias)
         export =
           if aliasexported alias then
-            PP.text "export "
+            PP.pretty "export "
           else
-            PP.empty
+            PP.emptyDoc
         params =
           if null (aliasparams alias) then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.hcat (PP.punctuate PP.space (PP.text <$> aliasparams alias)) <> PP.space
+            PP.hcat (PP.punctuate PP.space (PP.pretty <$> aliasparams alias)) <> PP.space
         (typing, comments') = typingToDoc comments (aliastype alias)
-    in  ( export <> PP.text "alias " <> name <> PP.space <> params <> PP.text "= " <> typing
+    in  ( export <> PP.pretty "alias " <> name <> PP.space <> params <> PP.pretty "= " <> typing
         , comments'
         )
 
 
-interfaceToDoc :: [Comment] -> Interface -> (PP.Doc, [Comment])
+interfaceToDoc :: [Comment] -> Interface -> (PP.Doc ann, [Comment])
 interfaceToDoc comments interface = case interface of
   Source _ (Interface constraints name vars methods) ->
     let (constraints', comments') = typingListToDoc comments constraints
         constraints''
-          | null constraints       = PP.empty
-          | length constraints > 1 = PP.lparen <> constraints' <> PP.rparen <> PP.text " => "
-          | otherwise              = constraints' <> PP.text " => "
+          | null constraints       = PP.emptyDoc
+          | length constraints > 1 = PP.lparen <> constraints' <> PP.rparen <> PP.pretty " => "
+          | otherwise              = constraints' <> PP.pretty " => "
 
-        vars' = PP.hcat (PP.punctuate PP.space (PP.text <$> vars))
+        vars' = PP.hcat (PP.punctuate PP.space (PP.pretty <$> vars))
         (methods', comments'') = methodTypingsToDoc comments' (Map.toList methods)
-    in  ( PP.text "interface " <> constraints'' <> PP.text name <> PP.space <> vars' <> PP.text " {" <> PP.nest indentSize (PP.line <> methods') <> PP.line <> PP.rbrace
+    in  ( PP.pretty "interface " <> constraints'' <> PP.pretty name <> PP.space <> vars' <> PP.pretty " {" <> PP.nest indentSize (PP.line <> methods') <> PP.line <> PP.rbrace
         ,comments''
         )
 
 
-methodsToDoc :: [Comment] -> [Exp] -> (PP.Doc, [Comment])
+methodsToDoc :: [Comment] -> [Exp] -> (PP.Doc ann, [Comment])
 methodsToDoc comments methods = case methods of
   (exp : more) ->
     let (exp', comments') = expToDoc comments exp
         (more', comments'')  = methodsToDoc comments' more
         after =
           if null more then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.nesting (\i -> PP.nest (-i) PP.linebreak) <> PP.linebreak
+            PP.nesting (\i -> PP.nest (-i) PP.line') <> PP.line'
     in  (exp' <> after <> more', comments'')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-instanceToDoc :: [Comment] -> Instance -> (PP.Doc, [Comment])
+instanceToDoc :: [Comment] -> Instance -> (PP.Doc ann, [Comment])
 instanceToDoc comments inst = case inst of
   Source _ (Instance constraints name typings methods) ->
     let (constraints', comments') = typingListToDoc comments constraints
         constraints''
-          | null constraints       = PP.empty
-          | length constraints > 1 = PP.lparen <> constraints' <> PP.rparen <> PP.text " => "
-          | otherwise              = constraints' <> PP.text " => "
+          | null constraints       = PP.emptyDoc
+          | length constraints > 1 = PP.lparen <> constraints' <> PP.rparen <> PP.pretty " => "
+          | otherwise              = constraints' <> PP.pretty " => "
         (typings', comments'')  = typingArgsToDoc comments typings
         (methods', comments''') = methodsToDoc comments'' (Map.elems methods)
-    in  ( PP.text "instance " <> constraints'' <> PP.text name <> PP.space <> typings' <> PP.text " {" <> PP.nest indentSize (PP.line <> methods') <> PP.line <> PP.rbrace
+    in  ( PP.pretty "instance " <> constraints'' <> PP.pretty name <> PP.space <> typings' <> PP.pretty " {" <> PP.nest indentSize (PP.line <> methods') <> PP.line <> PP.rbrace
         , comments'''
     )
 
 
-commentToDoc :: Bool -> Comment -> PP.Doc
+commentToDoc :: Bool -> Comment -> PP.Doc ann
 commentToDoc topLevel comment = case comment of
   Comment _ c ->
     let spaces =
           if length c > 200 then
-            PP.empty
+            PP.emptyDoc
           else
-            PP.text (concat $ replicate (200 - length c) " ")
-    in PP.text c <> spaces <> PP.line
+            PP.pretty (concat $ replicate (200 - length c) " ")
+    in PP.pretty c <> spaces <> PP.line
 
   MultilineComment _ c ->
     let break =
           if topLevel then
-            PP.linebreak
+            PP.line'
           else
-            PP.softbreak
-    in PP.text c <> break
+            PP.softline'
+    in PP.pretty c <> break
 
 
 isInlineComment :: Comment -> Bool
@@ -1058,7 +1061,7 @@ isInlineComment comment = case comment of
     False
 
 
-insertComments :: Bool -> Area -> [Comment] -> (PP.Doc, [Comment])
+insertComments :: Bool -> Area -> [Comment] -> (PP.Doc ann, [Comment])
 insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case comments of
   (comment : more) ->
     let commentArea@(Area _ (Loc _ commentEndLine _)) = getCommentArea comment
@@ -1070,7 +1073,7 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
             comment'          = commentToDoc topLevel comment
             comment''         =
               if nodeStartLine - commentEndLine > 1 then
-                comment' <> PP.linebreak <> PP.linebreak
+                comment' <> PP.line' <> PP.line'
               else
                 comment'
         in  (comment'' <> next, comments')
@@ -1079,9 +1082,9 @@ insertComments topLevel area@(Area (Loc _ nodeStartLine _) _) comments = case co
         in  (next, comment : comments')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
-insertRemainingComments :: [Comment] -> (PP.Doc, [Comment])
+insertRemainingComments :: [Comment] -> (PP.Doc ann, [Comment])
 insertRemainingComments comments = case comments of
   (comment : more) ->
     let (next, comments') = insertRemainingComments (tail comments)
@@ -1089,10 +1092,10 @@ insertRemainingComments comments = case comments of
     in  (comment' <> next, comments')
 
   [] ->
-    (PP.empty, comments)
+    (PP.emptyDoc, comments)
 
 
-nodesToDocs :: [Comment] -> [Node] -> (PP.Doc, [Comment])
+nodesToDocs :: [Comment] -> [Node] -> (PP.Doc ann, [Comment])
 nodesToDocs comments nodes = case nodes of
   (node : more) ->
     let (commentsDoc, comments') = insertComments True (getNodeArea node) comments
@@ -1167,5 +1170,6 @@ astToSource :: Int -> AST -> [Comment] -> String
 astToSource width ast comments =
   let nodeList = (sortASTNodes . astToNodeList) ast
       (doc, _) = nodesToDocs comments nodeList
-      rendered = PP.displayS (PP.renderPretty 1.0 width doc) ""
+      layoutOptions = LayoutOptions {layoutPageWidth = AvailablePerLine width 1.0}
+      rendered = renderString (layoutPretty layoutOptions doc)
   in  unlines $ removeCommentSpaces <$> lines rendered
