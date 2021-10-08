@@ -147,3 +147,21 @@ getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 getValue :: Optimized a -> a
 getValue (Optimized _ _ a) = a
 getValue (Untyped _ a    ) = a
+
+
+isTopLevelFunction :: Exp -> Bool
+isTopLevelFunction exp = case exp of
+  Optimized _ _ (Assignment _ (Optimized _ _ Abs{})) ->
+    True
+
+  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))) _) ->
+    True
+
+  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{})))) ->
+    True
+
+  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))))) _) ->
+    True
+
+  _ ->
+    False

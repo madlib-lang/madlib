@@ -40,6 +40,7 @@ import           Infer.Infer
 import           Generate.Javascript           as GenerateJS
 import qualified Generate.Json                 as GenerateJson
 import           Generate.JSInternals
+import qualified Generate.LLVM                 as LLVM
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
@@ -57,6 +58,7 @@ import qualified Utils.PathUtils               as PathUtils
 import           Paths_madlib                   ( version )
 import           Run.Utils
 import           Run.CommandLine
+import           Run.Target
 
 
 
@@ -168,7 +170,14 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                   let optimizedTable = optimizeTable optimized table
 
-                  generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
+                  if target == TLLVM then
+                    case M.lookup canonicalEntrypoint optimizedTable of
+                      Just ast ->
+                        LLVM.generate ast
+                      Nothing ->
+                        putStrLn $ "AST for '" <> canonicalEntrypoint <> "' not found!"
+                  else
+                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
                   when bundle $ do
                     let entrypointOutputPath =
