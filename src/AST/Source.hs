@@ -70,7 +70,7 @@ data Typing_
 
 
 type Is = Source Is_
-data Is_ = Is Pattern Symbol Exp deriving(Eq, Show)
+data Is_ = Is Pattern Exp deriving(Eq, Show)
 
 
 data PatternField
@@ -86,12 +86,12 @@ data Pattern_
   | PStr String
   | PBool String
   | PAny
-  | PCon (Source Name) Symbol [Pattern] Symbol
+  | PCon (Source Name) [Pattern]
   | PNullaryCon (Source Name)
-  | PRecord Symbol [PatternField] Symbol
-  | PList Symbol [Pattern] Symbol
-  | PTuple Symbol [Pattern] Symbol
-  | PSpread Symbol Pattern
+  | PRecord [PatternField]
+  | PList [Pattern]
+  | PTuple [Pattern]
+  | PSpread Pattern
   deriving(Eq, Show)
 
 type Field = Source Field_
@@ -111,13 +111,6 @@ data ListItem_
 type DictItem = Source DictItem_
 data DictItem_ = DictItem Exp Exp deriving(Eq, Show)
 
-data Keyword
-  = Keyword String Area
-  deriving(Eq, Show)
-
-data Symbol
-  = Symbol String Area
-  deriving(Eq, Show)
 
 type Exp = Source Exp_
 data Exp_
@@ -134,12 +127,12 @@ data Exp_
   | AbsWithMultilineBody [Source Name] [Exp]
   | Return Exp
   | Access Exp Exp
-  | Assignment Name Symbol Exp
+  | Assignment Name Exp
   | Record [Field]
-  | If Keyword Exp Exp Keyword Exp
-  | Ternary Exp Symbol Exp Symbol Exp
-  | Where Keyword Exp Symbol [Is] Symbol
-  | WhereAbs Keyword Symbol [Is] Symbol
+  | If Exp Exp Exp
+  | Ternary Exp Exp Exp
+  | Where Exp [Is]
+  | WhereAbs [Is]
   | Do [Exp]
   | DoAssignment Name Exp
   | Export Exp

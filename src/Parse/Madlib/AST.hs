@@ -128,7 +128,7 @@ generateJsonAssignments pathUtils ((Source area (DefaultImport (Source _ name) _
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath
   let var = Source area (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
-  let assignment = Source area (Assignment name (Symbol "=" area) var)
+  let assignment = Source area (Assignment name var)
 
   return $ assignment : next
 
