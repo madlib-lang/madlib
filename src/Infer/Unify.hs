@@ -89,7 +89,7 @@ instance Unify Type where
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
-  unify t1@(TCon a@(TC tNameA _) fpa) t2@(TCon b@(TC tNameB _) fpb)
+  unify t1@(TCon a fpa) t2@(TCon b fpb)
     | a == b && fpa == fpb = return M.empty
     | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
