@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 24d04d4daac93fbe6ec7725b2bf10426819bbe39a5507468c9876eb8568277dc
+-- hash: aa53a59402f4a896acb304482c830d4b14abcd832c19d74430b192311169f825
 
 name:           madlib
 version:        0.11.0
@@ -56,7 +56,9 @@ library
       Generate.Javascript
       Generate.JSInternals
       Generate.Json
-      Generate.LLVM
+      Generate.LLVM.ClosureConvert
+      Generate.LLVM.LLVM
+      Generate.LLVM.Optimized
       Generate.Utils
       Infer.AST
       Infer.Env
@@ -172,7 +174,9 @@ executable madlib
       Generate.Javascript
       Generate.JSInternals
       Generate.Json
-      Generate.LLVM
+      Generate.LLVM.ClosureConvert
+      Generate.LLVM.LLVM
+      Generate.LLVM.Optimized
       Generate.Utils
       Infer.AST
       Infer.Env
