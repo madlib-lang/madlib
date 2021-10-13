@@ -12,6 +12,7 @@ import           Data.List
 import qualified AST.Solved                    as Slv
 import qualified Generate.LLVM.Optimized       as Opt
 import           Infer.Type
+import Data.Maybe
 
 
 data OptimizationState
@@ -55,21 +56,27 @@ getTopLevelExps = do
 without :: Eq a => [a] -> [a] -> [a]
 without = foldr (filter . (/=))
 
-getFreeVars :: Slv.Exp -> [(String, Type)]
-getFreeVars exp = case exp of
-  Slv.Solved (_ :=> t) _ (Slv.Var n) ->
-    [(n, t)]
+findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Type)]
+findFreeVars env exp = do
+  fvs <- case exp of
+    Slv.Solved (_ :=> t) _ (Slv.Var n) ->
+      return [(n, t)]
 
-  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) ->
-    let vars = getFreeVars body
-    in  filter (\(varName, _) -> varName /= param) vars
-    -- in  vars `without` [param]
+    Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) -> do
+      vars <- findFreeVars env body
+      return $ filter (\(varName, _) -> varName /= param) vars
 
-  Slv.Solved _ _ (Slv.App f arg _) ->
-    getFreeVars f ++ getFreeVars arg
+    Slv.Solved _ _ (Slv.App f arg _) -> do
+      fFreeVars   <- findFreeVars env f
+      argFreeVars <- findFreeVars env arg
+      return $ fFreeVars ++ argFreeVars
 
-  _ ->
-    []
+    _ ->
+      return []
+
+  let globalVars = freeVars env
+
+  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs
 
 
 class Optimizable a b where
@@ -108,8 +115,8 @@ instance Optimizable Slv.Exp Opt.Exp where
         body' <- mapM (optimize (env { stillTopLevel = False })) body
         return $ Opt.Optimized t area (Opt.Abs param body')
       else do
-        body' <- mapM (optimize env) body
-        let fvs = getFreeVars fullExp
+        body'       <- mapM (optimize env) body
+        fvs         <- findFreeVars env fullExp
         closureName <- generateClosureName
         let def = Opt.Optimized t area (Opt.ClosureDef closureName (fst <$> fvs) param body')
         addTopLevelExp def
@@ -319,17 +326,21 @@ optimizeImportName (Slv.Untyped area name) = Opt.Untyped area name
 
 instance Optimizable Slv.AST Opt.AST where
   optimize env ast = do
-    imports    <- mapM (optimize env) $ Slv.aimports ast
-    exps       <- mapM (optimize env) $ Slv.aexps ast
-    typeDecls  <- mapM (optimize env) $ Slv.atypedecls ast
-    interfaces <- mapM (optimize env) $ Slv.ainterfaces ast
-    instances  <- mapM (optimize env) $ Slv.ainstances ast
+    let globalVars = mapMaybe Slv.getExpName (Slv.aexps ast)
+        env' = env { freeVars = globalVars }
+
+    imports    <- mapM (optimize env') $ Slv.aimports ast
+    exps       <- mapM (optimize env') $ Slv.aexps ast
+    typeDecls  <- mapM (optimize env') $ Slv.atypedecls ast
+    interfaces <- mapM (optimize env') $ Slv.ainterfaces ast
+    instances  <- mapM (optimize env') $ Slv.ainstances ast
 
     defs <- getTopLevelExps
     resetTopLevelExps
 
     return $ Opt.AST { Opt.aimports    = imports
-                     , Opt.aexps       = defs ++ exps
+                     , Opt.aexps       = exps ++ defs
+                    --  , Opt.aexps       = defs ++ exps
                      , Opt.atypedecls  = typeDecls
                      , Opt.ainterfaces = interfaces
                      , Opt.ainstances  = instances

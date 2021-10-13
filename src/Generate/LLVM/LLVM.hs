@@ -63,7 +63,7 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i32 [ptr i8] False) (AST.mkName "puts")))
 
   Optimized _ _ (Var n) ->
-    case Map.lookup n symbolTable of
+    case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
       Just global@(Operand.ConstantOperand Constant.GlobalReference{}) ->
         return (symbolTable, global)
 
@@ -97,10 +97,17 @@ generateExp symbolTable exp = case exp of
         fn' <- load fn 8
         closuredArgs <- gep f' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
         closuredArgs' <- load closuredArgs 8
-        firstArg <- gep closuredArgs' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+        let argCount = case typeOf (trace ("closuredArgs': "<>ppShow closuredArgs') closuredArgs') of
+              Type.PointerType (Type.StructureType _ items) _ ->
+                List.length items
+
+              _ ->
+                0
+        firstArg <- gep (trace ("arg count: "<>show argCount) closuredArgs') [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
         firstArg' <- load firstArg 8
-        -- res <- call (trace ("\nFN: "<>ppShow fn<>"\nfirstArg': "<>ppShow firstArg'<>"\narg': "<>ppShow arg') fn) [(firstArg', []), (arg', [])]
-        res <- call (trace ("FN': "<>ppShow fn') fn') [(firstArg', []), (arg', [])]
+        closuredArgs'' <- mapM (\index -> gep closuredArgs' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)] >>= (`load` 8)) $ List.take argCount [0..]
+        let closuredArgs''' = (, []) <$> closuredArgs''
+        res <- call fn' (closuredArgs''' ++ [(arg', [])])
         return (symbolTable'', res)
 
 
@@ -184,7 +191,7 @@ generateExp symbolTable exp = case exp of
     Monad.foldM_ (storeItem (trace ("STORE: "<>ppShow env') env')) () envWithIds
 
     -- TODO: needs to be computed
-    let fType = Type.ptr $ Type.FunctionType Type.double [Type.double, Type.double] False
+    let fType = Type.ptr $ Type.FunctionType Type.double ((typeOf . snd <$> envItems) ++ [Type.double]) False
     closure <- alloca (Type.StructureType False [fType, typeOf env']) Nothing 8
     let f = ConstantOperand (Constant.GlobalReference fType (AST.mkName name))
     Monad.foldM_ (storeItem closure) () [(f, 0), (env', 1)]
