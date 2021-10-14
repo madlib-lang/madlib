@@ -93,18 +93,20 @@ generateExp symbolTable exp = case exp of
 
       -- Closure call
       _ -> do
-        fn <- gep f' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+        closurePtr <- alloca (typeOf f') Nothing 8
+        store closurePtr 8 f'
+        fn <- gep closurePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
         fn' <- load fn 8
-        closuredArgs <- gep f' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+        closuredArgs <- gep closurePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
         closuredArgs' <- load closuredArgs 8
-        let argCount = case typeOf (trace ("closuredArgs': "<>ppShow closuredArgs') closuredArgs') of
-              Type.PointerType (Type.StructureType _ items) _ ->
+        let argCount = case typeOf closuredArgs' of
+              Type.StructureType _ items ->
                 List.length items
 
               _ ->
                 0
 
-        closuredArgs'' <- mapM (\index -> gep closuredArgs' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)] >>= (`load` 8)) $ List.take argCount [0..]
+        closuredArgs'' <- mapM (\index -> gep closuredArgs [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)] >>= (`load` 8)) $ List.take argCount [0..]
         let closuredArgs''' = (, []) <$> closuredArgs''
         res <- call fn' (closuredArgs''' ++ [(arg', [])])
         return (symbolTable'', res)
@@ -128,10 +130,23 @@ generateExp symbolTable exp = case exp of
     -- 92, 110 == \n
     let charCodes' = List.replace [92, 110] [10] charCodes
     let charCodes'' = toInteger <$> charCodes'
-    addr <- call (Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "malloc"))) [(ConstantOperand (Constant.Int 64 (fromIntegral $ List.length charCodes'')), [])]
+    addr <- call (Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))) [(ConstantOperand (Constant.Int 64 (fromIntegral $ List.length charCodes'')), [])]
+    -- addr <- call (Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i32, Type.i32] False) (AST.mkName "calloc"))) [(ConstantOperand (Constant.Int 32 (fromIntegral $ List.length charCodes'')), []), (ConstantOperand (Constant.Int 32 1), [])]
+    -- addr <- alloca Type.i8 Nothing 8
     let charCodesWithIds = List.zip charCodes'' [0..]
 
     Monad.foldM_ (storeChar addr) () charCodesWithIds
+
+    -- %str2 = alloca i8*
+    -- %1 = alloca [4 x i8]
+    -- store [4 x i8] c"foo\00", [4 x i8]* %1
+    -- %2 = bitcast [4 x i8]* %1 to i8*
+    -- store i8* %2, i8** %str2
+
+    -- let elems = Constant.Int 8 <$> charCodes''
+    --     arr = array elems
+    -- addr <- gep arr [Operand.ConstantOperand (Constant.Int 32 0)]
+
     return (symbolTable, addr)
     where
       storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Integer, Integer) -> m ()
@@ -145,9 +160,11 @@ generateExp symbolTable exp = case exp of
     let expsWithIds = List.zip exps' [0..]
     tuple <- alloca (Type.StructureType False (typeOf <$> exps')) Nothing 8
     Monad.foldM_ (storeItem tuple) () expsWithIds
+
+    -- TODO: should not return allocad
     return (symbolTable, tuple)
     where
-      
+
 
   Optimized _ _ (If cond truthy falsy) -> mdo
     (symbolTable', cond') <- generateExp symbolTable cond
@@ -186,14 +203,24 @@ generateExp symbolTable exp = case exp of
     envItems <- mapM (generateExp symbolTable) env
     let envWithIds = List.zip (snd <$> envItems) [0..]
     env' <- alloca (Type.StructureType False (typeOf . snd <$> envItems)) Nothing 8
-    Monad.foldM_ (storeItem (trace ("STORE: "<>ppShow env') env')) () envWithIds
+    -- env' <- call (Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "malloc"))) [(Operand.ConstantOperand (Constant.Constant.sizeof $ Type.StructureType False (typeOf . snd <$> envItems)), [])]
+    -- env'' <- bitcast env' (Type.ptr $ Type.StructureType False (typeOf . snd <$> envItems))
+    Monad.foldM_ (storeItem env') () envWithIds
 
-    -- TODO: needs to be computed
-    let fType = Type.ptr $ Type.FunctionType Type.double ((typeOf . snd <$> envItems) ++ [Type.double]) False
-    closure <- alloca (Type.StructureType False [fType, typeOf env']) Nothing 8
-    let f = ConstantOperand (Constant.GlobalReference fType (AST.mkName name))
-    Monad.foldM_ (storeItem closure) () [(f, 0), (env', 1)]
-    return (symbolTable, closure)
+    let f = case Map.lookup name symbolTable of
+          Just f' ->
+            f'
+
+          _ ->
+            error $ "Closure '" <> name <> "' not found!\n\n" <> ppShow symbolTable
+
+    env'' <- load env' 8
+
+    closure <- alloca (Type.StructureType False [typeOf f, typeOf env'']) Nothing 8
+    Monad.foldM_ (storeItem closure) () [(f, 0), (env'', 1)]
+
+    closure' <- load closure 8
+    return (symbolTable, closure')
 
   _ ->
     undefined
@@ -331,8 +358,8 @@ generateExps symbolTable exps = case exps of
     return ()
 
 
-buildLLVMType :: Exp -> Type.Type
-buildLLVMType (Optimized t area e) = case t of
+buildLLVMType :: InferredType.Type -> Type.Type
+buildLLVMType t = case t of
   InferredType.TCon (InferredType.TC "Number" InferredType.Star) "prelude" ->
     Type.double
 
@@ -346,52 +373,81 @@ buildLLVMType (Optimized t area e) = case t of
     Type.i1
 
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
-    case e of
-      Closure name args ->
-        let tLeft  = buildLLVMType (Optimized left area e)
-            tRight = buildLLVMType (Optimized right area e)
-            closureArgs = buildLLVMType <$> args
-        in  Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType tRight (closureArgs ++ [tLeft]) False, Type.ptr $ Type.StructureType False closureArgs]
+    let tLeft  = buildLLVMType left
+        tRight = buildLLVMType right
+    in  Type.ptr $ Type.FunctionType tRight [tLeft] False
 
-      _ ->
-        let tLeft  = buildLLVMType (Optimized left area e)
-            tRight = buildLLVMType (Optimized right area e)
-        in  Type.ptr $ Type.FunctionType tRight [tLeft] False
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
+    let tA = buildLLVMType a
+        tB = buildLLVMType b
+    in  Type.ptr $ Type.StructureType False [tA, tB]
 
   _ ->
-    Type.double
+    Type.ptr Type.i8
 
--- updateClosureType :: [InferredType.Type] -> Type.Type -> Type.Type
--- updateClosureType envArgs t =
---   let envArgs' = buildLLVMType <$> envArgs
---   in  t
+updateClosureType :: [InferredType.Type] -> Type.Type -> Type.Type
+updateClosureType envArgs t = case t of
+  Type.PointerType (Type.FunctionType ret args _) _ ->
+    let envArgs' = buildLLVMType <$> envArgs
+    in  Type.StructureType False [Type.ptr $ Type.FunctionType ret (envArgs' ++ args) False, Type.StructureType False envArgs']
+
+  _ ->
+    t
 
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
-  Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body]))) -> mdo
-    let returnType = buildLLVMType body
-    -- let paramType  = InferredType.getParamType t
-    f <- function (AST.mkName fnName) [(Type.double, ParameterName (stringToShortByteString paramName))] returnType $ \[param] -> mdo
-      entry <- block `named` "entry"; mdo
-        var <- alloca Type.double Nothing 4
+  Optimized _ _ (TypedExp (Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body])))) _) -> do
+    let returnType  = buildLLVMType (getType body)
+    let paramType   = buildLLVMType $ InferredType.getParamType t
+        returnType' = case body of
+          Optimized _ _ (Closure n args) ->
+            updateClosureType (getType <$> args) returnType
+          _ ->
+            returnType
+    f <- function (AST.mkName fnName) [(paramType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
+      entry <- block `named` "entry"; do
+        var <- alloca paramType Nothing 4
         store var 4 param
-        (_, exps) <- generateExp (Map.singleton paramName var) body
+        (_, exps) <- generateExp (Map.insert paramName var symbolTable) body
         ret exps
     return $ Map.insert fnName f symbolTable
 
-  Optimized _ _ (ClosureDef fnName env paramName [body]) -> do
-    let envParams = (Type.double,) . ParameterName . stringToShortByteString <$> (env ++ [paramName])
-    f <- function (AST.mkName fnName) envParams Type.double $ \params -> mdo
+  Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body]))) -> do
+    let returnType = buildLLVMType (getType body)
+    let paramType  = buildLLVMType $ InferredType.getParamType t
+        returnType' = case body of
+          Optimized _ _ (Closure n args) ->
+            updateClosureType (getType <$> args) returnType
+          _ ->
+            returnType
+    f <- function (AST.mkName fnName) [(paramType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
       entry <- block `named` "entry"; do
-        vars <- mapM (\_ -> alloca Type.double Nothing 4) params
-        mapM_ (\(p, v) -> store v 4 p) (List.zip params vars)
-        (_, exps) <- generateExp (Map.fromList (List.zip (env ++ [paramName]) vars)) body
+        var <- alloca paramType Nothing 4
+        store var 4 param
+        (_, exps) <- generateExp (Map.insert paramName var symbolTable) body
         ret exps
-    -- let f' = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.double [Type.double] False) (AST.mkName fnName))
+    return $ Map.insert fnName f symbolTable
+
+  Optimized t _ (ClosureDef fnName env paramName [body]) -> do
+    let envParams = (\(Optimized t _ (Var n)) -> (buildLLVMType t, ParameterName (stringToShortByteString n))) <$> env
+        paramType  = buildLLVMType $ InferredType.getParamType t
+        envParams' = envParams ++ [(paramType, ParameterName (stringToShortByteString paramName))]
+        returnType = buildLLVMType (getType body)
+    f <- function (AST.mkName fnName) envParams' returnType $ \params -> do
+      entry <- block `named` "entry"; do
+
+        vars <- mapM (\p -> alloca (typeOf p) Nothing 4) params
+        mapM_ (\(p, v) -> store v 4 p) (List.zip params vars)
+        (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) vars)) body
+        ret exps
     return $ Map.insert fnName f symbolTable
 
   _ ->
     return symbolTable
+
+getClosureParamNames :: [Exp] -> [String]
+getClosureParamNames exps =
+  (\(Optimized t _ (Var n)) -> n) <$> exps
 
 
 generateTopLevelFunctions :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [Exp] -> m SymbolTable
@@ -418,16 +474,22 @@ topLevelFunctions =
 
 toLLVMModule :: AST -> AST.Module
 toLLVMModule ast =
-  buildModule "main" $ mdo
+  buildModule "main" $ do
   symbolTable <- generateTopLevelFunctions Map.empty (topLevelFunctions $ aexps ast)
 
   extern (AST.mkName "puts") [ptr i8] i32
   extern (AST.mkName "malloc") [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc") [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__") [ptr i8, ptr i8] i1
 
   function "main" [] void $ \_ -> mdo
     entry <- block `named` "entry";
     generateExps symbolTable (expsForMain $ aexps ast)
+    -- x <- alloca (Type.StructureType False ([Type])) Nothing 8
+
+    -- x' <- bitcast x (Type.ptr Type.i8)
+    -- x'' <- load (trace ("T: "<> ppShow (typeOf x')) x') 8
     retVoid
 
 
@@ -443,4 +505,4 @@ generate ast = do
       withModuleFromAST ctx mod $ \mod' ->
         writeObjectToFile target (File "module.o") mod'
 
-  callCommand "clang++ -stdlib=libc++ -v module.o generate-llvm/lib.o -o a.out"
+  callCommand "clang++ -g -stdlib=libc++ -v module.o generate-llvm/lib.o gc.a -o a.out"

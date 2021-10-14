@@ -117,7 +117,13 @@ Right
                                      (Area (Loc 36 2 18) (Loc 39 2 21))
                                      (Access
                                         (Solved
-                                           ([] :=> TVar (TV "c2" Star))
+                                           ([] :=>
+                                              TRecord
+                                                (fromList
+                                                   [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                                                   , ( "y" , TCon (TC "Number" Star) "prelude" )
+                                                   ])
+                                                (Just (TVar (TV "h7" Star))))
                                            (Area (Loc 36 2 18) (Loc 37 2 19))
                                            (Var "r"))
                                         (Solved
@@ -128,9 +134,16 @@ Right
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
                                                    (TRecord
-                                                      (fromList [ ( "x" , TVar (TV "g6" Star) ) ])
+                                                      (fromList
+                                                         [ ( "x"
+                                                           , TCon (TC "Number" Star) "prelude"
+                                                           )
+                                                         , ( "y"
+                                                           , TCon (TC "Number" Star) "prelude"
+                                                           )
+                                                         ])
                                                       (Just (TVar (TV "h7" Star)))))
-                                                (TVar (TV "g6" Star)))
+                                                (TCon (TC "Number" Star) "prelude"))
                                            (Area (Loc 38 2 20) (Loc 39 2 21))
                                            (Var ".x"))))
                                   False))
@@ -141,7 +154,10 @@ Right
                                   (Solved
                                      ([] :=>
                                         TRecord
-                                          (fromList [ ( "x" , TCon (TC "Number" Star) "prelude" ) ])
+                                          (fromList
+                                             [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                                             , ( "y" , TCon (TC "Number" Star) "prelude" )
+                                             ])
                                           (Just (TVar (TV "h7" Star))))
                                      (Area (Loc 42 2 24) (Loc 43 2 25))
                                      (Var "r"))
@@ -152,9 +168,12 @@ Right
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecord
-                                                (fromList [ ( "y" , TVar (TV "j9" Star) ) ])
-                                                (Just (TVar (TV "k10" Star)))))
-                                          (TVar (TV "j9" Star)))
+                                                (fromList
+                                                   [ ( "x" , TCon (TC "Number" Star) "prelude" )
+                                                   , ( "y" , TCon (TC "Number" Star) "prelude" )
+                                                   ])
+                                                (Just (TVar (TV "h7" Star)))))
+                                          (TCon (TC "Number" Star) "prelude"))
                                      (Area (Loc 44 2 26) (Loc 45 2 27))
                                      (Var ".y"))))
                             True)

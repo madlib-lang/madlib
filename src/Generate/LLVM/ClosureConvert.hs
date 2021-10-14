@@ -56,11 +56,12 @@ getTopLevelExps = do
 without :: Eq a => [a] -> [a] -> [a]
 without = foldr (filter . (/=))
 
-findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Type)]
+findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
 findFreeVars env exp = do
   fvs <- case exp of
-    Slv.Solved (_ :=> t) _ (Slv.Var n) ->
-      return [(n, t)]
+    Slv.Solved (_ :=> t) _ (Slv.Var n) -> do
+      var' <- optimize env exp
+      return [(n, var')]
 
     Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) -> do
       vars <- findFreeVars env body
@@ -70,6 +71,10 @@ findFreeVars env exp = do
       fFreeVars   <- findFreeVars env f
       argFreeVars <- findFreeVars env arg
       return $ fFreeVars ++ argFreeVars
+
+    Slv.Solved _ _ (Slv.TupleConstructor exps) -> do
+      vars <- mapM (findFreeVars env) exps
+      return $ concat vars
 
     _ ->
       return []
@@ -118,10 +123,10 @@ instance Optimizable Slv.Exp Opt.Exp where
         body'       <- mapM (optimize env) body
         fvs         <- findFreeVars env fullExp
         closureName <- generateClosureName
-        let def = Opt.Optimized t area (Opt.ClosureDef closureName (fst <$> fvs) param body')
+        let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
         addTopLevelExp def
 
-        let vars = (\(varName, t') -> Opt.Optimized t' area (Opt.Var varName)) <$> fvs
+        let vars = snd <$> fvs
         let closure = Opt.Optimized t area (Opt.Closure closureName vars)
         return closure
 
@@ -339,8 +344,8 @@ instance Optimizable Slv.AST Opt.AST where
     resetTopLevelExps
 
     return $ Opt.AST { Opt.aimports    = imports
-                     , Opt.aexps       = exps ++ defs
-                    --  , Opt.aexps       = defs ++ exps
+                    --  , Opt.aexps       = exps ++ defs
+                     , Opt.aexps       = defs ++ exps
                      , Opt.atypedecls  = typeDecls
                      , Opt.ainterfaces = interfaces
                      , Opt.ainstances  = instances
