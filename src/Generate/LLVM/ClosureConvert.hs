@@ -301,9 +301,9 @@ instance Optimizable Slv.TypeDecl Opt.TypeDecl where
                                             }
    where
     optimizeConstructors :: Slv.Constructor -> Optimize Opt.Constructor
-    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings _)) = do
+    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings t)) = do
       typings' <- mapM (optimize env) typings
-      return $ Opt.Untyped area $ Opt.Constructor name typings'
+      return $ Opt.Untyped area $ Opt.Constructor name typings' t
 
 
 instance Optimizable Slv.Interface Opt.Interface where
