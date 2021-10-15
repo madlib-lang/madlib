@@ -298,10 +298,10 @@ patternToDoc (Source _ pat) = case pat of
   PTuple ps ->
     Pretty.group
       (
-        Pretty.pretty "<"
+        Pretty.pretty "#["
         <> Pretty.nest indentSize (Pretty.line' <> Pretty.hcat (Pretty.punctuate (Pretty.pretty "," <> Pretty.line) (patternToDoc <$> ps)))
         <> Pretty.line'
-        <> Pretty.pretty ">"
+        <> Pretty.pretty "]"
       )
 
   PRecord fields ->
@@ -516,7 +516,7 @@ typingToDoc comments typing = case typing of
 
   Source _ (TRTuple typings) ->
     let (typings', comments') = typingListToDoc comments typings
-    in  (Pretty.pretty "<" <> typings' <> Pretty.pretty ">", comments')
+    in  (Pretty.pretty "#[" <> typings' <> Pretty.pretty "]", comments')
 
   Source _ (TRRecord fields maybeExt) ->
     let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList fields)
@@ -747,12 +747,12 @@ expToDoc comments exp =
               (commentsDoc, comments'') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'
           in  ( Pretty.group
                   (
-                    Pretty.pretty "<"
+                    Pretty.pretty "#["
                     <> Pretty.nest indentSize (Pretty.line' <> items')
                     <> commentsDoc
                     <> Pretty.line'
                   )
-                <> Pretty.pretty ">"
+                <> Pretty.pretty "]"
               , comments''
               )
 

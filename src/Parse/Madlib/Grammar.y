@@ -51,6 +51,7 @@ import Text.Show.Pretty
   '{{'        { Token _ TokenLeftDoubleCurly }
   '{'         { Token _ TokenLeftCurly }
   '}'         { Token _ TokenRightCurly }
+  '#['        { Token _ TokenTupleStart }
   '['         { Token _ TokenLeftSquaredBracket }
   ']'         { Token _ TokenRightSquaredBracket }
   '$'         { Token _ TokenDollar }
@@ -74,6 +75,7 @@ import Text.Show.Pretty
   '&'         { Token _ TokenAmpersand }
   '^'         { Token _ TokenXor }
   '~'         { Token _ TokenTilde }
+  '<<'        { Token _ TokenDoubleLeftChevron }
   '>>'        { Token _ TokenDoubleRightChevron }
   '>>>'       { Token _ TokenTripleRightChevron }
   'pipe'      { Token _ TokenPipeKeyword }
@@ -88,7 +90,7 @@ import Text.Show.Pretty
   'jsx<'      { Token _ TokenJsxTagOpenStart }
   'jsx</'     { Token _ TokenJsxTagOpenEnd }
   'jsx<1'     { Token _ TokenJsxTagOpenSingle }
-  'tuple>'    { Token _ TokenTupleEnd }
+  
   '>='        { Token _ TokenRightChevronEq }
   '<='        { Token _ TokenLeftChevronEq }
   '!'         { Token _ TokenExclamationMark }
@@ -103,7 +105,7 @@ import Text.Show.Pretty
 %left '+' '-'
 %left '*' '/' '%'
 %left ','
-%nonassoc '(' ')' 'tuple>' '=>' '::' where is 'ret' '{' '}' '[' ']'
+%nonassoc '(' ')' '#[' '=>' '::' where is 'ret' '{' '}' '[' ']'
 %right '!'
 %nonassoc HIGHEST
 %left NEG
@@ -203,7 +205,6 @@ typeParams :: { [Src.Name] }
 adtConstructors :: { [Src.Constructor] }
   : adtConstructor rPipe adtConstructors      %shift { $1:$3 }
   | adtConstructor maybeRet                      %shift { [$1] }
-  -- | adtConstructor                            %shift { [$1] }
 
 adtConstructor :: { Src.Constructor }
   : name '(' adtConstructorArgs ')' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Constructor (strV $1) $3) }
@@ -266,7 +267,7 @@ typing :: { Src.Typing }
   | '(' typings ')'                                     %shift { $2 }
   | '{' recordTypingArgs maybeComma '}'                 %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.TRRecord $2 Nothing) }
   | '{' '...' name ','  recordTypingArgs maybeComma '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $7)) (Src.TRRecord $5 (Just (Src.Source (mergeAreas (tokenToArea $2) (tokenToArea $3)) (Src.TRSingle $ strV $3)))) }
-  | '<' tupleTypings 'tuple>'                           %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
+  | '#[' tupleTypings ']'                               %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }
   : name compositeTypingArgs          { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea (last $2))) (Src.TRComp (strV $1) $2) }
@@ -363,12 +364,8 @@ jsxTags :: { [Src.Exp] }
   | jsxTags rets jsxTag { $1 <> [$3] }
 
 jsxTag :: { Src.Exp }
-  : 'jsx<1' name jsxProps '/' 'tuple>'                                            %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxAutoClosedTag (strV $2) $3) }
-  | 'jsx<1' name jsxProps '/' '>'                                                 %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxAutoClosedTag (strV $2) $3) }
-  | 'jsx<' name jsxProps 'tuple>' rets jsxChildren rets 'jsx</' '/' name 'tuple>' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps 'tuple>' rets jsxChildren rets 'jsx</' '/' name '>'      %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps '>' rets jsxChildren rets 'jsx</' '/' name '>'           %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
-  | 'jsx<' name jsxProps '>' rets jsxChildren rets 'jsx</' '/' name 'tuple>'      %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
+  : 'jsx<1' name jsxProps '/' '>'                                            %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxAutoClosedTag (strV $2) $3) }
+  | 'jsx<' name jsxProps '>' rets jsxChildren rets 'jsx</' '/' name '>'      %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $11)) (Src.JsxTag (strV $2) $3 $6) }
 
 jsxProp :: { Src.JsxProp }
   : name '=' str          { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.JsxProp (strV $1) (Src.Source (tokenToArea $3) (Src.LStr $ strV $3))) }
@@ -477,7 +474,7 @@ spreadPattern :: { Src.Pattern }
 
 
 tuplePattern :: { Src.Pattern }
-  : '<' tupleItemPatterns 'tuple>' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple $2) }
+  : '#[' tupleItemPatterns ']' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple $2) }
 
 tupleItemPatterns :: { [Src.Pattern] }
   : pattern                       %shift { [$1] }
@@ -543,8 +540,8 @@ operation :: { Src.Exp }
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.BinOp $1 (Src.Source (tokenToArea $2) (Src.Var "&")) $3) }
   | exp '^' exp
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.BinOp $1 (Src.Source (tokenToArea $2) (Src.Var "^")) $3) }
-  | exp '<' '<' exp
-      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.BinOp $1 (Src.Source (tokenToArea $2) (Src.Var "<<")) $4) }
+  | exp '<<' exp
+      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.BinOp $1 (Src.Source (tokenToArea $2) (Src.Var "<<")) $3) }
   | exp '>>' exp
       { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.BinOp $1 (Src.Source (tokenToArea $2) (Src.Var ">>")) $3) }
   | exp '>>>' exp
@@ -568,7 +565,7 @@ listItems :: { [Src.ListItem] }
   | {- empty -}                 { [] }
 
 tupleConstructor :: { Src.Exp }
-  : '<' maybeRet tupleItems maybeRet 'tuple>' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TupleConstructor $3) }
+  : '#[' maybeRet tupleItems maybeRet ']' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TupleConstructor $3) }
 
 tupleItems :: { [Src.Exp] }
   : exp maybeRet ',' maybeRet exp        %shift { [$1, $5] }

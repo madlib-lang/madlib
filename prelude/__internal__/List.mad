@@ -282,11 +282,11 @@ export reduceM = (fn, initial, xs) => pipe(
     $,
     pipe(snd, Fun.complement(isEmpty)),
     where {
-      <initialM, [h, ...rest]> => <chain(fn($, h), initialM), rest>
+      #[initialM, [h, ...rest]] => #[chain(fn($, h), initialM), rest]
     }
   ),
   fst
-)(<of(initial), xs>)
+)(#[of(initial), xs])
 
 
 
@@ -418,13 +418,13 @@ export flatten = reduceL(concat, [])
  *
  * @since 0.0.5
  * @example
- * zip(["a", "b", "c"], [1, 2, 3]) // [<"a", 1>, <"b", 2>, <"c", 3>]
+ * zip(["a", "b", "c"], [1, 2, 3]) // [#["a", 1], #["b", 2], #["c", 3]]
  */
-zip :: List a -> List b -> List <a, b>
-export zip = (as, bs) => where(<as, bs>) {
-  <[a, ...aa], [b, ...bb]> => mappend([<a, b>], zip(aa, bb))
-  <[a], [b]> => [<a, b>]
-  <[], []> => []
+zip :: List a -> List b -> List #[a, b]
+export zip = (as, bs) => where(#[as, bs]) {
+  #[[a, ...aa], [b, ...bb]] => mappend([#[a, b]], zip(aa, bb))
+  #[[a], [b]] => [#[a, b]]
+  #[[], []] => []
 }
 
 /**

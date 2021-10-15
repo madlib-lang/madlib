@@ -35,9 +35,9 @@ instance Comparable String {
 }
 
 instance Comparable Boolean {
-  compare = (a, b) => where(<a, b>) {
-    <true, false> => MORE
-    <false, true> => LESS
+  compare = (a, b) => where(#[a, b]) {
+    #[true, false] => MORE
+    #[false, true] => LESS
     _ => EQUAL
   }
 }

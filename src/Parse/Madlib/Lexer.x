@@ -92,8 +92,9 @@ tokens :-
   <0> \{\{$tail*                                                                              { mapToken (\_ -> TokenLeftDoubleCurly) }
   <0, jsxOpeningTag, jsxAutoClosed, instanceHeader, jsxText> \{$tail*                         { mapToken (\_ -> TokenLeftCurly) }
   <0, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\}                                  { mapToken (\_ -> TokenRightCurly) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \#\[$tail*          { mapToken (\_ -> TokenTupleStart) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \[$tail*                            { mapToken (\_ -> TokenLeftSquaredBracket) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> $head*\]                            { mapToken (\_ -> TokenRightSquaredBracket) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\]            { mapToken (\_ -> TokenRightSquaredBracket) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \(                  { mapToken (\_ -> TokenLeftParen) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \($tail*            { mapToken (\_ -> TokenLeftParen) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\)            { mapToken (\_ -> TokenRightParen) }
@@ -107,6 +108,7 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \&                  { mapToken (\_ -> TokenAmpersand) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \^                  { mapToken (\_ -> TokenXor) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> \~                  { mapToken (\_ -> TokenTilde) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\<\<          { mapToken (\_ -> TokenDoubleLeftChevron) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\>\>          { mapToken (\_ -> TokenDoubleRightChevron) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, instanceHeader> $head*\>\>\>        { mapToken (\_ -> TokenTripleRightChevron) }
   <0> \;                                                                                      { mapToken (\_ -> TokenSemiColon) }
@@ -409,11 +411,7 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
   let next    = BLU.fromString $ ((tail . (take 200)) input)
       matchWL = match whiteList next :: BS.ByteString
       matchBL = match blackList matchWL :: Bool
-  token <-
-    if not (BS.null matchWL) && not matchBL then
-      return TokenRightChevron
-    else
-      return TokenTupleEnd
+      token = TokenRightChevron
 
   sc <- getStartCode
   if sc == jsxOpeningTag then do
@@ -548,6 +546,7 @@ data TokenClass
  | TokenLeftDoubleCurly
  | TokenLeftCurly
  | TokenRightCurly
+ | TokenTupleStart
  | TokenLeftSquaredBracket
  | TokenRightSquaredBracket
  | TokenLeftParen
@@ -573,7 +572,6 @@ data TokenClass
  | TokenReturn
  | TokenDoubleAmpersand
  | TokenDoublePipe
- | TokenTupleEnd
  | TokenRightChevron
  | TokenLeftChevron
  | TokenRightChevronEq

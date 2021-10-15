@@ -27,8 +27,8 @@ instance Functor (Wish e) {
 instance Applicative (Wish e) {
   pure = (a) => Wish((_, goodCB) => goodCB(a))
 
-  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>) {
-    <Wish(runMF), Wish(runM)> =>
+  ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {
+    #[Wish(runMF), Wish(runM)] =>
       runM(
         badCB,
         (x) => runMF(

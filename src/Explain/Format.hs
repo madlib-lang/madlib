@@ -481,13 +481,13 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
   TApp (TApp (TCon (TC "(,)" _) _) tl) tr ->
     let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, "<" <> left <> ", " <> right <> ">")
+    in  (varsRight, hkVarsRight, "#[" <> left <> ", " <> right <> "]")
 
   TApp (TApp (TApp (TCon (TC "(,,)" _) _) tl) tr) trr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
         (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
         (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
-    in  (varsRightRight, hkVarsRightRight, "<" <> left <> ", " <> right <> ", " <> rightRight <> ">")
+    in  (varsRightRight, hkVarsRightRight, "#[" <> left <> ", " <> right <> ", " <> rightRight <> "]")
 
   TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _) tl) tr) trr) trrr ->
     let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
@@ -497,7 +497,7 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
             prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
     in  ( varsRightRight
         , hkVarsRightRight
-        , "<" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> ">"
+        , "#[" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> "]"
         )
 
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
@@ -590,7 +590,7 @@ prettyPrintConstructorTyping' paren (Slv.Untyped _ typing) = case typing of
   Slv.TRArr l r -> if paren
     then "(" <> prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r <> ")"
     else prettyPrintConstructorTyping' False l <> " -> " <> prettyPrintConstructorTyping' False r
-  Slv.TRTuple ts -> "<" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> ">"
+  Slv.TRTuple ts -> "#[" <> intercalate ", " (prettyPrintConstructorTyping' False <$> ts) <> "]"
   Slv.TRRecord ts _ ->
     let mapped  = M.mapWithKey (\k v -> k <> " :: " <> prettyPrintConstructorTyping' False v) ts
         fields  = M.elems mapped

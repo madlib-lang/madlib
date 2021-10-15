@@ -76,7 +76,7 @@ export prettyPrint = (a) => #-{
   return a
 }-#
 
-export alias Row = { id :: String, cols :: List <String, String> }
+export alias Row = { id :: String, cols :: List #[String, String] }
 
 table :: List Row -> a -> a
 export table = (rows, a) => (#- {

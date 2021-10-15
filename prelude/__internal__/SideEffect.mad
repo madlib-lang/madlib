@@ -27,8 +27,8 @@ instance Functor SideEffect {
 instance Applicative SideEffect {
   pure = (a) => SideEffect((goodCB) => goodCB(a))
 
-  ap = (mf, m) => SideEffect((goodCB) => where(<mf, m>) {
-    <SideEffect(runMF), SideEffect(runM)> =>
+  ap = (mf, m) => SideEffect((goodCB) => where(#[mf, m]) {
+    #[SideEffect(runMF), SideEffect(runM)] =>
       runM(
         (x) => runMF(
           (f) => goodCB(f(x))
