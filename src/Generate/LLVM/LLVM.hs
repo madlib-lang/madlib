@@ -644,6 +644,51 @@ generateConstructors symbolTable tds =
   in  Monad.foldM generateConstructorsForADT symbolTable tds
 
 
+
+
+buildDictValues :: SymbolTable -> [String] -> [Constant.Constant]
+buildDictValues symbolTable methodNames = case methodNames of
+  (n : ns) ->
+    case Map.lookup n symbolTable of
+      Just (Symbol _ method) ->
+        let methodType = typeOf method
+            methodRef  = Constant.GlobalReference methodType (AST.mkName n)
+            next       = buildDictValues symbolTable ns
+        in  methodRef : next
+
+      Nothing ->
+        undefined
+
+  [] ->
+    []
+
+
+generateInstance :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Instance -> m SymbolTable
+generateInstance symbolTable inst = case inst of
+  Untyped _ (Instance interface preds typingStr methods) -> do
+    let instanceName = "$" <> interface <> "$" <> typingStr
+        prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
+        prefixedMethods' = (\(name, (Optimized _ _ (Assignment _ method), _)) -> (name, method)) <$> Map.toList prefixedMethods
+        prefixedMethodNames = fst <$> prefixedMethods'
+    symbolTable' <- Monad.foldM (\symbolTable (name, method) -> generateFunction symbolTable name method) symbolTable prefixedMethods'
+
+    let methods = buildDictValues symbolTable' prefixedMethodNames
+
+    _ <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methods)) $ Constant.Struct Nothing False methods
+
+    return symbolTable'
+
+  _ ->
+    undefined
+
+
+
+generateInstances :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [Instance] -> m SymbolTable
+generateInstances =
+  Monad.foldM generateInstance
+
+
+
 expsForMain :: [Exp] -> [Exp]
 expsForMain =
   List.filter (not . \e -> isTopLevelFunction e || isClosureDef e)
@@ -657,6 +702,7 @@ topLevelFunctions =
 toLLVMModule :: AST -> AST.Module
 toLLVMModule ast =
   buildModule "main" $ do
+  symbolTable <- generateInstances Map.empty (ainstances ast)
   symbolTable <- generateConstructors Map.empty (atypedecls ast)
   symbolTable' <- generateTopLevelFunctions symbolTable (topLevelFunctions $ aexps ast)
 
