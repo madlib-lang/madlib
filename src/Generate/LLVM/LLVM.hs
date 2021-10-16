@@ -59,6 +59,7 @@ data SymbolType
   | FunctionSymbol
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
+  | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show)
 
 
@@ -131,11 +132,30 @@ buildStr s = do
   Monad.foldM_ (storeChar addr) () charCodesWithIds
   return addr
   where
-    storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Integer, Integer) -> m ()
+    storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> () -> (Integer, Integer) -> m ()
     storeChar basePtr _ (charCode, index) = do
       ptr <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
       store ptr 8 (Operand.ConstantOperand (Constant.Int 8 charCode))
       return ()
+
+
+collectDictArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m ([Operand.Operand], Exp)
+collectDictArgs symbolTable exp = case exp of
+  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True False, typingStr) exp') -> do
+    let dictName = "$" <> interfaceName <> "$" <> typingStr
+    (nextArgs, nextExp) <- collectDictArgs symbolTable exp'
+    case Map.lookup dictName symbolTable of
+      Just (Symbol (DictionarySymbol _) dict) ->
+        return (dict : nextArgs, nextExp)
+
+      _ ->
+        undefined
+
+  Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
+    return ([], exp)
+
+  _ ->
+    error $ "oups\n\n" <> ppShow exp
 
 
 generateExp :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m (SymbolTable, Operand)
@@ -158,6 +178,46 @@ generateExp symbolTable exp = case exp of
       Nothing ->
         error $ "Var not found " <> n
 
+-- (Placeholder
+--   ( MethodRef "Show" "show" False , "Number" )
+--   (Optimized
+--     (TApp
+--         (TApp
+--           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+--           (TVar (TV "e4" Star)))
+--         (TCon (TC "String" Star) "prelude"))
+--     (Area (Loc 101 10 1) (Loc 105 10 5))
+--     (Var "show"))))
+  Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
+    let dictName = "$" <> interface <> "$" <> typingStr
+    case Map.lookup dictName symbolTable of
+      Just (Symbol (DictionarySymbol methodIndices) dict) -> do
+        let index = Maybe.fromMaybe 0 $ Map.lookup methodName methodIndices
+        method <- gep dict [i32ConstOp 0, i32ConstOp (fromIntegral index)]
+        method' <- load method 8
+        return (symbolTable, method')
+
+      _ ->
+        undefined
+
+-- (Placeholder
+--   ( MethodRef
+--       "Show" "show" True
+--   , "j9"
+--   )
+  Optimized _ _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
+    let dictName = "$" <> interface <> "$" <> typingStr
+    case Map.lookup dictName symbolTable of
+      -- TODO: this should be a DictionarySymbol with indices
+      Just (Symbol VariableSymbol dict) -> do
+        let index = 0
+        method <- gep dict [i32ConstOp 0, i32ConstOp (fromIntegral index)]
+        method' <- load method 8
+        return (symbolTable, method')
+
+      _ ->
+        undefined
+
   Optimized _ _ (TypedExp (Optimized _ _ (Assignment "puts" e)) _) ->
     return (symbolTable, Operand.ConstantOperand $ Constant.Null i8)
 
@@ -165,35 +225,48 @@ generateExp symbolTable exp = case exp of
     (symbolTable', exp') <- generateExp symbolTable e
     return (Map.insert name (varSymbol exp') symbolTable', exp')
 
-  Optimized _ _ (App f arg _) -> do
-    (symbolTable', f')    <- generateExp symbolTable (trace ("F: "<>ppShow f) f)
-    (symbolTable'', arg') <- generateExp symbolTable' arg
-    arg'' <- box arg'
-    case typeOf (trace (ppShow f') f') of
-      Type.PointerType Type.FunctionType{} _ -> do
-        res <- call f' [(arg'', [])]
-        return (symbolTable'', res)
+  Optimized _ _ (App f arg _) ->
+    case f of
+      -- ( ClassRef "Show" [] True False , "Boolean" )
+      Optimized _ _ (Placeholder (ClassRef interface classRefPreds True False, typingStr) _) -> do
+        (dicts, f) <- collectDictArgs symbolTable f
+        (symbolTable', f')    <- generateExp symbolTable f
+        (symbolTable'', arg') <- generateExp symbolTable' arg
+        arg'' <- box arg'
+        case typeOf (trace (ppShow f') f') of
+          Type.PointerType Type.FunctionType{} _ -> do
+            res <- call f' (((,[]) <$> dicts) ++ [(arg'', [])])
+            return (symbolTable'', res)
 
-      -- Closure call
       _ -> do
-        let t = getType f
-        closurePtr <- alloca (typeOf (trace ("T: "<>ppShow t) f')) Nothing 8
-        store closurePtr 8 f'
-        fn <- gep closurePtr [i32ConstOp 0, i32ConstOp 0]
-        fn' <- load fn 8
-        closuredArgs <- gep closurePtr [i32ConstOp 0, i32ConstOp 1]
-        closuredArgs' <- load closuredArgs 8
-        let argCount = case typeOf closuredArgs' of
-              Type.StructureType _ items ->
-                List.length items
+        (symbolTable', f')    <- generateExp symbolTable f
+        (symbolTable'', arg') <- generateExp symbolTable' arg
+        arg'' <- box arg'
+        case typeOf (trace (ppShow f') f') of
+          Type.PointerType Type.FunctionType{} _ -> do
+            res <- call f' [(arg'', [])]
+            return (symbolTable'', res)
 
-              _ ->
-                0
+          -- Closure call
+          _ -> do
+            let t = getType f
+            closurePtr <- alloca (typeOf (trace ("T: "<>ppShow t) f')) Nothing 8
+            store closurePtr 8 f'
+            fn <- gep closurePtr [i32ConstOp 0, i32ConstOp 0]
+            fn' <- load fn 8
+            closuredArgs <- gep closurePtr [i32ConstOp 0, i32ConstOp 1]
+            closuredArgs' <- load closuredArgs 8
+            let argCount = case typeOf closuredArgs' of
+                  Type.StructureType _ items ->
+                    List.length items
 
-        closuredArgs'' <- mapM (\index -> gep closuredArgs [i32ConstOp 0, i32ConstOp index] >>= (`load` 8)) $ List.take argCount [0..]
-        let closuredArgs''' = (, []) <$> closuredArgs''
-        res <- call fn' (closuredArgs''' ++ [(arg'', [])])
-        return (symbolTable'', res)
+                  _ ->
+                    0
+
+            closuredArgs'' <- mapM (\index -> gep closuredArgs [i32ConstOp 0, i32ConstOp index] >>= (`load` 8)) $ List.take argCount [0..]
+            let closuredArgs''' = (, []) <$> closuredArgs''
+            res <- call fn' (closuredArgs''' ++ [(arg'', [])])
+            return (symbolTable'', res)
 
 
   Optimized _ _ (LNum n) -> do
@@ -479,13 +552,24 @@ unbox t what = case t of
     int <- ptrtoint what Type.i64
     bitcast int (buildLLVMType t)
 
+  InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
+    int <- ptrtoint what Type.i1
+    bitcast int (buildLLVMType t)
+
   _ ->
     bitcast what (buildLLVMType t)
 
 box :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
+  -- Number
   Type.FloatingPointType _ -> do
     ptr <- alloca Type.double Nothing 8
+    store ptr 8 what
+    bitcast ptr boxType
+
+  -- Boolean
+  Type.IntegerType 1 -> do
+    ptr <- alloca Type.i1 Nothing 8
     store ptr 8 what
     bitcast ptr boxType
 
@@ -493,6 +577,7 @@ box what = case typeOf what of
   Type.PointerType (Type.IntegerType 8) _ ->
     return what
 
+  -- Any pointer type
   _ ->
     bitcast what boxType
 
@@ -507,20 +592,36 @@ updateClosureType envArgs t = case t of
     t
 
 
+collectDictParams :: Exp -> ([(String, Type.Type)], Exp)
+collectDictParams exp = case exp of
+  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) exp') ->
+    let dictName = "$" <> interfaceName <> "$" <> typingStr
+        -- TODO: generate based on interface data, mainly we need to know how many methods we have in the interface
+        dictType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType] False]
+        (nextParams, nextExp) = collectDictParams exp'
+    in  ((dictName, dictType) : nextParams, nextExp)
+
+  Optimized t _ (Abs paramName [body]) ->
+    ([], exp)
+
+  _ ->
+    undefined
+
+
+
 generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
 generateFunction symbolTable fnName abs = case abs of
   Optimized t _ (Abs paramName [body]) -> do
-    let returnType  = boxType
-    let paramType   = boxType
+    let param = (boxType, ParameterName (stringToShortByteString paramName))
         returnType' = case body of
           Optimized _ _ (Closure n args) ->
             updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
           _ ->
-            returnType
+            boxType
 
-    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
+    f <- function (AST.mkName fnName) [param] returnType' $ \[param'] -> do
       entry <- block `named` "entry"; do
-        var' <- unbox (InferredType.getParamType t) param
+        var' <- unbox (InferredType.getParamType t) param'
         (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
         exps' <- case body of
           Optimized _ _ Closure{} ->
@@ -530,8 +631,21 @@ generateFunction symbolTable fnName abs = case abs of
         ret exps'
     return $ Map.insert fnName (fnSymbol f) symbolTable
 
+  -- TODO: needs to handle closures
+  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
+    let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams abs
+        dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
+        param = (boxType, ParameterName (stringToShortByteString paramName))
+    f <- function (AST.mkName fnName) (dictParams' ++ [param]) boxType $ \params -> do
+      lastParam <- unbox (InferredType.getParamType t) (List.last params)
+      let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
+      let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
+      (_, exps) <- generateExp symbolTable' body
+      ret exps
+    return $ Map.insert fnName (fnSymbol f) symbolTable
+
   _ ->
-    undefined
+    error $ "unhandled function!\n\n" <> ppShow abs
 
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
@@ -672,11 +786,11 @@ generateInstance symbolTable inst = case inst of
         prefixedMethodNames = fst <$> prefixedMethods'
     symbolTable' <- Monad.foldM (\symbolTable (name, method) -> generateFunction symbolTable name method) symbolTable prefixedMethods'
 
-    let methods = buildDictValues symbolTable' prefixedMethodNames
+    let methodConstants = buildDictValues symbolTable' prefixedMethodNames
 
-    _ <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methods)) $ Constant.Struct Nothing False methods
+    dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
 
-    return symbolTable'
+    return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict) symbolTable'
 
   _ ->
     undefined
@@ -703,8 +817,8 @@ toLLVMModule :: AST -> AST.Module
 toLLVMModule ast =
   buildModule "main" $ do
   symbolTable <- generateInstances Map.empty (ainstances ast)
-  symbolTable <- generateConstructors Map.empty (atypedecls ast)
-  symbolTable' <- generateTopLevelFunctions symbolTable (topLevelFunctions $ aexps ast)
+  symbolTable' <- generateConstructors symbolTable (atypedecls ast)
+  symbolTable'' <- generateTopLevelFunctions symbolTable' (topLevelFunctions $ aexps ast)
 
   extern (AST.mkName "puts") [ptr i8] i32
   extern (AST.mkName "malloc") [Type.i64] (Type.ptr Type.i8)
@@ -714,7 +828,7 @@ toLLVMModule ast =
 
   function "main" [] void $ \_ -> mdo
     entry <- block `named` "entry";
-    generateExps symbolTable' (expsForMain $ aexps ast)
+    generateExps symbolTable'' (expsForMain $ aexps ast)
     retVoid
 
 
