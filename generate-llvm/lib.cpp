@@ -103,28 +103,244 @@ extern "C"
 }
 #endif
 
-typedef struct UnaryEnv
+// Partial application
+#ifdef __cplusplus
+extern "C"
 {
-  void *arg0;
-} UnaryEnv_t;
+#endif
 
-typedef struct BinaryEnv
-{
-  void *arg0;
-  void *arg1;
-} BinaryEnv_t;
-
-void *makeCall(void *fn, int arity, void *env)
-{
-  switch (arity)
+  typedef struct PAPEnv_1
   {
-  case 1:
-    return ((void *(*)(void *))fn)(((UnaryEnv_t *)env)->arg0);
-  case 2:
-    BinaryEnv_t *binaryEnv = ((BinaryEnv_t *)env);
-    return ((void *(*)(void *, void *))fn)(binaryEnv->arg0, binaryEnv->arg1);
+    void *arg0;
+  } PAPEnv_1_t;
+
+  typedef struct PAPEnv_2
+  {
+    void *arg0;
+    void *arg1;
+  } PAPEnv_2_t;
+
+  typedef struct PAPEnv_3
+  {
+    void *arg0;
+    void *arg1;
+    void *arg2;
+  } PAPEnv_3_t;
+
+  typedef struct PAPEnv_4
+  {
+    void *arg0;
+    void *arg1;
+    void *arg2;
+    void *arg3;
+  } PAPEnv_4_t;
+
+  typedef struct PAPEnv_5
+  {
+    void *arg0;
+    void *arg1;
+    void *arg2;
+    void *arg3;
+    void *arg4;
+  } PAPEnv_5_t;
+
+  typedef struct PAP
+  {
+    void *fn;
+    int arity;
+    int missingArgCount;
+    void *env;
+  } PAP_t;
+
+  void *__applyPAP__(void *pap, int argc, ...)
+  {
+    va_list argv;
+    va_start(argv, argc);
+
+    PAP_t *unwrappedPAP = (PAP_t *)pap;
+    int ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
+    int ARITY = unwrappedPAP->arity;
+
+    printf("ENV_SIZE: %d\n", ENV_SIZE);
+    printf("ARITY: %d\n", ARITY);
+    printf("argc: %d\n", argc);
+    printf("missing: %d\n", unwrappedPAP->missingArgCount);
+
+    if (argc == unwrappedPAP->missingArgCount)
+    {
+      // We need to do the call
+      switch (ARITY)
+      {
+      case 1:
+      {
+        void *(*fn)(void *) = (void *(*)(void *))unwrappedPAP->fn;
+        void *result = fn(va_arg(argv, void *));
+        va_end(argv);
+        return result;
+      }
+      case 2:
+      {
+        void *(*fn)(void *, void *) = (void *(*)(void *, void *))unwrappedPAP->fn;
+        switch (ENV_SIZE)
+        {
+        case 0:
+        {
+          void *result = fn(va_arg(argv, void *), va_arg(argv, void *));
+          va_end(argv);
+          return result;
+        }
+        case 1:
+        {
+          PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
+          void *result = fn(env->arg0, va_arg(argv, void *));
+          va_end(argv);
+          return result;
+        }
+        }
+      }
+      case 3:
+      {
+        void *(*fn)(void *, void *, void *) = (void *(*)(void *, void *, void *))unwrappedPAP->fn;
+        switch (ENV_SIZE)
+        {
+        case 0:
+        {
+          void *result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+          va_end(argv);
+          return result;
+        }
+        case 1:
+        {
+          printf("CALL");
+          PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
+          void *result = fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *));
+          va_end(argv);
+          return result;
+        }
+        case 2:
+        {
+          PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
+          void *result = fn(env->arg0, env->arg1, va_arg(argv, void *));
+          va_end(argv);
+          return result;
+        }
+        }
+      }
+      }
+    }
+    else
+    {
+      // We push the args to a new PAP
+      int NEXT_ENV_SIZE = argc + ENV_SIZE;
+      PAP_t *newPAP = (PAP_t *)GC_malloc(sizeof(PAP_t));
+      newPAP->fn = unwrappedPAP->fn;
+      newPAP->arity = unwrappedPAP->arity;
+      newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
+
+      switch (ENV_SIZE)
+      {
+      case 0:
+      {
+        switch (NEXT_ENV_SIZE)
+        {
+        case 1:
+        {
+          printf("APP_0_1");
+          PAPEnv_1_t *newEnv = (PAPEnv_1_t *)GC_malloc(sizeof(PAPEnv_1_t));
+          newEnv->arg0 = va_arg(argv, void *);
+          va_end(argv);
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        case 2:
+        {
+          PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_malloc(sizeof(PAPEnv_2_t));
+          newEnv->arg0 = va_arg(argv, void *);
+          newEnv->arg1 = va_arg(argv, void *);
+          va_end(argv);
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        case 3:
+        {
+          PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+          newEnv->arg0 = va_arg(argv, void *);
+          newEnv->arg1 = va_arg(argv, void *);
+          newEnv->arg2 = va_arg(argv, void *);
+          va_end(argv);
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        }
+      }
+      case 1:
+      {
+        PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
+        switch (NEXT_ENV_SIZE)
+        {
+        case 2:
+        {
+          PAPEnv_2_t *newEnv = (PAPEnv_2_t *)GC_malloc(sizeof(PAPEnv_2_t));
+          newEnv->arg0 = env->arg0;
+          newEnv->arg1 = va_arg(argv, void *);
+          va_end(argv);
+
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        case 3:
+        {
+          PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+          newEnv->arg0 = env->arg0;
+          newEnv->arg1 = va_arg(argv, void *);
+          newEnv->arg2 = va_arg(argv, void *);
+          va_end(argv);
+
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        }
+        break;
+      }
+      case 2:
+      {
+        PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
+        switch (NEXT_ENV_SIZE)
+        {
+        case 3:
+        {
+          PAPEnv_3_t *newEnv = (PAPEnv_3_t *)GC_malloc(sizeof(PAPEnv_3_t));
+          newEnv->arg0 = env->arg0;
+          newEnv->arg1 = env->arg1;
+          newEnv->arg2 = va_arg(argv, void *);
+          va_end(argv);
+
+          newPAP->env = newEnv;
+          return newPAP;
+        }
+        }
+      }
+      }
+    }
+    printf("OUPS");
+    return NULL;
   }
+
+  // void *__makeCall__(void *fn, int arity, void *env)
+  // {
+  //   switch (arity)
+  //   {
+  //   case 1:
+  //     return ((void *(*)(void *))fn)(((PAPEnv_1_t *)env)->arg0);
+  //   case 2:
+  //     PAPEnv_2_t *binaryEnv = ((PAPEnv_2_t *)env);
+  //     return ((void *(*)(void *, void *))fn)(binaryEnv->arg0, binaryEnv->arg1);
+  //   }
+  // }
+
+#ifdef __cplusplus
 }
+#endif
 
 // List
 
@@ -189,29 +405,20 @@ extern "C"
     return MadList_push(item, list);
   }
 
-  typedef void *(*ClosureFn)(void *, void *);
-
-  typedef struct closure
-  {
-    // void* fn(void*, void*);
-    ClosureFn fn;
-    void *env;
-  } closure_t;
-
-  MadListNode_t *MadList_map(closure_t *cls, MadListNode_t *list)
+  MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list)
   {
     MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
     MadListNode_t *head = newList;
     MadListNode_t *current = list;
 
-    newList->value = cls->fn(cls->env, current->value);
+    newList->value = __applyPAP__(pap, 1, current->value);
     newList->next = NULL;
     current = current->next;
 
     while (current != NULL)
     {
       MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-      nextItem->value = cls->fn(cls->env, current->value);
+      nextItem->value = __applyPAP__(pap, 1, current->value); //cls->fn(cls->env, current->value);
       nextItem->next = NULL;
 
       newList->next = nextItem;

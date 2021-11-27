@@ -24,7 +24,12 @@ data OptimizationState
   = OptimizationState { count :: Int, topLevel :: [Opt.Exp] }
 
 data Env
-  = Env { freeVars :: [Opt.Name], stillTopLevel :: Bool, lifted :: M.Map String Opt.Exp }
+  = Env
+  { freeVars :: [Opt.Name]
+  , stillTopLevel :: Bool
+  , lifted :: M.Map String (String, [Opt.Exp])
+  -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
+  }
 
 initialOptimizationState :: OptimizationState
 initialOptimizationState = OptimizationState { count = 0, topLevel = [] }
@@ -40,6 +45,14 @@ generateClosureName = do
   s@(OptimizationState count _) <- get
   let index = numbers !! count
   let name = "$closureFn$" ++ index
+  put s { count = count + 1 }
+  return name
+
+generateLiftedName :: String -> Optimize String
+generateLiftedName originalName = do
+  s@(OptimizationState count _) <- get
+  let index = numbers !! count
+  let name = originalName ++ "$lifted$" ++ index
   put s { count = count + 1 }
   return name
 
@@ -62,9 +75,9 @@ addGlobalFreeVar :: Opt.Name -> Env -> Env
 addGlobalFreeVar fv env =
   env { freeVars = fv : freeVars env }
 
-addLiftedLambda :: Opt.Name -> Opt.Exp -> Env -> Env
-addLiftedLambda name exp env =
-  env { lifted = M.insert name exp $ lifted env }
+addLiftedLambda :: Opt.Name -> Opt.Name -> [Opt.Exp] -> Env -> Env
+addLiftedLambda originalName liftedName args env =
+  env { lifted = M.insert originalName (liftedName, args) $ lifted env }
 
 
 findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
@@ -188,22 +201,6 @@ class Optimizable a b where
 
 
 
-optimizeInnerFunction :: Env -> Type -> Area -> Slv.Exp -> Slv.Name -> Slv.Name -> [Slv.Exp] -> [Slv.Exp] -> Optimize [Opt.Exp]
-optimizeInnerFunction env t area exp functionName param body es = do
-  freshName <- generateClosureName
-  let closureName = "$" ++ functionName ++ freshName
-  let env' = addGlobalFreeVar functionName env
-  fvs <- findFreeVars env' exp
-  let vars = snd <$> fvs
-  let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-  let env'' = addLiftedLambda functionName closure env'
-
-  body'       <- optimizeBody env'' body
-  let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-  addTopLevelExp def
-
-  optimizeBody env'' es
-
 
 -- At this point it's no longer top level and all functions encountered must be closured
 optimizeBody :: Env -> [Slv.Exp] -> Optimize [Opt.Exp]
@@ -212,11 +209,15 @@ optimizeBody env body = case body of
     return []
 
   (exp : es) -> case exp of
-    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) ->
-      optimizeInnerFunction env t area exp name param body es
+    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
+      exp' <- optimizeAbs env name abs
+      next <- optimizeBody env es
+      return $ exp' : next
 
-    Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
-      optimizeInnerFunction env t area exp name param body es
+    Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
+      exp' <- optimizeAbs env name abs
+      next <- optimizeBody env es
+      return $ exp' : next
 
     _ -> do
       exp' <- optimize env exp
@@ -237,25 +238,45 @@ collectAbsParams abs = case abs of
   b ->
     ([], [b])
 
+collectAppArgs :: Slv.Exp -> (Slv.Exp, [Slv.Exp])
+collectAppArgs app = case app of
+  Slv.Solved _ _ (Slv.App next arg _) ->
+    let (nextFn, nextArgs) = collectAppArgs next
+    in  (nextFn, nextArgs <> [arg])
+
+  b ->
+    (b, [])
+
 optimizeAbs :: Env -> String -> Slv.Exp -> Optimize Opt.Exp
-optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area (Slv.Abs (Slv.Solved _ _ param) body)) = do
+optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area _) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
-    body' <- optimizeBody env { stillTopLevel = False } body
-    let (params, uncurriedBody) = collectAbsParams abs
-    uncurriedBody' <- optimizeBody env { stillTopLevel = False } uncurriedBody
-    return $ Opt.Optimized t area $ TopLevelAbs functionName (params, uncurriedBody') (Opt.Optimized t area (Opt.Abs param body'))-- $ Opt.Optimized t area (Opt.Abs param body')
+    let (params, body') = collectAbsParams abs
+    body'' <- optimizeBody env { stillTopLevel = False } body'
+    return $ Opt.Optimized t area $ TopLevelAbs functionName params body''
   else do
-    body'       <- optimizeBody env body
-    fvs         <- findFreeVars env abs
-    closureName <- generateClosureName
+    -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
+    -- PartialApplication that applies the free vars from the current scope.
+    let (params, body') = collectAbsParams abs
+    fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
+    functionName' <- generateLiftedName functionName
+    body''        <- optimizeBody (addLiftedLambda functionName functionName' (snd <$> fvs) env) body'
 
-    let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-    addTopLevelExp def
+    let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-    let vars = snd <$> fvs
-    let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-    return closure
+    let liftedType = foldr fn t (Opt.getType . snd <$> fvs)
+    let lifted = Opt.Optimized liftedType area (Opt.TopLevelAbs functionName' paramsWithFreeVars body'')
+    addTopLevelExp lifted
+
+    let functionNode = Opt.Optimized t area (Opt.Var functionName')
+
+    if null fvs then
+      return $ Opt.Optimized t area (Opt.Assignment functionName functionNode False)
+    else
+      -- We need to carry types here
+      let fvVarNodes = snd <$> fvs
+      in  return $ Opt.Optimized t area (Opt.Assignment functionName (Opt.Optimized t area (Opt.App functionNode fvVarNodes)) False)
+
 
 
 instance Optimizable Slv.Exp Opt.Exp where
@@ -276,9 +297,10 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.JSExp js         -> return $ Opt.Optimized t area (Opt.JSExp js)
 
     Slv.App fn arg close -> do
-      fn'  <- optimize env { stillTopLevel = False } fn
-      arg' <- optimize env { stillTopLevel = False } arg
-      return $ Opt.Optimized t area (Opt.App fn' arg' close)
+      let (fn', args) = collectAppArgs fullExp
+      fn''  <- optimize env { stillTopLevel = False } fn'
+      args' <- mapM (optimize env { stillTopLevel = False }) args
+      return $ Opt.Optimized t area (Opt.App fn'' args')
 
     Slv.Access rec field -> do
       rec'   <- optimize env { stillTopLevel = False } rec
@@ -299,21 +321,23 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     -- unnamed abs, we need to generate a name here
     Slv.Abs (Slv.Solved _ _ param) body -> do
-      let isTopLevel = stillTopLevel env
-      if isTopLevel then do
-        body' <- optimizeBody env { stillTopLevel = False } body
-        return $ Opt.Optimized t area (Opt.Abs param body')
-      else do
-        body'       <- optimizeBody env body
-        fvs         <- findFreeVars env fullExp
-        closureName <- generateClosureName
+      let (params, body') = collectAbsParams fullExp
+      body''       <- optimizeBody env body'
+      fvs          <- findFreeVars env fullExp
+      functionName <- generateLiftedName "anonymous"
 
-        let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-        addTopLevelExp def
+      let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-        let vars = snd <$> fvs
-        let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-        return closure
+      let lifted = Opt.Optimized t area (Opt.TopLevelAbs functionName paramsWithFreeVars body'')
+      addTopLevelExp lifted
+
+      let functionNode = Opt.Optimized t area (Opt.Var functionName)
+
+      if null fvs then
+        return functionNode
+      else
+        let fvVarNodes = snd <$> fvs
+        in  return $ Opt.Optimized t area (Opt.App functionNode fvVarNodes)
 
     -- TODO: Add top level info so that we can generate or not the name for the global scope
     Slv.Assignment name exp -> do
@@ -328,8 +352,11 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     Slv.Var        name     -> do
       case M.lookup name (lifted env) of
-        Just closure ->
-          return closure
+        Just (liftedName, args) ->
+          if null args then
+            return $ Opt.Optimized t area (Opt.Var liftedName)
+          else
+            return $ Opt.Optimized t area (Opt.App (Opt.Optimized t area (Opt.Var liftedName)) args)
 
         Nothing ->
           return $ Opt.Optimized t area (Opt.Var name)
