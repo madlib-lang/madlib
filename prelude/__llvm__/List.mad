@@ -21,7 +21,7 @@ showWith = (with, list) => {
     [last] =>
       processed ++ with(last)
 
-    _ =>
+    [] =>
       ""
   }
 
