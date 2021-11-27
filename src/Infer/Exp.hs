@@ -372,21 +372,23 @@ pickJSXChild t1 t2 = case (t1, t2) of
 
 inferTupleConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTupleConstructor env (Can.Canonical area (Can.TupleConstructor elems)) = do
-  inferredElems <- mapM (infer env) elems
-  let elemSubsts = (\(s, _, _, _) -> s) <$> inferredElems
-  let elemTypes  = (\(_, _, t, _) -> t) <$> inferredElems
-  let elemEXPS   = (\(_, _, _, es) -> es) <$> inferredElems
-  let elemPS     = (\(_, ps, _, _) -> ps) <$> inferredElems
+  inferredElems <-
+    foldM
+      (\(s, ps, ts, es) e -> do
+          (s', ps', t', e') <- infer (apply s env) e
+          return (s `compose` s', ps ++ ps', ts ++ [t'], es ++ [e'])
+      ) (M.empty, [], [], []) elems
 
-  let s          = foldr compose M.empty elemSubsts
+  let s  = (\(s, _, _, _) -> s) inferredElems
+  let elemTypes  = (\(_, _, t, _) -> t) inferredElems
+  let elemEXPS   = (\(_, _, _, es) -> es) inferredElems
+  let ps     = (\(_, ps, _, _) -> ps) inferredElems
 
   let tupleT     = getTupleCtor (length elems)
   let t          = foldl' TApp tupleT elemTypes
 
-  let ps = concat elemPS
 
-  return (s, ps, t, Slv.Solved (ps :=> t) area (Slv.TupleConstructor elemEXPS))
-
+  return (s, ps, t, Slv.Solved (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
 
 
 -- INFER RECORD
