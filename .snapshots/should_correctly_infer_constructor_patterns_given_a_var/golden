@@ -60,10 +60,7 @@ Right
                                       (PCon
                                          "Just"
                                          [ Solved
-                                             ([] :=>
-                                                TApp
-                                                  (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                                  (TVar (TV "d3" Star)))
+                                             ([] :=> TVar (TV "d3" Star))
                                              (Area (Loc 69 4 10) (Loc 70 4 11))
                                              (PVar "x")
                                          ]))

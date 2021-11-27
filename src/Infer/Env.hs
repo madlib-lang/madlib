@@ -68,7 +68,7 @@ lookupInterface env n = case M.lookup n (envInterfaces env) of
 
 
 mergeVars :: Env -> Vars -> Env
-mergeVars env vs = env { envVars = envVars env <> vs }
+mergeVars env vs = env { envVars = vs <> envVars env }
 
 
 mergeEnv :: Env -> Env -> Env

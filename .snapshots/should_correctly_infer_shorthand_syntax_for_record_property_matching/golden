@@ -82,33 +82,13 @@ Right
                                          (fromList
                                             [ ( "x"
                                               , Solved
-                                                  ([] :=>
-                                                     TRecord
-                                                       (fromList
-                                                          [ ( "x"
-                                                            , TCon (TC "Number" Star) "prelude"
-                                                            )
-                                                          , ( "y"
-                                                            , TCon (TC "Number" Star) "prelude"
-                                                            )
-                                                          ])
-                                                       (Just (TVar (TV "f5" Star))))
+                                                  ([] :=> TCon (TC "Number" Star) "prelude")
                                                   (Area (Loc 33 3 7) (Loc 34 3 8))
                                                   (PVar "x")
                                               )
                                             , ( "y"
                                               , Solved
-                                                  ([] :=>
-                                                     TRecord
-                                                       (fromList
-                                                          [ ( "x"
-                                                            , TCon (TC "Number" Star) "prelude"
-                                                            )
-                                                          , ( "y"
-                                                            , TCon (TC "Number" Star) "prelude"
-                                                            )
-                                                          ])
-                                                       (Just (TVar (TV "f5" Star))))
+                                                  ([] :=> TCon (TC "Number" Star) "prelude")
                                                   (Area (Loc 36 3 10) (Loc 37 3 11))
                                                   (PVar "y")
                                               )

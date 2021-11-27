@@ -135,42 +135,15 @@ Right
                          (PCon
                             "Wish"
                             [ Solved
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TApp
-                                           (TCon
-                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
-                                              "path")
-                                           (TCon (TC "Number" Star) "prelude"))
-                                        (TCon (TC "Number" Star) "prelude"))
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 69 3 8) (Loc 70 3 9))
                                 PAny
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TApp
-                                           (TCon
-                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
-                                              "path")
-                                           (TCon (TC "Number" Star) "prelude"))
-                                        (TCon (TC "Number" Star) "prelude"))
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 72 3 11) (Loc 73 3 12))
                                 PAny
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TApp
-                                           (TCon
-                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
-                                              "path")
-                                           (TCon (TC "Number" Star) "prelude"))
-                                        (TCon (TC "Number" Star) "prelude"))
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 75 3 14) (Loc 76 3 15))
                                 (PVar "c")
                             ]))
