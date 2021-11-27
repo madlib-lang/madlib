@@ -8,6 +8,7 @@ module Generate.LLVM.ClosureConvert where
 
 import           Control.Monad.State
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Data.List
 import qualified AST.Solved                    as Slv
 import qualified Generate.LLVM.Optimized       as Opt
@@ -53,8 +54,8 @@ getTopLevelExps = do
   OptimizationState _ topLevel <- get
   return topLevel
 
-without :: Eq a => [a] -> [a] -> [a]
-without = foldr (filter . (/=))
+
+
 
 findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
 findFreeVars env exp = do
@@ -76,16 +77,68 @@ findFreeVars env exp = do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
+    Slv.Solved _ _ (Slv.Where whereExp iss) -> do
+      expVars <- findFreeVars env whereExp
+      issFreeVars <- findFreeVarsInBranches env iss
+      return $ expVars ++ issFreeVars
+
     _ ->
       return []
 
   let globalVars = freeVars env
+  let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs
+  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs'
+
+findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
+findFreeVarsInBranches env iss = case iss of
+  (is : next) -> do
+    branchVars <- findFreeVarsInBranch env is
+    nextVars   <- findFreeVarsInBranches env next
+    return $ branchVars ++ nextVars
+
+  [] ->
+    return []
+
+findFreeVarsInBranch :: Env -> Slv.Is -> Optimize [(String, Opt.Exp)]
+findFreeVarsInBranch env is = case is of
+  Slv.Solved _ _ (Slv.Is pat exp) -> do
+    let patternVars = getPatternVars pat
+    expVars <- findFreeVars env exp
+    return $ filter (\(varName, _) -> varName `notElem` patternVars) expVars
+
+
+getPatternVars :: Slv.Pattern -> [String]
+getPatternVars (Slv.Solved _ _ pat) = case pat of
+  Slv.PVar n ->
+    [n]
+
+  Slv.PCon _ pats ->
+    concatMap getPatternVars pats
+
+  Slv.PRecord fields ->
+    concatMap getPatternVars $ M.elems fields
+
+  Slv.PList pats ->
+    concatMap getPatternVars pats
+
+  Slv.PTuple pats ->
+    concatMap getPatternVars pats
+
+  Slv.PSpread pat' ->
+    getPatternVars pat'
+
+  _ ->
+    []
+
 
 
 class Optimizable a b where
   optimize :: Env -> a -> Optimize b
+
+
+
+
 
 instance Optimizable Slv.Exp Opt.Exp where
   optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
@@ -99,40 +152,124 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.LUnit             -> return $ Opt.Optimized t area Opt.LUnit
 
     Slv.TemplateString es -> do
-      es' <- mapM (optimize env) es
+      es' <- mapM (optimize env { stillTopLevel = False }) es
       return $ Opt.Optimized t area (Opt.TemplateString es')
 
     Slv.JSExp js         -> return $ Opt.Optimized t area (Opt.JSExp js)
 
     Slv.App fn arg close -> do
-      fn'  <- optimize env fn
-      arg' <- optimize env arg
+      fn'  <- optimize env { stillTopLevel = False } fn
+      arg' <- optimize env { stillTopLevel = False } arg
       return $ Opt.Optimized t area (Opt.App fn' arg' close)
 
     Slv.Access rec field -> do
-      rec'   <- optimize env rec
-      field' <- optimize env field
+      rec'   <- optimize env { stillTopLevel = False } rec
+      field' <- optimize env { stillTopLevel = False } field
       return $ Opt.Optimized t area (Opt.Access rec' field')
 
     Slv.Abs (Slv.Solved _ _ param) body -> do
-      let isTopLevel = stillTopLevel env
-      if isTopLevel then do
-        body' <- mapM (optimize (env { stillTopLevel = False })) body
-        return $ Opt.Optimized t area (Opt.Abs param body')
-      else do
-        body'       <- mapM (optimize env) body
-        fvs         <- findFreeVars env fullExp
-        closureName <- generateClosureName
-        let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-        addTopLevelExp def
+      processAbs env True fullExp
+      where
+        processAbs :: Env -> Bool -> Slv.Exp -> Optimize Opt.Exp
+        processAbs env isTop exp = case exp of
+          Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
+            if isTop then do
+              body' <- case body of
+                [abs@(Slv.Solved _ _ Slv.Abs{})] -> do
+                  next <- processAbs env False abs
+                  return [next]
 
-        let vars = snd <$> fvs
-        let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-        return closure
+                _ ->
+                  mapM (optimize (env { stillTopLevel = False })) body
+              fnName <- generateClosureName
+              addTopLevelExp $ Opt.Optimized t area (Opt.Assignment fnName (Opt.Optimized t area (Opt.Abs param body')))
+              let anonymousAbs = Opt.Optimized t area (Opt.AnonymousAbs fnName)
+              return anonymousAbs
 
-    Slv.Assignment name exp -> do
-      exp' <- optimize env exp
-      return $ Opt.Optimized t area (Opt.Assignment name exp')
+            else do
+              body'       <- mapM (optimize env) body
+              fvs         <- findFreeVars env fullExp
+              closureName <- generateClosureName
+              let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+              addTopLevelExp def
+
+              let vars = snd <$> fvs
+              let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+              return closure
+      -- let isTopLevel = stillTopLevel env
+      -- if isTopLevel then do
+      --   body' <- mapM (optimize (env { stillTopLevel = False })) body
+      --   return $ Opt.Optimized t area (Opt.Abs param body')
+      -- else do
+      --   body'       <- mapM (optimize env) body
+      --   fvs         <- findFreeVars env fullExp
+      --   closureName <- generateClosureName
+      --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+      --   addTopLevelExp def
+
+      --   let vars = snd <$> fvs
+      --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+      --   return closure
+    -- Slv.Abs (Slv.Solved _ _ param) body -> do
+    --   body'       <- mapM (optimize env) body
+    --   fvs         <- findFreeVars env fullExp
+    --   closureName <- generateClosureName
+    --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+    --   addTopLevelExp def
+
+    --   let vars = snd <$> fvs
+    --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+    --   return closure
+
+    Slv.Assignment name exp -> case exp of
+      Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
+        processAbs env True fullExp
+        where
+          processAbs :: Env -> Bool -> Slv.Exp -> Optimize Opt.Exp
+          processAbs env isTop exp = case exp of
+            Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
+              let isTopLevel = stillTopLevel env
+              if isTop then do
+                body' <- case body of
+                  [abs@(Slv.Solved _ _ Slv.Abs{})] -> do
+                    next <- processAbs env False abs
+                    return [next]
+
+                  _ ->
+                    mapM (optimize (env { stillTopLevel = False })) body
+                fnName <- generateClosureName
+                addTopLevelExp $ Opt.Optimized t area (Opt.Assignment fnName (Opt.Optimized t area (Opt.Abs param body')))
+                let anonymousAbs = Opt.Optimized t area (Opt.AnonymousAbs fnName)
+                return anonymousAbs
+
+              else do
+                body'       <- mapM (optimize env) body
+                fvs         <- findFreeVars env fullExp
+                closureName <- generateClosureName
+                let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+                addTopLevelExp def
+
+                let vars = snd <$> fvs
+                let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+                return closure
+        -- let isTopLevel = stillTopLevel env
+        -- if isTopLevel then do
+        --   body' <- mapM (optimize (env { stillTopLevel = False })) body
+        --   return $ Opt.Optimized t area (Opt.Abs param body')
+        -- else do
+        --   body'       <- mapM (optimize env) body
+        --   fvs         <- findFreeVars env fullExp
+        --   closureName <- generateClosureName
+        --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+        --   addTopLevelExp def
+
+        --   let vars = snd <$> fvs
+        --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+        --   return closure
+
+      _ -> do
+        exp' <- optimize env exp
+        return $ Opt.Optimized t area (Opt.Assignment name exp')
 
     Slv.Export exp -> do
       exp' <- optimize env exp
@@ -155,22 +292,22 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.TupleConstructor exps')
 
     Slv.Record fields -> do
-      fields' <- mapM (optimize env) fields
+      fields' <- mapM (optimize env { stillTopLevel = False }) fields
       return $ Opt.Optimized t area (Opt.Record fields')
 
     Slv.If cond truthy falsy -> do
-      cond'   <- optimize env cond
-      truthy' <- optimize env truthy
-      falsy'  <- optimize env falsy
+      cond'   <- optimize env { stillTopLevel = False } cond
+      truthy' <- optimize env { stillTopLevel = False } truthy
+      falsy'  <- optimize env { stillTopLevel = False } falsy
       return $ Opt.Optimized t area (Opt.If cond' truthy' falsy')
 
     Slv.Do exps -> do
-      exps' <- mapM (optimize env) exps
+      exps' <- mapM (optimize env { stillTopLevel = False }) exps
       return $ Opt.Optimized t area (Opt.Do exps')
 
     Slv.Where exp iss -> do
-      exp' <- optimize env exp
-      iss' <- mapM (optimize env) iss
+      exp' <- optimize env { stillTopLevel = False } exp
+      iss' <- mapM (optimize env { stillTopLevel = False }) iss
       return $ Opt.Optimized t area (Opt.Where exp' iss')
 
     Slv.Placeholder (placeholderRef, ts) exp -> do

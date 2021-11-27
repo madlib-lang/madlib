@@ -9,7 +9,7 @@ import qualified Data.Map                      as M
 data Optimized a
   = Optimized Ty.Type Area a
   | Untyped Area a
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 data AST =
   AST
@@ -26,13 +26,13 @@ type Import = Optimized Import_
 data Import_
   = NamedImport [Optimized Name] FilePath FilePath
   | DefaultImport (Optimized Name) FilePath FilePath
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Interface = Optimized Interface_
-data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
 type Instance = Optimized Instance_
-data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
+data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
 
 type TypeDecl = Optimized TypeDecl_
 data TypeDecl_
@@ -48,12 +48,12 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 type Constructor = Optimized Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Constraints = [Typing]
 
@@ -65,11 +65,11 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 type Is = Optimized Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
 type Pattern = Optimized Pattern_
 data Pattern_
@@ -83,29 +83,29 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Field = Optimized Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type ListItem = Optimized ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 data ClassRefPred
   = CRPNode String String Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
   | MethodRef String String Bool
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Exp = Optimized Exp_
 data Exp_ = LNum String
@@ -131,9 +131,10 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
           | Closure Name [Exp]
+          | AnonymousAbs Name
           | ClosureDef Name [Exp] Name [Exp]
           -- ^ Closure name | env ( Only Var exps ) | param | body
-          deriving(Eq, Show)
+          deriving(Eq, Show, Ord)
 
 type Name = String
 
