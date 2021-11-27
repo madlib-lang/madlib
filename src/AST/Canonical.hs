@@ -256,3 +256,26 @@ getExportNameAndScheme (Canonical _ exp) = case exp of
 
   _ ->
     (Nothing, Nothing)
+
+
+
+getFieldName :: Field -> Maybe String
+getFieldName field = case field of
+  Canonical _ (Field (name, _)) ->
+    Just name
+
+  _ ->
+    Nothing
+
+
+isSpread :: Field -> Bool
+isSpread field = case field of
+  Canonical _ (FieldSpread _) ->
+    True
+
+  _ ->
+    False
+
+hasSpread :: [Field] -> Bool
+hasSpread =
+  any isSpread

@@ -19,18 +19,11 @@ data Accessed
 
 -- List of typedecl found in the AST for which we need to derive
 -- an instance of Eq
-newtype ToDerive
+data ToDerive
   = TypeDeclToDerive TypeDecl
+  | RecordToDerive [String]
   deriving(Eq, Show, Ord)
 
--- List of types for which an instance of Eq has been defined.
--- This will mostly be useful for records since for a record such as:
--- { x :: Integer, y :: Integer } we would generate the general Eq instance:
--- instance (Eq a, Eq b) => Eq { x :: a, y :: b } { ... }
--- so that it can work for all variations of that record, but also we should
--- not redefine that instance later on if that record is present in another module.
-newtype Derived
-  = Derived Type
 
 data CanonicalState
   = CanonicalState
@@ -38,7 +31,13 @@ data CanonicalState
       , namesAccessed :: Set.Set Accessed
       , accumulatedJS :: String
       , typesToDerive :: Set.Set ToDerive
-      , derivedTypes :: Set.Set Derived
+      -- List of ToDerive for which an instance of Eq has been defined.
+      -- This will mostly be useful for records since for a record such as:
+      -- { x :: Integer, y :: Integer } we would generate the general Eq instance:
+      -- instance (Eq a, Eq b) => Eq { x :: a, y :: b } { ... }
+      -- so that it can work for all variations of that record, but also we should
+      -- not redefine that instance later on if that record is present in another module.
+      , derivedTypes :: Set.Set ToDerive
       }
 
 type CanonicalM a = forall m . (MonadError CompilationError m, MonadState CanonicalState m) => m a
@@ -106,6 +105,11 @@ pushTypeDeclToDerive td = do
   s <- get
   put s { typesToDerive = typesToDerive s <> Set.singleton (TypeDeclToDerive td) }
 
+pushRecordToDerive :: [String] -> CanonicalM ()
+pushRecordToDerive fieldNames = do
+  s <- get
+  put s { typesToDerive = typesToDerive s <> Set.singleton (RecordToDerive fieldNames) }
+
 getTypeDeclarationsToDerive :: CanonicalM (Set.Set ToDerive)
 getTypeDeclarationsToDerive =
   gets typesToDerive
@@ -114,3 +118,13 @@ resetToDerive :: CanonicalM ()
 resetToDerive = do
   s <- get
   put s { typesToDerive = Set.empty }
+
+addDerivedTypes :: Set.Set ToDerive -> CanonicalM ()
+addDerivedTypes derived = do
+  s <- get
+  put s { derivedTypes = derivedTypes s <> derived }
+
+getDerivedTypes :: CanonicalM (Set.Set ToDerive)
+getDerivedTypes =
+  gets derivedTypes
+

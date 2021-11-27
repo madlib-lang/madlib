@@ -34,6 +34,30 @@ unsigned char *__multiplyBytes__(unsigned char *a, unsigned char *b) {
   return boxed;
 }
 
+bool *__gtBytes__(unsigned char *a, unsigned char *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a > *b;
+  return boxed;
+}
+
+bool *__ltBytes__(unsigned char *a, unsigned char *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a < *b;
+  return boxed;
+}
+
+bool *__gteBytes__(unsigned char *a, unsigned char *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a >= *b;
+  return boxed;
+}
+
+bool *__lteBytes__(unsigned char *a, unsigned char *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a <= *b;
+  return boxed;
+}
+
 
 // instance Number Float
 
@@ -61,6 +85,30 @@ double *__multiplyFloats__(double *a, double *b) {
   return boxed;
 }
 
+bool *__gtFloats__(double *a, double *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a > *b;
+  return boxed;
+}
+
+bool *__ltFloats__(double *a, double *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a < *b;
+  return boxed;
+}
+
+bool *__gteFloats__(double *a, double *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a >= *b;
+  return boxed;
+}
+
+bool *__lteFloats__(double *a, double *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a <= *b;
+  return boxed;
+}
+
 
 // instance Number Integer
 
@@ -85,6 +133,30 @@ int64_t *__substractIntegers__(int64_t *a, int64_t *b) {
 int64_t *__multiplyIntegers__(int64_t *a, int64_t *b) {
   int64_t *boxed = (int64_t*) GC_malloc(sizeof(int64_t));
   *boxed = *a * *b;
+  return boxed;
+}
+
+bool *__gtIntegers__(int64_t *a, int64_t *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a > *b;
+  return boxed;
+}
+
+bool *__ltIntegers__(int64_t *a, int64_t *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a < *b;
+  return boxed;
+}
+
+bool *__gteIntegers__(int64_t *a, int64_t *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a >= *b;
+  return boxed;
+}
+
+bool *__lteIntegers__(int64_t *a, int64_t *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a <= *b;
   return boxed;
 }
 

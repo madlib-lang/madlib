@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Canonicalize.Derived where
+module Canonicalize.Derive where
 import Canonicalize.CanonicalM
 import AST.Canonical
 import Infer.Type
@@ -13,6 +13,10 @@ import Data.Maybe (mapMaybe)
 -- utility to create an empty canonical node
 ec :: a -> Canonical a
 ec = Canonical emptyArea
+
+
+chars :: [String]
+chars = (:"") <$> ['a'..]
 
 
 generateCtorParamPatternNames :: Char -> [Typing] -> [String]
@@ -55,6 +59,30 @@ buildConstructorIs ctor = case ctor of
         ec $ PCon name (ec . PVar <$> aVars),
         ec $ PCon name (ec . PVar <$> bVars)
       ]) conditions
+
+
+buildFieldConditions :: [String] -> Exp
+buildFieldConditions =
+  foldr
+    (\fieldName previousCondition ->
+      ec $ App
+        (ec $ App
+          (ec $ Var "&&")
+          (ec $ App
+            (ec $ App
+              (ec $ Var "==")
+              (ec $ Access (ec $ Var "a") (ec $ Var ('.':fieldName)))
+              False
+            )
+            (ec $ Access (ec $ Var "b") (ec $ Var ('.':fieldName)))
+            True
+          )
+          False
+        )
+        previousCondition
+        True
+    )
+    (ec $ LBool "true")
 
 
 isFnTyping :: Typing -> Bool
@@ -105,6 +133,22 @@ deriveEqInstance toDerive = case toDerive of
                   )
                 )
           in  Just inst
+
+  RecordToDerive fieldNames ->
+    let fieldNamesWithVars = zip fieldNames chars
+        fields             = TVar . (`TV` Star) <$> Map.fromList fieldNamesWithVars
+        recordType         = TRecord fields Nothing
+        instPreds          = (\var -> IsIn "Eq" [var] Nothing) <$> Map.elems fields
+    in  Just $ ec (Instance "Eq" instPreds (IsIn "Eq" [recordType] Nothing) (
+          Map.singleton
+          "=="
+          (
+            ec (Assignment "==" (ec $ Abs (ec "a") [ec $ Abs (ec "b") [
+              buildFieldConditions fieldNames
+            ]]))
+          )
+        ))
+
 
   _ ->
     undefined
