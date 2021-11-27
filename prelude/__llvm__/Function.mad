@@ -10,3 +10,80 @@
  */
 always :: a -> b -> a
 export always = (a, b) => a
+
+
+/**
+ * Wraps a predicate function and make it return the inverse. So if for a value
+ * the function would normally return true, after "complemented" it would return
+ * false and vice versa.
+ *
+ * @since 0.0.5
+ * @example
+ * complement((x) => x % 2 == 0)(2) // false
+ */
+ complement :: (a -> Boolean) -> (a -> Boolean)
+ export complement = (fn) => ((x) => (!fn(x)))
+
+
+ /**
+ * Returns exactly what you give it.
+ *
+ * @since 0.0.5
+ * @example
+ * identity(4)       // 4
+ * identity(Just(3)) // Just(3)
+ */
+identity :: a -> a
+export identity = (a) => a
+
+
+/**
+ * It models branching and allows to run different transformation based
+ * on the given predicate. The first parameter is the predicate, the second one
+ * is the function run when the predicate returns true, and the third parameter
+ * is the function run when the predicate returns false.
+ *
+ * @since 0.0.5
+ * @example
+ * ifElse(equals(4), (x) => x + 1, (x) => x * 2, 4) // 5
+ * ifElse(equals(4), (x) => x + 1, (x) => x * 2, 5) // 10
+ */
+ ifElse :: (a -> Boolean) -> (a -> b) -> (a -> b) -> a -> b
+ export ifElse = (predicate, truthy, falsy, value) => predicate(value)
+   ? truthy(value)
+   : falsy(value)
+ 
+
+ /**
+  * It runs a transformation only if the predicate returns true, otherwise it
+  * returns the initial value.
+  *
+  * @since 0.0.5
+  * @example
+  * when(equals(4), (x) => x * 2, 4) // 8
+  * when(equals(4), (x) => x * 2, 5) // 5
+  */
+ when :: (a -> Boolean) -> (a -> a) -> a -> a
+ export when = (predicate, truthy, value) =>
+   ifElse(predicate, truthy, always(value), value)
+ 
+
+ /**
+  * Returns the complement of the given Boolean value.
+  *
+  * @since 0.0.5
+  * @example
+  * not(true)  // false
+  * not(false) // true
+  */
+ not :: Boolean -> Boolean
+ export not = (b) => !b
+ 
+
+ /**
+  * Inverts the parameters of a binary function.
+  *
+  * @since 0.5.0
+  */
+ flip :: (a -> b -> c) -> (b -> a -> c)
+ export flip = (f) => ((b, a) => f(a, b))
