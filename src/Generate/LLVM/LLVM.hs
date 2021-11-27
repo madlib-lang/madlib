@@ -162,6 +162,14 @@ stringToShortByteString = ShortByteString.toShort . Char8.pack
 true :: Operand
 true = Operand.ConstantOperand (Constant.Int 1 1)
 
+initEventLoop :: Operand
+initEventLoop =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__initEventLoop__"))
+
+startEventLoop :: Operand
+startEventLoop =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__startEventLoop__"))
+
 gcMalloc :: Operand
 gcMalloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
@@ -1728,6 +1736,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+
   externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
   extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
   extern (AST.mkName "__streq__")              [stringType, stringType] Type.i1
@@ -1743,7 +1752,10 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
 
-  Monad.when isMain $ generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+  Monad.when isMain $ do
+    extern (AST.mkName "__initEventLoop__")    [] Type.void
+    extern (AST.mkName "__startEventLoop__")   [] Type.void
+    generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
 
   let moduleFunctionName =
         if isMain then
@@ -1753,8 +1765,13 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   moduleFunction <- function (AST.mkName moduleFunctionName) [] void $ \_ -> do
     entry <- block `named` "entry";
-    Monad.when isMain $ callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+    Monad.when isMain $ do
+      call initEventLoop []
+      callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
     generateExps env symbolTable'' (expsForMain $ aexps ast)
+    Monad.when isMain $ do
+      call startEventLoop []
+      return ()
     retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
@@ -1836,4 +1853,4 @@ generateTable outputFolder rootPath astTable entrypoint = do
 
   let objectFilePathsForCli = List.unwords objectFilePaths
 
-  callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " generate-llvm/lib.o gc.a -o a.out"
+  callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./c-bindings/lib/libgc.a ./c-bindings/lib/libuv.a ./c-bindings/build/lib.a -o a.out"
