@@ -109,7 +109,7 @@ initialEnv = Env
                        , ("__dict_ctor__", Forall [Star, Star] $ [] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
                        ]
                       --  Instance (Qual Pred) Vars
-  , envInterfaces = M.singleton "Number" (Interface [TV "a" Star] [] [Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty])
+  , envInterfaces = M.singleton "Number" (Interface [TV "a" Star] [] [Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tByte] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty])
   , envMethods = M.fromList
       [ ("+"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("-"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))

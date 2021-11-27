@@ -626,11 +626,11 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized qt area (Opt.Extern qt name originalName)
 
     Slv.Placeholder (placeholderRef, ts) exp -> case exp of
-      Slv.Solved _ _ (Slv.Var "count") ->
-        optimize env exp
+      -- Slv.Solved _ _ (Slv.Var "count") ->
+      --   optimize env exp
 
-      Slv.Solved _ _ (Slv.Var "initial") ->
-        optimize env exp
+      -- Slv.Solved _ _ (Slv.Var "initial") ->
+      --   optimize env exp
 
       _ -> do
         exp'            <- optimize env exp

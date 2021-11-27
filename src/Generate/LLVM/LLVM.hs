@@ -243,6 +243,9 @@ buildLLVMType t = case t of
   InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude" ->
     Type.double
 
+  InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude" ->
+    Type.i8
+
   InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude" ->
     Type.i64
 
@@ -307,6 +310,10 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr Type.double
     load ptr 8
 
+  InferredType.TCon (InferredType.TC "Byte" _) _ -> do
+    ptr <- bitcast what $ Type.ptr Type.i8
+    load ptr 8
+
   InferredType.TCon (InferredType.TC "Integer" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i64
     load ptr 8
@@ -351,6 +358,13 @@ box what = case typeOf what of
   Type.IntegerType 64 -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i64)
+    store ptr' 8 what
+    bitcast ptr' boxType
+
+  -- Byte
+  Type.IntegerType 8 -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
+    ptr' <- bitcast ptr (Type.ptr Type.i8)
     store ptr' 8 what
     bitcast ptr' boxType
 
@@ -1827,6 +1841,11 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__numberToInteger__")   [boxType] boxType
 
+  extern (AST.mkName "__addBytes__")          [boxType, boxType] (Type.ptr Type.i8)
+  extern (AST.mkName "__substractBytes__")    [boxType, boxType] (Type.ptr Type.i8)
+  extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] (Type.ptr Type.i8)
+  extern (AST.mkName "__numberToByte__")      [boxType] boxType
+
   extern (AST.mkName "__addFloats__")         [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__substractFloats__")   [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] (Type.ptr Type.double)
@@ -1836,6 +1855,11 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
       substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__substractIntegers__")
       multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__multiplyIntegers__")
       numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToInteger__")
+
+      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__addBytes__")
+      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__substractBytes__")
+      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__multiplyBytes__")
+      numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToByte__")
 
       addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__addFloats__")
       substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__substractFloats__")
@@ -1847,6 +1871,12 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__substractFloats__" (fnSymbol 2 substractFloats)
         $ Map.insert "__multiplyFloats__" (fnSymbol 2 multiplyFloats)
         $ Map.insert "__numberToFloat__" (fnSymbol 1 numberToFloat)
+
+        $ Map.insert "__addBytes__" (fnSymbol 2 addFloats)
+        $ Map.insert "__substractBytes__" (fnSymbol 2 substractFloats)
+        $ Map.insert "__multiplyBytes__" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "__numberToByte__" (fnSymbol 1 numberToFloat)
+
         $ Map.insert "__numberToInteger__" (fnSymbol 1 numberToInteger)
         $ Map.insert "__addIntegers__" (fnSymbol 2 addIntegers)
         $ Map.insert "__substractIntegers__" (fnSymbol 2 substractIntegers)
@@ -1907,6 +1937,54 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                 ]
               )
           )
+
+  let byteNumberInstance =
+        Untyped emptyArea
+          ( Instance "Number" [] "Byte"
+              (Map.fromList
+                [ ( "+"
+                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__addBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "-"
+                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__substractBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "*"
+                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__multiplyBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "__coerceNumber__"
+                  , ( Optimized coerceNumberQualType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
+                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "__numberToByte__")) [
+                          Optimized numberQualType emptyArea (Var "a")
+                        ])
+                    ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                ]
+              )
+          )
+
   let floatNumberInstance =
         Untyped emptyArea
           ( Instance "Number" [] "Float"
@@ -1953,7 +2031,7 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                 ]
               )
           )
-  symbolTable'  <- generateInstances env symbolTableWithCBindings [integerNumberInstance, floatNumberInstance]
+  symbolTable'  <- generateInstances env symbolTableWithCBindings [integerNumberInstance, byteNumberInstance, floatNumberInstance]
   return ()
 
 

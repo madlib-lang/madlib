@@ -47,6 +47,9 @@ tFloat = TCon (TC "Float" Star) "prelude"
 tInteger :: Type
 tInteger = TCon (TC "Integer" Star) "prelude"
 
+tByte :: Type
+tByte = TCon (TC "Byte" Star) "prelude"
+
 qNumber :: Qual Type
 qNumber = [IsIn "Number" [TVar (TV "a" Star)] Nothing] :=> TVar (TV "a" Star)
 
