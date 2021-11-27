@@ -105,7 +105,7 @@ generatePackageHash :: FilePath -> IO String
 generatePackageHash packageFolder = do
   packageContent <- getPackageContent packageFolder
 
-  hash packageContent
+  return $ hash packageContent
 
 runGeneratePackageHash :: FilePath -> IO ()
 runGeneratePackageHash packagePath = do

@@ -42,6 +42,7 @@ import qualified Generate.Json                 as GenerateJson
 import           Generate.JSInternals
 import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
+import qualified Generate.LLVM.Rename          as Rename
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
@@ -171,8 +172,10 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
 
                   if target == TLLVM then do
-                    let closureConverted = ClosureConvert.optimizeTable table
+                    let renamedTable     = Rename.renameTable table
+                    let closureConverted = ClosureConvert.optimizeTable renamedTable
                     putStrLn (ppShow closureConverted)
+                    putStrLn (ppShow renamedTable)
                     case M.lookup canonicalEntrypoint closureConverted of
                       Just ast ->
                         LLVM.generate ast

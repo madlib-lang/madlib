@@ -91,7 +91,7 @@ performBuild rebuild eitherVersionLock parsedVersion hashedVersion projectHash a
   case (eitherVersionLock, parsedVersion) of
     -- if there is no version.lock file we generate the initial one with version 0.0.1
     (Left VersionLock.FileNotFound, _) -> do
-      initialVersionHash <- hash $ BLChar8.pack "0.0.1"
+      let initialVersionHash = hash $ BLChar8.pack "0.0.1"
       let api = buildAPI ast table
           versionLock = VersionLock.VersionLock
             { VersionLock.versionHash = initialVersionHash
@@ -110,7 +110,7 @@ performBuild rebuild eitherVersionLock parsedVersion hashedVersion projectHash a
       else do
         let currentAPI = buildAPI ast table
         let nextVersion = bumpVersion rebuild (computeAPIChange api currentAPI) version
-        nextVersionHash <- hash $ BLChar8.pack $ showVersion nextVersion
+        let nextVersionHash = hash $ BLChar8.pack $ showVersion nextVersion
 
         let nextVersionLock = VersionLock.VersionLock
               { VersionLock.versionHash = nextVersionHash
@@ -133,7 +133,7 @@ runBuildPackage rebuild = do
       currentDirectoryPath    <- getCurrentDirectory
       versionLock             <- VersionLock.loadCurrentVersionLock
       projectHash             <- generatePackageHash currentDirectoryPath
-      hashedVersion           <- hash $ BLChar8.pack version
+      let hashedVersion = hash $ BLChar8.pack version
       (typeChecked, warnings) <- typeCheckMain canonicalMain
 
       let parsedVersion = MadlibVersion.parse version
