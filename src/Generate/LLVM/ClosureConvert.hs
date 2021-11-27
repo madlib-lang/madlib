@@ -16,13 +16,14 @@ import           Infer.Type
 import Data.Maybe
 import Debug.Trace
 import Text.Show.Pretty
+import Explain.Location
 
 
 data OptimizationState
   = OptimizationState { count :: Int, topLevel :: [Opt.Exp] }
 
 data Env
-  = Env { freeVars :: [Opt.Name], stillTopLevel :: Bool }
+  = Env { freeVars :: [Opt.Name], stillTopLevel :: Bool, lifted :: M.Map String Opt.Exp }
 
 initialOptimizationState :: OptimizationState
 initialOptimizationState = OptimizationState { count = 0, topLevel = [] }
@@ -60,7 +61,9 @@ addGlobalFreeVar :: Opt.Name -> Env -> Env
 addGlobalFreeVar fv env =
   env { freeVars = fv : freeVars env }
 
-
+addLiftedLambda :: Opt.Name -> Opt.Exp -> Env -> Env
+addLiftedLambda name exp env =
+  env { lifted = M.insert name exp $ lifted env }
 
 
 findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
@@ -125,13 +128,16 @@ findFreeVars env exp = do
     Slv.Solved _ _ (Slv.Assignment n exp) -> do
       findFreeVars env exp
 
+    Slv.Solved _ _ (Slv.TypedExp exp _ _) -> do
+      findFreeVars env exp
+
     _ ->
       return []
 
   let globalVars = freeVars env
   let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` ("inner":globalVars)) fvs'
+  return $ filter (\(varName, _) -> varName `notElem` ("helper" : globalVars)) fvs'
 
 findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
 findFreeVarsInBranches env iss = case iss of
@@ -181,6 +187,39 @@ class Optimizable a b where
 
 
 
+optimizeBodyFunction :: Env -> Type -> Area -> Slv.Exp -> Slv.Name -> Slv.Name -> [Slv.Exp] -> [Slv.Exp] -> Optimize [Opt.Exp]
+optimizeBodyFunction env t area exp name param body es = do
+  freshName <- generateClosureName
+  let closureName = "$" ++ name ++ freshName
+  fvs <- findFreeVars env exp
+  let vars = snd <$> fvs
+  let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+  let env' = addLiftedLambda name closure env
+
+  body'       <- optimizeBody env' body
+  let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+  addTopLevelExp def
+
+  optimizeBody env' es
+
+
+-- At this point it's no longer top level and all functions encountered must be closured
+optimizeBody :: Env -> [Slv.Exp] -> Optimize [Opt.Exp]
+optimizeBody env body = case body of
+  [] ->
+    return []
+
+  (exp : es) -> case exp of
+    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) ->
+      optimizeBodyFunction env t area exp name param body es
+
+    Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
+      optimizeBodyFunction env t area exp name param body es
+
+    _ -> do
+      exp' <- optimize env exp
+      next <- optimizeBody env es
+      return $ exp' : next
 
 
 instance Optimizable Slv.Exp Opt.Exp where
@@ -213,12 +252,13 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.Abs (Slv.Solved _ _ param) body -> do
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
-        body' <- mapM (optimize (env { stillTopLevel = False })) body
+        body' <- optimizeBody env { stillTopLevel = False } body
         return $ Opt.Optimized t area (Opt.Abs param body')
       else do
-        body'       <- mapM (optimize env) body
+        body'       <- optimizeBody env body
         fvs         <- findFreeVars env fullExp
         closureName <- generateClosureName
+
         let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
         addTopLevelExp def
 
@@ -226,9 +266,10 @@ instance Optimizable Slv.Exp Opt.Exp where
         let closure = Opt.Optimized t area (Opt.Closure closureName vars)
         return closure
 
+    -- TODO: Add top level info so that we can generate or not the name for the global scope
     Slv.Assignment name exp -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized t area (Opt.Assignment name exp')
+      return $ Opt.Optimized t area (Opt.Assignment name exp' (stillTopLevel env))
 
     Slv.Export exp -> do
       exp' <- optimize env exp
@@ -236,7 +277,13 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     Slv.NameExport name     -> return $ Opt.Optimized t area (Opt.NameExport name)
 
-    Slv.Var        name     -> return $ Opt.Optimized t area (Opt.Var name)
+    Slv.Var        name     -> do
+      case M.lookup name (lifted env) of
+        Just closure ->
+          return closure
+
+        Nothing ->
+          return $ Opt.Optimized t area (Opt.Var name)
 
     Slv.TypedExp exp _ scheme -> do
       exp' <- optimize env exp
@@ -261,7 +308,7 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.If cond' truthy' falsy')
 
     Slv.Do exps -> do
-      exps' <- mapM (optimize env { stillTopLevel = False }) exps
+      exps' <- optimizeBody env { stillTopLevel = False } exps --mapM (optimize env { stillTopLevel = False }) exps
       return $ Opt.Optimized t area (Opt.Do exps')
 
     Slv.Where exp iss -> do
@@ -293,7 +340,6 @@ instance Optimizable Slv.Exp Opt.Exp where
         ps'  <- mapM optimizeClassRefPred ps
         let tsStr = buildTypeStrForPlaceholder ts
         return $ Opt.CRPNode cls tsStr var ps'
-
 
 
 instance Optimizable Slv.Typing Opt.Typing where
@@ -486,6 +532,6 @@ getTypeHeadName t = case t of
 -- an env for optimization to keep track of what dictionaries have been removed.
 optimizeTable :: Slv.Table -> Opt.Table
 optimizeTable table =
-  let env       = Env { freeVars = [], stillTopLevel = True }
+  let env       = Env { freeVars = [], stillTopLevel = True, lifted = M.empty }
       optimized = mapM (optimize env) table
   in  evalState optimized initialOptimizationState

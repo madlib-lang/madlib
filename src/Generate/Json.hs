@@ -446,6 +446,9 @@ compileExpFields depth exp = case exp of
 
   Slv.JSExp _ -> indent depth <> "\"nodeType\": \"JSExpression\",\n" <> indent depth <> "\"js\": \"-\"\n"
 
+  Slv.Extern{} ->
+    indent depth <> "\"nodeType\": \"Extern\"\n"
+
 compileIs :: Int -> Slv.Is -> String
 compileIs depth (Slv.Solved qt@(_ :=> t) area (Slv.Is pat exp)) =
   "{\n"
