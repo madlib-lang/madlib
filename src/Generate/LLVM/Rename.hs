@@ -348,12 +348,47 @@ renameImports env imports = case imports of
     ([], env)
 
 
+populateInitialEnv :: [Exp] -> Env -> Env
+populateInitialEnv exps env = case exps of
+  (exp : next) -> case exp of
+    Solved _ _ (Assignment name _) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
+    Solved _ _ (TypedExp (Solved _ _ (Assignment name _)) _ _) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
+    Solved _ _ (Export (Solved _ _ (Assignment name _))) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
+    Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ _) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
+    Solved _ _ (Extern qt name _) ->
+      let hashedName = hashName env name
+          env'       = extendScope name hashedName env
+      in  populateInitialEnv next env'
+
+    _ ->
+      populateInitialEnv next env
+
+  [] ->
+    env
+
+
 
 renameAST :: Env -> AST -> (AST, Env)
 renameAST env ast =
   let moduleHash                 = hashModulePath ast
-      env'                       = env { currentModuleHash = moduleHash }
-      (renamedImports, env'')    = renameImports env' $ aimports ast
+      env'                       = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
+      (renamedImports, env'')    = renameImports (trace ("ENV': " <> ppShow env') env') $ aimports ast
       (renamedTypeDecls, env''') = renameTypeDecls env'' $ atypedecls ast
       (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
       renamedInstances           = renameInstance env'''' <$> ainstances ast

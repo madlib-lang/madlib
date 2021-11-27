@@ -119,15 +119,21 @@ Right
                                 (PCon
                                    "P.Point"
                                    [ Solved
-                                       ([] :=> TCon (TC "Point" Star) "./ModuleA")
+                                       ([] :=>
+                                          TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                               (TVar (TV "f5" Star)))
+                                            (TVar (TV "g6" Star)))
                                        (Area (Loc 68 4 11) (Loc 75 4 18))
                                        (PTuple
                                           [ Solved
-                                              ([] :=> TCon (TC "Point" Star) "./ModuleA")
+                                              ([] :=> TCon (TC "Number" Star) "prelude")
                                               (Area (Loc 70 4 13) (Loc 71 4 14))
                                               (PVar "a")
                                           , Solved
-                                              ([] :=> TCon (TC "Point" Star) "./ModuleA")
+                                              ([] :=> TCon (TC "Number" Star) "prelude")
                                               (Area (Loc 73 4 16) (Loc 74 4 17))
                                               (PVar "b")
                                           ])

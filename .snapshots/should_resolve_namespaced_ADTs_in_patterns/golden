@@ -148,13 +148,7 @@ Right
                                                          (PCon
                                                             "M.Just"
                                                             [ Solved
-                                                                ([] :=>
-                                                                   TApp
-                                                                     (TCon
-                                                                        (TC
-                                                                           "Maybe" (Kfun Star Star))
-                                                                        "./ModuleA")
-                                                                     (TVar (TV "e4" Star)))
+                                                                ([] :=> TVar (TV "e4" Star))
                                                                 (Area (Loc 102 5 12) (Loc 103 5 13))
                                                                 (PVar "a")
                                                             ]))

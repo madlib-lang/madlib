@@ -579,6 +579,7 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
   s                    <- contextualUnify env exp t' t
   (s', ps', t'', e')   <- infer (apply s $ mergeVars env vars) exp
+  -- s''                  <- contextualUnify env exp tv  t''
   s''                  <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
@@ -587,25 +588,33 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
     ( subst
     , ps ++ ps'
     , Slv.Solved ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
-      $ Slv.Is (updatePatternTypes subst pat') (updateQualType e' (ps' :=> apply subst t''))
+      $ Slv.Is (updatePatternTypes subst vars pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
-updatePatternTypes :: Substitution -> Slv.Pattern -> Slv.Pattern
-updatePatternTypes s pat = case pat of
+updatePatternTypes :: Substitution -> Vars -> Slv.Pattern -> Slv.Pattern
+updatePatternTypes s vars pat = case pat of
   Slv.Solved t area (Slv.PCon n pats) ->
-    Slv.Solved (apply s t) area (Slv.PCon n (updatePatternTypes s <$> pats))
+    Slv.Solved (apply s t) area (Slv.PCon n (updatePatternTypes s vars <$> pats))
 
   Slv.Solved t area (Slv.PRecord fields) ->
-    Slv.Solved (apply s t) area (Slv.PRecord (updatePatternTypes s <$> fields))
+    Slv.Solved (apply s t) area (Slv.PRecord (updatePatternTypes s vars <$> fields))
 
   Slv.Solved t area (Slv.PList items) ->
-    Slv.Solved (apply s t) area (Slv.PList (updatePatternTypes s <$> items))
+    Slv.Solved (apply s t) area (Slv.PList (updatePatternTypes s vars <$> items))
 
   Slv.Solved t area (Slv.PTuple items) ->
-    Slv.Solved (apply s t) area (Slv.PTuple (updatePatternTypes s <$> items))
+    Slv.Solved (apply s t) area (Slv.PTuple (updatePatternTypes s vars <$> items))
 
   Slv.Solved t area (Slv.PSpread pat) ->
-    Slv.Solved (apply s t) area (Slv.PSpread (updatePatternTypes s pat))
+    Slv.Solved (apply s t) area (Slv.PSpread (updatePatternTypes s vars pat))
+
+  Slv.Solved t area (Slv.PVar n) ->
+    case M.lookup n vars of
+      Just (Forall _ qt) ->
+        Slv.Solved (apply s qt) area (Slv.PVar n)
+
+      Nothing ->
+        Slv.Solved (apply s t) area (Slv.PVar n)
 
   Slv.Solved t area p ->
     Slv.Solved (apply s t) area p

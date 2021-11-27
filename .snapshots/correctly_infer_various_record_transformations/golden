@@ -92,7 +92,10 @@ Right
                          (Area (Loc 18 1 19) (Loc 65 5 2))
                          (ListConstructor
                             [ Solved
-                                ([] :=> TVar (TV "m12" Star))
+                                ([] :=>
+                                   TApp
+                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                     (TVar (TV "m12" Star)))
                                 (Area (Loc 22 2 3) (Loc 33 2 14))
                                 (ListSpread
                                    (Solved
@@ -166,7 +169,10 @@ Right
                                             (Area (Loc 32 2 13) (Loc 33 2 14))
                                             (Var ".x")))))
                             , Solved
-                                ([] :=> TVar (TV "q16" Star))
+                                ([] :=>
+                                   TApp
+                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                     (TVar (TV "q16" Star)))
                                 (Area (Loc 37 3 3) (Loc 48 3 14))
                                 (ListSpread
                                    (Solved
@@ -240,7 +246,10 @@ Right
                                             (Area (Loc 47 3 13) (Loc 48 3 14))
                                             (Var ".z")))))
                             , Solved
-                                ([] :=> TVar (TV "u20" Star))
+                                ([] :=>
+                                   TApp
+                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                     (TVar (TV "u20" Star)))
                                 (Area (Loc 52 4 3) (Loc 63 4 14))
                                 (ListSpread
                                    (Solved

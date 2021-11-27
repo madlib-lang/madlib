@@ -64,10 +64,7 @@ Right
                          (PCon
                             "Just"
                             [ Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 75 4 8) (Loc 76 4 9))
                                 (PVar "a")
                             ]))
