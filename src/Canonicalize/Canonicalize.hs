@@ -189,7 +189,6 @@ instance Canonicalizable Src.Exp Can.Exp where
           let app = Can.Canonical (mergeAreas (getArea prev) (Can.getArea e')) (Can.App e' prev True)
           buildApplication app es
 
-    -- TODO: generate imports
     Src.Dictionary items -> do
       pushNameAccess "__dict_ctor__"
       items' <- mapM (canonicalize env target) items
@@ -197,6 +196,10 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.App
         (Can.Canonical area (Can.Var "__dict_ctor__"))
         (Can.Canonical area (Can.ListConstructor items')) True)
+
+    Src.Extern typing name originalName -> do
+      scheme  <- typingToScheme env typing
+      return $ Can.Canonical area (Can.Extern scheme name originalName)
 
 
 buildAbs :: E.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp

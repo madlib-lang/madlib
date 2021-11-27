@@ -136,6 +136,7 @@ data Exp_ = LNum String
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]
           | JSExp String
+          | Extern Ty.Scheme Name Name
           deriving(Eq, Show)
 
 type Name = String

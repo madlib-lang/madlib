@@ -148,6 +148,7 @@ data Exp_
   | JsxTag Name [JsxProp] [JsxChild]
   | JsxAutoClosedTag Name [JsxProp]
   | Parenthesized Area Exp Area
+  | Extern Typing Name Name
   deriving(Eq, Show)
 
 

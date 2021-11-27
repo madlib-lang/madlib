@@ -131,6 +131,7 @@ data Exp_ = LNum String
           | Do [Exp]
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
+          | Extern (Ty.Qual Ty.Type) Name Name
           deriving(Eq, Show, Ord)
 
 type Name = String
@@ -244,6 +245,9 @@ getExpName (Solved _ _ exp) = case exp of
     return name
 
   Export (Solved _ _ (Assignment name _)) ->
+    return name
+
+  Extern _ name _ ->
     return name
 
   _                 ->

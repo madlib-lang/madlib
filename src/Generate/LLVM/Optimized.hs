@@ -130,6 +130,7 @@ data Exp_ = LNum String
           | Do [Exp]
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
+          | Extern (Ty.Qual Ty.Type) Name Name
           | Closure Name [Exp]
           | ClosureDef Name [Exp] Name [Exp]
           -- ^ Closure name | env ( Only Var exps ) | param | body
@@ -176,6 +177,14 @@ isTopLevelFunction exp = case exp of
 isClosureDef :: Exp -> Bool
 isClosureDef exp = case exp of
   Optimized _ _ ClosureDef{} ->
+    True
+
+  _ ->
+    False
+
+isExtern :: Exp -> Bool
+isExtern exp = case exp of
+  Optimized _ _ Extern{} ->
     True
 
   _ ->

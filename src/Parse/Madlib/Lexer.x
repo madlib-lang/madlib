@@ -67,6 +67,7 @@ tokens :-
   <0> from                                                                                    { mapToken (\_ -> TokenFrom) }
   <0> type                                                                                    { mapToken (\_ -> TokenType) }
   <0> alias                                                                                   { mapToken (\_ -> TokenAlias) }
+  <0> extern                                                                                  { mapToken (\_ -> TokenExtern) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                  { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                  { mapToken (\_ -> TokenIf) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                                { mapToken (\_ -> TokenElse) }
@@ -568,6 +569,7 @@ data TokenClass
  | TokenSpreadOperator
  | TokenType
  | TokenAlias
+ | TokenExtern
  | TokenSemiColon
  | TokenReturn
  | TokenDoubleAmpersand
