@@ -1,0 +1,15 @@
+import { yellow } from "./PrettyShow"
+
+
+showFloat :: Float -> String
+showFloat = extern "__floatToStr__"
+
+
+instance Show Float {
+  show = showFloat
+}
+
+
+instance PrettyShow Float {
+  ppShow = pipe(show, yellow)
+}

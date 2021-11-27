@@ -356,6 +356,9 @@ instance Compilable Exp where
           let safeName = generateSafeName name
           in  if safeName == "!" || not coverage then safeName else hpWrapLine coverage astPath l safeName
 
+        -- Placeholder (ClassRef "Number" _ call var, "Integer") exp' ->
+        --   compile env config exp'
+
         Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
 
          where

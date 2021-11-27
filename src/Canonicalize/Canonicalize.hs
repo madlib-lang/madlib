@@ -32,6 +32,8 @@ instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target (Src.Source area e) = case e of
     Src.LNum  x           -> return $ Can.Canonical area (Can.LNum x)
 
+    Src.LFloat x          -> return $ Can.Canonical area (Can.LFloat x)
+
     Src.LStr  x           -> return $ Can.Canonical area (Can.LStr x)
 
     Src.LBool x           -> return $ Can.Canonical area (Can.LBool x)

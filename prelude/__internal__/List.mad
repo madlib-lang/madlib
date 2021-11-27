@@ -106,7 +106,7 @@ export intercalate = (a, xs) => where(xs) {
 }
 
 
-_intercalateWithIndex :: Number -> (Number -> a) -> List a -> List a
+_intercalateWithIndex :: Integer -> (Integer -> a) -> List a -> List a
 _intercalateWithIndex = (i, f, xs) => where(xs) {
   [] => []
   [one] => [one]
@@ -114,7 +114,7 @@ _intercalateWithIndex = (i, f, xs) => where(xs) {
   [one, ...rest] => [one, f(i), ..._intercalateWithIndex(i + 1, f, rest)]
 }
 
-intercalateWithIndex :: (Number -> a) -> List a -> List a
+intercalateWithIndex :: (Integer -> a) -> List a -> List a
 export intercalateWithIndex = _intercalateWithIndex(0)
 
 /**
@@ -147,7 +147,7 @@ export join = (a, xs) => pipe(
  * @example
  * mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]) // ["a0", "b1", "c2"]
  */
-mapWithIndex :: (a -> Number -> b) -> List a -> List b
+mapWithIndex :: (a -> Integer -> b) -> List a -> List b
 export mapWithIndex = (f, xs) => (#- xs.map((a, b) => f(a)(b)) -#)
 
 
@@ -224,7 +224,7 @@ export tail = (xs) => (#- xs.slice(1) -#)
  * nth(1, [1, 2, 3]) // Just(2)
  * nth(3, [1, 2, 3]) // Nothing
  */
-nth :: Number -> List a -> Maybe a
+nth :: Integer -> List a -> Maybe a
 export nth = (i, xs) => (#- {
   const x = xs[i];
   return x === undefined
@@ -341,7 +341,7 @@ export find = (predicate, xs) => (#- {
  * @example
  * len([1, 2, 3]) // 3
  */
-len :: List a -> Number
+len :: List a -> Integer
 export len = (xs) => (#- xs.length -#)
 
 
@@ -349,7 +349,7 @@ export len = (xs) => (#- xs.length -#)
  * Cut a contiguous segment from a List, from start index to end index.
  * @since 0.0.5
  */
-slice :: Number -> Number -> List a -> List a
+slice :: Integer -> Integer -> List a -> List a
 export slice = (start, end, xs) => (#- xs.slice(start, end) -#)
 
 
@@ -436,10 +436,10 @@ includes :: x -> List x -> Boolean
 export includes = (x, xs) => (#- xs.includes(x) -#)
 
 
-drop :: Number -> List a -> List a
+drop :: Integer -> List a -> List a
 export drop = (amount, xs) => slice(amount, len(xs), xs)
 
-dropLast :: Number -> List a -> List a
+dropLast :: Integer -> List a -> List a
 export dropLast = (amount, xs) => slice(0, len(xs) - amount, xs)
 
 dropWhile :: (a -> Boolean) -> List a -> List a

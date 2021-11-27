@@ -414,13 +414,34 @@ placeholderArgCheck phIndex args = case args of
 instance Optimizable Slv.Exp Opt.Exp where
   optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
   optimize env fullExp@(Slv.Solved qt@(_ :=> t) area e) = case e of
-    Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.LNum x)
+    Slv.LNum x -> case t of
+      TVar _ ->
+        return $ Opt.Optimized t area (
+          Opt.App
+            ( Opt.Optimized t area (
+                Opt.Placeholder
+                  (Opt.MethodRef "Number" "__coerceNumber__" True, buildTypeStrForPlaceholder [t])
+                  (Opt.Optimized t area (Opt.Var "__coerceNumber__"))
+              )
+            )
+            [Opt.Optimized t area (Opt.LNum x)]
+        )
 
-    Slv.LStr  x           -> return $ Opt.Optimized t area (Opt.LStr x)
+            -- (Opt.Optimized t area (Opt.LNum x))
+      _ ->
+        return $ Opt.Optimized t area (Opt.LNum x)
 
-    Slv.LBool x           -> return $ Opt.Optimized t area (Opt.LBool x)
+    Slv.LFloat x ->
+      return $ Opt.Optimized t area (Opt.LFloat x)
 
-    Slv.LUnit             -> return $ Opt.Optimized t area Opt.LUnit
+    Slv.LStr x ->
+      return $ Opt.Optimized t area (Opt.LStr x)
+
+    Slv.LBool x ->
+      return $ Opt.Optimized t area (Opt.LBool x)
+
+    Slv.LUnit ->
+      return $ Opt.Optimized t area Opt.LUnit
 
     Slv.TemplateString es -> do
       es' <- mapM (optimize env { stillTopLevel = False }) es

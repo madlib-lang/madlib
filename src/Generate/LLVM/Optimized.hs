@@ -109,6 +109,7 @@ data PlaceholderRef
 
 type Exp = Optimized Exp_
 data Exp_ = LNum String
+          | LFloat String
           | LStr String
           | LBool String
           | LUnit

@@ -39,7 +39,16 @@ tVar :: String -> Type
 tVar v = TVar (TV v Star)
 
 tNumber :: Type
-tNumber = TCon (TC "Number" Star) "prelude"
+tNumber = TVar (TV "a" Star)
+
+tFloat :: Type
+tFloat = TCon (TC "Float" Star) "prelude"
+
+tInteger :: Type
+tInteger = TCon (TC "Integer" Star) "prelude"
+
+qNumber :: Qual Type
+qNumber = [IsIn "Number" [TVar (TV "a" Star)] Nothing] :=> TVar (TV "a" Star)
 
 tBool :: Type
 tBool = TCon (TC "Boolean" Star) "prelude"

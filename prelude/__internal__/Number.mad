@@ -3,15 +3,24 @@ import {} from "Read"
 import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
-instance Show Number {
+instance Show Float {
   show = (x) => #- x.toString() -#
 }
 
-instance Read Number {
+instance Show Integer {
+  show = (x) => #- x.toString() -#
+}
+
+instance Read Float {
   read = fromString
 }
 
-fromString :: String -> Maybe Number
+instance Read Integer {
+  read = fromString
+}
+
+
+fromString :: Number a => String -> Maybe a
 export fromString = (str) => (#- {
   const n = parseFloat(str)
   return isNaN(n) ? Nothing : Just(n)
@@ -24,13 +33,13 @@ export fromString = (str) => (#- {
  * @example
  * formatDecimal(3.14159, 2) // "3.14"
  */
-formatDecimal :: Number -> Number -> String
+formatDecimal :: Float -> Integer -> String
 export formatDecimal = (a, x) => #-{
   const n = x.toFixed(a)
   return isNaN(n) ? "0" : n
 }-#
 
-range :: Number -> Number -> List Number
+range :: Integer -> Integer -> List Integer
 export range = (a, b) => #-{
   const out = []
   let x = a

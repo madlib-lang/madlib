@@ -1,4 +1,4 @@
-export alias ComparisonResult = Number
+export alias ComparisonResult = Integer
 
 export MORE = 1
 export LESS = -1
@@ -26,7 +26,11 @@ interface Comparable a {
   compare :: a -> a -> ComparisonResult
 }
 
-instance Comparable Number {
+instance Comparable Integer {
+  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
+}
+
+instance Comparable Float {
   compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
 }
 

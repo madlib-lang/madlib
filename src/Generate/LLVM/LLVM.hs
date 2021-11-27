@@ -65,6 +65,8 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 import qualified Utils.Hash                    as Hash
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 import qualified Data.Tuple as Tuple
+import Explain.Location
+import System.FilePath (takeDirectory, joinPath)
 
 
 
@@ -238,8 +240,11 @@ storeItem basePtr _ (item, index) = do
 -- Mostly used for boxing/unboxing and therefore does just one Level
 buildLLVMType :: InferredType.Type -> Type.Type
 buildLLVMType t = case t of
-  InferredType.TCon (InferredType.TC "Number" InferredType.Star) "prelude" ->
+  InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude" ->
     Type.double
+
+  InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude" ->
+    Type.i64
 
   InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" ->
     stringType
@@ -298,8 +303,12 @@ recordType =
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
 unbox t what = case t of
-  InferredType.TCon (InferredType.TC "Number" _) _ -> do
+  InferredType.TCon (InferredType.TC "Float" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.double
+    load ptr 8
+
+  InferredType.TCon (InferredType.TC "Integer" _) _ -> do
+    ptr <- bitcast what $ Type.ptr Type.i64
     load ptr 8
 
   InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
@@ -331,10 +340,17 @@ unbox t what = case t of
 
 box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
-  -- Number
+  -- Float 
   Type.FloatingPointType _ -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
     ptr' <- bitcast ptr (Type.ptr Type.double)
+    store ptr' 8 what
+    bitcast ptr' boxType
+
+  -- Integer
+  Type.IntegerType 64 -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
+    ptr' <- bitcast ptr (Type.ptr Type.i64)
     store ptr' 8 what
     bitcast ptr' boxType
 
@@ -851,6 +867,9 @@ generateExp env symbolTable exp = case exp of
       return (symbolTable, unboxed)
 
   Optimized _ _ (LNum n) -> do
+    return (symbolTable, i64ConstOp (read n))
+
+  Optimized _ _ (LFloat n) -> do
     return (symbolTable, C.double (read n))
 
   Optimized _ _ (LBool b) -> do
@@ -1724,9 +1743,150 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
     return ()
 
 
+-- buildFloatCoercionFunction :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => SymbolTable -> m SymbolTable
+-- buildFloatCoercionFunction symbolTable = do
+--   toFloat <- extern (AST.mkName "__toFloat__") [boxType] boxType
+--   f <- function (AST.mkName "$Number$Float$coerce") [(boxType, NoParameterName)] boxType $ \[intParam] -> do
+--     call toFloat [(intParam, [])]
+--     return ()
+
+--   let symbolTable' = case Map.lookup "$Number$Float" symbolTable of
+--         Just (Symbol (DictionarySymbol) )
+
+--   return symbolTable
+
+
+buildNumberModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
+buildNumberModule env currentModuleHashes initialSymbolTable = do
+  extern (AST.mkName "__addIntegers__")       [boxType, boxType] boxType
+  extern (AST.mkName "__substractIntegers__") [boxType, boxType] boxType
+  extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] boxType
+
+  extern (AST.mkName "__addFloats__")         [boxType, boxType] boxType
+  extern (AST.mkName "__substractFloats__")   [boxType, boxType] boxType
+  extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] boxType
+  extern (AST.mkName "__numberToFloat__")     [boxType] boxType
+
+  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addIntegers__")
+      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractIntegers__")
+      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyIntegers__")
+
+      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addFloats__")
+      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractFloats__")
+      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyFloats__")
+      numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToFloat__")
+
+      symbolTableWithCBindings =
+        Map.insert "__addFloats__" (fnSymbol 2 addFloats)
+        $ Map.insert "__substractFloats__" (fnSymbol 2 substractFloats)
+        $ Map.insert "__multiplyFloats__" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "__numberToFloat__" (fnSymbol 1 numberToFloat)
+        $ Map.insert "__addIntegers__" (fnSymbol 2 addIntegers)
+        $ Map.insert "__substractIntegers__" (fnSymbol 2 substractIntegers)
+        $ Map.insert "__multiplyIntegers__" (fnSymbol 2 multiplyIntegers) initialSymbolTable
+
+      numberType       = InferredType.TVar (InferredType.TV "a" InferredType.Star)
+      numberPred       = InferredType.IsIn "Number" [numberType] Nothing
+      addNumbersType   = numberType `InferredType.fn` numberType `InferredType.fn` numberType
+      coerceNumberType = numberType `InferredType.fn` numberType
+
+  let integerNumberInstance =
+        Untyped emptyArea
+          ( Instance "Number" [] "Integer"
+              (Map.fromList
+                [ ( "+"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__addIntegers__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "-"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__substractIntegers__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "*"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__multiplyIntegers__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "__coerceNumber__"
+                  , ( Optimized coerceNumberType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
+                        Optimized numberType emptyArea (Var "a")
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                ]
+              )
+          )
+  let floatNumberInstance =
+        Untyped emptyArea
+          ( Instance "Number" [] "Float"
+              (Map.fromList
+                [ ( "+"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__addFloats__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "-"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__substractFloats__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "*"
+                  , ( Optimized addNumbersType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__multiplyFloats__")) [
+                          Optimized numberType emptyArea (Var "a"),
+                          Optimized numberType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( "__coerceNumber__"
+                  , ( Optimized coerceNumberType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
+                        Optimized numberType emptyArea (App (Optimized addNumbersType emptyArea (Var "__numberToFloat__")) [
+                          Optimized numberType emptyArea (Var "a")
+                        ])
+                    ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                ]
+              )
+          )
+  symbolTable'  <- generateInstances env symbolTableWithCBindings [integerNumberInstance, floatNumberInstance]
+  return ()
+
+
 buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
-  let symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
+  let symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps (trace ("INITIAL TABLE: "<>ppShow initialSymbolTable) ast))
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
@@ -1823,7 +1983,11 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    (\(first, _, _, _) -> first) $ generateAST True astTable (generatedTable, symbolTable, [], Env { dictionaryIndices = Map.empty }) ast
+    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildNumberModule Env { dictionaryIndices = Map.empty } [] symbolTable)
+        numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
+        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("__coerceNumber__", (3, 1))]) ]
+        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices }) ast
+    in  Map.insert numbersModulePath numbersModule moduleTable
 
   _ ->
     undefined
@@ -1848,7 +2012,7 @@ compileModule outputFolder rootPath astPath astModule = do
 
 generateTable :: FilePath -> FilePath -> Table -> FilePath -> IO ()
 generateTable outputFolder rootPath astTable entrypoint = do
-  let moduleTable = generateTableModules Map.empty Map.empty astTable entrypoint
+  let moduleTable  = generateTableModules Map.empty Map.empty astTable entrypoint
   objectFilePaths <- mapM (uncurry $ compileModule outputFolder rootPath) $ Map.toList moduleTable
 
   let objectFilePathsForCli = List.unwords objectFilePaths

@@ -23,6 +23,7 @@ import Text.Show.Pretty
 
 %token
   number      { Token _ (TokenNumber _) }
+  float       { Token _ (TokenFloat _) }
   str         { Token _ (TokenStr _) }
   strTplStart { Token _ (TokenTemplateStringStart) }
   strTplEnd   { Token _ (TokenTemplateStringEnd _) }
@@ -438,6 +439,7 @@ pattern :: { Src.Pattern }
 nonCompositePattern :: { Src.Pattern }
   : name             { nameToPattern (tokenToArea $1) (strV $1) }
   | number           { Src.Source (tokenToArea $1) (Src.PNum $ strV $1) }
+  | float            { Src.Source (tokenToArea $1) (Src.PFloat $ strV $1)}
   | str              { Src.Source (tokenToArea $1) (Src.PStr $ strV $1) }
   | true             { Src.Source (tokenToArea $1) (Src.PBool $ strV $1) }
   | false            { Src.Source (tokenToArea $1) (Src.PBool $ strV $1) }
@@ -579,6 +581,7 @@ tupleItems :: { [Src.Exp] }
 
 literal :: { Src.Exp }
   : number  %shift { Src.Source (tokenToArea $1) (Src.LNum $ strV $1) }
+  | float   %shift { Src.Source (tokenToArea $1) (Src.LFloat $ strV $1) }
   | str     %shift { Src.Source (tokenToArea $1) (Src.LStr $ strV $1) }
   | true    %shift { Src.Source (tokenToArea $1) (Src.LBool $ strV $1) }
   | false   %shift { Src.Source (tokenToArea $1) (Src.LBool $ strV $1) }

@@ -116,6 +116,7 @@ data ListItem_
 
 type Exp = Canonical Exp_
 data Exp_ = LNum String
+          | LFloat String
           | LStr String
           | LBool String
           | LUnit

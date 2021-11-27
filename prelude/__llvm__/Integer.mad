@@ -1,0 +1,15 @@
+import { yellow } from "./PrettyShow"
+
+
+showInteger :: Integer -> String
+showInteger = extern "__integerToStr__"
+
+
+instance Show Integer {
+  show = showInteger
+}
+
+
+instance PrettyShow Integer {
+  ppShow = pipe(show, yellow)
+}
