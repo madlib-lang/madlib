@@ -291,7 +291,7 @@ collectPlaceholderParams' ph = case ph of
     ([], or)
 
 collectAppArgs :: Slv.Exp -> (Slv.Exp, [Slv.Exp])
-collectAppArgs app = case trace ("COLLECT: "<>ppShow app) app of
+collectAppArgs app = case app of
   Slv.Solved _ _ (Slv.App next arg _) ->
     let (nextFn, nextArgs) = collectAppArgs next
     in  (nextFn, nextArgs <> [arg])

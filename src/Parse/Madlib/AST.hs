@@ -21,8 +21,7 @@ import           Error.Context
 import           Control.Monad.Except
 import           System.FilePath                ( dropFileName, takeExtension )
 import qualified Prelude                       as P
-import           Prelude                 hiding ( readFile )
-import qualified Data.ByteString.Lazy          as B
+import           Prelude                       hiding ( readFile )
 import qualified System.Environment.Executable as E
 import           Data.Maybe
 import           Explain.Location
