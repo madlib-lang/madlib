@@ -174,6 +174,7 @@ getTupleCtor n = case n of
   10 -> tTuple10
   11 -> tTuple11
   12 -> tTuple12
+  _ -> undefined
 
 infixr      4 `fn`
 fn :: Type -> Type -> Type

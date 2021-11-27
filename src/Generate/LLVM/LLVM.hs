@@ -47,7 +47,7 @@ import           LLVM.Context (withContext)
 import           Generate.LLVM.Optimized         as Opt
 
 import qualified Data.String.Utils               as List
-import qualified Infer.Type                      as InferredType
+import qualified Infer.Type                      as IT
 import           Infer.Type (isFunctionType)
 import           LLVM.PassManager
 import           LLVM.CodeGenOpt (Level)
@@ -240,45 +240,67 @@ storeItem basePtr _ (item, index) = do
 
 
 -- Mostly used for boxing/unboxing and therefore does just one Level
-buildLLVMType :: InferredType.Type -> Type.Type
+buildLLVMType :: IT.Type -> Type.Type
 buildLLVMType t = case t of
-  InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
     Type.double
 
-  InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
     Type.i8
 
-  InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
     Type.i64
 
-  InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "String" IT.Star) "prelude" ->
     stringType
 
-  InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
     Type.i1
 
-  InferredType.TCon (InferredType.TC "()" InferredType.Star) "prelude" ->
+  IT.TCon (IT.TC "()" IT.Star) "prelude" ->
     Type.ptr Type.i8
 
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" (InferredType.Kfun InferredType.Star InferredType.Star)) "prelude") _ ->
+  IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
 
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") left) right ->
     let tLeft  = buildLLVMType left
         tRight = buildLLVMType right
     in  Type.ptr $ Type.FunctionType boxType [boxType] False
 
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
-    let tA = buildLLVMType a
-        tB = buildLLVMType b
-    in  Type.ptr $ Type.StructureType False [boxType, boxType]
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,)" _) "prelude") _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,)" _) "prelude") _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,)" _) "prelude") _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,)" _) "prelude") _) _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,)" _) "prelude") _) _) _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
+
+  IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
+    Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
   _ ->
     Type.ptr Type.i8
 
-buildLLVMParamType :: InferredType.Type -> Type.Type
+buildLLVMParamType :: IT.Type -> Type.Type
 buildLLVMParamType t = case t of
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") left) right ->
     papType
 
   _ ->
@@ -306,42 +328,43 @@ recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
 
-unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
+unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Type -> Operand -> m Operand
 unbox t what = case t of
-  InferredType.TCon (InferredType.TC "Float" _) _ -> do
+  IT.TCon (IT.TC "Float" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.double
     load ptr 8
 
-  InferredType.TCon (InferredType.TC "Byte" _) _ -> do
+  IT.TCon (IT.TC "Byte" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i8
     load ptr 8
 
-  InferredType.TCon (InferredType.TC "Integer" _) _ -> do
+  IT.TCon (IT.TC "Integer" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i64
     load ptr 8
 
-  InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
+  IT.TCon (IT.TC "Boolean" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i1
     load ptr 8
 
   -- boxed strings are char**
-  InferredType.TCon (InferredType.TC "String" _) _ -> do
+  IT.TCon (IT.TC "String" _) _ -> do
     ptr <- bitcast what $ Type.ptr stringType
     load ptr 8
 
   -- boxed lists are { i8*, i8* }**
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ -> do
+  IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
     -- -- bitcast what listType
     ptr <- bitcast what (Type.ptr listType)
     load ptr 8
 
-  InferredType.TRecord fields _ -> do
+  IT.TRecord fields _ -> do
     bitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _) p) b ->
     bitcast what papType
 
+  -- That should handle tuples
   _ ->
     bitcast what (buildLLVMType t)
 
@@ -527,7 +550,7 @@ retrieveArgs =
        )
 
 
-generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand, Maybe Operand)
+generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand, Maybe Operand)
 generateApplicationForKnownFunction env symbolTable returnType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
@@ -597,7 +620,7 @@ buildReferencePAP symbolTable arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
-  Optimized (ps InferredType.:=> t) _ (Var n) ->
+  Optimized (ps IT.:=> t) _ (Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
@@ -640,7 +663,7 @@ generateExp env symbolTable exp = case exp of
   -- (Placeholder (ClassRef "Functor" [] False True , "b183")
   Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) _) -> do
     let (dictNameParams, innerExp) = gatherAllPlaceholders exp
-    let wrapperType = List.foldr InferredType.fn (InferredType.tVar "a") (InferredType.tVar "a" <$ dictNameParams)
+    let wrapperType = List.foldr IT.fn (IT.tVar "a") (IT.tVar "a" <$ dictNameParams)
     fnName <- freshName (stringToShortByteString "dictionaryWrapper")
     let (Name fnName') = fnName
     symbolTable' <-
@@ -666,7 +689,7 @@ generateExp env symbolTable exp = case exp of
 
 
   -- (Placeholder (MethodRef "Show" "show" True, "j9")
-  Optimized (_ InferredType.:=> t) _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
+  Optimized (_ IT.:=> t) _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
       Just (Symbol _ dict) -> do
@@ -692,7 +715,7 @@ generateExp env symbolTable exp = case exp of
         error $ "dict not found: '"<>dictName <>"\n\n"<>ppShow exp
 
   -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Optimized (_ InferredType.:=> t) _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
+  Optimized (_ IT.:=> t) _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
     (dictArgs, fn) <- collectDictArgs symbolTable exp
     (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
     pap' <- bitcast pap boxType
@@ -712,12 +735,12 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, pap, boxedPAP)
 
       _ ->
-        error "m"
+        error $ "method with name '" <> methodName' <> "' not found!"
 
   Optimized _ _ (Export e) -> do
     generateExp env { isLast = False } symbolTable e
 
-  Optimized (ps InferredType.:=> ty) _ (Assignment name e isTopLevel) -> do
+  Optimized (ps IT.:=> ty) _ (Assignment name e isTopLevel) -> do
     (symbolTable', exp', _) <- generateExp env { isLast = False } symbolTable e
 
     if isTopLevel then do
@@ -731,12 +754,12 @@ generateExp env symbolTable exp = case exp of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
           -- TODO: handle strings properly here
           case typeOf exp' of
-            Type.PointerType t _ | ty == InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
+            Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
               ptr' <- bitcast ptr $ Type.ptr stringType
               store ptr' 8 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
-            Type.PointerType _ _ | InferredType.isListType ty -> do
+            Type.PointerType _ _ | IT.isListType ty -> do
               ptr' <- bitcast ptr $ Type.ptr listType
               store ptr' 8 exp'
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
@@ -748,7 +771,7 @@ generateExp env symbolTable exp = case exp of
               store ptr' 8 loaded
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
-            _ | InferredType.hasNumberPred ps -> do
+            _ | IT.hasNumberPred ps -> do
               ptr'   <- bitcast ptr $ Type.ptr Type.i64
               exp''  <- bitcast exp' Type.i64
               store ptr' 8 exp''
@@ -806,27 +829,21 @@ generateExp env symbolTable exp = case exp of
     -- TODO: add special check for strings, tuples, records etc
     result <-
       case getType leftOperand of
-        InferredType.TCon (InferredType.TC "Integer" _) _ ->
+        IT.TCon (IT.TC "Integer" _) _ ->
           icmp IntegerPredicate.EQ leftOperand' rightOperand'
 
         _ ->
           fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
-  -- Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
-  --   (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-  --   (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-  --   result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
-  --   return (symbolTable, result, Nothing)
-
-  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
+  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
-      InferredType.TCon (InferredType.TC "Float" _) _ ->
+      IT.TCon (IT.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
 
-      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+      IT.TCon (IT.TC "Byte" _) _ ->
         icmp IntegerPredicate.UGT leftOperand' rightOperand'
 
       _ ->
@@ -834,28 +851,28 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, result, Nothing)
 
-  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
+  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
-      InferredType.TCon (InferredType.TC "Float" _) _ ->
+      IT.TCon (IT.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
 
-      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+      IT.TCon (IT.TC "Byte" _) _ ->
         icmp IntegerPredicate.ULT leftOperand' rightOperand'
 
       _ ->
         icmp IntegerPredicate.SLT leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
-  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">=")) [leftOperand, rightOperand]) -> do
+  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var ">=")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
-      InferredType.TCon (InferredType.TC "Float" _) _ ->
+      IT.TCon (IT.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
 
-      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+      IT.TCon (IT.TC "Byte" _) _ ->
         icmp IntegerPredicate.UGE leftOperand' rightOperand'
 
       _ ->
@@ -863,43 +880,43 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, result, Nothing)
 
-  Optimized _ _ (App (Optimized _ _ (Placeholder _ (Optimized _ _ (Var "!=")))) [leftOperand@(Optimized (_ InferredType.:=> t) _ _), rightOperand])
+  Optimized _ _ (App (Optimized _ _ (Placeholder _ (Optimized _ _ (Var "!=")))) [leftOperand@(Optimized (_ IT.:=> t) _ _), rightOperand])
     | t `List.elem`
-        [ InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude"
-        , InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude"
-        , InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude"
-        , InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude"
-        , InferredType.TCon (InferredType.TC "Unit" InferredType.Star) "prelude"
-        , InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude"
+        [ IT.TCon (IT.TC "Byte" IT.Star) "prelude"
+        , IT.TCon (IT.TC "Integer" IT.Star) "prelude"
+        , IT.TCon (IT.TC "Float" IT.Star) "prelude"
+        , IT.TCon (IT.TC "Boolean" IT.Star) "prelude"
+        , IT.TCon (IT.TC "Unit" IT.Star) "prelude"
+        , IT.TCon (IT.TC "String" IT.Star) "prelude"
         ] -> case t of
-              InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude" -> do
+              IT.TCon (IT.TC "Byte" IT.Star) "prelude" -> do
                 (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
                 (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
                 result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
                 return (symbolTable, result, Nothing)
 
-              InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude" -> do
+              IT.TCon (IT.TC "Integer" IT.Star) "prelude" -> do
                 (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
                 (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
                 result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
                 return (symbolTable, result, Nothing)
 
-              InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" -> do
+              IT.TCon (IT.TC "Boolean" IT.Star) "prelude" -> do
                 (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
                 (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
                 result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
                 return (symbolTable, result, Nothing)
 
-              InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude" -> do
+              IT.TCon (IT.TC "Float" IT.Star) "prelude" -> do
                 (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
                 (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
                 result                <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
                 return (symbolTable, result, Nothing)
 
-              InferredType.TCon (InferredType.TC "Unit" InferredType.Star) "prelude" ->
+              IT.TCon (IT.TC "Unit" IT.Star) "prelude" ->
                 return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
 
-              InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
+              IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
                 (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
                 (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
                 result                <- call areStringsNotEqual [(leftOperand', []), (rightOperand', [])]
@@ -908,27 +925,27 @@ generateExp env symbolTable exp = case exp of
               _ ->
                 undefined
 
-  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
+  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
-      InferredType.TCon (InferredType.TC "Float" _) _ ->
+      IT.TCon (IT.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
 
-      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+      IT.TCon (IT.TC "Byte" _) _ ->
         icmp IntegerPredicate.ULE leftOperand' rightOperand'
 
       _ ->
         icmp IntegerPredicate.SLE leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
-  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "&&")) [leftOperand, rightOperand]) -> do
+  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "&&")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result                <- Instruction.and leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
-  Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
+  Optimized (_ IT.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
       "==" -> case typingStr of
@@ -1190,12 +1207,15 @@ generateExp env symbolTable exp = case exp of
         unboxed <- unbox t ret
         return (symbolTable, unboxed, Just ret)
 
-  Optimized (_ InferredType.:=> t) _ (LNum n) -> case t of
-    InferredType.TCon (InferredType.TC "Float" _) _ ->
+  Optimized (_ IT.:=> t) _ (LNum n) -> case t of
+    IT.TCon (IT.TC "Float" _) _ ->
       return (symbolTable, C.double (read n), Nothing)
 
-    InferredType.TCon (InferredType.TC "Integer" _) _ ->
+    IT.TCon (IT.TC "Integer" _) _ ->
       return (symbolTable, C.int64 (read n), Nothing)
+
+    IT.TCon (IT.TC "Byte" _) _ ->
+      return (symbolTable, C.int8 (read n), Nothing)
 
     _ ->
       return (symbolTable, C.int64 (read n), Nothing)
@@ -1322,7 +1342,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-  Optimized (_ InferredType.:=> t) _ (Access record (Optimized _ _ (Var ('.' : fieldName)))) -> do
+  Optimized (_ IT.:=> t) _ (Access record (Optimized _ _ (Var ('.' : fieldName)))) -> do
     nameOperand        <- buildStr fieldName
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- call selectField [(nameOperand, []), (recordOperand, [])]
@@ -1331,7 +1351,7 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, value', Just value)
 
 
-  Optimized (_ InferredType.:=> t) _ (If cond truthy falsy) ->
+  Optimized (_ IT.:=> t) _ (If cond truthy falsy) ->
     if isLast env then mdo
       (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
       test  <- icmp IntegerPredicate.EQ cond' true
@@ -1400,10 +1420,10 @@ generateExp env symbolTable exp = case exp of
   Optimized _ _ (TypedExp exp _) ->
     generateExp env { isLast = False } symbolTable exp
 
-  Optimized (_ InferredType.:=> t) _ (NameExport n) -> do
+  Optimized (_ IT.:=> t) _ (NameExport n) -> do
     let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType t) (AST.mkName n)
-    if InferredType.isFunctionType t then do
-      let arity = List.length $ InferredType.getParamTypes t
+    if IT.isFunctionType t then do
+      let arity = List.length $ IT.getParamTypes t
       Writer.tell $ Map.singleton n (fnSymbol arity ref)
     else
       Writer.tell $ Map.singleton n (varSymbol ref)
@@ -1681,9 +1701,9 @@ generateExps env symbolTable exps = case exps of
     return ()
 
 
-generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
+generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> IT.Type -> String -> Int -> Operand -> m SymbolTable
 generateExternFunction symbolTable t functionName arity foreignFn = do
-  let paramTypes    = InferredType.getParamTypes t
+  let paramTypes    = IT.getParamTypes t
       params'       = List.replicate arity (boxType, NoParameterName)
       functionName' = AST.mkName functionName
 
@@ -1705,9 +1725,9 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> InferredType.Type -> String -> [String] -> [Exp] -> m SymbolTable
+generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> IT.Type -> String -> [String] -> [Exp] -> m SymbolTable
 generateFunction env symbolTable isMethod t functionName paramNames body = do
-  let paramTypes    = InferredType.getParamTypes t
+  let paramTypes    = IT.getParamTypes t
       params'       = (boxType,) . makeParamName <$> paramNames
       functionName' = AST.mkName functionName
 
@@ -1741,13 +1761,13 @@ generateFunction env symbolTable isMethod t functionName paramNames body = do
 
 generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
-  Optimized (_ InferredType.:=> t) _ (TopLevelAbs functionName params body) -> do
+  Optimized (_ IT.:=> t) _ (TopLevelAbs functionName params body) -> do
     generateFunction env symbolTable False t functionName params body
 
-  Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) -> do
-    let paramTypes  = InferredType.getParamTypes t
+  Optimized _ _ (Extern (_ IT.:=> t) name originalName) -> do
+    let paramTypes  = IT.getParamTypes t
         paramTypes' = buildLLVMParamType <$> paramTypes
-        returnType  = InferredType.getReturnType t
+        returnType  = IT.getReturnType t
         returnType' = buildLLVMParamType returnType
 
     ext <- extern (AST.mkName originalName) paramTypes' returnType'
@@ -1765,13 +1785,13 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Optimized _ _ (Extern (_ InferredType.:=> t) functionName originalName) ->
-    let arity  = List.length $ InferredType.getParamTypes t
+  Optimized _ _ (Extern (_ IT.:=> t) functionName originalName) ->
+    let arity  = List.length $ IT.getParamTypes t
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Optimized (_ InferredType.:=> t) _ (Assignment name exp _) ->
+  Optimized (_ IT.:=> t) _ (Assignment name exp _) ->
     if isFunctionType t then
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
@@ -1865,7 +1885,7 @@ the two i8* are the content of the created type
 generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
 generateConstructor symbolTable (constructor, index) = case constructor of
   Untyped _ (Constructor constructorName _ t) -> do
-    let paramTypes     = InferredType.getParamTypes t
+    let paramTypes     = IT.getParamTypes t
     let arity          = List.length paramTypes
     let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate arity boxType
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
@@ -1928,12 +1948,12 @@ buildDictValues symbolTable methodNames = case methodNames of
 generateMethod :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> String -> Exp -> m SymbolTable
 generateMethod env symbolTable methodName exp = case exp of
   -- TODO: handle overloaded methods that should be passed a dictionary
-  Opt.Optimized (_ InferredType.:=> t) _ (TopLevelAbs _ params body) ->
+  Opt.Optimized (_ IT.:=> t) _ (TopLevelAbs _ params body) ->
     generateFunction env symbolTable True t methodName params body
 
   -- TODO: reconsider this
-  Opt.Optimized (_ InferredType.:=> t) _ (Opt.Assignment _ exp _) -> do
-    let paramTypes  = InferredType.getParamTypes t
+  Opt.Optimized (_ IT.:=> t) _ (Opt.Assignment _ exp _) -> do
+    let paramTypes  = IT.getParamTypes t
         arity       = List.length paramTypes
         params'     = (,NoParameterName) <$> (boxType <$ paramTypes)
 
@@ -1988,8 +2008,8 @@ addMethodToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (methodSymbol arity fnRef) symbolTable
 
-  Optimized (_ InferredType.:=> t) _ (Assignment name exp _) ->
-    let paramTypes  = InferredType.getParamTypes t
+  Optimized (_ IT.:=> t) _ (Assignment name exp _) ->
+    let paramTypes  = IT.getParamTypes t
         arity       = List.length paramTypes
         paramTypes' = boxType <$ paramTypes
         expType     = Type.ptr $ Type.FunctionType boxType paramTypes' False
@@ -2043,8 +2063,8 @@ buildDictionaryIndices interfaces = case interfaces of
   (Untyped _ (Interface name _ _ methods _) : next) ->
     let nextMap   = buildDictionaryIndices next
         methodMap = Map.fromList
-          $ (\((methodName, InferredType.Forall _ (_ InferredType.:=> t)), index) ->
-              (methodName, (index, List.length $ InferredType.getParamTypes t))
+          $ (\((methodName, IT.Forall _ (_ IT.:=> t)), index) ->
+              (methodName, (index, List.length $ IT.getParamTypes t))
             ) <$> List.zip (Map.toList methods) [0..]
     in  Map.insert name methodMap nextMap
 
@@ -2184,6 +2204,127 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
 
 
 
+eqVars :: [String]
+eqVars = (:"") <$> ['a'..]
+
+eqNumbers :: [String]
+eqNumbers = show <$> [1..]
+
+getTupleName :: Int -> String
+getTupleName arity = case arity of
+  2         ->
+    "Tuple_2"
+
+  3        ->
+    "Tuple_3"
+
+  4       ->
+    "Tuple_4"
+
+  5      ->
+    "Tuple_5"
+
+  6     ->
+    "Tuple_6"
+
+  7    ->
+    "Tuple_7"
+
+  8   ->
+    "Tuple_8"
+
+  9  ->
+    "Tuple_9"
+
+  10 ->
+    "Tuple_10"
+
+  _ ->
+    "Tuple_unknown"
+
+-- generates AST for a tupleN instance. n must be >= 2
+buildTupleNEqInstance :: Int -> Instance
+buildTupleNEqInstance n =
+  let tvarNames          = List.take n eqVars
+      eqDictNames        = ("$Eq$" ++) <$> tvarNames
+      tvars              = (\name -> IT.TVar (IT.TV name IT.Star)) <$> tvarNames
+      dictTVars          = IT.TVar (IT.TV "eqDict" IT.Star) <$ eqDictNames
+      preds              = (\var -> IT.IsIn "Eq" [var] Nothing) <$> tvars
+      tupleName          = getTupleName n
+      tupleType          = List.foldl' IT.TApp tupleHeadType tvars
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tBool (dictTVars ++ (tupleType <$ tvars))
+      tupleHeadType      = IT.getTupleCtor n
+      tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
+      whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
+      isQualType         = preds IT.:=> (IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType `IT.fn` IT.tBool)
+      leftTupleVarNames  = ("a" ++) <$> eqNumbers
+      rightTupleVarNames = ("b" ++) <$> eqNumbers
+      leftTuplePatterns  =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (PVar var)
+        ) <$> List.zip tvarNames leftTupleVarNames
+      rightTuplePatterns =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (PVar var)
+        ) <$> List.zip tvarNames rightTupleVarNames
+
+      leftVars =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (Var var)
+        ) <$> List.zip tvarNames leftTupleVarNames
+      rightVars =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (Var var)
+        ) <$> List.zip tvarNames rightTupleVarNames
+
+      eqMethods =
+        (\tvName ->
+          Optimized
+            ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tBool))
+            emptyArea
+            (Placeholder (MethodRef "Eq" "==" True, tvName) (
+              Optimized
+              ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tBool))
+              emptyArea
+              (Var "==")
+            ))
+        ) <$> tvarNames
+
+      conditions = (\(method, leftVar, rightVar) -> Optimized ([] IT.:=> IT.tBool) emptyArea (App method [leftVar, rightVar])) <$> List.zip3 eqMethods leftVars rightVars
+      andApp = \left right -> Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized ([] IT.:=> (IT.tBool `IT.fn` IT.tBool `IT.fn` IT.tBool)) emptyArea (Var "&&")) [left, right])
+      condition = List.foldr andApp (Optimized ([] IT.:=> IT.tBool) emptyArea (LBool "true")) conditions
+
+
+  in  Untyped emptyArea (Instance
+        "Eq"
+        preds
+        tupleName
+        (Map.fromList
+          [ ( "=="
+            , ( Optimized methodQualType emptyArea (TopLevelAbs "==" (eqDictNames ++ ["a", "b"]) [
+                  Optimized ([] IT.:=> IT.tBool) emptyArea (Where (
+                    Optimized whereExpQualType emptyArea (TupleConstructor [
+                      Optimized tupleQualType emptyArea (Var "a"),
+                      Optimized tupleQualType emptyArea (Var "b")
+                    ])
+                  ) [
+                    Optimized isQualType emptyArea (Is
+                      (Optimized whereExpQualType emptyArea (PTuple [
+                        Optimized tupleQualType emptyArea (PTuple leftTuplePatterns),
+                        Optimized tupleQualType emptyArea (PTuple rightTuplePatterns)
+                      ]))
+                      condition
+                    )
+                  ])
+                ])
+              , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+              )
+            )
+          ]
+        )
+      )
+
+
 buildRuntimeModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
 buildRuntimeModule env currentModuleHashes initialSymbolTable = do
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
@@ -2314,12 +2455,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
         $ Map.insert "__eqList__" (fnSymbol 3 eqList) initialSymbolTable
 
-      numberType               = InferredType.TVar (InferredType.TV "a" InferredType.Star)
-      numberPred               = InferredType.IsIn "Number" [numberType] Nothing
-      numberQualType           = [numberPred] InferredType.:=> numberType
-      numberOperationQualType  = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` numberType)
-      numberComparisonQualType = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` InferredType.tBool)
-      coerceNumberQualType     = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType)
+      numberType               = IT.TVar (IT.TV "a" IT.Star)
+      numberPred               = IT.IsIn "Number" [numberType] Nothing
+      numberQualType           = [numberPred] IT.:=> numberType
+      numberOperationQualType  = [numberPred] IT.:=> (numberType `IT.fn` numberType `IT.fn` numberType)
+      numberComparisonQualType = [numberPred] IT.:=> (numberType `IT.fn` numberType `IT.fn` IT.tBool)
+      coerceNumberQualType     = [numberPred] IT.:=> (numberType `IT.fn` numberType)
 
   let integerNumberInstance =
         Untyped emptyArea
@@ -2332,7 +2473,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "-"
@@ -2342,7 +2483,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "*"
@@ -2352,7 +2493,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( ">"
@@ -2362,7 +2503,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<"
@@ -2372,7 +2513,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( ">="
@@ -2382,7 +2523,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<="
@@ -2392,7 +2533,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "__coerceNumber__"
@@ -2401,7 +2542,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 ]
@@ -2419,7 +2560,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "-"
@@ -2429,7 +2570,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "*"
@@ -2439,7 +2580,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( ">"
@@ -2449,7 +2590,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<"
@@ -2459,7 +2600,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( ">="
@@ -2469,7 +2610,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<="
@@ -2479,7 +2620,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "__coerceNumber__"
@@ -2488,7 +2629,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 ]
@@ -2506,7 +2647,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "-"
@@ -2516,7 +2657,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( "*"
@@ -2526,7 +2667,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Float" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 , ( ">"
@@ -2536,7 +2677,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<"
@@ -2546,7 +2687,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( ">="
@@ -2556,7 +2697,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "<="
@@ -2566,7 +2707,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 , ( "__coerceNumber__"
@@ -2575,18 +2716,18 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0)
                     )
                   )
                 ]
               )
           )
 
-  let varType             = InferredType.TVar (InferredType.TV "a" InferredType.Star)
-      eqPred              = InferredType.IsIn "Eq" [varType] Nothing
-      eqVarQualType       = [eqPred] InferredType.:=> varType
-      eqOperationQualType = [eqPred] InferredType.:=> (varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool)
-      eqOperationType     = varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
+  let varType             = IT.TVar (IT.TV "a" IT.Star)
+      eqPred              = IT.IsIn "Eq" [varType] Nothing
+      eqVarQualType       = [eqPred] IT.:=> varType
+      eqOperationQualType = [eqPred] IT.:=> (varType `IT.fn` varType `IT.fn` IT.tBool)
+      eqOperationType     = varType `IT.fn` varType `IT.fn` IT.tBool
 
       integerEqInstance =
         Untyped emptyArea
@@ -2594,12 +2735,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2612,12 +2753,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2630,12 +2771,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2648,12 +2789,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2666,12 +2807,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2684,9 +2825,9 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (LBool "true")
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (LBool "true")
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
@@ -2694,33 +2835,34 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
           )
 
 
-      dictType             = InferredType.TVar (InferredType.TV "dict" InferredType.Star)
-      overloadedEqType     = dictType `InferredType.fn` varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
-      overloadedEqQualType = [eqPred] InferredType.:=> overloadedEqType
+      dictType             = IT.TVar (IT.TV "dict" IT.Star)
+      overloadedEqType     = dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
+      overloadedEqQualType = [eqPred] IT.:=> overloadedEqType
 
       listEqInstance =
         Untyped emptyArea
-          ( Instance "Eq" [InferredType.IsIn "Eq" [InferredType.TVar (InferredType.TV "a" InferredType.Star)] Nothing] "List"
+          ( Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "List"
               (Map.fromList
                 [ ( "=="
-                  , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "+" ["eqDict", "a", "b"] [
-                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqList__")) [
-                          Optimized ([] InferredType.:=> dictType) emptyArea (Var "eqDict"),
+                  , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "==" ["eqDict", "a", "b"] [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqList__")) [
+                          Optimized ([] IT.:=> dictType) emptyArea (Var "eqDict"),
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
                       ])
-                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
                     )
                   )
                 ]
               )
           )
 
+      tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
   generateFunction env symbolTableWithCBindings False overloadedEqType "!=" ["$Eq$eqVar", "a", "b"] [
-      Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "!")) [
-        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Placeholder (MethodRef "Eq" "==" True, "eqVar") (Optimized eqOperationQualType emptyArea (Var "==")))) [
+      Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "!")) [
+        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Placeholder (MethodRef "Eq" "==" True, "eqVar") (Optimized eqOperationQualType emptyArea (Var "==")))) [
           Optimized eqVarQualType emptyArea (Var "a"),
           Optimized eqVarQualType emptyArea (Var "b")
         ])
@@ -2730,16 +2872,18 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
   generateInstances
     env
     symbolTableWithCBindings
-    [ integerNumberInstance
-    , byteNumberInstance
-    , floatNumberInstance
-    , integerEqInstance
-    , floatEqInstance
-    , stringEqInstance
-    , booleanEqInstance
-    , unitEqInstance
-    , listEqInstance
-    ]
+    (
+      [ integerNumberInstance
+      , byteNumberInstance
+      , floatNumberInstance
+      , integerEqInstance
+      , floatEqInstance
+      , stringEqInstance
+      , booleanEqInstance
+      , unitEqInstance
+      , listEqInstance
+      ] ++ tupleEqInstances
+    )
   return ()
 
 
