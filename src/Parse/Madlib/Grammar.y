@@ -130,6 +130,7 @@ importDecl :: { Src.Import }
   : 'import' '{' importNames '}' 'from' str rets        { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.NamedImport $3 (sanitizeImportPath $ strV $6) (sanitizeImportPath $ strV $6)) }
   | 'import' name 'from' str rets                       { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.DefaultImport (Src.Source emptyInfos (tokenToArea $2) (strV $2)) (sanitizeImportPath $ strV $4) (sanitizeImportPath $ strV $4)) }
   | 'import' 'type' '{' importNames '}' 'from' str rets { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $7)) (Src.TypeImport $4 (sanitizeImportPath $ strV $7) (sanitizeImportPath $ strV $7)) }
+  | 'import' str rets                                   { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.ImportAll (sanitizeImportPath $ strV $2) (sanitizeImportPath $ strV $2)) }
 
 importNames :: { [Src.Source Src.Name] }
   : importNames ',' name %shift { $1 <> [Src.Source emptyInfos (tokenToArea $3) (strV $3)] }
@@ -299,6 +300,7 @@ exp :: { Src.Exp }
   : literal                                                    { $1 }
   | jsx                                                        { $1 }
   | record                                              %shift { $1 }
+  | dict                                                %shift { $1 }
   | where                                               %shift { $1 }
   | tupleConstructor                                    %shift { $1 }
   | operation                                                  { $1 }
@@ -476,6 +478,14 @@ recordFields :: { [Src.Field] }
   | recordFields ',' name ':' exp           { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $5)) $ Src.Field (strV $3, $5)] }
   | recordFields rets ',' rets name ':' exp { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $7)) $ Src.Field (strV $5, $7)] }
   | {- empty -}                             { [] }
+
+dict :: { Src.Exp }
+  : '{{' rets dictItems maybeComa rets '}' '}' { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $7)) (Src.Dictionary $3) }
+
+dictItems :: { [Src.DictItem] }
+  : exp ':' exp                            { [Src.Source emptyInfos (mergeAreas (Src.getArea $1) (Src.getArea $3)) $ Src.DictItem $1 $3] }
+  | dictItems ',' exp ':' exp              { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $3) (Src.getArea $5)) $ Src.DictItem $3 $5] }
+  | dictItems rets ',' rets exp ':' exp    { $1 <> [Src.Source emptyInfos (mergeAreas (Src.getArea $5) (Src.getArea $7)) $ Src.DictItem $5 $7] }
 
 
 operation :: { Src.Exp }
