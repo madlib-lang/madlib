@@ -173,7 +173,7 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i32 [ptr i8] False) (AST.mkName "puts")))
 
   Optimized _ _ (Var n) ->
-    case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
+    case Map.lookup n symbolTable of
       Just (Symbol FunctionSymbol global) ->
         return (symbolTable, global)
 
@@ -580,14 +580,6 @@ unbox t what = case t of
     let closureType = Type.ptr $ Type.StructureType False [buildLLVMType t, Type.StructureType False []]
     casted <- bitcast what closureType
     load casted 8
-  -- InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
-  --   let closureType = Type.StructureType False [buildLLVMType t, Type.StructureType False []]
-  --   closure <- alloca closureType Nothing 0
-  --   -- closure <- call malloc [(Operand.ConstantOperand  $ sizeof closureType, [])]
-  --   closure' <- bitcast closure (Type.ptr boxType)
-  --   store closure' 8 what
-  --   casted <- bitcast closure' (Type.ptr closureType)
-  --   load casted 8
 
   _ ->
     bitcast what (buildLLVMType t)
@@ -737,7 +729,7 @@ generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
     f <- function (AST.mkName fnName) envParams' returnType' $ \params -> do
       entry <- block `named` "entry"; do
         vars' <- Monad.zipWithM unbox allParamTypes params
-        (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) (varSymbol <$> vars'))) body
+        (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) (varSymbol <$> vars')) <> symbolTable) body
         exps' <- case body of
           Optimized _ _ Closure{} ->
             return exps
@@ -887,9 +879,9 @@ toLLVMModule ast =
   extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__") [ptr i8, ptr i8] i1
 
-  function "main" [] void $ \_ -> mdo
+  function "main" [] void $ \_ -> do
     entry <- block `named` "entry";
-    generateExps symbolTable'' (expsForMain $ aexps ast)
+    generateExps (trace ("ST-FOR-EXPS: "<>ppShow symbolTable'') symbolTable'') (expsForMain $ aexps ast)
     retVoid
 
 
