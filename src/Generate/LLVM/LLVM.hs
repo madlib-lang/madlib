@@ -163,14 +163,6 @@ generateExp symbolTable exp = case exp of
   Optimized _ _ (Var "puts") ->
     return (symbolTable, Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i32 [ptr i8] False) (AST.mkName "puts")))
 
-  Optimized _ _ (AnonymousAbs n) ->
-    case Map.lookup n symbolTable of
-      Just (Symbol FunctionSymbol global) ->
-        return (symbolTable, global)
-
-      _ ->
-        error $ "Var not found " <> n
-
   Optimized _ _ (Var n) ->
     case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
       Just (Symbol FunctionSymbol global) ->
@@ -336,7 +328,7 @@ generateExp symbolTable exp = case exp of
     let (b, _) = List.head branches
 
     exitBlock <- block `named` "exitBlock"
-    ret <- phi branches -- <> [(defaultRet, defaultBlock)]
+    ret <- phi branches
 
     return (symbolTable, ret)
 
