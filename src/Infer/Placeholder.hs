@@ -144,7 +144,7 @@ updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholde
     ps  <- catchError (byInst env $ IsIn cls instanceTypes' Nothing) (const $ return [])
     ps' <- getAllParentPreds env ps
     pushPlaceholders env
-                     (Slv.Solved qt a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved qt' a' exp)))
+                     (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved (apply s qt') a' exp)))
                      ps'
 
 
@@ -169,9 +169,12 @@ updateClassPlaceholder env push s ph = case ph of
     ps'   <- buildClassRefPreds env cls instanceTypes'
 
     if not call then
-      return $ Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes) exp')
+      -- if all isConcrete instanceTypes' && not (all isConcrete instanceTypes) then
+      --   return exp'
+      -- else
+        return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
     else
-      return $ Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
+      return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
   _ -> return ph
 

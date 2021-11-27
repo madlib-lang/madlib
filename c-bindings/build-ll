@@ -1,4 +1,4 @@
 llvm-as-9 "$1.ll" -o "$1.bc"
 llc-9 -tailcallopt --debugger-tune=lldb --dwarf-version=3 -filetype=obj "$1.bc" -o "$1.o"
-clang++ -g -stdlib=libc++ -v "$1.o" ./generate-llvm/lib.o gc.a -o "$1.out"
+clang++ -g -stdlib=libc++ -v "$1.o" ./c-bindings/build/lib.a ./c-bindings/lib/libgc.a ./c-bindings/lib/libuv.a -o "$1.out"
 

@@ -304,6 +304,7 @@ getParamTypes t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) n -> p : getParamTypes n
   _ -> []
 
+
 dropFirstParamType :: Type -> Type
 dropFirstParamType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) n ->
@@ -311,6 +312,7 @@ dropFirstParamType t = case t of
 
   t' ->
     t'
+
 
 dropNFirstParamTypes :: Int -> Type -> Type
 dropNFirstParamTypes n t = case t of
@@ -323,6 +325,7 @@ dropNFirstParamTypes n t = case t of
   t' ->
     t'
 
+
 getTypeVarsInType :: Type -> [Type]
 getTypeVarsInType t = case t of
   TVar _           -> [t]
@@ -330,9 +333,21 @@ getTypeVarsInType t = case t of
   TRecord fields _ -> concat $ getTypeVarsInType <$> M.elems fields
   _                -> []
 
+
 getParamTypeOrSame :: Type -> Type
 getParamTypeOrSame t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
   _ -> t
 
 
+hasNumberPred :: [Pred] -> Bool
+hasNumberPred ps = case ps of
+  (p : next) -> case p of
+    IsIn "Number" _ _ ->
+      True
+
+    _ ->
+      hasNumberPred next
+
+  [] ->
+    False
