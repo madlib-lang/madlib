@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e94a8b06195b71597a310784f7cf6a7c6a413b7433e333d1e176f2042e648cdb
+-- hash: e5fe3146570b21c97b58877ba3a473d2a212b0383fc3b55e9808abf9af421b10
 
 name:           madlib
 version:        0.11.0
@@ -157,6 +157,85 @@ test-suite madlib-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      AST.Canonical
+      AST.Optimized
+      AST.Solved
+      AST.Source
+      Canonicalize.ADT
+      Canonicalize.AST
+      Canonicalize.Canonicalize
+      Canonicalize.CanonicalM
+      Canonicalize.Derive
+      Canonicalize.Env
+      Canonicalize.Interface
+      Canonicalize.JSExp
+      Canonicalize.Typing
+      Coverage.Coverable
+      Error.Backtrace
+      Error.Context
+      Error.Error
+      Error.Warning
+      Explain.Format
+      Explain.Location
+      Format.Format
+      Generate.Documentation
+      Generate.Javascript
+      Generate.JSInternals
+      Generate.Json
+      Generate.LLVM.ClosureConvert
+      Generate.LLVM.LLVM
+      Generate.LLVM.Optimized
+      Generate.LLVM.Rename
+      Generate.Utils
+      Infer.AST
+      Infer.Env
+      Infer.Exp
+      Infer.Infer
+      Infer.Instantiate
+      Infer.Interface
+      Infer.Pattern
+      Infer.Placeholder
+      Infer.Pred
+      Infer.Scheme
+      Infer.Scope
+      Infer.Substitute
+      Infer.ToSolved
+      Infer.Type
+      Infer.Typing
+      Infer.Unify
+      MadlibDotJson.MadlibDotJson
+      MadlibDotJson.MadlibVersion
+      Main
+      Optimize.Optimize
+      Parse.Comments.Lexer
+      Parse.DocString.DocString
+      Parse.DocString.Grammar
+      Parse.DocString.Lexer
+      Parse.Macro
+      Parse.Madlib.AST
+      Parse.Madlib.Grammar
+      Parse.Madlib.Lexer
+      Parse.Madlib.TargetMacro
+      Run.CommandLine
+      Run.Compile
+      Run.Format
+      Run.GenerateDocumentation
+      Run.GeneratePackage
+      Run.Package
+      Run.PackageHash
+      Run.PackageInstaller
+      Run.Run
+      Run.Target
+      Run.TestRunner
+      Run.Utils
+      Utils.Hash
+      Utils.Path
+      Utils.PathUtils
+      Utils.Tuple
+      Utils.URL
+      Utils.Version
+      VersionLock.PublicAPI
+      VersionLock.VersionLock
       Generate.JavascriptSpec
       Generate.JSInternalsSpec
       Infer.SolveSpec
@@ -165,6 +244,7 @@ test-suite madlib-test
       Utils.PathSpec
       Paths_madlib
   hs-source-dirs:
+      src
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -191,7 +271,6 @@ test-suite madlib-test
     , llvm-hs ==9.0.1
     , llvm-hs-pretty ==0.9.0.0
     , llvm-hs-pure ==9.0.0
-    , madlib
     , mtl
     , optparse-applicative
     , pretty-show
