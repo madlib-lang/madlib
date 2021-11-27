@@ -34,6 +34,14 @@ getTConId (TC id _) = id
 getTVarId :: TVar -> Id
 getTVarId (TV id _) = id
 
+getTV :: Type -> TVar
+getTV t = case t of
+  TVar tv ->
+    tv
+
+  _ ->
+    undefined
+
 
 tVar :: String -> Type
 tVar v = TVar (TV v Star)

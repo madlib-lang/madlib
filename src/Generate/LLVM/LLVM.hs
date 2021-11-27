@@ -593,7 +593,7 @@ buildReferencePAP symbolTable arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
-  Optimized (_ InferredType.:=> t) _ (Var n) ->
+  Optimized (ps InferredType.:=> t) _ (Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
@@ -873,6 +873,12 @@ generateExp env symbolTable exp = case exp of
         icmp IntegerPredicate.SLE leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
+  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "&&")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    result                <- Instruction.and leftOperand' rightOperand'
+    return (symbolTable, result, Nothing)
+
   Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
@@ -906,6 +912,9 @@ generateExp env symbolTable exp = case exp of
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
+
+        "Unit" -> do
+          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
         _ ->
           undefined
@@ -1425,6 +1434,7 @@ generateListSubPatternTest symbolTable basePtr pats = case pats of
 generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Pattern -> Operand -> m Operand
 generateBranchTest symbolTable pat value = case pat of
   Optimized _ _ (PNum n) ->
+    -- TODO: depending on the type of the pattern we need to generate fcmp or icmp
     fcmp FloatingPointPredicate.OEQ (C.double (read n)) value
 
   Optimized _ _ (PBool "true") ->
@@ -2373,6 +2383,21 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
+      unitEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "Unit"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea LUnit
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
 
       dictType   = InferredType.TVar (InferredType.TV "dict" InferredType.Star)
       listEqType = dictType `InferredType.fn` varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
@@ -2407,6 +2432,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
     , floatEqInstance
     , stringEqInstance
     , booleanEqInstance
+    , unitEqInstance
     , listEqInstance
     ]
   return ()

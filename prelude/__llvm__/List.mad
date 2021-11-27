@@ -37,7 +37,7 @@ showWith = (with, list) => {
 
 
 instance Show a => Show (List a) {
-  show = (l) => showWith(show, l)
+  show = showWith(show)
 }
 
 instance PrettyShow a => PrettyShow (List a) {
