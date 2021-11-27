@@ -2,7 +2,7 @@ import IO from "./IO"
 import {} from "./Number"
 import {} from "./String"
 import {} from "./Boolean"
-import {} from "./List"
+import { filter, reject } from "./List"
 
 
 IO.prettyLog("Hello world!")
@@ -12,3 +12,80 @@ IO.prettyLog([32, 133, 412])
 IO.prettyLog(["one string", "another one"])
 IO.prettyLog([true, false, false, false, true, false])
 IO.prettyLog(([] :: List Number))
+
+
+// instance Show { x :: Number, y :: Number } {
+//   show = (position) =>
+//     `{ x: ${show(position.x)}, y: ${show(position.y)} }`
+// }
+
+// instance PrettyShow { x :: Number, y :: Number } {
+//   ppShow = (position) =>
+//     `{ x: ${ppShow(position.x)}, y: ${ppShow(position.y)} }`
+// }
+
+instance Show a => Show { stuff :: a } {
+  show = (withStuff) => `{ stuff: ${show(withStuff.stuff)} }`
+}
+
+instance (Show a, Show b) => Show { x :: a, y :: b } {
+  show = (pos) => `{ x: ${show(pos.x)}, y: ${show(pos.y)} }`
+}
+
+IO.log(show({ stuff: false }))
+
+IO.log(show({ x: 3, y: 4 }))
+// IO.prettyLog({ x: 3, y: 4 })
+
+
+filtered = filter((x) => x > 2, [1, 2, 3, 4, 5, 6])
+IO.prettyLog(filtered)
+
+rejected = reject((x) => x > 2, [1, 2, 3, 4, 5, 6])
+IO.prettyLog(rejected)
+
+IO.prettyLog(!!true)
+IO.prettyLog(!!!true)
+IO.prettyLog(!false)
+
+
+
+inc = (a) => {
+  b = "1"
+  b = b ++ a
+  return a ++ b
+}
+
+IO.prettyLog(inc("4"))
+
+// makeCounter :: () -> (() -> Number)
+// makeCounter = (_) => {
+//   count = 0
+
+//   return (_) => {
+//     count = count + 1
+//     return count
+//   }
+// }
+
+// counter = makeCounter(())
+
+// IO.prettyLog(counter(()))
+// IO.prettyLog(counter(()))
+// IO.prettyLog(counter(()))
+
+
+makeGrower :: () -> (() -> List Number)
+makeGrower = (_) => {
+  initial = []
+
+  return (_) => {
+    initial = [...initial, 1]
+    return initial
+  }
+}
+
+grower = makeGrower(())
+
+IO.prettyLog(grower(()))
+IO.prettyLog(grower(()))

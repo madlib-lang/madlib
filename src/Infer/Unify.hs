@@ -147,11 +147,17 @@ instance Match Type where
     sl <- match l l'
     sr <- match r r'
     merge sl sr
-  match (TVar u) t | kind u == kind t = return $ M.singleton u t
+  match (TVar u) t | kind u == kind t =
+    return $ M.singleton u t
   match (TCon tc1 fp1) (TCon tc2 fp2)
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
     | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
+  match (TRecord fields1 _) (TRecord fields2 _) =
+    -- Not complete but that's all we need for now as we don't support userland
+    -- record instances. An instance for a record would be matched for all records.
+    unify (TRecord fields1 Nothing) (TRecord fields2 Nothing)
+    -- return M.empty
   match t1 t2 = throwError $ CompilationError (UnificationError t1 t2) NoContext
 
 instance Match t => Match [t] where

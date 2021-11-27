@@ -97,9 +97,9 @@ data KindRequirement
 
 typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
 typingToType env kindNeeded (Src.Source area (Src.TRSingle t))
-  | t == "Number" = return tNumber
+  | t == "Number"  = return tNumber
   | t == "Boolean" = return tBool
-  | t == "String" = return tStr
+  | t == "String"  = return tStr
   | t == "()" = return tUnit
   | isLower $ head t = return (TVar $ TV t Star)
   | otherwise = do

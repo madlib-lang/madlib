@@ -33,6 +33,8 @@ import           Explain.Location
 import           Text.Regex.TDFA
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Text.Show.Pretty
+import           Debug.Trace
 }
 
 %wrapper "monadUserState"
@@ -172,6 +174,10 @@ jsxTagClose = toRegex "\\`<\\/[a-zA-Z1-9]+[ \n\t]*>"
 
 constraintRegex :: Regex
 constraintRegex = toRegex "\\`[^={]*(=>)[^}]*"
+
+-- Use for instance headers, the initial opening curly is already consumed
+recordTypeRegex :: Regex
+recordTypeRegex = toRegex "\\`[ \n\t]*[a-zA-Z0-9_]*[ \n\t]*::"
 
 isTokenExport :: Regex
 isTokenExport = toRegex "\\`export[ ]+(type[ ]+)?[A-Za-z0-9_ ]+[ \n]*="
@@ -437,8 +443,13 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
   token <- case (tokenizer (take len input)) of
     TokenLeftCurly ->
       if sc == instanceHeader then do
-        popStartCode
-        return TokenLeftDoubleCurly
+        let next        = BLU.fromString $ ((tail . (take 70)) input)
+            matchRecord = match recordTypeRegex next :: Bool
+        if matchRecord then
+          return TokenLeftCurly
+        else do
+          popStartCode
+          return TokenLeftDoubleCurly
       else if sc == jsxText || sc == jsxOpeningTag || sc == jsxAutoClosed then do
         pushStartCode 0
         return TokenLeftCurly

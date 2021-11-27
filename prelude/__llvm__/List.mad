@@ -4,9 +4,11 @@ import {} from "./Functor"
 import {} from "./Monoid"
 import {} from "./PrettyShow"
 import { Just, Nothing } from "./Maybe"
+import { complement } from "./Function"
 
 push :: a -> List a -> List a
 push = extern "MadList_push"
+export push
 
 map2 :: (a -> b) -> List a -> List b
 map2 = extern "MadList_map"
@@ -55,7 +57,7 @@ instance Monoid (List a) {
 
 
 nth :: Number -> List a -> Maybe a
-nth = (index, list) => where(list) {
+export nth = (index, list) => where(list) {
   [] =>
     Nothing
 
@@ -67,7 +69,7 @@ nth = (index, list) => where(list) {
 
 
 reverse :: List a -> List a
-reverse = (xs) => {
+export reverse = (xs) => {
   helper :: List a -> List a -> List a
   helper = (acc, l) => where(l) {
     [h, ...t] =>
@@ -80,3 +82,23 @@ reverse = (xs) => {
   return helper([], xs)
 }
 
+
+filter :: (a -> Boolean) -> List a -> List a
+export filter = (predicate, list) => {
+  helper = (acc, xs) => where(xs) {
+    [h, ...t] =>
+      predicate(h)
+        ? helper(push(h, acc), t)
+        : helper(acc, t)
+
+    [] =>
+      reverse(acc)
+  }
+
+  return helper([], list)
+}
+
+
+reject :: (a -> Boolean) -> List a -> List a
+export reject = (predicate, list) =>
+  filter(complement(predicate), list)

@@ -84,6 +84,7 @@ newtype Env
 
 data SymbolType
   = VariableSymbol
+  | LocalVariableSymbol
   | FunctionSymbol Int
   -- ^ arity
   | MethodSymbol Int
@@ -109,6 +110,10 @@ type SymbolTable
 varSymbol :: Operand -> Symbol
 varSymbol =
   Symbol VariableSymbol
+
+localVarSymbol :: Operand -> Symbol
+localVarSymbol =
+  Symbol LocalVariableSymbol
 
 fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
@@ -517,6 +522,10 @@ generateExp env symbolTable exp = case exp of
         loaded <- load ptr 8
         return (symbolTable, loaded)
 
+      Just (Symbol LocalVariableSymbol ptr) -> do
+        loaded <- load ptr 8
+        return (symbolTable, loaded)
+
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
         constructed <- call fnPtr []
@@ -621,63 +630,79 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp')
     else
-      -- TODO: Make a local reference, otherwise we rebuild the whole exp each time we pull
-      -- it from the symbolTable
-      return (Map.insert name (varSymbol exp') symbolTable, exp')
+      case Map.lookup name (trace ("VAR: "<>name) symbolTable) of
+        Just (Symbol LocalVariableSymbol inScope) -> do
+          store inScope 8 (trace ("LOCAL-VAR: " <> name) exp')
+          return (symbolTable, exp')
+
+        Just (Symbol _ inScope) ->
+          return (symbolTable, inScope)
+
+        Nothing -> do
+          let t = typeOf exp'
+          ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof t, [])]
+          ptr' <- bitcast ptr (Type.ptr t)
+          store ptr' 8 (trace ("NAME: "<>name) exp')
+          return (Map.insert name (localVarSymbol ptr') symbolTable, exp')
+
+  Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
+    (_, operand') <- generateExp env symbolTable operand
+    result        <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
+    return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fsub leftOperand' rightOperand'
+    result             <- fsub leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "+")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fadd leftOperand' rightOperand'
+    result             <- fadd leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "*")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fmul leftOperand' rightOperand'
+    result             <- fmul leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "/")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fdiv leftOperand' rightOperand'
+    result             <- fdiv leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "++")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- call strConcat [(leftOperand', []), (rightOperand', [])]
+    result             <- call strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "==")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    -- TODO: add special check for strings
-    result <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+    -- TODO: add special check for strings, tuples, records etc
+    result             <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
+    result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+    result             <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
+    result             <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized t _ (App fn args) -> case fn of
@@ -704,7 +729,7 @@ generateExp env symbolTable exp = case exp of
         let argsApplied = List.length args
 
         pap' <-
-          if symbolType == TopLevelAssignment then
+          if symbolType == TopLevelAssignment || symbolType == LocalVariableSymbol then
             load pap 8
           else
             return pap

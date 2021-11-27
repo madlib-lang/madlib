@@ -27,6 +27,8 @@ data OptimizationState
 data Env
   = Env
   { freeVars :: [Opt.Name]
+  , freeVarExclusion :: [Opt.Name]
+  -- ^ Closured names that are reassigned. So if we find something in the higher scope, the inner function should not skip it but create a param for it
   , stillTopLevel :: Bool
   , lifted :: M.Map String (String, [Opt.Exp])
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
@@ -68,6 +70,14 @@ addGlobalFreeVar :: Opt.Name -> Env -> Env
 addGlobalFreeVar fv env =
   env { freeVars = fv : freeVars env }
 
+addVarExclusion :: String -> Env -> Env
+addVarExclusion var env =
+  env { freeVarExclusion = var : freeVarExclusion env }
+
+addVarExclusions :: [String] -> Env -> Env
+addVarExclusions vars env =
+  env { freeVarExclusion = vars ++ freeVarExclusion env }
+
 addLiftedLambda :: Opt.Name -> Opt.Name -> [Opt.Exp] -> Env -> Env
 addLiftedLambda originalName liftedName args env =
   env { lifted = M.insert originalName (liftedName, args) $ lifted env }
@@ -97,10 +107,17 @@ findFreeVars env exp = do
     Slv.Solved _ _ (Slv.Var "!=") ->
       return []
 
+    Slv.Solved _ _ (Slv.Var "!") ->
+      return []
+
     Slv.Solved _ _ (Slv.Var ">") ->
       return []
 
     Slv.Solved _ _ (Slv.Var "<") ->
+      return []
+
+    -- field access should not be registered as a free var
+    Slv.Solved _ _ (Slv.Var ('.' : _)) ->
       return []
 
     Slv.Solved _ _ (Slv.Var n) -> do
@@ -142,6 +159,15 @@ findFreeVars env exp = do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
+    Slv.Solved _ _ (Slv.TemplateString exps) -> do
+      vars <- mapM (findFreeVars env) exps
+      return $ concat vars
+
+    Slv.Solved _ _ (Slv.Access record field) -> do
+      recordVars <- findFreeVars env record
+      fieldVars  <- findFreeVars env field
+      return $ recordVars ++ fieldVars
+
     Slv.Solved _ _ (Slv.ListConstructor exps) -> do
       vars <- mapM (findFreeVars env . Slv.getListItemExp) exps
       return $ concat vars
@@ -180,7 +206,7 @@ findFreeVars env exp = do
   let globalVars = freeVars env ++ M.keys (lifted env)
   let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs'
+  return $ filter (\(varName, _) -> varName `notElem` globalVars || varName `elem` freeVarExclusion env) fvs'
 
 findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
 findFreeVarsInBranches env iss = case iss of
@@ -232,31 +258,35 @@ class Optimizable a b where
 
 
 -- At this point it's no longer top level and all functions encountered must be lifted
-optimizeBody :: Env -> [Slv.Exp] -> Optimize [Opt.Exp]
-optimizeBody env body = case body of
+optimizeBody :: [String] -> Env -> [Slv.Exp] -> Optimize [Opt.Exp]
+optimizeBody exclusionVars env body = case body of
   [] ->
     return []
 
   (exp : es) -> case exp of
     Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
-      exp' <- optimizeAbs env name abs
-      next <- optimizeBody (addGlobalFreeVar name env) es
+      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
+      next <- optimizeBody exclusionVars (addGlobalFreeVar name env) es
       return $ exp' : next
 
     Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
-      exp' <- optimizeAbs env name abs
-      next <- optimizeBody (addGlobalFreeVar name env) es
+      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
+      next <- optimizeBody exclusionVars (addGlobalFreeVar name env) es
+      return $ exp' : next
+
+    abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
+      exp' <- optimize (addVarExclusions exclusionVars env) abs
+      next <- optimizeBody exclusionVars env es
       return $ exp' : next
 
     Slv.Solved _ _ (Slv.Assignment name e) -> do
       e'   <- optimize env exp
-      next <- optimizeBody env es
-      -- next <- optimizeBody (addGlobalFreeVar name env) es
+      next <- optimizeBody (name : exclusionVars) env es
       return $ e' : next
 
     _ -> do
       exp' <- optimize env exp
-      next <- optimizeBody env es
+      next <- optimizeBody exclusionVars env es
       return $ exp' : next
 
 
@@ -291,22 +321,8 @@ collectAppArgs isFirst app = case app of
     let (nextFn, nextArgs) = collectAppArgs False next
     in  (nextFn, nextArgs <> [arg])
 
-  -- Slv.Solved _ _ (Slv.App next arg True) ->
-  --   (next, [arg])
-
   b ->
     (b, [])
--- collectAppArgs :: Slv.Exp -> (Slv.Exp, [Slv.Exp])
--- collectAppArgs app = case app of
---   Slv.Solved _ _ (Slv.App next arg _) ->
---     let (nextFn, nextArgs) = collectAppArgs next
---     in  (nextFn, nextArgs <> [arg])
-
---   -- Slv.Solved _ _ (Slv.App next arg True) ->
---   --   (next, [arg])
-
---   b ->
---     (b, [])
 
 
 optimizeAbs :: Env -> String -> Slv.Exp -> Optimize Opt.Exp
@@ -314,7 +330,7 @@ optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area _) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let (params, body') = collectAbsParams abs
-    body'' <- optimizeBody env { stillTopLevel = False } body'
+    body'' <- optimizeBody [] env { stillTopLevel = False } body'
 
     -- Hacky for now
     let paramTypes = getParamTypes t
@@ -331,7 +347,7 @@ optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area _) = do
     let (params, body') = collectAbsParams abs
     fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
     functionName' <- generateLiftedName functionName
-    body''        <- optimizeBody (addLiftedLambda functionName functionName' (snd <$> fvs) env) body'
+    body''        <- optimizeBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body'
 
     let paramsWithFreeVars = (fst <$> fvs) ++ params
 
@@ -455,7 +471,7 @@ instance Optimizable Slv.Exp Opt.Exp where
     -- unnamed abs, we need to generate a name here
     Slv.Abs (Slv.Solved _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
-      body''       <- optimizeBody env body'
+      body''       <- optimizeBody [] env body'
       fvs          <- findFreeVars env fullExp
       functionName <- generateLiftedName "$lambda"
 
@@ -483,7 +499,7 @@ instance Optimizable Slv.Exp Opt.Exp where
         return $ Opt.Optimized typeWithPlaceholders area $ TopLevelAbs functionName params [innerExp']
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
-        fvs           <- findFreeVars (addGlobalFreeVar functionName env) innerExp
+        fvs <- findFreeVars (addGlobalFreeVar functionName env) innerExp
         let fvsWithoutDictionary = filter (not . (`elem` dictParams) . fst) fvs
         let paramsWithFreeVars   = (fst <$> fvsWithoutDictionary) ++ dictParams
 
@@ -538,7 +554,7 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.If cond' truthy' falsy')
 
     Slv.Do exps -> do
-      exps' <- optimizeBody env { stillTopLevel = False } exps --mapM (optimize env { stillTopLevel = False }) exps
+      exps' <- optimizeBody [] env { stillTopLevel = False } exps
       return $ Opt.Optimized t area (Opt.Do exps')
 
     Slv.Where exp iss -> do
@@ -762,21 +778,53 @@ buildTypeStrForPlaceholder ts = intercalate "_" $ getTypeHeadName <$> ts
 
 getTypeHeadName :: Type -> String
 getTypeHeadName t = case t of
-  TVar (TV n _)   -> n
+  TVar (TV n _)   ->
+    n
+
   TCon (TC n _) _ -> case n of
-    "()"          -> "Unit"
-    "(,)"         -> "Tuple_2"
-    "(,,)"        -> "Tuple_3"
-    "(,,,)"       -> "Tuple_4"
-    "(,,,,)"      -> "Tuple_5"
-    "(,,,,,)"     -> "Tuple_6"
-    "(,,,,,,)"    -> "Tuple_7"
-    "(,,,,,,,)"   -> "Tuple_8"
-    "(,,,,,,,,)"  -> "Tuple_9"
-    "(,,,,,,,,,)" -> "Tuple_10"
-    _             -> n
-  TApp (TApp (TCon (TC "(->)" _) _) tl) tr -> getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
-  TApp l _  -> getTypeHeadName l
+    "()"          ->
+      "Unit"
+
+    "(,)"         ->
+      "Tuple_2"
+
+    "(,,)"        ->
+      "Tuple_3"
+
+    "(,,,)"       ->
+      "Tuple_4"
+
+    "(,,,,)"      ->
+      "Tuple_5"
+
+    "(,,,,,)"     ->
+      "Tuple_6"
+
+    "(,,,,,,)"    ->
+      "Tuple_7"
+
+    "(,,,,,,,)"   ->
+      "Tuple_8"
+
+    "(,,,,,,,,)"  ->
+      "Tuple_9"
+
+    "(,,,,,,,,,)" ->
+      "Tuple_10"
+
+    _             ->
+      n
+
+  TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
+    getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
+
+  TApp l _  ->
+    getTypeHeadName l
+
+  TRecord fields _ ->
+    let fields'   = M.map getTypeHeadName fields
+        fieldsStr = intercalate "_" $ uncurry (++) <$> M.toList fields'
+    in  "Record" <> "_" <> fieldsStr
 
 
 -- I think at some point we might want to follow imports in the optimization
@@ -784,6 +832,6 @@ getTypeHeadName t = case t of
 -- an env for optimization to keep track of what dictionaries have been removed.
 optimizeTable :: Slv.Table -> Opt.Table
 optimizeTable table =
-  let env       = Env { freeVars = [], stillTopLevel = True, lifted = M.empty }
+  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
       optimized = mapM (optimize env) table
   in  evalState optimized initialOptimizationState
