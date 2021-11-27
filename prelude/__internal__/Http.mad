@@ -1,3 +1,5 @@
+#iftarget js
+
 import W from "Wish"
 import type { Wish } from "Wish"
 import { Wish } from "Wish"
@@ -16,7 +18,7 @@ import http from "http"
 {/Node}
 -#
 
-alias Status = Number
+alias Status = Integer
 export BadRequest = 400
 export Unauthorized = 401
 export PaymentRequired = 402
@@ -72,7 +74,7 @@ headerKey = where { Header(key, _) => key }
 headerValue :: Header -> String
 headerValue = where { Header(_, val) => val }
 
-bodyLength :: Data -> Number
+bodyLength :: Data -> Integer
 bodyLength = where {
   TextData(s) => S.len(s)
   BinaryData(bytes) => B.len(bytes)
@@ -256,3 +258,4 @@ deleteWithHeaders :: String -> Data -> List Header -> Wish Response Response
 export deleteWithHeaders = (url, body, headers) =>
   requestWithBodyAndHeaders(DELETE, url, body, headers)
 
+#endif

@@ -1,3 +1,5 @@
+#iftarget js
+
 import { test, assertEquals, ErrorWithMessage } from "TestTools"
 import { bad, mapRej, bichain } from "Wish"
 import { always } from "Function"
@@ -32,3 +34,5 @@ test("get should return a bad Wish containing the error response when the server
   statusCode: 404,
   response: TextData("Not found")
 })))
+
+#endif

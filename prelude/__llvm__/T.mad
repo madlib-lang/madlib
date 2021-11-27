@@ -25,6 +25,19 @@ instance (Show a, Show b) => Show { x :: a, y :: b } {
   show = (pos) => `{ x: ${show(pos.x)}, y: ${show(pos.y)} }`
 }
 
+instance (Show a, Show b) => Show #[a, b] {
+  show = where { #[a, b] => "#[" ++ show(a) ++ ", " ++ show(b) ++ "]" }
+}
+
+snd :: #[a, b] -> b
+export snd = (tuple) => where(tuple) {
+  #[_, b] =>
+    b
+}
+
+IO.prettyLog(map(snd, [#[1, 4]]))
+IO.prettyLog(map((x) => x + 1, [54, 87]))
+
 IO.log(show({ stuff: false }))
 
 IO.log(show({ x: 3, y: 4 }))
@@ -121,6 +134,25 @@ grower(3)
 grower(4)
 IO.prettyLog(grower(10))
 IO.prettyLog(grower(21))
+
+
+makeList :: () -> List Integer
+makeList = (_) => {
+  initial = []
+
+  grow = (n) => {
+    initial = [...initial, n]
+    return initial
+  }
+
+  grow(11)
+  grow(22)
+  grow(33)
+
+  return initial
+}
+
+IO.prettyLog(makeList(()))
 
 
 makeCounterWithRec :: () -> (() -> Integer)

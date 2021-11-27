@@ -107,13 +107,13 @@ export not = (b) => !b
 flip :: (a -> b -> c) -> (b -> a -> c)
 export flip = (f) => ((b, a) => f(a, b))
 
+#iftarget js
 
 any :: (a -> Boolean) -> List a -> Boolean
 export any = (predicate, xs) => #- xs.some(predicate) -#
 
 all :: (a -> Boolean) -> List a -> Boolean
 export all = (predicate, xs) => #- xs.every(predicate) -#
-
 
 #-
 const nativeMemoize = (fn) => {
@@ -130,3 +130,5 @@ const nativeMemoize = (fn) => {
 
 memoize :: (a -> b) -> (a -> b)
 export memoize = (fn) => #- nativeMemoize(fn) -#
+
+#endif

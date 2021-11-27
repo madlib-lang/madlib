@@ -1,3 +1,5 @@
+#iftarget js
+
 import HP from "HitPoint"
 import W from "Wish"
 import IO from "IO"
@@ -13,12 +15,15 @@ import { andDo } from "Monad"
 import { TextData } from "Data"
 import Context from "HitPointContext"
 
+#endif
+
 colorString :: String -> String -> String
 colorString = (color, v) => color ++ v ++"\x1b[0m"
 
 red = colorString("\x1b[31m")
 green = colorString("\x1b[32m")
 
+#iftarget js
 
 export type AssertionError a
   = AssertionError(a, a)
@@ -44,7 +49,7 @@ addFunctionHit = (astPath, name, lcov) => map(
   lcov
 )
 
-addLineHit :: String -> Number -> Lcov.LcovInfo -> Lcov.LcovInfo
+addLineHit :: String -> Integer -> Lcov.LcovInfo -> Lcov.LcovInfo
 addLineHit = (astPath, line, lcov) =>
   map(
     (section) =>
@@ -100,7 +105,7 @@ collect = (hps, lcov) =>
   ) |> collectLh |> collectFnh
 
 
-buildRow :: String -> Number -> Number -> IO.Row
+buildRow :: String -> Float -> Float -> IO.Row
 buildRow = (name, lines, functions) => {
   formattedLines = N.formatDecimal(2, lines) ++ "%"
   formattedFunctions = N.formatDecimal(2, functions) ++ "%"
@@ -126,14 +131,14 @@ allRow = (lcov) => pipe(
     },
     { lf: 0, lh: 0, fnf: 0, fnh: 0 }
   ),
-  (total) => #[100 * total.lh / total.lf, 100 * total.fnh / total.fnf],
+  (total) => #[100 * N.intToFloat(total.lh) / N.intToFloat(total.lf), 100 * N.intToFloat(total.fnh) / N.intToFloat(total.fnf)],
   (total) => buildRow("All", T.fst(total), T.snd(total))
 )(lcov)
 
-computePercents :: Number -> Number -> Number
+computePercents :: Integer -> Integer -> Float
 computePercents = (hit, found) => found == 0
   ? 100
-  : 100 * hit / found
+  : 100 * N.intToFloat(hit) / N.intToFloat(found)
 
 generateTable :: Lcov.LcovInfo -> List IO.Row
 generateTable = (lcov) =>
@@ -255,7 +260,7 @@ reportGood = (id, good) => #-{
   })
 }-#
 
-assertEquals :: a -> a -> W.Wish (AssertionError a) String
+assertEquals :: Eq a => a -> a -> W.Wish (AssertionError a) String
 export assertEquals = (actual, expected) => actual == expected
   ? of("")
   : W.bad(AssertionError(expected, actual))
@@ -285,3 +290,32 @@ displayResults = (results) => {
     )
   )(T.snd(results))
 }
+
+#elseif llvm
+import Wish from "Wish"
+import IO from "IO"
+
+export type AssertionError a
+  = AssertionError(a, a)
+  | Error(a)
+  | ErrorWithMessage(String)
+  | NotImplemented
+
+
+assertEquals :: Eq a => a -> a -> Wish.Wish (AssertionError a) String
+export assertEquals = (actual, expected) => actual == expected
+  ? of("")
+  : Wish.bad(AssertionError(expected, actual))
+
+
+test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) ()
+export test = (description, testImpl) => pipe(
+  (run) => run(description),
+  map((_) => IO.log(green("  \x2713 " ++ description))),
+  Wish.chainRej((_) => of(IO.log(red("  \x00d7 " ++ description))))
+  // map(formatSuccessOutput(description)),
+  // Wish.chainRej(formatFailureOutput(description)),
+  // Wish.fulfill((_) => IO.log("failed"), (_) => IO.log("passed"))
+)(testImpl)
+
+#endif

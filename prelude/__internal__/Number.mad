@@ -3,14 +3,33 @@ import {} from "Read"
 import type { Maybe } from "Maybe"
 import { Just, Nothing } from "Maybe"
 
+#iftarget js
 instance Show Float {
   show = (x) => #- x.toString() -#
 }
+#elseif llvm
+showFloat :: Float -> String
+showFloat = extern "__floatToStr__"
 
+instance Show Float {
+  show = showFloat
+}
+#endif
+
+#iftarget js
 instance Show Integer {
   show = (x) => #- x.toString() -#
 }
+#elseif llvm
+showInteger :: Integer -> String
+showInteger = extern "__integerToStr__"
 
+instance Show Integer {
+  show = showInteger
+}
+endif
+
+#iftarget js
 instance Read Float {
   read = fromString
 }
@@ -19,12 +38,15 @@ instance Read Integer {
   read = fromString
 }
 
+intToFloat :: Integer -> Float
+export intToFloat = (x) => #- x -#
 
 fromString :: Number a => String -> Maybe a
 export fromString = (str) => (#- {
   const n = parseFloat(str)
   return isNaN(n) ? Nothing : Just(n)
 } -#)
+
 
 /**
  * Formats a a number given as the first parameter to a string containing the
@@ -33,7 +55,7 @@ export fromString = (str) => (#- {
  * @example
  * formatDecimal(3.14159, 2) // "3.14"
  */
-formatDecimal :: Float -> Integer -> String
+formatDecimal :: Number a => a -> Float -> String
 export formatDecimal = (a, x) => #-{
   const n = x.toFixed(a)
   return isNaN(n) ? "0" : n
@@ -49,3 +71,4 @@ export range = (a, b) => #-{
   }
   return out
 }-#
+#endif

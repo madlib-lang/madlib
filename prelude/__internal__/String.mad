@@ -16,6 +16,8 @@ instance Show String {
   show = (a) => a
 }
 
+#iftarget js
+
 toLower :: String -> String
 export toLower = (s) => #- s.toLowerCase() -#
 
@@ -111,3 +113,5 @@ export repeat = (n, s) => #- s.repeat(n) -#
 
 match :: String -> String -> Boolean
 export match = (regex, input) => #- input.match(regex) -#
+
+#endif

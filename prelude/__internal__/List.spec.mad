@@ -1,3 +1,4 @@
+#iftarget js
 import { test, assertEquals } from "TestTools"
 import {
   append,
@@ -177,3 +178,4 @@ test("dropLast", (_) => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 
 
 test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
 
+#endif

@@ -1,3 +1,5 @@
+#iftarget js
+
 #-
 import async_hooks from "async_hooks";
 
@@ -38,3 +40,5 @@ export getContext = #-() => {
   return contexts[asyncId] || {};
 };
 -#
+
+#endif

@@ -40,7 +40,7 @@ lookupADT env name = case M.lookup name (envTypeDecls env) of
 
 initialEnv :: Env
 initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Dictionary", tDictionary)]
-                 , envInterfaces = mempty
+                 , envInterfaces = M.fromList [("Eq", Interface [TV "a" Star] [])]
                  , envCurrentPath = ""
                  }
 

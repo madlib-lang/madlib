@@ -1,3 +1,5 @@
+#iftarget js
+
 #-
 {Node}
 import util from "util"
@@ -95,3 +97,11 @@ export table = (rows, a) => (#- {
   console.table(readyRows)
   return a
 } -#)
+
+#elseif llvm
+log :: String -> ()
+log = extern "puts"
+
+export log
+
+#endif

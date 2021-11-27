@@ -1,3 +1,5 @@
+#iftarget js
+
 import String from "String"
 import { filter, first, last, join, drop, dropLast } from "List"
 import { fromMaybe, Nothing, Just } from "Maybe"
@@ -95,7 +97,7 @@ export canonicalizePath = pipe(
  * @example
  * dropPathSegments(2, "/root/path/extra") // "path/extra"
  */
-dropPathSegments :: Number -> FilePath -> FilePath
+dropPathSegments :: Integer -> FilePath -> FilePath
 export dropPathSegments = (howMany) => pipe(
   splitPath,
   drop(howMany),
@@ -182,3 +184,5 @@ export takeExtension = pipe(
   map(ifElse(String.isEmpty, identity, mappend("."))),
   fromMaybe("")
 )
+
+#endif

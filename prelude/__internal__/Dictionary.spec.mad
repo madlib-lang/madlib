@@ -1,3 +1,5 @@
+#iftarget js
+
 import { assertEquals, test } from "TestTools"
 import {
   empty,
@@ -91,3 +93,5 @@ test("merge", (_) => {
 
   return assertEquals(merge(dictLeft, dictRight), expected)
 })
+
+#endif

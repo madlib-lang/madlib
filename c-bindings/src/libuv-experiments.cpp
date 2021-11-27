@@ -1,46 +1,28 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <uv.h>
-
-#include <chrono>
-#include <cmath>
-#include <future>
-#include <thread>
-
-uv_loop_t *loop;
-
-void timerCB(uv_timer_t *handle) { printf("done - %s\n", handle->data); }
-
-void out() {
-    printf("timer");
-}
-
-void forwardTimeoutCallback(uv_timer_t *handle) {
-  void(*cb)() = (void(*)()) handle->data;
-  cb();
-}
-
-void setTimeout(void(*cb)(), int millis) {
-  uv_timer_t *timer_req1 = (uv_timer_t *)malloc(sizeof(uv_timer_t));
-  timer_req1->data = (void*) cb;
-  uv_timer_init(loop, timer_req1);
-  uv_timer_start(timer_req1, forwardTimeoutCallback, millis, 0);
-}
+#include <iostream>
 
 int main() {
-  loop = (uv_loop_t *)malloc(sizeof(uv_loop_t));
-  uv_loop_init(loop);
+  // char *s = "\u2321";
+  // printf("char code1: %u\n", s[0]);
+  // puts((char*) s);
+
+  char *s = (char*)malloc(10);
+  s[0] = '\\';
+  s[1] = 'x';
+  s[2] = '2';
+  s[3] = '7';
+  s[4] = '1';
+  s[5] = '3';
+  s[6] = 0;
+  puts(s);
 
 
-  printf("Running.\n");
-  setTimeout([]() { printf("timer1\n"); }, 2000);
-  setTimeout([]() { printf("timer2\n"); }, 1000);
-  setTimeout([]() { printf("timer3\n"); }, 500);
+  // wchar_t *s2 = (wchar_t*) malloc(sizeof(wchar_t)*2);
+  wchar_t *s2 = L"\u2713";
+  // s2[1] = 0;
 
-
-  uv_run(loop, UV_RUN_DEFAULT);
-
-  uv_loop_close(loop);
-  free(loop);
+  wprintf(s2);
+  puts("");
+  // puts((char*) s2);
   return 0;
 }

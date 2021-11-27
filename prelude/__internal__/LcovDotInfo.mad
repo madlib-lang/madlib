@@ -1,3 +1,5 @@
+#iftarget js
+
 import L from "List"
 import S from "String"
 import N from "Number"
@@ -10,13 +12,13 @@ import Maybe from "Maybe"
 export type LcovLine
   = TN(String)
   | SF(String)
-  | FN(Number, String)
-  | FNDA(Number, String)
-  | FNF(Number)
-  | FNH(Number)
-  | DA(Number, Number)
-  | LF(Number)
-  | LH(Number)
+  | FN(Integer, String)
+  | FNDA(Integer, String)
+  | FNF(Integer)
+  | FNH(Integer)
+  | DA(Integer, Integer)
+  | LF(Integer)
+  | LH(Integer)
 
 /**
  * LcovLine type
@@ -52,12 +54,12 @@ emptySection = {
   lh: LH(0)
 }
 
-parseNumberString :: (Number -> String -> LcovLine) -> String -> LcovLine
+parseNumberString :: (Integer -> String -> LcovLine) -> String -> LcovLine
 parseNumberString = (ctor, args) => where(S.split(",", args)) {
   [line, name] => ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
 }
 
-parseNumberNumber :: (Number -> Number -> LcovLine) -> String -> LcovLine
+parseNumberNumber :: (Integer -> Integer -> LcovLine) -> String -> LcovLine
 parseNumberNumber = (ctor, args) => where(S.split(",", args)) {
   [line, count] =>
     ctor(
@@ -129,3 +131,5 @@ stringifySection = (section) =>
 
 stringify :: LcovInfo -> String
 export stringify = (lcov) => L.reduceL((r, section) => r ++ stringifySection(section), "", lcov)
+
+#endif

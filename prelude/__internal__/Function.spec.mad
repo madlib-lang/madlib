@@ -1,3 +1,5 @@
+#iftarget js
+
 import { assertEquals, test } from "./TestTools"
 import {} from "MonadState"
 import {} from "List"
@@ -14,7 +16,7 @@ import {
   when
 } from "./Function"
 
-divide :: Number -> Number -> Number
+divide :: Float -> Float -> Float
 divide = (a, b) => a / b
 
 
@@ -125,3 +127,5 @@ test("memoize - should call the function again once per different arg", (_) => {
 
   return assertEquals(count, 3)
 })
+
+#endif

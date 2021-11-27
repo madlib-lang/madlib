@@ -161,7 +161,7 @@ inferMethod' env instancePreds constraintPreds (mn, Can.Canonical area (Can.Assi
       sc' = quantify (ftv t'') (qs' :=> t'')
   ps'         <- filterM ((not <$>) . entail env qs') (apply s' ps)
 
-  (ds, rs)    <- split True env fs gs ps'
+  (ds, rs, _) <- split True env fs gs ps'
 
   withParents <- getAllParentPreds env qs'
 

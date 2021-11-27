@@ -13,7 +13,7 @@ typedef struct EqDictionary {
 extern "C" {
 #endif
 
-MadListNode_t *Madlist_empty();
+MadListNode_t *MadList_empty();
 
 bool *__eqList__(EqDictionary_t* eqDict, MadListNode **l1, MadListNode **l2);
 

@@ -76,8 +76,11 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
         p -> return $ Just p
 
       case path' of
-        Just p  -> Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
-        Nothing -> return Nothing
+        Just p  ->
+          Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+
+        Nothing ->
+          return Nothing
 
     PackagePath -> makePathForPackage pathUtils rootPath path
 
@@ -96,7 +99,9 @@ makePathForPackage :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 makePathForPackage pathUtils rootPath pkgName = do
   preludeModulePath <- findPreludeModulePath pathUtils pkgName
   case preludeModulePath of
-    Just path -> return $ Just path
+    Just path ->
+      return $ Just path
+
     Nothing   -> do
       (madlibDotJsonFile, _) <- retrieveMadlibDotJson pathUtils rootPath
       case madlibDotJsonFile of

@@ -23,6 +23,7 @@ import           Control.Monad.Except
 import           Data.List
 import Debug.Trace
 import Text.Show.Pretty
+import qualified Data.Maybe as Maybe
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
@@ -188,6 +189,9 @@ typingToType env _ (Src.Source _ (Src.TRArr l r)) = do
 typingToType env _ (Src.Source _ (Src.TRRecord fields base)) = do
   fields' <- mapM (typingToType env (KindRequired Star)) fields
   base'   <- mapM (typingToType env (KindRequired Star)) base
+  when (Maybe.isNothing base) $ do
+    let fieldNames = M.keys fields'
+    pushRecordToDerive fieldNames
   return $ TRecord fields' base'
 
 typingToType env _ (Src.Source _ (Src.TRTuple elems)) = do

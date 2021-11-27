@@ -1,3 +1,5 @@
+#iftarget js
+
 import { assertEquals, test } from "TestTools"
 import { MORE, LESS, EQUAL } from "./Compare"
 
@@ -12,3 +14,5 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 test("compare Boolean - MORE", (_) => assertEquals(compare(true, false), MORE))
 test("compare Boolean - LESS", (_) => assertEquals(compare(false, true), LESS))
 test("compare Boolean - EQUAL", (_) => assertEquals(compare(false, false), EQUAL))
+
+#endif

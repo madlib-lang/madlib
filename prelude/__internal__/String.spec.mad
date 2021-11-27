@@ -1,3 +1,5 @@
+#iftarget js
+
 import { test, assertEquals } from "TestTools"
 import { lines, mapChars, replace } from "./String"
 
@@ -12,3 +14,5 @@ test("mapChars should map the characters of a String", (_) => {
 })
 
 test("replace should replace parts of a string given some regex and replacement string", (_) => assertEquals(replace("a", "b", "abc"), "bbc"))
+
+#endif

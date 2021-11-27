@@ -41,7 +41,7 @@ solveASTsForDoc :: FilePath -> [FilePath] -> IO (Either CompilationError [(Slv.A
 solveASTsForDoc _          []         = return $ Right []
 solveASTsForDoc rootFolder (fp : fps) = do
   canonicalEntrypoint <- canonicalizePath fp
-  astTable            <- buildASTTable mempty canonicalEntrypoint
+  astTable            <- buildASTTable TNode mempty canonicalEntrypoint
   let (canTable, _) = case astTable of
         Right table -> Can.runCanonicalization mempty TNode Can.initialEnv table canonicalEntrypoint
         Left  e     -> (Left e, [])

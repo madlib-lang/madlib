@@ -35,8 +35,8 @@ run cmd = do
             Right s -> runCompilation cmd { compileOutput = s } coverage
             Left  e -> putStrLn e
 
-    Test entrypoint coverage ->
-      runTests entrypoint coverage
+    Test entrypoint coverage target ->
+      runTests entrypoint coverage target
 
     Install ->
       runPackageInstaller

@@ -23,7 +23,7 @@ data Command
       , compileJson :: Bool
       , compileTestFilesOnly :: Bool
       }
-  | Test { testInput :: FilePath, coverage :: Bool }
+  | Test { testInput :: FilePath, coverage :: Bool, testTarget :: Target }
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
@@ -155,7 +155,7 @@ parseTestInput =
   strOption (long "input" <> short 'i' <> metavar "INPUT" <> help "What to test" <> showDefault <> value ".")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseCoverage
+parseTest = Test <$> parseTestInput <*> parseCoverage <*> parseTarget
 
 
 parseRunInput :: Parser FilePath

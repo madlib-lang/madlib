@@ -3,7 +3,7 @@
  *
  * @since 0.0.5
  */
-add :: Number -> Number -> Number
+add :: Number a => a -> a -> a
 export add = (a, b) => (a + b)
 
 /**
@@ -11,7 +11,7 @@ export add = (a, b) => (a + b)
  *
  * @since 0.0.5
  */
-substract :: Number -> Number -> Number
+substract :: Number a => a -> a -> a
 export substract = (a, b) => (a - b)
 
 /**
@@ -19,7 +19,7 @@ export substract = (a, b) => (a - b)
  *
  * @since 0.0.5
  */
-multiply :: Number -> Number -> Number
+multiply :: Number a => a -> a -> a
 export multiply = (a, b) => (a * b)
 
 /**
@@ -27,7 +27,7 @@ export multiply = (a, b) => (a * b)
  *
  * @since 0.0.5
  */
-divide :: Number -> Number -> Number
+divide :: Float -> Float -> Float
 export divide = (a, b) => (a / b)
 
 
@@ -36,7 +36,7 @@ export divide = (a, b) => (a / b)
  *
  * @since 0.0.5
  */
-mod :: Number -> Number -> Number
+mod :: Float -> Float -> Float
 export mod = (a, b) => (a % b)
 
 
@@ -45,7 +45,7 @@ export mod = (a, b) => (a % b)
  *
  * @since 0.0.5
  */
-sqrt :: Number -> Number
+sqrt :: Float -> Float
 sqrt = (n) => (#- Math.sqrt(n) -#)
 
 
@@ -54,5 +54,5 @@ sqrt = (n) => (#- Math.sqrt(n) -#)
  *
  * @since 0.0.5
  */
-square :: Number -> Number
+square :: Number a => a -> a -> a
 square = (n) => n * n

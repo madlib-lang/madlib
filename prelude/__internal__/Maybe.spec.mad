@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { Maybe } from "./Maybe"
 import { test, assertEquals } from "TestTools"
 import { Just, Nothing, fromMaybe } from "./Maybe"
@@ -22,7 +24,9 @@ test("chain", (_) => assertEquals(chain((x) => Just(x + 1), Just(1)), Just(2)))
 test("chain - Nothing", (_) => assertEquals(chain((x) => Just(x + 1), Nothing), Nothing))
 
 test("show - Just", (_) => assertEquals(show(Just(3)), "Just 3"))
-test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Number)), "Nothing"))
+test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Integer)), "Nothing"))
 
 test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
 test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))
+
+#endif

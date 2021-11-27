@@ -225,6 +225,10 @@ updateClassPlaceholder env cleanUpEnv push s ph = case ph of
       return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
     else
       return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
+    -- if not call then
+    --   return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+    -- else
+    --   return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
   _ -> return ph
 

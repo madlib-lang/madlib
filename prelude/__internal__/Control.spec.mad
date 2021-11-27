@@ -1,3 +1,5 @@
+#iftarget js
+
 import { assertEquals, test } from "TestTools"
 import { Just, Nothing } from "Maybe"
 
@@ -22,3 +24,5 @@ test("maybeLoop", (_) => {
 
   return assertEquals(actual, expected)
 })
+
+#endif

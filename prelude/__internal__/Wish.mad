@@ -1,5 +1,8 @@
 import {} from "Monad"
 import {} from "Bifunctor"
+import { len, sortBy } from "List"
+import Tuple from "Tuple"
+import {} from "Compare"
 
 
 /**
@@ -113,28 +116,60 @@ export bad = (e) => Wish((badCB, _) => badCB(e))
 
 
 
-getWishFn = where { Wish(run) => run }
-
 parallel :: List (Wish e a) -> Wish e (List a)
-export parallel = (wishes) => (
-  Wish((badCB, goodCB) => (#- {
-    const l = wishes.length
-    let ko = false;
-    let ok = 0;
-    const out = new Array(l);
-    const next = j => (j === l && goodCB(out))
-    const fork = (w, j) => (getWishFn(w)(
-      e => ko || (badCB(e), ko = true))
-      (x => ko || (out[j] = x, next(++ok))
-    ));
-    wishes.forEach(fork);
+export parallel = (wishes) => Wish((badCB, goodCB) => {
+  amountOfWishesToProcess = len(wishes)
+  ko = false
+  ok = 0
 
-    if (l === 0) {
-      goodCB([])
-    }
-  } -#))
-)
+  // result :: List #[Integer, a]
+  result = []
 
+  next = (amountResolved) =>
+    amountResolved == amountOfWishesToProcess
+      ? pipe(
+          sortBy((a, b) => compare(Tuple.fst(a), Tuple.fst(b))),
+          map(Tuple.snd),
+          goodCB
+        )(result)
+      : ()
+
+  fork :: Integer -> List (Wish e a) -> ()
+  fork = (index, ws) => where(ws) {
+    [wish, ...nextWishes] =>
+      do {
+        where(wish) {
+          Wish(run) =>
+            run(
+              (err) =>
+                ko == false
+                  ? do {
+                      ko = true
+                      return badCB(err)
+                    }
+                  : ()
+              ,
+              (x) => {
+                result = [#[index, x], ...result]
+                ok = ok + 1
+                return next(ok)
+              }
+            )
+        }
+
+        return fork(index + 1, nextWishes)
+      }
+
+    [] =>
+      amountOfWishesToProcess == 0
+        ? goodCB([])
+        : ()
+  }
+
+  return fork(0, wishes)
+})
+
+#iftarget js
 
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
 export fulfill = (badCB, goodCB, m) => {
@@ -146,7 +181,26 @@ export fulfill = (badCB, goodCB, m) => {
 }
 
 
-after :: Number -> a -> Wish e a
+after :: Integer -> a -> Wish e a
 export after = (time, a) => Wish((_, goodCB) => #- {
   setTimeout(() => goodCB(a), time);
 } -#)
+
+#elseif llvm
+
+fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
+export fulfill = (badCB, goodCB, m) => {
+  where(m) {
+    Wish(run) => run(badCB, goodCB)
+  }
+
+  return ()
+}
+
+setTimeout :: (() -> a) -> Integer -> ()
+setTimeout = extern "__setTimeout__"
+
+after :: Integer -> a -> Wish e a
+export after = (time, a) => Wish((_, goodCB) => setTimeout((_) => goodCB(a), time))
+
+#endif

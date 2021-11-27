@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { Wish } from "Wish"
 
 import { good, Wish } from "Wish"
@@ -41,3 +43,5 @@ export getRecordedStdOut = Wish((_, goodCB) => #-{
   logs = ""
   goodCB(tmp)
 }-#)
+
+#endif

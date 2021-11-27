@@ -114,7 +114,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
     canonicalEntrypoint <- canonicalizePath entrypoint
     sourcesToCompile    <- getFilesToCompile testsOnly canonicalEntrypoint
-    astTable            <- buildManyASTTables mempty sourcesToCompile
+    astTable            <- buildManyASTTables target mempty sourcesToCompile
     let (canTable, warnings) = case astTable of
           Right table ->
             let (table', warnings) = Can.canonicalizeMany target Can.initialEnv table sourcesToCompile
