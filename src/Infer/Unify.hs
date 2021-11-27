@@ -6,6 +6,7 @@ module Infer.Unify where
 
 import           Infer.Type
 import           Infer.Substitute
+import           Infer.Instantiate
 import           Error.Error
 import           Error.Context
 import           Infer.Infer
@@ -94,6 +95,17 @@ instance Unify Type where
     | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
     | a /= b               = throwError $ CompilationError (UnificationError t2 t1) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
+
+  unify (TCon a@(TC tNameA _) fpa) t2@(TApp (TCon b@(TC tNameB k) fpb) _)
+    | tNameA == "String" && tNameB == "Element" = do
+        tv <- newTVar Star
+        unify (TApp (TCon (TC "Element" k) fpb) tv) t2
+
+  unify t1@(TApp (TCon b@(TC tNameB k) fpb) _) (TCon a@(TC tNameA _) fpa)
+    | tNameB == "Element" && tNameA == "String" = do
+        tv <- newTVar Star
+        unify (TApp (TCon (TC "Element" k) fpb) tv) t1
+
   unify t1 t2 = throwError $ CompilationError (UnificationError t2 t1) NoContext
 
 
