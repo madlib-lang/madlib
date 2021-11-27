@@ -181,6 +181,10 @@ applyPAP :: Operand
 applyPAP =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
 
+dictCtor :: Operand
+dictCtor =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) (AST.mkName "__dict_ctor__"))
+
 buildRecord :: Operand
 buildRecord =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType recordType [Type.i32, boxType] True) (AST.mkName "__buildRecord__"))
@@ -479,7 +483,7 @@ collectCRPDicts symbolTable crpNodes = case crpNodes of
               return $ dict' : nextNodes
 
           _ ->
-            undefined
+            error $ "dict not found: "<>dictName
 
   [] ->
     return []
@@ -1406,10 +1410,10 @@ generateExp env symbolTable exp = case exp of
 
   Optimized _ _ (Where exp iss) -> mdo
     (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
-    branches  <- generateBranches env symbolTable exitBlock exp' iss
+    branches     <- generateBranches env symbolTable exitBlock exp' iss
 
-    exitBlock <- block `named` "exitBlock"
-    ret <- phi branches
+    exitBlock    <- block `named` "exitBlock"
+    ret          <- phi branches
 
     if isLast env then
       return (symbolTable, ret, Just ret)
@@ -1451,12 +1455,12 @@ generateBranch :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadI
 generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
   Optimized _ _ (Is pat exp) -> mdo
     currBlock <- currentBlock
-    test <- generateBranchTest symbolTable pat whereExp
+    test      <- generateBranchTest symbolTable pat whereExp
     condBr test branchExpBlock nextBlock
 
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
-    (_, branchResult, maybeBoxedBranchResult) <- generateExp env { isLast = True } symbolTable' exp
+    (_, branchResult, maybeBoxedBranchResult) <- generateExp env symbolTable' exp
     branchResult' <-
       if isLast env then
         case maybeBoxedBranchResult of
@@ -1471,7 +1475,6 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
     -- therefore we need to get the block that contains the register reference in which
     -- it is defined. 
     retBlock <- currentBlock
-    -- branch' <- box branch
     br exitBlock
 
     (nextBlock, finalPhi) <-
@@ -1479,7 +1482,7 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
         b <- block `named` "nextBlock"
         return (b, [])
       else do
-        let def = Operand.ConstantOperand (Constant.Null (typeOf branchResult'))
+        let def = Operand.ConstantOperand (Constant.Undef (typeOf branchResult'))
         return (exitBlock, [(def, currBlock)])
 
     return $ (branchResult', retBlock) : finalPhi
@@ -1490,7 +1493,7 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
 
 generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Pattern, Integer) -> m SymbolTable
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
-  ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
+  ptr  <- gep basePtr [i32ConstOp 0, i32ConstOp index]
   ptr' <- load ptr 8
   ptr'' <- unbox (getType pat) ptr'
   generateSymbolTableForPattern symbolTable ptr'' pat
@@ -1648,7 +1651,11 @@ generateBranchTest symbolTable pat value = case pat of
             i64ConstOp $ fromIntegral id
 
           _ ->
-            error $ "Constructor '" <> name <> "' not found!"
+            -- This is necessary to make the special case of Dictionary constructor
+            if "Dictionary" `List.isSuffixOf` name then
+              i64ConstOp 0
+            else
+              error $ "Constructor '" <> name <> "' not found!"
 
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
     constructor' <- bitcast value constructorType
@@ -1656,9 +1663,9 @@ generateBranchTest symbolTable pat value = case pat of
     constructorArgPtrs <- getStructPointers argIds constructor'
     let patsWithPtrs = List.zip pats constructorArgPtrs
 
-    id <- gep constructor' [i32ConstOp 0, i32ConstOp 0]
-    id' <- load id 8
-    testIds <- icmp IntegerPredicate.EQ constructorId id'
+    id              <- gep constructor' [i32ConstOp 0, i32ConstOp 0]
+    id'             <- load id 8
+    testIds         <- icmp IntegerPredicate.EQ constructorId id'
 
     testSubPatterns <- Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
 
@@ -1710,6 +1717,7 @@ generateExternFunction symbolTable t functionName arity foreignFn = do
   function <- function functionName' params' boxType $ \params -> do
     let typesWithParams = List.zip paramTypes params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
+
     -- Generate body
     result <- call foreignFn ((, []) <$> unboxedParams)
 
@@ -2891,16 +2899,18 @@ buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModul
 buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   let symbolTableWithTopLevel = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
       symbolTableWithMethods  = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
+      symbolTableWithDefaults = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
-  symbolTable   <- generateConstructors symbolTableWithMethods (atypedecls ast)
+  symbolTable   <- generateConstructors symbolTableWithDefaults (atypedecls ast)
   symbolTable'  <- generateInstances env symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
 
+  extern (AST.mkName "__dict_ctor__")          [boxType, boxType] boxType
   externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
   extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
   extern (AST.mkName "__areStringsEqual__")    [stringType, stringType] Type.i1

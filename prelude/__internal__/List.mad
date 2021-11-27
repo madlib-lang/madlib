@@ -381,9 +381,11 @@ export isEmpty = (xs) => len(xs) == 0
 uniqueBy :: (a -> a -> Boolean) -> List a -> List a
 export uniqueBy = (f) => reduce(
   (result, elem) => where(find(f(elem), result)) {
-    Just(_) => result
+    Just(_) =>
+      result
 
-    Nothing => [...result, elem]
+    Nothing =>
+      [...result, elem]
   },
   []
 )

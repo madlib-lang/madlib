@@ -730,19 +730,20 @@ tryDefaults env ps = case ps of
             s    = M.fromList $ zip tvs' (tUnit <$ tvs')
         return (nextSubst `compose` s, nextPS)
 
-    -- IsIn _ [TCon _ _] _ -> do
-    --   tryDefaults env next
-
     _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
       maybeFound <- findInst env p
       case maybeFound of
-        Just _ ->
+        Just (Instance (instancePreds :=> pred) _) -> do
+          -- if the instance found has predicates eg. (Show a, Show b) => Show #[a, b]
+          -- we unify the found pred with the one we try to resolve to get a mapping of
+          -- the actual instantiated types and add this to the list of predicates to resolve.
+          s                   <- unify pred p
+          (nextSubst, nextPS) <- tryDefaults env (next ++ apply s instancePreds)
           return (nextSubst, nextPS)
 
-        Nothing ->
+        Nothing -> do
+          (nextSubst, nextPS) <- tryDefaults env next
           return (nextSubst, p : nextPS)
-      -- catchError (findInst env p >> return (nextSubst, nextPS)) (\_ -> return (nextSubst, p : nextPS))
 
   [] ->
     return (M.empty, [])
@@ -858,7 +859,6 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
-  -- qs'' <- getAllParentPreds env qs'
   qs'' <- dedupePreds <$> getAllParentPreds env qs'
 
   if sc /= sc' then
