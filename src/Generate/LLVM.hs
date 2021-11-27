@@ -5,18 +5,20 @@ module Generate.LLVM where
 
 import Data.Text.Lazy.IO as T
 import           Data.ByteString.Short as ShortByteString
-import qualified Data.Map   as Map
-import qualified Data.List  as List
-import qualified Data.Maybe as Maybe
+import qualified Data.Map              as Map
+import qualified Data.List             as List
+import qualified Data.Maybe            as Maybe
 import           Data.ByteString as ByteString
 import           Data.ByteString.Char8 as Char8
 import           System.Process
 
 import           LLVM.Pretty
 import           LLVM.Target
+import           LLVM.Linking
 import           LLVM.Module 
 import           LLVM.AST                    as AST hiding (function)
 import           LLVM.AST.Type               as Type
+import           LLVM.AST.AddrSpace          as AddrSpace
 import           LLVM.AST.ParameterAttribute as ParameterAttribute
 import           LLVM.AST.Typed
 import qualified LLVM.AST.Float              as Float
@@ -31,13 +33,6 @@ import LLVM.Context (withContext)
 import AST.Optimized
 
 
-
-simple :: IO ()
-simple = T.putStrLn $ ppllvm $ buildModule "exampleModule" $ mdo
-  function "add" [(i32, "a"), (i32, "b")] i32 $ \[a, b] -> mdo
-    entry <- block `named` "entry"; do
-      c <- add a b
-      ret c
 
 type SymbolTable = Map.Map String Operand
 
@@ -66,23 +61,50 @@ generateExp symbolTable exp = case exp of
 
   Optimized _ _ (Assignment name e) -> do
     (symbolTable', exp') <- generateExp symbolTable e
-    var <- alloca (typeOf exp') Nothing 4
+    var                  <- alloca (typeOf exp') Nothing 4
     store var 4 exp'
     return (Map.insert name var symbolTable', exp')
 
   Optimized _ _ (App f arg _) -> do
-    (symbolTable', f') <- generateExp symbolTable f
+    (symbolTable', f')    <- generateExp symbolTable f
     (symbolTable'', arg') <- generateExp symbolTable' arg
-    res <- call f' [(arg', [])]
+    res                   <- call f' [(arg', [])]
     return (symbolTable'', res)
 
-  Optimized _ _ (LNum num) -> do
-    return (symbolTable, C.double (read num))
+  Optimized _ _ (LNum n) -> do
+    return (symbolTable, C.double (read n))
+
+  Optimized _ _ (LBool b) -> do
+    let value =
+          if b == "true" then
+            1
+          else
+            0
+    return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value)
 
   Optimized _ _ (LStr s) -> do
     s'  <- globalStringPtr s (nameFromStr "s")
     s'' <- load (ConstantOperand s') 4
     return (symbolTable, s'')
+
+  Optimized _ _ (TupleConstructor exps) ->
+    if List.length exps == 2 then do
+      (symbolTable', a)  <- generateExp symbolTable (List.head exps)
+      (symbolTable'', b) <- generateExp symbolTable' (exps !! 1)
+
+      a' <- alloca (typeOf a) Nothing 0
+      store a' 0 a
+      a'' <- bitcast a' (ptr i8)
+
+      b' <- alloca (typeOf b) Nothing 0
+      store b' 0 b
+      b'' <- bitcast b' (ptr i8)
+
+      let createTuple2 = Operand.ConstantOperand $ Constant.GlobalReference (ptr $ Type.FunctionType (ptr tuple2Type) [ptr i8, ptr i8] False) (nameFromStr "createTuple2")
+      tuple <- call createTuple2 [(a'', []), (b'', [])]
+      return (symbolTable'', tuple)
+    else
+      undefined
 
   _ ->
     undefined
@@ -129,11 +151,18 @@ generateTopLevelFunctions symbolTable topLevelFunctions = case topLevelFunctions
 
 
 expsForMain :: [Exp] -> [Exp]
-expsForMain = List.filter (not . isTopLevelFunction)
+expsForMain =
+  List.filter (not . isTopLevelFunction)
+
 
 topLevelFunctions :: [Exp] -> [Exp]
-topLevelFunctions = List.filter isTopLevelFunction
+topLevelFunctions =
+  List.filter isTopLevelFunction
 
+
+tuple2Type :: Type.Type
+tuple2Type =
+  Type.NamedTypeReference (nameFromStr "Tuple2")
 
 
 toLLVMModule :: AST -> AST.Module
@@ -141,6 +170,9 @@ toLLVMModule ast =
   let
   in  buildModule "main" $ mdo
       symbolTable <- generateTopLevelFunctions Map.empty (topLevelFunctions $ aexps ast)
+
+      typedef (nameFromStr "Tuple2") (Just (Type.StructureType False [ptr i8, ptr i8]))
+      extern (nameFromStr "createTuple2") [ptr i8, ptr i8] (ptr tuple2Type)
 
       function "main" [] void $ \_ -> mdo
         entry <- block `named` "entry"; do
@@ -151,8 +183,6 @@ toLLVMModule ast =
 generate :: AST -> IO ()
 generate ast = do
   Prelude.putStrLn "generate llvm"
-  simple
---   let mod = generateModule
   let mod = toLLVMModule ast
 
   T.putStrLn $ ppllvm mod
@@ -162,4 +192,4 @@ generate ast = do
       withModuleFromAST ctx mod $ \mod' ->
         writeObjectToFile target (File "module.o") mod'
 
-  callCommand "clang -v module.o -o a.out"
+  callCommand "clang++ -stdlib=libc++ -v module.o generate-llvm/tuple.o -o a.out"
