@@ -168,6 +168,15 @@ isTopLevelFunction exp = case exp of
     False
 
 
+isSpreadField :: Field -> Bool
+isSpreadField field = case field of
+  Optimized _ _ (FieldSpread _) ->
+    True
+
+  _ ->
+    False
+
+
 isExtern :: Exp -> Bool
 isExtern exp = case exp of
   Optimized _ _ Extern{} ->

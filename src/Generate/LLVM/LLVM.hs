@@ -64,6 +64,7 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
+import qualified Data.Tuple as Tuple
 
 
 
@@ -158,6 +159,14 @@ gcMalloc =
 applyPAP :: Operand
 applyPAP =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
+
+buildRecord :: Operand
+buildRecord =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.i32, boxType] True) (AST.mkName "__buildRecord__"))
+
+selectField :: Operand
+selectField =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.ptr Type.i8, boxType] False) (AST.mkName "__selectField__"))
 
 madlistLength :: Operand
 madlistLength =
@@ -303,9 +312,8 @@ box what = case typeOf what of
 
 buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => String -> m Operand
 buildStr s = do
-  let s' = List.init . List.tail $ s
   let parser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
-  let parsed = fst $ List.last $ parser s'
+  let parsed = fst $ List.last $ parser s
   -- we need to add 0 to terminate a C string
   let charCodes = (fromEnum <$> parsed) ++ [0]
   -- 92, 110 == \n
@@ -745,7 +753,7 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1))
 
   Optimized _ _ (LStr s) -> do
-    addr <- buildStr s
+    addr <- buildStr (List.init . List.tail $ s)
     return (symbolTable, addr)
 
   Optimized _ _ (Opt.Do exps) -> do
@@ -799,6 +807,49 @@ generateExp env symbolTable exp = case exp of
 
     list' <- bitcast list listType
     return (symbolTable, list')
+
+  Optimized _ _ (Record fields) -> do
+
+    let (base, fields') = List.partition isSpreadField fields
+    let fieldCount = i32ConstOp (fromIntegral $ List.length fields')
+
+    base' <- case base of
+      [Optimized _ _ (FieldSpread exp)] -> do
+        (_, exp') <- generateExp env symbolTable exp
+        return exp'
+
+      _ ->
+        return $ Operand.ConstantOperand (Constant.Null boxType)
+
+    fields'' <- mapM (generateField symbolTable) fields'
+
+    record <- call buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
+    return (symbolTable, record)
+    where
+      generateField :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Field -> m Operand
+      generateField symbolTable field = case field of
+        Optimized _ _ (Field (name, value)) -> do
+          let fieldType = Type.StructureType False [Type.ptr Type.i8, boxType]
+          nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
+          (_, value') <- generateExp env symbolTable value
+          value''     <- box value'
+
+          fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
+          fieldPtr'   <- bitcast fieldPtr (Type.ptr fieldType)
+
+          Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (value'', 1)]
+          return fieldPtr'
+
+        _ ->
+          undefined
+
+  Optimized t _ (Access record (Optimized _ _ (Var ('.' : fieldName)))) -> do
+    nameOperand        <- buildStr fieldName
+    (_, recordOperand) <- generateExp env symbolTable record
+    value <- call selectField [(nameOperand, []), (recordOperand, [])]
+
+    value' <- unbox t value
+    return (symbolTable, value')
 
 
   Optimized t _ (If cond truthy falsy) -> mdo
@@ -894,7 +945,7 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
     undefined
 
 
-generateSymbolTableForIndexedData :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Pattern, Integer) -> m SymbolTable
+generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Pattern, Integer) -> m SymbolTable
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
   ptr' <- load ptr 8
@@ -902,7 +953,7 @@ generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   generateSymbolTableForPattern symbolTable ptr'' pat
 
 
-generateSymbolTableForList :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m SymbolTable
+generateSymbolTableForList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m SymbolTable
 generateSymbolTableForList symbolTable basePtr pats = case pats of
   (pat : next) -> case pat of
     Optimized _ _ (PSpread spread) ->
@@ -925,7 +976,7 @@ generateSymbolTableForList symbolTable basePtr pats = case pats of
 
 
 
-generateSymbolTableForPattern :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Pattern -> m SymbolTable
+generateSymbolTableForPattern :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Pattern -> m SymbolTable
 generateSymbolTableForPattern symbolTable baseExp pat = case pat of
   Optimized t _ (PVar n) -> do
     return $ Map.insert n (varSymbol baseExp) symbolTable
@@ -954,6 +1005,10 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
     constructor' <- bitcast baseExp constructorType
     let patsWithIds = List.zip pats [1..]
     Monad.foldM (generateSymbolTableForIndexedData constructor') symbolTable patsWithIds
+
+  Optimized _ _ (PRecord fieldPatterns) -> do
+    subPatterns <- mapM (getFieldPattern baseExp) $ Map.toList fieldPatterns
+    Monad.foldM (\previousTable (field, pat) -> generateSymbolTableForPattern previousTable field pat) symbolTable subPatterns
 
   _ ->
     undefined
@@ -1002,7 +1057,7 @@ generateBranchTest symbolTable pat value = case pat of
     icmp IntegerPredicate.EQ (Operand.ConstantOperand $ Constant.Int 1 0) value
 
   Optimized _ _ (PStr s) -> do
-    s' <- buildStr s
+    s' <- buildStr (List.init . List.tail $ s)
     call strEq [(s', []), (value, [])]
 
   Optimized _ _ PAny ->
@@ -1038,6 +1093,11 @@ generateBranchTest symbolTable pat value = case pat of
         _ ->
           False
 
+  Optimized _ _ (PRecord fieldPatterns) -> do
+    subPatterns <- mapM (getFieldPattern value) $ Map.toList fieldPatterns
+    subTests    <- mapM (uncurry (generateBranchTest symbolTable) . Tuple.swap) subPatterns
+    Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
+
   Optimized _ _ (PCon name pats) -> do
     let constructorId = case Map.lookup name symbolTable of
           Just (Symbol (ConstructorSymbol id _) _) ->
@@ -1062,6 +1122,15 @@ generateBranchTest symbolTable pat value = case pat of
 
   _ ->
     undefined
+
+
+getFieldPattern :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Operand -> (String, Pattern) -> m (Operand, Pattern)
+getFieldPattern record (fieldName, fieldPattern) = do
+  nameOperand <- buildStr fieldName
+  field       <- call selectField [(nameOperand, []), (record, [])]
+  field'      <- unbox (getType fieldPattern) field
+  return (field', fieldPattern)
+
 
 getStructPointers :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [Integer] -> Operand -> m [Operand]
 getStructPointers ids ptr = case ids of
@@ -1533,17 +1602,19 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   symbolTable'  <- generateInstances env symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
-  externVarArgs (AST.mkName "__applyPAP__")  [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
-  extern (AST.mkName "malloc")               [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc")            [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "calloc")               [Type.i32, Type.i32] (Type.ptr Type.i8)
-  extern (AST.mkName "__streq__")            [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
-  extern (AST.mkName "__strConcat__")        [Type.ptr Type.i8, Type.ptr Type.i8] (Type.ptr Type.i8)
-  extern (AST.mkName "MadList_hasMinLength") [Type.double, listType] Type.i1
-  extern (AST.mkName "MadList_hasLength")    [Type.double, listType] Type.i1
-  extern (AST.mkName "MadList_singleton")    [Type.ptr Type.i8] listType
-  extern (AST.mkName "__MadList_push__")     [Type.ptr Type.i8, listType] listType
-  extern (AST.mkName "MadList_concat")       [listType, listType] listType
+  externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+  externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] boxType
+  extern (AST.mkName "__selectField__")        [Type.ptr Type.i8, boxType] boxType
+  extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
+  extern (AST.mkName "__streq__")              [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
+  extern (AST.mkName "__strConcat__")          [Type.ptr Type.i8, Type.ptr Type.i8] (Type.ptr Type.i8)
+  extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
+  extern (AST.mkName "MadList_hasLength")      [Type.double, listType] Type.i1
+  extern (AST.mkName "MadList_singleton")      [Type.ptr Type.i8] listType
+  extern (AST.mkName "__MadList_push__")       [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "MadList_concat")         [listType, listType] listType
 
   Monad.when isMain $ generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
 

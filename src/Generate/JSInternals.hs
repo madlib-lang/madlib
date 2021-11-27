@@ -47,11 +47,6 @@ dictCtorFn target optimized =
         , "}"
         ]
 
--- fromList :: List (<k, v>) -> Dictionary k v
--- export fromList = pipe(
---   L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
---   Dictionary
--- )
 
 eqFnName :: Bool -> String
 eqFnName optimized = if optimized then "λ2" else "__eq__"
