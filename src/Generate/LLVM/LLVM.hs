@@ -257,7 +257,6 @@ buildLLVMType t = case t of
 
   InferredType.TApp (InferredType.TCon (InferredType.TC "List" (InferredType.Kfun InferredType.Star InferredType.Star)) "prelude") _ ->
     listType
-    --Type.ptr (Type.StructureType False [boxType, boxType])
 
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
     let tLeft  = buildLLVMType left
@@ -599,7 +598,7 @@ generateExp env symbolTable exp = case exp of
       Just (Symbol (MethodSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
         pap <- call fnPtr []
-        return (symbolTable, pap)
+        return (symbolTable, (trace ("NAME: "<>n<>"\nPAP: "<>ppShow pap) pap))
 
       Just (Symbol (MethodSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -679,7 +678,7 @@ generateExp env symbolTable exp = case exp of
           methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
           methodFn'  <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
           methodFn'' <- load methodFn' 8
-          value      <- call methodFn'' []
+          value      <- call methodFn'' (trace ("DICT NAME: "<>dictName<>"\nTYPE: "<>ppShow t<>"\nMETHODFN'': "<>ppShow methodFn'') [])
           return (symbolTable, value)
         else
           return (symbolTable, methodPAP)
@@ -1638,8 +1637,8 @@ generateMethod env symbolTable methodName exp = case exp of
         if arity > 0 then do
           pap <- bitcast exp' boxType
           call applyPAP $ [(pap, []), (i32ConstOp (fromIntegral arity), [])] ++ ((,[]) <$> params)
-        else
-          return exp'
+        else do
+          box exp'
 
       ret retVal
 
