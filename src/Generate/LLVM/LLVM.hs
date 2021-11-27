@@ -82,6 +82,8 @@ data SymbolType
   = VariableSymbol
   | FunctionSymbol Int
   -- ^ arity
+  | MethodSymbol Int
+  -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
   -- ^ contains the uncurried version of a function to be called if all args are provided and the param count
@@ -108,6 +110,10 @@ fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
   Symbol (FunctionSymbol arity)
 
+methodSymbol :: Int -> Operand -> Symbol
+methodSymbol arity =
+  Symbol (MethodSymbol arity)
+
 topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
   Symbol TopLevelAssignment
@@ -116,7 +122,21 @@ constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =
   Symbol (ConstructorSymbol id arity) ctor
 
+isMethodSymbol :: Symbol -> Bool
+isMethodSymbol symbol = case symbol of
+  Symbol (MethodSymbol _) _ ->
+    True
 
+  _ ->
+    False
+
+isDictSymbol :: Symbol -> Bool
+isDictSymbol symbol = case symbol of
+  Symbol (DictionarySymbol _) _ ->
+    True
+
+  _ ->
+    False
 
 
 
@@ -329,7 +349,7 @@ collectDictArgs' alreadyFound symbolTable exp = case exp of
     return ([], exp)
 
 
-generateApplicationForKnownFunction :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand)
+generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand)
 generateApplicationForKnownFunction env symbolTable returnType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
@@ -398,7 +418,7 @@ buildReferencePAP symbolTable arity fn = do
   return (symbolTable, papPtr')
 
 
-generateExp :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand)
+generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand)
 generateExp env symbolTable exp = case exp of
   Optimized _ _ (Var n) ->
     case Map.lookup n symbolTable of
@@ -408,6 +428,14 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, pap)
 
       Just (Symbol (FunctionSymbol arity) fnPtr) -> do
+        buildReferencePAP symbolTable arity fnPtr
+
+      Just (Symbol (MethodSymbol 0) fnPtr) -> do
+        -- Handle special nullary cases like assignment methods
+        pap <- call fnPtr []
+        return (symbolTable, pap)
+
+      Just (Symbol (MethodSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
 
       Just (Symbol TopLevelAssignment ptr) -> do
@@ -438,6 +466,7 @@ generateExp env symbolTable exp = case exp of
       generateFunction
         env
         symbolTable
+        False
         wrapperType
         (Char8.unpack (ShortByteString.fromShort fnName'))
         dictNameParams
@@ -495,7 +524,7 @@ generateExp env symbolTable exp = case exp of
   Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
     let methodName' = "$" <> interface <> "$" <> typingStr <> "$" <> methodName
     case Map.lookup methodName' symbolTable of
-      Just (Symbol (FunctionSymbol arity) fnOperand) -> do
+      Just (Symbol (MethodSymbol arity) fnOperand) -> do
         (_, pap) <- buildReferencePAP symbolTable arity fnOperand
         return (symbolTable, pap)
 
@@ -574,7 +603,7 @@ generateExp env symbolTable exp = case exp of
       let dictName    = "$" <> interface <> "$" <> typingStr
       let methodName' = dictName <> "$" <> methodName
       case Map.lookup methodName' symbolTable of
-        Just (Symbol (FunctionSymbol arity) fnOperand) ->
+        Just (Symbol (MethodSymbol arity) fnOperand) ->
           generateApplicationForKnownFunction env symbolTable t arity fnOperand args
 
         _ ->
@@ -732,7 +761,7 @@ generateExp env symbolTable exp = case exp of
 
 
 
-generateBranches :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> AST.Name -> Operand -> [Is] -> m [(Operand, AST.Name)]
+generateBranches :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> AST.Name -> Operand -> [Is] -> m [(Operand, AST.Name)]
 generateBranches env symbolTable exitBlock whereExp iss = case iss of
   (is : next) -> do
     branch <- generateBranch env symbolTable (not (List.null next)) exitBlock whereExp is
@@ -743,7 +772,7 @@ generateBranches env symbolTable exitBlock whereExp iss = case iss of
     return []
 
 
-generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Is -> m [(Operand, AST.Name)]
+generateBranch :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Is -> m [(Operand, AST.Name)]
 generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
   Optimized _ _ (Is pat exp) -> mdo
     currBlock <- currentBlock
@@ -955,7 +984,7 @@ getStructPointers ids ptr = case ids of
     return []
 
 
-generateExps :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m ()
+generateExps :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m ()
 generateExps env symbolTable exps = case exps of
   [exp] -> do
     generateExp env symbolTable exp
@@ -990,8 +1019,8 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> String -> [String] -> [Exp] -> m SymbolTable
-generateFunction env symbolTable t functionName paramNames body = do
+generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> InferredType.Type -> String -> [String] -> [Exp] -> m SymbolTable
+generateFunction env symbolTable isMethod t functionName paramNames body = do
   let paramTypes    = InferredType.getParamTypes t
       params'       = (boxType,) . makeParamName <$> paramNames
       functionName' = AST.mkName functionName
@@ -1009,13 +1038,20 @@ generateFunction env symbolTable t functionName paramNames body = do
     boxed <- box generatedBody
     ret boxed
 
-  return $ Map.insert functionName (fnSymbol (List.length paramNames) function) symbolTable
+  let symbolConstructor =
+        if isMethod then
+          methodSymbol
+        else
+          fnSymbol
+
+  Writer.tell $ Map.singleton functionName (symbolConstructor (List.length paramNames) function)
+  return $ Map.insert functionName (symbolConstructor (List.length paramNames) function) symbolTable
 
 
-generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m SymbolTable
+generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
   Optimized t _ (TopLevelAbs functionName params body) -> do
-    generateFunction env symbolTable t functionName params body
+    generateFunction env symbolTable False t functionName params body
 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) -> do
     let paramTypes  = InferredType.getParamTypes t
@@ -1066,7 +1102,7 @@ listToIndices l | List.null l = []
 
 
 
-generateBody :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m Operand
+generateBody :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m Operand
 generateBody env symbolTable exps = case exps of
   [exp] -> do
     (_, result) <- generateExp env symbolTable exp
@@ -1100,7 +1136,7 @@ getClosureParamNames exps =
   (\(Optimized t _ (Var n)) -> n) <$> exps
 
 
-generateTopLevelFunctions :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m SymbolTable
+generateTopLevelFunctions :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m SymbolTable
 generateTopLevelFunctions env symbolTable topLevelFunctions = case topLevelFunctions of
   (fn : fns) -> do
     symbolTable' <- generateTopLevelFunction env symbolTable fn
@@ -1187,7 +1223,7 @@ generateMethod :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadM
 generateMethod env symbolTable methodName exp = case exp of
   -- TODO: handle overloaded methods that should be passed a dictionary
   Opt.Optimized t _ (TopLevelAbs _ params body) ->
-    generateFunction env symbolTable t methodName params body
+    generateFunction env symbolTable True t methodName params body
 
   -- TODO: reconsider this
   Opt.Optimized t _ (Opt.Assignment _ exp _) -> do
@@ -1277,32 +1313,45 @@ getLLVMReturnType t = case t of
     undefined
 
 
+generateExternForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
+generateExternForName symbolTable name = case Map.lookup name symbolTable of
+  Just (Symbol (FunctionSymbol _) symbol) -> do
+    let t          = typeOf symbol
+        paramTypes = getLLVMParameterTypes t
+        returnType = getLLVMReturnType t
+    extern (AST.mkName name) paramTypes returnType
+    return ()
+
+  Just (Symbol (MethodSymbol _) symbol) -> do
+    let t          = typeOf symbol
+        paramTypes = getLLVMParameterTypes t
+        returnType = getLLVMReturnType t
+    extern (AST.mkName name) paramTypes returnType
+    return ()
+
+  Just (Symbol (ConstructorSymbol _ _) symbol) -> do
+    let t          = typeOf symbol
+        paramTypes = getLLVMParameterTypes t
+        returnType = getLLVMReturnType t
+    extern (AST.mkName name) paramTypes returnType
+    return ()
+
+  Just (Symbol _ symbol) -> do
+    let t = typeOf symbol
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let def = AST.GlobalDefinition g
+    emitDefn def
+    return ()
+
+  _ ->
+    error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
+
+
 generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Optimized String -> m ()
 generateExternForImportName symbolTable optimizedName = case optimizedName of
-  Untyped _ name -> case Map.lookup name symbolTable of
-    Just (Symbol (FunctionSymbol _) symbol) -> do
-      let t          = typeOf symbol
-          paramTypes = getLLVMParameterTypes t
-          returnType = getLLVMReturnType t
-      extern (AST.mkName name) paramTypes returnType
-      return ()
+  Untyped _ name ->
+    generateExternForName symbolTable name
 
-    Just (Symbol (ConstructorSymbol _ _) symbol) -> do
-      let t          = typeOf symbol
-          paramTypes = getLLVMParameterTypes t
-          returnType = getLLVMReturnType t
-      extern (AST.mkName name) paramTypes returnType
-      return ()
-
-    Just (Symbol _ symbol) -> do
-      let t = typeOf symbol
-      let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
-      let def = AST.GlobalDefinition g
-      emitDefn def
-      return ()
-
-    _ ->
-      error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
   _ ->
     undefined
 
@@ -1315,6 +1364,11 @@ generateImport symbolTable imp = case imp of
   _ ->
     undefined
 
+generateExternsForImportedInstances :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => SymbolTable -> m ()
+generateExternsForImportedInstances symbolTable = do
+  let dictsAndMethods    = Map.filter (\s -> isDictSymbol s || isMethodSymbol s) symbolTable
+      dictAndMethodNames = Map.keys dictsAndMethods
+  mapM_ (generateExternForName symbolTable) dictAndMethodNames
 
 
 
@@ -1325,6 +1379,7 @@ buildModule' isMain initialSymbolTable ast = do
       symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
+  generateExternsForImportedInstances initialSymbolTable
 
   symbolTable   <- generateConstructors symbolTableWithTopLevel (atypedecls ast)
   symbolTable'  <- generateInstances initialEnv symbolTable (ainstances ast)
@@ -1378,13 +1433,9 @@ type ModuleTable = Map.Map FilePath AST.Module
 
   generatedTable: the already generated modules
   symbolTable: accumulated symbolTable, used to map imports to extern instructions
-  table: input asts to generate
+  astTable: input asts to generate
   entrypoint: main module to generate
 -}
--- Note: we can probably skip the symbol table as we can reconstruct imports from the
--- ModuleTable, reading the top level definitions.
--- Or maybe better, we do it for exports and update the symbol table so that we can
--- catch all methods and dicts.
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->

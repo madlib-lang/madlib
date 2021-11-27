@@ -66,8 +66,8 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
     (pats, ps, vars, t) <- foldlM
       (\(pats, ps, vars, t) pat -> do
-        (pat, ps', vars', t') <- inferPListItem env tv pat
-        s                <- unify t t'
+        (pat, ps', vars', t') <- inferPListItem env t pat
+        s                     <- unify t t'
         return (pats ++ [pat], ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], [], mempty, tv)
@@ -82,6 +82,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
         let t' = tListOf listType
         return (Slv.Solved ([] :=> t') spreadArea (Slv.PSpread (Slv.Solved ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
 
+      -- TODO: we might need to unify with a list type here?
       _ -> inferPattern env pat
 
   Can.PRecord pats -> do

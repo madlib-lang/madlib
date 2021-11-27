@@ -335,31 +335,21 @@ inferListConstructor :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv
 inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case elems of
   [] -> do
     tv <- newTVar Star
-    let t = TApp (TCon (TC "List" (Kfun Star Star)) "prelude") tv
+    let t = tListOf tv
     return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
 
   elems -> do
-    -- tv <- newTVar Star
-    -- let listTV = tListOf tv
+    tv               <- newTVar Star
 
     (s', ps, t', es) <- foldlM
-      (\(s, pss, tCurrent, lis) elem -> do
-        (s', ps', tItem, li) <- inferListItem (apply s env) elem
-        (s'', tr) <- case (tCurrent, tItem, elem) of
-          (Nothing, _, Can.Canonical _ (Can.ListSpread _)) ->
-            return (mempty, tItem)
+      (\(s, pss, t, lis) elem -> do
+        (s', ps', t'', li) <- inferListItem (apply s env) (fromMaybe tv t) elem
+        (s'', tr) <- case t of
+          Nothing ->
+            return (mempty, t'')
 
-          (Nothing, _, _) ->
-            return (mempty, tListOf tItem)
-
-          -- (Just tCurrent', TApp (TCon (TC "List" _) _) tItem', Can.Canonical _ (Can.ListSpread _)) ->
-          --   (, pickJSXChild tCurrent' tItem') <$> contextualUnify env elem (apply s' tCurrent') tItem'
-
-          (Just tCurrent', tList, Can.Canonical _ (Can.ListSpread _)) ->
-            (, pickJSXChild tCurrent' tCurrent') <$> contextualUnify env elem (apply s' tCurrent') tList
-
-          (Just tCurrent', _, _) ->
-            (, pickJSXChild tCurrent' (tListOf tItem)) <$> contextualUnify env elem (apply s' tCurrent') (tListOf tItem)
+          Just t''' ->
+            (, pickJSXChild t''' t'') <$> contextualUnify env elem (apply s' t''') t''
 
         let s''' = s `compose` s' `compose` s''
         return (s''', pss ++ ps', Just $ apply s''' tr, lis ++ [li])
@@ -369,29 +359,28 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
     let (Just t'') = t'
 
-    -- s'' <- unify tv t''
-    -- let s''' = s' `compose` s''
+    s'' <- unify tv t''
+    let s''' = s' `compose` s''
 
-    -- let t = tListOf (apply s' tv)
+    let t = tListOf (apply s''' tv)
 
-    return (s', ps, t'', Slv.Solved (ps :=> t'') area (Slv.ListConstructor es))
+    return (s''', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
 
 
-inferListItem :: Env -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
-inferListItem env (Can.Canonical area li) = case li of
+inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListItem exp -> do
     (s1, ps, t, e) <- infer env exp
     return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
-    -- tv <- newTVar Star
-    -- s2 <- unify t (tListOf tv)
-    -- s2 <- unify (tListOf tv) t
+    tv <- newTVar Star
+    s2 <- unify t (tListOf tv)
 
-    -- let s = s1 `compose` s2 --`compose` s3
+    let s = s1 `compose` s2
 
-    return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListSpread e)
+    return (s, ps, apply s tv, Slv.Solved (apply s ps :=> apply s t) area $ Slv.ListSpread e)
 
 
 pickJSXChild :: Type -> Type -> Type
@@ -614,6 +603,9 @@ updatePatternTypes s pat = case pat of
 
   Slv.Solved t area (Slv.PTuple items) ->
     Slv.Solved (apply s t) area (Slv.PTuple (updatePatternTypes s <$> items))
+
+  Slv.Solved t area (Slv.PSpread pat) ->
+    Slv.Solved (apply s t) area (Slv.PSpread (updatePatternTypes s pat))
 
   Slv.Solved t area p ->
     Slv.Solved (apply s t) area p
