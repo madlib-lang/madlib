@@ -12,10 +12,10 @@ env:
 
 jobs:
   release:
-    runs-on: windows-2022
-    defaults:
-      run:
-        shell: msys2 {0}
+    runs-on: windows-latest
+    # defaults:
+    #   run:
+    #     shell: msys2 {0}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-haskell@v1.1.4
@@ -36,10 +36,10 @@ jobs:
         with:
           node-version: ${{ env.node-version }}
 
-      - uses: docker-practice/actions-setup-docker@v1
-        with:
-          docker_version: "20.10"
-          docker_channel: stable
+      # - uses: docker-practice/actions-setup-docker@v1
+      #   with:
+      #     docker_version: "20.10"
+      #     docker_channel: stable
 
       # - run: pacman install llvm-hs/llvm/llvm-9
       - name: Install LLVM and Clang
