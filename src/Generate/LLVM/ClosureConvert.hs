@@ -14,6 +14,8 @@ import qualified AST.Solved                    as Slv
 import qualified Generate.LLVM.Optimized       as Opt
 import           Infer.Type
 import Data.Maybe
+import Debug.Trace
+import Text.Show.Pretty
 
 
 data OptimizationState
@@ -399,7 +401,6 @@ instance Optimizable Slv.AST Opt.AST where
     resetTopLevelExps
 
     return $ Opt.AST { Opt.aimports    = imports
-                    --  , Opt.aexps       = exps ++ defs
                      , Opt.aexps       = defs ++ exps
                      , Opt.atypedecls  = typeDecls
                      , Opt.ainterfaces = interfaces
