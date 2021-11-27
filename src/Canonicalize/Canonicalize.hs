@@ -69,7 +69,7 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.Return exp ->
       canonicalize env target exp
 
-    Src.Assignment name _ exp -> do
+    Src.Assignment name exp -> do
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Assignment name exp')
 
@@ -118,13 +118,13 @@ instance Canonicalizable Src.Exp Can.Exp where
       fields' <- mapM (canonicalize env target) fields
       return $ Can.Canonical area (Can.Record fields')
 
-    Src.If _ cond truthy _ falsy -> do
+    Src.If cond truthy falsy -> do
       cond'   <- canonicalize env target cond
       truthy' <- canonicalize env target truthy
       falsy'  <- canonicalize env target falsy
       return $ Can.Canonical area (Can.If cond' truthy' falsy')
 
-    Src.Ternary cond _ truthy _ falsy -> do
+    Src.Ternary cond truthy falsy -> do
       cond'   <- canonicalize env target cond
       truthy' <- canonicalize env target truthy
       falsy'  <- canonicalize env target falsy
@@ -150,18 +150,18 @@ instance Canonicalizable Src.Exp Can.Exp where
             es' <- canonicalizeDefineExps es
             return $ e':es'
 
-    Src.Where _ exp _ iss _ -> do
+    Src.Where exp iss -> do
       exp' <- canonicalize env target exp
       iss' <- mapM (canonicalize env target) iss
       return $ Can.Canonical area (Can.Where exp' iss')
 
-    Src.WhereAbs whereKeyword leftCurlySymbol iss rightCurlySymbol -> do
+    Src.WhereAbs iss -> do
       buildAbs
         env
         target
         area
         [Src.Source emptyArea "__x__"]
-        [Src.Source area (Src.Where whereKeyword (Src.Source emptyArea (Src.Var "__x__")) leftCurlySymbol iss rightCurlySymbol)]
+        [Src.Source area (Src.Where (Src.Source emptyArea (Src.Var "__x__")) iss)]
 
     Src.JsxTag name props children -> do
       canonicalizeJsxTag env target (Src.Source area e)
@@ -312,7 +312,7 @@ instance Canonicalizable Src.Field Can.Field where
 
 
 instance Canonicalizable Src.Is Can.Is where
-  canonicalize env target (Src.Source area (Src.Is pat _ exp)) = do
+  canonicalize env target (Src.Source area (Src.Is pat exp)) = do
     pat' <- canonicalize env target pat
     exp' <- canonicalize env target exp
     return $ Can.Canonical area (Can.Is pat' exp')
@@ -324,7 +324,7 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
-    Src.PCon (Src.Source _ name) _ pats _ -> do
+    Src.PCon (Src.Source _ name) pats -> do
       let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       pats' <- mapM (canonicalize env target) pats
@@ -341,19 +341,19 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
     Src.PBool   boo  -> return $ Can.Canonical area (Can.PBool boo)
 
-    Src.PRecord _ pats _ -> do
+    Src.PRecord pats -> do
       pats' <- mapM (canonicalize env target) (extractPatternFields pats)
       return $ Can.Canonical area (Can.PRecord pats')
 
-    Src.PList _ pats _ -> do
+    Src.PList pats -> do
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PList pats')
 
-    Src.PTuple _ pats _ -> do
+    Src.PTuple pats -> do
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PTuple pats')
 
-    Src.PSpread _ pat -> do
+    Src.PSpread pat -> do
       pat' <- canonicalize env target pat
       return $ Can.Canonical area (Can.PSpread pat')
 

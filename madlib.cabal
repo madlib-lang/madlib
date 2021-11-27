@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3fd431c74f7ceb6920909733501d86b3d5cf58e5b26025289de68df9d44aeeba
+-- hash: 5c68addfbfda800b083552218110b3ed564c5e48f6d5b04013b113a50e1f576e
 
 name:           madlib
 version:        0.11.0
@@ -132,14 +132,13 @@ library
     , mtl
     , optparse-applicative
     , pretty-show
-    , prettyprinter
+    , prettyprinter ==1.6.2
     , process ==1.6.9.0
     , process-extras
     , regex-tdfa
     , text
     , transformers
     , utf8-string
-    , wl-pprint ==1.2.1
   default-language: Haskell2010
 
 executable madlib
@@ -244,14 +243,13 @@ executable madlib
     , mtl
     , optparse-applicative
     , pretty-show
-    , prettyprinter
+    , prettyprinter ==1.6.2
     , process ==1.6.9.0
     , process-extras
     , regex-tdfa
     , text
     , transformers
     , utf8-string
-    , wl-pprint ==1.2.1
   if flag(static)
     ld-options: -static
   default-language: Haskell2010
@@ -295,12 +293,11 @@ test-suite madlib-test
     , mtl
     , optparse-applicative
     , pretty-show
-    , prettyprinter
+    , prettyprinter ==1.6.2
     , process ==1.6.9.0
     , process-extras
     , regex-tdfa
     , text
     , transformers
     , utf8-string
-    , wl-pprint ==1.2.1
   default-language: Haskell2010

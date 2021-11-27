@@ -120,9 +120,9 @@ ast :: { Src.AST }
   | 'ret' ast                 %shift { $2 }
   | 'export' name ast         %shift { $3 { Src.aexps = Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.NameExport $ strV $2) : Src.aexps $3 } }
   | 'texport' 'type' name ast %shift { $4 { Src.aexps = Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TypeExport $ strV $3) : Src.aexps $4 } }
-  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Export (Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) (Src.Symbol "=" (tokenToArea $3)) $4)))) : Src.aexps $5 } }
+  | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Export (Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
   | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
-      { $9 { Src.aexps = Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) (Src.Symbol "=" (tokenToArea $7)) $8)))) $3) : Src.aexps $9 } }
+      { $9 { Src.aexps = Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $8)) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $8)) (Src.Export (Src.Source (mergeAreas (tokenToArea $6) (Src.getArea $8)) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }
@@ -160,8 +160,8 @@ instance :: { Src.Instance }
   | 'instance' '(' instanceConstraints ')' '=>' name manyTypings '{{' rets methodImpls rets '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $12)) (Src.Instance $3 (strV $6) $7 $10) }
 
 methodImpls :: { M.Map Src.Name Src.Exp }
-  : name '=' exp { M.fromList [(strV $1, Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) (Src.Symbol "=" (tokenToArea $2)) $3))] }
-  | methodImpls rets name '=' exp { M.union (M.fromList [(strV $3, Src.Source (mergeAreas (tokenToArea $3) (Src.getArea $5)) (Src.Assignment (strV $3) (Src.Symbol "=" (tokenToArea $4)) $5))]) $1 }
+  : name '=' exp { M.fromList [(strV $1, Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $3)) (Src.Assignment (strV $1) $3))] }
+  | methodImpls rets name '=' exp { M.union (M.fromList [(strV $3, Src.Source (mergeAreas (tokenToArea $3) (Src.getArea $5)) (Src.Assignment (strV $3) $5))]) $1 }
 
 rets :: { [TokenClass] }
   : 'ret'       %shift{ [] }
@@ -310,7 +310,7 @@ exp :: { Src.Exp }
   | listConstructor                                          %shift { $1 }
   | typedExp                                                 %shift { $1 }
   | js                                                       %shift { Src.Source (tokenToArea $1) (Src.JSExp (strV $1)) }
-  | name '=' maybeRet exp                                    %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $1) (Src.Symbol "=" (tokenToArea $2)) $4) }
+  | name '=' maybeRet exp                                    %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $1) $4) }
   | name                                                     %shift { Src.Source (tokenToArea $1) (Src.Var $ strV $1) }
   | '.' name                                                 %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.Var $ '.':strV $2) }
   | 'pipe' '(' maybeRet args ')' '(' argsWithPlaceholder ')' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.App (buildPipe (mergeAreas (tokenToArea $1) (tokenToArea $5)) $4) $7) }
@@ -320,68 +320,19 @@ exp :: { Src.Exp }
   | '(' exp ')'                                              %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.Parenthesized (tokenToArea $1) $2 (tokenToArea $3)) }
   | exp '.' name                                             %shift { access $1 (Src.Source (tokenToArea $3) (Src.Var $ "." <> strV $3)) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
-      { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If
-          (Src.Keyword "if" (tokenToArea $1))
-          $3
-          $7
-          (Src.Keyword "else" (tokenToArea $11))
-          $15
-        )
-      }
+      { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $17)) (Src.If $3 $7 $15) }
   | 'if' '(' exp ')' '{' maybeRet exp maybeRet '}' maybeRet 'else' maybeRet maybeRet exp maybeRet
-      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $14)) (Src.If
-          (Src.Keyword "if" (tokenToArea $1))
-          $3
-          $7
-          (Src.Keyword "else" (tokenToArea $11))
-          $14
-        )
-      }
+      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $14)) (Src.If $3 $7 $14) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet '{' maybeRet exp maybeRet '}'
-      { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $14)) (Src.If
-          (Src.Keyword "if" (tokenToArea $1))
-          $3
-          $6
-          (Src.Keyword "else" (tokenToArea $8))
-          $12
-        )
-      }
+      { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $14)) (Src.If $3 $6 $12) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp
-      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If
-          (Src.Keyword "if" (tokenToArea $1))
-          $3
-          $6
-          (Src.Keyword "else" (tokenToArea $8))
-          $10
-        )
-      }
+      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If $3 $6 $10) }
   | 'if' '(' exp ')' maybeRet exp maybeRet 'else' maybeRet exp 'ret'
-      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If
-          (Src.Keyword "if" (tokenToArea $1))
-          $3
-          $6
-          (Src.Keyword "else" (tokenToArea $8))
-          $10
-        )
-      }
+      { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $10)) (Src.If $3 $6 $10) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp
-      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.Ternary
-          $1
-          (Src.Symbol "?" (tokenToArea $2))
-          $4
-          (Src.Symbol ":" (tokenToArea $6))
-          $8
-        )
-      }
+      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.Ternary $1 $4 $8) }
   | exp '?' maybeRet exp maybeRet ':' maybeRet exp 'ret'
-      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.Ternary
-          $1
-          (Src.Symbol "?" (tokenToArea $2))
-          $4
-          (Src.Symbol ":" (tokenToArea $6))
-          $8
-        )
-      }
+      { Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $8)) (Src.Ternary $1 $4 $8) }
 
 
 absOrParenthesizedName :: { Src.Exp }
@@ -466,17 +417,17 @@ multiExpBody :: { [Src.Exp] }
 typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'                       %shift { Src.Source (mergeAreas (Src.getArea $2) (Src.getArea $4)) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')'                      %shift { Src.Source (mergeAreas (tokenToArea $2) (Src.getArea $4)) (Src.TypedExp (Src.Source (tokenToArea $2) (Src.Var (strV $2))) $4) }
-  | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $7)) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $7)) (Src.Assignment (strV $5) (Src.Symbol "=" (tokenToArea $6)) $7)) $3) }
+  | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $7)) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
 
 where :: { Src.Exp }
-  : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where (Src.Keyword "where" (tokenToArea $1)) $3 (Src.Symbol "{" (tokenToArea $5)) $7 (Src.Symbol "}" (tokenToArea $9))) }
-  | 'where' '{' rets iss rets '}'                     %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.WhereAbs (Src.Keyword "where" (tokenToArea $1)) (Src.Symbol "{" (tokenToArea $2)) $4 (Src.Symbol "}" (tokenToArea $6))) }
+  : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }
+  | 'where' '{' rets iss rets '}'                     %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.WhereAbs $4) }
 
 iss :: { [Src.Is] }
-  : pattern '=>' maybeRet exp 'ret'              %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 (Src.Symbol "=>" (tokenToArea $2)) $4)] }
-  | pattern '=>' maybeRet exp                    %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 (Src.Symbol "=>" (tokenToArea $2)) $4)] }
-  | iss maybeRet pattern '=>' maybeRet exp       %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 (Src.Symbol "=>" (tokenToArea $4)) $6)] }
-  | iss maybeRet pattern '=>' maybeRet exp 'ret' %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 (Src.Symbol "=>" (tokenToArea $4)) $6)] }
+  : pattern '=>' maybeRet exp 'ret'              %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | pattern '=>' maybeRet exp                    %shift { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $4)) (Src.Is $1 $4)] }
+  | iss maybeRet pattern '=>' maybeRet exp       %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
+  | iss maybeRet pattern '=>' maybeRet exp 'ret' %shift { $1 <> [Src.Source (mergeAreas (Src.getArea $3) (Src.getArea $6)) (Src.Is $3 $6)] }
 
 pattern :: { Src.Pattern }
   : nonCompositePattern %shift { $1 }
@@ -495,8 +446,8 @@ nonCompositePattern :: { Src.Pattern }
 
 
 compositePattern :: { Src.Pattern }
-  : name '(' compositePatternArgs ')'          %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCon (Src.Source (tokenToArea $1) (strV $1)) (Src.Symbol "(" (tokenToArea $2)) $3 (Src.Symbol ")" (tokenToArea $4))) }
-  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCon (Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) $ strV $1 <> "." <> strV $3) (Src.Symbol "(" (tokenToArea $4)) $5 (Src.Symbol ")" (tokenToArea $6))) }
+  : name '(' compositePatternArgs ')'          %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PCon (Src.Source (tokenToArea $1) (strV $1)) $3) }
+  | name '.' name '(' compositePatternArgs ')' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.PCon (Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) $ strV $1 <> "." <> strV $3) $5) }
   | name '.' name                              %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PNullaryCon (Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) $ strV $1 <> "." <> strV $3)) }
 
 compositePatternArgs :: { [Src.Pattern] }
@@ -504,7 +455,7 @@ compositePatternArgs :: { [Src.Pattern] }
   | pattern ',' compositePatternArgs { $1:$3 }
 
 recordPattern :: { Src.Pattern }
-  : '{' recordFieldPatterns maybeComma '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PRecord (Src.Symbol "{" (tokenToArea $1)) $2 (Src.Symbol "}" (tokenToArea $4))) }
+  : '{' recordFieldPatterns maybeComma '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PRecord $2) }
 
 recordFieldPatterns :: { [Src.PatternField] }
   : name ':' pattern                         { [Src.PatternField (Src.Source (tokenToArea $1) (strV $1)) $3] }
@@ -513,7 +464,7 @@ recordFieldPatterns :: { [Src.PatternField] }
   | recordFieldPatterns ',' name             { $1 <> [Src.PatternFieldShorthand (Src.Source (tokenToArea $3) (strV $3))] }
 
 listPattern :: { Src.Pattern }
-  : '[' listItemPatterns maybeComma ']' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PList (Src.Symbol "[" (tokenToArea $1)) $2 (Src.Symbol "]" (tokenToArea $4))) }
+  : '[' listItemPatterns maybeComma ']' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.PList $2) }
 
 listItemPatterns :: { [Src.Pattern] }
   : pattern                            { [$1] }
@@ -522,11 +473,11 @@ listItemPatterns :: { [Src.Pattern] }
   | {- empty -}                        { [] }
 
 spreadPattern :: { Src.Pattern }
-  : '...' name  { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.PSpread (Src.Symbol "..." (tokenToArea $1)) (nameToPattern (tokenToArea $2) (strV $2))) }
+  : '...' name  { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.PSpread (nameToPattern (tokenToArea $2) (strV $2))) }
 
 
 tuplePattern :: { Src.Pattern }
-  : '<' tupleItemPatterns 'tuple>' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple (Src.Symbol "<" (tokenToArea $1)) $2 (Src.Symbol ">" (tokenToArea $3))) }
+  : '<' tupleItemPatterns 'tuple>' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.PTuple $2) }
 
 tupleItemPatterns :: { [Src.Pattern] }
   : pattern                       %shift { [$1] }
