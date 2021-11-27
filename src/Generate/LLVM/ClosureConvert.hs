@@ -274,16 +274,11 @@ collectAbsParams abs = case abs of
   b ->
     ([], [b])
 
-collectPlaceholderParams :: Slv.Exp -> ([String], Slv.Exp)
-collectPlaceholderParams ph =
-  let (params, body) = collectPlaceholderParams' ph
-  in  (params, body)
-  -- in  (S.toList $ S.fromList params, body)
 
-collectPlaceholderParams' :: Slv.Exp -> ([String], Slv.Exp)
-collectPlaceholderParams' ph = case ph of
-  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ True, ts) next) ->
-    let (nextParams, nextBody) = collectPlaceholderParams' next
+collectPlaceholderParams :: Slv.Exp -> ([String], Slv.Exp)
+collectPlaceholderParams ph = case ph of
+  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ False True, ts) next) ->
+    let (nextParams, nextBody) = collectPlaceholderParams next
         tsStr = buildTypeStrForPlaceholder ts
     in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
 
