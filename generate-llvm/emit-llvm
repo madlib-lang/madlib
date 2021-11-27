@@ -1,1 +1,1 @@
-clang++ -S -emit-llvm "$1.cpp" -o "$1.ll"
+clang++ -S -std=c++11 -emit-llvm "$1.cpp" -o "$1.ll"

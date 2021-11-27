@@ -40,7 +40,8 @@ import           Infer.Infer
 import           Generate.Javascript           as GenerateJS
 import qualified Generate.Json                 as GenerateJson
 import           Generate.JSInternals
-import qualified Generate.LLVM                 as LLVM
+import qualified Generate.LLVM.LLVM            as LLVM
+import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Optimize.Optimize
@@ -168,15 +169,17 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   when coverage $ do
                     runCoverageInitialization rootPath table
 
-                  let optimizedTable = optimizeTable optimized table
 
-                  if target == TLLVM then
-                    case M.lookup canonicalEntrypoint optimizedTable of
+                  if target == TLLVM then do
+                    let closureConverted = ClosureConvert.optimizeTable table
+                    putStrLn (ppShow closureConverted)
+                    case M.lookup canonicalEntrypoint closureConverted of
                       Just ast ->
                         LLVM.generate ast
                       Nothing ->
                         putStrLn $ "AST for '" <> canonicalEntrypoint <> "' not found!"
-                  else
+                  else do
+                    let optimizedTable = optimizeTable optimized table
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
                   when bundle $ do
