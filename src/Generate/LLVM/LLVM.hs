@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Generate.LLVM.LLVM where
 
 
@@ -40,12 +41,49 @@ import Text.Show.Pretty
 import Debug.Trace
 import qualified Data.String.Utils as List
 import Foreign.C
-import Generate.LLVM.Optimized (isClosureDef)
 import qualified Infer.Type as InferredType
+import Infer.Type (isFunctionType)
+
+
+-- TODO: Move to util module
+sizeof :: Type.Type -> Constant.Constant
+sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
+  where
+     ptrType = Type.PointerType t (AddrSpace 0)
+     nullPtr = Constant.IntToPtr (Constant.Int 32 0) ptrType
+     szPtr   = Constant.GetElementPtr True nullPtr [Constant.Int 32 1]
+
+
+data SymbolType
+  = VariableSymbol
+  | FunctionSymbol
+  | ConstructorSymbol Int Int -- ctor unique id ( index ) | arity
+  deriving(Eq, Show)
+
+
+data Symbol
+  = Symbol SymbolType Operand
+  deriving(Eq, Show)
+
+
+type SymbolTable
+  = Map.Map String Symbol
+
+
+varSymbol :: Operand -> Symbol
+varSymbol =
+  Symbol VariableSymbol
+
+fnSymbol :: Operand -> Symbol
+fnSymbol =
+  Symbol FunctionSymbol
+
+constructorSymbol :: Operand -> Int -> Int -> Symbol
+constructorSymbol ctor id arity =
+  Symbol (ConstructorSymbol id arity) ctor
 
 
 
-type SymbolTable = Map.Map String Operand
 
 
 
@@ -56,6 +94,48 @@ stringToShortByteString = ShortByteString.toShort . Char8.pack
 true :: Operand
 true = Operand.ConstantOperand (Constant.Int 1 1)
 
+gcMalloc :: Operand
+gcMalloc =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
+
+strEq :: Operand
+strEq =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.ptr Type.i8, Type.ptr Type.i8] False) (AST.mkName "__streq__"))
+
+i32ConstOp :: Integer -> Operand
+i32ConstOp i = Operand.ConstantOperand $ Constant.Int 32 i
+
+i64ConstOp :: Integer -> Operand
+i64ConstOp i = Operand.ConstantOperand $ Constant.Int 64 i
+
+storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
+storeItem basePtr _ (item, index) = do
+  ptr <- gep basePtr [i32ConstOp 0, i32ConstOp index]
+  store ptr 8 item
+  return ()
+
+
+
+buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => String -> m Operand
+buildStr s = do
+  let s' = List.init . List.tail $ s
+  -- we need to add 0 to terminate a C string
+  let charCodes = (fromEnum <$> s') ++ [0]
+  -- 92, 110 == \n
+  let charCodes' = List.replace [92, 110] [10] charCodes
+  let charCodes'' = toInteger <$> charCodes'
+  addr <- call gcMalloc [(ConstantOperand (Constant.Int 64 (fromIntegral $ List.length charCodes'')), [])]
+  let charCodesWithIds = List.zip charCodes'' [0..]
+
+  Monad.foldM_ (storeChar addr) () charCodesWithIds
+  return addr
+  where
+    storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Integer, Integer) -> m ()
+    storeChar basePtr _ (charCode, index) = do
+      ptr <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
+      store ptr 8 (Operand.ConstantOperand (Constant.Int 8 charCode))
+      return ()
+
 
 generateExp :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m (SymbolTable, Operand)
 generateExp symbolTable exp = case exp of
@@ -64,10 +144,14 @@ generateExp symbolTable exp = case exp of
 
   Optimized _ _ (Var n) ->
     case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
-      Just global@(Operand.ConstantOperand Constant.GlobalReference{}) ->
+      Just (Symbol FunctionSymbol global) ->
         return (symbolTable, global)
 
-      Just var -> do
+      Just (Symbol (ConstructorSymbol _ 0) var) -> do
+        struct <- call var []
+        return (symbolTable, struct)
+
+      Just (Symbol _ var) -> do
         return (symbolTable, var)
 
       Nothing ->
@@ -78,9 +162,7 @@ generateExp symbolTable exp = case exp of
 
   Optimized _ _ (Assignment name e) -> do
     (symbolTable', exp') <- generateExp symbolTable e
-    -- var                  <- alloca (typeOf exp') Nothing 4
-    -- store var 4 exp'
-    return (Map.insert name exp' symbolTable', exp')
+    return (Map.insert name (varSymbol exp') symbolTable', exp')
 
   Optimized _ _ (App f arg _) -> do
     (symbolTable', f')    <- generateExp symbolTable (trace ("F: "<>ppShow f) f)
@@ -96,9 +178,9 @@ generateExp symbolTable exp = case exp of
         let t = getType f
         closurePtr <- alloca (typeOf (trace ("T: "<>ppShow t) f')) Nothing 8
         store closurePtr 8 f'
-        fn <- gep closurePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+        fn <- gep closurePtr [i32ConstOp 0, i32ConstOp 0]
         fn' <- load fn 8
-        closuredArgs <- gep closurePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+        closuredArgs <- gep closurePtr [i32ConstOp 0, i32ConstOp 1]
         closuredArgs' <- load closuredArgs 8
         let argCount = case typeOf closuredArgs' of
               Type.StructureType _ items ->
@@ -107,7 +189,7 @@ generateExp symbolTable exp = case exp of
               _ ->
                 0
 
-        closuredArgs'' <- mapM (\index -> gep closuredArgs [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)] >>= (`load` 8)) $ List.take argCount [0..]
+        closuredArgs'' <- mapM (\index -> gep closuredArgs [i32ConstOp 0, i32ConstOp index] >>= (`load` 8)) $ List.take argCount [0..]
         let closuredArgs''' = (, []) <$> closuredArgs''
         res <- call fn' (closuredArgs''' ++ [(arg'', [])])
         return (symbolTable'', res)
@@ -125,23 +207,8 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value)
 
   Optimized _ _ (LStr s) -> do
-    let s' = List.init . List.tail $ s
-    -- we need to add 0 to terminate a C string
-    let charCodes = (fromEnum <$> s') ++ [0]
-    -- 92, 110 == \n
-    let charCodes' = List.replace [92, 110] [10] charCodes
-    let charCodes'' = toInteger <$> charCodes'
-    addr <- call (Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))) [(ConstantOperand (Constant.Int 64 (fromIntegral $ List.length charCodes'')), [])]
-    let charCodesWithIds = List.zip charCodes'' [0..]
-
-    Monad.foldM_ (storeChar addr) () charCodesWithIds
+    addr <- buildStr s
     return (symbolTable, addr)
-    where
-      storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Integer, Integer) -> m ()
-      storeChar basePtr _ (charCode, index) = do
-        ptr <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
-        store ptr 8 (Operand.ConstantOperand (Constant.Int 8 charCode))
-        return ()
 
   Optimized _ _ (TupleConstructor exps) -> do
     exps' <- mapM ((snd <$>). generateExp symbolTable) exps
@@ -195,30 +262,24 @@ generateExp symbolTable exp = case exp of
     Monad.foldM_ (storeItem env') () envWithIds
 
     let f = case Map.lookup name symbolTable of
-          Just f' ->
+          Just (Symbol _ f') ->
             f'
 
           _ ->
             error $ "Closure '" <> name <> "' not found!\n\n" <> ppShow symbolTable
 
     env'' <- load env' 8
-    -- env''' <- bitcast env'' (Type.StructureType False (boxType <$ envItems))
 
     closure <- alloca (Type.StructureType False [typeOf f, typeOf env'']) Nothing 8
     Monad.foldM_ (storeItem closure) () [(f, 0), (env'', 1)]
 
     closure' <- load closure 8
-    -- closure'' <- bitcast closure' (Type.StructureType False [typeOf f, typeOf env'''])
     return (symbolTable, closure')
 
   _ ->
     undefined
 
-storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
-storeItem basePtr _ (item, index) = do
-  ptr <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
-  store ptr 8 item
-  return ()
+
 
 
 generateBranches :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> AST.Name -> AST.Name -> Operand -> [Is] -> m [(Operand, AST.Name)]
@@ -239,7 +300,7 @@ generateBranches symbolTable defaultBlock exitBlock whereExp iss = case iss of
 generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> AST.Name -> Bool -> AST.Name -> Operand -> Is -> m (Operand, AST.Name)
 generateBranch symbolTable defaultBlock hasMore exitBlock whereExp is = case is of
   Optimized _ _ (Is pat exp) -> mdo
-    test <- generateBranchTest pat whereExp
+    test <- generateBranchTest symbolTable pat whereExp
     if hasMore then
       condBr test branchExpBlock nextBlock
     else
@@ -269,7 +330,7 @@ generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
 generateSymbolTableForPattern :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Pattern -> m SymbolTable
 generateSymbolTableForPattern symbolTable baseExp pat = case pat of
   Optimized _ _ (PVar n) ->
-    return $ Map.insert n baseExp symbolTable
+    return $ Map.insert n (varSymbol baseExp) symbolTable
 
   Optimized _ _ PAny ->
     return symbolTable
@@ -287,12 +348,25 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
     let patsWithIds = List.zip pats [0..]
     Monad.foldM (generateSymbolTableForIndexedData baseExp) symbolTable patsWithIds
 
+  Optimized _ _ (PCon name pats) -> do
+    let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
+    constructor' <- bitcast baseExp constructorType
+    let patsWithIds = List.zip pats [1..]
+    Monad.foldM (generateSymbolTableForIndexedData constructor') symbolTable patsWithIds
+
   _ ->
     undefined
 
 
-generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Pattern -> Operand -> m Operand
-generateBranchTest pat value = case pat of
+generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> (Pattern, Operand) -> m Operand
+generateSubPatternTest symbolTable prev (pat', ptr) = do
+  v <- load ptr 8
+  curr <- generateBranchTest symbolTable pat' v
+  prev `Instruction.and` curr
+
+
+generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Pattern -> Operand -> m Operand
+generateBranchTest symbolTable pat value = case pat of
   Optimized _ _ (PNum n) ->
     fcmp FloatingPointPredicate.OEQ (C.double (read n)) value
 
@@ -302,6 +376,10 @@ generateBranchTest pat value = case pat of
   Optimized _ _ (PBool _) ->
     icmp IntegerPredicate.EQ (Operand.ConstantOperand $ Constant.Int 1 0) value
 
+  Optimized _ _ (PStr s) -> do
+    s' <- buildStr s
+    call strEq [(s', []), (value, [])]
+
   Optimized _ _ PAny ->
     return true
 
@@ -310,25 +388,40 @@ generateBranchTest pat value = case pat of
 
   Optimized _ _ (PTuple pats) -> do
     let ids = fromIntegral <$> List.take (List.length pats) [0..]
-    itemPtrs <- getTuplePointers ids value
+    itemPtrs <- getStructPointers ids value
     let patsWithPtrs = List.zip pats itemPtrs
-    Monad.foldM
-      (\prev (pat', ptr) -> do
-        v <- load ptr 8
-        curr <- generateBranchTest pat' v
-        prev `Instruction.and` curr
-      )
-      true
-      patsWithPtrs
+    Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
+
+  Optimized _ _ (PCon name pats) -> do
+    let constructorId = case Map.lookup name symbolTable of
+          Just (Symbol (ConstructorSymbol id _) _) ->
+            i64ConstOp $ fromIntegral id
+
+          _ ->
+            error $ "Constructor '" <> name <> "' not found!"
+
+    let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
+    constructor' <- bitcast value constructorType
+    let argIds = fromIntegral <$> List.take (List.length pats) [1..]
+    constructorArgPtrs <- getStructPointers argIds constructor'
+    let patsWithPtrs = List.zip pats constructorArgPtrs
+
+    id <- gep constructor' [i32ConstOp 0, i32ConstOp 0]
+    id' <- load id 8
+    testIds <- icmp IntegerPredicate.EQ constructorId id'
+
+    testSubPatterns <- Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
+
+    testIds `Instruction.and` testSubPatterns
 
   _ ->
     undefined
 
-getTuplePointers :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [Integer] -> Operand -> m [Operand]
-getTuplePointers ids ptr = case ids of
+getStructPointers :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [Integer] -> Operand -> m [Operand]
+getStructPointers ids ptr = case ids of
   (index : next) -> do
-    ptr'  <- gep ptr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
-    next  <- getTuplePointers (List.tail ids) ptr
+    ptr'  <- gep ptr [i32ConstOp 0, i32ConstOp index]
+    next  <- getStructPointers (List.tail ids) ptr
     return $ ptr' : next
 
   [] ->
@@ -415,61 +508,70 @@ updateClosureType envArgs t = case t of
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
   Optimized _ _ (TypedExp (Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body])))) _) -> do
-    let returnType  = boxType --buildLLVMType (getType body)
-    let paramType   = boxType --buildLLVMType $ InferredType.getParamType t
+    let returnType  = boxType
+    let paramType   = boxType
         returnType' = case body of
           Optimized _ _ (Closure n args) ->
             updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
           _ ->
             returnType
+
     f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
       entry <- block `named` "entry"; do
-        -- var <- alloca paramType Nothing 8
-        -- store var 4 param
         var' <- unbox (InferredType.getParamType t) param
-        (_, exps) <- generateExp (Map.insert paramName var' symbolTable) body
+        (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
         exps' <- case body of
           Optimized _ _ Closure{} ->
             return exps
-            --bitcast exps returnType'
           _ ->
             box exps
         ret exps'
-    return $ Map.insert fnName f symbolTable
+    return $ Map.insert fnName (fnSymbol f) symbolTable
 
   Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body]))) -> do
-    let returnType  = boxType --buildLLVMType (getType body)
-    let paramType   = boxType --buildLLVMType $ InferredType.getParamType t
-        -- returnType' = case body of
-        --   Optimized _ _ (Closure n args) ->
-        --     updateClosureType (getType <$> args) returnType
-        --   _ ->
-        --     returnType
-    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] boxType $ \[param] -> do
+    let returnType  = boxType
+    let paramType   = boxType
+        returnType' = case body of
+          Optimized _ _ (Closure n args) ->
+            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
+          _ ->
+            returnType
+
+    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
       entry <- block `named` "entry"; do
-        -- var <- alloca paramType Nothing 4
-        -- store var 4 param
         var' <- unbox (InferredType.getParamType t) param
-        (_, exps) <- generateExp (Map.insert paramName var' symbolTable) body
-        exps' <- box exps
+        (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
+        exps' <- case body of
+          Optimized _ _ Closure{} ->
+            return exps
+          _ ->
+            box exps
         ret exps'
-    return $ Map.insert fnName f symbolTable
+    return $ Map.insert fnName (fnSymbol f) symbolTable
 
   Optimized t _ (ClosureDef fnName env paramName [body]) -> do
     let envParams = (\(Optimized t _ (Var n)) -> (boxType, ParameterName (stringToShortByteString n))) <$> env
         paramType  = buildLLVMType $ InferredType.getParamType t
         envParams' = envParams ++ [(boxType, ParameterName (stringToShortByteString paramName))]
-        returnType = boxType
         allParamTypes = (getType <$> env) ++ [InferredType.getParamType t]
-    f <- function (AST.mkName fnName) envParams' returnType $ \params -> do
+        returnType = boxType
+        returnType' = case body of
+          Optimized _ _ (Closure n args) ->
+            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
+          _ ->
+            returnType
+
+    f <- function (AST.mkName fnName) envParams' returnType' $ \params -> do
       entry <- block `named` "entry"; do
-        -- vars <- mapM (\p -> alloca boxType Nothing 4) params
-        -- mapM_ (\(p, v) -> store v 4 p) (List.zip params vars)
         vars' <- Monad.zipWithM unbox allParamTypes params
-        (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) vars')) body
-        exps' <- box exps
+        (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) (varSymbol <$> vars'))) body
+        exps' <- case body of
+          Optimized _ _ Closure{} ->
+            return exps
+          _ ->
+            box exps
         ret exps'
-    return $ Map.insert fnName f symbolTable
+    return $ Map.insert fnName (fnSymbol f) symbolTable
 
   _ ->
     return symbolTable
@@ -491,6 +593,58 @@ generateTopLevelFunctions symbolTable topLevelFunctions = case topLevelFunctions
 
 
 
+{-
+type R = R(Maybe Number, List String)
+
+constructor R becomes:
+i8* (i8*, i8*)
+
+internally it builds a struct to represent the constructor:
+{ i64, i8*, i8* }
+the i64 is the type of constructor ( simply the index )
+the two i8* are the content of the created type
+-}
+generateConstructor :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
+generateConstructor symbolTable (constructor, index) = case constructor of
+  Untyped _ (Constructor n _ t) -> do
+    let paramTypes  = InferredType.getParamTypes t
+        paramTypes' = boxType <$ paramTypes
+        fType       = Type.ptr $ Type.FunctionType boxType paramTypes' False
+
+    f <- function (AST.mkName n) ((, NoParameterName) <$> paramTypes') boxType $ \params -> do
+      let structType = Type.StructureType False $ Type.i64 : (typeOf <$> params)
+          size       = Operand.ConstantOperand $ sizeof structType
+      constructorStruct   <- call gcMalloc [(size, [])]
+      constructorStruct'  <- bitcast constructorStruct (Type.ptr structType)
+      ptrConstructorIndex <- gep constructorStruct' [i32ConstOp 0, i32ConstOp 0]
+      store ptrConstructorIndex 8 (i64ConstOp (fromIntegral index))
+      Monad.foldM_ (storeItem constructorStruct') () (List.zip params [1..])
+      boxed <- box constructorStruct'
+      ret boxed
+
+    return $ Map.insert n (constructorSymbol f index (List.length paramTypes)) symbolTable
+
+  _ ->
+    undefined
+
+
+generateConstructorsForADT :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> TypeDecl -> m SymbolTable
+generateConstructorsForADT symbolTable adt = case adt of
+  Untyped _ ADT { adtconstructors } ->
+    let indexedConstructors = List.zip adtconstructors [0..]
+    in  Monad.foldM generateConstructor symbolTable indexedConstructors
+
+  _ ->
+    undefined
+
+
+
+generateConstructors :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [TypeDecl] -> m SymbolTable
+generateConstructors symbolTable tds =
+  let adts = List.filter isADT tds
+  in  Monad.foldM generateConstructorsForADT symbolTable tds
+
+
 expsForMain :: [Exp] -> [Exp]
 expsForMain =
   List.filter (not . \e -> isTopLevelFunction e || isClosureDef e)
@@ -504,7 +658,8 @@ topLevelFunctions =
 toLLVMModule :: AST -> AST.Module
 toLLVMModule ast =
   buildModule "main" $ do
-  symbolTable <- generateTopLevelFunctions Map.empty (topLevelFunctions $ aexps ast)
+  symbolTable <- generateConstructors Map.empty (atypedecls ast)
+  symbolTable' <- generateTopLevelFunctions symbolTable (topLevelFunctions $ aexps ast)
 
   extern (AST.mkName "puts") [ptr i8] i32
   extern (AST.mkName "malloc") [Type.i64] (Type.ptr Type.i8)
@@ -514,7 +669,7 @@ toLLVMModule ast =
 
   function "main" [] void $ \_ -> mdo
     entry <- block `named` "entry";
-    generateExps symbolTable (expsForMain $ aexps ast)
+    generateExps symbolTable' (expsForMain $ aexps ast)
     retVoid
 
 
