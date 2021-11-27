@@ -35,6 +35,9 @@ getTVarId :: TVar -> Id
 getTVarId (TV id _) = id
 
 
+tVar :: String -> Type
+tVar v = TVar (TV v Star)
+
 tNumber :: Type
 tNumber = TCon (TC "Number" Star) "prelude"
 
