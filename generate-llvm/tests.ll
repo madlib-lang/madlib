@@ -7,7 +7,7 @@
 define external ccc  i8* @$Functor$List$map(i8*  %f_0, i8*  %m_0)    {
   %1 = bitcast i8* %f_0 to {i8*, i32, i32, i8*}* 
   %2 = bitcast i8* %m_0 to {i8*, i8*}* 
-  %3 = bitcast i8* (i8*, i8*, i8*)* @helper$lifted$5 to i8* 
+  %3 = bitcast i8* (i8*, i8*, i8*)* @helper$lifted$6 to i8* 
   %4 = bitcast {i8*, i32, i32, i8*}* %1 to i8* 
   %5 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*}* getelementptr inbounds ({i8*}, {i8*}* inttoptr (i32 0 to {i8*}*), i32 1) to i64))  
   %6 = bitcast i8* %5 to {i8*}* 
@@ -39,7 +39,7 @@ define external ccc  i8* @$Functor$List$map(i8*  %f_0, i8*  %m_0)    {
 define external ccc  i8* @$Applicative$List$ap(i8*  %mf_0, i8*  %ma_0)    {
   %1 = bitcast i8* %mf_0 to {i8*, i8*}* 
   %2 = bitcast i8* %ma_0 to {i8*, i8*}* 
-  %3 = bitcast i8* (i8*, i8*)* @anonymous$lifted$7 to i8* 
+  %3 = bitcast i8* (i8*, i8*)* @anonymous$lifted$8 to i8* 
   %4 = bitcast {i8*, i8*}* %2 to i8* 
   %5 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*}* getelementptr inbounds ({i8*}, {i8*}* inttoptr (i32 0 to {i8*}*), i32 1) to i64))  
   %6 = bitcast i8* %5 to {i8*}* 
@@ -203,7 +203,19 @@ define external ccc  i8* @anonymous$lifted$4(i8*  %x_0)    {
 }
 
 
-define external ccc  i8* @helper$lifted$5(i8*  %f_0, i8*  %acc_0, i8*  %n_0)    {
+define external ccc  i8* @anonymous$lifted$5(i8*  %x_0)    {
+  %1 = bitcast i8* %x_0 to double* 
+  %2 = load  double, double* %1, align 8 
+  %3 = fadd double %2, 1.000000e0 
+  %4 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %5 = bitcast i8* %4 to double* 
+  store  double %3, double* %5, align 8 
+  %6 = bitcast double* %5 to i8* 
+  ret i8* %6 
+}
+
+
+define external ccc  i8* @helper$lifted$6(i8*  %f_0, i8*  %acc_0, i8*  %n_0)    {
 ; <label>:0:
   %1 = bitcast i8* %f_0 to {i8*, i32, i32, i8*}* 
   %2 = bitcast i8* %acc_0 to {i8*, i8*}* 
@@ -235,7 +247,7 @@ branchExpBlock_0:
   %26 = bitcast {i8*, i32, i32, i8*}* %1 to i8* 
   %27 = bitcast {i8*, i8*}* %25 to i8* 
   %28 = bitcast {i8*, i8*}* %18 to i8* 
-  %29 =  call ccc  i8*  @helper$lifted$5(i8*  %26, i8*  %27, i8*  %28)  
+  %29 =  call ccc  i8*  @helper$lifted$6(i8*  %26, i8*  %27, i8*  %28)  
   %30 = bitcast i8* %29 to {i8*, i8*}* 
   %31 = bitcast {i8*, i8*}* %30 to i8* 
   br label %exitBlock_0 
@@ -255,7 +267,7 @@ exitBlock_0:
 }
 
 
-define external ccc  i8* @anonymous$lifted$6(i8*  %ma_0, i8*  %f_0)    {
+define external ccc  i8* @anonymous$lifted$7(i8*  %ma_0, i8*  %f_0)    {
   %1 = bitcast i8* %ma_0 to {i8*, i8*}* 
   %2 = bitcast i8* %f_0 to {i8*, i32, i32, i8*}* 
   %3 = bitcast {i8*, i32, i32, i8*}* %2 to i8* 
@@ -267,10 +279,10 @@ define external ccc  i8* @anonymous$lifted$6(i8*  %ma_0, i8*  %f_0)    {
 }
 
 
-define external ccc  i8* @anonymous$lifted$7(i8*  %ma_0, i8*  %_P__0)    {
+define external ccc  i8* @anonymous$lifted$8(i8*  %ma_0, i8*  %_P__0)    {
   %1 = bitcast i8* %ma_0 to {i8*, i8*}* 
   %2 = bitcast i8* %_P__0 to {i8*, i8*}* 
-  %3 = bitcast i8* (i8*, i8*)* @anonymous$lifted$6 to i8* 
+  %3 = bitcast i8* (i8*, i8*)* @anonymous$lifted$7 to i8* 
   %4 = bitcast {i8*, i8*}* %1 to i8* 
   %5 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*}* getelementptr inbounds ({i8*}, {i8*}* inttoptr (i32 0 to {i8*}*), i32 1) to i64))  
   %6 = bitcast i8* %5 to {i8*}* 
@@ -401,6 +413,68 @@ exitBlock_0:
 }
 
 
+define external ccc  i8* @fAdd(i8*  %$Functor$d185_0)    {
+  %1 = bitcast i8* %$Functor$d185_0 to i8* 
+  %2 = bitcast i8* %1 to {i8*}* 
+  %3 = getelementptr  {i8*}, {i8*}* %2, i32 0, i32 0 
+  %4 = load  i8*, i8** %3, align 8 
+  %5 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
+  %6 = bitcast i8* %5 to {i8*, i32, i32}* 
+  %7 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 0 
+  store  i8* %4, i8** %7, align 8 
+  %8 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 1 
+  store  i32 2, i32* %8, align 8 
+  %9 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 2 
+  store  i32 2, i32* %9, align 8 
+  %10 = bitcast {i8*, i32, i32}* %6 to i8* 
+  %11 = bitcast i8* (i8*)* @anonymous$lifted$4 to i8* 
+  %12 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
+  %13 = bitcast i8* %12 to {i8*, i32, i32}* 
+  %14 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 0 
+  store  i8* %11, i8** %14, align 8 
+  %15 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 1 
+  store  i32 1, i32* %15, align 8 
+  %16 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 2 
+  store  i32 1, i32* %16, align 8 
+  %17 = bitcast {i8*, i32, i32}* %13 to i8* 
+  %18 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %10, i32  1, i8*  %17)  
+  %19 = bitcast i8* %18 to {i8*, i32, i32, i8*}* 
+  %20 = bitcast {i8*, i32, i32, i8*}* %19 to i8* 
+  ret i8* %20 
+}
+
+
+define external ccc  i8* @fAdd2(i8*  %$Functor$m220_0, i8*  %functor_0)    {
+  %1 = bitcast i8* %$Functor$m220_0 to i8* 
+  %2 = bitcast i8* %functor_0 to i8* 
+  %3 = bitcast i8* %1 to {i8*}* 
+  %4 = getelementptr  {i8*}, {i8*}* %3, i32 0, i32 0 
+  %5 = load  i8*, i8** %4, align 8 
+  %6 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
+  %7 = bitcast i8* %6 to {i8*, i32, i32}* 
+  %8 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %7, i32 0, i32 0 
+  store  i8* %5, i8** %8, align 8 
+  %9 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %7, i32 0, i32 1 
+  store  i32 2, i32* %9, align 8 
+  %10 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %7, i32 0, i32 2 
+  store  i32 2, i32* %10, align 8 
+  %11 = bitcast {i8*, i32, i32}* %7 to i8* 
+  %12 = bitcast i8* (i8*)* @anonymous$lifted$5 to i8* 
+  %13 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
+  %14 = bitcast i8* %13 to {i8*, i32, i32}* 
+  %15 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %14, i32 0, i32 0 
+  store  i8* %12, i8** %15, align 8 
+  %16 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %14, i32 0, i32 1 
+  store  i32 1, i32* %16, align 8 
+  %17 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %14, i32 0, i32 2 
+  store  i32 1, i32* %17, align 8 
+  %18 = bitcast {i8*, i32, i32}* %14 to i8* 
+  %19 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %11, i32  2, i8*  %18, i8*  %2)  
+  %20 = bitcast i8* %19 to i8* 
+  ret i8* %20 
+}
+
+
 declare external ccc  i8* @__applyPAP__(i8*, i32, ...)    
 
 
@@ -434,38 +508,7 @@ declare external ccc  {i8*, i8*}* @MadList_concat({i8*, i8*}*, {i8*, i8*}*)
 @$EMPTY_ENV =    global {} {  }
 
 
-define external ccc  i8* @whateva(i8*  %$Functor$b183_0)    {
-  %1 = bitcast i8* %$Functor$b183_0 to i8* 
-  %2 = bitcast i8* %1 to {i8*}* 
-  %3 = getelementptr  {i8*}, {i8*}* %2, i32 0, i32 0 
-  %4 = load  i8*, i8** %3, align 8 
-  %5 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
-  %6 = bitcast i8* %5 to {i8*, i32, i32}* 
-  %7 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 0 
-  store  i8* %4, i8** %7, align 8 
-  %8 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 1 
-  store  i32 2, i32* %8, align 8 
-  %9 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %6, i32 0, i32 2 
-  store  i32 2, i32* %9, align 8 
-  %10 = bitcast {i8*, i32, i32}* %6 to i8* 
-  %11 = bitcast i8* (i8*)* @anonymous$lifted$4 to i8* 
-  %12 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
-  %13 = bitcast i8* %12 to {i8*, i32, i32}* 
-  %14 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 0 
-  store  i8* %11, i8** %14, align 8 
-  %15 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 1 
-  store  i32 1, i32* %15, align 8 
-  %16 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %13, i32 0, i32 2 
-  store  i32 1, i32* %16, align 8 
-  %17 = bitcast {i8*, i32, i32}* %13 to i8* 
-  %18 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %10, i32  1, i8*  %17)  
-  %19 = bitcast i8* %18 to {i8*, i32, i32, i8*}* 
-  %20 = bitcast {i8*, i32, i32, i8*}* %19 to i8* 
-  ret i8* %20 
-}
-
-
-@fAdd =    global i8* (i8*)* undef
+@r =    global {i8*, i8*}* undef
 
 
 define external ccc  void @main()    {
@@ -508,26 +551,63 @@ entry_0:
   %28 = bitcast {i8*, i32, i32, i8*}* %27 to i8* 
   %29 =  call ccc  i8*  @anonymous$lifted$3(i8*  %28)  
   %30 = bitcast i8* %29 to {i8*, i8*}* 
-  store  i8* (i8*)* @whateva, i8* (i8*)** @fAdd, align 8 
   %31 = bitcast {i8* (i8*, i8*)*}* @$Functor$List to i8* 
-  %32 =  call ccc  i8*  @whateva(i8*  %31)  
-  %33 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
-  %34 = bitcast i8* %33 to {i8*, i32, i32}* 
-  %35 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %34, i32 0, i32 0 
-  store  i8* %32, i8** %35, align 8 
-  %36 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %34, i32 0, i32 1 
-  store  i32 1, i32* %36, align 8 
-  %37 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %34, i32 0, i32 2 
-  store  i32 1, i32* %37, align 8 
-  %38 = bitcast {i8*, i32, i32}* %34 to i8* 
-  %39 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
-  %40 = bitcast i8* %39 to double* 
-  store  double 1.000000e0, double* %40, align 8 
-  %41 = bitcast double* %40 to i8* 
-  %42 =  call ccc  {i8*, i8*}*  @MadList_singleton(i8*  %41)  
-  %43 = bitcast {i8*, i8*}* %42 to {i8*, i8*}* 
-  %44 = bitcast {i8*, i8*}* %43 to i8* 
-  %45 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %38, i32  1, i8*  %44)  
-  %46 = bitcast i8* %45 to {i8*, i8*}* 
+  %32 =  call ccc  i8*  @fAdd(i8*  %31)  
+  %33 = bitcast i8* %32 to i8* 
+  %34 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %35 = bitcast i8* %34 to double* 
+  store  double 3.000000e0, double* %35, align 8 
+  %36 = bitcast double* %35 to i8* 
+  %37 =  call ccc  {i8*, i8*}*  @MadList_singleton(i8*  %36)  
+  %38 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %39 = bitcast i8* %38 to double* 
+  store  double 2.000000e0, double* %39, align 8 
+  %40 = bitcast double* %39 to i8* 
+  %41 =  call ccc  {i8*, i8*}*  @__MadList_push__(i8*  %40, {i8*, i8*}*  %37)  
+  %42 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %43 = bitcast i8* %42 to double* 
+  store  double 1.000000e0, double* %43, align 8 
+  %44 = bitcast double* %43 to i8* 
+  %45 =  call ccc  {i8*, i8*}*  @__MadList_push__(i8*  %44, {i8*, i8*}*  %41)  
+  %46 = bitcast {i8*, i8*}* %45 to {i8*, i8*}* 
+  %47 = bitcast {i8*, i8*}* %46 to i8* 
+  %48 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %33, i32  1, i8*  %47)  
+  %49 = bitcast i8* %48 to {i8*, i8*}* 
+  store  {i8*, i8*}* %49, {i8*, i8*}** @r, align 8 
+  %50 = bitcast i8* (i8*)* @logNum to i8* 
+  %51 =  call ccc  i8*  @GC_malloc(i64  ptrtoint ({i8*, i32, i32}* getelementptr inbounds ({i8*, i32, i32}, {i8*, i32, i32}* inttoptr (i32 0 to {i8*, i32, i32}*), i32 1) to i64))  
+  %52 = bitcast i8* %51 to {i8*, i32, i32}* 
+  %53 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %52, i32 0, i32 0 
+  store  i8* %50, i8** %53, align 8 
+  %54 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %52, i32 0, i32 1 
+  store  i32 1, i32* %54, align 8 
+  %55 = getelementptr  {i8*, i32, i32}, {i8*, i32, i32}* %52, i32 0, i32 2 
+  store  i32 1, i32* %55, align 8 
+  %56 = bitcast {i8*, i32, i32}* %52 to i8* 
+  %57 = bitcast {i8*, i8*}* %49 to i8* 
+  %58 =  call ccc  i8*  @$Functor$List$map(i8*  %56, i8*  %57)  
+  %59 = bitcast i8* %58 to {i8*, i32, i32, i8*}* 
+  %60 = bitcast {i8* (i8*, i8*)*}* @$Functor$List to i8* 
+  %61 =  call ccc  i8*  @fAdd2(i8*  %60)  
+  %62 = bitcast i8* %61 to i8* 
+  %63 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %64 = bitcast i8* %63 to double* 
+  store  double 3.000000e0, double* %64, align 8 
+  %65 = bitcast double* %64 to i8* 
+  %66 =  call ccc  {i8*, i8*}*  @MadList_singleton(i8*  %65)  
+  %67 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %68 = bitcast i8* %67 to double* 
+  store  double 2.000000e0, double* %68, align 8 
+  %69 = bitcast double* %68 to i8* 
+  %70 =  call ccc  {i8*, i8*}*  @__MadList_push__(i8*  %69, {i8*, i8*}*  %66)  
+  %71 =  call ccc  i8*  @GC_malloc(i64  ptrtoint (double* getelementptr inbounds (double, double* inttoptr (i32 0 to double*), i32 1) to i64))  
+  %72 = bitcast i8* %71 to double* 
+  store  double 1.000000e0, double* %72, align 8 
+  %73 = bitcast double* %72 to i8* 
+  %74 =  call ccc  {i8*, i8*}*  @__MadList_push__(i8*  %73, {i8*, i8*}*  %70)  
+  %75 = bitcast {i8*, i8*}* %74 to {i8*, i8*}* 
+  %76 = bitcast {i8*, i8*}* %75 to i8* 
+  %77 =  call ccc  i8* (i8*, i32, ...) @__applyPAP__(i8*  %62, i32  1, i8*  %76)  
+  %78 = bitcast i8* %77 to {i8*, i8*}* 
   ret void 
 }
