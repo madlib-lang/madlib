@@ -4,7 +4,7 @@ import type { Maybe } from "Maybe"
 
 import List from "List"
 import String from "String"
-import { bichain, mapRej } from "Wish"
+import { bad, bichain, chainRej, mapRej } from "Wish"
 import { parallel, fromWish, toWish } from "SideEffect"
 import IO from "IO"
 import Json from "Json"
@@ -396,7 +396,8 @@ export run = (config) => {
       (packageDotJsonContent) => pipe(
         installPackages(config, initialContext),
         toWish,
-        chain((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(of(x)))
+        chain((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(of(x))),
+        chainRej((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(bad(x)))
       )("madlib.json")
     ),
     andDo(of(()))

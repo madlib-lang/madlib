@@ -258,12 +258,12 @@ typings :: { Src.Typing }
   | typing                       %shift { $1 }
 
 typing :: { Src.Typing }
-  : name                        %shift { Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
-  | '(' ')'                     %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRSingle "()") }
-  | '(' typings ')'             %shift { $2 }
-  | '{' recordTypingArgs '}'    %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $2 Nothing) }
-  | '{' '...' name ','  recordTypingArgs '}'    %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRRecord $5 (Just (Src.Source emptyInfos (mergeAreas (tokenToArea $2) (tokenToArea $3)) (Src.TRSingle $ strV $3)))) }
-  | '<' tupleTypings 'tuple>'   %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
+  : name                                               %shift { Src.Source emptyInfos (tokenToArea $1) (Src.TRSingle $ strV $1) }
+  | '(' ')'                                            %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TRSingle "()") }
+  | '(' typings ')'                                    %shift { $2 }
+  | '{' recordTypingArgs maybeComa '}'                 %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.TRRecord $2 Nothing) }
+  | '{' '...' name ','  recordTypingArgs maybeComa '}' %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $7)) (Src.TRRecord $5 (Just (Src.Source emptyInfos (mergeAreas (tokenToArea $2) (tokenToArea $3)) (Src.TRSingle $ strV $3)))) }
+  | '<' tupleTypings 'tuple>'                          %shift { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TRTuple $2) }
 
 compositeTyping :: { Src.Typing }
   : name compositeTypingArgs          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea (last $2))) (Src.TRComp (strV $1) $2) }
@@ -283,7 +283,9 @@ compositeTypingArgs :: { [Src.Typing] }
 
 recordTypingArgs :: { M.Map Src.Name Src.Typing }
   : name '::' typings                               { M.fromList [(strV $1, $3)] }
+  | name '::' typings ','                           { M.fromList [(strV $1, $3)] }
   | recordTypingArgs ',' name '::' typings          { M.insert (strV $3) $5 $1 }
+  | recordTypingArgs ',' name '::' typings ','      { M.insert (strV $3) $5 $1 }
 
 tupleTypings :: { [Src.Typing] }
   : typing ',' typing                   { [$1, $3] }
@@ -347,6 +349,7 @@ jsxTag :: { Src.Exp }
 jsxProp :: { Src.JsxProp }
   : name '=' str          { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.JsxProp (strV $1) (Src.Source emptyInfos (tokenToArea $3) (Src.LStr $ strV $3))) }
   | name '=' '{' exp '}'  { Src.Source emptyInfos (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.JsxProp (strV $1) $4) }
+  | name                  { Src.Source emptyInfos (tokenToArea $1) (Src.JsxProp (strV $1) (Src.Source emptyInfos (tokenToArea $1) (Src.LBool "true"))) }
 
 jsxProps :: { [Src.JsxProp] }
   : jsxProp rets               { [$1] }
@@ -468,12 +471,10 @@ record :: { Src.Exp }
 
 recordFields :: { [Src.Field] }
   : name ':' exp                            { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $3)) $ Src.Field (strV $1, $3)] }
-  -- | '...' exp                               { [Src.Source emptyInfos (mergeAreas (tokenToArea $1) (Src.getArea $2)) $ Src.FieldSpread $2] }
   | name                                    { [Src.Source emptyInfos (tokenToArea $1) $ Src.Field (strV $1, Src.Source emptyInfos (tokenToArea $1) (Src.Var (strV $1)))] }
   | recordFields ',' name                   { $1 <> [Src.Source emptyInfos (tokenToArea $3) $ Src.Field (strV $3, Src.Source emptyInfos (tokenToArea $3) (Src.Var (strV $3)))] }
   | recordFields ',' name ':' exp           { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $5)) $ Src.Field (strV $3, $5)] }
   | recordFields rets ',' rets name ':' exp { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $5) (Src.getArea $7)) $ Src.Field (strV $5, $7)] }
-  -- | recordFields ',' '...' exp              { $1 <> [Src.Source emptyInfos (mergeAreas (tokenToArea $3) (Src.getArea $4)) $ Src.FieldSpread $4] }
   | {- empty -}                             { [] }
 
 

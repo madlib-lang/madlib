@@ -319,15 +319,15 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
     (s', ps, t', es) <- foldlM
       (\(s, pss, t, lis) elem -> do
         (s', ps', t'', li) <- inferListItem (apply s env) (fromMaybe tv t) elem
-        s'' <- case t of
+        (s'', tr) <- case t of
           Nothing ->
-            return mempty
+            return (mempty, t'')
 
           Just t''' ->
-            contextualUnify env elem (apply s' t''') t''
+            (, pickJSXChild t''' t'') <$> contextualUnify env elem (apply s' t''') t''
 
         let s''' = s `compose` s' `compose` s''
-        return (s''', pss ++ ps', Just t'', lis ++ [li])
+        return (s''', pss ++ ps', Just $ apply s''' tr, lis ++ [li])
       )
       (mempty, [], Nothing, [])
       elems
@@ -357,6 +357,14 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
     return (s, ps, apply s tv, Slv.Solved (apply s ps :=> apply s tv) area $ Slv.ListSpread e)
 
+
+pickJSXChild :: Type -> Type -> Type
+pickJSXChild t1 t2 = case (t1, t2) of
+  (TApp (TCon (TC "Element" _) _) _, TCon (TC "String" _) _) ->
+    t1
+
+  _ ->
+    t2
 
 
 -- INFER TUPLE CONSTRUCTOR

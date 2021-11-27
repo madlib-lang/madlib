@@ -38,7 +38,7 @@ initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty }
 
 allowedJSNames :: [String]
-allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length"]
+allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default"]
 
 generateSafeName :: String -> String
 generateSafeName n = if n `elem` allowedJSNames then "_$_" <> n <> "_$_" else n
