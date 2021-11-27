@@ -199,7 +199,6 @@ updateClassPlaceholder env cleanUpEnv push s ph = case ph of
 
     ps'   <- buildClassRefPreds env cls instanceTypes'
     let newRef = (cls, instanceTypes')
-    -- let newRef = (cls, instanceTypes', ps')
     let nextEnv =
           if not call then
             addDict newRef cleanUpEnv
@@ -217,7 +216,9 @@ updateClassPlaceholder env cleanUpEnv push s ph = case ph of
             _ ->
               Nothing
 
-    if newRef `elem` dictsInScope cleanUpEnv && isNameInScope maybeName cleanUpEnv then
+    let areConcrete = all isConcrete instanceTypes'
+
+    if (newRef `elem` dictsInScope cleanUpEnv || call && areConcrete) && isNameInScope maybeName cleanUpEnv then
       -- this class ref is already in scope so we skip the placeholder
       return exp'
     else if not call then

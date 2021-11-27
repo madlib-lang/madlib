@@ -27,11 +27,11 @@ void forwardTimeoutCallback(uv_timer_t *handle) {
   __applyPAP__(pap, 1, NULL);
 }
 
-void __setTimeout__(PAP_t *pap, double *millis) {
+void __setTimeout__(PAP_t *pap, int64_t millis) {
   uv_timer_t *timer_req1 = (uv_timer_t *)malloc(sizeof(uv_timer_t));
   timer_req1->data = (void *)pap;
   uv_timer_init(loop, timer_req1);
-  uv_timer_start(timer_req1, forwardTimeoutCallback, std::round(*millis), 0);
+  uv_timer_start(timer_req1, forwardTimeoutCallback, millis, 0);
 }
 
 #ifdef __cplusplus
