@@ -7,7 +7,18 @@
 extern "C" {
 #endif
 
-bool __streq__(char *s1, char *s2) {
+bool *__eqString__(char **s1, char **s2) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  if (strcmp(*s1, *s2) == 0) {
+    *boxed = true;
+  } else {
+    *boxed = false;
+  }
+
+  return boxed;
+}
+
+bool __areStringsEqual__(char *s1, char *s2) {
   if (strcmp(s1, s2) == 0) {
     return true;
   } else {
@@ -15,6 +26,8 @@ bool __streq__(char *s1, char *s2) {
   }
 }
 
+
+// currently unused, types need adjustment. The param probably needs to be a char**
 double *__strLength__(char *s) {
   double *result = (double *)GC_malloc(sizeof(double));
   *result = strlen(s);

@@ -154,3 +154,21 @@ inc = (a) => {
 }
 
 IO.prettyLog(inc("4"))
+
+
+IO.prettyLog(2.2 == 2.2)
+IO.prettyLog("2.2" == "2.2")
+IO.prettyLog("2.2" == "2.4")
+
+cmp = (a, b) => a == b
+IO.prettyLog(cmp(3, 4))
+
+IO.prettyLog(cmp(true, false))
+
+IO.prettyLog(true == true)
+
+
+IO.prettyLog([1, 2, 3] == [1, 2, 3])
+IO.prettyLog([1, 2, 3] == [1, 2, 3, 4])
+
+// s = (a) => show(a)
