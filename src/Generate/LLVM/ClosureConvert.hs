@@ -144,8 +144,13 @@ findFreeVars env exp = do
               dictName = "$" <> interface <> "$" <> tsStr
           in  return ([(dictName, Opt.Optimized (tVar "dict") area (Opt.Var dictName))], [])
 
-        (Slv.MethodRef _ methodName _, _) -> do
-          return ([], [methodName])
+        (Slv.MethodRef interface methodName True, ts) -> do
+          let tsStr    = buildTypeStrForPlaceholder ts
+              dictName = "$" <> interface <> "$" <> tsStr
+          return ([(dictName, Opt.Optimized (tVar "dict") area (Opt.Var dictName))], [methodName])
+
+        -- (Slv.MethodRef interface methodName False, ts) -> do
+        --   return ([], [methodName])
 
         _ ->
           return ([], [])
@@ -326,9 +331,6 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.TemplateString es')
 
     Slv.JSExp js         -> return $ Opt.Optimized t area (Opt.JSExp js)
-
-    -- when we apply a lifted function
-    -- Slv.App (Slv.Solved _ _ (Slv.Var n))
 
     Slv.App fn arg close -> do
       let (fn', args) = collectAppArgs fullExp
@@ -629,10 +631,16 @@ instance Optimizable Slv.Import Opt.Import where
 optimizeImportName :: Slv.Solved Slv.Name -> Opt.Optimized Opt.Name
 optimizeImportName (Slv.Untyped area name) = Opt.Untyped area name
 
+getMethodNames :: Slv.Interface -> [String]
+getMethodNames interface = case interface of
+  Slv.Untyped _ (Slv.Interface _ _ _ methods _) ->
+    M.keys methods
+
 instance Optimizable Slv.AST Opt.AST where
   optimize env ast = do
-    let globalVars = mapMaybe Slv.getExpName (Slv.aexps ast)
-        env' = env { freeVars = globalVars }
+    let globalVars    = mapMaybe Slv.getExpName (Slv.aexps ast)
+        globalMethods = concatMap getMethodNames $ Slv.ainterfaces ast
+        env' = env { freeVars = globalVars ++ globalMethods }
 
     imports    <- mapM (optimize env') $ Slv.aimports ast
     exps       <- mapM (optimize env') $ Slv.aexps ast

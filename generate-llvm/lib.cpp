@@ -5,7 +5,8 @@
 
 #include <iostream>
 
-// __streq__
+// String
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,15 +19,18 @@ bool __streq__(char *s1, char *s2) {
   }
 }
 
-#ifdef __cplusplus
+double *__strLength__(char *s) {
+  double *result = (double *)GC_malloc(sizeof(double));
+  *result = strlen(s);
+  return result;
 }
-#endif
 
-// String
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+char *__strConcat__(char *s1, char *s2) {
+  char *result = (char*)GC_malloc(strlen(s1) + strlen(s2) + 1);
+  strcpy(result, s1);
+  strcat(result, s2);
+  return result;
+}
 
 char *__stripTrailingZeros__(char *number) {
   int length = strlen(number);
@@ -64,8 +68,8 @@ char *__doubleToStr__(double *d) {
   return __stripTrailingZeros__(str);
 }
 
-char *__booleanToStr__(bool b) {
-  if (b) {
+char *__booleanToStr__(bool *b) {
+  if (*b) {
     char *str = (char *)GC_malloc(5);
     str[0] = 't';
     str[1] = 'r';
