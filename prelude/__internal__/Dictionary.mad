@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { Maybe } from "Maybe"
 import L from "List"
 import T from "Tuple"
@@ -23,7 +25,7 @@ Dictionary = (items) => #- ({
  * fromList([#["one", 2], #["two", 2]])
  * fromList([#["a", 2], #["b", 2], #["c", 3]])
  */
-fromList :: List (#[k, v]) -> Dictionary k v
+fromList :: Eq k =>  List (#[k, v]) -> Dictionary k v
 export fromList = pipe(
   L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
   Dictionary
@@ -34,7 +36,7 @@ export fromList = pipe(
  *
  * @since 0.0.5
  */
-empty :: Dictionary k v
+empty ::Eq k => Dictionary k v
 export empty = fromList([])
 
 
@@ -47,7 +49,7 @@ export empty = fromList([])
  * insert(1, 2, empty)              // fromList([#[1, 2]])
  * insert(1, 7, fromList([#[1, 2]])) // fromList([#[1, 7]])
  */
-insert :: k -> v -> Dictionary k v -> Dictionary k v
+insert :: Eq k => k -> v -> Dictionary k v -> Dictionary k v
 export insert = (k, v, m) => where(m) {
   Dictionary(items) =>
     L.reject(
@@ -68,7 +70,7 @@ export insert = (k, v, m) => where(m) {
  * get("john", fromList([#["john", { age: 32 }]])) // Just({ age: 32 })
  * get("paul", fromList([#["john", { age: 32 }]])) // Nothing
  */
-get :: k -> Dictionary k v -> Maybe v
+get :: Eq k => k -> Dictionary k v -> Maybe v
 export get = (k) => where {
   Dictionary(items) => pipe(
     L.find((item) => where(item) {
@@ -111,7 +113,7 @@ export values = (m) => where(m) {
  * @example
  * len(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
  */
-len :: Dictionary k v -> Number
+len :: Dictionary k v -> Integer
 export len = (m) => (m |> keys |> L.len)
 
 
@@ -123,7 +125,7 @@ export len = (m) => (m |> keys |> L.len)
  * map((x) => x / 2, fromList([#["Sidney", 3], #["New York", 18], #["London", 2]]))
  * // fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]])
  */
-instance Functor (Dictionary k) {
+instance Eq k => Functor (Dictionary k) {
   map = (fn) => where {
     Dictionary(items) => map((i) => #[T.fst(i), fn(T.snd(i))], items) |> fromList
   }
@@ -140,7 +142,7 @@ instance Functor (Dictionary k) {
  * )
  * // fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
  */
-mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
+mapWithKey :: Eq k => (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where {
   Dictionary(items) => map((i) => #[T.fst(i), fn(T.fst(i), T.snd(i))], items) |> fromList
 }
@@ -150,7 +152,9 @@ export mapWithKey = (fn) => where {
  *
  * @since 0.0.5
  */
-merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
+merge :: Eq k => Dictionary k v -> Dictionary k v -> Dictionary k v
 export merge = (a, b) => where(#[a, b]) {
   #[Dictionary(itemsA), Dictionary(itemsB)] => L.concat(itemsA, itemsB) |> fromList
 }
+
+#endif

@@ -1,6 +1,10 @@
+#iftarget js
+
 encode :: String -> String
 export encode = #- encodeURI -#
 
 
 decode :: String -> String
 export decode = #- decodeURI -#
+
+#endif

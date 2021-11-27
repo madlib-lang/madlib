@@ -62,6 +62,7 @@ export fail = (err, sideEffect) => Wish((bad, good) => where(sideEffect) {
 })
 
 
+#iftarget js
 getSideEffectCB = where { SideEffect(run) => run }
 
 parallel :: List (SideEffect a) -> SideEffect (List a)
@@ -81,8 +82,9 @@ export parallel = (effects) => (
     }
   } -#))
 )
+#endif
 
-
+#iftarget js
 execute :: (a -> b) -> SideEffect a -> ()
 export execute = (goodCB, m) => {
   where(m) {
@@ -91,9 +93,12 @@ export execute = (goodCB, m) => {
 
   return ()
 }
+#endif
 
 
+#iftarget js
 after :: Number -> a -> SideEffect a
 export after = (time, a) => SideEffect((goodCB) => #- {
   setTimeout(() => goodCB(a), time);
 } -#)
+#endif

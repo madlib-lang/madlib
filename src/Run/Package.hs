@@ -41,7 +41,7 @@ import           Utils.Tuple
 import           Explain.Format
 
 parse :: FilePath -> IO (Either CompilationError Src.Table)
-parse = Src.buildASTTable mempty
+parse = Src.buildASTTable TNode mempty
 
 canonicalize :: Src.Table -> FilePath -> (Either CompilationError Can.Table, [CompilationWarning])
 canonicalize srcTable main =

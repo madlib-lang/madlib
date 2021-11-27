@@ -1,9 +1,11 @@
+#iftarget js
+
 import W from "Wish"
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
 
-export type CommandError = CommandError(Number, String)
+export type CommandError = CommandError(Integer, String)
 
 
 getCommandErrorMessage :: CommandError -> String
@@ -22,7 +24,7 @@ export exec = (command) => W.Wish((bad, good) => #- {
   }
 -#)
 
-spawn :: String -> W.Wish CommandError Number
+spawn :: String -> W.Wish CommandError Integer
 export spawn = (command) => W.Wish((bad, good) => #- {
     const split = command.split(" ")
     const spawned = spawnJs(split[0], split.slice(1));
@@ -61,3 +63,5 @@ export getCurrentPath = of(#- process.cwd() -#)
 
 getExecutablePath :: W.Wish String String
 export getExecutablePath = of(#- process.argv[1] -#)
+
+#endif

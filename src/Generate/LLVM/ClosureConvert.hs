@@ -146,6 +146,11 @@ findFreeVars env exp = do
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
 
+            Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name exp)) _ _) -> do
+              fvs     <- findFreeVars (addGlobalFreeVar name env) exp
+              nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
+              return $ fvs ++ nextFVs
+
             _ -> do
               fvs     <- findFreeVars env e
               nextFVs <- findFreeVarsInBody env es
@@ -298,18 +303,23 @@ optimizeBody exclusionVars env body = case body of
   (exp : es) -> case exp of
     Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
-      next <- optimizeBody exclusionVars (addGlobalFreeVar name env) es
+      next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
-      next <- optimizeBody exclusionVars (addGlobalFreeVar name env) es
+      next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
       exp' <- optimize (addVarExclusions exclusionVars env) abs
       next <- optimizeBody exclusionVars env es
       return $ exp' : next
+
+    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name e)) _ _) -> do
+      e'   <- optimize env exp
+      next <- optimizeBody (name : exclusionVars) env es
+      return $ e' : next
 
     Slv.Solved _ _ (Slv.Assignment name e) -> do
       e'   <- optimize env exp
@@ -821,13 +831,27 @@ getConstructorNames typeDeclarations = case typeDeclarations of
   [] ->
     []
 
+getGlobalsFromImports :: [Slv.Import] -> [String]
+getGlobalsFromImports imports = case imports of
+  (imp : nextImports) -> case imp of
+    Slv.Untyped _ (Slv.NamedImport names _ _) ->
+      (Slv.getValue <$> names) ++ getGlobalsFromImports nextImports
+
+    _ ->
+      getGlobalsFromImports nextImports
+
+  [] ->
+    []
+
+
 instance Optimizable Slv.AST Opt.AST where
   optimize env ast = do
-    let globalVars         = mapMaybe Slv.getExpName (Slv.aexps ast)
+    let globalVars         = mapMaybe Slv.getExpName $ Slv.aexps ast
         globalMethods      = concatMap getMethodNames $ Slv.ainterfaces ast
         globalConstructors = getConstructorNames $ Slv.atypedecls ast
+        globalsFromImports = getGlobalsFromImports $ Slv.aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
-        env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ ["$"] }
+        env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ globalsFromImports ++ ["$"] }
 
     imports    <- mapM (optimize env') $ Slv.aimports ast
     exps       <- mapM (optimize env') $ Slv.aexps ast

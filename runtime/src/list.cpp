@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 
-MadListNode_t *Madlist_empty() {
+MadListNode_t *MadList_empty() {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   head->next = NULL;
   head->value = NULL;
@@ -66,7 +66,7 @@ bool *__eqList__(EqDictionary_t* eqDict, MadListNode **l1, MadListNode **l2) {
 
 MadListNode_t *MadList_singleton(void *item) {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-  head->next = Madlist_empty();
+  head->next = MadList_empty();
   head->value = item;
 
   return head;
@@ -91,6 +91,7 @@ MadListNode_t *MadList_append(void *item, MadListNode_t *list) {
   return list;
 }
 
+
 MadListNode_t *MadList_push(void *item, MadListNode_t *list) {
   MadListNode_t *newHead = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   newHead->next = list;
@@ -113,14 +114,12 @@ MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
   MadListNode_t *current = list;
 
   while (current->value != NULL) {
-    MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-    nextItem->value = __applyPAP__(
-        pap, 1, current->value);  // cls->fn(cls->env, current->value);
-    nextItem->next = NULL;
+    MadListNode_t *nextItem = MadList_empty();
 
+    newList->value = __applyPAP__(pap, 1, current->value);
     newList->next = nextItem;
-    newList = newList->next;
 
+    newList = newList->next;
     current = current->next;
   }
 
@@ -212,6 +211,62 @@ MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
     return head;
   }
 }
+
+
+MadListNode_t *MadList_copy(MadListNode_t *list) {
+  if (list->value == NULL) {
+    return MadList_empty();
+  }
+
+  MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+  MadListNode_t *head = newList;
+  MadListNode_t *current = list;
+
+  while (current->value != NULL) {
+    MadListNode_t *nextItem = MadList_empty();
+
+    newList->value = current->value;
+    newList->next = nextItem;
+
+    newList = newList->next;
+    current = current->next;
+  }
+
+  return head;
+}
+
+// Sort
+
+/**
+ * currently a bubble sort algorithm, needs to be improved at some point
+ */
+MadListNode_t *MadList_sort(PAP_t *compare, MadListNode_t *list) {
+  MadListNode_t *copy = MadList_copy(list);
+  bool hadPermutation = true;
+
+  while (hadPermutation != false) {
+    MadListNode_t *head = copy;
+    hadPermutation = false;
+
+    while (head->value != NULL) {
+      if (head->next->value != NULL) {
+        int64_t comparisonResult = *(int64_t*)__applyPAP__((void*)compare, 2, head->value, head->next->value);
+
+        // If the current item is bigger than the next one we need to swap them
+        if (comparisonResult == 1) {
+          void* value = head->value;
+          head->value = head->next->value;
+          head->next->value = value;
+          hadPermutation = true;
+        }
+      }
+      head = head->next;
+    }
+  }
+
+  return copy;
+}
+
 
 #ifdef __cplusplus
 }

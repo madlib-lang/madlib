@@ -1,3 +1,5 @@
+#iftarget js
+
 import { assertEquals, test } from "TestTools"
 
 import {
@@ -117,3 +119,5 @@ test("dropPathSegments      - '/root/path/child/'", (_) => pipe(
   dropPathSegments(2),
   assertEquals($, "path/child")
 )("/root/path/child/"))
+
+#endif

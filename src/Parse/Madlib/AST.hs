@@ -26,27 +26,29 @@ import qualified System.Environment.Executable as E
 import           Data.Maybe
 import           Explain.Location
 import Data.List
+import           Parse.Macro
+import           Run.Target
 
 
 
-buildManyASTTables :: Table -> [FilePath] -> IO (Either CompilationError Table)
-buildManyASTTables currentTable fps = case fps of
+buildManyASTTables :: Target -> Table -> [FilePath] -> IO (Either CompilationError Table)
+buildManyASTTables target currentTable fps = case fps of
   [] -> return $ return mempty
   fp:fps' -> do
-    current <- buildASTTable currentTable fp
+    current <- buildASTTable target currentTable fp
     next    <- case current of
       Left e  -> return $ Left e
-      Right t -> buildManyASTTables (currentTable <> t) fps'
+      Right t -> buildManyASTTables target (currentTable <> t) fps'
     return $ current >>= (\current' -> next >>= (\next' -> return $ current' <> next'))
 
 
-buildASTTable :: Table -> FilePath -> IO (Either CompilationError Table)
-buildASTTable table path = do
-  buildASTTable' table defaultPathUtils path Nothing [] path
+buildASTTable :: Target -> Table -> FilePath -> IO (Either CompilationError Table)
+buildASTTable target table path = do
+  buildASTTable' target table defaultPathUtils path Nothing [] path
 
 
-buildASTTable' :: Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
-buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
+buildASTTable' :: Target -> Table -> PathUtils -> FilePath -> Maybe Import -> [FilePath] -> FilePath -> IO (Either CompilationError Table)
+buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPath
   | srcPath `elem` previousPaths = return $ Left $ CompilationError (ImportCycle (previousPaths ++ [srcPath])) NoContext
   | otherwise = do
     let parentDir = dropFileName parentPath
@@ -68,8 +70,13 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
               Left  _ -> Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
 
         ast <- case source of
-          Left  e    -> return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
-          Right code -> return $ buildAST srcPath code
+          Left  e    ->
+            return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
+
+          Right code -> do
+            let codeWithoutMacros = parseTargetMacros target code
+            return $ buildAST srcPath codeWithoutMacros
+
 
         getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
           Left  x               -> return $ Left x
@@ -87,7 +94,7 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
               (\table imp'@(Source area _) ->
                 case table of
                   Left e       -> return $ Left e
-                  Right table' -> buildChildTable pathUtils previousPaths srcPath (previousTable <> table') imp'
+                  Right table' -> buildChildTable target pathUtils previousPaths srcPath (previousTable <> table') imp'
               )
               (Right M.empty)
               madImports
@@ -95,12 +102,13 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
             return $ liftM2 M.union generatedTable childTables
 
 
-buildChildTable :: PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
-buildChildTable pathUtils previousPaths srcPath table imp = do
+buildChildTable :: Target -> PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
+buildChildTable target pathUtils previousPaths srcPath table imp = do
   let absPath = getImportAbsolutePath imp
   builtImport <- case M.lookup absPath table of
     Just ast -> return $ Right $ M.singleton absPath ast
-    Nothing  -> buildASTTable' table
+    Nothing  -> buildASTTable' target
+                               table
                                pathUtils
                                srcPath
                                (Just imp)

@@ -27,9 +27,11 @@ export type Either e a
  */
 instance Functor (Either e) {
   map = (f) => where {
-    Right(a) => Right(f(a))
+    Right(a) =>
+      Right(f(a))
 
-    Left(e) => Left(e)
+    Left(e) =>
+      Left(e)
   }
 }
 
@@ -49,9 +51,11 @@ instance Applicative (Either e) {
   pure = Right
 
   ap = (mf, m) => where(mf) {
-    Left(e) => Left(e)
+    Left(e) =>
+      Left(e)
 
-    Right(f) => map(f, m)
+    Right(f) =>
+      map(f, m)
   }
 }
 
@@ -70,18 +74,22 @@ instance Monad (Either e) {
   of = pure
 
   chain = (f) => where {
-    Right(a) => f(a)
+    Right(a) =>
+      f(a)
 
-    Left(e) => Left(e)
+    Left(e) =>
+      Left(e)
   }
 }
 
 
 instance Bifunctor Either {
   bimap = (leftF, rightF) => where {
-    Right(a) => Right(rightF(a))
+    Right(a) =>
+      Right(rightF(a))
 
-    Left(e) => Left(leftF(e))
+    Left(e) =>
+      Left(leftF(e))
   }
 
   mapFirst = mapLeft
@@ -99,9 +107,11 @@ instance Bifunctor Either {
  */
 instance (Show e, Show a) => Show (Either e a) {
   show = where {
-    Right(a) => "Right " ++ show(a)
+    Right(a) =>
+      "Right " ++ show(a)
 
-    Left(e) => "Left " ++ show(e)
+    Left(e) =>
+      "Left " ++ show(e)
   }
 }
 
@@ -128,9 +138,11 @@ export mapRight = map
  */
 mapLeft :: (e -> f) -> Either e a -> Either f a
 export mapLeft = (f, m) => where(m) {
-  Right(a) => Right(a)
+  Right(a) =>
+    Right(a)
 
-  Left(e) => Left(f(e))
+  Left(e) =>
+    Left(f(e))
 }
 
 
@@ -144,9 +156,11 @@ export mapLeft = (f, m) => where(m) {
  */
 isLeft :: Either e a -> Boolean
 export isLeft = (either) => where(either) {
-  Left(_) => true
+  Left(_) =>
+    true
 
-  _ => false
+  _ =>
+    false
 }
 
 
@@ -160,9 +174,11 @@ export isLeft = (either) => where(either) {
  */
 isRight :: Either e a -> Boolean
 export isRight = (either) => where(either) {
-  Right(_) => true
+  Right(_) =>
+    true
 
-  _ => false
+  _ =>
+    false
 }
 
 
@@ -177,7 +193,9 @@ export isRight = (either) => where(either) {
  */
 fromRight :: a -> Either e a -> a
 export fromRight = (a, either) => where(either) {
-  Right(x) => x
+  Right(x) =>
+    x
 
-  _ => a
+  _ =>
+    a
 }

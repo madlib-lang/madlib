@@ -15,6 +15,8 @@ import qualified Data.List             as List
 import qualified Data.Maybe            as Maybe
 import qualified Text.ParserCombinators.ReadP as ReadP
 import qualified Data.Char              as Char
+import qualified Data.Text              as Text
+import qualified Data.Text.Encoding     as TextEncoding
 import qualified Control.Monad          as Monad
 import qualified Control.Monad.Fix      as MonadFix
 import qualified Control.Monad.Identity as Identity
@@ -53,7 +55,7 @@ import           LLVM.PassManager
 import           LLVM.CodeGenOpt (Level)
 import           LLVM.AST.Constant (Constant(Null))
 import qualified LLVM.Prelude as FloatingPointPredicate
-import           LLVM.Transforms (Pass(TailCallElimination))
+import           LLVM.Transforms (Pass(TailCallElimination), defaultGCOVProfiler)
 import           Codec.Binary.UTF8.String as UTF8
 import           Codec.Binary.UTF8.Generic as GEN
 import           Text.Show.Pretty
@@ -66,8 +68,9 @@ import qualified Utils.Hash                    as Hash
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 import qualified Data.Tuple as Tuple
 import Explain.Location
-import System.FilePath (takeDirectory, joinPath)
+import System.FilePath (takeDirectory, joinPath, takeFileName, dropExtension)
 import qualified LLVM.AST.Linkage as Linkage
+import System.Directory
 
 
 
@@ -262,7 +265,7 @@ buildLLVMType t = case t of
     Type.i1
 
   IT.TCon (IT.TC "()" IT.Star) "prelude" ->
-    Type.ptr Type.i8
+    Type.ptr Type.i1
 
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
@@ -355,6 +358,9 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr stringType
     load ptr 8
 
+  IT.TCon (IT.TC "Unit" _) _ -> do
+    bitcast what $ Type.ptr Type.i1
+
   -- boxed lists are { i8*, i8* }**
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
     -- -- bitcast what listType
@@ -434,13 +440,17 @@ buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Str
 buildStr s = do
   let parser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
   let parsed = fst $ List.last $ parser s
+  -- let parsed = read "\"" ++ s ++ "\"" :: String
+  let asText = Text.pack parsed
+      bs2 = TextEncoding.encodeUtf8 asText
+      bytes2 = ByteString.unpack bs2
+  let bs = Char8.pack parsed
+      bytes = ByteString.unpack bs
   -- we need to add 0 to terminate a C string
-  let charCodes = (fromEnum <$> parsed) ++ [0]
-  -- 92, 110 == \n
-  let charCodes'   = List.replace [92, 110] [10] charCodes
-  -- 92, 34 == \"
-  let charCodes''  = List.replace [92, 34] [34] charCodes'
+  -- let charCodes = (fromEnum <$> parsed) ++ [0]
+  let charCodes = (fromEnum <$> bytes2) ++ [0]
   let charCodes''' = toInteger <$> charCodes
+  -- let charCodes''' = toInteger <$> (trace ("CHARCODES: "<>ppShow charCodes<>"\nparsed: "<>ppShow parsed<>"\nBYTES: "<>ppShow bytes<>"\nBYTES2: "<>ppShow bytes2<>"\nINPUT: "<>s) charCodes)
   addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'''), [])]
   addr' <- addrspacecast addr stringType
   let charCodesWithIds = List.zip charCodes''' [0..]
@@ -662,7 +672,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, var, Nothing)
 
       Nothing ->
-        error $ "Var not found " <> n <> "\n\n" <> ppShow symbolTable
+        error $ "Var not found " <> n <> "\nExp: "<>ppShow exp
 
   -- (Placeholder (ClassRef "Functor" [] False True , "b183")
   Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) _) -> do
@@ -757,7 +767,7 @@ generateExp env symbolTable exp = case exp of
       case Map.lookup name symbolTable of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
           -- TODO: handle strings properly here
-          case typeOf exp' of
+          case typeOf (trace ("ASSIGNMENT: "<>name) exp') of
             Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
               ptr' <- bitcast ptr $ Type.ptr stringType
               store ptr' 8 exp'
@@ -790,23 +800,24 @@ generateExp env symbolTable exp = case exp of
           return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
 
         Nothing -> do
-          return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
+          boxed <- box exp'
+          return (Map.insert name (localVarSymbol boxed exp') symbolTable, exp', Just boxed)
 
   Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
     (_, operand', _) <- generateExp env { isLast = False } symbolTable operand
-    result        <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
+    result           <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- fsub leftOperand' rightOperand'
+    result                <- fsub leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "+")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- fadd leftOperand' rightOperand'
+    result                <- fadd leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "*")) [leftOperand, rightOperand]) -> do
@@ -818,70 +829,13 @@ generateExp env symbolTable exp = case exp of
   Optimized _ _ (App (Optimized _ _ (Var "/")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env symbolTable rightOperand
-    result             <- fdiv leftOperand' rightOperand'
+    result                <- fdiv leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "++")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- call strConcat [(leftOperand', []), (rightOperand', [])]
-    return (symbolTable, result, Nothing)
-
-  Optimized _ _ (App (Optimized _ _ (Var "==")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    -- TODO: add special check for strings, tuples, records etc
-    result <-
-      case getType leftOperand of
-        IT.TCon (IT.TC "Integer" _) _ ->
-          icmp IntegerPredicate.EQ leftOperand' rightOperand'
-
-        _ ->
-          fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
-
-  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- case t of
-      IT.TCon (IT.TC "Float" _) _ ->
-        fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
-
-      IT.TCon (IT.TC "Byte" _) _ ->
-        icmp IntegerPredicate.UGT leftOperand' rightOperand'
-
-      _ ->
-        icmp IntegerPredicate.SGT leftOperand' rightOperand'
-
-    return (symbolTable, result, Nothing)
-
-  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- case t of
-      IT.TCon (IT.TC "Float" _) _ ->
-        fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
-
-      IT.TCon (IT.TC "Byte" _) _ ->
-        icmp IntegerPredicate.ULT leftOperand' rightOperand'
-
-      _ ->
-        icmp IntegerPredicate.SLT leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
-
-  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var ">=")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- case t of
-      IT.TCon (IT.TC "Float" _) _ ->
-        fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
-
-      IT.TCon (IT.TC "Byte" _) _ ->
-        icmp IntegerPredicate.UGE leftOperand' rightOperand'
-
-      _ ->
-        icmp IntegerPredicate.SGE leftOperand' rightOperand'
-
+    result                <- call strConcat [(leftOperand', []), (rightOperand', [])]
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Placeholder _ (Optimized _ _ (Var "!=")))) [leftOperand@(Optimized (_ IT.:=> t) _ _), rightOperand])
@@ -929,19 +883,19 @@ generateExp env symbolTable exp = case exp of
               _ ->
                 undefined
 
-  Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- case t of
-      IT.TCon (IT.TC "Float" _) _ ->
-        fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
+  -- Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
+  --   (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+  --   (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+  --   result             <- case t of
+  --     IT.TCon (IT.TC "Float" _) _ ->
+  --       fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
 
-      IT.TCon (IT.TC "Byte" _) _ ->
-        icmp IntegerPredicate.ULE leftOperand' rightOperand'
+  --     IT.TCon (IT.TC "Byte" _) _ ->
+  --       icmp IntegerPredicate.ULE leftOperand' rightOperand'
 
-      _ ->
-        icmp IntegerPredicate.SLE leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
+  --     _ ->
+  --       icmp IntegerPredicate.SLE leftOperand' rightOperand'
+  --   return (symbolTable, result, Nothing)
 
   Optimized (_ IT.:=> t) _ (App (Optimized _ _ (Var "&&")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
@@ -1055,6 +1009,25 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
+      "unary-minus" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- mul leftOperand' (i64ConstOp (-1))
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- sub leftOperand' (C.int8 256)
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          result                <- fmul leftOperand' (C.double (-1))
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
       ">" -> case typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
@@ -1077,11 +1050,11 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "<" -> case typingStr of
+      "<" -> case trace ("TYPING-STR: "<>typingStr) typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
+          result                <- icmp IntegerPredicate.SLT (trace ("LEFT: "<>ppShow leftOperand'<>"\nRIGHT: "<>ppShow rightOperand') leftOperand') rightOperand'
           return (symbolTable, result, Nothing)
 
         "Byte" -> do
@@ -1181,7 +1154,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, unboxed, Just ret)
 
       _ ->
-        error $ "Function not found " <> functionName <> "\n\n" <> ppShow symbolTable
+        error $ "Function not found " <> functionName
 
     _ -> case fn of
       Opt.Optimized _ _ (Opt.Placeholder (Opt.MethodRef "Number" _ True, _) _) -> do
@@ -1194,9 +1167,8 @@ generateExp env symbolTable exp = case exp of
         boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        ret' <- bitcast ret $ Type.ptr Type.i64
-        ret'' <- load ret' 8
-        return (symbolTable, ret'', Just ret)
+        unboxed <- unbox t ret
+        return (symbolTable, unboxed, Just ret)
 
       _ -> do
         (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
@@ -1358,11 +1330,11 @@ generateExp env symbolTable exp = case exp of
   Optimized (_ IT.:=> t) _ (If cond truthy falsy) ->
     if isLast env then mdo
       (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
-      test  <- icmp IntegerPredicate.EQ cond' true
-      condBr test ifThen ifElse
+      -- test  <- icmp IntegerPredicate.EQ cond' true
+      condBr cond' ifThen ifElse
 
       ifThen <- block `named` "if.then"
-      (symbolTable'', truthy', maybeBoxedTruthy) <- generateExp env { isLast = True } symbolTable' truthy
+      (symbolTable'', truthy', maybeBoxedTruthy) <- generateExp env symbolTable' truthy
       truthyValue <- case maybeBoxedTruthy of
         Just boxed ->
           return boxed
@@ -1373,7 +1345,7 @@ generateExp env symbolTable exp = case exp of
       br ifExit
 
       ifElse <- block `named` "if.else"
-      (symbolTable''', falsy', maybeBoxedFalsy) <- generateExp env { isLast = True } symbolTable' falsy
+      (symbolTable''', falsy', maybeBoxedFalsy) <- generateExp env symbolTable' falsy
       falsyValue <- case maybeBoxedFalsy of
         Just boxed ->
           return boxed
@@ -1800,7 +1772,37 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
   Optimized (_ IT.:=> t) _ (Assignment name exp _) ->
-    if isFunctionType t then
+    if IT.isFunctionType t then
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+    else
+      let expType   = buildLLVMType t
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+
+  Optimized _ _ (TypedExp (Optimized (_ IT.:=> t) _ (Assignment name exp _)) _) ->
+    if IT.isFunctionType t then
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+    else
+      let expType   = buildLLVMType t
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+
+  Optimized _ _ (Export (Optimized (_ IT.:=> t) _ (Assignment name exp _))) ->
+    if IT.isFunctionType t then
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+    else
+      let expType   = buildLLVMType t
+          globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+      in  Map.insert name (topLevelSymbol globalRef) symbolTable
+
+  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized (_ IT.:=> t) _ (Assignment name exp _)))) _) ->
+    if IT.isFunctionType t then
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
@@ -2339,90 +2341,94 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
 
   -- Number Integer
-  extern (AST.mkName "__addIntegers__")       [boxType, boxType] (Type.ptr Type.i64)
-  extern (AST.mkName "__substractIntegers__") [boxType, boxType] (Type.ptr Type.i64)
-  extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] (Type.ptr Type.i64)
-  extern (AST.mkName "__gtIntegers__")        [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__ltIntegers__")        [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__gteIntegers__")       [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__lteIntegers__")       [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__addIntegers__")       [boxType, boxType] boxType
+  extern (AST.mkName "__substractIntegers__") [boxType, boxType] boxType
+  extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] boxType
+  extern (AST.mkName "__gtIntegers__")        [boxType, boxType] boxType
+  extern (AST.mkName "__ltIntegers__")        [boxType, boxType] boxType
+  extern (AST.mkName "__gteIntegers__")       [boxType, boxType] boxType
+  extern (AST.mkName "__lteIntegers__")       [boxType, boxType] boxType
   extern (AST.mkName "__numberToInteger__")   [boxType] boxType
 
   -- Number Byte
-  extern (AST.mkName "__addBytes__")          [boxType, boxType] (Type.ptr Type.i8)
-  extern (AST.mkName "__substractBytes__")    [boxType, boxType] (Type.ptr Type.i8)
-  extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] (Type.ptr Type.i8)
-  extern (AST.mkName "__gtBytes__")           [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__ltBytes__")           [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__gteBytes__")          [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__lteBytes__")          [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__addBytes__")          [boxType, boxType] boxType
+  extern (AST.mkName "__substractBytes__")    [boxType, boxType] boxType
+  extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] boxType
+  extern (AST.mkName "__gtBytes__")           [boxType, boxType] boxType
+  extern (AST.mkName "__ltBytes__")           [boxType, boxType] boxType
+  extern (AST.mkName "__gteBytes__")          [boxType, boxType] boxType
+  extern (AST.mkName "__lteBytes__")          [boxType, boxType] boxType
   extern (AST.mkName "__numberToByte__")      [boxType] boxType
 
   -- Number Float
-  extern (AST.mkName "__addFloats__")         [boxType, boxType] (Type.ptr Type.double)
-  extern (AST.mkName "__substractFloats__")   [boxType, boxType] (Type.ptr Type.double)
-  extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] (Type.ptr Type.double)
-  extern (AST.mkName "__gtFloats__")          [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__ltFloats__")          [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__gteFloats__")         [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__lteFloats__")         [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__addFloats__")         [boxType, boxType] boxType
+  extern (AST.mkName "__substractFloats__")   [boxType, boxType] boxType
+  extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] boxType
+  extern (AST.mkName "__gtFloats__")          [boxType, boxType] boxType
+  extern (AST.mkName "__ltFloats__")          [boxType, boxType] boxType
+  extern (AST.mkName "__gteFloats__")         [boxType, boxType] boxType
+  extern (AST.mkName "__lteFloats__")         [boxType, boxType] boxType
   extern (AST.mkName "__numberToFloat__")     [boxType] boxType
 
   -- Eq
-  extern (AST.mkName "__eqInteger__")         [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__eqByte__")            [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__eqFloat__")           [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__eqString__")          [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__eqBoolean__")         [boxType, boxType] (Type.ptr Type.i1)
-  extern (AST.mkName "__eqList__")            [boxType, boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqInteger__")         [boxType, boxType] boxType
+  extern (AST.mkName "__eqByte__")            [boxType, boxType] boxType
+  extern (AST.mkName "__eqFloat__")           [boxType, boxType] boxType
+  extern (AST.mkName "__eqString__")          [boxType, boxType] boxType
+  extern (AST.mkName "__eqBoolean__")         [boxType, boxType] boxType
+  extern (AST.mkName "__eqList__")            [boxType, boxType, boxType] boxType
+  extern (AST.mkName "__eqDictionary__")      [boxType, boxType, boxType, boxType] boxType
 
       -- Number Integer
-  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__addIntegers__")
-      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__substractIntegers__")
-      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__multiplyIntegers__")
-      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtIntegers__")
-      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltIntegers__")
-      gteIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteIntegers__")
-      lteIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteIntegers__")
+  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addIntegers__")
+      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractIntegers__")
+      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyIntegers__")
+      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtIntegers__")
+      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltIntegers__")
+      gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteIntegers__")
+      lteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteIntegers__")
       numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToInteger__")
 
       -- Number Byte
-      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__addBytes__")
-      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__substractBytes__")
-      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__multiplyBytes__")
-      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtBytes__")
-      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltBytes__")
-      gteBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteBytes__")
-      lteBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteBytes__")
+      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addBytes__")
+      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractBytes__")
+      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyBytes__")
+      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtBytes__")
+      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltBytes__")
+      gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteBytes__")
+      lteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteBytes__")
       numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToByte__")
 
       -- Number Float
-      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__addFloats__")
-      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__substractFloats__")
-      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__multiplyFloats__")
-      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtFloats__")
-      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltFloats__")
-      gteFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteFloats__")
-      lteFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteFloats__")
+      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addFloats__")
+      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractFloats__")
+      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyFloats__")
+      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtFloats__")
+      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltFloats__")
+      gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteFloats__")
+      lteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteFloats__")
       numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToFloat__")
 
       -- Eq Integer
-      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
 
       -- Eq Byte
-      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
 
       -- Eq Float
-      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
 
       -- Eq String
-      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqString__")
+      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqString__")
 
       -- Eq Boolean
-      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqBoolean__")
+      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqBoolean__")
 
       -- Eq List
-      eqList         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType, boxType] False) "__eqList__")
+      eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "__eqList__")
+
+      -- Eq Dictionary
+      eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "__eqDictionary__")
 
       symbolTableWithCBindings =
         -- Number Float
@@ -2461,7 +2467,8 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__eqFloat__" (fnSymbol 2 eqFloat)
         $ Map.insert "__eqString__" (fnSymbol 2 eqString)
         $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
-        $ Map.insert "__eqList__" (fnSymbol 3 eqList) initialSymbolTable
+        $ Map.insert "__eqList__" (fnSymbol 3 eqList)
+        $ Map.insert "__eqDictionary__" (fnSymbol 4 eqDictionary) initialSymbolTable
 
       numberType               = IT.TVar (IT.TV "a" IT.Star)
       numberPred               = IT.IsIn "Number" [numberType] Nothing
@@ -2470,6 +2477,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
       numberComparisonQualType = [numberPred] IT.:=> (numberType `IT.fn` numberType `IT.fn` IT.tBool)
       coerceNumberQualType     = [numberPred] IT.:=> (numberType `IT.fn` numberType)
 
+  -- TODO: Add "unary-minus" method for number instances
   let integerNumberInstance =
         Untyped emptyArea
           ( Instance "Number" [] "Integer"
@@ -2506,7 +2514,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2516,7 +2524,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2526,7 +2534,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2536,7 +2544,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2593,7 +2601,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2603,7 +2611,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2613,7 +2621,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2623,7 +2631,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2680,7 +2688,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2690,7 +2698,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2700,7 +2708,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2710,7 +2718,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2866,6 +2874,30 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
+      dictionaryEqPreds    = [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing, IT.IsIn "Eq" [IT.TVar (IT.TV "b" IT.Star)] Nothing]
+      dictionaryEqType     = dictType `IT.fn` dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
+      dictionaryEqQualType = dictionaryEqPreds IT.:=> dictionaryEqType
+
+      dictionaryEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" dictionaryEqPreds "Dictionary"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized dictionaryEqQualType emptyArea (TopLevelAbs "==" ["eqDictA", "eqDictB", "a", "b"] [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized dictionaryEqQualType emptyArea (Var "__eqDictionary__")) [
+                          Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictA"),
+                          Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictB"),
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
       tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
   generateFunction env symbolTableWithCBindings False overloadedEqType "!=" ["$Eq$eqVar", "a", "b"] [
@@ -2890,6 +2922,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
       , booleanEqInstance
       , unitEqInstance
       , listEqInstance
+      , dictionaryEqInstance
       ] ++ tupleEqInstances
     )
   return ()
@@ -3009,7 +3042,7 @@ generateTableModules generatedTable symbolTable astTable entrypoint = case Map.l
     in  Map.insert numbersModulePath numbersModule moduleTable
 
   _ ->
-    undefined
+    error $ "AST '" <> entrypoint <> "' not found in:\n" <> ppShow (Map.keys astTable)
 
 
 compileModule :: FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
@@ -3022,10 +3055,36 @@ compileModule outputFolder rootPath astPath astModule = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
-          runPassManager pm mod'
-          return mod'
-        -- TODO: Create dir before if not existing
+        dataLayout  <- getTargetMachineDataLayout target
+        triple      <- getTargetMachineTriple target
+        libraryInfo <- withTargetLibraryInfo triple return
+        mod'' <-
+          withPassManager
+          defaultCuratedPassSetSpec
+            { optLevel                = Just 2
+            , useInlinerWithThreshold = Just 150
+            , dataLayout              = Just dataLayout
+            , targetLibraryInfo       = Just libraryInfo
+            }
+          $ \pm -> do
+            runPassManager pm mod'
+            return mod'
+        -- mod'' <-
+        --   withPassManager
+        --     defaultPassSetSpec
+        --     { transforms        = [defaultGCOVProfiler]
+        --     , targetMachine     = Just target
+        --     , dataLayout        = Just dataLayout
+        --     , targetLibraryInfo = Just libraryInfo
+        --     }
+        --     $ \pm -> do
+        --       runPassManager pm mod'
+        --       return mod'
+
+        createDirectoryIfMissing True $ takeDirectory outputPath
+        -- writeBitcodeToFile (File ((dropExtension outputPath) ++ ".bc")) mod''
+        -- callCommand $ "opt-9 -O0 --insert-gcov-profiling --instrprof " ++ (dropExtension outputPath) ++ ".bc -o " ++ (dropExtension outputPath) ++ "2.bc"
+        -- callCommand $ "llc-9 -tailcallopt -O0 -filetype=obj " ++ (dropExtension outputPath) ++ ".bc"
         writeObjectToFile target (File outputPath) mod''
 
   return outputPath
@@ -3037,4 +3096,5 @@ generateTable outputFolder rootPath astTable entrypoint = do
 
   let objectFilePathsForCli = List.unwords objectFilePaths
 
-  callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./c-bindings/lib/libgc.a ./c-bindings/lib/libuv.a ./c-bindings/build/lib.a -o a.out"
+  callCommand $ "clang++ --coverage -fprofile-instr-generate -fcoverage-mapping -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"
+  -- callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"

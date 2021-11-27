@@ -1,8 +1,10 @@
+#iftarget js
+
 import Context from "HitPointContext"
 
 export type HitPoint
   = FunctionHit(String, String)
-  | LineHit(String, Number)
+  | LineHit(String, Integer)
 
 
 #-
@@ -37,3 +39,5 @@ global.__hp = (astPath, type, line, id) => {
 
 global.__getGlobalHPs = () => __HIT_POINTS
 -#
+
+#endif

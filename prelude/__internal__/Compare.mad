@@ -34,9 +34,13 @@ instance Comparable Float {
   compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS
 }
 
+#iftarget js
+
 instance Comparable String {
   compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#
 }
+
+#endif
 
 instance Comparable Boolean {
   compare = (a, b) => where(#[a, b]) {

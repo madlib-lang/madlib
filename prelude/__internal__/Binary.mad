@@ -1,3 +1,5 @@
+#iftarget js
+
 /**
  * An array of bytes.
  *
@@ -11,5 +13,7 @@ export type ByteArray = ByteArray
  *
  * @since 0.7.0
  */
-len :: ByteArray -> Number
+len :: ByteArray -> Integer
 export len = (byteArray) => #- byteArray.length -#
+
+#endif

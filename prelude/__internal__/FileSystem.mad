@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { Data } from "Data"
 import W from "Wish"
 import { BinaryData, TextData } from "Data"
@@ -64,3 +66,5 @@ export readDir = (path) => W.Wish((bad, good) => #- {
     }
   })
 } -#)
+
+#endif

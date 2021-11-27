@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { ComparisonResult } from "Compare"
 import type { Maybe } from "Maybe"
 import {} from "Show"
@@ -457,3 +459,57 @@ export dropWhile = (pred, xs) => #-{
 
   return xs.slice(i)
 }-#
+
+
+
+#elseif llvm
+
+import {} from "Functor"
+import type { Maybe } from "Maybe"
+import { Nothing, Just } from "Maybe"
+import type { ComparisonResult } from "Compare"
+import { MORE, LESS } from "Compare"
+
+push :: a -> List a -> List a
+push = extern "MadList_push"
+export push
+
+map_ :: (a -> b) -> List a -> List b
+map_ = extern "MadList_map"
+
+instance Functor List {
+  map = map_
+}
+
+nth :: Integer -> List a -> Maybe a
+export nth = (index, list) => where(list) {
+  [] =>
+    Nothing
+
+  [item, ...rest] =>
+    (index == 0)
+      ? Just(item)
+      : nth(index - 1, rest)
+}
+
+len :: List a -> Integer
+len = extern "MadList_length"
+export len
+
+
+sort_ :: (a -> a -> ComparisonResult) -> List a -> List a
+sort_ = extern "MadList_sort"
+
+sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
+export sortBy = sort_
+
+sort :: Comparable a => List a -> List a
+export sort = sortBy(compare)
+
+sortAsc :: Comparable a => List a -> List a
+export sortAsc = sort
+
+sortDesc :: Comparable a => List a -> List a
+export sortDesc = sortBy((a, b) => compare(a, b) * -1)
+
+#endif

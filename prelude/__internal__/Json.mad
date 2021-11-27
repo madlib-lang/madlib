@@ -1,3 +1,5 @@
+#iftarget js
+
 import type { Either } from "Either"
 import type { Maybe } from "Maybe"
 import { Right, Left, isLeft, fromRight, mapRight } from "Either"
@@ -350,3 +352,5 @@ export parse = (parser, input) => #-{
     return Left("Parsing error!\nInvalid input you might have called parse on an already parsed input or the given JSON is invalid.")
   }
 }-#
+
+#endif
