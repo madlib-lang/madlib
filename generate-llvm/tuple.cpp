@@ -6,6 +6,13 @@ struct Tuple2
   void *b;
 };
 
+
+char* v() {
+  char* s = (char*) malloc(sizeof(char) * 20);
+  return s;
+}
+
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -19,6 +26,21 @@ extern "C"
 
     return t;
   }
+
+  void *fst(Tuple2 *tuple)
+  {
+    return tuple->a;
+  }
+
+  void *snd(Tuple2 *tuple)
+  {
+    return tuple->b;
+  }
 #ifdef __cplusplus
 }
 #endif
+
+int main() {
+  puts("before\nafter");
+  return 0;
+}
