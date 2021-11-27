@@ -188,7 +188,7 @@ char *__integerToStr__(int64_t i) {
 
 char *__byteToStr__(unsigned char i) {
   char *str = (char *)GC_malloc(4);
-  sprintf(str, "%d", i);
+  sprintf(str, "%02X", i);
 
   return str;
 }
