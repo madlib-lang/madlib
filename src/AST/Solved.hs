@@ -209,8 +209,8 @@ isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
-  (Solved _ _ (TypedExp _ _ _)) -> True
-  _                           -> False
+  (Solved _ _ TypedExp{}) -> True
+  _                       -> False
 
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of

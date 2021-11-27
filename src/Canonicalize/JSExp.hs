@@ -23,6 +23,7 @@ filterJSExp target = removeSelectors target . removeOtherTargets target
 
 removeOtherTargets :: Target -> String -> String
 removeOtherTargets TAny code   = code
+removeOtherTargets TLLVM code  = code
 removeOtherTargets target code =
   let (startRegex, endRegex) = case target of
         TNode    -> (browserStartRegex, browserEndRegex)
@@ -36,6 +37,7 @@ removeOtherTargets target code =
 
 removeSelectors :: Target -> String -> String
 removeSelectors TAny code   = code
+removeSelectors TLLVM code  = code
 removeSelectors target code =
   let regexCleanup = case target of
         TNode    -> "({Node}[\n]*|{/Node}[\n]*)"
