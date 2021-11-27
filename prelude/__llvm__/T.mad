@@ -79,7 +79,13 @@ counter = makeCounter(())
 
 IO.prettyLog(counter(()))
 IO.prettyLog(counter(()))
+counter2 = makeCounter(())
+IO.prettyLog(counter2(()))
 IO.prettyLog(counter(()))
+IO.prettyLog(counter(()))
+IO.prettyLog(counter2(()))
+IO.prettyLog(counter2(()))
+IO.prettyLog(counter2(()))
 
 
 makeGrower :: () -> (Number -> List Number)
