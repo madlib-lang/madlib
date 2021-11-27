@@ -662,6 +662,8 @@ instance Compilable Opt.Interface where
 
 instance Compilable Opt.Instance where
   compile env config (Untyped _ inst) = case inst of
+    Opt.Instance "Eq" _ _ _ -> ""
+
     Opt.Instance interface _ typings dict -> interface <> "['" <> typings <> "'] = {};\n" <> concat
       (uncurry compileMethod <$> M.toList (M.map fst dict))
      where

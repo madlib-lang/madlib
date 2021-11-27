@@ -109,6 +109,9 @@ canonicalizeConstructors env astPath (Src.Source area adt@Src.ADT{}) = do
                 , Can.adtType         = rt
                 , Can.adtexported     = Src.adtexported adt
                 }
+
+  pushTypeDeclToDerive adt'
+
   return (addADT env name rt, adt')
 
 canonicalizeConstructors _ _ _ = undefined

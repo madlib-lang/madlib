@@ -25,6 +25,7 @@ import           Control.Monad.State
 import           Explain.Location
 import           Text.Regex.TDFA
 import AST.Solved (Import_(NamedImport))
+import Canonicalize.Derived
 
 
 type TableCache = M.Map FilePath (Env, Can.AST)
@@ -201,11 +202,17 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
 
     checkUnusedImports env'' imports
 
+
+    typeDeclarationsToDerive <- getTypeDeclarationsToDerive
+    resetToDerive
+
+    let derivedEqInstances = mapMaybe deriveEqInstance $ S.toList typeDeclarationsToDerive
+
     let canonicalizedAST = Can.AST { Can.aimports    = imports
                                    , Can.aexps       = exps
                                    , Can.atypedecls  = typeDecls
                                    , Can.ainterfaces = interfaces
-                                   , Can.ainstances  = instances
+                                   , Can.ainstances  = instances ++ derivedEqInstances
                                    , Can.apath       = Src.apath ast
                                    }
 
@@ -246,7 +253,7 @@ runCanonicalization
   -> (Either CompilationError (Can.Table, TableCache), [CompilationWarning])
 runCanonicalization tableCache target env table entrypoint = do
   let (canonicalized, s) = runState (runExceptT (canonicalizeAST tableCache target env table entrypoint))
-                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "" })
+                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = S.empty, derivedTypes = S.empty })
   ((\(table, _, cache) -> (table, cache)) <$> canonicalized, warnings s)
 
 

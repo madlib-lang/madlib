@@ -7,7 +7,7 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data Canonical a = Canonical Area a deriving(Eq, Show)
+data Canonical a = Canonical Area a deriving(Eq, Show, Ord)
 
 
 data AST =
@@ -19,13 +19,13 @@ data AST =
     , ainstances  :: [Instance]
     , apath       :: Maybe FilePath
     }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 type Interface = Canonical Interface_
-data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
+data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
 type Instance = Canonical Instance_
-data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show)
+data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) deriving(Eq, Show, Ord)
 
 type Import = Canonical Import_
 -- The second FilePath parameter is the absolute path to that module
@@ -34,10 +34,10 @@ data Import_
   | TypeImport [Canonical Name] FilePath FilePath
   | DefaultImport (Canonical Name) FilePath FilePath
   | ImportAll FilePath FilePath
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Constructor = Canonical Constructor_
-data Constructor_ = Constructor Name [Typing] Ty.Scheme deriving(Eq, Show)
+data Constructor_ = Constructor Name [Typing] Ty.Scheme deriving(Eq, Show, Ord)
 
 getCtorScheme :: Constructor -> Ty.Scheme
 getCtorScheme (Canonical _ (Constructor _ _ sc)) = sc
@@ -65,7 +65,7 @@ data TypeDecl_
       , aliastype :: Typing
       , aliasexported :: Bool
       }
-    deriving(Eq, Show)
+    deriving(Eq, Show, Ord)
 
 
 
@@ -79,11 +79,11 @@ data Typing_
   | TRRecord (M.Map Name Typing) (Maybe Typing)
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 type Is = Canonical Is_
-data Is_ = Is Pattern Exp deriving(Eq, Show)
+data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
 
 type Pattern = Canonical Pattern_
@@ -98,20 +98,20 @@ data Pattern_
   | PList [Pattern]
   | PTuple [Pattern]
   | PSpread Pattern
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 type Field = Canonical Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 type ListItem = Canonical ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 
 type Exp = Canonical Exp_
@@ -138,7 +138,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | JSExp String
           | Extern Ty.Scheme Name Name
-          deriving(Eq, Show)
+          deriving(Eq, Show, Ord)
 
 type Name = String
 

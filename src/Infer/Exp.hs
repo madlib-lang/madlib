@@ -710,19 +710,32 @@ defaultedPreds :: Env -> [TVar] -> [Pred] -> Infer ([Ambiguity], [Pred])
 defaultedPreds  = withDefaults (\as _ -> concatMap snd as)
 
 
-tryDefaults :: Env -> [Pred] -> Infer (Substitution, [Pred])
-tryDefaults env ps = case ps of
+tryDefaults :: Env -> Bool -> [Pred] -> Infer (Substitution, [Pred])
+tryDefaults env firstPass ps = case ps of
   (p : next) -> case p of
     IsIn "Number" [TVar tv] _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
+      (nextSubst, nextPS) <- tryDefaults env firstPass next
       let s = M.singleton tv tInteger
-      return (nextSubst `compose` s, nextPS)
+      return (s `compose` nextSubst, nextPS)
+
+    -- IsIn "Eq" [t] _ | not firstPass -> do
+    IsIn "Eq" [t] _ -> do
+      (nextSubst, nextPS) <- tryDefaults env firstPass next
+
+      let vars = getTypeVarsInType t
+      if null (trace ("VARS: "<>ppShow vars) vars) then
+        return (nextSubst, nextPS)
+      else do
+        let tvs  = getTV <$> vars
+            tvs' = filter (`M.notMember` nextSubst) tvs
+            s    = M.fromList $ zip tvs' (tUnit <$ tvs')
+        return (nextSubst `compose` s, nextPS)
 
     -- IsIn _ [TCon _ _] _ -> do
     --   tryDefaults env next
 
     _ -> do
-      (nextSubst, nextPS) <- tryDefaults env next
+      (nextSubst, nextPS) <- tryDefaults env firstPass next
       maybeFound <- findInst env p
       case maybeFound of
         Just _ ->
@@ -792,20 +805,20 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   (ds', sDefaults) <-
     if not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp) then do
-      (sDef, rs')   <- tryDefaults env (rs ++ ds)
+      (sDef, rs')   <- tryDefaults env True (rs ++ ds)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
           -- and then it could resolve instances like Show where before we still had a type var
           -- but after the first pass we have Integer instead.
-      (sDef', rs'') <- tryDefaults env (apply sDef rs')
+      (sDef', rs'') <- tryDefaults env False (apply sDef rs')
       CM.unless (null rs'') $ throwError $ CompilationError
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef)
-    else if not isLet then do
-      (sDef, ds')   <- tryDefaults env (ds ++ rs)
-      (sDef', ds'') <- tryDefaults env (apply sDef ds')
-      return (ds'', sDef)
+    else if not isLet && not (isFunctionType t) then do
+      (sDef, ds')   <- tryDefaults env True (ds ++ rs)
+      (sDef', ds'') <- tryDefaults env False (apply sDef ds')
+      return (ds'', sDef' `compose` sDef)
     else do
       return (ds ++ rs, M.empty)
 

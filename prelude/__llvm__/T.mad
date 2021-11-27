@@ -1,7 +1,7 @@
 import IO from "./IO"
 import {} from "./Integer"
 import {} from "./Float"
-import { Just } from "./Maybe"
+import { Just, Nothing } from "./Maybe"
 import {} from "./String"
 import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
@@ -160,15 +160,20 @@ IO.prettyLog(2.2 == 2.2)
 IO.prettyLog("2.2" == "2.2")
 IO.prettyLog("2.2" == "2.4")
 
-cmp = (a, b) => a == b
-IO.prettyLog(cmp(3, 4))
 
-IO.prettyLog(cmp(true, false))
 
 IO.prettyLog(true == true)
 
 
 IO.prettyLog([1, 2, 3] == [1, 2, 3])
-IO.prettyLog([1, 2, 3] == [1, 2, 3, 4])
+IO.prettyLog([1, 2, 3] == [1, 2, 3.3])
 
-// s = (a) => show(a)
+
+IO.prettyLog(Nothing == Nothing)
+IO.prettyLog(Just(4) == Just(4))
+
+
+cmp = (a, b) => a == b
+IO.prettyLog(cmp(3, 4))
+
+IO.prettyLog(cmp(true, false))

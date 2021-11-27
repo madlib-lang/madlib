@@ -148,6 +148,12 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.Placeholder (Slv.MethodRef "Number" _ _, ts) exp ->
       optimize enabled exp
 
+    Slv.Placeholder (Slv.ClassRef "Eq" _ _ _, ts) exp ->
+      optimize enabled exp
+
+    Slv.Placeholder (Slv.MethodRef "Eq" _ _, ts) exp ->
+      optimize enabled exp
+
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- optimize enabled exp
       placeholderRef' <- optimizePlaceholderRef placeholderRef

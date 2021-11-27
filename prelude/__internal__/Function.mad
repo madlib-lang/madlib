@@ -44,7 +44,7 @@ export identity = (a) => a
  * equals([1, 2, 3], [1, 2, 3]) // true
  * equals(Just(1), Nothing)     // false
  */
-equals :: a -> a -> Boolean
+equals :: Eq a => a -> a -> Boolean
 export equals = (val, a) => val == a
 
 /**
