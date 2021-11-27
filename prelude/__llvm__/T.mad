@@ -1,5 +1,7 @@
 import IO from "./IO"
 import {} from "./Integer"
+import {} from "./Float"
+import { Just } from "./Maybe"
 import {} from "./String"
 import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
@@ -47,6 +49,19 @@ IO.prettyLog(([127, 245, 11, 90, 2] :: List Byte))
 // IO.prettyLog(!!!true)
 // IO.prettyLog(!false)
 
+
+
+
+maybe = do {
+  oneDotOne <- Just(1.1)
+  jus2 = oneDotOne + 4
+  return of(jus2)
+}
+
+where(maybe) {
+  Just(x) =>
+    IO.prettyLog(x)
+}
 
 
 

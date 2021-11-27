@@ -142,13 +142,13 @@ instance Canonicalizable Src.Exp Can.Exp where
           Src.Source _ (Src.DoAssignment name action) -> do
             exp' <- canonicalize env target action
             es'  <- canonicalizeDefineExps es
-            let fn = Can.Canonical area (Can.Var "chain")
+            let fn  = Can.Canonical area (Can.Var "chain")
             let abs = Can.Canonical area $ Can.Abs (Can.Canonical area name) es'
             let app = Can.Canonical area (Can.App (Can.Canonical area $ Can.App fn abs False) exp' True)
             return [app]
 
           _ -> do
-            e' <- canonicalize env target e
+            e'  <- canonicalize env target e
             es' <- canonicalizeDefineExps es
             return $ e':es'
 

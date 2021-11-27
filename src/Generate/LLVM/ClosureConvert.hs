@@ -214,7 +214,13 @@ findFreeVars env exp = do
 
         _ ->
           return ([], [])
-      expVars <- findFreeVars env exp
+      expVars <- case ph of
+        -- If it's a resolved method, it is accessed from the global scope
+        (Slv.MethodRef _ _ False, _) ->
+          return []
+
+        _ ->
+          findFreeVars env exp
       return $ filter (\(varName, _) -> varName `notElem` excludeVars) $ placeholderVars ++ expVars
 
     _ ->
@@ -556,7 +562,7 @@ instance Optimizable Slv.Exp Opt.Exp where
         let fvsWithoutDictionary = filter (not . (`elem` dictParams) . fst) fvs
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
-        functionName' <- generateLiftedName (trace ("FVS: "<>ppShow fvs<>"\nparamsWithFreeVars: "<>ppShow paramsWithFreeVars<>"\nfunctionName: "<>functionName<>"\ninnerExp: "<>ppShow innerExp) functionName)
+        functionName' <- generateLiftedName functionName
         innerExp'     <- optimize (addLiftedLambda functionName functionName' (Opt.Optimized ([] :=> tVar "dict") emptyArea . Opt.Var <$> paramsWithFreeVars) env) innerExp
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (Opt.getType . snd <$> fvs))
@@ -584,7 +590,7 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.NameExport name     ->
       return $ Opt.Optimized qt area (Opt.NameExport name)
 
-    Slv.Var        name     -> case M.lookup name (lifted (trace ("name: "<>name<>"\nlifted: "<>ppShow (lifted env)) env)) of
+    Slv.Var        name     -> case M.lookup name (lifted env) of
       Just (newName, capturedArgs) ->
         return $ Opt.Optimized qt area (Opt.App (Opt.Optimized qt area (Opt.Var newName)) capturedArgs)
 

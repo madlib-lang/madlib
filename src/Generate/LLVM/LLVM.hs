@@ -1766,9 +1766,56 @@ generateInstance env symbolTable inst = case inst of
     undefined
 
 
-
 generateInstances :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Instance] -> m SymbolTable
 generateInstances env =
+  Monad.foldM (generateInstance env)
+
+
+addMethodToSymbolTable :: SymbolTable -> Exp -> SymbolTable
+addMethodToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
+  Optimized _ _ (TopLevelAbs functionName params _) ->
+    let arity  = List.length params
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+    in  Map.insert functionName (methodSymbol arity fnRef) symbolTable
+
+  Optimized (_ InferredType.:=> t) _ (Assignment name exp _) ->
+    let paramTypes  = InferredType.getParamTypes t
+        arity       = List.length paramTypes
+        paramTypes' = boxType <$ paramTypes
+        expType     = Type.ptr $ Type.FunctionType boxType paramTypes' False
+        globalRef   = Operand.ConstantOperand (Constant.GlobalReference expType (AST.mkName name))
+    in  Map.insert name (methodSymbol arity globalRef) symbolTable
+
+  _ ->
+    symbolTable
+
+
+updateMethodName :: Exp -> String -> Exp
+updateMethodName exp newName = case exp of
+  Optimized t area (TopLevelAbs name params body) ->
+    Optimized t area (TopLevelAbs newName params body)
+
+  Optimized t area (Assignment name exp isTopLevel) ->
+    Optimized t area (Assignment newName exp isTopLevel)
+
+  _ ->
+    undefined
+
+addInstanceToSymbolTable :: SymbolTable -> Instance -> SymbolTable
+addInstanceToSymbolTable symbolTable inst = case inst of
+  Untyped _ (Instance interface preds typingStr methods) -> do
+    let instanceName = "$" <> interface <> "$" <> typingStr
+        prefixedMethods = Map.mapKeys ((instanceName <> "$") <>) methods
+        updatedMethods  = Map.elems $ Map.mapWithKey (\name (exp, sc) -> updateMethodName exp name) prefixedMethods
+    List.foldl' addMethodToSymbolTable symbolTable updatedMethods
+
+  _ ->
+    undefined
+
+
+addInstancesToSymbolTable :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Instance] -> m SymbolTable
+addInstancesToSymbolTable env =
   Monad.foldM (generateInstance env)
 
 
@@ -2131,12 +2178,13 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
 
 buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
-  let symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
+  let symbolTableWithTopLevel = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
+      symbolTableWithMethods  = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
-  symbolTable   <- generateConstructors symbolTableWithTopLevel (atypedecls ast)
+  symbolTable   <- generateConstructors symbolTableWithMethods (atypedecls ast)
   symbolTable'  <- generateInstances env symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
