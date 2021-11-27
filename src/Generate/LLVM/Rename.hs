@@ -7,8 +7,8 @@ import qualified Data.Maybe                    as Maybe
 import qualified Data.Bifunctor                as Bifunctor
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
-import           AST.Solved
 import qualified Utils.Hash                    as Hash
+import           AST.Solved
 import Debug.Trace
 import Text.Show.Pretty
 

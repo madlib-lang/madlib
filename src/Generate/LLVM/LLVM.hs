@@ -60,6 +60,9 @@ import           Text.Show.Pretty
 import           Debug.Trace
 import qualified Control.Monad.Fix as Writer
 import qualified Utils.Path        as Path
+import qualified Data.ByteString.Lazy.Char8    as BLChar8
+
+import qualified Utils.Hash                    as Hash
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 
 
@@ -531,15 +534,21 @@ generateExp env symbolTable exp = case exp of
       _ ->
         error "m"
 
+  Optimized _ _ (Export e) -> do
+    generateExp env symbolTable e
+
   Optimized ty _ (Assignment name e isTopLevel) -> do
     (symbolTable', exp') <- generateExp env symbolTable e
 
     if isTopLevel then do
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
-      store g 8 exp'
-      return (Map.insert name (varSymbol exp') symbolTable, exp')
+      store g 8 (trace ("ASSIGNMENT: "<>ppShow exp'<>"\nName: "<>name) exp')
+      Writer.tell $ Map.singleton name (topLevelSymbol g)
+      return (Map.insert name (topLevelSymbol g) symbolTable, exp')
     else
+      -- TODO: Make a local reference, otherwise we rebuild the whole exp each time we pull
+      -- it from the symbolTable
       return (Map.insert name (varSymbol exp') symbolTable, exp')
 
   Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
@@ -1313,8 +1322,8 @@ getLLVMReturnType t = case t of
     undefined
 
 
-generateExternForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
-generateExternForName symbolTable name = case Map.lookup name symbolTable of
+generateExternalForName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> m ()
+generateExternalForName symbolTable name = case Map.lookup name symbolTable of
   Just (Symbol (FunctionSymbol _) symbol) -> do
     let t          = typeOf symbol
         paramTypes = getLLVMParameterTypes t
@@ -1336,6 +1345,13 @@ generateExternForName symbolTable name = case Map.lookup name symbolTable of
     extern (AST.mkName name) paramTypes returnType
     return ()
 
+  Just (Symbol TopLevelAssignment symbol) -> do
+    let (Type.PointerType t _) = typeOf symbol
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let def = AST.GlobalDefinition g
+    emitDefn def
+    return ()
+
   Just (Symbol _ symbol) -> do
     let t = typeOf symbol
     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
@@ -1350,7 +1366,7 @@ generateExternForName symbolTable name = case Map.lookup name symbolTable of
 generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Optimized String -> m ()
 generateExternForImportName symbolTable optimizedName = case optimizedName of
   Untyped _ name ->
-    generateExternForName symbolTable name
+    generateExternalForName symbolTable name
 
   _ ->
     undefined
@@ -1368,12 +1384,52 @@ generateExternsForImportedInstances :: (Writer.MonadWriter SymbolTable m, Writer
 generateExternsForImportedInstances symbolTable = do
   let dictsAndMethods    = Map.filter (\s -> isDictSymbol s || isMethodSymbol s) symbolTable
       dictAndMethodNames = Map.keys dictsAndMethods
-  mapM_ (generateExternForName symbolTable) dictAndMethodNames
+  mapM_ (generateExternalForName symbolTable) dictAndMethodNames
 
 
+generateHashFromPath :: FilePath -> String
+generateHashFromPath =
+  Hash.hash . BLChar8.pack
 
-buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Bool -> SymbolTable -> AST -> m ()
-buildModule' isMain initialSymbolTable ast = do
+hashModulePath :: AST -> String
+hashModulePath ast =
+  generateHashFromPath $ Maybe.fromMaybe "" (apath ast)
+
+
+callModuleFunctions :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> [String] -> m ()
+callModuleFunctions symbolTable allModuleHashes = case allModuleHashes of
+  (hash : next) -> do
+    let functionName = "__" <> hash <> "__moduleFunction"
+    case Map.lookup functionName symbolTable of
+      Just (Symbol _ f) -> do
+
+        call f []
+
+      _ ->
+        undefined
+    callModuleFunctions symbolTable next
+
+  [] ->
+    return ()
+
+generateModuleFunctionExternals :: (MonadModuleBuilder m) => SymbolTable -> [String] -> m ()
+generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHashes of
+  (hash : next) -> do
+    let functionName = "__" <> hash <> "__moduleFunction"
+    case Map.lookup functionName symbolTable of
+      Just (Symbol _ f) -> do
+        extern (AST.mkName functionName) [] Type.void
+
+      _ ->
+        undefined
+    generateModuleFunctionExternals symbolTable next
+
+  [] ->
+    return ()
+
+
+buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Bool -> [String] -> SymbolTable -> AST -> m ()
+buildModule' isMain currentModuleHashes initialSymbolTable ast = do
   let computedDictionaryIndices = buildDictionaryIndices $ ainterfaces ast
       initialEnv                = Env { dictionaryIndices = computedDictionaryIndices }
       symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
@@ -1397,29 +1453,45 @@ buildModule' isMain initialSymbolTable ast = do
   extern (AST.mkName "__MadList_push__")     [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat")       [listType, listType] listType
 
-  Monad.when isMain $ do
-    function "main" [] void $ \_ -> do
-      entry <- block `named` "entry";
-      generateExps initialEnv symbolTable'' (expsForMain $ aexps ast)
-      retVoid
-    return ()
+  Monad.when isMain $ generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+
+  let moduleFunctionName =
+        if isMain then
+          "main"
+        else
+          "__" <> hashModulePath ast <> "__moduleFunction"
+
+  moduleFunction <- function (AST.mkName moduleFunctionName) [] void $ \_ -> do
+    entry <- block `named` "entry";
+    Monad.when isMain $ callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+    generateExps initialEnv symbolTable'' (expsForMain $ aexps ast)
+    retVoid
+
+  Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
+  return ()
 
 
-toLLVMModule :: Bool -> SymbolTable -> AST -> (AST.Module, SymbolTable)
-toLLVMModule isMain symbolTable ast =
-  Writer.runWriter $ buildModuleT "main" (buildModule' isMain symbolTable ast)
+toLLVMModule :: Bool -> [String] -> SymbolTable -> AST -> (AST.Module, SymbolTable)
+toLLVMModule isMain currentModuleHashes symbolTable ast =
+  let moduleName =
+        if isMain then
+          "main"
+        else
+          hashModulePath ast
+  in  Writer.runWriter $ buildModuleT (stringToShortByteString moduleName) (buildModule' isMain currentModuleHashes symbolTable ast)
 
 
-generateAST :: Bool -> Table -> (ModuleTable, SymbolTable) -> AST -> (ModuleTable, SymbolTable)
-generateAST isMain astTable (moduleTable, symbolTable) ast@AST{ apath = Just apath } =
-  let imports                                          = aimports ast
-      alreadyProcessedPaths                            = Map.keys moduleTable
-      importPathsToProcess                             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
-      astsForImports                                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
-      (moduleTableWithImports, symbolTableWithImports) = List.foldl (generateAST False astTable) (moduleTable, symbolTable) astsForImports
-      (newModule, newSymbolTableTable)                 = toLLVMModule isMain symbolTableWithImports ast
-      updatedModuleTable                               = Map.insert apath newModule moduleTableWithImports
-  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable)
+generateAST :: Bool -> Table -> (ModuleTable, SymbolTable, [String]) -> AST -> (ModuleTable, SymbolTable, [String])
+generateAST isMain astTable (moduleTable, symbolTable, processedHashes) ast@AST{ apath = Just apath } =
+  let imports                                                           = aimports ast
+      alreadyProcessedPaths                                             = Map.keys moduleTable
+      importPathsToProcess                                              = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
+      astsForImports                                                    = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
+      (moduleTableWithImports, symbolTableWithImports, importHashes)    = List.foldl (generateAST False astTable) (moduleTable, symbolTable, processedHashes) astsForImports
+      (newModule, newSymbolTableTable)                                  = toLLVMModule isMain (processedHashes ++ importHashes) symbolTableWithImports ast
+      updatedModuleTable                                                = Map.insert apath newModule moduleTableWithImports
+      moduleHash                                                        = hashModulePath ast
+  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable, processedHashes ++ importHashes ++ [moduleHash])
 
 generateAST _ _ _ _ =
   undefined
@@ -1439,7 +1511,7 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    fst $ generateAST True astTable (generatedTable, symbolTable) ast
+    (\(first, _, _) -> first) $ generateAST True astTable (generatedTable, symbolTable, []) ast
 
   _ ->
     undefined
@@ -1473,19 +1545,19 @@ generateTable outputFolder rootPath astTable entrypoint = do
 
 
 
-generate :: AST -> IO ()
-generate ast = do
-  Prelude.putStrLn "generate llvm"
-  let (mod, _) = toLLVMModule True Map.empty ast
+-- generate :: AST -> IO ()
+-- generate ast = do
+--   Prelude.putStrLn "generate llvm"
+--   let (mod, _) = toLLVMModule True Map.empty ast
 
-  T.putStrLn $ ppllvm mod
+--   T.putStrLn $ ppllvm mod
 
-  withHostTargetMachineDefault $ \target -> do
-    withContext $ \ctx -> do
-      withModuleFromAST ctx mod $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
-          runPassManager pm mod'
-          return mod'
-        writeObjectToFile target (File "module.o") mod''
+--   withHostTargetMachineDefault $ \target -> do
+--     withContext $ \ctx -> do
+--       withModuleFromAST ctx mod $ \mod' -> do
+--         mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
+--           runPassManager pm mod'
+--           return mod'
+--         writeObjectToFile target (File "module.o") mod''
 
-  callCommand "clang++ -g -stdlib=libc++ -v module.o generate-llvm/lib.o gc.a -o a.out"
+--   callCommand "clang++ -g -stdlib=libc++ -v module.o generate-llvm/lib.o gc.a -o a.out"
