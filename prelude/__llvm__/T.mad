@@ -1,5 +1,5 @@
 import IO from "./IO"
-import {} from "./Number"
+import {} from "./Integer"
 import {} from "./String"
 import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
@@ -12,7 +12,7 @@ IO.prettyLog(true)
 IO.prettyLog(len([32, 133, 412]))
 IO.prettyLog(["one string", "another one"])
 IO.prettyLog([true, false, false, false, true, false])
-IO.prettyLog(([] :: List Number))
+IO.prettyLog(([] :: List Integer))
 
 instance Show a => Show { stuff :: a } {
   show = (withStuff) => `{ stuff: ${show(withStuff.stuff)} }`
@@ -88,7 +88,7 @@ IO.prettyLog(counter2(()))
 IO.prettyLog(counter2(()))
 
 
-makeGrower :: () -> (Number -> List Number)
+makeGrower :: () -> (Integer -> List Integer)
 makeGrower = (_) => {
   initial = []
 
@@ -107,7 +107,7 @@ IO.prettyLog(grower(10))
 IO.prettyLog(grower(21))
 
 
-makeCounterWithRec :: () -> (() -> Number)
+makeCounterWithRec :: () -> (() -> Integer)
 makeCounterWithRec = (_) => {
   count = { a: 0 }
 

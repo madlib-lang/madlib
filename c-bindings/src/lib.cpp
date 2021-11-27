@@ -246,8 +246,8 @@ MadListNode_t *Madlist_empty() {
   return head;
 }
 
-void *MadList_length(MadListNode_t *list) {
-  double *total = (double *)GC_malloc(sizeof(double));
+int64_t *MadList_length(MadListNode_t *list) {
+  int64_t *total = (int64_t *)GC_malloc(sizeof(int64_t));
 
   if (list->value == NULL) {
     *total = 0;

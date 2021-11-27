@@ -14,7 +14,7 @@ export push
 map_ :: (a -> b) -> List a -> List b
 map_ = extern "MadList_map"
 
-len :: List a -> Number
+len :: List a -> Integer
 len = extern "MadList_length"
 export len
 
@@ -63,7 +63,7 @@ instance Monoid (List a) {
 }
 
 
-nth :: Number -> List a -> Maybe a
+nth :: Integer -> List a -> Maybe a
 export nth = (index, list) => where(list) {
   [] =>
     Nothing

@@ -823,10 +823,19 @@ generateExp env symbolTable exp = case exp of
     result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
+  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result             <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+    result             <- case t of
+      InferredType.TCon (InferredType.TC "Float" _) _ ->
+        fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+
+      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+        icmp IntegerPredicate.UGT leftOperand' rightOperand'
+
+      _ ->
+        icmp IntegerPredicate.SGT leftOperand' rightOperand'
+
     return (symbolTable, result)
 
   Optimized _ _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
