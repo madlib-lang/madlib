@@ -88,10 +88,6 @@ initialEnv = Env
                        , ("!="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("||"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                        , ("!"            , Forall [] $ [] :=> (tBool `fn` tBool))
-                       , (">"            , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-                       , ("<"            , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-                       , (">="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-                       , ("<="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
 
                        , ("++"           , Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
 
@@ -131,6 +127,10 @@ initialEnv = Env
       , ("-"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("*"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("unary-minus"  , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0))
+      , (">"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+      , ("<"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+      , (">="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+      , ("<="           , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       ]
   , envCurrentPath = ""

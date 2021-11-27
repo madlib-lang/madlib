@@ -21,6 +21,7 @@ import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
 import           Infer.Type
+import qualified Data.Maybe as Maybe
 
 
 
@@ -118,6 +119,9 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.Record fields -> do
       fields' <- mapM (canonicalize env target) fields
+      unless (Can.hasSpread fields') $ do
+        let fieldNames = Maybe.mapMaybe Can.getFieldName fields'
+        pushRecordToDerive fieldNames
       return $ Can.Canonical area (Can.Record fields')
 
     Src.If cond truthy falsy -> do

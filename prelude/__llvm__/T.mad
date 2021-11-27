@@ -177,3 +177,13 @@ cmp = (a, b) => a == b
 IO.prettyLog(cmp(3, 4))
 
 IO.prettyLog(cmp(true, false))
+
+
+moreThan15 = (a) => a >= 15
+
+IO.prettyLog(moreThan15(15))
+
+IO.prettyLog({ x: 4 } == { x: 4 })
+IO.prettyLog({ xs: [1, 2, 3] } == { xs: [1, 2, 3, 4] })
+
+IO.prettyLog(cmp({ name: "John" }, { name: "John" }))

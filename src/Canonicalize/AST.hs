@@ -25,7 +25,7 @@ import           Control.Monad.State
 import           Explain.Location
 import           Text.Regex.TDFA
 import AST.Solved (Import_(NamedImport))
-import Canonicalize.Derived
+import Canonicalize.Derive
 
 
 type TableCache = M.Map FilePath (Env, Can.AST)
@@ -203,10 +203,13 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
     checkUnusedImports env'' imports
 
 
+    derivedTypes             <- getDerivedTypes
     typeDeclarationsToDerive <- getTypeDeclarationsToDerive
+    let typeDeclarationsToDerive' = S.difference typeDeclarationsToDerive derivedTypes
+        derivedEqInstances        = mapMaybe deriveEqInstance $ S.toList typeDeclarationsToDerive'
+    
+    addDerivedTypes typeDeclarationsToDerive'
     resetToDerive
-
-    let derivedEqInstances = mapMaybe deriveEqInstance $ S.toList typeDeclarationsToDerive
 
     let canonicalizedAST = Can.AST { Can.aimports    = imports
                                    , Can.aexps       = exps

@@ -985,6 +985,28 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
+      ">" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
       _ -> do
         let dictName    = "$" <> interface <> "$" <> typingStr
         let methodName' = dictName <> "$" <> methodName
@@ -2056,18 +2078,30 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "__addIntegers__")       [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__substractIntegers__") [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] (Type.ptr Type.i64)
+  extern (AST.mkName "__gtIntegers__")        [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__ltIntegers__")        [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__gteIntegers__")       [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__lteIntegers__")       [boxType, boxType] (Type.ptr Type.i1)
   extern (AST.mkName "__numberToInteger__")   [boxType] boxType
 
   -- Number Byte
   extern (AST.mkName "__addBytes__")          [boxType, boxType] (Type.ptr Type.i8)
   extern (AST.mkName "__substractBytes__")    [boxType, boxType] (Type.ptr Type.i8)
   extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] (Type.ptr Type.i8)
+  extern (AST.mkName "__gtBytes__")           [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__ltBytes__")           [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__gteBytes__")          [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__lteBytes__")          [boxType, boxType] (Type.ptr Type.i1)
   extern (AST.mkName "__numberToByte__")      [boxType] boxType
 
   -- Number Float
   extern (AST.mkName "__addFloats__")         [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__substractFloats__")   [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] (Type.ptr Type.double)
+  extern (AST.mkName "__gtFloats__")          [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__ltFloats__")          [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__gteFloats__")         [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__lteFloats__")         [boxType, boxType] (Type.ptr Type.i1)
   extern (AST.mkName "__numberToFloat__")     [boxType] boxType
 
   -- Eq
@@ -2082,18 +2116,30 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
   let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__addIntegers__")
       substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__substractIntegers__")
       multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__multiplyIntegers__")
+      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtIntegers__")
+      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltIntegers__")
+      gteIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteIntegers__")
+      lteIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteIntegers__")
       numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToInteger__")
 
       -- Number Byte
       addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__addBytes__")
       substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__substractBytes__")
       multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__multiplyBytes__")
+      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtBytes__")
+      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltBytes__")
+      gteBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteBytes__")
+      lteBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteBytes__")
       numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToByte__")
 
       -- Number Float
       addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__addFloats__")
       substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__substractFloats__")
       multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__multiplyFloats__")
+      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gtFloats__")
+      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__ltFloats__")
+      gteFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__gteFloats__")
+      lteFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__lteFloats__")
       numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToFloat__")
 
       -- Eq Integer
@@ -2119,12 +2165,20 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
         Map.insert "__addFloats__" (fnSymbol 2 addFloats)
         $ Map.insert "__substractFloats__" (fnSymbol 2 substractFloats)
         $ Map.insert "__multiplyFloats__" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "__gtFloats__" (fnSymbol 2 gtFloats)
+        $ Map.insert "__ltFloats__" (fnSymbol 2 ltFloats)
+        $ Map.insert "__gteFloats__" (fnSymbol 2 gteFloats)
+        $ Map.insert "__lteFloats__" (fnSymbol 2 lteFloats)
         $ Map.insert "__numberToFloat__" (fnSymbol 1 numberToFloat)
 
         -- Number Byte
         $ Map.insert "__addBytes__" (fnSymbol 2 addFloats)
         $ Map.insert "__substractBytes__" (fnSymbol 2 substractFloats)
         $ Map.insert "__multiplyBytes__" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "__gtBytes__" (fnSymbol 2 gtFloats)
+        $ Map.insert "__ltBytes__" (fnSymbol 2 ltFloats)
+        $ Map.insert "__gteBytes__" (fnSymbol 2 gteFloats)
+        $ Map.insert "__lteBytes__" (fnSymbol 2 lteFloats)
         $ Map.insert "__numberToByte__" (fnSymbol 1 numberToFloat)
 
         -- Number Integer
@@ -2132,6 +2186,10 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__addIntegers__" (fnSymbol 2 addIntegers)
         $ Map.insert "__substractIntegers__" (fnSymbol 2 substractIntegers)
         $ Map.insert "__multiplyIntegers__" (fnSymbol 2 multiplyIntegers)
+        $ Map.insert "__gtIntegers__" (fnSymbol 2 gtIntegers)
+        $ Map.insert "__ltIntegers__" (fnSymbol 2 ltIntegers)
+        $ Map.insert "__gteIntegers__" (fnSymbol 2 gteIntegers)
+        $ Map.insert "__lteIntegers__" (fnSymbol 2 lteIntegers)
 
         -- Eq
         $ Map.insert "__eqInteger__" (fnSymbol 2 eqInteger)
@@ -2141,11 +2199,12 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
         $ Map.insert "__eqList__" (fnSymbol 3 eqList) initialSymbolTable
 
-      numberType              = InferredType.TVar (InferredType.TV "a" InferredType.Star)
-      numberPred              = InferredType.IsIn "Number" [numberType] Nothing
-      numberQualType          = [numberPred] InferredType.:=> numberType
-      numberOperationQualType = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` numberType)
-      coerceNumberQualType    = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType)
+      numberType               = InferredType.TVar (InferredType.TV "a" InferredType.Star)
+      numberPred               = InferredType.IsIn "Number" [numberType] Nothing
+      numberQualType           = [numberPred] InferredType.:=> numberType
+      numberOperationQualType  = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` numberType)
+      numberComparisonQualType = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` InferredType.tBool)
+      coerceNumberQualType     = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType)
 
   let integerNumberInstance =
         Untyped emptyArea
@@ -2179,6 +2238,46 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                         ])
                       ])
                     , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( ">"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtIntegers__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltIntegers__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( ">="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteIntegers__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteIntegers__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
                     )
                   )
                 , ( "__coerceNumber__"
@@ -2228,6 +2327,46 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                     , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
                     )
                   )
+                , ( ">"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( ">="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteBytes__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
                 , ( "__coerceNumber__"
                   , ( Optimized coerceNumberQualType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
                         Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "__numberToByte__")) [
@@ -2273,6 +2412,46 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                         ])
                       ])
                     , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Float" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0)
+                    )
+                  )
+                , ( ">"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtFloats__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<"
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltFloats__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( ">="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteFloats__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                , ( "<="
+                  , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteFloats__")) [
+                          Optimized numberQualType emptyArea (Var "a"),
+                          Optimized numberQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Number" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
                     )
                   )
                 , ( "__coerceNumber__"
@@ -2542,7 +2721,7 @@ generateTableModules generatedTable symbolTable astTable entrypoint = case Map.l
   Just ast ->
     let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildRuntimeModule Env { dictionaryIndices = Map.empty, isLast = False } [] symbolTable)
         numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
-        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("__coerceNumber__", (3, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
+        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
         (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
     in  Map.insert numbersModulePath numbersModule moduleTable
 
