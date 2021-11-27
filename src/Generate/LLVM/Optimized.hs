@@ -52,7 +52,7 @@ data TypeDecl_
 
 type Constructor = Optimized Constructor_
 data Constructor_
-  = Constructor Name [Typing]
+  = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show)
 
 type Constraints = [Typing]
@@ -180,3 +180,8 @@ isClosureDef exp = case exp of
 
   _ ->
     False
+
+isADT :: TypeDecl -> Bool
+isADT td = case td of
+  Untyped _ ADT {} -> True
+  _                -> False
