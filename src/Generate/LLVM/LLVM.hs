@@ -374,6 +374,11 @@ generateExp symbolTable exp = case exp of
         ptr' <- load ptr 8
         return (symbolTable, ptr')
 
+      Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
+        -- Nullary constructors need to be called directly to retrieve the value
+        constructed <- call fnPtr []
+        return (symbolTable, constructed)
+
       Just (Symbol _ var) ->
         return (symbolTable, var)
 
@@ -382,13 +387,13 @@ generateExp symbolTable exp = case exp of
 
     -- (Placeholder
     --  ( ClassRef "Functor" [] False True , "b183" )
-  Optimized t _ (Placeholder (ClassRef interface _ _ True, typingStr) exp) -> do
+  Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) exp) -> do
     fnName <- freshName (stringToShortByteString "dictionaryWrapper")
     let (Name fnName') = fnName
     symbolTable' <-
       generateFunction
         symbolTable
-        t --(InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
+        (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
         (Char8.unpack (ShortByteString.fromShort fnName'))
         ["$" <> interface <> "$" <> typingStr]
         [exp]
@@ -396,6 +401,25 @@ generateExp symbolTable exp = case exp of
     where
       gatherAllPlaceholders :: Exp -> ([(PlaceholderRef, String)], Exp)
       gatherAllPlaceholders = undefined
+
+  -- Optimized t _ (Placeholder (ClassRef interface _ True True, typingStr) exp) -> do
+  --   pap <- generateExp symbolTable exp
+
+  --   undefined
+    -- error $ "should retrieve: $" <> interface <> "$" <> typingStr <> " from symbolTable, given as param.\n\n" <> ppShow (Map.lookup ("$" <> interface <> "$" <> typingStr) symbolTable)
+    -- fnName <- freshName (stringToShortByteString "dictionaryWrapper")
+    -- let (Name fnName') = fnName
+    -- symbolTable' <-
+    --   generateFunction
+    --     symbolTable
+    --     (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
+    --     (Char8.unpack (ShortByteString.fromShort fnName'))
+    --     ["$" <> interface <> "$" <> typingStr]
+    --     [exp]
+    -- return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) fnName))
+    -- where
+    --   gatherAllPlaceholders :: Exp -> ([(PlaceholderRef, String)], Exp)
+    --   gatherAllPlaceholders = undefined
 
 -- (Placeholder
 --   ( MethodRef
@@ -426,7 +450,7 @@ generateExp symbolTable exp = case exp of
         undefined
 
     -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Optimized t _ (Placeholder (ClassRef interface _ True False, typingStr) fn) -> do
+  Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) fn) -> do
     let dictName    = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
       Just (Symbol _ dict) -> do
@@ -553,7 +577,7 @@ generateExp symbolTable exp = case exp of
         return (symbolTable, unboxed)
 
       _ ->
-        undefined
+        error $ "Function not found " <> functionName <> "\n\n" <> ppShow symbolTable
 
     _ -> do
       (_, pap) <- generateExp symbolTable fn
@@ -1241,8 +1265,8 @@ toLLVMModule ast =
   buildModule "main" $ do
   let initialSymbolTable = List.foldr (flip addTopLevelFnToSymbolTable) mempty (aexps ast)
 
-  symbolTable   <- generateInstances initialSymbolTable (ainstances ast)
-  symbolTable'  <- generateConstructors symbolTable (atypedecls ast)
+  symbolTable   <- generateConstructors initialSymbolTable (atypedecls ast)
+  symbolTable'  <- generateInstances symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions (trace ("ST: "<>ppShow symbolTable') symbolTable') (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__") [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)

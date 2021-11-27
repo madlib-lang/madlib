@@ -127,7 +127,7 @@ findFreeVars env exp = do
       return $ concat vars
 
     Slv.Solved _ _ (Slv.Where whereExp iss) -> do
-      expVars <- findFreeVars env whereExp
+      expVars     <- findFreeVars env whereExp
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
@@ -136,6 +136,21 @@ findFreeVars env exp = do
 
     Slv.Solved _ _ (Slv.TypedExp exp _ _) -> do
       findFreeVars env exp
+
+    Slv.Solved _ area (Slv.Placeholder ph exp) -> do
+      (placeholderVars, excludeVars) <- case ph of
+        (Slv.ClassRef interface _ _ True, ts) ->
+          let tsStr = buildTypeStrForPlaceholder ts
+              dictName = "$" <> interface <> "$" <> tsStr
+          in  return ([(dictName, Opt.Optimized (tVar "dict") area (Opt.Var dictName))], [])
+
+        (Slv.MethodRef _ methodName _, _) -> do
+          return ([], [methodName])
+
+        _ ->
+          return ([], [])
+      expVars <- findFreeVars env exp
+      return $ filter (\(varName, _) -> varName `notElem` excludeVars) $ placeholderVars ++ expVars
 
     _ ->
       return []
@@ -227,13 +242,23 @@ collectAbsParams abs = case abs of
   Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
     ([param], body)
 
-  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ _, ts) next) ->
-    let (nextParams, nextBody) = collectAbsParams next
-        tsStr = buildTypeStrForPlaceholder ts
-    in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
+  -- Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ _, ts) next) ->
+  --   let (nextParams, nextBody) = collectAbsParams next
+  --       tsStr = buildTypeStrForPlaceholder ts
+  --   in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
 
   b ->
     ([], [b])
+
+collectPlaceholderParams :: Slv.Exp -> ([String], Slv.Exp)
+collectPlaceholderParams ph = case ph of
+  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ True, ts) next) ->
+    let (nextParams, nextBody) = collectPlaceholderParams next
+        tsStr = buildTypeStrForPlaceholder ts
+    in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
+
+  or ->
+    ([], or)
 
 collectAppArgs :: Slv.Exp -> (Slv.Exp, [Slv.Exp])
 collectAppArgs app = case app of
@@ -360,16 +385,19 @@ instance Optimizable Slv.Exp Opt.Exp where
         in  return $ Opt.Optimized t area (Opt.App functionNode fvVarNodes)
 
 
-    Slv.Assignment functionName abs@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ _ _), ts) exp)) -> do
+    Slv.Assignment functionName ph@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ _ _), ts) exp)) -> do
       let tsStr = buildTypeStrForPlaceholder ts
-      let isTopLevel = stillTopLevel env
-      if isTopLevel then
-        optimizeAbs env functionName abs
+      -- let isTopLevel = stillTopLevel env
+      -- if isTopLevel then do
+      let (params, innerExp)   = collectPlaceholderParams ph
+      let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
+      innerExp' <- optimize env innerExp
+      return $ Opt.Optimized typeWithPlaceholders area $ TopLevelAbs functionName params [innerExp']
 
-      else do
-        exp'            <- optimize env exp
-        placeholderRef' <- optimizePlaceholderRef placeholderRef
-        return $ Opt.Optimized t area (Opt.Placeholder (placeholderRef', tsStr) exp')
+      -- else do
+      --   exp'            <- optimize env exp
+      --   placeholderRef' <- optimizePlaceholderRef placeholderRef
+      --   return $ Opt.Optimized t area (Opt.Placeholder (placeholderRef', tsStr) exp')
 
      where
       optimizePlaceholderRef :: Slv.PlaceholderRef -> Optimize Opt.PlaceholderRef
