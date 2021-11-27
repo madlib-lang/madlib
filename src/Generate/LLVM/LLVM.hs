@@ -84,7 +84,8 @@ newtype Env
 
 data SymbolType
   = VariableSymbol
-  | LocalVariableSymbol
+  | LocalVariableSymbol Operand
+  -- ^ operand is a ptr to the value for mutation
   | FunctionSymbol Int
   -- ^ arity
   | MethodSymbol Int
@@ -111,9 +112,9 @@ varSymbol :: Operand -> Symbol
 varSymbol =
   Symbol VariableSymbol
 
-localVarSymbol :: Operand -> Symbol
-localVarSymbol =
-  Symbol LocalVariableSymbol
+localVarSymbol :: Operand -> Operand -> Symbol
+localVarSymbol ptr =
+  Symbol (LocalVariableSymbol ptr)
 
 fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
@@ -273,8 +274,10 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr Type.i1
     load ptr 8
 
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ -> do
     bitcast what listType
+    -- ptr <- bitcast what (Type.ptr listType)
+    -- load ptr 8
 
   -- TODO: check that we need this
   -- This should be called for parameters that are closures
@@ -300,6 +303,13 @@ box what = case typeOf what of
     ptr' <- bitcast ptr (Type.ptr Type.i1)
     store ptr' 8 what
     bitcast ptr' boxType
+
+  -- List
+  -- Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) _ -> do
+  --   ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
+  --   ptr' <- bitcast ptr (Type.ptr listType)
+  --   store ptr' 8 what
+  --   return ptr
 
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
@@ -500,7 +510,7 @@ buildReferencePAP symbolTable arity fn = do
 
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand)
 generateExp env symbolTable exp = case exp of
-  Optimized _ _ (Var n) ->
+  Optimized t _ (Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
@@ -522,9 +532,13 @@ generateExp env symbolTable exp = case exp of
         loaded <- load ptr 8
         return (symbolTable, loaded)
 
-      Just (Symbol LocalVariableSymbol ptr) -> do
-        loaded <- load ptr 8
-        return (symbolTable, loaded)
+      Just (Symbol (LocalVariableSymbol ptr) value) -> do
+        case t of
+          -- InferredType.TCon (InferredType.TC "String" InferredType.Star) _ ->
+          --   return (symbolTable, ptr)
+
+          _ ->
+            return (symbolTable, value)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
@@ -630,20 +644,33 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp')
     else
-      case Map.lookup name (trace ("VAR: "<>name) symbolTable) of
-        Just (Symbol LocalVariableSymbol inScope) -> do
-          store inScope 8 (trace ("LOCAL-VAR: " <> name) exp')
-          return (symbolTable, exp')
+      case Map.lookup name (trace ("FOUND ASS: " <> ppShow (Map.lookup name symbolTable)) symbolTable) of
+        Just (Symbol (LocalVariableSymbol ptr) value) ->
+          case typeOf exp' of
+            Type.PointerType t _ -> do
+              ptr' <- bitcast ptr $ typeOf exp'
+              loaded <- load exp' 8
+              store ptr' 8 loaded
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
 
-        Just (Symbol _ inScope) ->
-          return (symbolTable, inScope)
+            _ -> do
+              ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
+              store ptr' 8 exp'
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
 
         Nothing -> do
-          let t = typeOf exp'
-          ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof t, [])]
-          ptr' <- bitcast ptr (Type.ptr t)
-          store ptr' 8 (trace ("NAME: "<>name) exp')
-          return (Map.insert name (localVarSymbol ptr') symbolTable, exp')
+          case typeOf exp' of
+            Type.PointerType t _ -> do
+              return (Map.insert name (localVarSymbol exp' exp') symbolTable, exp')
+
+            t -> do
+              ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof t, [])]
+              ptr' <- bitcast ptr (Type.ptr t)
+              store ptr' 8 exp'
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp')
+
+        _ ->
+          undefined
 
   Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
     (_, operand') <- generateExp env symbolTable operand
@@ -729,7 +756,7 @@ generateExp env symbolTable exp = case exp of
         let argsApplied = List.length args
 
         pap' <-
-          if symbolType == TopLevelAssignment || symbolType == LocalVariableSymbol then
+          if symbolType == TopLevelAssignment then
             load pap 8
           else
             return pap
@@ -809,8 +836,13 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, tuplePtr')
 
-  Optimized _ _ (ListConstructor []) ->
-    return (symbolTable, Operand.ConstantOperand (Constant.Null listType))
+  Optimized _ _ (ListConstructor []) -> do
+    -- an empty list is { value: null, next: null }
+    emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+    emptyList' <- bitcast emptyList listType
+    store emptyList' 8 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
+
+    return (symbolTable, emptyList')
 
   Optimized _ _ (ListConstructor listItems) -> do
     tail <- case List.last listItems of
@@ -1225,7 +1257,8 @@ generateFunction env symbolTable isMethod t functionName paramNames body = do
   function <- function functionName' params' boxType $ \params -> mdo
     let typesWithParams = List.zip paramTypes params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
-    let paramsWithNames       = Map.fromList $ List.zip paramNames (varSymbol <$> unboxedParams)
+    -- let paramsWithNames       = Map.fromList $ List.zip paramNames (varSymbol <$> unboxedParams)
+    let paramsWithNames       = Map.fromList $ List.zip paramNames (localVarSymbol <$> params <*> unboxedParams)
         symbolTableWithParams = symbolTable <> paramsWithNames
 
     -- Generate body
@@ -1643,9 +1676,6 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] boxType
   extern (AST.mkName "__selectField__")        [Type.ptr Type.i8, boxType] boxType
-  extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__")              [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
   extern (AST.mkName "__strConcat__")          [Type.ptr Type.i8, Type.ptr Type.i8] (Type.ptr Type.i8)
   extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
@@ -1653,6 +1683,11 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "MadList_singleton")      [Type.ptr Type.i8] listType
   extern (AST.mkName "__MadList_push__")       [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat")         [listType, listType] listType
+
+  -- void* memcpy( void* dest, const void* src, std::size_t count );
+  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
 
   Monad.when isMain $ generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
 
@@ -1747,4 +1782,4 @@ generateTable outputFolder rootPath astTable entrypoint = do
 
   let objectFilePathsForCli = List.unwords objectFilePaths
 
-  callCommand $ "clang++ -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " generate-llvm/lib.o gc.a -o a.out"
+  callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " generate-llvm/lib.o gc.a -o a.out"
