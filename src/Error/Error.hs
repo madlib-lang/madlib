@@ -26,6 +26,7 @@ data TypeError
   | MethodDoesNotMatchInterfaceType Type Type
   | AmbiguousType (TVar, [Pred])
   | ADTAlreadyDefined Type
+  | CapitalizedADTTVar String String
   | NotCapitalizedADTName String
   | NotCapitalizedAliasName String
   | NotCapitalizedConstructorName String

@@ -127,6 +127,7 @@ data Exp_ = LNum String
           | TupleConstructor [Exp]
           | Record [Field]
           | If Exp Exp Exp
+          | Do [Exp]
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
           deriving(Eq, Show)

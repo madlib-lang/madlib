@@ -15,7 +15,6 @@ import           Parse.Madlib.Grammar           ( parse )
 import           AST.Source
 import           Utils.Path                     ( resolveAbsoluteSrcPath )
 import           Utils.PathUtils
-import           Explain.Meta
 import           Error.Error
 import           Error.Context
 
@@ -31,8 +30,6 @@ import Data.List
 
 
 
-
-
 buildManyASTTables :: Table -> [FilePath] -> IO (Either CompilationError Table)
 buildManyASTTables currentTable fps = case fps of
   [] -> return $ return mempty
@@ -44,9 +41,6 @@ buildManyASTTables currentTable fps = case fps of
     return $ current >>= (\current' -> next >>= (\next' -> return $ current' <> next'))
 
 
--- TODO: Write an integration test with real files ?
--- Move that to Main and rename buildASTTable' to buildASTTable
--- Then use the scoped name in Main in order to partially apply it.
 buildASTTable :: Table -> FilePath -> IO (Either CompilationError Table)
 buildASTTable table path = do
   buildASTTable' table defaultPathUtils path Nothing [] path
@@ -82,7 +76,7 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
           Left  x               -> return $ Left x
           Right completeImports -> do
             let (jsonImports, madImports) = partition (\case
-                                                        (Source _ _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
+                                                        (Source _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
                                                         _ -> False
                                                       ) completeImports
             jsonAssignments <- generateJsonAssignments pathUtils jsonImports
@@ -90,9 +84,8 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
             let generatedTable =
                   uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
 
-            -- TODO: replace mapM with foldM and verify that the import to process is not already in the table.
             childTables <- foldM
-              (\table imp'@(Source _ area _) ->
+              (\table imp'@(Source area _) ->
                 case table of
                   Left e       -> return $ Left e
                   Right table' -> buildChildTable pathUtils previousPaths srcPath (previousTable <> table') imp'
@@ -101,6 +94,7 @@ buildASTTable' previousTable pathUtils parentPath imp previousPaths srcPath
               madImports
 
             return $ liftM2 M.union generatedTable childTables
+
 
 buildChildTable :: PathUtils -> [FilePath] -> FilePath -> Table -> Import -> IO (Either CompilationError Table)
 buildChildTable pathUtils previousPaths srcPath table imp = do
@@ -130,11 +124,11 @@ escapeJSONString s = case s of
 
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
-generateJsonAssignments pathUtils ((Source _ area (DefaultImport (Source _ _ name) _ absPath)):imps) = do
+generateJsonAssignments pathUtils ((Source area (DefaultImport (Source _ name) _ absPath)):imps) = do
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath
-  let var = Source emptyInfos area (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
-  let assignment = Source emptyInfos area (Assignment name var)
+  let var = Source area (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
+  let assignment = Source area (Assignment name (Symbol "=" area) var)
 
   return $ assignment : next
 
@@ -159,10 +153,10 @@ getImportsWithAbsolutePaths pathUtils ctxPath ast =
 
 setImportAbsolutePath :: Import -> FilePath -> Import
 setImportAbsolutePath imp fp = case imp of
-  Source i a (NamedImport   s p _) -> Source i a (NamedImport s p fp)
-  Source i a (TypeImport   s p _)  -> Source i a (TypeImport s p fp)
-  Source i a (DefaultImport s p _) -> Source i a (DefaultImport s p fp)
-  Source i a (ImportAll p _)       -> Source i a (ImportAll p fp)
+  Source a (NamedImport   s p _) -> Source a (NamedImport s p fp)
+  Source a (TypeImport   s p _)  -> Source a (TypeImport s p fp)
+  Source a (DefaultImport s p _) -> Source a (DefaultImport s p fp)
+  Source a (ImportAll p _)       -> Source a (ImportAll p fp)
 
 
 findAST :: Table -> FilePath -> Either CompilationError AST
@@ -180,6 +174,7 @@ buildAST path code = case parse code of
         col   = (read $ split !! 1) :: Int
         text  = unlines (tail . tail $ split)
     in  Left $ CompilationError (GrammarError path text) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))) [])
+
 
 setPath :: AST -> FilePath -> Either e AST
 setPath ast path = Right ast { apath = Just path }

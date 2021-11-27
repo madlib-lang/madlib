@@ -11,9 +11,9 @@ global.Ι8 = {};
 global.Ι4 = {};
 global.Ι7 = {};
 Ι6['τ10'] = {};
-Ι6['τ10']['assoc'] = () => (xs1 => xs2 => xs1.concat(xs2));
+Ι6['τ10']['assoc'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
 Ι5['τ10'] = {};
-Ι5['τ10']['mappend'] = () => (xs1 => xs2 => xs1.concat(xs2));
+Ι5['τ10']['mappend'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
 Ι5['τ10']['mempty'] = () => ([]);
 Ι3['τ11'] = {};
 let __Ι3τ11map = λ4(() => (f => m => WriterT(Ι3τ15.map()((__x__ => ((__x__) => {

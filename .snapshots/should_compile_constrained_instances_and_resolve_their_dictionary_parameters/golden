@@ -5,7 +5,7 @@ global.Show = {};
 Show['Boolean'] = {};
 Show['Boolean']['show'] = () => (b => (b ? 'True' : 'False'));
 Show['Number'] = {};
-Show['Number']['show'] = () => (n => new Number(n).toString());
+Show['Number']['show'] = () => (n =>  new Number(n).toString() );
 Show['Tuple_2'] = {};
 let __ShowTuple_2show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {

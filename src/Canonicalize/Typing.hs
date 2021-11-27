@@ -26,7 +26,7 @@ import Text.Show.Pretty
 
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
-canonicalizeTyping (Src.Source _ area t) = case t of
+canonicalizeTyping (Src.Source area t) = case t of
   Src.TRSingle name       -> return $ Can.Canonical area (Can.TRSingle name)
 
   Src.TRComp name typings -> do
@@ -62,7 +62,7 @@ typingToScheme env typing = do
 
 
 qualTypingToQualType :: Env -> Src.Typing -> CanonicalM (Qual Type)
-qualTypingToQualType env t@(Src.Source _ _ typing) = case typing of
+qualTypingToQualType env t@(Src.Source _ typing) = case typing of
   Src.TRConstrained constraints typing' -> do
     t  <- typingToType env (KindRequired Star) typing'
     ps <- mapM (constraintToPredicate env t) constraints
@@ -72,13 +72,13 @@ qualTypingToQualType env t@(Src.Source _ _ typing) = case typing of
 
 
 constraintToPredicate :: Env -> Type -> Src.Typing -> CanonicalM Pred
-constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
+constraintToPredicate env t (Src.Source _ (Src.TRComp n typings)) = do
   let s = buildVarSubsts t
   ts <- mapM
     (\case
-      Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
+      Src.Source _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV var Star
 
-      fullTyping@(Src.Source _ _ (Src.TRComp n typings')) -> do
+      fullTyping@(Src.Source _ (Src.TRComp n typings')) -> do
         apply s <$> typingToType env (KindRequired Star) fullTyping
 
       _ -> undefined
@@ -96,7 +96,7 @@ data KindRequirement
 
 
 typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
-typingToType env kindNeeded (Src.Source _ area (Src.TRSingle t))
+typingToType env kindNeeded (Src.Source area (Src.TRSingle t))
   | t == "Number" = return tNumber
   | t == "Boolean" = return tBool
   | t == "String" = return tStr
@@ -129,7 +129,7 @@ typingToType env kindNeeded (Src.Source _ area (Src.TRSingle t))
 
 
 
-typingToType env kindNeeded (Src.Source _ area (Src.TRComp t ts))
+typingToType env kindNeeded (Src.Source area (Src.TRComp t ts))
   | isLower . head $ t = do
     params <- mapM (typingToType env AnyKind) ts
     return $ foldl' TApp (TVar $ TV t (buildKind (length ts))) params
@@ -178,23 +178,23 @@ typingToType env kindNeeded (Src.Source _ area (Src.TRComp t ts))
           throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area [])
 
 
-typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
+typingToType env _ (Src.Source _ (Src.TRArr l r)) = do
   l' <- typingToType env (KindRequired Star) l
   r' <- typingToType env (KindRequired Star) r
   return $ l' `fn` r'
 
-typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
+typingToType env _ (Src.Source _ (Src.TRRecord fields base)) = do
   fields' <- mapM (typingToType env (KindRequired Star)) fields
   base'   <- mapM (typingToType env (KindRequired Star)) base
   return $ TRecord fields' base'
 
-typingToType env _ (Src.Source _ _ (Src.TRTuple elems)) = do
+typingToType env _ (Src.Source _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env (KindRequired Star)) elems
   let tupleT = getTupleCtor (length elems)
   return $ foldl' TApp tupleT elems'
 
 -- Never happens as it's handled in the qualTypingToQualType function
-typingToType _ _ (Src.Source _ _ (Src.TRConstrained _ _)) = undefined
+typingToType _ _ (Src.Source _ (Src.TRConstrained _ _)) = undefined
 
 
 getConstructorArgs :: Type -> [Type]

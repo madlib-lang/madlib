@@ -9,7 +9,6 @@ import           Parse.DocString.Lexer
 import           Infer.Type
 import           Parse.DocString.DocString
 import           Explain.Location
-import           Explain.Meta
 import           Run.Target
 import           Text.Regex.TDFA
 import           Text.Show.Pretty (ppShow)

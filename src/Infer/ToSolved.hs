@@ -50,6 +50,8 @@ toSolved (Can.Canonical area exp) = case exp of
 
   Can.JSExp            code  -> Slv.Solved ([] :=> tSubst) area (Slv.JSExp code)
 
+  Can.Do               exps  -> Slv.Solved ([] :=> tSubst) area (Slv.Do (toSolved <$> exps))
+
 
 
 liToSolved :: Can.ListItem -> Slv.ListItem

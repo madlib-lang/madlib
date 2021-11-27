@@ -39,7 +39,7 @@ export boolean = (input) => (#-
 -#)
 
 
-dict :: Parser b -> Parser (D.Dictionary String b)
+dict :: Parser b -> Parser (Dictionary String b)
 export dict = (parser, input) => (#- {
   try {
     const keys = Object.keys(input);

@@ -207,6 +207,10 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
     let param' = Slv.Solved paramType paramArea param
     return $ Slv.Solved qt a $ Slv.Abs param' es'
 
+  Slv.Do exps -> do
+    exps' <- mapM (updatePlaceholders env push s) exps
+    return $ Slv.Solved qt a $ Slv.Do exps'
+
   Slv.Where exp iss -> do
     exp' <- updatePlaceholders env push s exp
     iss' <- mapM (updateIs s) iss

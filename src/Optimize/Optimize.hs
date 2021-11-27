@@ -130,6 +130,10 @@ instance Optimizable Slv.Exp Opt.Exp where
       falsy'  <- optimize enabled falsy
       return $ Opt.Optimized t area (Opt.If cond' truthy' falsy')
 
+    Slv.Do exps -> do
+      exps' <- mapM (optimize enabled) exps
+      return $ Opt.Optimized t area (Opt.Do exps')
+
     Slv.Where exp iss -> do
       exp' <- optimize enabled exp
       iss' <- mapM (optimize enabled) iss

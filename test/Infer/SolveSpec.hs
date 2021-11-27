@@ -174,7 +174,7 @@ spec = do
 
     it "should infer params for adts" $ do
       let code =
-            unlines ["type Result = Success({ value :: String })", "r = Success({ value: \"42\" })", "((a) => (a))(r)"]
+            unlines ["type Result = Success({ value :: String })", "r = Success({ value: \"42\" })", "((a) => a)(r)"]
           actual = tester code
       snapshotTest "should infer params for adts" actual
 

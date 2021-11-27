@@ -459,6 +459,15 @@ instance Compilable Exp where
 
         TupleConstructor elems -> "([" <> intercalate ", " (compile env config <$> elems) <> "])"
 
+        Do exps ->
+          let compiledExps = compile env config <$> exps
+              allExceptLast = init compiledExps
+              l = last compiledExps
+          in "(() => {\n  "
+              <> intercalate "\n  " allExceptLast
+              <> "\n  return " <> l
+              <> "\n})()"
+
         Where exp (first : cs) ->
           "((__x__) => {\n  "
             <> compileIs first

@@ -4,7 +4,6 @@ import           Error.Error
 import           Error.Warning
 import           Error.Backtrace
 import           Error.Context
-import           Explain.Meta
 import           Explain.Location
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
@@ -144,9 +143,17 @@ analyzeBacktrace json err exps = case exps of
 -- TODO: Add Env and lookup stuff there like unbound names that are close to give suggestions
 formatTypeError :: Bool -> TypeError -> String
 formatTypeError json err = case err of
-  InfiniteType (TV n _) t -> "Infinite type " <> n <> " -> " <> prettyPrintType True t
+  InfiniteType tv t ->
+    let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
+        (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
+    in  "Infinite type " <> printedN <> " -> " <> printedT
 
   UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo!"
+
+  CapitalizedADTTVar adtname param ->
+    "The type parameter '" <> param <> "' in the type declaration '" <> adtname <> "' is capitalized.\n"
+      <> "Type parameters can't be capitalized.\n\n"
+      <> "Hint: Either remove it if you don't need the type variable, or make its first letter lowercase."
 
   UnboundType n ->
     "The type '" <> n <> "' has not been declared, you might have a typo!\n\n" <> "Hint: Maybe you forgot to import it?"

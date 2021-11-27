@@ -53,7 +53,7 @@ let carResponse = ({ cars: ([]) });
     throw 'non exhaustive patterns!';
   }
 })(true);
-let log = (a => { console.log(a); return a; });
+let log = (a =>  { console.log(a); return a; } );
 (true ? "OK" : "NOT OK");
 let mapMaybe = (f => m => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {

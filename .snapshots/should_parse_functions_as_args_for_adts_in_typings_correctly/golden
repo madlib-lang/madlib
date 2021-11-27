@@ -76,7 +76,7 @@ Right
                                   [ Solved
                                       ([] :=> TVar (TV "g6" Star))
                                       (Area (Loc 54 2 19) (Loc 67 2 32))
-                                      (JSExp "some JS")
+                                      (JSExp " some JS ")
                                   ])
                            ]))))
                (Untyped
@@ -207,7 +207,7 @@ Right
                                         [ Solved
                                             ([] :=> TVar (TV "l11" Star))
                                             (Area (Loc 137 4 32) (Loc 158 4 53))
-                                            (JSExp "xs1.concat(xs2)")
+                                            (JSExp " xs1.concat(xs2) ")
                                         ])
                                  ]))))))
                (Untyped
@@ -386,7 +386,7 @@ Right
                                                [ Solved
                                                    ([] :=> TVar (TV "t19" Star))
                                                    (Area (Loc 241 6 38) (Loc 268 6 65))
-                                                   (JSExp "xs.reduce(f, initial)")
+                                                   (JSExp " xs.reduce(f, initial) ")
                                                ])
                                         ])
                                  ]))))))
@@ -459,7 +459,7 @@ Right
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV "v21" Star)))))
-            (Area (Loc 271 8 1) (Loc 414 15 6))
+            (Area (Loc 271 8 1) (Loc 416 16 2))
             (TypedExp
                (Solved
                   ([] :=>
@@ -482,7 +482,7 @@ Right
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV "v21" Star)))))
-                  (Area (Loc 311 9 1) (Loc 414 15 6))
+                  (Area (Loc 311 9 1) (Loc 416 16 2))
                   (Export
                      (Solved
                         ([] :=>
@@ -505,7 +505,7 @@ Right
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV "q42" Star)))))
-                        (Area (Loc 318 9 8) (Loc 414 15 6))
+                        (Area (Loc 318 9 8) (Loc 416 16 2))
                         (Assignment
                            "ap"
                            (Solved
@@ -531,7 +531,7 @@ Right
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV "q42" Star)))))
-                              (Area (Loc 323 9 13) (Loc 414 15 6))
+                              (Area (Loc 323 9 13) (Loc 416 16 2))
                               (Abs
                                  (Solved
                                     ([] :=>
@@ -558,7 +558,7 @@ Right
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TVar (TV "q42" Star))))
-                                     (Area (Loc 323 9 13) (Loc 414 15 6))
+                                     (Area (Loc 323 9 13) (Loc 416 16 2))
                                      (Abs
                                         (Solved
                                            ([] :=>
@@ -646,7 +646,7 @@ Right
                                                                       (TC "List" (Kfun Star Star))
                                                                       "prelude")
                                                                    (TVar (TV "p41" Star)))))
-                                                        (Area (Loc 336 9 26) (Loc 416 16 1))
+                                                        (Area (Loc 336 9 26) (Loc 416 16 2))
                                                         (App
                                                            (Solved
                                                               ([] :=>
@@ -902,7 +902,7 @@ Right
                                                                                                 Star))))
                                                                                   (Area
                                                                                      (Loc 359 10 16)
-                                                                                     (Loc 397 13 3))
+                                                                                     (Loc 397 13 4))
                                                                                   (Abs
                                                                                      (Solved
                                                                                         ([] :=>
