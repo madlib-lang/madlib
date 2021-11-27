@@ -36,7 +36,7 @@ import LLVM.IRBuilder.Constant as C
 import LLVM.IRBuilder.Monad
 import LLVM.IRBuilder.Instruction as Instruction
 import LLVM.Context (withContext)
-import Generate.LLVM.Optimized
+import Generate.LLVM.Optimized as Opt
 import Text.Show.Pretty
 import Debug.Trace
 import qualified Data.String.Utils as List
@@ -47,6 +47,7 @@ import LLVM.PassManager
 import LLVM.CodeGenOpt (Level)
 import LLVM.AST.Constant (Constant(Null))
 import qualified LLVM.Prelude as FloatingPointPredicate
+import LLVM.Transforms (Pass(TailCallElimination))
 
 
 -- TODO: Move to util module
@@ -63,6 +64,7 @@ data SymbolType
   | FunctionSymbol
   | ConstructorSymbol Int Int
   | ClosureSymbol
+  | TopLevelAssignment
   -- ^ unique id ( index ) | arity
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show)
@@ -89,6 +91,10 @@ fnSymbol :: Operand -> Symbol
 fnSymbol =
   Symbol FunctionSymbol
 
+topLevelSymbol :: Operand -> Symbol
+topLevelSymbol =
+  Symbol TopLevelAssignment
+
 constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =
   Symbol (ConstructorSymbol id arity) ctor
@@ -112,6 +118,14 @@ gcMalloc =
 madlistLength :: Operand
 madlistLength =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [listType] False) (AST.mkName "MadList_length"))
+
+madlistHasMinLength :: Operand
+madlistHasMinLength =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.double, listType] False) (AST.mkName "MadList_hasMinLength"))
+
+madlistHasLength :: Operand
+madlistHasLength =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.double, listType] False) (AST.mkName "MadList_hasLength"))
 
 madlistSingleton :: Operand
 madlistSingleton =
@@ -285,10 +299,14 @@ generateExp symbolTable exp = case exp of
       Just (Symbol FunctionSymbol global) ->
         return (symbolTable, global)
 
-      Just (Symbol ClosureSymbol closurePtr) -> do
+      Just (Symbol ClosureSymbol closurePtr) ->
         return (symbolTable, closurePtr)
 
-      Just (Symbol _ var) -> do
+      Just (Symbol TopLevelAssignment ptr) -> do
+        ptr' <- load ptr 8
+        return (symbolTable, ptr')
+
+      Just (Symbol _ var) ->
         return (symbolTable, var)
 
       Nothing ->
@@ -335,9 +353,20 @@ generateExp symbolTable exp = case exp of
       _ ->
         undefined
 
-  Optimized _ _ (Assignment name e) -> do
+  Optimized ty _ (Assignment name e) -> do
     (symbolTable', exp') <- generateExp symbolTable e
-    return (Map.insert name (varSymbol exp') symbolTable', exp')
+
+    let t = case typeOf exp' of
+          t'@Type.PointerType{} ->
+            t'
+
+          t' ->
+            Type.ptr t'
+    -- Only do this for top level stuff
+    g <- global (AST.mkName name) (typeOf exp') $ Constant.Undef (typeOf exp')
+    store g 8 exp'
+
+    return (Map.insert name (varSymbol exp') symbolTable, exp')
 
   Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "-")) leftOperand _)) rightOperand _) -> do
     (_, leftOperand') <- generateExp symbolTable leftOperand
@@ -345,10 +374,46 @@ generateExp symbolTable exp = case exp of
     result <- fsub leftOperand' rightOperand'
     return (symbolTable, result)
 
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "+")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fadd leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "*")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fmul leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "/")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fdiv leftOperand' rightOperand'
+    return (symbolTable, result)
+
   Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "==")) leftOperand _)) rightOperand _) -> do
     (_, leftOperand') <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "!=")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var ">")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "<")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized _ _ (App f arg _) ->
@@ -410,6 +475,10 @@ generateExp symbolTable exp = case exp of
   Optimized _ _ (LStr s) -> do
     addr <- buildStr s
     return (symbolTable, addr)
+
+  Optimized _ _ (Opt.Do exps) -> do
+    ret <- generateBody symbolTable exps
+    return (symbolTable, ret)
 
   Optimized _ _ (TupleConstructor exps) -> do
     exps' <- mapM ((snd <$>). generateExp symbolTable) exps
@@ -696,20 +765,22 @@ generateBranchTest symbolTable pat value = case pat of
 
   Optimized _ _ (PList pats) -> do
     -- i8*
-    listLength   <- call madlistLength [(value, [])]
-    -- double*
-    listLength'  <- bitcast listLength (Type.ptr Type.double)
-    -- double
-    listLength'' <- load listLength' 8
+    -- listLength   <- call madlistLength [(value, [])]
+    -- -- double*
+    -- listLength'  <- bitcast listLength (Type.ptr Type.double)
+    -- -- double
+    -- listLength'' <- load listLength' 8
 
     let hasSpread = List.any isSpread pats
 
     -- test that the length of the given list is at least as long as the pattern items
     lengthTest <-
       if hasSpread then do
-        fcmp FloatingPointPredicate.OGE listLength'' (C.double (fromIntegral $ List.length pats - 1))
+        call madlistHasMinLength [(C.double (fromIntegral $ List.length pats - 1), []), (value, [])]
+        -- fcmp FloatingPointPredicate.OGE listLength'' (C.double (fromIntegral $ List.length pats - 1))
       else
-        fcmp FloatingPointPredicate.OEQ listLength'' (C.double (fromIntegral $ List.length pats))
+        call madlistHasLength [(C.double (fromIntegral $ List.length pats), []), (value, [])]
+        -- fcmp FloatingPointPredicate.OEQ listLength'' (C.double (fromIntegral $ List.length pats))
 
     subPatternsTest <- generateListSubPatternTest symbolTable value pats
     lengthTest `Instruction.and` subPatternsTest
@@ -958,6 +1029,11 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
         globalRef = Operand.ConstantOperand (Constant.GlobalReference closureDefType (AST.mkName name))
     in  Map.insert name (closureSymbol globalRef) symbolTable
 
+  Optimized t _ (Assignment name exp) ->
+    let expType = buildLLVMType t
+        globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
+    in  Map.insert name (topLevelSymbol globalRef) symbolTable
+
   _ ->
     symbolTable
 
@@ -977,7 +1053,7 @@ generateClosure :: (MonadModuleBuilder m, MonadFix.MonadFix m) =>
   -> [Char]
   -> [Exp]
   -> m (Map.Map String Symbol)
-generateClosure isTopLevel symbolTable t fnName env paramName [body] = mdo
+generateClosure isTopLevel symbolTable t fnName env paramName body = mdo
   let envType = Type.ptr $ Type.StructureType False (boxType <$ env)
       closureEnvNames = getClosureParamNames env
       closureEnvTypes = getType <$> env
@@ -1026,11 +1102,11 @@ generateClosure isTopLevel symbolTable t fnName env paramName [body] = mdo
 
     -- Generate symbol table for the body
     let envMap                     = Map.fromList $ List.zip closureEnvNames unboxedEnvArgs
-        fullMap                    = Map.insert paramName unboxedParam envMap
+        fullMap                    = Map.insert paramName unboxedParam (trace ("FNAME: "<>ppShow functionName<>"\nENV MAP: "<>ppShow envMap<>"\nENV: "<>ppShow env) envMap)
         symbolTableWithEnvAndParam = varSymbol <$> fullMap
 
     -- Generate body
-    (_, generatedBody) <- generateExp (resultSymbolTable <> symbolTableWithEnvAndParam) body
+    generatedBody <- generateBody (resultSymbolTable <> symbolTableWithEnvAndParam) body
 
     -- box the result
     boxed <- box generatedBody
@@ -1038,7 +1114,21 @@ generateClosure isTopLevel symbolTable t fnName env paramName [body] = mdo
 
   return resultSymbolTable
 
-generateClosure _ _ _ _ _ _ _ = undefined
+
+
+generateBody :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> [Exp] -> m Operand
+generateBody symbolTable exps = case exps of
+  [exp] -> do
+    (_, result) <- generateExp symbolTable exp
+    return result
+
+  (exp : es) -> do
+    (symbolTable', _) <- generateExp symbolTable exp
+    generateBody symbolTable' es
+
+  _ ->
+    undefined
+
 
 
 extractEnvArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand -> [Int] -> m [Operand.Operand]
@@ -1278,7 +1368,7 @@ topLevelFunctions =
 toLLVMModule :: AST -> AST.Module
 toLLVMModule ast =
   buildModule "main" $ do
-  let initialSymbolTable = List.foldr (flip addTopLevelFnToSymbolTable) mempty (topLevelFunctions $ aexps ast)
+  let initialSymbolTable = List.foldr (flip addTopLevelFnToSymbolTable) mempty (aexps ast)
 
   symbolTable   <- generateInstances initialSymbolTable (ainstances ast)
   symbolTable'  <- generateConstructors symbolTable (atypedecls ast)
@@ -1288,7 +1378,9 @@ toLLVMModule ast =
   extern (AST.mkName "GC_malloc") [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__") [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
-  extern (AST.mkName "MadList_length") [listType] (Type.ptr Type.i8)
+  -- extern (AST.mkName "MadList_length") [listType] (Type.ptr Type.i8)
+  extern (AST.mkName "MadList_hasMinLength") [Type.double, listType] Type.i1
+  extern (AST.mkName "MadList_hasLength") [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_singleton") [Type.ptr Type.i8] listType
   extern (AST.mkName "MadList_push") [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat") [listType, listType] listType
