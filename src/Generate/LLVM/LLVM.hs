@@ -333,12 +333,9 @@ unbox t what = case t of
   InferredType.TRecord fields _ -> do
     bitcast what recordType
 
-
-  -- TODO: check that we need this
-  -- This should be called for parameters that are closures
+  -- This should be called for parameters that are closures or returned closures
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b ->
-    bitcast what $ Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-    -- return what
+    bitcast what papType
 
   _ ->
     bitcast what (buildLLVMType t)
@@ -585,7 +582,7 @@ buildReferencePAP symbolTable arity fn = do
 
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand)
 generateExp env symbolTable exp = case exp of
-  Optimized t _ (Var n) ->
+  Optimized (_ InferredType.:=> t) _ (Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
@@ -596,9 +593,10 @@ generateExp env symbolTable exp = case exp of
         buildReferencePAP symbolTable arity fnPtr
 
       Just (Symbol (MethodSymbol 0) fnPtr) -> do
-        -- Handle special nullary cases like assignment methods
-        pap <- call fnPtr []
-        return (symbolTable, (trace ("NAME: "<>n<>"\nPAP: "<>ppShow pap) pap))
+        -- Handle special nullary cases like assignment methods or mempty
+        pap     <- call fnPtr []
+        unboxed <- unbox t pap
+        return (symbolTable, unboxed)
 
       Just (Symbol (MethodSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -609,14 +607,6 @@ generateExp env symbolTable exp = case exp of
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
         return (symbolTable, value)
-        -- loaded <- load ptr 8
-        -- return (symbolTable, loaded)
-        -- case t of
-        --   -- InferredType.TCon (InferredType.TC "String" InferredType.Star) _ ->
-        --   --   return (symbolTable, ptr)
-
-        --   _ ->
-        --     return (symbolTable, value)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
@@ -830,10 +820,18 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
+  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
     (_, leftOperand')  <- generateExp env symbolTable leftOperand
     (_, rightOperand') <- generateExp env symbolTable rightOperand
-    result             <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
+    result             <- case t of
+      InferredType.TCon (InferredType.TC "Float" _) _ ->
+        fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
+
+      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+        icmp IntegerPredicate.ULT leftOperand' rightOperand'
+
+      _ ->
+        icmp IntegerPredicate.SLT leftOperand' rightOperand'
     return (symbolTable, result)
 
   Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
@@ -2161,7 +2159,7 @@ compileModule outputFolder rootPath astPath astModule = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 3 } $ \pm -> do
           runPassManager pm mod'
           return mod'
         writeObjectToFile target (File outputPath) mod''

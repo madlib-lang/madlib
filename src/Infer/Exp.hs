@@ -797,7 +797,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef)
     else if not isLet then do
-      (sDef, ds')   <- tryDefaults env ds
+      (sDef, ds')   <- tryDefaults env (ds ++ rs)
       (sDef', ds'') <- tryDefaults env (apply sDef ds')
       return (ds'', sDef)
     else do
