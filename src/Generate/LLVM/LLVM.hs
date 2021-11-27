@@ -465,7 +465,7 @@ generateExp env symbolTable exp = case exp of
         let interfaceMap = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
         let index = Maybe.fromMaybe 0 $ Map.lookup methodName interfaceMap
         dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) boxType))
-        method  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral (trace ("INDEX: "<>show index) index))]
+        method  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
         method' <- load method 8
 
         let paramTypes = InferredType.getParamTypes t
@@ -1183,11 +1183,9 @@ buildDictValues symbolTable methodNames = case methodNames of
     []
 
 
-generateMethod :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> String -> Exp -> m SymbolTable
+generateMethod :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> String -> Exp -> m SymbolTable
 generateMethod env symbolTable methodName exp = case exp of
-
   -- TODO: handle overloaded methods that should be passed a dictionary
-
   Opt.Optimized t _ (TopLevelAbs _ params body) ->
     generateFunction env symbolTable t methodName params body
 
@@ -1209,14 +1207,14 @@ generateMethod env symbolTable methodName exp = case exp of
 
       ret retVal
 
-
+    Writer.tell $ Map.singleton methodName (fnSymbol arity f)
     return $ Map.insert methodName (fnSymbol arity f) symbolTable
 
   _ ->
     undefined
 
 
-generateInstance :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Instance -> m SymbolTable
+generateInstance :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Instance -> m SymbolTable
 generateInstance env symbolTable inst = case inst of
   Untyped _ (Instance interface preds typingStr methods) -> do
     let instanceName = "$" <> interface <> "$" <> typingStr
@@ -1228,6 +1226,7 @@ generateInstance env symbolTable inst = case inst of
 
     dict <- global (AST.mkName instanceName) (Type.StructureType False (typeOf <$> methodConstants)) $ Constant.Struct Nothing False methodConstants
 
+    Writer.tell $ Map.singleton instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict)
     return $ Map.insert instanceName (Symbol (DictionarySymbol (Map.fromList  $ List.zip (Map.keys methods) [0..])) dict) symbolTable'
 
   _ ->
@@ -1235,7 +1234,7 @@ generateInstance env symbolTable inst = case inst of
 
 
 
-generateInstances :: (MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Instance] -> m SymbolTable
+generateInstances :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Instance] -> m SymbolTable
 generateInstances env =
   Monad.foldM (generateInstance env)
 
@@ -1329,7 +1328,7 @@ buildModule' isMain initialSymbolTable ast = do
 
   symbolTable   <- generateConstructors symbolTableWithTopLevel (atypedecls ast)
   symbolTable'  <- generateInstances initialEnv symbolTable (ainstances ast)
-  symbolTable'' <- generateTopLevelFunctions initialEnv (trace ("initialEnv: "<>ppShow initialEnv) symbolTable') (topLevelFunctions $ aexps ast)
+  symbolTable'' <- generateTopLevelFunctions initialEnv symbolTable' (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")  [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")               [Type.i64] (Type.ptr Type.i8)
@@ -1399,8 +1398,8 @@ compileModule :: FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
 compileModule outputFolder rootPath astPath astModule = do
   let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
 
-  -- Prelude.putStrLn outputPath
-  -- T.putStrLn $ ppllvm astModule
+  Prelude.putStrLn outputPath
+  T.putStrLn $ ppllvm astModule
 
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do

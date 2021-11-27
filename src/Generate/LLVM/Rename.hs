@@ -349,7 +349,7 @@ renameAST env ast =
       env'                       = env { currentModuleHash = moduleHash }
       (renamedImports, env'')    = renameImports env' $ aimports ast
       (renamedTypeDecls, env''') = renameTypeDecls env'' $ atypedecls ast
-      (renamedExps, env'''')     = renameTopLevelExps (trace ("ENV'''"<>ppShow env''') env''') $ aexps ast
+      (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
       renamedInstances           = renameInstance env'''' <$> ainstances ast
   in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = renamedImports }, env)
 
