@@ -84,8 +84,7 @@ initialEnv :: Env
 initialEnv = Env
   { envVars        = M.fromList
                        [ ("&&"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
-                      --  , ("=="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-                       , ("!="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       , ("!="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("||"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                        , ("!"            , Forall [] $ [] :=> (tBool `fn` tBool))
 

@@ -217,6 +217,10 @@ areStringsEqual :: Operand
 areStringsEqual =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__areStringsEqual__"))
 
+areStringsNotEqual :: Operand
+areStringsNotEqual =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__areStringsNotEqual__"))
+
 strConcat :: Operand
 strConcat =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (AST.mkName "__strConcat__"))
@@ -809,11 +813,11 @@ generateExp env symbolTable exp = case exp of
           fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
-  Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
+  -- Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
+  --   (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+  --   (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+  --   result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
+  --   return (symbolTable, result, Nothing)
 
   Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
@@ -859,6 +863,51 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, result, Nothing)
 
+  Optimized _ _ (App (Optimized _ _ (Placeholder _ (Optimized _ _ (Var "!=")))) [leftOperand@(Optimized (_ InferredType.:=> t) _ _), rightOperand])
+    | t `List.elem`
+        [ InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude"
+        , InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude"
+        , InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude"
+        , InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude"
+        , InferredType.TCon (InferredType.TC "Unit" InferredType.Star) "prelude"
+        , InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude"
+        ] -> case t of
+              InferredType.TCon (InferredType.TC "Byte" InferredType.Star) "prelude" -> do
+                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
+                return (symbolTable, result, Nothing)
+
+              InferredType.TCon (InferredType.TC "Integer" InferredType.Star) "prelude" -> do
+                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
+                return (symbolTable, result, Nothing)
+
+              InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" -> do
+                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+                result                <- icmp IntegerPredicate.NE leftOperand' rightOperand'
+                return (symbolTable, result, Nothing)
+
+              InferredType.TCon (InferredType.TC "Float" InferredType.Star) "prelude" -> do
+                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+                result                <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
+                return (symbolTable, result, Nothing)
+
+              InferredType.TCon (InferredType.TC "Unit" InferredType.Star) "prelude" ->
+                return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 0, Nothing)
+
+              InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
+                (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+                (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+                result                <- call areStringsNotEqual [(leftOperand', []), (rightOperand', [])]
+                return (symbolTable, result, Nothing)
+
+              _ ->
+                undefined
+
   Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
     (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
     (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
@@ -897,19 +946,19 @@ generateExp env symbolTable exp = case exp of
 
         "Float" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
         "String" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
           return (symbolTable, result, Nothing)
 
         "Boolean" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
           result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
@@ -1002,6 +1051,72 @@ generateExp env symbolTable exp = case exp of
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
           result                <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "<" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      ">=" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.UGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
+      "<=" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.SLE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.ULE leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
         _ ->
@@ -2471,6 +2586,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
       eqPred              = InferredType.IsIn "Eq" [varType] Nothing
       eqVarQualType       = [eqPred] InferredType.:=> varType
       eqOperationQualType = [eqPred] InferredType.:=> (varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool)
+      eqOperationType     = varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
 
       integerEqInstance =
         Untyped emptyArea
@@ -2478,7 +2594,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2496,7 +2612,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2514,7 +2630,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2532,7 +2648,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2550,7 +2666,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2568,7 +2684,7 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized eqVarQualType emptyArea LUnit
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (LBool "true")
                       ])
                     , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
                     )
@@ -2578,17 +2694,17 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
           )
 
 
-      dictType   = InferredType.TVar (InferredType.TV "dict" InferredType.Star)
-      listEqType = dictType `InferredType.fn` varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
-      listEqQualType = [eqPred] InferredType.:=> listEqType
+      dictType             = InferredType.TVar (InferredType.TV "dict" InferredType.Star)
+      overloadedEqType     = dictType `InferredType.fn` varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
+      overloadedEqQualType = [eqPred] InferredType.:=> overloadedEqType
 
       listEqInstance =
         Untyped emptyArea
           ( Instance "Eq" [InferredType.IsIn "Eq" [InferredType.TVar (InferredType.TV "a" InferredType.Star)] Nothing] "List"
               (Map.fromList
                 [ ( "=="
-                  , ( Optimized listEqQualType emptyArea (TopLevelAbs "+" ["eqDict", "a", "b"] [
-                        Optimized eqVarQualType emptyArea (App (Optimized listEqQualType emptyArea (Var "__eqList__")) [
+                  , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "+" ["eqDict", "a", "b"] [
+                        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqList__")) [
                           Optimized ([] InferredType.:=> dictType) emptyArea (Var "eqDict"),
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
@@ -2600,6 +2716,16 @@ buildRuntimeModule env currentModuleHashes initialSymbolTable = do
                 ]
               )
           )
+
+
+  generateFunction env symbolTableWithCBindings False overloadedEqType "!=" ["$Eq$eqVar", "a", "b"] [
+      Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "!")) [
+        Optimized ([] InferredType.:=> InferredType.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Placeholder (MethodRef "Eq" "==" True, "eqVar") (Optimized eqOperationQualType emptyArea (Var "==")))) [
+          Optimized eqVarQualType emptyArea (Var "a"),
+          Optimized eqVarQualType emptyArea (Var "b")
+        ])
+      ])
+    ]
 
   generateInstances
     env
@@ -2634,6 +2760,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
   extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
   extern (AST.mkName "__areStringsEqual__")    [stringType, stringType] Type.i1
+  extern (AST.mkName "__areStringsNotEqual__") [stringType, stringType] Type.i1
   extern (AST.mkName "__strConcat__")          [stringType, stringType] stringType
   extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_hasLength")      [Type.double, listType] Type.i1
@@ -2644,6 +2771,8 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
+
+  extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do
     extern (AST.mkName "__initEventLoop__")    [] Type.void
@@ -2719,9 +2848,9 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildRuntimeModule Env { dictionaryIndices = Map.empty, isLast = False } [] symbolTable)
+    let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
+        (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildRuntimeModule Env { dictionaryIndices = dictionaryIndices, isLast = False } [] symbolTable)
         numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
-        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
         (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
     in  Map.insert numbersModulePath numbersModule moduleTable
 
