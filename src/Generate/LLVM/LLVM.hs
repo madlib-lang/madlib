@@ -267,10 +267,12 @@ buildStr s = do
   -- we need to add 0 to terminate a C string
   let charCodes = (fromEnum <$> s') ++ [0]
   -- 92, 110 == \n
-  let charCodes' = List.replace [92, 110] [10] charCodes
-  let charCodes'' = toInteger <$> charCodes'
-  addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes''), [])]
-  let charCodesWithIds = List.zip charCodes'' [0..]
+  let charCodes'   = List.replace [92, 110] [10] charCodes
+  -- 92, 34 == \"
+  let charCodes''  = List.replace [92, 34] [34] charCodes'
+  let charCodes''' = toInteger <$> charCodes''
+  addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'''), [])]
+  let charCodesWithIds = List.zip charCodes''' [0..]
 
   Monad.foldM_ (storeChar addr) () charCodesWithIds
   return addr
@@ -290,16 +292,16 @@ collectDictArgs' :: (MonadIRBuilder m, MonadModuleBuilder m) => [String] -> Symb
 collectDictArgs' alreadyFound symbolTable exp = case exp of
   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True _, typingStr) exp') -> do
     let dictName = "$" <> interfaceName <> "$" <> typingStr
-    if dictName `List.elem` alreadyFound then
-      collectDictArgs' alreadyFound symbolTable exp'
-    else do
-      (nextArgs, nextExp) <- collectDictArgs' (dictName : alreadyFound) symbolTable exp'
-      case Map.lookup dictName symbolTable of
-        Just (Symbol _ dict) ->
-          return (dict : nextArgs, nextExp)
+    -- if dictName `List.elem` alreadyFound then
+    --   collectDictArgs' alreadyFound symbolTable exp'
+    -- else do
+    (nextArgs, nextExp) <- collectDictArgs' (dictName : alreadyFound) symbolTable exp'
+    case Map.lookup dictName symbolTable of
+      Just (Symbol _ dict) ->
+        return (dict : nextArgs, nextExp)
 
-        _ ->
-          error $ "dict not found: '" <> dictName <> "'"
+      _ ->
+        error $ "dict not found: '" <> dictName <> "'"
 
   Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
     return ([], exp)
@@ -408,7 +410,7 @@ generateExp symbolTable exp = case exp of
         error $ "Var not found " <> n <> "\n\n" <> ppShow symbolTable
 
   -- (Placeholder (ClassRef "Functor" [] False True , "b183")
-  Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) e) -> do
+  Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) _) -> do
     -- TODO: gather all placeholders and build the function accordingly
     let (dictNameParams, innerExp) = gatherAllPlaceholders exp
     let wrapperType = List.foldr InferredType.fn (InferredType.tVar "a") (InferredType.tVar "a" <$ (trace ("DNP: "<>ppShow dictNameParams) dictNameParams))
@@ -422,16 +424,6 @@ generateExp symbolTable exp = case exp of
         dictNameParams
         [innerExp]
     return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName))
-    -- fnName <- freshName (stringToShortByteString "dictionaryWrapper")
-    -- let (Name fnName') = fnName
-    -- symbolTable' <-
-    --   generateFunction
-    --     symbolTable
-    --     (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
-    --     (Char8.unpack (ShortByteString.fromShort fnName'))
-    --     ["$" <> interface <> "$" <> typingStr]
-    --     [e]
-    -- return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) fnName))
     where
       gatherAllPlaceholders :: Exp -> ([String], Exp)
       gatherAllPlaceholders ph =
@@ -474,8 +466,8 @@ generateExp symbolTable exp = case exp of
 
   -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
   Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
-    (dictArgs, fn) <- collectDictArgs symbolTable (trace ("EXP: "<>ppShow exp) exp)
-    (_, pap) <- generateExp symbolTable (trace ("FN: "<>ppShow fn) fn)
+    (dictArgs, fn) <- collectDictArgs symbolTable exp
+    (_, pap) <- generateExp symbolTable fn
     pap' <- bitcast pap boxType
     let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
     dictArgs' <- mapM box dictArgs
@@ -483,23 +475,6 @@ generateExp symbolTable exp = case exp of
     ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
     unboxed <- unbox t ret
     return (symbolTable, unboxed)
-  -- Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) fn) -> do
-    -- let dictName    = "$" <> interface <> "$" <> typingStr
-    -- case Map.lookup dictName symbolTable of
-    --   Just (Symbol _ dict) -> do
-    --     (_, pap) <- generateExp symbolTable fn
-    --     pap' <- bitcast pap boxType
-
-    --     let argc = i32ConstOp 1
-
-    --     dict' <- box dict
-
-    --     ret <- call applyPAP [(pap', []), (argc, []), (dict',[])]
-    --     unboxed <- unbox t ret
-    --     return (symbolTable, unboxed)
-
-    --   _ ->
-    --     undefined
 
   -- Most likely a method that has to be applied some dictionaries
   Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
