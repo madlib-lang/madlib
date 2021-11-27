@@ -140,7 +140,6 @@ generateExp symbolTable exp = case exp of
     (symbolTable'', truthy') <- generateExp symbolTable' truthy
     br exitBlock 
 
-    
     falsyBlock <- block `named` "falsyBlock"
     (symbolTable''', falsy') <- generateExp symbolTable' falsy
     br exitBlock
@@ -151,9 +150,18 @@ generateExp symbolTable exp = case exp of
     return (symbolTable', ret)
 
 
-  Optimized _ _ (Where exp iss) -> do
-    (symbolTable', exp') <- generateExp symbolTable exp
-    generateBranch symbolTable' exp' (List.head iss)
+  Optimized _ _ (Where exp iss) -> mdo
+    (_, exp') <- generateExp symbolTable exp
+    branch@(b, _) <- generateBranch symbolTable (Just defaultBlock) exitBlock exp' (List.head iss)
+
+    defaultBlock <- block `named` "defaultBlock"
+    defaultRet <- return $ Operand.ConstantOperand (Constant.Null (typeOf b))
+    br exitBlock
+
+    exitBlock <- block `named` "exitBlock"
+    ret <- phi [branch, (defaultRet, defaultBlock)]
+
+    return (symbolTable, ret)
 
   _ ->
     undefined
@@ -181,11 +189,22 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
     undefined
 
 
-generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Is -> m (SymbolTable, Operand)
-generateBranch symbolTable whereExp is = case is of
-  Optimized _ _ (Is pat exp) -> do
+generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Maybe AST.Name -> AST.Name -> Operand -> Is -> m (Operand, AST.Name)
+generateBranch symbolTable maybeNext exitBlock whereExp is = case is of
+  Optimized _ _ (Is pat exp) -> mdo
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
-    generateExp symbolTable' exp
+    test <- icmp IntegerPredicate.EQ true true -- generateBranchTest
+    case maybeNext of
+      Just next ->
+        condBr test branchExpBlock next
+
+      Nothing ->
+        condBr test branchExpBlock exitBlock
+
+    branchExpBlock <- block `named` "branchExpBlock"
+    (_, branch) <- generateExp symbolTable' exp
+    br exitBlock
+    return (branch, branchExpBlock)
 
   _ ->
     undefined
