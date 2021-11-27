@@ -170,37 +170,30 @@ char *__stripTrailingZeros__(char *number) {
 extern "C" {
 #endif
 
-char **__floatToStr__(double d) {
+char *__floatToStr__(double d) {
   char *str = (char *)GC_malloc(200);
   sprintf(str, "%.20f", d);
   char *stripped = __stripTrailingZeros__(str);
 
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-  *boxed = stripped;
-  return boxed;
+  return stripped;
 }
 
-char **__integerToStr__(int64_t i) {
+char *__integerToStr__(int64_t i) {
+  int64_t *ii = (int64_t *) i;
   char *str = (char *)GC_malloc(200);
   sprintf(str, "%" PRId64, i);
 
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-  *boxed = str;
-  return boxed;
+  return str;
 }
 
-char **__byteToStr__(unsigned char i) {
+char *__byteToStr__(unsigned char i) {
   char *str = (char *)GC_malloc(4);
   sprintf(str, "%d", i);
 
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-  *boxed = str;
-  return boxed;
+  return str;
 }
 
-char **__booleanToStr__(bool b) {
-  char **boxed = (char **)GC_malloc(sizeof(char *));
-
+char *__booleanToStr__(bool b) {
   if (b) {
     char *str = (char *)GC_malloc(5);
     str[0] = 't';
@@ -208,7 +201,7 @@ char **__booleanToStr__(bool b) {
     str[2] = 'u';
     str[3] = 'e';
     str[4] = '\0';
-    *boxed = str;
+    return str;
   } else {
     char *str = (char *)GC_malloc(6);
     str[0] = 'f';
@@ -217,10 +210,8 @@ char **__booleanToStr__(bool b) {
     str[3] = 's';
     str[4] = 'e';
     str[5] = '\0';
-    *boxed = str;
+    return str;
   }
-
-  return boxed;
 }
 
 #ifdef __cplusplus
@@ -246,18 +237,18 @@ MadListNode_t *Madlist_empty() {
   return head;
 }
 
-int64_t *MadList_length(MadListNode_t *list) {
-  int64_t *total = (int64_t *)GC_malloc(sizeof(int64_t));
+int64_t MadList_length(MadListNode_t *list) {
+  int64_t total = 0;
 
   if (list->value == NULL) {
-    *total = 0;
+    total = 0;
     return total;
   }
 
-  *total = 1;
+  total = 1;
 
   while (list->next->value != NULL) {
-    *total += 1;
+    total += 1;
     list = list->next;
   }
 
@@ -268,6 +259,8 @@ MadListNode_t *MadList_singleton(void *item) {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   head->next = Madlist_empty();
   head->value = item;
+
+  printf("singleton addr: %d\n", head);
 
   return head;
 }

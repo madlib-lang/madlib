@@ -289,6 +289,14 @@ isFunctionType t = case t of
   _ -> False
 
 
+isListType :: Type -> Bool
+isListType t = case t of
+  TApp (TCon (TC "List" _) "prelude") _ ->
+    True
+
+  _ ->
+    False
+
 getReturnType :: Type -> Type
 getReturnType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) _) r ->

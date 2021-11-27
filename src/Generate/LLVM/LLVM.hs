@@ -188,10 +188,6 @@ selectField :: Operand
 selectField =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [stringType, recordType] False) (AST.mkName "__selectField__"))
 
-madlistLength :: Operand
-madlistLength =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [listType] False) (AST.mkName "MadList_length"))
-
 madlistHasMinLength :: Operand
 madlistHasMinLength =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.double, listType] False) (AST.mkName "MadList_hasMinLength"))
@@ -237,6 +233,7 @@ storeItem basePtr _ (item, index) = do
   store ptr 8 item
   return ()
 
+
 -- Mostly used for boxing/unboxing and therefore does just one Level
 buildLLVMType :: InferredType.Type -> Type.Type
 buildLLVMType t = case t of
@@ -259,7 +256,8 @@ buildLLVMType t = case t of
     Type.ptr Type.i8
 
   InferredType.TApp (InferredType.TCon (InferredType.TC "List" (InferredType.Kfun InferredType.Star InferredType.Star)) "prelude") _ ->
-    Type.ptr (Type.StructureType False [boxType, boxType])
+    listType
+    --Type.ptr (Type.StructureType False [boxType, boxType])
 
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
     let tLeft  = buildLLVMType left
@@ -289,7 +287,7 @@ boxType =
 
 listType :: Type.Type
 listType =
-  Type.ptr $ Type.StructureType False [boxType, boxType]
+  Type.PointerType (Type.StructureType False [boxType, boxType]) (AddrSpace 1)
 
 stringType :: Type.Type
 stringType =
@@ -327,10 +325,11 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr stringType
     load ptr 8
 
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ ->
-    bitcast what listType
-    -- ptr <- bitcast what (Type.ptr listType)
-    -- load ptr 8
+  -- boxed lists are { i8*, i8* }**
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ -> do
+    -- -- bitcast what listType
+    ptr <- bitcast what (Type.ptr listType)
+    load ptr 8
 
   InferredType.TRecord fields _ -> do
     bitcast what recordType
@@ -375,7 +374,7 @@ box what = case typeOf what of
     store ptr' 8 what
     bitcast ptr' boxType
 
-  -- String?
+  -- String
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof stringType, [])]
     ptr' <- bitcast ptr (Type.ptr stringType)
@@ -383,11 +382,11 @@ box what = case typeOf what of
     bitcast ptr' boxType
 
   -- List
-  -- Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) _ -> do
-  --   ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
-  --   ptr' <- bitcast ptr (Type.ptr listType)
-  --   store ptr' 8 what
-  --   return ptr
+  Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
+    ptr' <- bitcast ptr (Type.ptr listType)
+    store ptr' 8 what
+    bitcast ptr' boxType
 
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
@@ -724,7 +723,7 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp')
     else
-      case Map.lookup name (trace ("FOUND ASS: " <> name <> "\nexp'" <> ppShow exp' <> "\n" <> ppShow (Map.lookup name symbolTable)) symbolTable) of
+      case Map.lookup name symbolTable of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
           -- TODO: handle strings properly here
           case typeOf exp' of
@@ -733,9 +732,15 @@ generateExp env symbolTable exp = case exp of
               store ptr' 8 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
 
+            Type.PointerType _ _ | InferredType.isListType ty -> do
+              ptr' <- bitcast ptr $ Type.ptr listType
+              -- exp'' <- addrspacecast exp' listType
+              store ptr' 8 exp'
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp')
+
 
             Type.PointerType t _  -> do
-              ptr' <- bitcast ptr $ typeOf exp'
+              ptr'   <- bitcast ptr $ typeOf exp'
               loaded <- load exp' 8
               store ptr' 8 loaded
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
@@ -751,23 +756,11 @@ generateExp env symbolTable exp = case exp of
               store ptr' 8 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
 
+        Just (Symbol _ _) ->
+          return (Map.insert name (varSymbol exp') symbolTable, exp')
+
         Nothing -> do
-          case typeOf (trace ("NOTHING - "<>name<>"\nexp: "<>ppShow exp'<>"\ntype: "<>ppShow (typeOf exp')) exp') of
-            Type.PointerType t _ | ty == InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
-              ptr <- box exp'
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
-
-            Type.PointerType t _ -> do
-              return (Map.insert name (localVarSymbol exp' exp') symbolTable, exp')
-
-            t -> do
-              ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof t, [])]
-              ptr' <- bitcast ptr (Type.ptr t)
-              store ptr' 8 (trace ("STORE-PTR: "<>ppShow ptr') exp')
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp')
-
-        _ ->
-          undefined
+          return (Map.insert name (varSymbol exp') symbolTable, exp')
 
   Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
     (_, operand') <- generateExp env symbolTable operand
@@ -860,6 +853,9 @@ generateExp env symbolTable exp = case exp of
           result             <- fadd leftOperand' rightOperand'
           return (symbolTable, result)
 
+        _ ->
+          undefined
+
       "-" -> case typingStr of
         "Integer" -> do
           (_, leftOperand')  <- generateExp env symbolTable (List.head args)
@@ -872,6 +868,9 @@ generateExp env symbolTable exp = case exp of
           (_, rightOperand') <- generateExp env symbolTable (args!!1)
           result             <- fsub leftOperand' rightOperand'
           return (symbolTable, result)
+
+        _ ->
+          undefined
 
 
 
@@ -1006,7 +1005,7 @@ generateExp env symbolTable exp = case exp of
   Optimized _ _ (ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
     emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
-    emptyList' <- bitcast emptyList listType
+    emptyList' <- addrspacecast emptyList listType
     store emptyList' 8 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
 
     return (symbolTable, emptyList')
@@ -1029,12 +1028,12 @@ generateExp env symbolTable exp = case exp of
       (\list' i -> case i of
         Optimized _ _ (ListItem item) -> do
           (_, item') <- generateExp env symbolTable item
-          item'' <- box item'
+          item''     <- box item'
           call madlistPush [(item'', []), (list', [])]
 
         Optimized _ _ (ListSpread spread) -> do
           (_, spread') <- generateExp env symbolTable spread
-          call madlistConcat [(spread', []), (list', [])]
+          call madlistConcat [((trace ("SPREAD': "<>ppShow spread'<>"\nLIST': "<>ppShow list') spread'), []), (list', [])]
 
         cannotHappen ->
           undefined
@@ -1042,8 +1041,8 @@ generateExp env symbolTable exp = case exp of
       tail
       (List.reverse $ List.init listItems)
 
-    list' <- bitcast list listType
-    return (symbolTable, list')
+    -- list' <- bitcast list listType
+    return (symbolTable, list)
 
   Optimized _ _ (Record fields) -> do
 
@@ -1096,20 +1095,20 @@ generateExp env symbolTable exp = case exp of
 
     truthyBlock <- block `named` "truthyBlock"
     (symbolTable'', truthy') <- generateExp env symbolTable' truthy
-    truthy'' <- box truthy'
+    -- truthy'' <- box truthy'
     br exitBlock
 
     falsyBlock <- block `named` "falsyBlock"
     (symbolTable''', falsy') <- generateExp env symbolTable' falsy
-    falsy'' <- box falsy'
+    -- falsy'' <- box falsy'
     br exitBlock
 
     exitBlock <- block `named` "condBlock"
-    ret <- phi [(truthy'', truthyBlock), (falsy'', falsyBlock)]
+    ret <- phi [(truthy', truthyBlock), (falsy', falsyBlock)]
 
-    ret' <- unbox t ret
+    -- ret' <- unbox t ret
 
-    return (symbolTable', ret')
+    return (symbolTable', ret)
 
   Optimized _ _ (Where exp iss) -> mdo
     (_, exp') <- generateExp env symbolTable exp
@@ -1164,7 +1163,7 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
     -- therefore we need to get the block that contains the register reference in which
     -- it is defined. 
     retBlock <- currentBlock
-    branch' <- box branch
+    -- branch' <- box branch
     br exitBlock
 
     (nextBlock, finalPhi) <-
@@ -1172,11 +1171,11 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
         b <- block `named` "nextBlock"
         return (b, [])
       else do
-        let def = Operand.ConstantOperand (Constant.Null (typeOf branch'))
+        let def = Operand.ConstantOperand (Constant.Null (typeOf branch))
         return (exitBlock, [(def, currBlock)])
 
 
-    return $ (branch', retBlock) : finalPhi
+    return $ (branch, retBlock) : finalPhi
 
   _ ->
     undefined
@@ -1186,7 +1185,7 @@ generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, Mon
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
   ptr' <- load ptr 8
-  ptr'' <- unbox (getType pat) ptr'
+  ptr'' <- unbox (getType pat) (trace ("PAT TYPE: "<>ppShow (getType pat)) ptr')
   generateSymbolTableForPattern symbolTable ptr'' pat
 
 
@@ -1205,7 +1204,7 @@ generateSymbolTableForList symbolTable basePtr pats = case pats of
       -- i8*
       nextNodePtr'  <- load nextNodePtr 8
       -- { i8*, i8* }*
-      nextNodePtr'' <- bitcast nextNodePtr' listType
+      nextNodePtr'' <- addrspacecast nextNodePtr' listType
       generateSymbolTableForList symbolTable' nextNodePtr'' next
 
   [] ->
@@ -1274,7 +1273,7 @@ generateListSubPatternTest symbolTable basePtr pats = case pats of
       -- i8*
       nextNodePtr'  <- load nextNodePtr 8
       -- { i8*, i8* }*
-      nextNodePtr'' <- bitcast nextNodePtr' listType
+      nextNodePtr'' <- addrspacecast nextNodePtr' listType
       nextTest      <- generateListSubPatternTest symbolTable nextNodePtr'' next
       test `Instruction.and` nextTest
 
@@ -1371,9 +1370,9 @@ getFieldPattern record (fieldName, fieldPattern) = do
 
 getStructPointers :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [Integer] -> Operand -> m [Operand]
 getStructPointers ids ptr = case ids of
-  (index : next) -> do
+  (index : nextIndices) -> do
     ptr'  <- gep ptr [i32ConstOp 0, i32ConstOp index]
-    next  <- getStructPointers (List.tail ids) ptr
+    next  <- getStructPointers nextIndices ptr
     return $ ptr' : next
 
   [] ->
@@ -1430,7 +1429,7 @@ generateFunction env symbolTable isMethod t functionName paramNames body = do
         symbolTableWithParams = symbolTable <> paramsWithNames
 
     -- Generate body
-    generatedBody <- generateBody env symbolTableWithParams (trace ("FN: "<>functionName<>"\nparam types: "<>ppShow paramTypes<>"\nparams: "<>ppShow params<>"\nparamsWithName: "<>ppShow paramsWithNames) body)
+    generatedBody <- generateBody env symbolTableWithParams body
 
     -- box the result
     boxed <- box generatedBody
@@ -1455,7 +1454,7 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
     let paramTypes  = InferredType.getParamTypes t
         paramTypes' = buildLLVMParamType <$> paramTypes
         returnType  = InferredType.getReturnType t
-        returnType' = boxType
+        returnType' = buildLLVMParamType returnType
 
     ext <- extern (AST.mkName originalName) paramTypes' returnType'
     generateExternFunction symbolTable t name (List.length paramTypes) ext

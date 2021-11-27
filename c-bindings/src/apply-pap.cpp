@@ -18,25 +18,8 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   int32_t ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
   int32_t ARITY = unwrappedPAP->arity;
 
-  // if (ENV_SIZE == 19) {
-  //   unwrappedPAP = (PAP_t *)&pap;
-  //   ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
-  //   ARITY = unwrappedPAP->arity;
-  // }
-
-  // printf("FN_POINTER: %d\n", unwrappedPAP->fn);
-  // printf("FN_POINTER_: %d\n", &unwrappedPAP->fn);
-  // printf("PAP: %d\n", pap);
-  // printf("PAP_: %d\n",  *((int*)pap));
-  // printf("ENV_SIZE: %d\n", ENV_SIZE);
-  // printf("ARITY: %d\n", ARITY);
-  // printf("argc: %d\n", argc);
-  // printf("missing: %d\n", unwrappedPAP->missingArgCount);
 
   if (argc >= unwrappedPAP->missingArgCount) {
-    // We need to do the call
-    // printf("doing call - argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc,
-    // ENV_SIZE, ARITY);
     switch (ARITY) {
       case 1: {
         void *(*fn)(void *) = (void *(*)(void *))unwrappedPAP->fn;
