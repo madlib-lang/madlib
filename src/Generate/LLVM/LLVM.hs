@@ -82,8 +82,8 @@ addrspacecast op t =
   emitInstr t $ AddrSpaceCast op t []
 
 
-newtype Env
-  = Env { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int)) }
+data Env
+  = Env { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int)), isLast :: Bool }
   -- ^ Map InterfaceName (Map MethodName (index, arity))
   deriving(Eq, Show)
 
@@ -511,36 +511,47 @@ collectDictArgs symbolTable exp = case exp of
     return ([], exp)
 
 
-generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand)
+retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => [(SymbolTable, Operand, Maybe Operand)] -> m [Operand]
+retrieveArgs =
+  mapM (\(_, arg, maybeBoxedArg) -> case maybeBoxedArg of
+          Just boxed ->
+            return boxed
+
+          Nothing ->
+            box arg
+       )
+
+
+generateApplicationForKnownFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand, Maybe Operand)
 generateApplicationForKnownFunction env symbolTable returnType arity fnOperand args
   | List.length args == arity = do
       -- We have a known call!
-      args'   <- mapM (generateExp env symbolTable) args
-      args''  <- mapM (box . snd) args'
+      args'   <- mapM (generateExp env { isLast = False } symbolTable) args
+      args''  <- retrieveArgs args'
       let args''' = (, []) <$> args''
 
       ret <- call fnOperand args'''
       unboxed <- unbox returnType ret
 
-      return (symbolTable, unboxed)
+      return (symbolTable, unboxed, Just ret)
   | List.length args > arity = do
       -- We have extra args so we do the known call and the applyPAP the resulting partial application
       let (args', remainingArgs) = List.splitAt arity args
-      args''   <- mapM (generateExp env symbolTable) args'
-      args'''  <- mapM (box . snd) args''
+      args''   <- mapM (generateExp env { isLast = False } symbolTable) args'
+      args'''  <- retrieveArgs args''
       let args'''' = (, []) <$> args'''
 
       pap <- call fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
-      remainingArgs'  <- mapM (generateExp env symbolTable) remainingArgs
-      remainingArgs'' <- mapM (box . snd) remainingArgs'
+      remainingArgs'  <- mapM (generateExp env { isLast = False } symbolTable) remainingArgs
+      remainingArgs'' <- retrieveArgs remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
       ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
       unboxed <- unbox returnType ret
 
-      return (symbolTable, unboxed)
+      return (symbolTable, unboxed, Just ret)
   | otherwise = do
       -- We don't have enough args, so we create a new PAP
       let papType                 = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
@@ -551,9 +562,8 @@ generateApplicationForKnownFunction env symbolTable returnType arity fnOperand a
 
       boxedFn  <- box fnOperand
 
-      args'  <- mapM (generateExp env symbolTable) args
-      let args'' = snd <$> args'
-      boxedArgs <- mapM box args''
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      boxedArgs <- retrieveArgs args'
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
       envPtr' <- bitcast envPtr (Type.ptr envType)
@@ -563,10 +573,10 @@ generateApplicationForKnownFunction env symbolTable returnType arity fnOperand a
       papPtr' <- bitcast papPtr (Type.ptr papType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
 
-      return (symbolTable, papPtr')
+      return (symbolTable, papPtr', Just papPtr)
 
 
-buildReferencePAP :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand.Operand -> m (SymbolTable, Operand.Operand)
+buildReferencePAP :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand.Operand -> m (SymbolTable, Operand.Operand, Maybe Operand.Operand)
 buildReferencePAP symbolTable arity fn = do
   let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
   let arity'  = i32ConstOp (fromIntegral arity)
@@ -577,17 +587,17 @@ buildReferencePAP symbolTable arity fn = do
   papPtr'  <- bitcast papPtr (Type.ptr papType)
   Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
 
-  return (symbolTable, papPtr')
+  return (symbolTable, papPtr', Just papPtr)
 
-
-generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand)
+-- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
+generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
   Optimized (_ InferredType.:=> t) _ (Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods
         pap <- call fnPtr []
-        return (symbolTable, pap)
+        return (symbolTable, pap, Nothing)
 
       Just (Symbol (FunctionSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -596,28 +606,28 @@ generateExp env symbolTable exp = case exp of
         -- Handle special nullary cases like assignment methods or mempty
         pap     <- call fnPtr []
         unboxed <- unbox t pap
-        return (symbolTable, unboxed)
+        return (symbolTable, unboxed, Just pap)
 
       Just (Symbol (MethodSymbol arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
 
       Just (Symbol TopLevelAssignment ptr) -> do
         loaded <- load ptr 8
-        return (symbolTable, loaded)
+        return (symbolTable, loaded, Nothing)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
-        return (symbolTable, value)
+        return (symbolTable, value, Just ptr)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
         constructed <- call fnPtr []
-        return (symbolTable, constructed)
+        return (symbolTable, constructed, Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
 
       Just (Symbol _ var) ->
-        return (symbolTable, var)
+        return (symbolTable, var, Nothing)
 
       Nothing ->
         error $ "Var not found " <> n <> "\n\n" <> ppShow symbolTable
@@ -637,7 +647,7 @@ generateExp env symbolTable exp = case exp of
         (Char8.unpack (ShortByteString.fromShort fnName'))
         dictNameParams
         [innerExp]
-    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName))
+    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName), Nothing)
     where
       gatherAllPlaceholders :: Exp -> ([String], Exp)
       gatherAllPlaceholders ph = case ph of
@@ -668,10 +678,10 @@ generateExp env symbolTable exp = case exp of
           methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
           methodFn'  <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
           methodFn'' <- load methodFn' 8
-          value      <- call methodFn'' (trace ("DICT NAME: "<>dictName<>"\nTYPE: "<>ppShow t<>"\nMETHODFN'': "<>ppShow methodFn'') [])
-          return (symbolTable, value)
+          value      <- call methodFn'' []
+          return (symbolTable, value, Nothing)
         else
-          return (symbolTable, methodPAP)
+          return (symbolTable, methodPAP, Nothing)
 
       _ ->
         error $ "dict not found: '"<>dictName <>"\n\n"<>ppShow exp
@@ -679,38 +689,38 @@ generateExp env symbolTable exp = case exp of
   -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
   Optimized (_ InferredType.:=> t) _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
     (dictArgs, fn) <- collectDictArgs symbolTable exp
-    (_, pap) <- generateExp env symbolTable fn
+    (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
     pap' <- bitcast pap boxType
     let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
     dictArgs' <- mapM box dictArgs
     let dictArgs'' = (,[]) <$> dictArgs'
     ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
     unboxed <- unbox t ret
-    return (symbolTable, unboxed)
+    return (symbolTable, unboxed, Just ret)
 
   -- Most likely a method that has to be applied some dictionaries
   Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
     let methodName' = "$" <> interface <> "$" <> typingStr <> "$" <> methodName
     case Map.lookup methodName' symbolTable of
       Just (Symbol (MethodSymbol arity) fnOperand) -> do
-        (_, pap) <- buildReferencePAP symbolTable arity fnOperand
-        return (symbolTable, pap)
+        (_, pap, boxedPAP) <- buildReferencePAP symbolTable arity fnOperand
+        return (symbolTable, pap, boxedPAP)
 
       _ ->
         error "m"
 
   Optimized _ _ (Export e) -> do
-    generateExp env symbolTable e
+    generateExp env { isLast = False } symbolTable e
 
   Optimized (ps InferredType.:=> ty) _ (Assignment name e isTopLevel) -> do
-    (symbolTable', exp') <- generateExp env symbolTable e
+    (symbolTable', exp', _) <- generateExp env { isLast = False } symbolTable e
 
     if isTopLevel then do
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
       store g 8 exp'
       Writer.tell $ Map.singleton name (topLevelSymbol g)
-      return (Map.insert name (topLevelSymbol g) symbolTable, exp')
+      return (Map.insert name (topLevelSymbol g) symbolTable, exp', Nothing)
     else
       case Map.lookup name symbolTable of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
@@ -719,76 +729,75 @@ generateExp env symbolTable exp = case exp of
             Type.PointerType t _ | ty == InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
               ptr' <- bitcast ptr $ Type.ptr stringType
               store ptr' 8 exp'
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             Type.PointerType _ _ | InferredType.isListType ty -> do
               ptr' <- bitcast ptr $ Type.ptr listType
-              -- exp'' <- addrspacecast exp' listType
               store ptr' 8 exp'
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp')
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
 
             Type.PointerType t _  -> do
               ptr'   <- bitcast ptr $ typeOf exp'
               loaded <- load exp' 8
               store ptr' 8 loaded
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             _ | InferredType.hasNumberPred ps -> do
               ptr'   <- bitcast ptr $ Type.ptr Type.i64
               exp''  <- bitcast exp' Type.i64
               store ptr' 8 exp''
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp')
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
             _ -> do
               ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
               store ptr' 8 exp'
-              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
         Just (Symbol _ _) ->
-          return (Map.insert name (varSymbol exp') symbolTable, exp')
+          return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
 
         Nothing -> do
-          return (Map.insert name (varSymbol exp') symbolTable, exp')
+          return (Map.insert name (varSymbol exp') symbolTable, exp', Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
-    (_, operand') <- generateExp env symbolTable operand
+    (_, operand', _) <- generateExp env { isLast = False } symbolTable operand
     result        <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- fsub leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "+")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- fadd leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "*")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- fmul leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "/")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
     result             <- fdiv leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "++")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- call strConcat [(leftOperand', []), (rightOperand', [])]
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "==")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     -- TODO: add special check for strings, tuples, records etc
     result <-
       case getType leftOperand of
@@ -797,17 +806,17 @@ generateExp env symbolTable exp = case exp of
 
         _ ->
           fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
       InferredType.TCon (InferredType.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
@@ -818,11 +827,11 @@ generateExp env symbolTable exp = case exp of
       _ ->
         icmp IntegerPredicate.SGT leftOperand' rightOperand'
 
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand')  <- generateExp env symbolTable leftOperand
-    (_, rightOperand') <- generateExp env symbolTable rightOperand
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
     result             <- case t of
       InferredType.TCon (InferredType.TC "Float" _) _ ->
         fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
@@ -832,44 +841,76 @@ generateExp env symbolTable exp = case exp of
 
       _ ->
         icmp IntegerPredicate.SLT leftOperand' rightOperand'
-    return (symbolTable, result)
+    return (symbolTable, result, Nothing)
 
   Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
       "+" -> case typingStr of
         "Integer" -> do
-          (_, leftOperand')  <- generateExp env symbolTable (List.head args)
-          (_, rightOperand') <- generateExp env symbolTable (args !! 1)
-          result             <- add leftOperand' rightOperand'
-          return (symbolTable, result)
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- add leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- add leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
 
         "Float" -> do
-          (_, leftOperand')  <- generateExp env symbolTable (List.head args)
-          (_, rightOperand') <- generateExp env symbolTable (args!!1)
-          result             <- fadd leftOperand' rightOperand'
-          return (symbolTable, result)
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fadd leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
 
         _ ->
           undefined
 
       "-" -> case typingStr of
         "Integer" -> do
-          (_, leftOperand')  <- generateExp env symbolTable (List.head args)
-          (_, rightOperand') <- generateExp env symbolTable (args !! 1)
-          result             <- sub leftOperand' rightOperand'
-          return (symbolTable, result)
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- sub leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- sub leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
 
         "Float" -> do
-          (_, leftOperand')  <- generateExp env symbolTable (List.head args)
-          (_, rightOperand') <- generateExp env symbolTable (args!!1)
-          result             <- fsub leftOperand' rightOperand'
-          return (symbolTable, result)
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fsub leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
 
         _ ->
           undefined
 
+      "*" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- mul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
 
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- mul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fmul leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
 
       _ -> do
         let dictName    = "$" <> interface <> "$" <> typingStr
@@ -901,60 +942,56 @@ generateExp env symbolTable exp = case exp of
         pap'' <- bitcast pap' boxType
 
         let argc = i32ConstOp (fromIntegral argsApplied)
-
-        args'  <- mapM (generateExp env symbolTable) args
-        let args'' = snd <$> args'
-        boxedArgs <- mapM box args''
+        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+        boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed <- unbox t ret
-        return (symbolTable, unboxed)
+        return (symbolTable, unboxed, Just ret)
 
       _ ->
         error $ "Function not found " <> functionName <> "\n\n" <> ppShow symbolTable
 
     _ -> case fn of
       Opt.Optimized _ _ (Opt.Placeholder (Opt.MethodRef "Number" _ True, _) _) -> do
-        (_, pap) <- generateExp env symbolTable fn
+        (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
         pap' <- bitcast pap boxType
 
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
-        args'  <- mapM (generateExp env symbolTable) args
-        let args'' = snd <$> args'
-        boxedArgs <- mapM box args''
+        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+        boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         ret' <- bitcast ret $ Type.ptr Type.i64
         ret'' <- load ret' 8
-        return (symbolTable, ret'')
+        return (symbolTable, ret'', Just ret)
 
       _ -> do
-        (_, pap) <- generateExp env symbolTable fn
+        (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
         pap' <- bitcast pap boxType
 
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
-        args'  <- mapM (generateExp env symbolTable) args
-        let args'' = snd <$> args'
-        boxedArgs <- mapM box args''
+        args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+        boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed <- unbox t ret
-        return (symbolTable, unboxed)
+        return (symbolTable, unboxed, Just ret)
 
   Optimized (_ InferredType.:=> t) _ (LNum n) -> case t of
     InferredType.TCon (InferredType.TC "Float" _) _ ->
-      return (symbolTable, C.double (read n))
+      return (symbolTable, C.double (read n), Nothing)
 
     InferredType.TCon (InferredType.TC "Integer" _) _ ->
-      return (symbolTable, C.int64 (read n))
+      return (symbolTable, C.int64 (read n), Nothing)
 
     _ ->
-      return (symbolTable, C.int64 (read n))
+      return (symbolTable, C.int64 (read n), Nothing)
 
   Optimized _ _ (LFloat n) -> do
-    return (symbolTable, C.double (read n))
+    return (symbolTable, C.double (read n), Nothing)
 
   Optimized _ _ (LBool b) -> do
     let value =
@@ -962,34 +999,34 @@ generateExp env symbolTable exp = case exp of
             1
           else
             0
-    return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value)
+    return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value, Nothing)
 
   Optimized _ _ LUnit -> do
-    return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1))
+    return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
 
   Optimized _ _ (LStr (leading : s)) | leading == '"' || leading == '\'' -> do
     addr <- buildStr (List.init s)
-    return (symbolTable, addr)
+    return (symbolTable, addr, Nothing)
 
   Optimized _ _ (LStr s) -> do
     addr <- buildStr s
-    return (symbolTable, addr)
+    return (symbolTable, addr, Nothing)
 
   Optimized _ _ (TemplateString parts) -> do
-    parts' <- mapM (generateExp env symbolTable) parts
-    let parts'' = snd <$> parts'
+    parts' <- mapM (generateExp env { isLast = False } symbolTable) parts
+    let parts'' = (\(_, a, _) -> a) <$> parts'
     asOne  <- Monad.foldM
       (\prev next -> call strConcat [(prev, []), (next, [])])
       (List.head parts'')
       (List.tail parts'')
-    return (symbolTable, asOne)
+    return (symbolTable, asOne, Nothing)
 
   Optimized _ _ (Opt.Do exps) -> do
-    ret <- generateBody env symbolTable exps
-    return (symbolTable, ret)
+    (ret, boxed) <- generateDoExps env { isLast = False } symbolTable exps
+    return (symbolTable, ret, boxed)
 
   Optimized _ _ (TupleConstructor exps) -> do
-    exps'     <- mapM ((snd <$>). generateExp env symbolTable) exps
+    exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
     boxedExps <- mapM box exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
@@ -997,7 +1034,7 @@ generateExp env symbolTable exp = case exp of
     tuplePtr' <- bitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
-    return (symbolTable, tuplePtr')
+    return (symbolTable, tuplePtr', Nothing)
 
   Optimized _ _ (ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
@@ -1005,17 +1042,17 @@ generateExp env symbolTable exp = case exp of
     emptyList' <- addrspacecast emptyList listType
     store emptyList' 8 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
 
-    return (symbolTable, emptyList')
+    return (symbolTable, emptyList', Nothing)
 
   Optimized _ _ (ListConstructor listItems) -> do
     tail <- case List.last listItems of
       Optimized _ _ (ListItem lastItem) -> do
-        (symbolTable', lastItem') <- generateExp env symbolTable lastItem
+        (symbolTable', lastItem', _) <- generateExp env { isLast = False } symbolTable lastItem
         lastItem''                <- box lastItem'
         call madlistSingleton [(lastItem'', [])]
 
       Optimized _ _ (ListSpread spread) -> do
-        (_, spread') <- generateExp env symbolTable spread
+        (_, spread', _) <- generateExp env { isLast = False } symbolTable spread
         return spread'
 
       cannotHappen ->
@@ -1024,13 +1061,13 @@ generateExp env symbolTable exp = case exp of
     list <- Monad.foldM
       (\list' i -> case i of
         Optimized _ _ (ListItem item) -> do
-          (_, item') <- generateExp env symbolTable item
+          (_, item', _) <- generateExp env { isLast = False } symbolTable item
           item''     <- box item'
           call madlistPush [(item'', []), (list', [])]
 
         Optimized _ _ (ListSpread spread) -> do
-          (_, spread') <- generateExp env symbolTable spread
-          call madlistConcat [((trace ("SPREAD': "<>ppShow spread'<>"\nLIST': "<>ppShow list') spread'), []), (list', [])]
+          (_, spread', _) <- generateExp env { isLast = False } symbolTable spread
+          call madlistConcat [(spread', []), (list', [])]
 
         cannotHappen ->
           undefined
@@ -1038,8 +1075,7 @@ generateExp env symbolTable exp = case exp of
       tail
       (List.reverse $ List.init listItems)
 
-    -- list' <- bitcast list listType
-    return (symbolTable, list)
+    return (symbolTable, list, Nothing)
 
   Optimized _ _ (Record fields) -> do
 
@@ -1048,7 +1084,7 @@ generateExp env symbolTable exp = case exp of
 
     base' <- case base of
       [Optimized _ _ (FieldSpread exp)] -> do
-        (_, exp') <- generateExp env symbolTable exp
+        (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
         return exp'
 
       _ ->
@@ -1057,14 +1093,14 @@ generateExp env symbolTable exp = case exp of
     fields'' <- mapM (generateField symbolTable) fields'
 
     record <- call buildRecord $ [(fieldCount, []), (base', [])] ++ ((,[]) <$> fields'')
-    return (symbolTable, record)
+    return (symbolTable, record, Nothing)
     where
       generateField :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Field -> m Operand
       generateField symbolTable field = case field of
         Optimized _ _ (Field (name, value)) -> do
           let fieldType = Type.StructureType False [stringType, boxType]
           nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
-          (_, value') <- generateExp env symbolTable value
+          (_, value', _) <- generateExp env { isLast = False } symbolTable value
           value''     <- box value'
 
           fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
@@ -1078,46 +1114,81 @@ generateExp env symbolTable exp = case exp of
 
   Optimized (_ InferredType.:=> t) _ (Access record (Optimized _ _ (Var ('.' : fieldName)))) -> do
     nameOperand        <- buildStr fieldName
-    (_, recordOperand) <- generateExp env symbolTable record
+    (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- call selectField [(nameOperand, []), (recordOperand, [])]
 
     value' <- unbox t value
-    return (symbolTable, value')
+    return (symbolTable, value', Just value)
 
 
-  Optimized (_ InferredType.:=> t) _ (If cond truthy falsy) -> mdo
-    (symbolTable', cond') <- generateExp env symbolTable cond
-    test  <- icmp IntegerPredicate.EQ cond' true
-    condBr test truthyBlock falsyBlock
+  Optimized (_ InferredType.:=> t) _ (If cond truthy falsy) ->
+    if isLast env then mdo
+      (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
+      test  <- icmp IntegerPredicate.EQ cond' true
+      condBr test ifThen ifElse
 
-    truthyBlock <- block `named` "truthyBlock"
-    (symbolTable'', truthy') <- generateExp env symbolTable' truthy
-    -- truthy'' <- box truthy'
-    br exitBlock
+      ifThen <- block `named` "if.then"
+      (symbolTable'', truthy', maybeBoxedTruthy) <- generateExp env { isLast = True } symbolTable' truthy
+      truthyValue <- case maybeBoxedTruthy of
+        Just boxed ->
+          return boxed
 
-    falsyBlock <- block `named` "falsyBlock"
-    (symbolTable''', falsy') <- generateExp env symbolTable' falsy
-    -- falsy'' <- box falsy'
-    br exitBlock
+        Nothing ->
+          box truthy'
+      ifThen' <- currentBlock
+      br ifExit
 
-    exitBlock <- block `named` "condBlock"
-    ret <- phi [(truthy', truthyBlock), (falsy', falsyBlock)]
+      ifElse <- block `named` "if.else"
+      (symbolTable''', falsy', maybeBoxedFalsy) <- generateExp env { isLast = True } symbolTable' falsy
+      falsyValue <- case maybeBoxedFalsy of
+        Just boxed ->
+          return boxed
 
-    -- ret' <- unbox t ret
+        Nothing ->
+          box falsy'
+      ifElse' <- currentBlock
+      br ifExit
 
-    return (symbolTable', ret)
+      ifExit <- block `named` "if.exit"
+      ret <- phi [(truthyValue, ifThen'), (falsyValue, ifElse')]
+
+      -- this value comes boxed as that will directly be returned
+      return (symbolTable', ret, Just ret)
+    else mdo
+      (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
+      test  <- icmp IntegerPredicate.EQ cond' true
+      condBr test ifThen ifElse
+
+      ifThen <- block `named` "if.then"
+      (symbolTable'', truthy', _) <- generateExp env symbolTable' truthy
+      ifThen' <- currentBlock
+      br ifExit
+
+      ifElse <- block `named` "if.else"
+      (symbolTable''', falsy', _) <- generateExp env symbolTable' falsy
+      ifElse' <- currentBlock
+      br ifExit
+
+      ifExit <- block `named` "if.exit"
+      ret <- phi [(truthy', ifThen'), (falsy', ifElse')]
+
+      return (symbolTable', ret, Nothing)
 
   Optimized _ _ (Where exp iss) -> mdo
-    (_, exp') <- generateExp env symbolTable exp
+    (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
     branches  <- generateBranches env symbolTable exitBlock exp' iss
 
     exitBlock <- block `named` "exitBlock"
     ret <- phi branches
 
-    return (symbolTable, ret)
+    if isLast env then
+      return (symbolTable, ret, Just ret)
+    else
+      return (symbolTable, ret, Nothing)
+
 
   Optimized _ _ (TypedExp exp _) ->
-    generateExp env symbolTable exp
+    generateExp env { isLast = False } symbolTable exp
 
   Optimized (_ InferredType.:=> t) _ (NameExport n) -> do
     let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType t) (AST.mkName n)
@@ -1126,7 +1197,7 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton n (fnSymbol arity ref)
     else
       Writer.tell $ Map.singleton n (varSymbol ref)
-    return (symbolTable, ref)
+    return (symbolTable, ref, Nothing)
 
 
   _ ->
@@ -1155,7 +1226,17 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
 
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
-    (_, branch) <- generateExp env symbolTable' exp
+    (_, branchResult, maybeBoxedBranchResult) <- generateExp env { isLast = True } symbolTable' exp
+    branchResult' <-
+      if isLast env then
+        case maybeBoxedBranchResult of
+          Just boxed ->
+            return boxed
+
+          Nothing ->
+            box branchResult
+      else
+        return branchResult
     -- the exp might contain a where or if expression generating new blocks in between.
     -- therefore we need to get the block that contains the register reference in which
     -- it is defined. 
@@ -1168,11 +1249,10 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
         b <- block `named` "nextBlock"
         return (b, [])
       else do
-        let def = Operand.ConstantOperand (Constant.Null (typeOf branch))
+        let def = Operand.ConstantOperand (Constant.Null (typeOf branchResult'))
         return (exitBlock, [(def, currBlock)])
 
-
-    return $ (branch, retBlock) : finalPhi
+    return $ (branchResult', retBlock) : finalPhi
 
   _ ->
     undefined
@@ -1383,14 +1463,14 @@ generateExps env symbolTable exps = case exps of
     return ()
 
   (exp : es) -> do
-    (symbolTable', _) <- generateExp env symbolTable exp
+    (symbolTable', _, _) <- generateExp env symbolTable exp
     generateExps env symbolTable' es
 
   _ ->
     return ()
 
 
-generateExternFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
+generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
 generateExternFunction symbolTable t functionName arity foreignFn = do
   let paramTypes    = InferredType.getParamTypes t
       params'       = List.replicate arity (boxType, NoParameterName)
@@ -1406,6 +1486,7 @@ generateExternFunction symbolTable t functionName arity foreignFn = do
     boxed <- box result
     ret boxed
 
+  Writer.tell $ Map.singleton functionName (fnSymbol arity function)
   return $ Map.insert functionName (fnSymbol arity function) symbolTable
 
 
@@ -1426,11 +1507,16 @@ generateFunction env symbolTable isMethod t functionName paramNames body = do
         symbolTableWithParams = symbolTable <> paramsWithNames
 
     -- Generate body
-    generatedBody <- generateBody env symbolTableWithParams body
+    (generatedBody, maybeBoxed) <- generateBody env symbolTableWithParams body
 
-    -- box the result
-    boxed <- box generatedBody
-    ret boxed
+    case maybeBoxed of
+      Just boxed ->
+        ret boxed
+
+      Nothing -> do
+        -- box the result
+        boxed <- box generatedBody
+        ret boxed
 
   let symbolConstructor =
         if isMethod then
@@ -1496,14 +1582,27 @@ listToIndices l | List.null l = []
 
 
 
-generateBody :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m Operand
-generateBody env symbolTable exps = case exps of
+generateDoExps :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m (Operand, Maybe Operand)
+generateDoExps env symbolTable exps = case exps of
   [exp] -> do
-    (_, result) <- generateExp env symbolTable exp
-    return result
+    (_, result, boxed) <- generateExp env symbolTable exp
+    return (result, boxed)
 
   (exp : es) -> do
-    (symbolTable', _) <- generateExp env symbolTable exp
+    (symbolTable', _, _) <- generateExp env { isLast = False } symbolTable exp
+    generateBody env symbolTable' es
+
+  _ ->
+    undefined
+
+generateBody :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> [Exp] -> m (Operand, Maybe Operand)
+generateBody env symbolTable exps = case exps of
+  [exp] -> do
+    (_, result, boxed) <- generateExp env { isLast = True } symbolTable exp
+    return (result, boxed)
+
+  (exp : es) -> do
+    (symbolTable', _, _) <- generateExp env symbolTable exp
     generateBody env symbolTable' es
 
   _ ->
@@ -1629,7 +1728,7 @@ generateMethod env symbolTable methodName exp = case exp of
         params'     = (,NoParameterName) <$> (boxType <$ paramTypes)
 
     f <- function (AST.mkName methodName) params' boxType $ \params -> do
-      (symbolTable, exp') <- generateExp env symbolTable exp
+      (symbolTable, exp', _) <- generateExp env symbolTable exp
 
       retVal <-
         if arity > 0 then do
@@ -1782,7 +1881,7 @@ generateExternsForImportedInstances :: (Writer.MonadWriter SymbolTable m, Writer
 generateExternsForImportedInstances symbolTable = do
   let dictsAndMethods    = Map.filter (\s -> isDictSymbol s || isMethodSymbol s) symbolTable
       dictAndMethodNames = Map.keys dictsAndMethods
-  mapM_ (generateExternalForName symbolTable) dictAndMethodNames
+  mapM_ (generateExternalForName symbolTable) (Set.toList $ Set.fromList dictAndMethodNames)
 
 
 generateHashFromPath :: FilePath -> String
@@ -1820,23 +1919,12 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
 
       _ ->
         undefined
+
     generateModuleFunctionExternals symbolTable next
 
   [] ->
     return ()
 
-
--- buildFloatCoercionFunction :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => SymbolTable -> m SymbolTable
--- buildFloatCoercionFunction symbolTable = do
---   toFloat <- extern (AST.mkName "__toFloat__") [boxType] boxType
---   f <- function (AST.mkName "$Number$Float$coerce") [(boxType, NoParameterName)] boxType $ \[intParam] -> do
---     call toFloat [(intParam, [])]
---     return ()
-
---   let symbolTable' = case Map.lookup "$Number$Float" symbolTable of
---         Just (Symbol (DictionarySymbol) )
-
---   return symbolTable
 
 
 buildNumberModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
@@ -2063,7 +2151,6 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "__MadList_push__")       [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat")         [listType, listType] listType
 
-  -- void* memcpy( void* dest, const void* src, std::size_t count );
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc")                 [Type.i32, Type.i32] (Type.ptr Type.i8)
@@ -2114,7 +2201,7 @@ generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialE
         List.foldl (generateAST False astTable) (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
 
       computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
-      envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports }
+      envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False }
       (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (processedHashes ++ importHashes) symbolTableWithImports ast
 
       updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
@@ -2139,10 +2226,10 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildNumberModule Env { dictionaryIndices = Map.empty } [] symbolTable)
+    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildNumberModule Env { dictionaryIndices = Map.empty, isLast = False } [] symbolTable)
         numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
         dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("__coerceNumber__", (3, 1))]) ]
-        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices }) ast
+        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
     in  Map.insert numbersModulePath numbersModule moduleTable
 
   _ ->

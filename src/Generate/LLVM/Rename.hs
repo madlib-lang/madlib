@@ -98,9 +98,9 @@ renameExp env what = case what of
   Solved t area (Assignment name exp) ->
     -- here we deal with an assignment in a body or Do
     -- therefore we must not rename it as it only concerns top level names.
-    let env'            = extendScope name name env
-        (renamedExp, _) = renameExp env exp
-    in  (Solved t area (Assignment name renamedExp), env')
+    let env'                = extendScope name name env
+        (renamedExp, env'') = renameExp env' exp
+    in  (Solved t area (Assignment name renamedExp), env'')
 
   Solved t area (Var name) -> case break (== '.') name of
     -- A normal name
@@ -127,8 +127,8 @@ renameExp env what = case what of
     in  (Solved t area (NameExport renamed), env)
 
   Solved t area (TypedExp exp typing scheme) ->
-    let (renamedExp, _) = renameExp env exp
-    in  (Solved t area (TypedExp renamedExp typing scheme), env)
+    let (renamedExp, env') = renameExp env exp
+    in  (Solved t area (TypedExp renamedExp typing scheme), env')
 
   Solved t area (ListConstructor items) ->
     let (renamedItems, env') = renameListItems env items
@@ -266,10 +266,10 @@ renameListItem env item = case item of
 renameTopLevelAssignment :: Env -> Exp -> (Exp, Env)
 renameTopLevelAssignment env assignment = case assignment of
   Solved t area (Assignment name exp) ->
-    let hashedName      = hashName env name
-        env'            = extendScope name hashedName env
-        (renamedExp, _) = renameExp env' exp
-    in  (Solved t area (Assignment hashedName renamedExp), env')
+    let hashedName          = hashName env name
+        env'                = extendScope name hashedName env
+        (renamedExp, env'') = renameExp env' exp
+    in  (Solved t area (Assignment hashedName renamedExp), env'')
 
   _ ->
     undefined

@@ -5,7 +5,7 @@ import {} from "./Monoid"
 import {} from "./PrettyShow"
 import { Just, Nothing } from "./Maybe"
 import { complement } from "./Function"
-import { log, prettyLog } from "./IO"
+
 
 push :: a -> List a -> List a
 push = extern "MadList_push"
@@ -22,13 +22,11 @@ export len
 showWith :: (a -> String) -> List a -> String
 showWith = (with, list) => {
   processItems = (processed, items) => where(items) {
-    [first, second, ...rest] => do {
-      return processItems(processed ++ with(first) ++ ", ", push(second, rest))
-    }
+    [first, second, ...rest] =>
+      processItems(processed ++ with(first) ++ ", ", push(second, rest))
 
-    [last] => do {
-      return processed ++ with(last)
-    }
+    [last] =>
+      processed ++ with(last)
 
     [] =>
       ""
