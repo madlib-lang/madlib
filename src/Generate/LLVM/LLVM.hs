@@ -8,6 +8,7 @@ module Generate.LLVM.LLVM where
 import Data.Text.Lazy.IO as T
 import           Data.ByteString.Short as ShortByteString
 import qualified Data.Map              as Map
+import qualified Data.Set              as Set
 import qualified Data.List             as List
 import qualified Data.Maybe            as Maybe
 import qualified Control.Monad         as Monad
@@ -281,23 +282,30 @@ buildStr s = do
       return ()
 
 
+-- TODO: move the dedupping in closure convertion phase
 collectDictArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m ([Operand.Operand], Exp)
-collectDictArgs symbolTable exp = case exp of
-  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True False, typingStr) exp') -> do
-    let dictName = "$" <> interfaceName <> "$" <> typingStr
-    (nextArgs, nextExp) <- collectDictArgs symbolTable exp'
-    case Map.lookup dictName symbolTable of
-      Just (Symbol (DictionarySymbol _) dict) ->
-        return (dict : nextArgs, nextExp)
+collectDictArgs = collectDictArgs' []
 
-      _ ->
-        undefined
+collectDictArgs' :: (MonadIRBuilder m, MonadModuleBuilder m) => [String] -> SymbolTable -> Exp -> m ([Operand.Operand], Exp)
+collectDictArgs' alreadyFound symbolTable exp = case exp of
+  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True _, typingStr) exp') -> do
+    let dictName = "$" <> interfaceName <> "$" <> typingStr
+    if dictName `List.elem` alreadyFound then
+      collectDictArgs' alreadyFound symbolTable exp'
+    else do
+      (nextArgs, nextExp) <- collectDictArgs' (dictName : alreadyFound) symbolTable exp'
+      case Map.lookup dictName symbolTable of
+        Just (Symbol _ dict) ->
+          return (dict : nextArgs, nextExp)
+
+        _ ->
+          error $ "dict not found: '" <> dictName <> "'"
 
   Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
     return ([], exp)
 
   _ ->
-    error $ "oups\n\n" <> ppShow exp
+    return ([], exp)
 
 
 generateApplicationForKnownFunction :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> Int -> Operand -> [Exp] -> m (SymbolTable, Operand)
@@ -400,21 +408,45 @@ generateExp symbolTable exp = case exp of
         error $ "Var not found " <> n <> "\n\n" <> ppShow symbolTable
 
   -- (Placeholder (ClassRef "Functor" [] False True , "b183")
-  Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) exp) -> do
+  Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) e) -> do
     -- TODO: gather all placeholders and build the function accordingly
+    let (dictNameParams, innerExp) = gatherAllPlaceholders exp
+    let wrapperType = List.foldr InferredType.fn (InferredType.tVar "a") (InferredType.tVar "a" <$ (trace ("DNP: "<>ppShow dictNameParams) dictNameParams))
     fnName <- freshName (stringToShortByteString "dictionaryWrapper")
     let (Name fnName') = fnName
     symbolTable' <-
       generateFunction
         symbolTable
-        (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
+        wrapperType
         (Char8.unpack (ShortByteString.fromShort fnName'))
-        ["$" <> interface <> "$" <> typingStr]
-        [exp]
-    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) fnName))
+        dictNameParams
+        [innerExp]
+    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType (List.replicate (List.length dictNameParams) boxType) False) fnName))
+    -- fnName <- freshName (stringToShortByteString "dictionaryWrapper")
+    -- let (Name fnName') = fnName
+    -- symbolTable' <-
+    --   generateFunction
+    --     symbolTable
+    --     (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
+    --     (Char8.unpack (ShortByteString.fromShort fnName'))
+    --     ["$" <> interface <> "$" <> typingStr]
+    --     [e]
+    -- return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) fnName))
     where
-      gatherAllPlaceholders :: Exp -> ([(PlaceholderRef, String)], Exp)
-      gatherAllPlaceholders = undefined
+      gatherAllPlaceholders :: Exp -> ([String], Exp)
+      gatherAllPlaceholders ph =
+        let (dictParamNames, innerExp) = gatherAllPlaceholders' ph
+        in  (Set.toList $ Set.fromList dictParamNames, innerExp)
+
+      gatherAllPlaceholders' :: Exp -> ([String], Exp)
+      gatherAllPlaceholders' ph = case ph of
+        Optimized t _ (Placeholder (ClassRef interface _ False True, typingStr) e) ->
+          let (nextDictParams, nextExp) = gatherAllPlaceholders' e
+              dictParamName      = "$" <> interface <> "$" <> typingStr
+          in  (dictParamName : nextDictParams, nextExp)
+
+        _ ->
+          ([], ph)
 
 
   -- (Placeholder (MethodRef "Show" "show" True, "j9")
@@ -441,23 +473,33 @@ generateExp symbolTable exp = case exp of
         error $ "dict not found: '"<>dictName<>"'\n\n"<>ppShow symbolTable
 
   -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) fn) -> do
-    let dictName    = "$" <> interface <> "$" <> typingStr
-    case Map.lookup dictName symbolTable of
-      Just (Symbol _ dict) -> do
-        (_, pap) <- generateExp symbolTable fn
-        pap' <- bitcast pap boxType
+  Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
+    (dictArgs, fn) <- collectDictArgs symbolTable (trace ("EXP: "<>ppShow exp) exp)
+    (_, pap) <- generateExp symbolTable (trace ("FN: "<>ppShow fn) fn)
+    pap' <- bitcast pap boxType
+    let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
+    dictArgs' <- mapM box dictArgs
+    let dictArgs'' = (,[]) <$> dictArgs'
+    ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
+    unboxed <- unbox t ret
+    return (symbolTable, unboxed)
+  -- Optimized t _ (Placeholder (ClassRef interface _ True _, typingStr) fn) -> do
+    -- let dictName    = "$" <> interface <> "$" <> typingStr
+    -- case Map.lookup dictName symbolTable of
+    --   Just (Symbol _ dict) -> do
+    --     (_, pap) <- generateExp symbolTable fn
+    --     pap' <- bitcast pap boxType
 
-        let argc = i32ConstOp 1
+    --     let argc = i32ConstOp 1
 
-        dict' <- box dict
+    --     dict' <- box dict
 
-        ret <- call applyPAP [(pap', []), (argc, []), (dict',[])]
-        unboxed <- unbox t ret
-        return (symbolTable, unboxed)
+    --     ret <- call applyPAP [(pap', []), (argc, []), (dict',[])]
+    --     unboxed <- unbox t ret
+    --     return (symbolTable, unboxed)
 
-      _ ->
-        undefined
+    --   _ ->
+    --     undefined
 
   -- Most likely a method that has to be applied some dictionaries
   Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
@@ -1146,19 +1188,6 @@ buildDictValues symbolTable methodNames = case methodNames of
 
 generateMethod :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
 generateMethod symbolTable methodName exp = case exp of
-
-  -- Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
-  --   let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams exp
-  --       dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
-  --       param = (boxType, ParameterName (stringToShortByteString paramName))
-  --   f <- function (AST.mkName name) (dictParams' ++ [param]) boxType $ \params -> do
-  --     lastParam <- unbox (InferredType.getParamType t) (List.last params)
-  --     let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
-  --     let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
-  --     (_, exps) <- generateExp symbolTable' body
-  --     ret exps
-
-  --   return $ Map.insert name (fnSymbol f) symbolTable
 
   -- TODO: handle overloaded methods that should be passed a dictionary
 
