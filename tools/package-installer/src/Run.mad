@@ -242,7 +242,7 @@ tryRecovery = (validation) => where(validation) {
 }
 
 
-postProcess :: <Context, List Dependency> -> Dependency -> Validate ValidationOutput -> <Context, List Dependency>
+postProcess :: #[Context, List Dependency] -> Dependency -> Validate ValidationOutput -> #[Context, List Dependency]
 postProcess = (previousContextAndDeps, processedDependency, validation) => where(validation) {
   ValidationError(_, _, _) =>
     previousContextAndDeps
@@ -255,19 +255,19 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
         context: addInstalledPackage(processedDependency.sanitizedUrl, validationResult.context)
       }),
       (validationResult) => validationResult.shouldCopy
-        ? <
+        ? #[
             validationResult.context,
             mappend(
               Tuple.snd(previousContextAndDeps),
               fromMaybe([], validationResult.madlibDotJson.dependencies)
             )
-          >
-        : <validationResult.context, Tuple.snd(previousContextAndDeps)>
+          ]
+        : #[validationResult.context, Tuple.snd(previousContextAndDeps)]
     )(v)
 }
 
 
-processDependency :: Config -> <Context, List Dependency> -> Dependency -> SideEffect <Context, List Dependency>
+processDependency :: Config -> #[Context, List Dependency] -> Dependency -> SideEffect #[Context, List Dependency]
 processDependency = (config, contextAndNextDeps, dependency) => pipe(
   prepareValidationInput(config),
   map(chain(validate(Tuple.fst(contextAndNextDeps), dependency))),
@@ -293,7 +293,7 @@ filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
 )(dependencies)
 
 
-processDependencies :: Config -> Context -> List Dependency -> SideEffect <Context, List Dependency>
+processDependencies :: Config -> Context -> List Dependency -> SideEffect #[Context, List Dependency]
 processDependencies = (config, context, dependencies) => pipe(
   filterAlreadyInstalledDependencies(context),
   pipe(
@@ -312,13 +312,13 @@ processDependencies = (config, context, dependencies) => pipe(
       })
     )
   ),
-  chain(List.reduceM(processDependency(config), <context, []>)),
+  chain(List.reduceM(processDependency(config), #[context, []])),
   chain(
     where {
-      <_context, []> =>
-        of(<_context, []>)
+      #[_context, []] =>
+        of(#[_context, []])
 
-      <_context, nextDependencies> =>
+      #[_context, nextDependencies] =>
         processDependencies(config, _context, nextDependencies)
     }
   )

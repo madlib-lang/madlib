@@ -1,10 +1,10 @@
-name: 'Publish new version'
+name: 'Release new version'
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish ( ex: v0.0.1 )'
+        description: 'Version to release ( ex: v0.0.1 )'
         required: true
 
 env:
@@ -54,6 +54,8 @@ jobs:
         with:
           docker_version: "20.10"
           docker_channel: stable
+
+      - run: brew install llvm-hs/llvm/llvm-9
 
       - run: npm i -g rollup @rollup/plugin-node-resolve
       - run: stack install alex happy

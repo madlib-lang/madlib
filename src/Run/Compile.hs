@@ -170,19 +170,12 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   when coverage $ do
                     runCoverageInitialization rootPath table
 
-
                   if target == TLLVM then do
                     let renamedTable     = Rename.renameTable table
                     let closureConverted = ClosureConvert.optimizeTable renamedTable
-                    putStrLn (ppShow closureConverted)
-                    -- putStrLn (ppShow renamedTable)
-
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
-                    -- case M.lookup canonicalEntrypoint closureConverted of
-                    --   Just ast ->
-                    --     LLVM.generate ast
-                    --   Nothing ->
-                    --     putStrLn $ "AST for '" <> canonicalEntrypoint <> "' not found!"
+                    -- TODO: only do this in verbose mode?
+                    -- putStrLn (ppShow closureConverted)
                   else do
                     let optimizedTable = optimizeTable optimized table
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile

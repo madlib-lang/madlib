@@ -26,6 +26,7 @@ import           Data.ByteString as ByteString
 import           Data.ByteString.Char8 as Char8
 import           System.Process
 import           System.Info
+import           System.Environment.Executable
 
 import           LLVM.Pretty
 import           LLVM.Target
@@ -72,6 +73,10 @@ import Explain.Location
 import System.FilePath (takeDirectory, joinPath, takeFileName, dropExtension)
 import qualified LLVM.AST.Linkage as Linkage
 import System.Directory
+import qualified LLVM.Relocation as Reloc
+import qualified LLVM.CodeModel as CodeModel
+import qualified LLVM.AST.Visibility as CodeGenOptLevel
+import qualified LLVM.CodeGenOpt as CodeGenOpt
 
 
 
@@ -2331,8 +2336,8 @@ buildTupleNEqInstance n =
       )
 
 
-buildRuntimeModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
-buildRuntimeModule env currentModuleHashes initialSymbolTable = do
+buildDefaultInstancesModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
+buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
 
@@ -3032,10 +3037,10 @@ generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> Modul
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
     let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
-        (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildRuntimeModule Env { dictionaryIndices = dictionaryIndices, isLast = False } [] symbolTable)
-        numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
+        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False } [] symbolTable)
+        defaultInstancesModulePath = joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
         (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
-    in  Map.insert numbersModulePath numbersModule moduleTable
+    in  Map.insert defaultInstancesModulePath defaultInstancesModule moduleTable
 
   _ ->
     error $ "AST '" <> entrypoint <> "' not found in:\n" <> ppShow (Map.keys astTable)
@@ -3045,10 +3050,14 @@ compileModule :: FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
 compileModule outputFolder rootPath astPath astModule = do
   let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
 
-  Prelude.putStrLn outputPath
-  T.putStrLn $ ppllvm astModule
+  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+    Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  withHostTargetMachineDefault $ \target -> do
+  -- TODO: only do this on verbose mode
+  -- Prelude.putStrLn outputPath
+  -- T.putStrLn $ ppllvm astModule
+
+  withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
         dataLayout  <- getTargetMachineDataLayout target
@@ -3085,19 +3094,34 @@ compileModule outputFolder rootPath astPath astModule = do
 
   return outputPath
 
+
 generateTable :: FilePath -> FilePath -> Table -> FilePath -> IO ()
 generateTable outputFolder rootPath astTable entrypoint = do
   let moduleTable  = generateTableModules Map.empty Map.empty astTable entrypoint
+
   objectFilePaths <- mapM (uncurry $ compileModule outputFolder rootPath) $ Map.toList moduleTable
+  compilerPath    <- getExecutablePath
 
   let objectFilePathsForCli = List.unwords objectFilePaths
+      runtimeLibPathOpt     = "-L" <> joinPath [takeDirectory compilerPath, "./runtime/lib/"]
+      runtimeBuildPathOpt   = "-L" <> joinPath [takeDirectory compilerPath, "./runtime/build/"]
 
-  Prelude.putStrLn $ "OS: " <> os
+  Prelude.putStrLn "Linking.."
 
   if os == "darwin" then
-    callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -o a.out"
+    callCommand $
+      "clang++ -dead_strip -foptimize-sibling-calls -g -stdlib=libc++ "
+      <> objectFilePathsForCli
+      <> " " <> runtimeLibPathOpt
+      <> " " <> runtimeBuildPathOpt
+      <> " -lruntime -lgc -luv -o a.out"
   else
-    callCommand $ "g++ -static " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
+    callCommand $
+      "g++ -static "
+      <> objectFilePathsForCli
+      <> " " <> runtimeLibPathOpt
+      <> " " <> runtimeBuildPathOpt
+      <> " -lruntime -lgc -luv -pthread -ldl -o a.out"
     -- callCommand $ "clang++ -static -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
 
   -- callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"

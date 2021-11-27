@@ -25,7 +25,7 @@ export string = (input) => (#-
 -#)
 
 
-number :: Parser Number
+number :: Parser Integer
 export number = (input) => (#-
   typeof input === "number"
     ? Right(input)

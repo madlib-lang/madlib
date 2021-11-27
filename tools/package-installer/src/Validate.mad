@@ -75,32 +75,32 @@ instance Functor Validate {
 instance Applicative Validate {
   pure = (a) => Valid(a)
 
-  ap = (fn, m) => where(<fn, m>) {
-    <Valid(f), Valid(a)> =>
+  ap = (fn, m) => where(#[fn, m]) {
+    #[Valid(f), Valid(a)] =>
       Valid(f(a))
 
-    <Valid(f), NotValid(warnings, a)> =>
+    #[Valid(f), NotValid(warnings, a)] =>
         NotValid(warnings, f(a))
 
-    <Valid(f), ValidationError(warnings, err, maybeA)> =>
+    #[Valid(f), ValidationError(warnings, err, maybeA)] =>
       ValidationError(warnings, err, map(f, maybeA))
 
-    <NotValid(warnings, f), Valid(a)> =>
+    #[NotValid(warnings, f), Valid(a)] =>
       NotValid(warnings, f(a))
 
-    <NotValid(warningsA, f), NotValid(warningsB, a)> =>
+    #[NotValid(warningsA, f), NotValid(warningsB, a)] =>
       NotValid(mappend(warningsA, warningsB), f(a))
 
-    <NotValid(warningsA, f), ValidationError(warningsB, err, maybeA)> =>
+    #[NotValid(warningsA, f), ValidationError(warningsB, err, maybeA)] =>
       ValidationError(mappend(warningsA, warningsB), err, map(f, maybeA))
 
-    <ValidationError(warningsA, errA, maybeF), ValidationError(warningsB, errB, maybeA)> =>
+    #[ValidationError(warningsA, errA, maybeF), ValidationError(warningsB, errB, maybeA)] =>
       ValidationError(mappend(warningsA, warningsB), errA, ap(maybeF, maybeA))
 
-    <ValidationError(warnings, err, maybeF), Valid(a)> =>
+    #[ValidationError(warnings, err, maybeF), Valid(a)] =>
       ValidationError(warnings, err, ap(maybeF, Just(a)))
 
-    <ValidationError(warningsA, err, maybeF), NotValid(warningsB, a)> =>
+    #[ValidationError(warningsA, err, maybeF), NotValid(warningsB, a)] =>
       ValidationError(mappend(warningsA, warningsB), err, ap(maybeF, Just(a)))
   }
 }
@@ -166,30 +166,30 @@ export mapError = (f, v) => where(v) {
 
 
 combine :: Validate a -> Validate b -> Validate b
-export combine = (a, b) => where(<a, b>) {
-  <Valid(_), _> =>
+export combine = (a, b) => where(#[a, b]) {
+  #[Valid(_), _] =>
     b
 
-  <NotValid(warnings, _), Valid(x)> =>
+  #[NotValid(warnings, _), Valid(x)] =>
     NotValid(warnings, x)
 
-  <NotValid(warningsA, _), NotValid(warningsB, x)> =>
+  #[NotValid(warningsA, _), NotValid(warningsB, x)] =>
     NotValid(mappend(warningsA, warningsB), x)
 
-  <NotValid(warningsA, _), ValidationError(warningsB, error, x)> =>
+  #[NotValid(warningsA, _), ValidationError(warningsB, error, x)] =>
     ValidationError(mappend(warningsA, warningsB), error, x)
 
-  <ValidationError(warnings, error, maybeA), Valid(v)> =>
+  #[ValidationError(warnings, error, maybeA), Valid(v)] =>
     ValidationError(warnings, error, map(always(v), maybeA))
 
-  <ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)> =>
+  #[ValidationError(warningsA, error, maybeA), NotValid(warningsB, v)] =>
     ValidationError(
       mappend(warningsA, warningsB),
       error,
       map(always(v), maybeA)
     )
 
-  <ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)> =>
+  #[ValidationError(warningsA, _, _), ValidationError(warningsB, error, m)] =>
     ValidationError(
       mappend(warningsA, warningsB),
       error,

@@ -10,7 +10,7 @@ import { ge, le } from "Compare"
 
 
 
-export type Version = Version(Number, Number, Number)
+export type Version = Version(Integer, Integer, Integer)
 
 
 export type VersionRange
@@ -43,24 +43,24 @@ instance Comparable Version {
 
 
 createRange :: Maybe Version -> Maybe Version -> VersionRange
-export createRange = (maybeMin, maybeMax) => where(<maybeMin, maybeMax>) {
-  <Just(minVersion), Just(maxVersion)> => VersionRange(minVersion, maxVersion)
+export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
+  #[Just(minVersion), Just(maxVersion)] => VersionRange(minVersion, maxVersion)
 
-  <Just(minVersion), Nothing> => FromVersion(minVersion)
+  #[Just(minVersion), Nothing] => FromVersion(minVersion)
 
-  <Nothing, Just(maxVersion)> => UntilVersion(maxVersion)
+  #[Nothing, Just(maxVersion)] => UntilVersion(maxVersion)
 
-  <Nothing, Nothing> => AnyVersion
+  #[Nothing, Nothing] => AnyVersion
 }
 
 
-getMajor :: Version -> Number
+getMajor :: Version -> Integer
 getMajor = where { Version(major, _, _) => major }
 
-getMinor :: Version -> Number
+getMinor :: Version -> Integer
 getMinor = where { Version(_, minor, _) => minor }
 
-getPatch :: Version -> Number
+getPatch :: Version -> Integer
 getPatch = where { Version(_, _, patch) => patch }
 
 
@@ -98,37 +98,37 @@ min = (v1, v2) => le(v1, v2) ? v1 : v2
 
 
 intersectRanges :: VersionRange -> VersionRange -> VersionRange
-export intersectRanges = (range1, range2) => where(<range1, range2>) {
-  <FromVersion(start1), FromVersion(start2)> =>
+export intersectRanges = (range1, range2) => where(#[range1, range2]) {
+  #[FromVersion(start1), FromVersion(start2)] =>
     FromVersion(max(start1, start2))
 
-  <FromVersion(start1), UntilVersion(end2)> =>
+  #[FromVersion(start1), UntilVersion(end2)] =>
     VersionRange(start1, end2)
 
-  <FromVersion(start1), VersionRange(start2, end2)> =>
+  #[FromVersion(start1), VersionRange(start2, end2)] =>
     VersionRange(max(start1, start2), end2)
   
-  <UntilVersion(end1), FromVersion(start2)> =>
+  #[UntilVersion(end1), FromVersion(start2)] =>
     VersionRange(start2, end1)
 
-  <UntilVersion(end1), UntilVersion(end2)> =>
+  #[UntilVersion(end1), UntilVersion(end2)] =>
     UntilVersion(min(end1, end2))
 
-  <UntilVersion(end1), VersionRange(start2, end2)> =>
+  #[UntilVersion(end1), VersionRange(start2, end2)] =>
     VersionRange(start2, min(end1, end2))
   
-  <VersionRange(start1, end1), FromVersion(start2)> =>
+  #[VersionRange(start1, end1), FromVersion(start2)] =>
     VersionRange(max(start1, start2), end1)
 
-  <VersionRange(start1, end1), UntilVersion(end2)> =>
+  #[VersionRange(start1, end1), UntilVersion(end2)] =>
     VersionRange(start1, min(end1, end2))
 
-  <VersionRange(start1, end1), VersionRange(start2, end2)> =>
+  #[VersionRange(start1, end1), VersionRange(start2, end2)] =>
     VersionRange(max(start1, start2), min(end1, end2))
 
-  <AnyVersion, range> =>
+  #[AnyVersion, range] =>
     range
 
-  <range, AnyVersion> =>
+  #[range, AnyVersion] =>
     range
 }
