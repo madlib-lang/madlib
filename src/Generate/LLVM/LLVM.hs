@@ -445,7 +445,7 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, result)
 
   Optimized t _ (App fn args) -> case fn of
-    Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName symbolTable of
+    Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName (trace ("ST: "<>ppShow symbolTable) symbolTable) of
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
         if arity == List.length args then do
           -- We have a known call!
@@ -465,8 +465,7 @@ generateExp symbolTable exp = case exp of
           let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
           let envType                 = Type.StructureType False (List.replicate argCount boxType)
 
-          (_, fn') <- generateExp symbolTable fn
-          boxedFn  <- box fn'
+          boxedFn  <- box fnOperand
 
           args'  <- mapM (generateExp symbolTable) args
           let args'' = snd <$> args'
@@ -487,7 +486,6 @@ generateExp symbolTable exp = case exp of
 
       Just (Symbol _ pap) -> mdo
         -- We apply a partial application
-        let papType     = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
         let argsApplied = List.length args
 
         pap' <- bitcast pap boxType
@@ -507,8 +505,7 @@ generateExp symbolTable exp = case exp of
 
     _ -> do
       (_, pap) <- generateExp symbolTable fn
-      let papType     = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-      let argsApplied = List.length (trace ("PAP: "<>ppShow pap) args)
+      let argsApplied = List.length (trace ("PAP: "<>ppShow pap<>"\arg-length:"<>show (List.length args)) args)
 
       pap' <- bitcast pap boxType
 
@@ -1420,7 +1417,7 @@ generate ast = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx mod $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 3 } $ \pm -> do
           runPassManager pm mod'
           return mod'
         writeObjectToFile target (File "module.o") mod''
