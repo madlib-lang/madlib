@@ -114,12 +114,14 @@ data Exp_ = LNum String
           | LUnit
           | TemplateString [Exp]
           | JSExp String
-          | App Exp Exp Bool
+          -- TODO: change to Exp [Exp] and remove the bool
+          | App Exp [Exp]
           | Access Exp Exp
-          | Abs Name [Exp]
-          | TopLevelAbs Name ([Name], [Exp]) Exp
-          -- ^ name of the function | (params, body) of uncurried function | curried abs
+          -- | Abs Name [Exp]
+          | TopLevelAbs Name [Name] [Exp]
+          -- ^ name of the function | params | body
           | Assignment Name Exp Bool
+          -- ^ name | exp assigned | isTopLevel
           | Export Exp
           | NameExport Name
           | TypeExport Name
@@ -135,6 +137,7 @@ data Exp_ = LNum String
           | Extern (Ty.Qual Ty.Type) Name Name
           | Closure Name [Exp]
           | ClosureDef Name [Exp] Name [Exp]
+
           -- ^ Closure name | env ( Only Var exps ) | param | body
           deriving(Eq, Show, Ord)
 
@@ -161,17 +164,17 @@ getType (Optimized t _ _) = t
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _) ->
-    True
+  -- Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _) ->
+  --   True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)) _) ->
-    True
+  -- Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)) _) ->
+  --   True
 
-  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _))) ->
-    True
+  -- Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _))) ->
+  --   True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)))) _) ->
-    True
+  -- Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)))) _) ->
+  --   True
 
   Optimized _ _ TopLevelAbs{} ->
     True

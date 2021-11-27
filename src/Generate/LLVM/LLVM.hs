@@ -61,7 +61,8 @@ sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
 
 data SymbolType
   = VariableSymbol
-  | FunctionSymbol
+  | FunctionSymbol Int
+  -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
   | ClosureSymbol
@@ -91,9 +92,9 @@ closureSymbol :: Operand -> Symbol
 closureSymbol =
   Symbol ClosureSymbol
 
-fnSymbol :: Operand -> Symbol
-fnSymbol =
-  Symbol FunctionSymbol
+fnSymbol :: Int -> Operand -> Symbol
+fnSymbol arity =
+  Symbol (FunctionSymbol arity)
 
 envSymbol :: Int -> Operand -> Symbol
 envSymbol size =
@@ -122,6 +123,10 @@ true = Operand.ConstantOperand (Constant.Int 1 1)
 gcMalloc :: Operand
 gcMalloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
+
+applyPAP :: Operand
+applyPAP =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
 
 madlistLength :: Operand
 madlistLength =
@@ -227,7 +232,8 @@ unbox t what = case t of
   -- TODO: check that we need this
   -- This should be called for parameters that are closures
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b ->
-    return what
+    bitcast what $ Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+    -- return what
 
   _ ->
     bitcast what (buildLLVMType t)
@@ -306,8 +312,18 @@ generateExp :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => 
 generateExp symbolTable exp = case exp of
   Optimized _ _ (Var n) ->
     case Map.lookup n symbolTable of
-      Just (Symbol FunctionSymbol global) ->
-        return (symbolTable, global)
+      Just (Symbol (FunctionSymbol arity) fn) -> do
+        -- build PAP
+        let papType = Type.StructureType False [boxType, Type.i32, Type.i32]
+        let arity'  = i32ConstOp (fromIntegral arity)
+
+        boxedFn  <- box fn
+
+        papPtr   <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
+        papPtr'  <- bitcast papPtr (Type.ptr papType)
+        Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
+
+        return (symbolTable, papPtr')
 
       Just (Symbol ClosureSymbol closurePtr) ->
         return (symbolTable, closurePtr)
@@ -372,190 +388,139 @@ generateExp symbolTable exp = case exp of
               t'
 
             t' ->
-              Type.ptr t'
+              t'
 
-      g <- global (AST.mkName name) (typeOf exp') $ Constant.Undef t
+      g <- global (AST.mkName name) t $ Constant.Undef t
       store g 8 exp'
       return (Map.insert name (varSymbol exp') symbolTable, exp')
-      -- return (Map.insert name (Symbol TopLevelAssignment exp') symbolTable, exp')
     else
       return (Map.insert name (varSymbol exp') symbolTable, exp')
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "-")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fsub leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "+")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "+")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fadd leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "*")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "*")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fmul leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "/")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "/")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fdiv leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "==")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "==")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "!=")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "!=")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fcmp FloatingPointPredicate.ONE leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var ">")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var ">")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fcmp FloatingPointPredicate.OGT leftOperand' rightOperand'
     return (symbolTable, result)
 
-  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "<")) leftOperand _)) rightOperand _) -> do
-    (_, leftOperand') <- generateExp symbolTable leftOperand
+  Optimized _ _ (App (Optimized _ _ (Var "<")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand')  <- generateExp symbolTable leftOperand
     (_, rightOperand') <- generateExp symbolTable rightOperand
     result <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
     return (symbolTable, result)
 
-  app@(Optimized _ _ (App f arg True)) -> do
-    -- go find the initial env and accumulate params and return (originalAbs, [args])
-    -- then count the params and if possible call the function directly
-    let (finalFn, args) = unwrapApp app
-    case finalFn of
-      Optimized _ _ (Opt.Var n) -> case Map.lookup n symbolTable of
-        Just (Symbol (WithExtraUncurried uncurriedFn paramCount) curriedFn) | List.length args == paramCount -> do
-          args' <- mapM (generateExp symbolTable) args
-          args'' <- mapM box (snd <$> args')
+  Optimized t _ (App fn args) -> case fn of
+    Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName symbolTable of
+      Just (Symbol (FunctionSymbol arity) fnOperand) ->
+        if arity == List.length args then do
+          -- We have a known call!
+          args'   <- mapM (generateExp symbolTable) args
+          args''  <- mapM (box . snd) args'
           let args''' = (, []) <$> args''
-          res <- call uncurriedFn args'''
-          res' <- unbox (InferredType.getReturnType $ getType finalFn) res
-          return (symbolTable, res')
 
-        _ -> do
-          (symbolTable', f')    <- generateExp symbolTable f
-          (symbolTable'', arg') <- generateExp symbolTable' arg
+          ret <- call fnOperand args'''
+          unboxed <- unbox t ret
 
-          case typeOf (trace ("not fully applied: "<>ppShow finalFn<>"\nargs: "<>ppShow args<>"\nIN ST: "<>ppShow (Map.lookup n symbolTable)) f') of
-            Type.PointerType Type.FunctionType{} _ -> do
-              res <- call f' [(arg', [])]
-              return (symbolTable'', res)
+          return (symbolTable, unboxed)
+        else if List.length args < arity then do
+          -- We need to create a new PAP
+          let papType                 = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+          let arity'                  = i32ConstOp (fromIntegral arity)
+          let argCount                = List.length args
+          let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
+          let envType                 = Type.StructureType False (List.replicate argCount boxType)
 
-            _ -> do
-              boxedArg <- box arg'
+          (_, fn') <- generateExp symbolTable fn
+          boxedFn  <- box fn'
 
-              -- unbox closure
-              let closureType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType, boxType] False, boxType]
-              unboxedClosure <- bitcast f' closureType
+          args'  <- mapM (generateExp symbolTable) args
+          let args'' = snd <$> args'
+          boxedArgs <- mapM box args''
 
-              -- load the function pointer
-              fn <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 0]
-              fn' <- load fn 8
+          envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
+          envPtr' <- bitcast envPtr (Type.ptr envType)
+          Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
 
-              -- load the env pointer
-              env <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 1]
-              env' <- load env 8
+          papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
+          papPtr' <- bitcast papPtr (Type.ptr papType)
+          Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
 
-              res <- call fn' [(env', []), (boxedArg, [])]
-              -- TODO: here unbox takes the last parameter only but we want everything after the first,
-              -- if it's a function it means that we got a closure
-              -- res' <- unbox (InferredType.getReturnType $ getType f) res
-              return (symbolTable'', res)
+          return (symbolTable, papPtr')
+        else
+          -- We gave more args than required and we need to apply the remaining ones to the resulting function
+          undefined
 
-      _ -> do
-        (symbolTable', f')    <- generateExp symbolTable f
-        (symbolTable'', arg') <- generateExp symbolTable' arg
+      Just (Symbol _ pap) -> mdo
+        -- We apply a partial application
+        let papType     = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+        let argsApplied = List.length args
 
-        case typeOf f' of
-          Type.PointerType Type.FunctionType{} _ -> do
-            res <- call f' [(arg', [])]
-            return (symbolTable'', res)
+        pap' <- bitcast pap boxType
 
-          _ -> do
-            boxedArg <- box arg'
+        let argc = i32ConstOp (fromIntegral argsApplied)
 
-            -- unbox closure
-            let closureType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType, boxType] False, boxType]
-            unboxedClosure <- bitcast f' closureType
+        args'  <- mapM (generateExp symbolTable) args
+        let args'' = snd <$> args'
+        boxedArgs <- mapM box args''
 
-            -- load the function pointer
-            fn <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 0]
-            fn' <- load fn 8
+        ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
+        unboxed <- unbox t ret
+        return (symbolTable, unboxed)
 
-            -- load the env pointer
-            env <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 1]
-            env' <- load env 8
+      _ ->
+        undefined
 
-            res <- call fn' [(env', []), (boxedArg, [])]
-            res' <- unbox (InferredType.getReturnType $ getType f) res
-            return (symbolTable'', res')
-    where
-      unwrapApp :: Exp -> (Exp, [Exp])
-      unwrapApp e = case e of
-        Opt.Optimized _ _ (Opt.App f' arg' _) ->
-          let (nextF, nextArgs) = unwrapApp f'
-          in  (nextF, nextArgs<>[arg'])
+    _ -> do
+      (_, pap) <- generateExp symbolTable fn
+      let papType     = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+      let argsApplied = List.length (trace ("PAP: "<>ppShow pap) args)
 
-        final ->
-          (final, [])
+      pap' <- bitcast pap boxType
 
-  Optimized _ _ (App f arg _) ->
-    case f of
-      -- ( ClassRef "Show" [] True False , "Boolean" )
-      Optimized _ _ (Placeholder (ClassRef interface classRefPreds True False, typingStr) _) -> do
-        (dicts, f) <- collectDictArgs symbolTable f
-        (symbolTable', f')    <- generateExp symbolTable f
-        (symbolTable'', arg') <- generateExp symbolTable' arg
-        arg'' <- box arg'
-        case typeOf f' of
-          Type.PointerType Type.FunctionType{} _ -> do
-            res <- call f' (((,[]) <$> dicts) ++ [(arg'', [])])
-            return (symbolTable'', res)
+      let argc = i32ConstOp (fromIntegral argsApplied)
 
-          _ ->
-            undefined
+      args'  <- mapM (generateExp symbolTable) args
+      let args'' = snd <$> args'
+      boxedArgs <- mapM box args''
 
-      -- TODO: avoid dupplication with above
-      _ -> do
-        (symbolTable', f')    <- generateExp symbolTable f
-        (symbolTable'', arg') <- generateExp symbolTable' arg
-
-        case typeOf f' of
-          Type.PointerType Type.FunctionType{} _ -> do
-            res <- call f' [(arg', [])]
-            return (symbolTable'', res)
-
-          _ -> do
-            boxedArg <- box arg'
-
-            -- unbox closure
-            let closureType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType, boxType] False, boxType]
-            unboxedClosure <- bitcast f' closureType
-
-            -- load the function pointer
-            fn <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 0]
-            fn' <- load fn 8
-
-            -- load the env pointer
-            env <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 1]
-            env' <- load env 8
-
-            res <- call fn' [(env', []), (boxedArg, [])]
-            -- TODO: here unbox takes the last parameter only but we want everything after the first,
-            -- if it's a function it means that we got a closure
-            -- res' <- unbox (InferredType.getReturnType $ getType f) res
-            return (symbolTable'', res)
+      ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
+      unboxed <- unbox t ret
+      return (symbolTable, unboxed)
 
 
   Optimized _ _ (LNum n) -> do
@@ -761,7 +726,7 @@ generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
 
 generateSymbolTableForList :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m SymbolTable
 generateSymbolTableForList symbolTable basePtr pats = case pats of
-  (pat : next) -> case trace ("basePtr type: "<>ppShow (typeOf basePtr)) pat of
+  (pat : next) -> case pat of
     Optimized _ _ (PSpread spread) ->
       generateSymbolTableForPattern symbolTable basePtr spread
 
@@ -946,20 +911,20 @@ generateExps symbolTable exps = case exps of
 
 
 
-collectDictParams :: Exp -> ([(String, Type.Type)], Exp)
-collectDictParams exp = case exp of
-  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) exp') ->
-    let dictName = "$" <> interfaceName <> "$" <> typingStr
-        -- TODO: generate based on interface data, mainly we need to know how many methods we have in the interface
-        dictType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType] False]
-        (nextParams, nextExp) = collectDictParams exp'
-    in  ((dictName, dictType) : nextParams, nextExp)
+-- collectDictParams :: Exp -> ([(String, Type.Type)], Exp)
+-- collectDictParams exp = case exp of
+--   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) exp') ->
+--     let dictName = "$" <> interfaceName <> "$" <> typingStr
+--         -- TODO: generate based on interface data, mainly we need to know how many methods we have in the interface
+--         dictType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType] False]
+--         (nextParams, nextExp) = collectDictParams exp'
+--     in  ((dictName, dictType) : nextParams, nextExp)
 
-  Optimized t _ (Abs paramName [body]) ->
-    ([], exp)
+--   Optimized t _ (Abs paramName [body]) ->
+--     ([], exp)
 
-  _ ->
-    undefined
+--   _ ->
+--     undefined
 
 
 
@@ -982,16 +947,13 @@ collectDictParams exp = case exp of
 --     error $ "unhandled function!\n\n" <> ppShow abs
 
 
-generateUncurriedExternFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
-generateUncurriedExternFunction symbolTable t functionName paramCount foreignFn = do
+generateExternFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
+generateExternFunction symbolTable t functionName paramCount foreignFn = do
   let paramTypes    = InferredType.getParamTypes t
       params'       = List.replicate paramCount (boxType, NoParameterName)
-      functionName' = AST.mkName $ functionName ++ "$uncurried"
+      functionName' = AST.mkName functionName
 
-  uncurriedFunction <- function functionName' params' boxType $ \params -> mdo
-    let typesWithParams = List.zip paramTypes params
-    unboxedParams <- mapM (uncurry unbox) typesWithParams
-
+  uncurriedFunction <- function functionName' params' boxType $ \params -> do
     -- Generate body
     result <- call foreignFn ((, []) <$> params)
 
@@ -1005,80 +967,15 @@ generateUncurriedExternFunction symbolTable t functionName paramCount foreignFn 
   return $ Map.insert functionName symbolWithUncurried symbolTable
 
 
-generateClosuresForExtern :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> [InferredType.Type] -> Int -> Int -> [InferredType.Type] -> Operand -> m SymbolTable
-generateClosuresForExtern symbolTable name allParamTypes paramIndex lastIndex paramTypes foreignFn = case paramTypes of
-  (t : ts) -> do
-    let fnName      = name ++ "$" ++ show paramIndex
-        paramType   = boxType
-        envType     = Type.StructureType False (boxType <$ List.take paramIndex [0..])
-        envPtrType  = Type.ptr envType
-        nextEnvType = Type.StructureType False (boxType <$ List.take (paramIndex + 1) [0..])
-
-    closure <- function (AST.mkName fnName) [(boxType, makeParamName "env"), (boxType, makeParamName "arg")] boxType $ \params -> do
-      let envParam      = List.head params
-          explicitParam = params !! 1
-
-      -- unbox the env
-      unwrappedEnv   <- bitcast envParam envPtrType
-
-      envArgs        <- extractEnvArgs unwrappedEnv (List.take paramIndex [0..])
-      let nextEnvArgs = envArgs ++ [explicitParam]
-
-      if paramIndex == lastIndex then do
-        -- args <- Monad.zipWithM unbox allParamTypes nextEnvArgs
-        result <- call foreignFn ((, []) <$> nextEnvArgs)
-
-        boxed <- box result
-        ret boxed
-      else do
-        -- allocate the next env
-        nextEnvPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof nextEnvType, [])]
-        nextEnvPtr'    <- bitcast nextEnvPtr $ Type.ptr nextEnvType
-        Monad.foldM_ (storeItem nextEnvPtr') () $ List.zip nextEnvArgs [0..]
-
-        -- then we need to return the next closure
-        -- {i8* (i8*, i8*)*, {}*}*
-        let closureFnType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
-            closureType   = Type.StructureType False [closureFnType, Type.ptr nextEnvType]
-        closurePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof closureType, [])]
-        closurePtr' <- bitcast closurePtr $ Type.ptr closureType
-
-        let nextClosureFnRef = Operand.ConstantOperand $ Constant.GlobalReference closureFnType (AST.mkName $ name ++ "$" ++ show (paramIndex + 1))
-
-        Monad.foldM_ (storeItem closurePtr') () [(nextClosureFnRef, 0), (nextEnvPtr', 1)]
-
-        boxed <- box closurePtr'
-        ret boxed
-
-    if paramIndex == lastIndex then do
-      -- then we need to generate the global closure and push it in the symbolTable
-      let closureStruct =
-            Constant.Struct
-              Nothing
-              False
-              [ Constant.GlobalReference
-                  (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
-                  (AST.mkName $ name ++ "$0")
-              , Constant.Null $ Type.ptr (Type.StructureType False [])
-              ]
-      publicClosure <- global (AST.mkName name) (typeOf closureStruct) closureStruct
-      return $ Map.insert name (fnSymbol publicClosure) symbolTable
-    else
-      generateClosuresForExtern symbolTable name allParamTypes (paramIndex + 1) lastIndex ts foreignFn
-
-  [] ->
-    return symbolTable
-
-
 makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
-generateUncurriedFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> [String] -> [Exp] -> m SymbolTable
-generateUncurriedFunction symbolTable t functionName paramNames body = do
+generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> [String] -> [Exp] -> m SymbolTable
+generateFunction symbolTable t functionName paramNames body = do
   let paramTypes    = InferredType.getParamTypes t
       params'       = (boxType,) . makeParamName <$> paramNames
-      functionName' = AST.mkName $ functionName ++ "$uncurried"
+      functionName' = AST.mkName functionName
 
   uncurriedFunction <- function functionName' params' boxType $ \params -> mdo
     let typesWithParams = List.zip paramTypes params
@@ -1100,28 +997,17 @@ generateUncurriedFunction symbolTable t functionName paramNames body = do
 
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
-  Optimized t _ (TopLevelAbs fnName uncurriedFn@(uncurriedParams, uncurriedBody) (Optimized _ _ (Abs paramName body))) -> do
-    symbolTable'  <- generateCurriedFunction True symbolTable t fnName [] paramName body
-    generateUncurriedFunction symbolTable' t fnName uncurriedParams uncurriedBody
-
-  {-
-    A ClosureDef is a function of type:
-    i8* (i8*, i8*) : boxedValue (env, arg)
-  -}
-  Optimized t _ (ClosureDef fnName env paramName body) ->
-    generateCurriedFunction False symbolTable t fnName env paramName body
+  Optimized t _ (TopLevelAbs functionName params body) -> do
+    generateFunction symbolTable t functionName params body
 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) -> do
     let paramTypes  = InferredType.getParamTypes t
         paramTypes' = boxType <$ paramTypes
-        -- paramTypes' = buildLLVMType <$> paramTypes
         returnType  = InferredType.getReturnType t
         returnType' = boxType
-        -- returnType' = buildLLVMType returnType
 
     ext <- extern (AST.mkName originalName) paramTypes' returnType'
-    symbolTable' <- generateClosuresForExtern symbolTable name paramTypes 0 (List.length paramTypes - 1) paramTypes ext
-    generateUncurriedExternFunction symbolTable' t name (List.length paramTypes) ext
+    generateExternFunction symbolTable t name (List.length paramTypes) ext
 
 
 
@@ -1140,23 +1026,23 @@ emptyClosureType =
 
 addTopLevelFnToSymbolTable :: SymbolTable -> Exp -> SymbolTable
 addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
-  Optimized _ _ (TopLevelAbs fnName uncurriedFn@(uncurriedParams, _) (Optimized t _ (Abs paramName body))) ->
-    let closureRef = Operand.ConstantOperand (Constant.GlobalReference emptyClosureType (AST.mkName fnName))
-        uncurriedFnType = Type.ptr $ Type.FunctionType boxType (boxType <$ uncurriedParams) False
-        uncurriedFnRef = Operand.ConstantOperand (Constant.GlobalReference uncurriedFnType (AST.mkName (fnName ++ "$uncurried")))
-    in  Map.insert fnName (Symbol (WithExtraUncurried uncurriedFnRef (List.length uncurriedParams)) closureRef) symbolTable
+  Optimized _ _ (TopLevelAbs functionName params _) ->
+    let arity  = List.length params
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) ->
-    let closureRef = Operand.ConstantOperand (Constant.GlobalReference emptyClosureType (AST.mkName name))
-        paramCount = List.length $ InferredType.getParamTypes t
-        uncurriedFnType = Type.ptr $ Type.FunctionType boxType (List.replicate paramCount boxType) False
-        uncurriedFnRef = Operand.ConstantOperand (Constant.GlobalReference uncurriedFnType (AST.mkName (name ++ "$uncurried")))
-    in  Map.insert name (Symbol (WithExtraUncurried uncurriedFnRef paramCount) closureRef) symbolTable
 
-  Optimized _ _ (ClosureDef name closured _ _) ->
-    let closureDefType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
-        globalRef = Operand.ConstantOperand (Constant.GlobalReference closureDefType (AST.mkName name))
-    in  Map.insert name (fnSymbol globalRef) symbolTable
+  Optimized _ _ (Extern (_ InferredType.:=> t) functionName originalName) ->
+    let arity  = List.length $ InferredType.getParamTypes t
+        fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
+        fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
+    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
+
+  -- Optimized _ _ (ClosureDef name closured _ _) ->
+  --   let closureDefType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
+  --       globalRef = Operand.ConstantOperand (Constant.GlobalReference closureDefType (AST.mkName name))
+  --   in  Map.insert name (fnSymbol globalRef) symbolTable
 
   Optimized t _ (Assignment name exp _) ->
     let expType = buildLLVMType t
@@ -1173,77 +1059,77 @@ listToIndices l | List.null l = []
 
 
 
-generateCurriedFunction :: (MonadModuleBuilder m, MonadFix.MonadFix m) =>
-  Bool
-  -> Map.Map String Symbol
-  -> InferredType.Type
-  -> String
-  -> [Optimized Exp_]
-  -> [Char]
-  -> [Exp]
-  -> m (Map.Map String Symbol)
-generateCurriedFunction isTopLevel symbolTable t fnName env paramName body = mdo
-  let envType = Type.ptr $ Type.StructureType False (boxType <$ env)
-      closureEnvNames = getClosureParamNames env
-      closureEnvTypes = getType <$> env
+-- generateCurriedFunction :: (MonadModuleBuilder m, MonadFix.MonadFix m) =>
+--   Bool
+--   -> Map.Map String Symbol
+--   -> InferredType.Type
+--   -> String
+--   -> [Optimized Exp_]
+--   -> [Char]
+--   -> [Exp]
+--   -> m (Map.Map String Symbol)
+-- generateCurriedFunction isTopLevel symbolTable t fnName env paramName body = mdo
+--   let envType = Type.ptr $ Type.StructureType False (boxType <$ env)
+--       closureEnvNames = getClosureParamNames env
+--       closureEnvTypes = getType <$> env
 
-      closureParams = [(boxType, makeParamName "env"), (boxType, makeParamName paramName)]
+--       closureParams = [(boxType, makeParamName "env"), (boxType, makeParamName paramName)]
 
-      paramType = InferredType.getParamType t
+--       paramType = InferredType.getParamType t
 
-      functionName =
-        if isTopLevel then
-          AST.mkName $ fnName ++ "$fn"
-        else
-          AST.mkName fnName
+--       functionName =
+--         if isTopLevel then
+--           AST.mkName $ fnName ++ "$fn"
+--         else
+--           AST.mkName fnName
 
-  resultSymbolTable <-
-      if isTopLevel then do
-        let closureStruct =
-              Constant.Struct
-                Nothing
-                False
-                [ Constant.GlobalReference
-                    (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
-                    functionName
-                , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
-                ]
+--   resultSymbolTable <-
+--       if isTopLevel then do
+--         let closureStruct =
+--               Constant.Struct
+--                 Nothing
+--                 False
+--                 [ Constant.GlobalReference
+--                     (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
+--                     functionName
+--                 , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
+--                 ]
 
-        closure <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
-        return symbolTable
-          -- $ Map.insert (fnName ++ "$fn") (fnSymbol curriedFunction)
-          -- $ Map.insert fnName (closureSymbol closure) symbolTable
-      else
-        return $ Map.insert fnName (fnSymbol curriedFunction) symbolTable
+--         closure <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
+--         return symbolTable
+--           -- $ Map.insert (fnName ++ "$fn") (fnSymbol curriedFunction)
+--           -- $ Map.insert fnName (closureSymbol closure) symbolTable
+--       else
+--         return $ Map.insert fnName (fnSymbol 0 curriedFunction) symbolTable
 
-  curriedFunction <- function functionName closureParams boxType $ \params -> mdo
-    let envParam      = List.head params
-        explicitParam = params !! 1
+--   curriedFunction <- function functionName closureParams boxType $ \params -> mdo
+--     let envParam      = List.head params
+--         explicitParam = params !! 1
 
-    -- unbox
-    unwrappedEnv   <- bitcast envParam envType
+--     -- unbox
+--     unwrappedEnv   <- bitcast envParam envType
 
-    envArgs        <- extractEnvArgs unwrappedEnv (listToIndices closureEnvNames)
-    unboxedEnvArgs <- Monad.zipWithM unbox closureEnvTypes envArgs
+--     envArgs        <- extractEnvArgs unwrappedEnv (listToIndices closureEnvNames)
+--     unboxedEnvArgs <- Monad.zipWithM unbox closureEnvTypes envArgs
 
-    unboxedParam   <- unbox paramType explicitParam
+--     unboxedParam   <- unbox paramType explicitParam
 
 
-    -- Generate symbol table for the body
-    let envMap                     = Map.fromList $ List.zip closureEnvNames unboxedEnvArgs
-        fullMap                    = Map.insert paramName unboxedParam envMap
-        symbolTableWithEnvAndParam = varSymbol <$> fullMap
+--     -- Generate symbol table for the body
+--     let envMap                     = Map.fromList $ List.zip closureEnvNames unboxedEnvArgs
+--         fullMap                    = Map.insert paramName unboxedParam envMap
+--         symbolTableWithEnvAndParam = varSymbol <$> fullMap
 
-        withCurrentEnv = Map.insert "__current_env__" (envSymbol (List.length env) envParam) symbolTableWithEnvAndParam
+--         withCurrentEnv = Map.insert "__current_env__" (envSymbol (List.length env) envParam) symbolTableWithEnvAndParam
 
-    -- Generate body
-    generatedBody <- generateBody (resultSymbolTable <> withCurrentEnv) body
+--     -- Generate body
+--     generatedBody <- generateBody (resultSymbolTable <> withCurrentEnv) body
 
-    -- box the result
-    boxed <- box generatedBody
-    ret boxed
+--     -- box the result
+--     boxed <- box generatedBody
+--     ret boxed
 
-  return resultSymbolTable
+--   return resultSymbolTable
 
 
 
@@ -1436,21 +1322,21 @@ buildDictValues symbolTable methodNames = case methodNames of
 
 generateMethod :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
 generateMethod symbolTable name exp = case exp of
-  Optimized t _ (Abs param body) ->
-    generateCurriedFunction True symbolTable t name [] param body
+  -- Optimized t _ (Abs param body) ->
+  --   generateCurriedFunction True symbolTable t name [] param body
 
-  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
-    let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams exp
-        dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
-        param = (boxType, ParameterName (stringToShortByteString paramName))
-    f <- function (AST.mkName name) (dictParams' ++ [param]) boxType $ \params -> do
-      lastParam <- unbox (InferredType.getParamType t) (List.last params)
-      let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
-      let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
-      (_, exps) <- generateExp symbolTable' body
-      ret exps
+  -- Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
+  --   let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams exp
+  --       dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
+  --       param = (boxType, ParameterName (stringToShortByteString paramName))
+  --   f <- function (AST.mkName name) (dictParams' ++ [param]) boxType $ \params -> do
+  --     lastParam <- unbox (InferredType.getParamType t) (List.last params)
+  --     let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
+  --     let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
+  --     (_, exps) <- generateExp symbolTable' body
+  --     ret exps
 
-    return $ Map.insert name (fnSymbol f) symbolTable
+  --   return $ Map.insert name (fnSymbol f) symbolTable
 
   _ -> do
     -- generate a global
@@ -1458,7 +1344,7 @@ generateMethod symbolTable name exp = case exp of
       (symbolTable, exp') <- generateExp symbolTable exp
       ret exp'
 
-    return $ Map.insert name (fnSymbol f) symbolTable
+    return $ Map.insert name (fnSymbol 0 f) symbolTable
 
 generateInstance :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Instance -> m SymbolTable
 generateInstance symbolTable inst = case inst of
@@ -1484,16 +1370,14 @@ generateInstances =
   Monad.foldM generateInstance
 
 
-
 expsForMain :: [Exp] -> [Exp]
 expsForMain =
-  List.filter (not . \e -> isTopLevelFunction e || isClosureDef e || isExtern e)
+  List.filter (not . \e -> isTopLevelFunction e || isExtern e)
 
 
 topLevelFunctions :: [Exp] -> [Exp]
 topLevelFunctions =
-  List.filter $ \e -> isTopLevelFunction e || isClosureDef e || isExtern e
-
+  List.filter $ \e -> isTopLevelFunction e || isExtern e
 
 
 toLLVMModule :: AST -> AST.Module
@@ -1505,11 +1389,11 @@ toLLVMModule ast =
   symbolTable'  <- generateConstructors symbolTable (atypedecls ast)
   symbolTable'' <- generateTopLevelFunctions symbolTable' (topLevelFunctions $ aexps ast)
 
+  externVarArgs (AST.mkName "__applyPAP__") [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "malloc") [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc") [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__") [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
-  -- extern (AST.mkName "MadList_length") [listType] (Type.ptr Type.i8)
   extern (AST.mkName "MadList_hasMinLength") [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_hasLength") [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_singleton") [Type.ptr Type.i8] listType
