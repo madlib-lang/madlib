@@ -414,7 +414,7 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.App fn arg close -> do
       let (fn', args)                       = collectAppArgs True fullExp
           (args', wrapperPlaceholderParams) = placeholderArgCheck 0 args
-      if null (trace ("wrapped: "<>ppShow wrapperPlaceholderParams) wrapperPlaceholderParams) then do
+      if null wrapperPlaceholderParams then do
         let (fn'', extraArgs) = case fn' of
               Slv.Solved t area (Slv.Var fnName) -> case M.lookup fnName (lifted env) of
                 Just (newName, extraArgs) ->
@@ -457,7 +457,7 @@ instance Optimizable Slv.Exp Opt.Exp where
       let (params, body') = collectAbsParams fullExp
       body''       <- optimizeBody env body'
       fvs          <- findFreeVars env fullExp
-      functionName <- generateLiftedName "anonymous"
+      functionName <- generateLiftedName "$lambda"
 
       let paramsWithFreeVars = (fst <$> fvs) ++ params
 

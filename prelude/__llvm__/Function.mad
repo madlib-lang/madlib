@@ -1,0 +1,12 @@
+/**
+ * It always returns the first supplied parameter no matter what. It is especially
+ * practical during function composition when you want to discard whatever value
+ * is passed to a function and always return the same thing.
+ *
+ * @since 0.0.5
+ * @example
+ * always(true, "1")            // true
+ * map(always(true), [1, 2 ,3]) // [true, true, true]
+ */
+always :: a -> b -> a
+export always = (a, b) => a

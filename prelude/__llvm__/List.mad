@@ -1,0 +1,82 @@
+import type { Maybe } from "./Maybe"
+
+import {} from "./Functor"
+import {} from "./Monoid"
+import {} from "./PrettyShow"
+import { Just, Nothing } from "./Maybe"
+
+push :: a -> List a -> List a
+push = extern "MadList_push"
+
+map2 :: (a -> b) -> List a -> List b
+map2 = extern "MadList_map"
+
+
+showWith :: (a -> String) -> List a -> String
+showWith = (with, list) => {
+  processItems = (processed, items) => where(items) {
+    [first, second, ...rest] =>
+      processItems(processed ++ with(first) ++ ", ", [second, ...rest])
+
+    [last] =>
+      processed ++ with(last)
+
+    _ =>
+      ""
+  }
+
+  return "[" ++ processItems("", list) ++ "]"
+}
+
+
+instance Show a => Show (List a) {
+  show = showWith(show)
+}
+
+instance PrettyShow a => PrettyShow (List a) {
+  ppShow = showWith(ppShow)
+}
+
+
+instance Functor List {
+  map = map2
+}
+
+
+instance Semigroup (List a) {
+  assoc = (l1, l2) => [...l1, ...l2]
+}
+
+
+instance Monoid (List a) {
+  mappend = (l1, l2) => [...l1, ...l2]
+  mempty = []
+}
+
+
+nth :: Number -> List a -> Maybe a
+nth = (index, list) => where(list) {
+  [] =>
+    Nothing
+
+  [item, ...rest] =>
+    (index == 0)
+      ? Just(item)
+      : nth(index - 1, rest)
+}
+
+
+reverse :: List a -> List a
+reverse = (xs) => {
+  helper :: List a -> List a -> List a
+  helper = (acc, l) => where(l) {
+    [h, ...t] =>
+      helper(push(h, acc), t)
+  
+    [] =>
+      acc
+  }
+
+  return helper([], xs)
+}
+

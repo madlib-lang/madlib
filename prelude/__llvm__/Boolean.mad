@@ -1,0 +1,14 @@
+import { yellow } from "./PrettyShow"
+
+
+showBoolean :: Boolean -> String
+showBoolean = extern "__booleanToStr__"
+
+
+instance Show Boolean {
+  show = showBoolean
+}
+
+instance PrettyShow Boolean {
+  ppShow = pipe(showBoolean, yellow)
+}
