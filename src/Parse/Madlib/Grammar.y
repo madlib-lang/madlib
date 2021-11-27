@@ -541,7 +541,7 @@ record :: { Src.Exp }
 recordFields :: { [Src.Field] }
   : name ':' exp                            { [Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $3)) $ Src.Field (strV $1, $3)] }
   | name                                    { [Src.Source (tokenToArea $1) $ Src.FieldShorthand (strV $1)] }
-  | recordFields ',' name                   { $1 <> [Src.Source (tokenToArea $3) $ Src.Field (strV $3, Src.Source (tokenToArea $3) (Src.Var (strV $3)))] }
+  | recordFields ',' name                   { $1 <> [Src.Source (tokenToArea $3) $ Src.FieldShorthand (strV $3)] }
   | recordFields ',' name ':' exp           { $1 <> [Src.Source (mergeAreas (tokenToArea $3) (Src.getArea $5)) $ Src.Field (strV $3, $5)] }
   | recordFields rets ',' rets name ':' exp { $1 <> [Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $7)) $ Src.Field (strV $5, $7)] }
   | {- empty -}                             { [] }
