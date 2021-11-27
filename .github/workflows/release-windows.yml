@@ -12,12 +12,92 @@ env:
 
 jobs:
   release:
-    runs-on: windows-latest
-    # defaults:
-    #   run:
-    #     shell: msys2 {0}
+    runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout madlib
+        uses: actions/checkout@v2
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          # toolset: 14.25.28610
+          toolset: 14.16.27023
+          # toolset: 14.0
+
+      # - shell: pwsh
+      #   run: echo "mypath" | Out-File -FilePath $env:GITHUB_PATH -Append
+      # - name: Update paths
+      #   shell: pwsh
+      #   run: |
+      #     mkdir -p C:\LLVM\bin
+      #     echo "mypath" | Out-File -FilePath $env:GITHUB_PATH -Append
+      #     echo "C:\LLVM\bin\" | Out-File -FilePath $env:GITHUB_PATH -Append
+      #     echo "PATH:"
+      #     echo $PATH
+      #     echo $GITHUB_PATH
+      #     echo "PATH=C:\LLVM\bin\" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #     echo "PATH:"
+      #     echo $PATH
+
+      # - name: Update Environment Variables
+      #   shell: bash
+      #   run: |
+      #     mkdir -p "/c/Program Files/LLVM/bin"
+      #     echo "/c/Program Files/LLVM/bin:$PATH" >> $GITHUB_PATH
+      #     # echo "INCLUDE=/c/Program Files/LLVM/include:$INCLUDE" >> $GITHUB_ENV
+      #     # echo "LIB=/c/Program Files/LLVM/lib:$LIB" >> $GITHUB_ENV
+      #     # echo "LIBPATH=/c/Program Files/LLVM/lib:$LIBPATH" >> $GITHUB_ENV
+      #     # echo "PATH=/c/Program Files/LLVM/bin:$PATH" >> $GITHUB_ENV
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - name: Checkout llvm
+        uses: actions/checkout@v2
+        with:
+          repository: llvm/llvm-project
+          path: './llvm-project'
+          fetch-depth: 0
+
+      - name: Get llvm 9.0.1
+        run: |
+          cd llvm-project
+          git checkout tags/llvmorg-9.0.1
+
+# git clone <LLVM>
+# cd LLVM
+# mkdir build
+# cd build
+#  -DCMAKE_CXX_COMPILER="C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Tools/MSVC/14.25.28610/bin/Hostx64/x64/cl.exe" 
+# cmake .. -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=C:\some_folder -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64
+# cmake --build . --target install
+      - name: Build llvm
+        run: |
+          mkdir C:\llvm-build
+          cd llvm-project/llvm
+          cmake -S . -B C:\llvm-build -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX:PATH="c:\Program Files\LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
+          cmake --build C:\llvm-build
+          cmake --build C:\llvm-build --target install
+
+      # - name: Update Environment Variables
+      #   shell: bash
+      #   run: |
+      #     echo "c:/Program Files/LLVM/bin" >> $GITHUB_PATH
+      #     echo "INCLUDE=c:/Program Files/LLVM/include;$INCLUDE" >> $GITHUB_ENV
+      #     echo "LIB=c:/Program Files/LLVM/lib;$INCLUDE" >> $GITHUB_ENV
+      #     echo "LIBPATH=c:/Program Files/LLVM/lib;$INCLUDE" >> $GITHUB_ENV
+      #     echo "PATH=c:/Program Files/LLVM/bin;$INCLUDE" >> $GITHUB_ENV
+
+      - name: Update paths
+        run: |
+          echo "c:\Program Files\LLVM\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+
       - uses: actions/setup-haskell@v1.1.4
         with:
           ghc-version: "8.8.4"
@@ -25,93 +105,41 @@ jobs:
           enable-stack: true
           stack-version: "latest"
 
-      # - uses: actions/cache@v2.1.3
-      #   name: Cache ~/.stack
+      - run: stack config set system-ghc --global true
+
+      # - name: Set up MinGW
+      #   uses: egor-tensin/setup-mingw@v2
       #   with:
-      #     path: ~/.stack
-      #     key: ${{ runner.os }}-8.8.4-stack
+      #     platform: x64
 
       - name: Use Node.js ${{ env.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ env.node-version }}
 
-      # - uses: docker-practice/actions-setup-docker@v1
+      # - name: Install LLVM and Clang
+      #   uses: KyleMayes/install-llvm-action@v1
       #   with:
-      #     docker_version: "20.10"
-      #     docker_channel: stable
+      #     version: "9.0"
+      #     directory: "C:\Program Files\LLVM"
 
-      # - run: pacman install llvm-hs/llvm/llvm-9
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "9.0"
+      # - run: dir "C:\Program Files\LLVM\"
+      # - run: dir "C:\Program Files\LLVM\lib"
+      # - run: dir "C:\Program Files\LLVM\include"
+      # - run: dir "C:\Program Files\LLVM\bin"
 
-      # - run: npm i -g rollup @rollup/plugin-node-resolve
+      # - run: setx LIBPATH "C:\Program Files\LLVM\lib;%LIBPATH%"
+      # - run: setx LIB "C:\Program Files\LLVM\lib;%LIB%"
+      # - run: setx INCLUDE "C:\Program Files\LLVM\include;%INCLUDE%"
+
+      # - run: cmd /c mklink "C:\Program Files\LLVM\lib\LLVM.lib" "C:\Program Files\LLVM\lib\LLVM-C.lib"
+
+      - run: npm i -g rollup @rollup/plugin-node-resolve
       - run: stack install alex happy
 
-      - run: stack build --flag madlib:static
+      - run: |
+          stack build -v --flag madlib:static
+          stack build -v --flag madlib:static
 
 
       # - run: ./pkg/build-targets
-
-      # - name: 'Changelog: generate changelog'
-      #   id: changelog
-      #   uses: TriPSs/conventional-changelog-action@v3.4.1
-      #   with:
-      #     presets: 'conventionalcommits'
-      #     github-token: ${{ secrets.github_token }}
-      #     skip-on-empty: false
-      #     output-file: false
-      #     tag-prefix: 'v'
-      #     skip-commit: true
-      #     skip-version-file: true
-
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1.1.4
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ github.event.inputs.version }}
-      #     release_name: Release ${{ github.event.inputs.version }}
-      #     body: ${{ steps.changelog.outputs.clean_changelog }}
-      #     draft: false
-      #     prerelease: false
-
-      # - name: Upload OSX target
-      #   uses: actions/upload-release-asset@v1.0.2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./pkg/targets/madlib-macos.tar.gz
-      #     asset_name: madlib-macos.tar.gz
-      #     asset_content_type: application/tar+gzip
-     
-      # - name: Upload Linux target
-      #   uses: actions/upload-release-asset@v1.0.2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ./pkg/targets/madlib-linux.tar.gz
-      #     asset_name: madlib-linux.tar.gz
-      #     asset_content_type: application/tar+gzip
-
-  # publish:
-  #   needs: release
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./pkg
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Use Node.js ${{ env.node-version }}
-  #       uses: actions/setup-node@v1
-  #       with:
-  #         node-version: ${{ env.node-version }}
-  #     - run: cp -R ../prelude ./
-  #     - run: npm install
-  #     - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-  #     - run: npm publish --access public
