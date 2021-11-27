@@ -65,11 +65,8 @@ data SymbolType
   -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
-  | ClosureSymbol
-  | WithExtraUncurried Operand Int
   -- ^ contains the uncurried version of a function to be called if all args are provided and the param count
   | TopLevelAssignment
-  | EnvSymbol Int
   -- ^ amount of items in the env
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show)
@@ -88,17 +85,9 @@ varSymbol :: Operand -> Symbol
 varSymbol =
   Symbol VariableSymbol
 
-closureSymbol :: Operand -> Symbol
-closureSymbol =
-  Symbol ClosureSymbol
-
 fnSymbol :: Int -> Operand -> Symbol
 fnSymbol arity =
   Symbol (FunctionSymbol arity)
-
-envSymbol :: Int -> Operand -> Symbol
-envSymbol size =
-  Symbol (EnvSymbol size)
 
 topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
@@ -312,6 +301,7 @@ generateExp :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => 
 generateExp symbolTable exp = case exp of
   Optimized _ _ (Var n) ->
     case Map.lookup n symbolTable of
+      -- TODO: need to extract that and do the same for constructors
       Just (Symbol (FunctionSymbol arity) fn) -> do
         -- build PAP
         let papType = Type.StructureType False [boxType, Type.i32, Type.i32]
@@ -324,9 +314,6 @@ generateExp symbolTable exp = case exp of
         Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
 
         return (symbolTable, papPtr')
-
-      Just (Symbol ClosureSymbol closurePtr) ->
-        return (symbolTable, closurePtr)
 
       Just (Symbol TopLevelAssignment ptr) -> do
         ptr' <- load ptr 8
@@ -383,13 +370,7 @@ generateExp symbolTable exp = case exp of
     (symbolTable', exp') <- generateExp symbolTable e
 
     if isTopLevel then do
-      let t = case typeOf exp' of
-            t'@Type.PointerType{} ->
-              t'
-
-            t' ->
-              t'
-
+      let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
       store g 8 exp'
       return (Map.insert name (varSymbol exp') symbolTable, exp')
@@ -445,44 +426,12 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, result)
 
   Optimized t _ (App fn args) -> case fn of
-    Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName (trace ("ST: "<>ppShow symbolTable) symbolTable) of
+    Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName symbolTable of
+      Just (Symbol (ConstructorSymbol _ arity) fnOperand) ->
+        generateApplicationForKnownFunction arity fnOperand args
+
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
-        if arity == List.length args then do
-          -- We have a known call!
-          args'   <- mapM (generateExp symbolTable) args
-          args''  <- mapM (box . snd) args'
-          let args''' = (, []) <$> args''
-
-          ret <- call fnOperand args'''
-          unboxed <- unbox t ret
-
-          return (symbolTable, unboxed)
-        else if List.length args < arity then do
-          -- We need to create a new PAP
-          let papType                 = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-          let arity'                  = i32ConstOp (fromIntegral arity)
-          let argCount                = List.length args
-          let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
-          let envType                 = Type.StructureType False (List.replicate argCount boxType)
-
-          boxedFn  <- box fnOperand
-
-          args'  <- mapM (generateExp symbolTable) args
-          let args'' = snd <$> args'
-          boxedArgs <- mapM box args''
-
-          envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-          envPtr' <- bitcast envPtr (Type.ptr envType)
-          Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
-
-          papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
-          papPtr' <- bitcast papPtr (Type.ptr papType)
-          Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
-
-          return (symbolTable, papPtr')
-        else
-          -- We gave more args than required and we need to apply the remaining ones to the resulting function
-          undefined
+        generateApplicationForKnownFunction arity fnOperand args
 
       Just (Symbol _ pap) -> mdo
         -- We apply a partial application
@@ -505,11 +454,9 @@ generateExp symbolTable exp = case exp of
 
     _ -> do
       (_, pap) <- generateExp symbolTable fn
-      let argsApplied = List.length (trace ("PAP: "<>ppShow pap<>"\arg-length:"<>show (List.length args)) args)
-
       pap' <- bitcast pap boxType
 
-      let argc = i32ConstOp (fromIntegral argsApplied)
+      let argc = i32ConstOp (fromIntegral $ List.length args)
 
       args'  <- mapM (generateExp symbolTable) args
       let args'' = snd <$> args'
@@ -518,6 +465,61 @@ generateExp symbolTable exp = case exp of
       ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
       unboxed <- unbox t ret
       return (symbolTable, unboxed)
+
+    where
+      generateApplicationForKnownFunction :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Int -> Operand -> [Exp] -> m (SymbolTable, Operand)
+      generateApplicationForKnownFunction arity fnOperand args
+        | List.length args == arity = do
+            -- We have a known call!
+            args'   <- mapM (generateExp symbolTable) args
+            args''  <- mapM (box . snd) args'
+            let args''' = (, []) <$> args''
+
+            ret <- call fnOperand args'''
+            unboxed <- unbox t ret
+
+            return (symbolTable, unboxed)
+        | List.length args > arity = do
+            -- We have extra args so we do the known call and the applyPAP the resulting partial application
+            let (args', remainingArgs) = List.splitAt arity args
+            args''   <- mapM (generateExp symbolTable) args'
+            args'''  <- mapM (box . snd) args''
+            let args'''' = (, []) <$> args'''
+
+            pap <- call fnOperand args''''
+
+            let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
+            remainingArgs' <- mapM (generateExp symbolTable) remainingArgs
+            remainingArgs''  <- mapM (box . snd) remainingArgs'
+            let remainingArgs''' = (, []) <$> remainingArgs''
+
+            ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
+            unboxed <- unbox t ret
+
+            return (symbolTable, ret)
+        | otherwise = do
+            -- We don't have enough args, so we create a new PAP
+            let papType                 = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+            let arity'                  = i32ConstOp (fromIntegral arity)
+            let argCount                = List.length args
+            let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
+            let envType                 = Type.StructureType False (List.replicate argCount boxType)
+
+            boxedFn  <- box fnOperand
+
+            args'  <- mapM (generateExp symbolTable) args
+            let args'' = snd <$> args'
+            boxedArgs <- mapM box args''
+
+            envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
+            envPtr' <- bitcast envPtr (Type.ptr envType)
+            Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
+
+            papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
+            papPtr' <- bitcast papPtr (Type.ptr papType)
+            Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
+
+            return (symbolTable, papPtr')
 
 
   Optimized _ _ (LNum n) -> do
@@ -619,50 +621,6 @@ generateExp symbolTable exp = case exp of
     ret <- phi branches
 
     return (symbolTable, ret)
-
-
-  {-
-    Closures:
-      { i8* (i8*, i8*)*, { [ENV] } }
-      { functionRef, closured_args }
-  -}
-  Optimized _ _ (Closure name env) -> do
-    envItems <- mapM (generateExp symbolTable) env
-    envItems' <- mapM (box . snd) envItems
-    let envWithIds = List.zip envItems' [0..]
-
-
-    -- let envType = Type.StructureType False (typeOf <$> envItems')
-    -- env' <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-    -- env'' <- bitcast env' (Type.ptr envType)
-    -- Monad.foldM_ (storeItem env'') () envWithIds
-
-    let envType = Type.StructureType False (List.replicate 5 boxType)
-    (size, env') <- case Map.lookup "__current_env__" symbolTable of
-      Just (Symbol (EnvSymbol size) found) ->
-        return (size, found)
-
-      Nothing -> do
-        -- if there's no env yet we allocate a new one
-        ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-        return (0, ptr)
-    env'' <- bitcast env' (Type.ptr envType)
-    
-    Monad.when (size /= List.length env) $ Monad.foldM_ (storeItem env'') () envWithIds
-
-    let f = case Map.lookup name symbolTable of
-          Just (Symbol _ f') ->
-            f'
-
-          _ ->
-            error $ "Closure '" <> name <> "' not found!\n\n" <> ppShow symbolTable
-
-    let closureType = Type.StructureType False [typeOf f, typeOf env'']
-
-    closure <- call gcMalloc [(Operand.ConstantOperand $ sizeof closureType, [])]
-    closure' <- bitcast closure (Type.ptr closureType)
-    Monad.foldM_ (storeItem closure') () [(f, 0), (env'', 1)]
-    return (symbolTable, closure')
 
   _ ->
     error $ "not implemented\n\n" ++ ppShow exp
@@ -945,12 +903,12 @@ generateExps symbolTable exps = case exps of
 
 
 generateExternFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
-generateExternFunction symbolTable t functionName paramCount foreignFn = do
+generateExternFunction symbolTable t functionName arity foreignFn = do
   let paramTypes    = InferredType.getParamTypes t
-      params'       = List.replicate paramCount (boxType, NoParameterName)
+      params'       = List.replicate arity (boxType, NoParameterName)
       functionName' = AST.mkName functionName
 
-  uncurriedFunction <- function functionName' params' boxType $ \params -> do
+  function <- function functionName' params' boxType $ \params -> do
     -- Generate body
     result <- call foreignFn ((, []) <$> params)
 
@@ -958,10 +916,7 @@ generateExternFunction symbolTable t functionName paramCount foreignFn = do
     boxed <- box result
     ret boxed
 
-  let (Just (Symbol _ closure)) = Map.lookup functionName symbolTable
-      symbolWithUncurried = Symbol (WithExtraUncurried uncurriedFunction paramCount) closure
-
-  return $ Map.insert functionName symbolWithUncurried symbolTable
+  return $ Map.insert functionName (fnSymbol arity function) symbolTable
 
 
 makeParamName :: String -> ParameterName
@@ -974,7 +929,7 @@ generateFunction symbolTable t functionName paramNames body = do
       params'       = (boxType,) . makeParamName <$> paramNames
       functionName' = AST.mkName functionName
 
-  uncurriedFunction <- function functionName' params' boxType $ \params -> mdo
+  function <- function functionName' params' boxType $ \params -> mdo
     let typesWithParams = List.zip paramTypes params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
     let paramsWithNames       = Map.fromList $ List.zip paramNames (varSymbol <$> unboxedParams)
@@ -987,10 +942,7 @@ generateFunction symbolTable t functionName paramNames body = do
     boxed <- box generatedBody
     ret boxed
 
-  let (Just (Symbol _ closure)) = Map.lookup functionName symbolTable
-      symbolWithUncurried = Symbol (WithExtraUncurried uncurriedFunction (List.length paramNames)) closure
-
-  return $ Map.insert functionName symbolWithUncurried symbolTable
+  return $ Map.insert functionName (fnSymbol (List.length paramNames) function) symbolTable
 
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
@@ -1029,17 +981,11 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-
   Optimized _ _ (Extern (_ InferredType.:=> t) functionName originalName) ->
     let arity  = List.length $ InferredType.getParamTypes t
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
-
-  -- Optimized _ _ (ClosureDef name closured _ _) ->
-  --   let closureDefType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
-  --       globalRef = Operand.ConstantOperand (Constant.GlobalReference closureDefType (AST.mkName name))
-  --   in  Map.insert name (fnSymbol globalRef) symbolTable
 
   Optimized t _ (Assignment name exp _) ->
     let expType = buildLLVMType t
@@ -1055,78 +1001,6 @@ listToIndices l | List.null l = []
                 | otherwise   = [0 .. List.length l - 1]
 
 
-
--- generateCurriedFunction :: (MonadModuleBuilder m, MonadFix.MonadFix m) =>
---   Bool
---   -> Map.Map String Symbol
---   -> InferredType.Type
---   -> String
---   -> [Optimized Exp_]
---   -> [Char]
---   -> [Exp]
---   -> m (Map.Map String Symbol)
--- generateCurriedFunction isTopLevel symbolTable t fnName env paramName body = mdo
---   let envType = Type.ptr $ Type.StructureType False (boxType <$ env)
---       closureEnvNames = getClosureParamNames env
---       closureEnvTypes = getType <$> env
-
---       closureParams = [(boxType, makeParamName "env"), (boxType, makeParamName paramName)]
-
---       paramType = InferredType.getParamType t
-
---       functionName =
---         if isTopLevel then
---           AST.mkName $ fnName ++ "$fn"
---         else
---           AST.mkName fnName
-
---   resultSymbolTable <-
---       if isTopLevel then do
---         let closureStruct =
---               Constant.Struct
---                 Nothing
---                 False
---                 [ Constant.GlobalReference
---                     (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
---                     functionName
---                 , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
---                 ]
-
---         closure <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
---         return symbolTable
---           -- $ Map.insert (fnName ++ "$fn") (fnSymbol curriedFunction)
---           -- $ Map.insert fnName (closureSymbol closure) symbolTable
---       else
---         return $ Map.insert fnName (fnSymbol 0 curriedFunction) symbolTable
-
---   curriedFunction <- function functionName closureParams boxType $ \params -> mdo
---     let envParam      = List.head params
---         explicitParam = params !! 1
-
---     -- unbox
---     unwrappedEnv   <- bitcast envParam envType
-
---     envArgs        <- extractEnvArgs unwrappedEnv (listToIndices closureEnvNames)
---     unboxedEnvArgs <- Monad.zipWithM unbox closureEnvTypes envArgs
-
---     unboxedParam   <- unbox paramType explicitParam
-
-
---     -- Generate symbol table for the body
---     let envMap                     = Map.fromList $ List.zip closureEnvNames unboxedEnvArgs
---         fullMap                    = Map.insert paramName unboxedParam envMap
---         symbolTableWithEnvAndParam = varSymbol <$> fullMap
-
---         withCurrentEnv = Map.insert "__current_env__" (envSymbol (List.length env) envParam) symbolTableWithEnvAndParam
-
---     -- Generate body
---     generatedBody <- generateBody (resultSymbolTable <> withCurrentEnv) body
-
---     -- box the result
---     boxed <- box generatedBody
---     ret boxed
-
---   return resultSymbolTable
 
 
 
@@ -1174,91 +1048,6 @@ generateTopLevelFunctions symbolTable topLevelFunctions = case topLevelFunctions
     return symbolTable
 
 
-
-
-generateConstructorClosures :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Int -> String -> Int -> Int -> [InferredType.Type] -> m SymbolTable
-generateConstructorClosures symbolTable constructorIndex constructorName paramIndex lastIndex paramTypes = case paramTypes of
-  (t : ts) -> do
-    let fnName      = constructorName ++ "$" ++ show paramIndex
-        paramType   = boxType
-        envType     = Type.StructureType False (boxType <$ List.take paramIndex [0..])
-        envPtrType  = Type.ptr envType
-        nextEnvType = Type.StructureType False (boxType <$ List.take (paramIndex + 1) [0..])
-
-    closure <- function (AST.mkName fnName) [(boxType, makeParamName "env"), (boxType, makeParamName "arg")] boxType $ \params -> do
-      let envParam      = List.head params
-          explicitParam = params !! 1
-
-      -- unbox the env
-      unwrappedEnv   <- bitcast envParam envPtrType
-
-      -- allocate the next env
-      nextEnvPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof nextEnvType, [])]
-      nextEnvPtr'    <- bitcast nextEnvPtr $ Type.ptr nextEnvType
-
-      -- store the args for the next call
-      envArgs        <- extractEnvArgs unwrappedEnv (List.take paramIndex [0..])
-      let nextEnvArgs = envArgs ++ [explicitParam]
-      Monad.foldM_ (storeItem nextEnvPtr') () $ List.zip nextEnvArgs [0..]
-
-      if paramIndex == lastIndex then do
-        -- then we need to return the constructed value
-        let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate (lastIndex + 1) boxType
-
-        -- allocate memory for the structure
-        structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
-        structPtr'    <- bitcast structPtr $ Type.ptr structType
-
-        -- store the constructor data in the struct
-        Monad.foldM_ (storeItem structPtr') () $ List.zip nextEnvArgs [1..] ++ [(i64ConstOp (fromIntegral constructorIndex), 0)]
-
-        boxed <- box structPtr'
-        ret boxed
-      else do
-        -- then we need to return the next closure
-        -- {i8* (i8*, i8*)*, {}*}*
-        let closureFnType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
-            closureType   = Type.StructureType False [closureFnType, Type.ptr nextEnvType]
-        closurePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof closureType, [])]
-        closurePtr' <- bitcast closurePtr $ Type.ptr closureType
-
-        let nextClosureFnRef = Operand.ConstantOperand $ Constant.GlobalReference closureFnType (AST.mkName $ constructorName ++ "$" ++ show (paramIndex + 1))
-
-        Monad.foldM_ (storeItem closurePtr') () [(nextClosureFnRef, 0), (nextEnvPtr', 1)]
-
-        boxed <- box closurePtr'
-        ret boxed
-
-    if paramIndex == lastIndex then do
-      -- then we need to generate the global closure and push it in the symbolTable
-      let closureStruct =
-            Constant.Struct
-              Nothing
-              False
-              [ Constant.GlobalReference
-                  (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
-                  (AST.mkName $ constructorName ++ "$0")
-              , Constant.Null $ Type.ptr (Type.StructureType False [])
-              ]
-      publicClosure <- global (AST.mkName constructorName) (typeOf closureStruct) closureStruct
-      return $ Map.insert constructorName (constructorSymbol publicClosure constructorIndex $ lastIndex + 1) symbolTable
-    else
-      generateConstructorClosures symbolTable constructorIndex constructorName (paramIndex + 1) lastIndex ts
-
-  [] ->
-    if lastIndex == -1 then do
-      -- handle nullary constructors
-      let struct =
-            Constant.Struct
-              Nothing
-              False
-              [ Constant.Int 64 (fromIntegral constructorIndex) ]
-      publicClosure <- global (AST.mkName constructorName) (typeOf struct) struct
-      return $ Map.insert constructorName (constructorSymbol publicClosure constructorIndex 0) symbolTable
-    else
-      return symbolTable
-
-
 {-
 type R = R(Maybe Number, List String)
 
@@ -1273,9 +1062,25 @@ the two i8* are the content of the created type
 -- TODO: still need to generate closured constructors
 generateConstructor :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
 generateConstructor symbolTable (constructor, index) = case constructor of
-  Untyped _ (Constructor n _ t) -> do
-    let paramTypes  = InferredType.getParamTypes t
-    generateConstructorClosures symbolTable index n 0 (List.length paramTypes - 1) paramTypes
+  Untyped _ (Constructor constructorName _ t) -> do
+    let paramTypes     = InferredType.getParamTypes t
+    let arity          = List.length paramTypes
+    let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate arity boxType
+    let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
+
+    constructor <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+    -- allocate memory for the structure
+      structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+      structPtr'    <- bitcast structPtr $ Type.ptr structType
+
+      -- store the constructor data in the struct
+      Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
+
+      boxed <- box structPtr'
+      ret boxed
+
+    return $ Map.insert constructorName (constructorSymbol constructor index arity) symbolTable
+    -- generateConstructorClosures symbolTable index n 0 (List.length paramTypes - 1) paramTypes
 
   _ ->
     undefined
@@ -1417,7 +1222,7 @@ generate ast = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx mod $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 3 } $ \pm -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
           runPassManager pm mod'
           return mod'
         writeObjectToFile target (File "module.o") mod''

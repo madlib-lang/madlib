@@ -114,10 +114,8 @@ data Exp_ = LNum String
           | LUnit
           | TemplateString [Exp]
           | JSExp String
-          -- TODO: change to Exp [Exp] and remove the bool
           | App Exp [Exp]
           | Access Exp Exp
-          -- | Abs Name [Exp]
           | TopLevelAbs Name [Name] [Exp]
           -- ^ name of the function | params | body
           | Assignment Name Exp Bool
@@ -135,8 +133,6 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
           | Extern (Ty.Qual Ty.Type) Name Name
-          | Closure Name [Exp]
-          | ClosureDef Name [Exp] Name [Exp]
 
           -- ^ Closure name | env ( Only Var exps ) | param | body
           deriving(Eq, Show, Ord)
@@ -164,27 +160,7 @@ getType (Optimized t _ _) = t
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  -- Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _) ->
-  --   True
-
-  -- Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)) _) ->
-  --   True
-
-  -- Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _))) ->
-  --   True
-
-  -- Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)))) _) ->
-  --   True
-
   Optimized _ _ TopLevelAbs{} ->
-    True
-
-  _ ->
-    False
-
-isClosureDef :: Exp -> Bool
-isClosureDef exp = case exp of
-  Optimized _ _ ClosureDef{} ->
     True
 
   _ ->
