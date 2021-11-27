@@ -5,23 +5,30 @@ import {} from "./Monoid"
 import {} from "./PrettyShow"
 import { Just, Nothing } from "./Maybe"
 import { complement } from "./Function"
+import { log, prettyLog } from "./IO"
 
 push :: a -> List a -> List a
 push = extern "MadList_push"
 export push
 
-map2 :: (a -> b) -> List a -> List b
-map2 = extern "MadList_map"
+map_ :: (a -> b) -> List a -> List b
+map_ = extern "MadList_map"
+
+len :: List a -> Number
+len = extern "MadList_length"
+export len
 
 
 showWith :: (a -> String) -> List a -> String
 showWith = (with, list) => {
   processItems = (processed, items) => where(items) {
-    [first, second, ...rest] =>
-      processItems(processed ++ with(first) ++ ", ", [second, ...rest])
+    [first, second, ...rest] => do {
+      return processItems(processed ++ with(first) ++ ", ", push(second, rest))
+    }
 
-    [last] =>
-      processed ++ with(last)
+    [last] => do {
+      return processed ++ with(last)
+    }
 
     [] =>
       ""
@@ -41,7 +48,7 @@ instance PrettyShow a => PrettyShow (List a) {
 
 
 instance Functor List {
-  map = map2
+  map = map_
 }
 
 

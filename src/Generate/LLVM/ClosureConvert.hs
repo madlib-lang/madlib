@@ -149,6 +149,10 @@ findFreeVars env exp = do
       argFreeVars <- findFreeVars env arg
       return $ fFreeVars ++ argFreeVars
 
+    Slv.Solved _ _ (Slv.Do exps) -> do
+      vars <- mapM (findFreeVars env) exps
+      return $ concat vars
+
     Slv.Solved _ _ (Slv.If cond truthy falsy) -> do
       condFreeVars   <- findFreeVars env cond
       truthyFreeVars <- findFreeVars env truthy

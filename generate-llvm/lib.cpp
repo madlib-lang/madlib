@@ -108,6 +108,20 @@ void *__selectField__(char *name, Record_t *record) {
 }
 #endif
 
+// Dictionary
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+// void* __buildDictionary__() {}
+
+
+#ifdef __cplusplus
+}
+#endif
+
 // String
 
 #ifdef __cplusplus
@@ -1632,16 +1646,44 @@ typedef struct MadListNode {
   struct MadListNode *next;
 } MadListNode_t;
 
-MadListNode_t *MadList_singleton(void *item) {
+
+MadListNode_t *Madlist_empty() {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   head->next = NULL;
+  head->value = NULL;
+  return head;
+}
+
+
+void *MadList_length(MadListNode_t *list) {
+  double *total = (double *)GC_malloc(sizeof(double));
+
+  if (list->value == NULL) {
+    *total = 0;
+    return total;
+  }
+
+  *total = 1;
+
+  while (list->next->value != NULL) {
+    *total += 1;
+    list = list->next;
+  }
+
+  return total;
+}
+
+
+MadListNode_t *MadList_singleton(void *item) {
+  MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+  head->next = Madlist_empty();
   head->value = item;
 
   return head;
 }
 
 MadListNode_t *MadList_append(void *item, MadListNode_t *list) {
-  if (list == NULL) {
+  if (list->value == NULL) {
     return MadList_singleton(item);
   }
 
@@ -1660,10 +1702,6 @@ MadListNode_t *MadList_append(void *item, MadListNode_t *list) {
 }
 
 MadListNode_t *MadList_push(void *item, MadListNode_t *list) {
-  if (list == NULL) {
-    return MadList_singleton(item);
-  }
-
   MadListNode_t *newHead = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   newHead->next = list;
   newHead->value = item;
@@ -1676,15 +1714,15 @@ MadListNode_t *__MadList_push__(void *item, MadListNode_t *list) {
 }
 
 MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
+  if (list->value == NULL) {
+    return list;
+  }
+
   MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   MadListNode_t *head = newList;
   MadListNode_t *current = list;
 
-  newList->value = __applyPAP__(pap, 1, current->value);
-  newList->next = NULL;
-  current = current->next;
-
-  while (current != NULL) {
+  while (current->value != NULL) {
     MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
     nextItem->value = __applyPAP__(
         pap, 1, current->value);  // cls->fn(cls->env, current->value);
@@ -1701,7 +1739,7 @@ MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
 
 void *MadList_nth(double index, MadListNode_t *list) {
   // empty list
-  if (list == NULL) {
+  if (list->value == NULL) {
     return NULL;
   }
 
@@ -1720,33 +1758,16 @@ void *MadList_nth(double index, MadListNode_t *list) {
   }
 }
 
-void *MadList_length(MadListNode_t *list) {
-  double *total = (double *)GC_malloc(sizeof(double));
-
-  if (list == NULL) {
-    *total = 0;
-    return total;
-  }
-
-  *total = 1;
-
-  while (list->next != NULL) {
-    *total += 1;
-    list = list->next;
-  }
-
-  return total;
-}
-
 bool MadList_hasMinLength(double l, MadListNode_t *list) {
   MadListNode_t *head = list;
-  if (head == NULL) {
+
+  if (head->value == NULL) {
     return l == 0;
   }
 
   l -= 1;
 
-  while (head->next != NULL && l > 0) {
+  while (head->next->value != NULL && l > 0) {
     l -= 1;
     head = head->next;
   }
@@ -1756,24 +1777,25 @@ bool MadList_hasMinLength(double l, MadListNode_t *list) {
 
 bool MadList_hasLength(double l, MadListNode_t *list) {
   MadListNode_t *head = list;
-  if (head == NULL) {
+
+  if (head->value == NULL) {
     return l == 0;
   }
 
   l -= 1;
 
-  while (head->next != NULL && l > 0) {
+  while (head->next->value != NULL && l > 0) {
     l -= 1;
     head = head->next;
   }
 
-  return l == 0 && head->next == NULL;
+  return l == 0 && head->next->value == NULL;
 }
 
 MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
-  if (a == NULL) {
+  if (a->value == NULL) {
     return b;
-  } else if (b == NULL) {
+  } else if (b->value == NULL) {
     return a;
   } else {
     MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
@@ -1784,7 +1806,7 @@ MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
     newList->next = NULL;
     current = current->next;
 
-    while (current != NULL) {
+    while (current->value != NULL) {
       MadListNode_t *nextItem =
           (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
       nextItem->value = current->value;
