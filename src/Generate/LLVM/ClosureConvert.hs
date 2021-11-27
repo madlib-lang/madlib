@@ -62,7 +62,22 @@ getTopLevelExps = do
 findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
 findFreeVars env exp = do
   fvs <- case exp of
-    Slv.Solved (_ :=> t) _ (Slv.Var n) -> do
+    Slv.Solved _ _ (Slv.Var "+") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var "-") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var "*") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var "/") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var "==") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var n) -> do
       var' <- optimize env exp
       return [(n, var')]
 
@@ -75,8 +90,18 @@ findFreeVars env exp = do
       argFreeVars <- findFreeVars env arg
       return $ fFreeVars ++ argFreeVars
 
+    Slv.Solved _ _ (Slv.If cond truthy falsy) -> do
+      condFreeVars   <- findFreeVars env cond
+      truthyFreeVars <- findFreeVars env truthy
+      falsyFreeVars  <- findFreeVars env falsy
+      return $ condFreeVars ++ truthyFreeVars ++ falsyFreeVars
+
     Slv.Solved _ _ (Slv.TupleConstructor exps) -> do
       vars <- mapM (findFreeVars env) exps
+      return $ concat vars
+
+    Slv.Solved _ _ (Slv.ListConstructor exps) -> do
+      vars <- mapM (findFreeVars env . Slv.getListItemExp) exps
       return $ concat vars
 
     Slv.Solved _ _ (Slv.Where whereExp iss) -> do

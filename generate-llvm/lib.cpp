@@ -67,14 +67,14 @@ extern "C"
 {
 #endif
 
-  void *__doubleToStr__(double d)
+  char *__doubleToStr__(double d)
   {
     char *str = (char *)GC_malloc(200);
     sprintf(str, "%.20f", d);
     return __stripTrailingZeros__(str);
   }
 
-  void *__booleanToStr__(bool b)
+  char *__booleanToStr__(bool b)
   {
     if (b)
     {
@@ -154,7 +154,7 @@ extern "C"
       return MadList_singleton(item);
     }
 
-    MadListNode_t *newHead = (MadListNode_t *)malloc(sizeof(MadListNode_t));
+    MadListNode_t *newHead = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
     newHead->next = list;
     newHead->value = item;
 
@@ -188,22 +188,61 @@ extern "C"
     }
   }
 
-  void* MadList_length(MadListNode_t *list)
+  void *MadList_length(MadListNode_t *list)
   {
-    double *total = (double*)GC_malloc(sizeof(double));
-    if (list == NULL) {
+    double *total = (double *)GC_malloc(sizeof(double));
+    if (list == NULL)
+    {
       *total = 0;
       return total;
     }
 
     *total = 1;
 
-    while(list->next != NULL) {
+    while (list->next != NULL)
+    {
       *total += 1;
       list = list->next;
     }
 
     return total;
+  }
+
+  MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b)
+  {
+    if (a == NULL)
+    {
+      return b;
+    }
+    else if (b == NULL)
+    {
+      return a;
+    }
+    else
+    {
+      MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+      MadListNode_t *head = newList;
+      MadListNode_t *current = a;
+
+      newList->value = current->value;
+      newList->next = NULL;
+      current = current->next;
+
+      while (current != NULL)
+      {
+        MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+        nextItem->value = current->value;
+        nextItem->next = NULL;
+
+        newList->next = nextItem;
+        newList = newList->next;
+
+        current = current->next;
+      }
+
+      newList->next = b;
+      return head;
+    }
   }
 
 #ifdef __cplusplus

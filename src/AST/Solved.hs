@@ -156,6 +156,17 @@ getArea (Solved _ a _) = a
 extractExp :: Exp -> Exp_
 extractExp (Solved _ (Area _ _) e) = e
 
+getListItemExp :: ListItem -> Exp
+getListItemExp li = case li of
+  Solved _ _ (ListItem exp) ->
+    exp
+
+  Solved _ _ (ListSpread exp) ->
+    exp
+
+  _ ->
+    undefined
+
 getConstructorName :: Constructor -> String
 getConstructorName (Untyped _ (Constructor name _ _)) = name
 
