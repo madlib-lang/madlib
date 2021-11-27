@@ -90,16 +90,36 @@ updateQualType (Slv.Solved _ a e) qt = Slv.Solved qt a e
 -- TODO: handle this properly so that code generation can rely on it
 updatePattern :: Qual Type -> Can.Pattern -> Slv.Pattern
 updatePattern qt (Can.Canonical area pat) = case pat of
-  Can.PVar name             -> Slv.Solved qt area $ Slv.PVar name
-  Can.PAny                  -> Slv.Solved qt area Slv.PAny
-  Can.PCon name patterns    -> Slv.Solved qt area $ Slv.PCon name (updatePattern qt <$> patterns)
-  Can.PNum    n             -> Slv.Solved ([] :=> tNumber) area $ Slv.PNum n
-  Can.PStr    n             -> Slv.Solved ([] :=> tStr) area $ Slv.PStr n
-  Can.PBool   n             -> Slv.Solved ([] :=> tBool) area $ Slv.PBool n
-  Can.PRecord fieldPatterns -> Slv.Solved qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
-  Can.PList   patterns      -> Slv.Solved qt area $ Slv.PList (updatePattern qt <$> patterns)
-  Can.PTuple  patterns      -> Slv.Solved qt area $ Slv.PTuple (updatePattern qt <$> patterns)
-  Can.PSpread pat'          -> Slv.Solved qt area $ Slv.PSpread (updatePattern qt pat')
+  Can.PVar name             ->
+    Slv.Solved qt area $ Slv.PVar name
+
+  Can.PAny                  ->
+    Slv.Solved qt area Slv.PAny
+
+  Can.PCon name patterns    ->
+    Slv.Solved qt area $ Slv.PCon name (updatePattern qt <$> patterns)
+
+  Can.PNum    n             ->
+    Slv.Solved ([] :=> tNumber) area $ Slv.PNum n
+
+  Can.PStr    n             ->
+    Slv.Solved ([] :=> tStr) area $ Slv.PStr n
+
+  Can.PBool   n             ->
+    Slv.Solved ([] :=> tBool) area $ Slv.PBool n
+
+  Can.PRecord fieldPatterns ->
+    Slv.Solved qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
+
+  Can.PList   patterns      ->
+    Slv.Solved qt area $ Slv.PList (updatePattern qt <$> patterns)
+
+  Can.PTuple  patterns      ->
+    Slv.Solved qt area $ Slv.PTuple (updatePattern qt <$> patterns)
+
+  Can.PSpread pat'          ->
+    Slv.Solved qt area $ Slv.PSpread (updatePattern qt pat')
+
 
 
 -- INFER VAR
@@ -556,10 +576,10 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
 inferBranch :: Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
 inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
-  (ps, vars, t')     <- inferPattern env pat
-  s                  <- contextualUnify env exp t' t
-  (s', ps', t'', e') <- infer (apply s $ mergeVars env vars) exp
-  s''                <- contextualUnify env exp tv (apply (s `compose` s') t'')
+  (pat', ps, vars, t') <- inferPattern env pat
+  s                    <- contextualUnify env exp t' t
+  (s', ps', t'', e')   <- infer (apply s $ mergeVars env vars) exp
+  s''                  <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
 
@@ -567,9 +587,25 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
     ( subst
     , ps ++ ps'
     , Slv.Solved ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
-      $ Slv.Is (updatePattern (ps :=> apply subst t') pat) (updateQualType e' (ps' :=> apply subst t''))
+      $ Slv.Is (updatePatternTypes subst pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
+updatePatternTypes :: Substitution -> Slv.Pattern -> Slv.Pattern
+updatePatternTypes s pat = case pat of
+  Slv.Solved t area (Slv.PCon n pats) ->
+    Slv.Solved (apply s t) area (Slv.PCon n (updatePatternTypes s <$> pats))
+
+  Slv.Solved t area (Slv.PRecord fields) ->
+    Slv.Solved (apply s t) area (Slv.PRecord (updatePatternTypes s <$> fields))
+
+  Slv.Solved t area (Slv.PList items) ->
+    Slv.Solved (apply s t) area (Slv.PList (updatePatternTypes s <$> items))
+
+  Slv.Solved t area (Slv.PTuple items) ->
+    Slv.Solved (apply s t) area (Slv.PTuple (updatePatternTypes s <$> items))
+
+  Slv.Solved t area p ->
+    Slv.Solved (apply s (trace ("S: "<>ppShow s) t)) area p
 
 
 -- INFER TYPEDEXP

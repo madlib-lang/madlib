@@ -9,6 +9,8 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import           AST.Solved
 import qualified Utils.Hash                    as Hash
+import Debug.Trace
+import Text.Show.Pretty
 
 
 
@@ -305,7 +307,7 @@ renameSolvedNames :: Env -> String -> [Solved String] -> ([Solved String], Env)
 renameSolvedNames env hash solvedNames = case solvedNames of
   (name : names) ->
     let (renamed, env')        = renameSolvedName env hash name
-        (nextRenamed, nextEnv) = renameSolvedNames env hash names
+        (nextRenamed, nextEnv) = renameSolvedNames env' hash names
     in  (renamed : nextRenamed, nextEnv)
 
   [] ->
@@ -319,6 +321,7 @@ renameImport env imp = case imp of
         (renamedNames, env') = renameSolvedNames env moduleHash names
     in  (Untyped area (NamedImport renamedNames relPath absPath), env')
 
+  -- TODO: this won't work like this as we need to rename and generate externs for what is actually used
   Untyped area (DefaultImport name relPath absPath) ->
     let moduleHash          = generateHashFromPath absPath
         (renamedName, env') = renameSolvedName env moduleHash name
@@ -332,7 +335,7 @@ renameImports :: Env -> [Import] -> ([Import], Env)
 renameImports env imports = case imports of
   (imp : imps) ->
     let (renamedImport, env')  = renameImport env imp
-        (nextImports, nextEnv) = renameImports env imps
+        (nextImports, nextEnv) = renameImports env' imps
     in  (renamedImport : nextImports, nextEnv)
 
   [] ->
@@ -342,13 +345,13 @@ renameImports env imports = case imports of
 
 renameAST :: Env -> AST -> (AST, Env)
 renameAST env ast =
-  let moduleHash                = hashModulePath ast
-      env'                      = env { currentModuleHash = moduleHash }
-      (renamedImports, env'')   = renameImports env' $ aimports ast
+  let moduleHash                 = hashModulePath ast
+      env'                       = env { currentModuleHash = moduleHash }
+      (renamedImports, env'')    = renameImports env' $ aimports ast
       (renamedTypeDecls, env''') = renameTypeDecls env'' $ atypedecls ast
-      (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
-      renamedInstances          = renameInstance env'''' <$> ainstances ast
-  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances }, env)
+      (renamedExps, env'''')     = renameTopLevelExps (trace ("ENV'''"<>ppShow env''') env''') $ aexps ast
+      renamedInstances           = renameInstance env'''' <$> ainstances ast
+  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = renamedImports }, env)
 
 renameTable :: Table -> Table
 renameTable table =

@@ -116,6 +116,7 @@ data Exp_ = LNum String
           | JSExp String
           | App Exp [Exp]
           | Access Exp Exp
+          -- TODO: probably add an export boolean here?
           | TopLevelAbs Name [Name] [Exp]
           -- ^ name of the function | params | body
           | Assignment Name Exp Bool
@@ -179,3 +180,14 @@ isADT :: TypeDecl -> Bool
 isADT td = case td of
   Untyped _ ADT {} -> True
   _                -> False
+
+getImportAbsolutePath :: Import -> FilePath
+getImportAbsolutePath imp = case imp of
+  Untyped _ (NamedImport   _ _ n) ->
+    n
+
+  Untyped _ (DefaultImport _ _ n) ->
+    n
+
+  _ ->
+    undefined

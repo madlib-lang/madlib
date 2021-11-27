@@ -176,11 +176,13 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     let closureConverted = ClosureConvert.optimizeTable renamedTable
                     putStrLn (ppShow closureConverted)
                     putStrLn (ppShow renamedTable)
-                    case M.lookup canonicalEntrypoint closureConverted of
-                      Just ast ->
-                        LLVM.generate ast
-                      Nothing ->
-                        putStrLn $ "AST for '" <> canonicalEntrypoint <> "' not found!"
+
+                    LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
+                    -- case M.lookup canonicalEntrypoint closureConverted of
+                    --   Just ast ->
+                    --     LLVM.generate ast
+                    --   Nothing ->
+                    --     putStrLn $ "AST for '" <> canonicalEntrypoint <> "' not found!"
                   else do
                     let optimizedTable = optimizeTable optimized table
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile

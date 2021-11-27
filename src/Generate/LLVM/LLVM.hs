@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Generate.LLVM.LLVM where
 
 
@@ -13,9 +14,12 @@ import qualified Data.Set              as Set
 import qualified Data.List             as List
 import qualified Data.Maybe            as Maybe
 import qualified Text.ParserCombinators.ReadP as ReadP
-import qualified Data.Char as Char
-import qualified Control.Monad         as Monad
-import qualified Control.Monad.Fix     as MonadFix
+import qualified Data.Char              as Char
+import qualified Control.Monad          as Monad
+import qualified Control.Monad.Fix      as MonadFix
+import qualified Control.Monad.Identity as Identity
+import qualified Control.Monad.Writer   as Writer
+import qualified Control.Monad.Writer.Class as Writer
 import           Data.ByteString as ByteString
 import           Data.ByteString.Char8 as Char8
 import           System.Process
@@ -33,6 +37,7 @@ import qualified LLVM.AST.Constant               as Constant
 import qualified LLVM.AST.Operand                as Operand
 import qualified LLVM.AST.IntegerPredicate       as IntegerPredicate
 import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
+import qualified LLVM.AST.Global                 as Global
 
 import           LLVM.IRBuilder.Module
 import           LLVM.IRBuilder.Constant         as C
@@ -53,6 +58,11 @@ import           Codec.Binary.UTF8.String as UTF8
 import           Codec.Binary.UTF8.Generic as GEN
 import           Text.Show.Pretty
 import           Debug.Trace
+import qualified Control.Monad.Fix as Writer
+import qualified Utils.Path        as Path
+import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
+
+
 
 sizeof :: Type.Type -> Constant.Constant
 sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
@@ -798,7 +808,7 @@ generateSymbolTableForList symbolTable basePtr pats = case pats of
 
 generateSymbolTableForPattern :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Pattern -> m SymbolTable
 generateSymbolTableForPattern symbolTable baseExp pat = case pat of
-  Optimized _ _ (PVar n) ->
+  Optimized t _ (PVar n) -> do
     return $ Map.insert n (varSymbol baseExp) symbolTable
 
   Optimized _ _ PAny ->
@@ -1044,13 +1054,6 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
-    -- let expType = buildLLVMType t
-    --     globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-    -- in  Map.insert name (topLevelSymbol globalRef) (trace ("ADD: "<>name<>"\nT: "<>ppShow t<>"\nexpT: "<>ppShow expType) symbolTable)
-    -- let expType   = buildLLVMType t
-    --     globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
-    -- in  Map.insert name (topLevelSymbol globalRef) symbolTable
-
   _ ->
     symbolTable
 
@@ -1119,7 +1122,7 @@ the i64 is the type of constructor ( simply the index )
 the two i8* are the content of the created type
 -}
 -- TODO: still need to generate closured constructors
-generateConstructor :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
+generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
 generateConstructor symbolTable (constructor, index) = case constructor of
   Untyped _ (Constructor constructorName _ t) -> do
     let paramTypes     = InferredType.getParamTypes t
@@ -1138,14 +1141,14 @@ generateConstructor symbolTable (constructor, index) = case constructor of
       boxed <- box structPtr'
       ret boxed
 
+    Writer.tell $ Map.singleton constructorName (constructorSymbol constructor index arity)
     return $ Map.insert constructorName (constructorSymbol constructor index arity) symbolTable
-    -- generateConstructorClosures symbolTable index n 0 (List.length paramTypes - 1) paramTypes
 
   _ ->
     undefined
 
 
-generateConstructorsForADT :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> TypeDecl -> m SymbolTable
+generateConstructorsForADT :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> TypeDecl -> m SymbolTable
 generateConstructorsForADT symbolTable adt = case adt of
   Untyped _ ADT { adtconstructors } ->
     let indexedConstructors = List.zip adtconstructors [0..]
@@ -1155,13 +1158,10 @@ generateConstructorsForADT symbolTable adt = case adt of
     undefined
 
 
-
-generateConstructors :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [TypeDecl] -> m SymbolTable
+generateConstructors :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [TypeDecl] -> m SymbolTable
 generateConstructors symbolTable tds =
   let adts = List.filter isADT tds
   in  Monad.foldM generateConstructorsForADT symbolTable tds
-
-
 
 
 buildDictValues :: SymbolTable -> [String] -> [Constant.Constant]
@@ -1261,14 +1261,73 @@ buildDictionaryIndices interfaces = case interfaces of
     Map.empty
 
 
-toLLVMModule :: AST -> AST.Module
-toLLVMModule ast =
-  buildModule "main" $ do
+getLLVMParameterTypes :: Type.Type -> [Type.Type]
+getLLVMParameterTypes t = case t of
+  Type.PointerType (Type.FunctionType _ paramTypes _) _ ->
+    paramTypes
+
+  _ ->
+    undefined
+
+getLLVMReturnType :: Type.Type -> Type.Type
+getLLVMReturnType t = case t of
+  Type.PointerType (Type.FunctionType returnType _ _) _ ->
+    returnType
+
+  _ ->
+    undefined
+
+
+generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Optimized String -> m ()
+generateExternForImportName symbolTable optimizedName = case optimizedName of
+  Untyped _ name -> case Map.lookup name symbolTable of
+    Just (Symbol (FunctionSymbol _) symbol) -> do
+      let t          = typeOf symbol
+          paramTypes = getLLVMParameterTypes t
+          returnType = getLLVMReturnType t
+      extern (AST.mkName name) paramTypes returnType
+      return ()
+
+    Just (Symbol (ConstructorSymbol _ _) symbol) -> do
+      let t          = typeOf symbol
+          paramTypes = getLLVMParameterTypes t
+          returnType = getLLVMReturnType t
+      extern (AST.mkName name) paramTypes returnType
+      return ()
+
+    Just (Symbol _ symbol) -> do
+      let t = typeOf symbol
+      let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+      let def = AST.GlobalDefinition g
+      emitDefn def
+      return ()
+
+    _ ->
+      error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
+  _ ->
+    undefined
+
+
+generateImport :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Import -> m ()
+generateImport symbolTable imp = case imp of
+  Untyped _ (NamedImport names _ _) ->
+    mapM_ (generateExternForImportName symbolTable) names
+
+  _ ->
+    undefined
+
+
+
+
+buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Bool -> SymbolTable -> AST -> m ()
+buildModule' isMain initialSymbolTable ast = do
   let computedDictionaryIndices = buildDictionaryIndices $ ainterfaces ast
       initialEnv                = Env { dictionaryIndices = computedDictionaryIndices }
-      initialSymbolTable        = List.foldr (flip addTopLevelFnToSymbolTable) mempty (aexps ast)
+      symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
 
-  symbolTable   <- generateConstructors initialSymbolTable (atypedecls ast)
+  mapM_ (generateImport initialSymbolTable) $ aimports ast
+
+  symbolTable   <- generateConstructors symbolTableWithTopLevel (atypedecls ast)
   symbolTable'  <- generateInstances initialEnv symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions initialEnv (trace ("initialEnv: "<>ppShow initialEnv) symbolTable') (topLevelFunctions $ aexps ast)
 
@@ -1284,18 +1343,90 @@ toLLVMModule ast =
   extern (AST.mkName "__MadList_push__")     [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat")       [listType, listType] listType
 
-  function "main" [] void $ \_ -> do
-    entry <- block `named` "entry";
-    generateExps initialEnv symbolTable'' (expsForMain $ aexps ast)
-    retVoid
+  Monad.when isMain $ do
+    function "main" [] void $ \_ -> do
+      entry <- block `named` "entry";
+      generateExps initialEnv symbolTable'' (expsForMain $ aexps ast)
+      retVoid
+    return ()
+
+
+toLLVMModule :: Bool -> SymbolTable -> AST -> (AST.Module, SymbolTable)
+toLLVMModule isMain symbolTable ast =
+  Writer.runWriter $ buildModuleT "main" (buildModule' isMain symbolTable ast)
+
+
+generateAST :: Bool -> Table -> (ModuleTable, SymbolTable) -> AST -> (ModuleTable, SymbolTable)
+generateAST isMain astTable (moduleTable, symbolTable) ast@AST{ apath = Just apath } =
+  let imports                                          = aimports ast
+      alreadyProcessedPaths                            = Map.keys moduleTable
+      importPathsToProcess                             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
+      astsForImports                                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
+      (moduleTableWithImports, symbolTableWithImports) = List.foldl (generateAST False astTable) (moduleTable, symbolTable) astsForImports
+      (newModule, newSymbolTableTable)                 = toLLVMModule isMain symbolTableWithImports ast
+      updatedModuleTable                               = Map.insert apath newModule moduleTableWithImports
+  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable)
+
+generateAST _ _ _ _ =
+  undefined
+
+
+
+type ModuleTable = Map.Map FilePath AST.Module
+
+{-
+  Generates all modules
+
+  generatedTable: the already generated modules
+  symbolTable: accumulated symbolTable, used to map imports to extern instructions
+  table: input asts to generate
+  entrypoint: main module to generate
+-}
+-- Note: we can probably skip the symbol table as we can reconstruct imports from the
+-- ModuleTable, reading the top level definitions.
+-- Or maybe better, we do it for exports and update the symbol table so that we can
+-- catch all methods and dicts.
+generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
+generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
+  Just ast ->
+    fst $ generateAST True astTable (generatedTable, symbolTable) ast
+
+  _ ->
+    undefined
+
+
+compileModule :: FilePath -> FilePath -> FilePath -> AST.Module -> IO FilePath
+compileModule outputFolder rootPath astPath astModule = do
+  let outputPath = Path.computeLLVMTargetPath outputFolder rootPath astPath
+
+  -- Prelude.putStrLn outputPath
+  -- T.putStrLn $ ppllvm astModule
+
+  withHostTargetMachineDefault $ \target -> do
+    withContext $ \ctx -> do
+      withModuleFromAST ctx astModule $ \mod' -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
+          runPassManager pm mod'
+          return mod'
+        writeObjectToFile target (File outputPath) mod''
+
+  return outputPath
+
+generateTable :: FilePath -> FilePath -> Table -> FilePath -> IO ()
+generateTable outputFolder rootPath astTable entrypoint = do
+  let moduleTable = generateTableModules Map.empty Map.empty astTable entrypoint
+  objectFilePaths <- mapM (uncurry $ compileModule outputFolder rootPath) $ Map.toList moduleTable
+
+  let objectFilePathsForCli = List.unwords objectFilePaths
+
+  callCommand $ "clang++ -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " generate-llvm/lib.o gc.a -o a.out"
+
 
 
 generate :: AST -> IO ()
 generate ast = do
   Prelude.putStrLn "generate llvm"
-  let mod = toLLVMModule ast
-
-
+  let (mod, _) = toLLVMModule True Map.empty ast
 
   T.putStrLn $ ppllvm mod
 

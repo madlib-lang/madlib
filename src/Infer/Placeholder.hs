@@ -16,6 +16,8 @@ import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
 import           Infer.Instantiate
+import Debug.Trace
+import Text.Show.Pretty
 
 
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
