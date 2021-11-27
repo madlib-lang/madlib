@@ -416,6 +416,8 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     }
   }
 
+  printf("__applyPAP__ case not handled");
+
   return NULL;
 }
 
