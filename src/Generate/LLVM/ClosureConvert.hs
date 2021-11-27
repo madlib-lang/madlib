@@ -171,6 +171,8 @@ instance Optimizable Slv.Exp Opt.Exp where
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
         body' <- mapM (optimize (env { stillTopLevel = False })) body
+        -- closureName <- generateClosureName
+        -- let def = Opt.Optimized t area (Opt.ClosureDef closureName [] param body')
         return $ Opt.Optimized t area (Opt.Abs param body')
       else do
         body'       <- mapM (optimize env) body
