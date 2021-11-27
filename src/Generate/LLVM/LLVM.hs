@@ -67,6 +67,7 @@ import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 import qualified Data.Tuple as Tuple
 import Explain.Location
 import System.FilePath (takeDirectory, joinPath)
+import qualified LLVM.AST.Linkage as Linkage
 
 
 
@@ -1262,7 +1263,7 @@ generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, Mon
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
   ptr' <- load ptr 8
-  ptr'' <- unbox (getType pat) (trace ("PAT TYPE: "<>ppShow (getType pat)) ptr')
+  ptr'' <- unbox (getType pat) ptr'
   generateSymbolTableForPattern symbolTable ptr'' pat
 
 
@@ -1837,21 +1838,21 @@ generateExternalForName symbolTable name = case Map.lookup name symbolTable of
 
   Just (Symbol TopLevelAssignment symbol) -> do
     let (Type.PointerType t _) = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
     emitDefn def
     return ()
 
   Just (Symbol (DictionarySymbol _) symbol) -> do
     let (Type.PointerType t _) = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
     emitDefn def
     return ()
 
   Just (Symbol _ symbol) -> do
     let t = typeOf symbol
-    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t, Global.linkage = Linkage.External }
     let def = AST.GlobalDefinition g
     emitDefn def
     return ()
@@ -2193,20 +2194,23 @@ toLLVMModule initialEnv isMain currentModuleHashes symbolTable ast =
 
 generateAST :: Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> AST -> (ModuleTable, SymbolTable, [String], Env)
 generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast@AST{ apath = Just apath } =
-  let imports                          = aimports ast
-      alreadyProcessedPaths            = Map.keys moduleTable
-      importPathsToProcess             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
-      astsForImports                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
-      (moduleTableWithImports, symbolTableWithImports, importHashes, envFromImports) =
-        List.foldl (generateAST False astTable) (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
+  if Map.member apath moduleTable then
+    (moduleTable, symbolTable, processedHashes, initialEnv)
+  else
+    let imports                          = aimports ast
+        alreadyProcessedPaths            = Map.keys moduleTable
+        importPathsToProcess             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
+        astsForImports                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
+        (moduleTableWithImports, symbolTableWithImports, importHashes, envFromImports) =
+          List.foldl' (generateAST False astTable) (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
 
-      computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
-      envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False }
-      (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (processedHashes ++ importHashes) symbolTableWithImports ast
+        computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
+        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False }
+        (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (processedHashes ++ importHashes) symbolTableWithImports ast
 
-      updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
-      moduleHash                       = hashModulePath ast
-  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable, processedHashes ++ importHashes ++ [moduleHash], envForAST)
+        updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
+        moduleHash                       = hashModulePath ast
+    in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable, processedHashes ++ importHashes ++ [moduleHash], envForAST)
 
 generateAST _ _ _ _ =
   undefined
@@ -2246,9 +2250,10 @@ compileModule outputFolder rootPath astPath astModule = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 3 } $ \pm -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
           runPassManager pm mod'
           return mod'
+        -- TODO: Create dir before if not existing
         writeObjectToFile target (File outputPath) mod''
 
   return outputPath
