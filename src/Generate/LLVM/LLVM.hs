@@ -63,9 +63,11 @@ data SymbolType
   = VariableSymbol
   | FunctionSymbol
   | ConstructorSymbol Int Int
+  -- ^ unique id ( index ) | arity
   | ClosureSymbol
   | TopLevelAssignment
-  -- ^ unique id ( index ) | arity
+  | EnvSymbol Int
+  -- ^ amount of items in the env
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show)
 
@@ -90,6 +92,10 @@ closureSymbol =
 fnSymbol :: Operand -> Symbol
 fnSymbol =
   Symbol FunctionSymbol
+
+envSymbol :: Int -> Operand -> Symbol
+envSymbol size =
+  Symbol (EnvSymbol size)
 
 topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
@@ -574,8 +580,16 @@ generateExp symbolTable exp = case exp of
     envItems <- mapM (generateExp symbolTable) env
     envItems' <- mapM (box . snd) envItems
     let envWithIds = List.zip envItems' [0..]
-    let envType = Type.StructureType False (typeOf <$> envItems')
-    env' <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
+    -- let envType = Type.StructureType False (typeOf <$> envItems')
+    -- env' <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
+    let envType = Type.StructureType False (List.replicate 5 boxType)
+    env' <- case Map.lookup "__current_env__" symbolTable of
+      Just (Symbol _ found) ->
+        return found
+
+      Nothing -> do
+        -- if there's no env yet we allocate a new one
+        call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
     env'' <- bitcast env' (Type.ptr envType)
     Monad.foldM_ (storeItem env'') () envWithIds
 
@@ -1088,8 +1102,10 @@ generateClosure isTopLevel symbolTable t fnName env paramName body = mdo
         fullMap                    = Map.insert paramName unboxedParam envMap
         symbolTableWithEnvAndParam = varSymbol <$> fullMap
 
+        withCurrentEnv = Map.insert "__current_env__" (envSymbol (List.length env) envParam) symbolTableWithEnvAndParam
+
     -- Generate body
-    generatedBody <- generateBody (resultSymbolTable <> symbolTableWithEnvAndParam) body
+    generatedBody <- generateBody (resultSymbolTable <> withCurrentEnv) body
 
     -- box the result
     boxed <- box generatedBody
