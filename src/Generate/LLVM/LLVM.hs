@@ -58,6 +58,7 @@ data SymbolType
   = VariableSymbol
   | FunctionSymbol
   | ConstructorSymbol Int Int
+  | ClosureSymbol
   -- ^ unique id ( index ) | arity
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
   deriving(Eq, Show)
@@ -75,6 +76,10 @@ type SymbolTable
 varSymbol :: Operand -> Symbol
 varSymbol =
   Symbol VariableSymbol
+
+closureSymbol :: Operand -> Symbol
+closureSymbol =
+  Symbol ClosureSymbol
 
 fnSymbol :: Operand -> Symbol
 fnSymbol =
@@ -99,6 +104,10 @@ true = Operand.ConstantOperand (Constant.Int 1 1)
 gcMalloc :: Operand
 gcMalloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
+
+malloc :: Operand
+malloc =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "malloc"))
 
 strEq :: Operand
 strEq =
@@ -167,6 +176,10 @@ generateExp symbolTable exp = case exp of
     case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
       Just (Symbol FunctionSymbol global) ->
         return (symbolTable, global)
+
+      Just (Symbol ClosureSymbol closurePtr) -> do
+        closure <- load closurePtr 8
+        return (symbolTable, closure)
 
       Just (Symbol (ConstructorSymbol _ 0) var) -> do
         struct <- call var []
@@ -250,7 +263,7 @@ generateExp symbolTable exp = case exp of
           -- Closure call
           _ -> do
             let t = getType f
-            closurePtr <- alloca (typeOf (trace ("T: "<>ppShow t) f')) Nothing 8
+            closurePtr <- alloca (typeOf f') Nothing 8
             store closurePtr 8 f'
             fn <- gep closurePtr [i32ConstOp 0, i32ConstOp 0]
             fn' <- load fn 8
@@ -562,9 +575,18 @@ unbox t what = case t of
     bitcast int (buildLLVMType t)
 
   -- This should be called for parameters that are closures
+    
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
+    let closureType = Type.ptr $ Type.StructureType False [buildLLVMType t, Type.StructureType False []]
+    casted <- bitcast what closureType
+    load casted 8
   -- InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
-  --   let closureType = Type.ptr $ Type.StructureType False [buildLLVMType t, Type.StructureType False []]
-  --   casted <- bitcast what closureType
+  --   let closureType = Type.StructureType False [buildLLVMType t, Type.StructureType False []]
+  --   closure <- alloca closureType Nothing 0
+  --   -- closure <- call malloc [(Operand.ConstantOperand  $ sizeof closureType, [])]
+  --   closure' <- bitcast closure (Type.ptr boxType)
+  --   store closure' 8 what
+  --   casted <- bitcast closure' (Type.ptr closureType)
   --   load casted 8
 
   _ ->
@@ -575,6 +597,8 @@ box what = case typeOf what of
   -- Number
   Type.FloatingPointType _ -> do
     ptr <- alloca Type.double Nothing 8
+    -- ptr <- call malloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
+    -- ptr' <- bitcast ptr (Type.ptr Type.double)
     store ptr 8 what
     bitcast ptr boxType
 
@@ -590,9 +614,12 @@ box what = case typeOf what of
 
   -- closure?
   t@(Type.StructureType _ _) -> do
-    ptr <- alloca t Nothing 8
-    store ptr 8 what
-    bitcast ptr boxType
+    return what
+    -- ptr <- alloca t Nothing 0
+    -- -- ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof t, [])]
+    -- ptr' <- bitcast ptr (Type.ptr t)
+    -- store ptr' 8 what
+    -- bitcast ptr' boxType
 
   -- Any pointer type
   _ ->
@@ -636,7 +663,9 @@ generateFunction symbolTable fnName abs = case abs of
           _ ->
             boxType
 
-    f <- function (AST.mkName fnName) [param] returnType' $ \[param'] -> do
+    let closureName = fnName ++ "_closure"
+
+    f <- function (AST.mkName closureName) [param] returnType' $ \[param'] -> do
       entry <- block `named` "entry"; do
         var' <- unbox (InferredType.getParamType t) param'
         (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
@@ -646,7 +675,22 @@ generateFunction symbolTable fnName abs = case abs of
           _ ->
             box exps
         ret exps'
-    return $ Map.insert fnName (fnSymbol f) symbolTable
+
+    let closureStruct =
+          Constant.Struct
+            Nothing
+            False
+            [ Constant.GlobalReference
+                (Type.ptr $ Type.FunctionType returnType' [boxType] False)
+                (AST.mkName closureName)
+            , Constant.Struct Nothing False []
+            ]
+
+    g <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
+
+    return 
+      $ Map.insert fnName (closureSymbol g)
+      $ Map.insert closureName (fnSymbol f) symbolTable
 
   -- TODO: needs to handle closures
   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
