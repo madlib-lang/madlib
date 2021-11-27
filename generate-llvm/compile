@@ -9,6 +9,6 @@
 #      -current_version 1.0 -compatibility_version 1.0 \
 #     -fvisibility=hidden -o "$1.dylib"
 
-clang++ -g -stdlib=libc++ -c -o "$1.o" "$1.cpp"
+clang++ -g -std=c++11 -stdlib=libc++ -c -o "$1.o" "$1.cpp"
 
 llvm-ar-9 rc "$1.a" "$1.o"

@@ -345,8 +345,8 @@ collectDictArgs' alreadyFound symbolTable exp = case exp of
       _ ->
         error $ "dict not found: '" <> dictName <> "'"
 
-  Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
-    return ([], exp)
+  -- Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
+  --   return ([], exp)
 
   _ ->
     return ([], exp)
@@ -616,7 +616,7 @@ generateExp env symbolTable exp = case exp of
           generateApplicationForKnownFunction env symbolTable t arity fnOperand args
 
         _ ->
-          error $ "method not found" <> methodName
+          error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
     Optimized _ _ (Opt.Var functionName) -> case Map.lookup functionName symbolTable of
       Just (Symbol (ConstructorSymbol _ arity) fnOperand) ->
@@ -674,6 +674,9 @@ generateExp env symbolTable exp = case exp of
           else
             0
     return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value)
+
+  Optimized _ _ LUnit -> do
+    return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1))
 
   Optimized _ _ (LStr s) -> do
     addr <- buildStr s
@@ -1200,7 +1203,7 @@ generateConstructorsForADT symbolTable adt = case adt of
     in  Monad.foldM generateConstructor symbolTable indexedConstructors
 
   _ ->
-    undefined
+    return symbolTable
 
 
 generateConstructors :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [TypeDecl] -> m SymbolTable
@@ -1252,8 +1255,8 @@ generateMethod env symbolTable methodName exp = case exp of
 
       ret retVal
 
-    Writer.tell $ Map.singleton methodName (fnSymbol arity f)
-    return $ Map.insert methodName (fnSymbol arity f) symbolTable
+    Writer.tell $ Map.singleton methodName (methodSymbol arity f)
+    return $ Map.insert methodName (methodSymbol arity f) symbolTable
 
   _ ->
     undefined

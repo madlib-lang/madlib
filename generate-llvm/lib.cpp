@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <future>
+#include <chrono>
+#include <thread>
+#include <cmath>
 #include <iostream>
 
 // String
@@ -650,6 +654,24 @@ MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
     newList->next = b;
     return head;
   }
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+
+
+// Wish
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void *__after__(double *millis, void *value) {
+  auto a1 = std::async(std::launch::async, [value]() { return value; });
+  std::this_thread::sleep_for(std::chrono::milliseconds((long) std::round(*millis)));
+  return a1.get();
 }
 
 #ifdef __cplusplus

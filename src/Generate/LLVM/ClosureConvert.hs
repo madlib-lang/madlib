@@ -491,8 +491,9 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.Assignment name exp' (stillTopLevel env))
 
     Slv.Export exp -> do
-      exp' <- optimize env exp
-      return $ Opt.Optimized t area (Opt.Export exp')
+      optimize env exp
+      -- exp' <- optimize env exp
+      -- return $ Opt.Optimized t area (Opt.Export exp')
 
     Slv.NameExport name     -> return $ Opt.Optimized t area (Opt.NameExport name)
 
