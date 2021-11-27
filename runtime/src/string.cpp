@@ -26,6 +26,14 @@ bool __areStringsEqual__(char *s1, char *s2) {
   }
 }
 
+bool __areStringsNotEqual__(char *s1, char *s2) {
+  if (strcmp(s1, s2) == 0) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 
 // currently unused, types need adjustment. The param probably needs to be a char**
 double *__strLength__(char *s) {
