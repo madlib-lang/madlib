@@ -289,10 +289,30 @@ getParamType :: Type -> Type
 getParamType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) _ -> p
 
+
 getParamTypes :: Type -> [Type]
 getParamTypes t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) p) n -> p : getParamTypes n
   _ -> []
+
+dropFirstParamType :: Type -> Type
+dropFirstParamType t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) p) n ->
+    n
+
+  t' ->
+    t'
+
+dropNFirstParamTypes :: Int -> Type -> Type
+dropNFirstParamTypes n t = case t of
+  TApp (TApp (TCon (TC "(->)" _) _) from) to ->
+    if n > 0 then
+      dropNFirstParamTypes (n - 1) to
+    else
+      to
+
+  t' ->
+    t'
 
 getTypeVarsInType :: Type -> [Type]
 getTypeVarsInType t = case t of

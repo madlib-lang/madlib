@@ -222,7 +222,7 @@ buildApp' env target total nth area f@(Src.Source _ f') [arg] = do
   return $ Can.Canonical area (Can.App f' arg' (total == nth))
 buildApp' env target total nth area f@(Src.Source _ f') xs = do
   let arg@(Src.Source area' _) = last xs
-  arg'   <- canonicalize env target (last xs)
+  arg'   <- canonicalize env target arg
   subApp <- buildApp' env target total (nth - 1) area f (init xs)
   return $ Can.Canonical (mergeAreas area area') (Can.App subApp arg' (total == nth))
 
