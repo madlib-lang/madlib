@@ -350,7 +350,7 @@ maybeAbsExps :: { Maybe [Src.Exp] }
 
 
 do :: { Src.Exp }
-  : 'do' '{' doExps '}' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $4)) (Src.Do $3) }
+  : 'do' '{' rets doExps rets '}' { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $6)) (Src.Do $4) }
 
 doExps :: { [Src.Exp] }
   : 'return' exp              %shift { [Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $2)) (Src.Return $2)] }
@@ -393,12 +393,12 @@ jsxChildren :: { [Src.JsxChild] }
 
 
 templateString :: { Src.Exp }
-  : strTplStart templateStringParts strTplEnd { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $3)) (Src.TemplateString ($2 <> [Src.Source (tokenToArea $3) (Src.LStr (strV $3))])) }
+  : strTplStart rets templateStringParts rets strTplEnd { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $5)) (Src.TemplateString ($3 <> [Src.Source (tokenToArea $5) (Src.LStr (strV $5))])) }
   | strTplStart strTplEnd                     { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $2)) (Src.TemplateString [Src.Source (tokenToArea $2) (Src.LStr (strV $2))]) }
 
 templateStringParts :: { [Src.Exp] }
-  : exp                      { [$1] }
-  | templateStringParts exp  { $1 <> [$2] }
+  : exp                          { [$1] }
+  | templateStringParts rets exp { $1 <> [$3] }
 
 app :: { Src.Exp }
   : app '(' argsWithPlaceholder ')'          %shift { Src.Source (mergeAreas (Src.getArea $1) (tokenToArea $4)) (Src.App $1 $3) }
