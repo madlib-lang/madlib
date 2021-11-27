@@ -37,6 +37,7 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 %wrapper "monadUserState"
 
+
 $alpha    = [a-zA-Z]                        -- alphabetic characters
 $empty    = [\ \t\f\v\r]                    -- equivalent to $white but without line return
 $superEmpty = [\ \t\f\v\r\n]

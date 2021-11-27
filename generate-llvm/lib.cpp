@@ -223,6 +223,53 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
           }
         }
       }
+      case 4: {
+        void *(*fn)(void *, void *, void *, void*) =
+            (void *(*)(void *, void *, void *, void*))unwrappedPAP->fn;
+        switch (ENV_SIZE) {
+          case 0: {
+            void *result = fn(va_arg(argv, void *), va_arg(argv, void *),
+                              va_arg(argv, void *), va_arg(argv, void *));
+            if (argc > 4) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 4, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+          case 1: {
+            PAPEnv_1_t *env = (PAPEnv_1_t *)unwrappedPAP->env;
+            void *result =
+                fn(env->arg0, va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            if (argc > 3) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 3, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+          case 2: {
+            PAPEnv_2_t *env = (PAPEnv_2_t *)unwrappedPAP->env;
+            void *result = fn(env->arg0, env->arg1, va_arg(argv, void *), va_arg(argv, void *));
+            if (argc > 2) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 2, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+          case 3: {
+            PAPEnv_3_t *env = (PAPEnv_3_t *)unwrappedPAP->env;
+            void *result = fn(env->arg0, env->arg1, env->arg2, va_arg(argv, void *));
+            if (argc > 1) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 1, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+        }
+      }
     }
   } else {
     // We push the args to a newly allocated PAP
