@@ -752,9 +752,22 @@ generateExp env symbolTable exp = case exp of
   Optimized _ _ LUnit -> do
     return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1))
 
-  Optimized _ _ (LStr s) -> do
-    addr <- buildStr (List.init . List.tail $ s)
+  Optimized _ _ (LStr (leading : s)) | leading == '"' || leading == '\'' -> do
+    addr <- buildStr (List.init s)
     return (symbolTable, addr)
+
+  Optimized _ _ (LStr s) -> do
+    addr <- buildStr s
+    return (symbolTable, addr)
+
+  Optimized _ _ (TemplateString parts) -> do
+    parts' <- mapM (generateExp env symbolTable) parts
+    let parts'' = snd <$> parts'
+    asOne  <- Monad.foldM
+      (\prev next -> call strConcat [(prev, []), (next, [])])
+      (List.head parts'')
+      (List.tail parts'')
+    return (symbolTable, asOne)
 
   Optimized _ _ (Opt.Do exps) -> do
     ret <- generateBody env symbolTable exps
