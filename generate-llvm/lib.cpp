@@ -30,7 +30,6 @@ typedef struct Record {
   RecordField_t **fields;
 } Record_t;
 
-
 RecordField_t *__findField__(char *name, Record_t *record) {
   for (int i = 0; i < record->fieldCount; i++) {
     RecordField_t *currentField = record->fields[i];
@@ -41,7 +40,6 @@ RecordField_t *__findField__(char *name, Record_t *record) {
 
   return NULL;
 }
-
 
 /**
  * low level function for { name: value }
@@ -71,7 +69,7 @@ Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...) {
     // If it's an extension we need to overwrite the update fields
     // first we copy all fields
     for (int i = 0; i < base->fieldCount; i++) {
-      record->fields[i] = (RecordField_t*)GC_malloc(sizeof(RecordField_t));
+      record->fields[i] = (RecordField_t *)GC_malloc(sizeof(RecordField_t));
       record->fields[i]->name = base->fields[i]->name;
       record->fields[i]->value = base->fields[i]->value;
     }
@@ -86,7 +84,6 @@ Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...) {
 
   return record;
 }
-
 
 /**
  * low level function for record.field
@@ -114,9 +111,7 @@ void *__selectField__(char *name, Record_t *record) {
 extern "C" {
 #endif
 
-
 // void* __buildDictionary__() {}
-
 
 #ifdef __cplusplus
 }
@@ -179,21 +174,27 @@ char *__stripTrailingZeros__(char *number) {
 extern "C" {
 #endif
 
-char *__doubleToStr__(double *d) {
+char **__doubleToStr__(double d) {
   char *str = (char *)GC_malloc(200);
-  sprintf(str, "%.20f", *d);
-  return __stripTrailingZeros__(str);
+  sprintf(str, "%.20f", d);
+  char *stripped = __stripTrailingZeros__(str);
+
+  char **boxed = (char **)GC_malloc(sizeof(char *));
+  *boxed = stripped;
+  return boxed;
 }
 
-char *__booleanToStr__(bool *b) {
-  if (*b) {
+char **__booleanToStr__(bool b) {
+  char **boxed = (char **)GC_malloc(sizeof(char *));
+
+  if (b) {
     char *str = (char *)GC_malloc(5);
     str[0] = 't';
     str[1] = 'r';
     str[2] = 'u';
     str[3] = 'e';
     str[4] = '\0';
-    return str;
+    *boxed = str;
   } else {
     char *str = (char *)GC_malloc(6);
     str[0] = 'f';
@@ -202,8 +203,10 @@ char *__booleanToStr__(bool *b) {
     str[3] = 's';
     str[4] = 'e';
     str[5] = '\0';
-    return str;
+    *boxed = str;
   }
+
+  return boxed;
 }
 
 #ifdef __cplusplus
@@ -1646,14 +1649,12 @@ typedef struct MadListNode {
   struct MadListNode *next;
 } MadListNode_t;
 
-
 MadListNode_t *Madlist_empty() {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   head->next = NULL;
   head->value = NULL;
   return head;
 }
-
 
 void *MadList_length(MadListNode_t *list) {
   double *total = (double *)GC_malloc(sizeof(double));
@@ -1672,7 +1673,6 @@ void *MadList_length(MadListNode_t *list) {
 
   return total;
 }
-
 
 MadListNode_t *MadList_singleton(void *item) {
   MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));

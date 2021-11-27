@@ -75,6 +75,10 @@ sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
      nullPtr = Constant.IntToPtr (Constant.Int 32 0) ptrType
      szPtr   = Constant.GetElementPtr True nullPtr [Constant.Int 32 1]
 
+addrspacecast :: MonadIRBuilder m => Operand -> Type -> m Operand
+addrspacecast op t =
+  emitInstr t $ AddrSpaceCast op t []
+
 
 newtype Env
   = Env { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int)) }
@@ -168,11 +172,11 @@ applyPAP =
 
 buildRecord :: Operand
 buildRecord =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.i32, boxType] True) (AST.mkName "__buildRecord__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType recordType [Type.i32, boxType] True) (AST.mkName "__buildRecord__"))
 
 selectField :: Operand
 selectField =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [Type.ptr Type.i8, boxType] False) (AST.mkName "__selectField__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [stringType, recordType] False) (AST.mkName "__selectField__"))
 
 madlistLength :: Operand
 madlistLength =
@@ -204,11 +208,11 @@ malloc =
 
 strEq :: Operand
 strEq =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.ptr Type.i8, Type.ptr Type.i8] False) (AST.mkName "__streq__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__streq__"))
 
 strConcat :: Operand
 strConcat =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.ptr Type.i8] False) (AST.mkName "__strConcat__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (AST.mkName "__strConcat__"))
 
 i32ConstOp :: Integer -> Operand
 i32ConstOp i = Operand.ConstantOperand $ Constant.Int 32 i
@@ -230,7 +234,7 @@ buildLLVMType t = case t of
     Type.double
 
   InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" ->
-    Type.ptr Type.i8
+    stringType
 
   InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" ->
     Type.i1
@@ -254,6 +258,14 @@ buildLLVMType t = case t of
   _ ->
     Type.ptr Type.i8
 
+buildLLVMParamType :: InferredType.Type -> Type.Type
+buildLLVMParamType t = case t of
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
+    papType
+
+  _ ->
+    buildLLVMType t
+
 
 boxType :: Type.Type
 boxType =
@@ -262,6 +274,18 @@ boxType =
 listType :: Type.Type
 listType =
   Type.ptr $ Type.StructureType False [boxType, boxType]
+
+stringType :: Type.Type
+stringType =
+  Type.PointerType Type.i8 (AddrSpace 1)
+
+papType :: Type.Type
+papType =
+  Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+
+recordType :: Type.Type
+recordType =
+  Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
@@ -274,10 +298,19 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr Type.i1
     load ptr 8
 
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ -> do
+  -- boxed strings are char**
+  InferredType.TCon (InferredType.TC "String" _) _ -> do
+    ptr <- bitcast what $ Type.ptr stringType
+    load ptr 8
+
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) _ ->
     bitcast what listType
     -- ptr <- bitcast what (Type.ptr listType)
     -- load ptr 8
+
+  InferredType.TRecord fields _ -> do
+    bitcast what recordType
+
 
   -- TODO: check that we need this
   -- This should be called for parameters that are closures
@@ -301,6 +334,13 @@ box what = case typeOf what of
   Type.IntegerType 1 -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i1)
+    store ptr' 8 what
+    bitcast ptr' boxType
+
+  -- String?
+  Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof stringType, [])]
+    ptr' <- bitcast ptr (Type.ptr stringType)
     store ptr' 8 what
     bitcast ptr' boxType
 
@@ -337,14 +377,15 @@ buildStr s = do
   let charCodes''  = List.replace [92, 34] [34] charCodes'
   let charCodes''' = toInteger <$> charCodes
   addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'''), [])]
+  addr' <- addrspacecast addr stringType
   let charCodesWithIds = List.zip charCodes''' [0..]
 
-  Monad.foldM_ (storeChar addr) () charCodesWithIds
-  return addr
+  Monad.foldM_ (storeChar addr') () charCodesWithIds
+  return addr'
   where
     storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> () -> (Integer, Integer) -> m ()
     storeChar basePtr _ (charCode, index) = do
-      ptr <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
+      ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
       store ptr 8 (Operand.ConstantOperand (Constant.Int 8 charCode))
       return ()
 
@@ -354,9 +395,7 @@ buildStr s = do
   --  ( ClassRef
       --  "Applicative"
       --  [ CRPNode "Semigroup" "List" False []
-      --  , CRPNode "Monoid" "List" False []
       --  , CRPNode "Functor" "Identity" False []
-      --  , CRPNode "Applicative" "Identity" False []
       --  ]
       --  True
       --  False
@@ -533,12 +572,15 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, loaded)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
-        case t of
-          -- InferredType.TCon (InferredType.TC "String" InferredType.Star) _ ->
-          --   return (symbolTable, ptr)
+        return (symbolTable, value)
+        -- loaded <- load ptr 8
+        -- return (symbolTable, loaded)
+        -- case t of
+        --   -- InferredType.TCon (InferredType.TC "String" InferredType.Star) _ ->
+        --   --   return (symbolTable, ptr)
 
-          _ ->
-            return (symbolTable, value)
+        --   _ ->
+        --     return (symbolTable, value)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
@@ -646,7 +688,13 @@ generateExp env symbolTable exp = case exp of
     else
       case Map.lookup name (trace ("FOUND ASS: " <> ppShow (Map.lookup name symbolTable)) symbolTable) of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
+          -- TODO: handle strings properly here
           case typeOf exp' of
+            Type.PointerType t _ | ty == InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
+              ptr' <- bitcast ptr $ Type.ptr stringType
+              store ptr' 8 exp'
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
+
             Type.PointerType t _ -> do
               ptr' <- bitcast ptr $ typeOf exp'
               loaded <- load exp' 8
@@ -660,6 +708,10 @@ generateExp env symbolTable exp = case exp of
 
         Nothing -> do
           case typeOf exp' of
+            Type.PointerType t _ | ty == InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" -> do
+              ptr <- box exp'
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp')
+
             Type.PointerType t _ -> do
               return (Map.insert name (localVarSymbol exp' exp') symbolTable, exp')
 
@@ -899,7 +951,7 @@ generateExp env symbolTable exp = case exp of
       generateField :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Field -> m Operand
       generateField symbolTable field = case field of
         Optimized _ _ (Field (name, value)) -> do
-          let fieldType = Type.StructureType False [Type.ptr Type.i8, boxType]
+          let fieldType = Type.StructureType False [stringType, boxType]
           nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
           (_, value') <- generateExp env symbolTable value
           value''     <- box value'
@@ -1234,8 +1286,10 @@ generateExternFunction symbolTable t functionName arity foreignFn = do
       functionName' = AST.mkName functionName
 
   function <- function functionName' params' boxType $ \params -> do
+    let typesWithParams = List.zip paramTypes params
+    unboxedParams <- mapM (uncurry unbox) typesWithParams
     -- Generate body
-    result <- call foreignFn ((, []) <$> params)
+    result <- call foreignFn ((, []) <$> unboxedParams)
 
     -- box the result
     boxed <- box result
@@ -1285,7 +1339,7 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) -> do
     let paramTypes  = InferredType.getParamTypes t
-        paramTypes' = boxType <$ paramTypes
+        paramTypes' = buildLLVMParamType <$> paramTypes
         returnType  = InferredType.getReturnType t
         returnType' = boxType
 
@@ -1674,10 +1728,10 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
-  externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] boxType
-  extern (AST.mkName "__selectField__")        [Type.ptr Type.i8, boxType] boxType
-  extern (AST.mkName "__streq__")              [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
-  extern (AST.mkName "__strConcat__")          [Type.ptr Type.i8, Type.ptr Type.i8] (Type.ptr Type.i8)
+  externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
+  extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
+  extern (AST.mkName "__streq__")              [stringType, stringType] Type.i1
+  extern (AST.mkName "__strConcat__")          [stringType, stringType] stringType
   extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_hasLength")      [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_singleton")      [Type.ptr Type.i8] listType

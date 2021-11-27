@@ -4,8 +4,6 @@ import {} from "./String"
 import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
 
-IO.prettyLog([32, 133, 412])
-
 
 IO.prettyLog("Hello world!")
 IO.prettyLog(32)
@@ -15,17 +13,6 @@ IO.prettyLog(len([32, 133, 412]))
 IO.prettyLog(["one string", "another one"])
 IO.prettyLog([true, false, false, false, true, false])
 IO.prettyLog(([] :: List Number))
-
-
-instance Show { x :: Number, y :: Number } {
-  show = (position) =>
-    `{ x: ${show(position.x)}, y: ${show(position.y)} }`
-}
-
-instance PrettyShow { x :: Number, y :: Number } {
-  ppShow = (position) =>
-    `{ x: ${ppShow(position.x)}, y: ${ppShow(position.y)} }`
-}
 
 instance Show a => Show { stuff :: a } {
   show = (withStuff) => `{ stuff: ${show(withStuff.stuff)} }`
@@ -39,6 +26,7 @@ IO.log(show({ stuff: false }))
 
 IO.log(show({ x: 3, y: 4 }))
 
+IO.prettyLog([1, 2, 3])
 
 reversed = reverse([1, 2, 3, 4, 5, 6])
 IO.prettyLog(reversed)
@@ -46,31 +34,45 @@ IO.prettyLog(reversed)
 filtered = filter((x) => x > 2, [1, 2, 3, 4, 5, 6])
 IO.prettyLog(filtered)
 
-// rejected = reject((x) => x > 2, [1, 2, 3, 4, 5, 6])
-// IO.prettyLog(rejected)
+rejected = reject((x) => x > 2, [1, 2, 3, 4, 5, 6])
+IO.prettyLog(rejected)
 
-IO.prettyLog(!!true)
-IO.prettyLog(!!!true)
-IO.prettyLog(!false)
+// IO.prettyLog(!!true)
+// IO.prettyLog(!!!true)
+// IO.prettyLog(!false)
 
 
 
-inc = (a) => {
-  b = "1"
-  b = b ++ a
-  return a ++ b
+
+makeInverter :: () -> (() -> Boolean)
+makeInverter = (_) => {
+  initial = false
+
+  return (_) => {
+    initial = !initial
+    return initial
+  }
 }
 
-IO.prettyLog(inc("4"))
+inverter = makeInverter(())
+IO.prettyLog(inverter(()))
+IO.prettyLog(inverter(()))
+IO.prettyLog(inverter(()))
+
+
 
 makeCounter :: () -> (() -> String)
 makeCounter = (_) => {
-  count = "0"
+  count = ""
 
-  return (_) => {
-    count = count ++ "1"
-    return count
+  innerCounter = (_) => {
+    return (_) => {
+      count = count ++ "1"
+      return count
+    }
   }
+
+  return innerCounter(())
 }
 
 counter = makeCounter(())
@@ -99,13 +101,13 @@ IO.prettyLog(grower(10))
 IO.prettyLog(grower(21))
 
 
-makeCounterWithRec :: () -> (() -> { a :: Number })
+makeCounterWithRec :: () -> (() -> Number)
 makeCounterWithRec = (_) => {
   count = { a: 0 }
 
   return (_) => {
     count = { a: count.a + 1 }
-    return count
+    return count.a
   }
 }
 
@@ -113,4 +115,15 @@ c2 = makeCounterWithRec(())
 c2(())
 c2(())
 c2(())
-IO.prettyLog(c2(()).a)
+IO.prettyLog(c2(()))
+
+
+
+
+inc = (a) => {
+  b = "1"
+  b = b ++ a
+  return a ++ b
+}
+
+IO.prettyLog(inc("4"))
