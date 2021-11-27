@@ -97,7 +97,8 @@ data KindRequirement
 
 typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
 typingToType env kindNeeded (Src.Source area (Src.TRSingle t))
-  | t == "Number"  = return tNumber
+  | t == "Integer" = return tInteger
+  | t == "Float"   = return tFloat
   | t == "Boolean" = return tBool
   | t == "String"  = return tStr
   | t == "()" = return tUnit

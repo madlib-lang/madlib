@@ -83,6 +83,7 @@ type Pattern = Source Pattern_
 data Pattern_
   = PVar Name
   | PNum String
+  | PFloat String
   | PStr String
   | PBool String
   | PAny
@@ -115,6 +116,7 @@ data DictItem_ = DictItem Exp Exp deriving(Eq, Show)
 type Exp = Source Exp_
 data Exp_
   = LNum String
+  | LFloat String
   | LStr String
   | LBool String
   | LUnit

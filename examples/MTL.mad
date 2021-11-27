@@ -12,19 +12,19 @@ import {} from "MonadWriter"
 import {} from "MonadState"
 
 
-alias Stack a = StateT Number (WriterT (List String) Identity) a
+alias Stack a = StateT Integer (WriterT (List String) Identity) a
 
 hep :: MonadWriter w m => w -> m ()
 hep = tell
 
-sumAndLog :: MonadWriter (List String) m => Number -> m Number
+sumAndLog :: MonadWriter (List String) m => Integer -> m Integer
 sumAndLog = pipe(
   of,
   chain((x) => of(x + 18)),
   chain((x) => tell(["Summed 18"]) |> andDo(of(x)))
 )
 
-runStack :: Number -> Stack a -> #[#[a, Number], List String]
+runStack :: Integer -> Stack a -> #[#[a, Integer], List String]
 runStack = (x) => pipe(
   (m) => runStateT(m, x),
   runWriterT,

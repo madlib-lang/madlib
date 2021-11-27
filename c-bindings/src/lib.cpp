@@ -1,5 +1,6 @@
 #include <gc.h>
 #include <iostream>
+#include <inttypes.h>
 
 #include "apply-pap.hpp"
 
@@ -162,18 +163,29 @@ char *__stripTrailingZeros__(char *number) {
 }
 #endif
 
+
 // Show
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-char **__doubleToStr__(double d) {
+char **__floatToStr__(double d) {
   char *str = (char *)GC_malloc(200);
   sprintf(str, "%.20f", d);
   char *stripped = __stripTrailingZeros__(str);
 
   char **boxed = (char **)GC_malloc(sizeof(char *));
   *boxed = stripped;
+  return boxed;
+}
+
+char **__integerToStr__(int64_t i) {
+  char *str = (char *)GC_malloc(200);
+  sprintf(str, "%" PRId64, i);
+
+  char **boxed = (char **)GC_malloc(sizeof(char *));
+  *boxed = str;
   return boxed;
 }
 

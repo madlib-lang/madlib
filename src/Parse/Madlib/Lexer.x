@@ -84,7 +84,8 @@ tokens :-
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed, jsxOpeningTag> \=                   { mapToken (\_ -> TokenEq) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \n[\ ]*\-Infinity                   { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> Infinity                            { mapToken (\s -> TokenNumber s) }
-  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @floating                           { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @decimal                            { mapToken (\s -> TokenNumber s) }
+  <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> @floating                           { mapToken (\s -> TokenFloat s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> 0x[0-9a-fA-F]*                      { mapToken (\s -> TokenNumber s) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "true"                              { mapToken (\_ -> (TokenBool "true")) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> "false"                             { mapToken (\_ -> (TokenBool "false")) }
@@ -525,6 +526,7 @@ data Token = Token Area TokenClass deriving (Eq, Show)
 data TokenClass
  = TokenConst
  | TokenNumber String
+ | TokenFloat String
  | TokenStr  String
  | TokenName String
  | TokenConstraintName String
@@ -604,6 +606,7 @@ strV :: Token -> String
 strV (Token _ (TokenStr x))               = x
 strV (Token _ (TokenTemplateStringEnd x)) = x
 strV (Token _ (TokenNumber x))            = x
+strV (Token _ (TokenFloat x))             = x
 strV (Token _ (TokenBool x))              = x
 strV (Token _ (TokenName x))              = x
 strV (Token _ (TokenConstraintName x))    = x

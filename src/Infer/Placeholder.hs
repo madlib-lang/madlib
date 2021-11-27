@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Infer.Placeholder where
 
 import           Infer.Type
@@ -38,6 +39,9 @@ insertVarPlaceholders env exp@(Slv.Solved t a e) (p : ps) = do
             else
               exp
       insertVarPlaceholders env exp' ps
+
+insertVarPlaceholders _ _ _ =
+  undefined
 
 
 
@@ -98,7 +102,9 @@ shouldInsert env p = do
 
   let insert = case inst of
         Just (Instance (_ :=> p') _) ->
-          let (_, IsIn _ withoutVars _) = removeInstanceVars p' p in any isTVar withoutVars
+          let (_, IsIn _ withoutVars _) = removeInstanceVars p' p
+          in  any isTVar withoutVars
+
         Nothing -> True
   return insert
 
@@ -109,6 +115,7 @@ getCanonicalPlaceholderTypes env p@(IsIn cls ts _) = do
   return $ case inst of
     Just (Instance (_ :=> (IsIn _ ts'' _)) _) -> ts''
     Nothing -> ts
+
 
 updateMethodPlaceholder :: Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
 updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholder (Slv.MethodRef cls method var, instanceTypes) (Slv.Solved qt' a' exp)))

@@ -92,26 +92,30 @@ initialEnv = Env
                        , ("<"            , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , (">="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("<="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+
                        , ("++"           , Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
-                       , ("+"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("unary-minus"  , Forall [] $ [] :=> (tNumber `fn` tNumber))
-                       , ("-"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("*"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("/"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("%"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("&"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("|"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("^"            , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , ("~"            , Forall [] $ [] :=> (tNumber `fn` tNumber))
-                       , ("<<"           , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , (">>"           , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
-                       , (">>>"          , Forall [] $ [] :=> (tNumber `fn` tNumber `fn` tNumber))
+
+                       , ("/"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
+                       , ("%"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
+                       , ("^"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
+                       , ("|"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
+                       , ("&"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
+                       , ("~"            , Forall [] $ [] :=> (tInteger `fn` tInteger))
+                       , ("<<"           , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
+                       , (">>"           , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
+                       , (">>>"          , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                        , ("|>"           , Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        , ("$"            , Forall [Star] $ [] :=> TGen 0)
                        , ("__dict_ctor__", Forall [Star, Star] $ [] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
                        ]
-  , envInterfaces = mempty
-  , envMethods = mempty
+                      --  Instance (Qual Pred) Vars
+  , envInterfaces = M.singleton "Number" (Interface [TV "a" Star] [] [Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty])
+  , envMethods = M.fromList
+      [ ("+"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("-"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("*"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
+      , ("unary-minus"  , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0))
+      ]
   , envCurrentPath = ""
   , envBacktrace   = mempty
   }

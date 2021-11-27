@@ -43,7 +43,11 @@ infer env lexp = do
   let (Can.Canonical area exp) = lexp
       env'                     = pushExpToBT env lexp
   case exp of
-    Can.LNum  _               -> return (M.empty, [], tNumber, applyLitSolve lexp tNumber)
+    Can.LNum  _               -> do
+      t <- newTVar Star
+      return (M.empty, [IsIn "Number" [t] Nothing], t, applyLitSolve lexp t)
+
+    Can.LFloat _              -> return (M.empty, [], tFloat, applyLitSolve lexp tFloat)
     Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
     Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
     Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp tUnit)
@@ -71,10 +75,11 @@ infer env lexp = do
 
 applyLitSolve :: Can.Exp -> Type -> Slv.Exp
 applyLitSolve (Can.Canonical area exp) t = case exp of
-  Can.LNum  v -> Slv.Solved ([] :=> t) area $ Slv.LNum v
-  Can.LStr  v -> Slv.Solved ([] :=> t) area $ Slv.LStr v
-  Can.LBool v -> Slv.Solved ([] :=> t) area $ Slv.LBool v
-  Can.LUnit   -> Slv.Solved ([] :=> t) area Slv.LUnit
+  Can.LNum  v  -> Slv.Solved ([] :=> t) area $ Slv.LNum v
+  Can.LFloat v -> Slv.Solved ([] :=> t) area $ Slv.LFloat v
+  Can.LStr  v  -> Slv.Solved ([] :=> t) area $ Slv.LStr v
+  Can.LBool v  -> Slv.Solved ([] :=> t) area $ Slv.LBool v
+  Can.LUnit    -> Slv.Solved ([] :=> t) area Slv.LUnit
 
 applyAbsSolve :: Can.Exp -> Slv.Solved Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
 applyAbsSolve (Can.Canonical loc _) param body qt = Slv.Solved qt loc $ Slv.Abs param body
@@ -135,12 +140,14 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
     sc         <- catchError (lookupVar env n) (enhanceVarError env exp area)
     (ps :=> t) <- instantiate sc
 
-    let e = Slv.Solved (ps :=> t) area $ Slv.Var n
-    e' <- insertVarPlaceholders env e ps
+    let ps' = dedupePreds ps
 
-    let ps' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps
+    let e = Slv.Solved (ps' :=> t) area $ Slv.Var n
+    e' <- insertVarPlaceholders env e ps'
 
-    return (M.empty, ps', t, e')
+    let ps'' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps'
+
+    return (M.empty, ps'', t, e')
 
 enhanceVarError :: Env -> Can.Exp -> Area -> CompilationError -> Infer Scheme
 enhanceVarError env exp area (CompilationError e _) =
@@ -647,7 +654,8 @@ split :: Bool -> Env -> [TVar] -> [TVar] -> [Pred] -> Infer ([Pred], [Pred])
 split mustCheck env fs gs ps = do
   ps' <- reduce env ps
   let (ds, rs) = partition (all (`elem` fs) . ftv) ps'
-  let as       = ambiguities (fs ++ gs) rs
+  -- (as, rs')       <- defaultedPreds env (fs ++ gs) rs
+  let as = ambiguities (fs ++ gs) rs
   if mustCheck && not (null as) then
     case head as of
       (_, IsIn c ts (Just area):_) ->
@@ -657,6 +665,71 @@ split mustCheck env fs gs ps = do
         throwError $ CompilationError (AmbiguousType (head as)) NoContext
   else
     return (ds, rs)
+    -- return (ds, rs \\ rs')
+
+
+numClasses :: [Id]
+numClasses  = ["Number"]
+
+candidates :: Env -> Ambiguity -> [Type]
+candidates env (tv, ps) = case ps of
+  [IsIn "Number" ts _] | ts == [TVar tv] ->
+    [tInteger, tFloat]
+
+  _ ->
+    []
+
+
+withDefaults :: ([Ambiguity] -> [Type] -> a)
+                  -> Env -> [TVar] -> [Pred] -> Infer ([Ambiguity], a)
+withDefaults f env tvs ps
+    | any null tss  = do
+        let rest = filter (null . snd) $ zip as tss
+            as'  = fst <$> rest
+            tss' = snd <$> rest
+        return (as', f as' (map head tss'))
+    | otherwise     = return ([], f as (map head tss))
+      where as = ambiguities tvs ps
+            tss = map (candidates env) as
+
+defaultedPreds :: Env -> [TVar] -> [Pred] -> Infer ([Ambiguity], [Pred])
+defaultedPreds  = withDefaults (\as _ -> concatMap snd as)
+
+
+tryDefaults :: [Pred] -> (Substitution, [Pred])
+tryDefaults ps = case ps of
+  (p : next) -> case p of
+    IsIn "Number" [TVar tv] _ ->
+      let (nextSubst, nextPS) = tryDefaults next
+          s = M.singleton tv tInteger
+      in  (nextSubst `compose` s, nextPS)
+
+    IsIn _ [TCon _ _] _ ->
+      let (nextSubst, nextPS) = tryDefaults next
+      in  (nextSubst, nextPS)
+
+    _ ->
+      let (nextSubst, nextPS) = tryDefaults next
+      in  (nextSubst, p : nextPS)
+
+  [] ->
+    (M.empty, [])
+
+
+dedupePreds :: [Pred] -> [Pred]
+dedupePreds = reverse . dedupePreds' []
+
+dedupePreds' :: [Pred] -> [Pred] -> [Pred]
+dedupePreds' acc ps = case ps of
+  (p : next) -> case p of
+    IsIn cls ts _ ->
+      if any (\(IsIn cls' ts' _) -> cls == cls' && ts == ts') acc then
+        dedupePreds' acc next
+      else
+        dedupePreds' (p:acc) next
+
+  [] ->
+    acc
 
 
 inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
@@ -695,18 +768,29 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
-  CM.when (not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp)) $ throwError $ CompilationError
-    (AmbiguousType (TV "-" Star, rs ++ ds))
-    (Context (envCurrentPath env) area (envBacktrace env))
 
+  (ds', sDefaults) <-
+    if not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp) then do
+      let (sDef, rs')   = tryDefaults (rs ++ ds)
+          -- TODO: tryDefaults should handle such a case so that we only call it once.
+          -- What happens is that defaulting may solve some types ( like Number a -> Integer )
+          -- and then it could resolve instances like Show where before we still had a type var
+          -- but after the first pass we have Integer instead.
+          (sDef', rs'') = tryDefaults (apply sDef rs')
+      CM.unless (null rs'') $ throwError $ CompilationError
+        (AmbiguousType (TV "-" Star, rs'))
+        (Context (envCurrentPath env) area (envBacktrace env))
+      return ([], sDef)
+    else
+      return (ds, M.empty)
 
   let fs' = ftv $ ps' :=> t'
       sc  = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
 
   case Can.getExpName exp of
-    Just n  -> return (s'', (ds, ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
+    Just n  -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
 
-    Nothing -> return (s'', (ds, ps'), env', updateQualType e (ds :=> t'))
+    Nothing -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ps'), env', updateQualType e (ds :=> t'))
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -735,7 +819,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
-  qs'' <- getAllParentPreds env qs'
+  qs'' <- dedupePreds <$> getAllParentPreds env qs'
 
   if sc /= sc' then
     throwError $ CompilationError (SignatureTooGeneral sc sc') (Context (envCurrentPath env') area (envBacktrace env))

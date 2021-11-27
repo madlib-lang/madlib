@@ -71,6 +71,8 @@ instance Optimizable Slv.Exp Opt.Exp where
   optimize enabled (Slv.Solved qt@(_ :=> t) area e) = case e of
     Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.LNum x)
 
+    Slv.LFloat x          -> return $ Opt.Optimized t area (Opt.LNum x)
+
     Slv.LStr  x           -> return $ Opt.Optimized t area (Opt.LStr x)
 
     Slv.LBool x           -> return $ Opt.Optimized t area (Opt.LBool x)
@@ -139,6 +141,12 @@ instance Optimizable Slv.Exp Opt.Exp where
       exp' <- optimize enabled exp
       iss' <- mapM (optimize enabled) iss
       return $ Opt.Optimized t area (Opt.Where exp' iss')
+
+    Slv.Placeholder (Slv.ClassRef "Number" _ _ _, ts) exp ->
+      optimize enabled exp
+
+    Slv.Placeholder (Slv.MethodRef "Number" _ _, ts) exp ->
+      optimize enabled exp
 
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- optimize enabled exp
