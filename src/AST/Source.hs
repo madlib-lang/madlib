@@ -5,6 +5,7 @@ import           Explain.Meta
 import           Explain.Location
 import qualified Data.Map                      as M
 
+-- TODO: remove infos
 data Source a = Source (Infos a) Area a deriving(Eq, Show)
 
 data AST =
@@ -24,6 +25,7 @@ data Import_
   = NamedImport [Source Name] FilePath FilePath
   | TypeImport [Source Name] FilePath FilePath
   | DefaultImport (Source Name) FilePath FilePath
+  | ImportAll FilePath FilePath
   deriving(Eq, Show)
 
 type TypeDecl = Source TypeDecl_
@@ -100,6 +102,9 @@ data ListItem_
   | ListSpread Exp
   deriving(Eq, Show)
 
+type DictItem = Source DictItem_
+data DictItem_ = DictItem Exp Exp deriving(Eq, Show)
+
 data JSXChild
   = JSXChild Exp
   | JSXSpreadChild Exp
@@ -125,6 +130,7 @@ data Exp_ = LNum String
           | TypeExport Name
           | TypedExp Exp Typing
           | ListConstructor [ListItem]
+          | Dictionary [DictItem]
           | TupleConstructor [Exp]
           | Pipe [Exp]
           | JSExp String
@@ -150,23 +156,27 @@ getImportNames imp = case imp of
   Source _ _ (NamedImport names _ n) -> names
   Source _ _ DefaultImport{}         -> []
   Source _ _ TypeImport{}            -> []
+  Source _ _ ImportAll{}             -> []
 
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
   Source _ _ (NamedImport names _ _) -> []
   Source _ _ (TypeImport  names _ _) -> names
   Source _ _ DefaultImport{}         -> []
+  Source _ _ ImportAll{}             -> []
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
   Source _ _ (NamedImport   _ _ n) -> n
   Source _ _ (TypeImport    _ _ n) -> n
   Source _ _ (DefaultImport _ _ n) -> n
+  Source _ _ (ImportAll _ n) -> n
 
 getImportPath :: Import -> (Import, FilePath)
 getImportPath imp@(Source _ _ (NamedImport   _ p _)) = (imp, p)
 getImportPath imp@(Source _ _ (TypeImport    _ p _)) = (imp, p)
 getImportPath imp@(Source _ _ (DefaultImport _ p _)) = (imp, p)
+getImportPath imp@(Source _ _ (ImportAll p _)) = (imp, p)
 
 getArea :: Source a -> Area
 getArea (Source _ a _) = a

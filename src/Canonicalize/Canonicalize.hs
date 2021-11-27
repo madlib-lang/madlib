@@ -177,6 +177,22 @@ instance Canonicalizable Src.Exp Can.Exp where
           let app = Can.Canonical (mergeAreas (getArea prev) (Can.getArea e')) (Can.App e' prev True)
           buildApplication app es
 
+    Src.Dictionary items -> do
+      pushNameAccess "fromList"
+      items' <- mapM (canonicalize env target) items
+
+      return $ Can.Canonical area (Can.App
+        (Can.Canonical area (Can.Var "fromList"))
+        (Can.Canonical area (Can.ListConstructor items')) True)
+
+
+instance Canonicalizable Src.DictItem Can.ListItem where
+  canonicalize env target (Src.Source _ area exp) = case exp of
+    (Src.DictItem key value) -> do
+      key' <- canonicalize env target key
+      value' <- canonicalize env target value
+      return $ Can.Canonical area (Can.ListItem (Can.Canonical area (Can.TupleConstructor [key', value'])))
+
 
 instance Canonicalizable Src.ListItem Can.ListItem where
   canonicalize env target (Src.Source _ area item) = case item of
@@ -252,6 +268,9 @@ instance Canonicalizable Src.Import Can.Import where
 
     Src.DefaultImport namespace relPath absPath ->
       return $ Can.Canonical area (Can.DefaultImport (canonicalizeName namespace) relPath absPath)
+
+    Src.ImportAll relPath absPath ->
+      return $ Can.Canonical area (Can.ImportAll relPath absPath)
 
 canonicalizeName :: Src.Source Src.Name -> Can.Canonical Can.Name
 canonicalizeName (Src.Source _ area name) = Can.Canonical area name

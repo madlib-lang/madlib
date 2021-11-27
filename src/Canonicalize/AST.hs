@@ -82,11 +82,17 @@ mapImportToEnvTypeDecls env imp ast = do
 
 fromExportToImport :: Src.Import -> M.Map String Type -> M.Map String Type
 fromExportToImport imp exports = case imp of
-  Src.Source _ _ (Src.TypeImport    names _ _) -> M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
+  Src.Source _ _ (Src.TypeImport    names _ _) ->
+    M.restrictKeys exports $ S.fromList (Src.getSourceContent <$> names)
 
-  Src.Source _ _ (Src.NamedImport   names _ _) -> mempty
+  Src.Source _ _ (Src.NamedImport   names _ _) ->
+    mempty
 
-  Src.Source _ _ (Src.DefaultImport name  _ _) -> M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
+  Src.Source _ _ (Src.DefaultImport name  _ _) ->
+    M.mapKeys ((Src.getSourceContent name ++ ".") ++) exports
+
+  Src.Source _ _ (Src.ImportAll _ _) ->
+    mempty
 
 extractExportsFromAST :: Env -> Can.AST -> CanonicalM (M.Map String Type)
 extractExportsFromAST env ast = do
