@@ -86,14 +86,15 @@ updateQualType :: Slv.Exp -> Qual Type -> Slv.Exp
 updateQualType (Slv.Solved _ a e) qt = Slv.Solved qt a e
 
 
+-- TODO: handle this properly so that code generation can rely on it
 updatePattern :: Qual Type -> Can.Pattern -> Slv.Pattern
 updatePattern qt (Can.Canonical area pat) = case pat of
   Can.PVar name             -> Slv.Solved qt area $ Slv.PVar name
   Can.PAny                  -> Slv.Solved qt area Slv.PAny
   Can.PCon name patterns    -> Slv.Solved qt area $ Slv.PCon name (updatePattern qt <$> patterns)
-  Can.PNum    n             -> Slv.Solved qt area $ Slv.PNum n
-  Can.PStr    n             -> Slv.Solved qt area $ Slv.PStr n
-  Can.PBool   n             -> Slv.Solved qt area $ Slv.PBool n
+  Can.PNum    n             -> Slv.Solved ([] :=> tNumber) area $ Slv.PNum n
+  Can.PStr    n             -> Slv.Solved ([] :=> tStr) area $ Slv.PStr n
+  Can.PBool   n             -> Slv.Solved ([] :=> tBool) area $ Slv.PBool n
   Can.PRecord fieldPatterns -> Slv.Solved qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
   Can.PList   patterns      -> Slv.Solved qt area $ Slv.PList (updatePattern qt <$> patterns)
   Can.PTuple  patterns      -> Slv.Solved qt area $ Slv.PTuple (updatePattern qt <$> patterns)

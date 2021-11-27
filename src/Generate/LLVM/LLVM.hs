@@ -136,7 +136,7 @@ buildStr s = do
   -- 92, 110 == \n
   let charCodes' = List.replace [92, 110] [10] charCodes
   let charCodes'' = toInteger <$> charCodes'
-  addr <- call gcMalloc [(ConstantOperand (Constant.Int 64 (fromIntegral $ List.length charCodes'')), [])]
+  addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes''), [])]
   let charCodesWithIds = List.zip charCodes'' [0..]
 
   Monad.foldM_ (storeChar addr) () charCodesWithIds
@@ -182,9 +182,9 @@ generateExp symbolTable exp = case exp of
         -- closure <- load closurePtr 8
         return (symbolTable, closurePtr)
 
-      Just (Symbol (ConstructorSymbol _ 0) var) -> do
-        struct <- call var []
-        return (symbolTable, struct)
+      -- Just (Symbol (ConstructorSymbol _ 0) var) -> do
+      --   struct <- call var []
+      --   return (symbolTable, struct)
 
       Just (Symbol _ var) -> do
         return (symbolTable, var)
@@ -262,19 +262,21 @@ generateExp symbolTable exp = case exp of
             return (symbolTable'', res)
 
           _ -> do
-            arg'' <- box arg'
+            boxedArg <- box arg'
 
+            -- unbox closure
+            let closureType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType, boxType] False, boxType]
+            unboxedClosure <- bitcast f' closureType
 
-            let fnType = Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType [boxType, boxType] False, boxType]
-
-            unboxedFn <- bitcast f' fnType
-
-            fn <- gep (trace ("F': "<>ppShow unboxedFn <> "\nfExp: "<>ppShow f) unboxedFn) [i32ConstOp 0, i32ConstOp 0]
+            -- load the function pointer
+            fn <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 0]
             fn' <- load fn 8
-            env <- gep unboxedFn [i32ConstOp 0, i32ConstOp 1]
+
+            -- load the env pointer
+            env <- gep unboxedClosure [i32ConstOp 0, i32ConstOp 1]
             env' <- load env 8
 
-            res <- call fn' [(env', []), (arg'', [])]
+            res <- call fn' [(env', []), (boxedArg, [])]
             return (symbolTable'', res)
 
 
@@ -295,8 +297,9 @@ generateExp symbolTable exp = case exp of
 
   Optimized _ _ (TupleConstructor exps) -> do
     exps' <- mapM ((snd <$>). generateExp symbolTable) exps
-    let expsWithIds = List.zip exps' [0..]
-        tupleType = Type.StructureType False (typeOf <$> exps')
+    boxedExps <- mapM box exps'
+    let expsWithIds = List.zip boxedExps [0..]
+        tupleType = Type.StructureType False (typeOf <$> boxedExps)
     tuplePtr <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
     tuplePtr' <- bitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
@@ -448,7 +451,8 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
 generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> (Pattern, Operand) -> m Operand
 generateSubPatternTest symbolTable prev (pat', ptr) = do
   v <- load ptr 8
-  curr <- generateBranchTest symbolTable pat' v
+  v' <- unbox (getType pat') v
+  curr <- generateBranchTest symbolTable pat' v'
   prev `Instruction.and` curr
 
 
@@ -556,34 +560,24 @@ buildLLVMType t = case t of
   _ ->
     Type.ptr Type.i8
 
+
 boxType :: Type.Type
 boxType = Type.ptr Type.i8
 
 unbox :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
 unbox t what = case t of
   InferredType.TCon (InferredType.TC "Number" _) _ -> do
-    int <- ptrtoint what Type.i64
-    bitcast int (buildLLVMType t)
+    ptr <- bitcast what $ Type.ptr Type.double
+    load ptr 8
 
   InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
-    int <- ptrtoint what Type.i1
-    bitcast int (buildLLVMType t)
+    ptr <- bitcast what $ Type.ptr Type.i1
+    load ptr 8
 
+  -- TODO: check that we need this
   -- This should be called for parameters that are closures
-    
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
-    -- let closureType = Type.ptr $ Type.StructureType False [buildLLVMType t, Type.StructureType False []]
-    -- bitcast what closureType
     return what
-    -- load casted 8
-  -- InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
-  --   let closureType = Type.StructureType False [buildLLVMType t, Type.StructureType False []]
-  --   closure <- alloca closureType Nothing 0
-  --   -- closure <- call malloc [(Operand.ConstantOperand  $ sizeof closureType, [])]
-  --   closure' <- bitcast closure (Type.ptr boxType)
-  --   store closure' 8 what
-  --   casted <- bitcast closure' (Type.ptr closureType)
-  --   load casted 8
 
   _ ->
     bitcast what (buildLLVMType t)
@@ -721,37 +715,10 @@ generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
 
   {-
     A ClosureDef is a function of type:
-    i8* (i8*, i8*)
+    i8* (i8*, i8*) : boxedValue (env, arg)
   -}
   Optimized t _ (ClosureDef fnName env paramName body) -> do
     generateClosure False symbolTable t fnName env paramName body
-
-
-
-  -- Optimized t _ (ClosureDef fnName env paramName [body]) -> do
-  --   let envParams = (\(Optimized t _ (Var n)) -> (boxType, ParameterName (stringToShortByteString n))) <$> env
-  --       paramType  = buildLLVMType $ InferredType.getParamType t
-  --       envParams' = envParams ++ [(boxType, ParameterName (stringToShortByteString paramName))]
-  --       allParamTypes = (getType <$> env) ++ [InferredType.getParamType t]
-  --       returnType = boxType
-  --       returnType' = case body of
-  --         Optimized _ _ (Closure n args) ->
-  --           updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
-  --         _ ->
-  --           returnType
-
-  --   f <- function (AST.mkName (trace ("curr FN: "<>ppShow fnName) fnName)) envParams' returnType' $ \params -> do
-  --     entry <- block `named` "entry"; do
-  --       vars' <- Monad.zipWithM unbox allParamTypes params
-  --       (_, exps) <- generateExp (Map.fromList (List.zip (getClosureParamNames env ++ [paramName]) (varSymbol <$> vars')) <> symbolTable) body
-  --       exps' <- case body of
-  --         Optimized _ _ Closure{} ->
-  --           return exps
-  --         _ ->
-  --           box exps
-  --       ret exps'
-
-  --   return $ Map.insert fnName (fnSymbol f) symbolTable
 
   _ ->
     return symbolTable
@@ -787,7 +754,26 @@ generateClosure isTopLevel symbolTable t fnName env paramName [body] = mdo
         else
           AST.mkName fnName
 
-  closure <- function functionName closureParams boxType $ \params -> do
+  resultSymbolTable <-
+      if isTopLevel then do
+        let closureStruct =
+              Constant.Struct
+                Nothing
+                False
+                [ Constant.GlobalReference
+                    (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
+                    functionName
+                , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
+                ]
+
+        g <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
+        return
+          $ Map.insert (fnName ++ "$fn") (fnSymbol closure)
+          $ Map.insert fnName (fnSymbol g) symbolTable
+      else
+        return $ Map.insert fnName (fnSymbol closure) symbolTable
+
+  closure <- function functionName closureParams boxType $ \params -> mdo
     let envParam      = List.head params
         explicitParam = params !! 1
 
@@ -804,58 +790,21 @@ generateClosure isTopLevel symbolTable t fnName env paramName [body] = mdo
     let envMap                     = Map.fromList $ List.zip closureEnvNames unboxedEnvArgs
         fullMap                    = Map.insert paramName unboxedParam envMap
         symbolTableWithEnvAndParam = varSymbol <$> fullMap
-        completeSymbolTable        = symbolTable <> symbolTableWithEnvAndParam
 
+    -- Generate body
+    (_, generatedBody) <- generateExp (resultSymbolTable <> symbolTableWithEnvAndParam) body
 
-    withRecursion <-
-      if isTopLevel then do
-        let closureStruct =
-              Constant.Struct
-                Nothing
-                False
-                [ Constant.GlobalReference
-                    (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
-                    functionName
-                , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
-                ]
-
-        g <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
-        return
-          $ Map.insert (fnName ++ "$fn") (fnSymbol closure)
-          $ Map.insert fnName (fnSymbol g) completeSymbolTable
-      else
-        return $ Map.insert fnName (fnSymbol closure) completeSymbolTable
-
-    (_, generatedBody) <- generateExp withRecursion body
-
-    -- TODO: we need to box that back to a i8*
+    -- box the result
     boxed <- box generatedBody
     ret boxed
 
-
-  if isTopLevel then do
-    let closureStruct =
-          Constant.Struct
-            Nothing
-            False
-            [ Constant.GlobalReference
-                (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
-                functionName
-            , Constant.GlobalReference (Type.ptr $ Type.StructureType False []) (AST.mkName "$EMPTY_ENV")
-            ]
-
-    g <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
-    return
-      $ Map.insert (fnName ++ "$fn") (fnSymbol closure)
-      $ Map.insert fnName (fnSymbol g) symbolTable
-  else
-    return $ Map.insert fnName (fnSymbol closure) symbolTable
+  return resultSymbolTable
 
 generateClosure _ _ _ _ _ _ _ = undefined
 
 
 extractEnvArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand -> [Int] -> m [Operand.Operand]
-extractEnvArgs envPtr indices = case (trace ("INDICES: "<>ppShow indices) indices) of
+extractEnvArgs envPtr indices = case indices of
   (index : is) -> do
     itemPtr   <- gep envPtr [i32ConstOp 0, i32ConstOp (fromIntegral index)]
     item      <- load itemPtr 8
@@ -866,20 +815,6 @@ extractEnvArgs envPtr indices = case (trace ("INDICES: "<>ppShow indices) indice
 
   _ ->
     return []
-
-
--- extractEnvArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand -> [(Int, String)] -> m [(String, Operand.Operand)]
--- extractEnvArgs envPtr argNames = case argNames of
---   ((index, n) : ns) -> do
---     itemPtr   <- gep envPtr [i32ConstOp 0, i32ConstOp (fromIntegral index)]
---     item      <- load itemPtr 8
-
---     nextItems <- extractEnvArgs envPtr ns
-
---     return $ (n, item) : nextItems
-
---   _ ->
---     return []
 
 
 getClosureParamNames :: [Exp] -> [String]
@@ -899,6 +834,89 @@ generateTopLevelFunctions symbolTable topLevelFunctions = case topLevelFunctions
 
 
 
+generateConstructorClosures :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Int -> String -> Int -> Int -> [InferredType.Type] -> m SymbolTable
+generateConstructorClosures symbolTable constructorIndex constructorName paramIndex lastIndex paramTypes = case paramTypes of
+  (t : ts) -> do
+    let fnName      = constructorName ++ "$" ++ show paramIndex
+        paramType   = boxType
+        envType     = Type.StructureType False (boxType <$ List.take paramIndex [0..])
+        envPtrType  = Type.ptr envType
+        nextEnvType = Type.StructureType False (boxType <$ List.take (paramIndex + 1) [0..])
+
+    closure <- function (AST.mkName fnName) [(boxType, makeParamName "env"), (boxType, makeParamName "arg")] boxType $ \params -> do
+      let envParam      = List.head params
+          explicitParam = params !! 1
+
+      -- unbox the env
+      unwrappedEnv   <- bitcast envParam envPtrType
+
+      -- allocate the next env
+      nextEnvPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof nextEnvType, [])]
+      nextEnvPtr'    <- bitcast nextEnvPtr $ Type.ptr nextEnvType
+
+      -- store the args for the next call
+      envArgs        <- extractEnvArgs unwrappedEnv (List.take paramIndex [0..])
+      let nextEnvArgs = envArgs ++ [explicitParam]
+      Monad.foldM_ (storeItem nextEnvPtr') () $ List.zip nextEnvArgs [0..]
+
+      if paramIndex == lastIndex then do
+        -- then we need to return the constructed value
+        let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate (lastIndex + 1) boxType
+
+        -- allocate memory for the structure
+        structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+        structPtr'    <- bitcast structPtr $ Type.ptr structType
+
+        -- store the constructor data in the struct
+        Monad.foldM_ (storeItem structPtr') () $ List.zip nextEnvArgs [1..] ++ [(i64ConstOp (fromIntegral constructorIndex), 0)]
+
+        boxed <- box structPtr'
+        ret boxed
+      else do
+        -- then we need to return the next closure
+        -- {i8* (i8*, i8*)*, {}*}*
+        let closureFnType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
+            closureType   = Type.StructureType False [closureFnType, Type.ptr nextEnvType]
+        closurePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof closureType, [])]
+        closurePtr' <- bitcast closurePtr $ Type.ptr closureType
+
+        let nextClosureFnRef = Operand.ConstantOperand $ Constant.GlobalReference closureFnType (AST.mkName $ constructorName ++ "$" ++ show (paramIndex + 1))
+
+        Monad.foldM_ (storeItem closurePtr') () [(nextClosureFnRef, 0), (nextEnvPtr', 1)]
+
+        boxed <- box closurePtr'
+        ret boxed
+
+    if paramIndex == lastIndex then do
+      -- then we need to generate the global closure and push it in the symbolTable
+      let closureStruct =
+            Constant.Struct
+              Nothing
+              False
+              [ Constant.GlobalReference
+                  (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False)
+                  (AST.mkName $ constructorName ++ "$0")
+              , Constant.Null $ Type.ptr (Type.StructureType False [])
+              ]
+      publicClosure <- global (AST.mkName constructorName) (typeOf closureStruct) closureStruct
+      return $ Map.insert constructorName (constructorSymbol publicClosure constructorIndex $ lastIndex + 1) symbolTable
+    else
+      generateConstructorClosures symbolTable constructorIndex constructorName (paramIndex + 1) lastIndex ts
+
+  [] ->
+    if lastIndex == -1 then do
+      -- handle nullary constructors
+      let struct =
+            Constant.Struct
+              Nothing
+              False
+              [ Constant.Int 64 (fromIntegral constructorIndex) ]
+      publicClosure <- global (AST.mkName constructorName) (typeOf struct) struct
+      return $ Map.insert constructorName (constructorSymbol publicClosure constructorIndex 0) symbolTable
+    else
+      return symbolTable
+
+
 {-
 type R = R(Maybe Number, List String)
 
@@ -915,21 +933,7 @@ generateConstructor :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTabl
 generateConstructor symbolTable (constructor, index) = case constructor of
   Untyped _ (Constructor n _ t) -> do
     let paramTypes  = InferredType.getParamTypes t
-        paramTypes' = boxType <$ paramTypes
-        fType       = Type.ptr $ Type.FunctionType boxType paramTypes' False
-
-    f <- function (AST.mkName n) ((, NoParameterName) <$> paramTypes') boxType $ \params -> do
-      let structType = Type.StructureType False $ Type.i64 : (typeOf <$> params)
-          size       = Operand.ConstantOperand $ sizeof structType
-      constructorStruct   <- call gcMalloc [(size, [])]
-      constructorStruct'  <- bitcast constructorStruct (Type.ptr structType)
-      ptrConstructorIndex <- gep constructorStruct' [i32ConstOp 0, i32ConstOp 0]
-      store ptrConstructorIndex 8 (i64ConstOp (fromIntegral index))
-      Monad.foldM_ (storeItem constructorStruct') () (List.zip params [1..])
-      boxed <- box constructorStruct'
-      ret boxed
-
-    return $ Map.insert n (constructorSymbol f index (List.length paramTypes)) symbolTable
+    generateConstructorClosures symbolTable index n 0 (List.length paramTypes - 1) paramTypes
 
   _ ->
     undefined
