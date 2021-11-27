@@ -135,10 +135,10 @@ findFreeVars env exp = do
     _ ->
       return []
 
-  let globalVars = freeVars env
+  let globalVars = freeVars env ++ M.keys (lifted env)
   let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` ("helper" : globalVars)) fvs'
+  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs'
 
 findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
 findFreeVarsInBranches env iss = case iss of
@@ -188,20 +188,21 @@ class Optimizable a b where
 
 
 
-optimizeBodyFunction :: Env -> Type -> Area -> Slv.Exp -> Slv.Name -> Slv.Name -> [Slv.Exp] -> [Slv.Exp] -> Optimize [Opt.Exp]
-optimizeBodyFunction env t area exp name param body es = do
+optimizeInnerFunction :: Env -> Type -> Area -> Slv.Exp -> Slv.Name -> Slv.Name -> [Slv.Exp] -> [Slv.Exp] -> Optimize [Opt.Exp]
+optimizeInnerFunction env t area exp functionName param body es = do
   freshName <- generateClosureName
-  let closureName = "$" ++ name ++ freshName
-  fvs <- findFreeVars env exp
+  let closureName = "$" ++ functionName ++ freshName
+  let env' = addGlobalFreeVar functionName env
+  fvs <- findFreeVars env' exp
   let vars = snd <$> fvs
   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-  let env' = addLiftedLambda name closure env
+  let env'' = addLiftedLambda functionName closure env'
 
-  body'       <- optimizeBody env' body
+  body'       <- optimizeBody env'' body
   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
   addTopLevelExp def
 
-  optimizeBody env' es
+  optimizeBody env'' es
 
 
 -- At this point it's no longer top level and all functions encountered must be closured
@@ -212,10 +213,10 @@ optimizeBody env body = case body of
 
   (exp : es) -> case exp of
     Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) ->
-      optimizeBodyFunction env t area exp name param body es
+      optimizeInnerFunction env t area exp name param body es
 
     Slv.Solved qt@(_ :=> t) area (Slv.Assignment name (Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
-      optimizeBodyFunction env t area exp name param body es
+      optimizeInnerFunction env t area exp name param body es
 
     _ -> do
       exp' <- optimize env exp

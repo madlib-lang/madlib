@@ -67,10 +67,10 @@ extern "C"
 {
 #endif
 
-  char *__doubleToStr__(double d)
+  char *__doubleToStr__(double *d)
   {
     char *str = (char *)GC_malloc(200);
-    sprintf(str, "%.20f", d);
+    sprintf(str, "%.20f", *d);
     return __stripTrailingZeros__(str);
   }
 

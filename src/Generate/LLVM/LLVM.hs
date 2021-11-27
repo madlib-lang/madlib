@@ -728,7 +728,7 @@ generateBranch symbolTable hasMore exitBlock whereExp is = case is of
 
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
-    (_, branch) <- generateExp (trace ("ST': "<>ppShow symbolTable') symbolTable') exp
+    (_, branch) <- generateExp symbolTable' exp
     -- the exp might contain a where or if expression generating new blocks in between.
     -- therefore we need to get the block that contains the register reference in which
     -- it is defined. 
