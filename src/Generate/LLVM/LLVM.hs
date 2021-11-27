@@ -844,6 +844,35 @@ generateExp env symbolTable exp = case exp of
         icmp IntegerPredicate.SLT leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
+  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var ">=")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    result             <- case t of
+      InferredType.TCon (InferredType.TC "Float" _) _ ->
+        fcmp FloatingPointPredicate.OGE leftOperand' rightOperand'
+
+      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+        icmp IntegerPredicate.UGE leftOperand' rightOperand'
+
+      _ ->
+        icmp IntegerPredicate.SGE leftOperand' rightOperand'
+
+    return (symbolTable, result, Nothing)
+
+  Optimized (_ InferredType.:=> t) _ (App (Optimized _ _ (Var "<=")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    result             <- case t of
+      InferredType.TCon (InferredType.TC "Float" _) _ ->
+        fcmp FloatingPointPredicate.OLE leftOperand' rightOperand'
+
+      InferredType.TCon (InferredType.TC "Byte" _) _ ->
+        icmp IntegerPredicate.ULE leftOperand' rightOperand'
+
+      _ ->
+        icmp IntegerPredicate.SLE leftOperand' rightOperand'
+    return (symbolTable, result, Nothing)
+
   Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
