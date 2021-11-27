@@ -45,6 +45,8 @@ import qualified Infer.Type as InferredType
 import Infer.Type (isFunctionType)
 import LLVM.PassManager
 import LLVM.CodeGenOpt (Level)
+import LLVM.AST.Constant (Constant(Null))
+import qualified LLVM.Prelude as FloatingPointPredicate
 
 
 -- TODO: Move to util module
@@ -110,6 +112,18 @@ gcMalloc =
 madlistLength :: Operand
 madlistLength =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [listType] False) (AST.mkName "MadList_length"))
+
+madlistSingleton :: Operand
+madlistSingleton =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8] False) (AST.mkName "MadList_singleton"))
+
+madlistPush :: Operand
+madlistPush =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8, listType] False) (AST.mkName "MadList_push"))
+
+madlistConcat :: Operand
+madlistConcat =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [listType, listType] False) (AST.mkName "MadList_concat"))
 
 malloc :: Operand
 malloc =
@@ -321,12 +335,21 @@ generateExp symbolTable exp = case exp of
       _ ->
         undefined
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment "puts" e)) _) ->
-    return (symbolTable, Operand.ConstantOperand $ Constant.Null i8)
-
   Optimized _ _ (Assignment name e) -> do
     (symbolTable', exp') <- generateExp symbolTable e
     return (Map.insert name (varSymbol exp') symbolTable', exp')
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "-")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fsub leftOperand' rightOperand'
+    return (symbolTable, result)
+
+  Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "==")) leftOperand _)) rightOperand _) -> do
+    (_, leftOperand') <- generateExp symbolTable leftOperand
+    (_, rightOperand') <- generateExp symbolTable rightOperand
+    result <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+    return (symbolTable, result)
 
   Optimized _ _ (App f arg _) ->
     case f of
@@ -399,34 +422,76 @@ generateExp symbolTable exp = case exp of
 
     return (symbolTable, tuplePtr')
 
-  Optimized _ _ (If cond truthy falsy) -> mdo
+  Optimized _ _ (ListConstructor []) ->
+    return (symbolTable, Operand.ConstantOperand (Constant.Null listType))
+
+  Optimized _ _ (ListConstructor listItems) -> do
+    tail <- case List.last listItems of
+      Optimized _ _ (ListItem lastItem) -> do
+        (symbolTable', lastItem') <- generateExp symbolTable lastItem
+        lastItem'' <- box lastItem'
+        call madlistSingleton [(lastItem'', [])]
+
+      Optimized _ _ (ListSpread spread) -> do
+        (_, spread') <- generateExp symbolTable spread
+        return spread'
+
+      cannotHappen ->
+        undefined
+
+    list <- Monad.foldM
+      (\list' i -> case i of
+        Optimized _ _ (ListItem item) -> do
+          (_, item') <- generateExp symbolTable item
+          item'' <- box item'
+          call madlistPush [(item'', []), (list', [])]
+
+        Optimized _ _ (ListSpread spread) -> do
+          (_, spread') <- generateExp symbolTable spread
+          call madlistConcat [(spread', []), (list', [])]
+
+        cannotHappen ->
+          undefined
+      )
+      tail
+      (List.reverse $ List.init listItems)
+
+    return (symbolTable, list)
+
+
+  Optimized t _ (If cond truthy falsy) -> mdo
     (symbolTable', cond') <- generateExp symbolTable cond
     test  <- icmp IntegerPredicate.EQ cond' true
     condBr test truthyBlock falsyBlock
 
     truthyBlock <- block `named` "truthyBlock"
     (symbolTable'', truthy') <- generateExp symbolTable' truthy
+    truthy'' <- box truthy'
     br exitBlock
 
     falsyBlock <- block `named` "falsyBlock"
     (symbolTable''', falsy') <- generateExp symbolTable' falsy
+    falsy'' <- box falsy'
     br exitBlock
 
     exitBlock <- block `named` "condBlock"
-    ret <- phi [(truthy', truthyBlock), (falsy', falsyBlock)]
+    ret <- phi [(truthy'', truthyBlock), (falsy'', falsyBlock)]
 
-    return (symbolTable', ret)
+    ret' <- unbox t ret
+
+    return (symbolTable', ret')
 
 
-  Optimized _ _ (Where exp iss) -> mdo
+  Optimized t _ (Where exp iss) -> mdo
     (_, exp') <- generateExp symbolTable exp
     branches  <- generateBranches symbolTable exitBlock exp' iss
-    let (b, _) = List.head branches
 
     exitBlock <- block `named` "exitBlock"
     ret <- phi branches
 
-    return (symbolTable, ret)
+    ret' <- unbox t ret
+
+    return (symbolTable, ret')
 
 
   {-
@@ -484,6 +549,11 @@ generateBranch symbolTable hasMore exitBlock whereExp is = case is of
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
     (_, branch) <- generateExp symbolTable' exp
+    -- the exp might contain a where or if expression generating new blocks in between.
+    -- therefore we need to get the block that contains the register reference in which
+    -- it is defined. 
+    retBlock <- currentBlock
+    branch' <- box branch
     br exitBlock
 
     (nextBlock, finalPhi) <-
@@ -491,11 +561,11 @@ generateBranch symbolTable hasMore exitBlock whereExp is = case is of
         b <- block `named` "nextBlock"
         return (b, [])
       else do
-        let def = Operand.ConstantOperand (Constant.Null (typeOf branch))
+        let def = Operand.ConstantOperand (Constant.Null (typeOf branch'))
         return (exitBlock, [(def, currBlock)])
 
 
-    return $ (branch, branchExpBlock) : finalPhi
+    return $ (branch', retBlock) : finalPhi
 
   _ ->
     undefined
@@ -860,6 +930,7 @@ emptyClosureType =
     , Type.ptr $ Type.StructureType False []
     ]
 
+
 addTopLevelFnToSymbolTable :: SymbolTable -> Exp -> SymbolTable
 addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
   Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment fnName (Optimized t _ Abs{}))))) _) ->
@@ -881,6 +952,11 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) ->
     let globalRef = Operand.ConstantOperand (Constant.GlobalReference emptyClosureType (AST.mkName name))
     in  Map.insert name (fnSymbol globalRef) symbolTable
+
+  Optimized _ _ (ClosureDef name closured _ _) ->
+    let closureDefType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
+        globalRef = Operand.ConstantOperand (Constant.GlobalReference closureDefType (AST.mkName name))
+    in  Map.insert name (closureSymbol globalRef) symbolTable
 
   _ ->
     symbolTable
@@ -1213,6 +1289,9 @@ toLLVMModule ast =
   extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "__streq__") [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
   extern (AST.mkName "MadList_length") [listType] (Type.ptr Type.i8)
+  extern (AST.mkName "MadList_singleton") [Type.ptr Type.i8] listType
+  extern (AST.mkName "MadList_push") [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "MadList_concat") [listType, listType] listType
 
   global (AST.mkName "$EMPTY_ENV") (Type.StructureType False []) (Constant.Struct Nothing False [])
 
