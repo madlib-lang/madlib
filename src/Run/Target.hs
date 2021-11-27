@@ -1,3 +1,8 @@
 module Run.Target where
 
-data Target = TNode | TBrowser | TAny deriving(Eq, Show)
+data Target
+  = TNode
+  | TBrowser
+  | TLLVM
+  | TAny
+  deriving(Eq, Show)
