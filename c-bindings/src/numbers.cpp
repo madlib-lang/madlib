@@ -7,22 +7,31 @@ extern "C" {
 #endif
 
 
-// #define FLOAT_TYPE 0
-
-// typedef struct Number {
-//   char type;
-//   void* value;
-// } Number_t;
 
 
-// double *__addFloats__(Number_t *a, Number_t *b) {
-//   if (a->type == FLOAT_TYPE && b->type == FLOAT_TYPE) {
-//     double *aValue = (double*)a->value;
-//     double *bValue = (double*)b->value;
-//     ...
-//   }
+unsigned char* __numberToByte__(int64_t *a) {
+  unsigned char *result = (unsigned char*) malloc(sizeof(unsigned char));
+  *result = (unsigned char) *a;
+  return result;
+}
 
-// }
+unsigned char *__addBytes__(unsigned char *a, unsigned char *b) {
+  unsigned char *boxed = (unsigned char*) GC_malloc(sizeof(unsigned char));
+  *boxed = *a + *b;
+  return boxed;
+}
+
+unsigned char *__substractBytes__(unsigned char *a, unsigned char *b) {
+  unsigned char *boxed = (unsigned char*) GC_malloc(sizeof(unsigned char));
+  *boxed = *a - *b;
+  return boxed;
+}
+
+unsigned char *__multiplyBytes__(unsigned char *a, unsigned char *b) {
+  unsigned char *boxed = (unsigned char*) GC_malloc(sizeof(unsigned char));
+  *boxed = *a - *b;
+  return boxed;
+}
 
 
 double* __numberToFloat__(int64_t *a) {

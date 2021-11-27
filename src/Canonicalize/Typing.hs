@@ -99,6 +99,7 @@ typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
 typingToType env kindNeeded (Src.Source area (Src.TRSingle t))
   | t == "Integer" = return tInteger
   | t == "Float"   = return tFloat
+  | t == "Byte"    = return tByte
   | t == "Boolean" = return tBool
   | t == "String"  = return tStr
   | t == "()" = return tUnit

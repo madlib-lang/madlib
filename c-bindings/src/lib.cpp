@@ -189,6 +189,15 @@ char **__integerToStr__(int64_t i) {
   return boxed;
 }
 
+char **__byteToStr__(unsigned char i) {
+  char *str = (char *)GC_malloc(4);
+  sprintf(str, "%d", i);
+
+  char **boxed = (char **)GC_malloc(sizeof(char *));
+  *boxed = str;
+  return boxed;
+}
+
 char **__booleanToStr__(bool b) {
   char **boxed = (char **)GC_malloc(sizeof(char *));
 

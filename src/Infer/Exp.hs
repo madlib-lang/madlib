@@ -37,6 +37,7 @@ import qualified Control.Monad                 as CM
 import Debug.Trace
 import Text.Show.Pretty
 import AST.Solved (getType)
+import Data.Int (Int8)
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -194,7 +195,7 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
 
   -- es'' <- mapM (updatePlaceholders env' True s) es
 
-  return (s, apply s (trace ("PS: "<>ppShow ps) ps), t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
+  return (s, apply s ps, t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
@@ -790,7 +791,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
           -- and then it could resolve instances like Show where before we still had a type var
           -- but after the first pass we have Integer instead.
           (sDef', rs'') = tryDefaults (apply sDef rs')
-      CM.unless (null (trace ("RS'': "<>ppShow rs'') rs'')) $ throwError $ CompilationError
+      CM.unless (null rs'') $ throwError $ CompilationError
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef)
@@ -803,12 +804,14 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   let sc  = if isLet then Forall [] $ ds' :=> apply sDefaults t' else quantify fs $ ds' :=> apply sDefaults t'
 
+  let ds'' = dedupePreds ds'
+
   case Can.getExpName exp of
     -- Just n  -> return (sDefaults `compose` s'', (ds', ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
-    Just n  -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ds'), extendVars env' (n, sc), updateQualType e (ds' :=> apply sDefaults t'))
+    Just n  -> return (sDefaults `compose` s'', (ds'', ds''), extendVars env' (n, sc), updateQualType e (ds'' :=> apply sDefaults t'))
 
     -- Nothing -> return (sDefaults `compose` s'', (ds', ps'), env', updateQualType e (ds :=> t'))
-    Nothing -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ds'), env', updateQualType e (ds' :=> apply sDefaults t'))
+    Nothing -> return (sDefaults `compose` s'', (ds'', ds''), env', updateQualType e (ds'' :=> apply sDefaults t'))
 
 
 
@@ -882,11 +885,10 @@ inferExp env e = do
 
     _ -> do
       (s, (ds, ps), env', e') <- inferImplicitlyTyped False env e
-      -- inferImplicitlyTyped False env' e
       return (s, ps, env', e')
 
   e''  <- insertClassPlaceholders env e' ps
-  e''' <- updatePlaceholders env False s e''
+  e''' <- updatePlaceholders env (CleanUpEnv [] []) False s e''
 
   return (Just e''', env')
 
