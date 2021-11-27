@@ -222,7 +222,7 @@ verifyExport :: Env -> [String] -> Src.Exp -> CanonicalM [String]
 verifyExport env exportedNames (Src.Source area exp) = case exp of
   Src.NameExport name -> performExportCheck env area exportedNames name
 
-  Src.Export (Src.Source _ (Src.Assignment name _ _)) -> performExportCheck env area exportedNames name
+  Src.Export (Src.Source _ (Src.Assignment name _)) -> performExportCheck env area exportedNames name
 
   _                   -> return exportedNames
 
