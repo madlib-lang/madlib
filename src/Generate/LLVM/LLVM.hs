@@ -34,25 +34,25 @@ import qualified LLVM.AST.Operand                as Operand
 import qualified LLVM.AST.IntegerPredicate       as IntegerPredicate
 import qualified LLVM.AST.FloatingPointPredicate as FloatingPointPredicate
 
-import LLVM.IRBuilder.Module
-import LLVM.IRBuilder.Constant as C
-import LLVM.IRBuilder.Monad
-import LLVM.IRBuilder.Instruction as Instruction
-import LLVM.Context (withContext)
-import Generate.LLVM.Optimized as Opt
-import Text.Show.Pretty
-import Debug.Trace
-import qualified Data.String.Utils as List
-import qualified Infer.Type as InferredType
-import Infer.Type (isFunctionType)
-import LLVM.PassManager
-import LLVM.CodeGenOpt (Level)
-import LLVM.AST.Constant (Constant(Null))
-import qualified LLVM.Prelude as FloatingPointPredicate
-import LLVM.Transforms (Pass(TailCallElimination))
-import Codec.Binary.UTF8.String as UTF8
-import Codec.Binary.UTF8.Generic as GEN
+import           LLVM.IRBuilder.Module
+import           LLVM.IRBuilder.Constant         as C
+import           LLVM.IRBuilder.Monad
+import           LLVM.IRBuilder.Instruction      as Instruction
+import           LLVM.Context (withContext)
+import           Generate.LLVM.Optimized         as Opt
 
+import qualified Data.String.Utils               as List
+import qualified Infer.Type                      as InferredType
+import           Infer.Type (isFunctionType)
+import           LLVM.PassManager
+import           LLVM.CodeGenOpt (Level)
+import           LLVM.AST.Constant (Constant(Null))
+import qualified LLVM.Prelude as FloatingPointPredicate
+import           LLVM.Transforms (Pass(TailCallElimination))
+import           Codec.Binary.UTF8.String as UTF8
+import           Codec.Binary.UTF8.Generic as GEN
+import           Text.Show.Pretty
+import           Debug.Trace
 
 sizeof :: Type.Type -> Constant.Constant
 sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)

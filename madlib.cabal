@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aa53a59402f4a896acb304482c830d4b14abcd832c19d74430b192311169f825
+-- hash: f15d338bd6cd65fdd0e8732ca4bd63ff980cde0781f9efeebff014550c600767
 
 name:           madlib
 version:        0.11.0
@@ -59,6 +59,7 @@ library
       Generate.LLVM.ClosureConvert
       Generate.LLVM.LLVM
       Generate.LLVM.Optimized
+      Generate.LLVM.Rename
       Generate.Utils
       Infer.AST
       Infer.Env
@@ -177,6 +178,7 @@ executable madlib
       Generate.LLVM.ClosureConvert
       Generate.LLVM.LLVM
       Generate.LLVM.Optimized
+      Generate.LLVM.Rename
       Generate.Utils
       Infer.AST
       Infer.Env
