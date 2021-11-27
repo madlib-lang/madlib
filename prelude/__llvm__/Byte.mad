@@ -1,5 +1,4 @@
 import { yellow } from "./PrettyShow"
-// import List from "./List"
 
 
 showByte :: Byte -> String
@@ -14,25 +13,3 @@ instance Show Byte {
 instance PrettyShow Byte {
   ppShow = pipe(show, yellow)
 }
-
-
-// showWith :: (a -> String) -> List a -> String
-// showWith = (with, list) => {
-//   processItems = (processed, items) => where(items) {
-//     [first, second, ...rest] =>
-//       processItems(processed ++ with(first) ++ " ", List.push(second, rest))
-
-//     [last] =>
-//       processed ++ with(last)
-
-//     [] =>
-//       ""
-//   }
-
-//   return processItems("", list)
-// }
-
-// instance Show (List Byte) {
-//   show = showWith(show)
-// }
-

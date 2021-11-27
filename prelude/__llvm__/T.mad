@@ -1,9 +1,9 @@
 import IO from "./IO"
 import {} from "./Integer"
-import {} from "./Byte"
 import {} from "./String"
 import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
+import {} from "./Byte"
 
 
 IO.prettyLog("Hello world!")
@@ -41,6 +41,7 @@ IO.prettyLog(rejected)
 
 IO.prettyLog((127 :: Byte))
 IO.prettyLog(([127, 245, 11, 90, 2] :: List Byte))
+
 
 // IO.prettyLog(!!true)
 // IO.prettyLog(!!!true)
