@@ -235,10 +235,10 @@ spec = do
 
     it "should allow ADT constructors to have record parameters" $ do
       let
-        codeA = "export type Point = Point(<Number, Number>)"
+        codeA = "export type Point = Point(#[Number, Number])"
         astA  = buildAST "./ModuleA" codeA
         codeB = unlines
-          ["import P from \"./ModuleA\"", "p = P.Point(<2, 4>)", "where(p) {", "  P.Point(<a, b>) => a + b", "}"]
+          ["import P from \"./ModuleA\"", "p = P.Point(#[2, 4])", "where(p) {", "  P.Point(#[a, b]) => a + b", "}"]
         astB   = buildAST "./ModuleB" codeB
         actual = case (astA, astB) of
           (Right a, Right b) ->
@@ -283,8 +283,8 @@ spec = do
             , "instance Applicative (Wish e) {"
             , "  pure = (a) => Wish((badCB, goodCB) => goodCB(a))"
             , ""
-            , "  ap = (mf, m) => Wish((badCB, goodCB) => where(<mf, m>) {"
-            , "    <Wish(runMF), Wish(runM)> =>"
+            , "  ap = (mf, m) => Wish((badCB, goodCB) => where(#[mf, m]) {"
+            , "    #[Wish(runMF), Wish(runM)] =>"
             , "      runM("
             , "        badCB,"
             , "        (x) => runMF("
@@ -445,11 +445,11 @@ spec = do
             , "  show = (n) => (#- new Number(n).toString() -#)"
             , "}"
             , ""
-            , "instance (Show a, Show b) => Show <a, b> {"
-            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
+            , "instance (Show a, Show b) => Show #[a, b] {"
+            , "  show = where { #[a, b] => '#[' ++ show(a) ++ ', ' ++ show(b) ++ ']' }"
             , "}"
             , ""
-            , "show(<1, false>)"
+            , "show(#[1, false])"
             ]
           actual = tester code
       snapshotTest "should resolve constrained instances" actual
@@ -468,11 +468,11 @@ spec = do
             , "  show = (n) => (#- new Number(n).toString() -#)"
             , "}"
             , ""
-            , "instance Show <a, b> {"
-            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
+            , "instance Show #[a, b] {"
+            , "  show = where { #[a, b] => '#[' ++ show(a) ++ ', ' ++ show(b) ++ ']' }"
             , "}"
             , ""
-            , "show(<1, false>)"
+            , "show(#[1, false])"
             ]
           actual = tester code
       snapshotTest "should fail for instances missing constrains" actual
@@ -487,8 +487,8 @@ spec = do
             , "  show = (b) => b ? 'True' : 'False'"
             , "}"
             , ""
-            , "instance (Show a, Show b) => Show <a, b> {"
-            , "  show = where { <a, b> => '<' ++ show(a) ++ ', ' ++ show(b) ++ '>' }"
+            , "instance (Show a, Show b) => Show #[a, b] {"
+            , "  show = where { #[a, b] => '#[' ++ show(a) ++ ', ' ++ show(b) ++ ']' }"
             , "}"
             , ""
             , "show(3)"
@@ -601,13 +601,13 @@ spec = do
             , "FunctionLink = where { f => 'moduleName' ++ f.name }"
             , "generateFunctionLinks = pipe("
             , "  chain(.expressions),"
-            , "  sortBy((a, b) => where(<a, b>) {"
-            , "    <{ name: nameA }, { name: nameB }> => compare(nameA, nameB)"
-            , "    <{ name: nameC }, { ik: nameD }> => compare(nameC, nameD)"
-            , "    <{ tchouk: nameD }, { name: nameC }> => compare(nameC, nameD)"
-            , "    <{ name: nameC }, { lui: nameD }> => compare(nameC, nameD)"
-            , "    <{ name: nameC }, { po: { pi: { nameD }}}> => compare(nameC, nameD)"
-            , "    <{ po: { pi: { nameC }}}, { name: nameD }> => compare(nameC, nameD)"
+            , "  sortBy((a, b) => where(#[a, b]) {"
+            , "    #[{ name: nameA }, { name: nameB }] => compare(nameA, nameB)"
+            , "    #[{ name: nameC }, { ik: nameD }] => compare(nameC, nameD)"
+            , "    #[{ tchouk: nameD }, { name: nameC }] => compare(nameC, nameD)"
+            , "    #[{ name: nameC }, { lui: nameD }] => compare(nameC, nameD)"
+            , "    #[{ name: nameC }, { po: { pi: { nameD }}}] => compare(nameC, nameD)"
+            , "    #[{ po: { pi: { nameC }}}, { name: nameD }] => compare(nameC, nameD)"
             , "  }),"
             , "  map(FunctionLink)"
             , ")"
@@ -716,16 +716,10 @@ spec = do
     -- Tuples
 
     it "should infer tuple constructors" $ do
-      let code   = unlines ["<1, 2, 3>", "<true, \"John\", 33>"]
+      let code   = unlines ["#[1, 2, 3]", "#[true, \"John\", 33]"]
           actual = tester code
       snapshotTest "should infer tuple constructors" actual
 
-    it "should not confuse > operator with end of tuples" $ do
-      let
-        code = unlines
-          ["<1, 2, 3>", "<true, \"John\", 33>", "<true, \"John\", 33> 3>", "<true, \"John\", \"OK\"> \"NOT OK\">"]
-        actual = tester code
-      snapshotTest "should not confuse > operator with end of tuples" actual
 
     ---------------------------------------------------------------------------
 

@@ -24,7 +24,7 @@ sumAndLog = pipe(
   chain((x) => tell(["Summed 18"]) |> andDo(of(x)))
 )
 
-runStack :: Number -> Stack a -> <<a, Number>, List String>
+runStack :: Number -> Stack a -> #[#[a, Number], List String]
 runStack = (x) => pipe(
   (m) => runStateT(m, x),
   runWriterT,

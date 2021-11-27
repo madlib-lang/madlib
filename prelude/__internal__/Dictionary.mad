@@ -9,7 +9,7 @@ import T from "Tuple"
  */
 
 
-Dictionary :: List <k, v> -> Dictionary k v
+Dictionary :: List #[k, v] -> Dictionary k v
 Dictionary = (items) => #- ({
   __constructor: "Dictionary",
   __args: [items],
@@ -20,10 +20,10 @@ Dictionary = (items) => #- ({
  *
  * @since 0.0.5
  * @example
- * fromList([<"one", 2>, <"two", 2>])
- * fromList([<"a", 2>, <"b", 2>, <"c", 3>])
+ * fromList([#["one", 2], #["two", 2]])
+ * fromList([#["a", 2], #["b", 2], #["c", 3]])
  */
-fromList :: List (<k, v>) -> Dictionary k v
+fromList :: List (#[k, v]) -> Dictionary k v
 export fromList = pipe(
   L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
   Dictionary
@@ -44,19 +44,19 @@ export empty = fromList([])
  *
  * @since 0.0.5
  * @example
- * insert(1, 2, empty)              // fromList([<1, 2>])
- * insert(1, 7, fromList([<1, 2>])) // fromList([<1, 7>])
+ * insert(1, 2, empty)              // fromList([#[1, 2]])
+ * insert(1, 7, fromList([#[1, 2]])) // fromList([#[1, 7]])
  */
 insert :: k -> v -> Dictionary k v -> Dictionary k v
 export insert = (k, v, m) => where(m) {
   Dictionary(items) =>
     L.reject(
       (item) => where(item) {
-        <kk, _> => kk == k
+        #[kk, _] => kk == k
       },
       items
     )
-    |> L.append(<k, v>)
+    |> L.append(#[k, v])
     |> Dictionary
 }
 
@@ -65,14 +65,14 @@ export insert = (k, v, m) => where(m) {
  *
  * @since 0.0.5
  * @example
- * get("john", fromList([<"john", { age: 32 }>])) // Just({ age: 32 })
- * get("paul", fromList([<"john", { age: 32 }>])) // Nothing
+ * get("john", fromList([#["john", { age: 32 }]])) // Just({ age: 32 })
+ * get("paul", fromList([#["john", { age: 32 }]])) // Nothing
  */
 get :: k -> Dictionary k v -> Maybe v
 export get = (k) => where {
   Dictionary(items) => pipe(
     L.find((item) => where(item) {
-      <kk, _> => k == kk
+      #[kk, _] => k == kk
     }),
     map(T.snd)
   )(items)
@@ -84,7 +84,7 @@ export get = (k) => where {
  *
  * @since 0.0.5
  * @example
- * keys(fromList([<true, "Go for it">, <false, "NOGO">])) // [true, false]
+ * keys(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // [true, false]
  */
 keys :: Dictionary k v -> List k
 export keys = (m) => where(m) {
@@ -96,7 +96,7 @@ export keys = (m) => where(m) {
  *
  * @since 0.0.5
  * @example
- * values(fromList([<true, "Go for it">, <false, "NOGO">])) // ["Go for it", "NOGO"]
+ * values(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // ["Go for it", "NOGO"]
  */
 values :: Dictionary k v -> List v
 export values = (m) => where(m) {
@@ -109,7 +109,7 @@ export values = (m) => where(m) {
  *
  * @since 0.0.5
  * @example
- * len(fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>])) // 3
+ * len(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
  */
 len :: Dictionary k v -> Number
 export len = (m) => (m |> keys |> L.len)
@@ -120,12 +120,12 @@ export len = (m) => (m |> keys |> L.len)
  *
  * @since 0.0.5
  * @example
- * map((x) => x / 2, fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>]))
- * // fromList([<"Sidney", 1.5>, <"New York", 9>, <"London", 1>])
+ * map((x) => x / 2, fromList([#["Sidney", 3], #["New York", 18], #["London", 2]]))
+ * // fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]])
  */
 instance Functor (Dictionary k) {
   map = (fn) => where {
-    Dictionary(items) => map((i) => <T.fst(i), fn(T.snd(i))>, items) |> fromList
+    Dictionary(items) => map((i) => #[T.fst(i), fn(T.snd(i))], items) |> fromList
   }
 }
 
@@ -136,13 +136,13 @@ instance Functor (Dictionary k) {
  * @example
  * mapWithKey(
  *   (city, x) => city == "Sidney" ? 9 : x / 2,
- *   fromList([<"Sidney", 3>, <"New York", 18>, <"London", 2>])
+ *   fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])
  * )
- * // fromList([<"Sidney", 9>, <"New York", 9>, <"London", 1>])
+ * // fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
  */
 mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where {
-  Dictionary(items) => map((i) => <T.fst(i), fn(T.fst(i), T.snd(i))>, items) |> fromList
+  Dictionary(items) => map((i) => #[T.fst(i), fn(T.fst(i), T.snd(i))], items) |> fromList
 }
 
 /**
@@ -151,6 +151,6 @@ export mapWithKey = (fn) => where {
  * @since 0.0.5
  */
 merge :: Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => where(<a, b>) {
-  <Dictionary(itemsA), Dictionary(itemsB)> => L.concat(itemsA, itemsB) |> fromList
+export merge = (a, b) => where(#[a, b]) {
+  #[Dictionary(itemsA), Dictionary(itemsB)] => L.concat(itemsA, itemsB) |> fromList
 }

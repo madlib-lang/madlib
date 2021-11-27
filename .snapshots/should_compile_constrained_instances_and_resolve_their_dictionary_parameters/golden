@@ -10,7 +10,7 @@ Show['Tuple_2'] = {};
 let __ShowTuple_2show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return '<' + Show_i8.show()(a) + ', ' + Show_j9.show()(b) + '>';
+    return '#[' + Show_i8.show()(a) + ', ' + Show_j9.show()(b) + ']';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -27,7 +27,7 @@ Show['Tuple_3'] = {};
 let __ShowTuple_3show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return '<' + Show_b27.show()(a) + ', ' + Show_c28.show()(b) + ', ' + Show_d29.show()(c) + '>';
+    return '#[' + Show_b27.show()(a) + ', ' + Show_c28.show()(b) + ', ' + Show_d29.show()(c) + ']';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 

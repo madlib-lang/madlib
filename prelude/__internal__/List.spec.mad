@@ -40,7 +40,7 @@ test(
 )
 
 test("of should wrap a value in a List", (_) =>
-  assertEquals(of(<1, true>), [<1, true>])
+  assertEquals(of(#[1, true]), [#[1, true]])
 )
 
 test(

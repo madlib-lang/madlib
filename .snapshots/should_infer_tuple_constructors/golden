@@ -12,19 +12,19 @@ Right
                        (TCon (TC "Number" Star) "prelude"))
                     (TCon (TC "Number" Star) "prelude"))
                  (TCon (TC "Number" Star) "prelude"))
-            (Area (Loc 0 1 1) (Loc 9 1 10))
+            (Area (Loc 0 1 1) (Loc 10 1 11))
             (TupleConstructor
                [ Solved
                    ([] :=> TCon (TC "Number" Star) "prelude")
-                   (Area (Loc 1 1 2) (Loc 2 1 3))
+                   (Area (Loc 2 1 3) (Loc 3 1 4))
                    (LNum "1")
                , Solved
                    ([] :=> TCon (TC "Number" Star) "prelude")
-                   (Area (Loc 4 1 5) (Loc 5 1 6))
+                   (Area (Loc 5 1 6) (Loc 6 1 7))
                    (LNum "2")
                , Solved
                    ([] :=> TCon (TC "Number" Star) "prelude")
-                   (Area (Loc 7 1 8) (Loc 8 1 9))
+                   (Area (Loc 8 1 9) (Loc 9 1 10))
                    (LNum "3")
                ])
         , Solved
@@ -37,19 +37,19 @@ Right
                        (TCon (TC "Boolean" Star) "prelude"))
                     (TCon (TC "String" Star) "prelude"))
                  (TCon (TC "Number" Star) "prelude"))
-            (Area (Loc 10 2 1) (Loc 28 2 19))
+            (Area (Loc 11 2 1) (Loc 30 2 20))
             (TupleConstructor
                [ Solved
                    ([] :=> TCon (TC "Boolean" Star) "prelude")
-                   (Area (Loc 11 2 2) (Loc 15 2 6))
+                   (Area (Loc 13 2 3) (Loc 17 2 7))
                    (LBool "true")
                , Solved
                    ([] :=> TCon (TC "String" Star) "prelude")
-                   (Area (Loc 17 2 8) (Loc 23 2 14))
+                   (Area (Loc 19 2 9) (Loc 25 2 15))
                    (LStr "\"John\"")
                , Solved
                    ([] :=> TCon (TC "Number" Star) "prelude")
-                   (Area (Loc 25 2 16) (Loc 27 2 18))
+                   (Area (Loc 27 2 17) (Loc 29 2 19))
                    (LNum "33")
                ])
         ]
