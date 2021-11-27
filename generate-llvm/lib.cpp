@@ -118,7 +118,7 @@ extern "C"
 
   MadListNode_t *MadList_singleton(void *item)
   {
-    MadListNode_t *head = (MadListNode_t *)malloc(sizeof(MadListNode_t));
+    MadListNode_t *head = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
     head->next = NULL;
     head->value = item;
 
@@ -138,7 +138,7 @@ extern "C"
       current = current->next;
     }
 
-    MadListNode_t *nextNode = (MadListNode_t *)malloc(sizeof(MadListNode_t));
+    MadListNode_t *nextNode = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
     nextNode->next = NULL;
     nextNode->value = item;
 
@@ -159,6 +159,46 @@ extern "C"
     newHead->value = item;
 
     return newHead;
+  }
+
+  MadListNode_t *__MadList_push__(void *item, MadListNode_t *list)
+  {
+    return MadList_push(item, list);
+  }
+
+  typedef void* (*ClosureFn)(void*, void*);
+
+  typedef struct closure
+  {
+    // void* fn(void*, void*);
+    ClosureFn fn;
+    void* env;
+  } closure_t;
+  
+
+  MadListNode_t *MadList_map(closure_t* cls, MadListNode_t *list)
+  {
+      MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+      MadListNode_t *head = newList;
+      MadListNode_t *current = list;
+
+      newList->value = cls->fn(cls->env, current->value);
+      newList->next = NULL;
+      current = current->next;
+
+      while (current != NULL)
+      {
+        MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+        nextItem->value = cls->fn(cls->env, current->value);
+        nextItem->next = NULL;
+
+        newList->next = nextItem;
+        newList = newList->next;
+
+        current = current->next;
+      }
+
+      return head;
   }
 
   void *MadList_nth(double index, MadListNode_t *list)
