@@ -57,7 +57,8 @@ sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
 data SymbolType
   = VariableSymbol
   | FunctionSymbol
-  | ConstructorSymbol Int Int -- ctor unique id ( index ) | arity
+  | ConstructorSymbol Int Int
+  -- ^ unique id ( index ) | arity
   deriving(Eq, Show)
 
 
@@ -505,49 +506,40 @@ updateClosureType envArgs t = case t of
   _ ->
     t
 
+
+generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
+generateFunction symbolTable fnName abs = case abs of
+  Optimized t _ (Abs paramName [body]) -> do
+    let returnType  = boxType
+    let paramType   = boxType
+        returnType' = case body of
+          Optimized _ _ (Closure n args) ->
+            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
+          _ ->
+            returnType
+
+    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
+      entry <- block `named` "entry"; do
+        var' <- unbox (InferredType.getParamType t) param
+        (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
+        exps' <- case body of
+          Optimized _ _ Closure{} ->
+            return exps
+          _ ->
+            box exps
+        ret exps'
+    return $ Map.insert fnName (fnSymbol f) symbolTable
+
+  _ ->
+    undefined
+
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body])))) _) -> do
-    let returnType  = boxType
-    let paramType   = boxType
-        returnType' = case body of
-          Optimized _ _ (Closure n args) ->
-            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
-          _ ->
-            returnType
+  Optimized _ _ (TypedExp (Optimized _ _ (Assignment fnName abs@(Optimized t _ Abs{}))) _) -> do
+    generateFunction symbolTable fnName abs
 
-    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
-      entry <- block `named` "entry"; do
-        var' <- unbox (InferredType.getParamType t) param
-        (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
-        exps' <- case body of
-          Optimized _ _ Closure{} ->
-            return exps
-          _ ->
-            box exps
-        ret exps'
-    return $ Map.insert fnName (fnSymbol f) symbolTable
-
-  Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body]))) -> do
-    let returnType  = boxType
-    let paramType   = boxType
-        returnType' = case body of
-          Optimized _ _ (Closure n args) ->
-            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
-          _ ->
-            returnType
-
-    f <- function (AST.mkName fnName) [(boxType, ParameterName (stringToShortByteString paramName))] returnType' $ \[param] -> do
-      entry <- block `named` "entry"; do
-        var' <- unbox (InferredType.getParamType t) param
-        (_, exps) <- generateExp (Map.insert paramName (varSymbol var') symbolTable) body
-        exps' <- case body of
-          Optimized _ _ Closure{} ->
-            return exps
-          _ ->
-            box exps
-        ret exps'
-    return $ Map.insert fnName (fnSymbol f) symbolTable
+  Optimized _ _ (Assignment fnName abs@(Optimized t _ Abs{})) -> do
+    generateFunction symbolTable fnName abs
 
   Optimized t _ (ClosureDef fnName env paramName [body]) -> do
     let envParams = (\(Optimized t _ (Var n)) -> (boxType, ParameterName (stringToShortByteString n))) <$> env
@@ -604,6 +596,7 @@ internally it builds a struct to represent the constructor:
 the i64 is the type of constructor ( simply the index )
 the two i8* are the content of the created type
 -}
+-- TODO: still need to generate closured constructors
 generateConstructor :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Constructor, Int) -> m SymbolTable
 generateConstructor symbolTable (constructor, index) = case constructor of
   Untyped _ (Constructor n _ t) -> do
