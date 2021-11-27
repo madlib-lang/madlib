@@ -1,0 +1,21 @@
+#!/bin/bash
+mkdir .buildlibs
+cd .buildlibs
+
+wget https://github.com/libuv/libuv/archive/refs/tags/v1.42.0.zip
+unzip v1.42.0.zip -d libuv
+cd libuv/libuv-1.42.0 && sh autogen.sh && ./configure --enable-static && make -j
+cd ../..
+cp libuv/libuv-1.42.0/.libs/libuv.a ../runtime/lib/libuv.a
+cp -R libuv/libuv-1.42.0/include ../runtime/
+
+# install libgc
+wget https://github.com/ivmai/bdwgc/archive/refs/tags/v8.2.0.zip
+unzip v8.2.0.zip -d libgc
+cd libgc/bdwgc-8.2.0 && ./autogen.sh && ./configure --enable-static && make -j
+cd ../..
+cp libgc/bdwgc-8.2.0/.libs/libgc.a ../runtime/lib/libgc.a
+cp -R libgc/bdwgc-8.2.0/include ../runtime/
+
+cd ..
+rm -r .buildlibs

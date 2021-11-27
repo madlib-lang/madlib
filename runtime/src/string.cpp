@@ -1,5 +1,6 @@
 #include <gc.h>
 #include <iostream>
+#include <string.h>
 
 // String
 

@@ -252,6 +252,11 @@ compileExpFields depth exp = case exp of
             if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
     in  indent depth <> "\"nodeType\": \"LiteralNumber\",\n" <> indent depth <> "\"value\": \"" <> compiledVal <> "\"\n"
 
+  Slv.LFloat val ->
+    let compiledVal =
+            if isInfixOf "Infinity" val || isInfixOf "-Infinity" val then "" <> escapeString val <> "" else val
+    in  indent depth <> "\"nodeType\": \"LiteralFloat\",\n" <> indent depth <> "\"value\": \"" <> compiledVal <> "\"\n"
+
   Slv.LBool val ->
     indent depth <> "\"nodeType\": \"LiteralBoolean\",\n" <> indent depth <> "\"value\": " <> val <> "\n"
 
@@ -334,6 +339,12 @@ compileExpFields depth exp = case exp of
       <> ",\n"
       <> indent depth
       <> "\"scheme\": \"TBD\"\n"
+
+  Slv.Extern qt name foreignName ->
+    indent depth
+      <> "\"nodeType\": \"Extern\",\n"
+      <> indent depth
+      <> "\"name\": \"" <> name <> "\"\n"
 
   Slv.Export exp ->
     indent depth <> "\"nodeType\": \"Export\",\n" <> indent depth <> "\"expression\": " <> compileExp depth exp <> "\n"

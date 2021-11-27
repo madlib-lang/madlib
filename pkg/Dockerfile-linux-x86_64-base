@@ -1,0 +1,21 @@
+# Should use alpine:3.13 to get ghc 8.8.4
+FROM ubuntu:20.04 as build-stage
+
+# install ghc and cabal
+RUN apt-get update
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository -y ppa:hvr/ghc
+RUN apt-get update
+RUN apt-get install -y cabal-install-3.2 ghc-8.8.4
+ENV PATH="/opt/cabal/bin:/opt/ghc/bin:$PATH"
+
+# install common dependencies
+RUN apt-get install -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev
+
+# install stack
+RUN curl -sSL https://get.haskellstack.org/ | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# tell stack to use the global ghc, installing GHC with stack fails
+RUN stack config set system-ghc --global true
+ENV PATH="$(stack path --bin-path):$PATH"

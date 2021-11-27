@@ -29,8 +29,13 @@
 /* Eventually this one may become unnecessary.  For now we need */
 /* it to keep the old-style build process working.              */
 #define GC_TMP_VERSION_MAJOR 8
+<<<<<<< HEAD
 #define GC_TMP_VERSION_MINOR 0
 #define GC_TMP_VERSION_MICRO 6 /* 8.0.6 */
+=======
+#define GC_TMP_VERSION_MINOR 2
+#define GC_TMP_VERSION_MICRO 0 /* 8.2.0 */
+>>>>>>> WIP update linux build dockerfile
 
 #ifdef GC_VERSION_MAJOR
 # if GC_TMP_VERSION_MAJOR != GC_VERSION_MAJOR \
