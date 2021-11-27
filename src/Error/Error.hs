@@ -30,6 +30,7 @@ data TypeError
   | NotCapitalizedAliasName String
   | NotCapitalizedConstructorName String
   | TypingHasWrongKind Type Kind Kind
+  | WrongAliasArgCount String Int Int
   | UnknownType String
   | WrongSpreadType String
   | FieldNotExisting String

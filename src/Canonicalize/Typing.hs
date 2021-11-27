@@ -109,8 +109,11 @@ typingToType env kindNeeded (Src.Source _ area (Src.TRSingle t))
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area []))
 
     parsedType <- case h of
-      (TAlias _ _ _ t) ->
-        updateAliasVars (getConstructorCon h) []
+      (TAlias _ id vars t) ->
+        if not (null vars) then
+          throwError $ CompilationError (WrongAliasArgCount id (length vars) 0) (Context (envCurrentPath env) area [])
+        else
+          updateAliasVars (getConstructorCon h) []
 
       t                -> return $ getConstructorCon t
 
@@ -155,8 +158,11 @@ typingToType env kindNeeded (Src.Source _ area (Src.TRComp t ts))
       (zip ts kargs)
 
     parsedType <- case h of
-      TAlias _ _ tvs t ->
-        updateAliasVars (getConstructorCon h) params
+      TAlias _ id tvs t ->
+        if length tvs /= length ts then
+          throwError $ CompilationError (WrongAliasArgCount id (length tvs) (length ts)) (Context (envCurrentPath env) area [])
+        else
+          updateAliasVars (getConstructorCon h) params
 
       t ->
         return $ foldl' TApp (getConstructorCon t) params

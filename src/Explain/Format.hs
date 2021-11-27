@@ -327,6 +327,17 @@ formatTypeError json err = case err of
       <> "has the following constraints: " <> intercalate ", " (predClass <$> preds) <>".\n\n"
       <> "Hint: Add the missing interface constraints to the type annotation."
 
+  WrongAliasArgCount aliasName expected actual ->
+    "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ", but\n"
+      <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given.\n\n"
+      <> "Hint: "
+      <> (
+            if actual > expected then
+              "remove " <> show (actual - expected) <> " argument(s)"
+            else
+              "add the missing '" <> show (expected - actual) <> "' argument(s)"
+         )
+
   _ -> ppShow err
 
 
