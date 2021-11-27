@@ -40,7 +40,7 @@
 #define GC_BUILTIN_ATOMIC 1
 
 /* Define to build dynamic libraries with only API symbols exposed. */
-#define GC_DLL 1
+/* #undef GC_DLL */
 
 /* Skip the initial guess of data root sets. */
 /* #undef GC_DONT_REGISTER_MAIN_STATIC_DATA */
@@ -88,7 +88,7 @@
 #define GC_VERSION_MICRO 0
 
 /* The minor version number of this GC release. */
-#define GC_VERSION_MINOR 3
+#define GC_VERSION_MINOR 2
 
 /* Define to support pthreads-win32 or winpthreads. */
 /* #undef GC_WIN32_PTHREADS */
@@ -192,7 +192,7 @@
 #define PACKAGE_NAME "gc"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "gc 8.3.0"
+#define PACKAGE_STRING "gc 8.2.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "gc"
@@ -201,7 +201,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "8.3.0"
+#define PACKAGE_VERSION "8.2.0"
 
 /* Define to enable parallel marking. */
 #define PARALLEL_MARK 1
@@ -257,7 +257,7 @@
 /* #undef USE_WINALLOC */
 
 /* Version number of package */
-#define VERSION "8.3.0"
+#define VERSION "8.2.0"
 
 /* The POSIX feature macro. */
 /* #undef _POSIX_C_SOURCE */

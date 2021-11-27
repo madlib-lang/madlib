@@ -675,7 +675,11 @@ EXTERN_C_BEGIN
 #   endif
 #   define mach_type_known
 # endif
+<<<<<<< HEAD
 # if defined(__riscv) && defined(LINUX)
+=======
+# if defined(__riscv) && (defined(FREEBSD) || defined(LINUX))
+>>>>>>> WIP update linux build dockerfile
 #   define RISCV
 #   define mach_type_known
 # endif
@@ -2892,9 +2896,12 @@ EXTERN_C_BEGIN
 #     define OS_TYPE "LINUX"
       extern int __data_start[] __attribute__((__weak__));
 #     define DATASTART ((ptr_t)__data_start)
+<<<<<<< HEAD
 #     define LINUX_STACKBOTTOM
 #     define COUNT_UNMAPPED_REGIONS
 #     define DYNAMIC_LOADING
+=======
+>>>>>>> WIP update linux build dockerfile
 #   endif
 # endif /* RISCV */
 

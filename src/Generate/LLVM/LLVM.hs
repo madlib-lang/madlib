@@ -25,6 +25,7 @@ import qualified Control.Monad.Writer.Class as Writer
 import           Data.ByteString as ByteString
 import           Data.ByteString.Char8 as Char8
 import           System.Process
+import           System.Info
 
 import           LLVM.Pretty
 import           LLVM.Target
@@ -3091,5 +3092,12 @@ generateTable outputFolder rootPath astTable entrypoint = do
 
   let objectFilePathsForCli = List.unwords objectFilePaths
 
-  callCommand $ "clang++ --coverage -fprofile-instr-generate -fcoverage-mapping -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"
+  Prelude.putStrLn $ "OS: " <> os
+
+  if os == "darwin" then
+    callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -o a.out"
+  else
+    callCommand $ "g++ -static " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
+    -- callCommand $ "clang++ -static -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
+
   -- callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"

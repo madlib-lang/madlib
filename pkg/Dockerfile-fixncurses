@@ -30,6 +30,8 @@ RUN apk --no-cache add \
   libc-dev \
   curl
 
+RUN ln -s /usr/lib/libncursesw.a /usr/lib/libcurses.a
+
 # Configure with cmake
 RUN cd llvm-9.0.1.src && mkdir build && cd build && cmake .. -G "Unix Makefiles" -DLLVM_TARGETS_TO_BUILD="X86" -DCMAKE_BUILD_TYPE=MinSizeRel
 
@@ -56,11 +58,4 @@ RUN stack config set system-ghc --global true
 COPY . .
 
 RUN stack install alex happy
-RUN stack build --jobs 1 --flag madlib:static --ghc-options='-fPIC'
-# RUN stack build --jobs 1 --ghc-options='-fPIC'
-
-RUN cp "$(stack path --dist-dir)/build/madlib/madlib" .
-
-
-FROM scratch AS export-stage
-COPY --from=build-stage ./madlib /
+# RUN stack build --jobs 1 --flag madlib:static --ghc-options='-fPIC'

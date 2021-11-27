@@ -803,7 +803,13 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef' `compose` sDef)
     else do
-      return (ds ++ rs, M.empty)
+      (sDef, rs')   <- tryDefaults env'' rs
+          -- TODO: tryDefaults should handle such a case so that we only call it once.
+          -- What happens is that defaulting may solve some types ( like Number a -> Integer )
+          -- and then it could resolve instances like Show where before we still had a type var
+          -- but after the first pass we have Integer instead.
+      (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
+      return (ds ++ rs'', sDef' `compose` sDef)
 
   let ds'' = dedupePreds ds'
   let sFinal = sDefaults `compose` s''

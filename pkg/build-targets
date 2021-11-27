@@ -28,22 +28,22 @@ mkdir $PATH_LINUX_TARGET
 # --------------------------------------------------------------------------- #
 # build osx
 
-PATH_OSX_EXE="$(stack path --dist-dir)/build/madlib/madlib"
+# PATH_OSX_EXE="$(stack path --dist-dir)/build/madlib/madlib"
 
-stack build --jobs 1
+# stack build --jobs 1
 
-# build test-runner
-stack run -- compile -i tools/test-runner/src/Main.mad -o $TEST_RUNNER_TARGET -b
-# build package-installer
-stack run -- compile -i tools/package-installer/src/Main.mad -o $PKG_INSTALLER_TARGET -b
+# # build test-runner
+# stack run -- compile -i tools/test-runner/src/Main.mad -o $TEST_RUNNER_TARGET -b
+# # build package-installer
+# stack run -- compile -i tools/package-installer/src/Main.mad -o $PKG_INSTALLER_TARGET -b
 
-cp -R $PRELUDE_PATH "$PATH_DARWIN_TARGET/"
-cp $TEST_RUNNER_TARGET "$PATH_DARWIN_TARGET/"
-cp $PKG_INSTALLER_TARGET "$PATH_DARWIN_TARGET/"
-cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
-tar -C $PATH_TARGETS -czvf $DARWIN_TAR_FILENAME $DARWIN_NAME
-mv $DARWIN_TAR_FILENAME $PATH_TARGETS
-rm -r $PATH_DARWIN_TARGET
+# cp -R $PRELUDE_PATH "$PATH_DARWIN_TARGET/"
+# cp $TEST_RUNNER_TARGET "$PATH_DARWIN_TARGET/"
+# cp $PKG_INSTALLER_TARGET "$PATH_DARWIN_TARGET/"
+# cp $PATH_OSX_EXE "$PATH_DARWIN_TARGET/"
+# tar -C $PATH_TARGETS -czvf $DARWIN_TAR_FILENAME $DARWIN_NAME
+# mv $DARWIN_TAR_FILENAME $PATH_TARGETS
+# rm -r $PATH_DARWIN_TARGET
 
 
 

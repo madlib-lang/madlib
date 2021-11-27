@@ -449,6 +449,7 @@ EXTERN_C_END
                                     + (long)(a.tv_usec-b.tv_usec) / 1000))
                             /* "a" time is expected to be not earlier than  */
                             /* "b" one; the result has unsigned long type.  */
+<<<<<<< HEAD
 #elif defined(MSWIN32) || defined(MSWINCE)
 # ifndef WIN32_LEAN_AND_MEAN
 #   define WIN32_LEAN_AND_MEAN 1
@@ -459,6 +460,29 @@ EXTERN_C_END
 # define CLOCK_TYPE DWORD
 # ifdef MSWINRT_FLAVOR
 #   define GET_TIME(x) (void)(x = (DWORD)GetTickCount64())
+=======
+# define NS_FRAC_TIME_DIFF(a, b) ((unsigned long) \
+                ((a.tv_usec < b.tv_usec \
+                  && (long)(a.tv_usec - b.tv_usec) % 1000 != 0 ? 1000L : 0) \
+                 + (long)(a.tv_usec - b.tv_usec) % 1000) * 1000)
+                        /* The total time difference could be computed as   */
+                        /* MS_TIME_DIFF(a,b)*1000000+NS_FRAC_TIME_DIFF(a,b).*/
+
+#elif defined(MSWIN32) || defined(MSWINCE) || defined(WINXP_USE_PERF_COUNTER)
+# if defined(MSWINRT_FLAVOR) || defined(WINXP_USE_PERF_COUNTER)
+#   define CLOCK_TYPE ULONGLONG
+#   define GET_TIME(x) \
+                do { \
+                  LARGE_INTEGER freq, tc; \
+                  if (!QueryPerformanceFrequency(&freq) \
+                      || !QueryPerformanceCounter(&tc)) \
+                    ABORT("QueryPerformanceCounter requires WinXP+"); \
+                  x = (CLOCK_TYPE)((double)tc.QuadPart/freq.QuadPart * 1e9); \
+                } while (0)
+                /* TODO: Call QueryPerformanceFrequency once at GC init. */
+#   define MS_TIME_DIFF(a, b) ((unsigned long)(((a) - (b)) / 1000000UL))
+#   define NS_FRAC_TIME_DIFF(a, b) ((unsigned long)(((a) - (b)) % 1000000UL))
+>>>>>>> WIP update linux build dockerfile
 # else
 #   define GET_TIME(x) (void)(x = GetTickCount())
 # endif
@@ -1764,9 +1788,14 @@ GC_INNER void GC_with_callee_saves_pushed(void (*fn)(ptr_t, void *),
 #endif
                         /* Push register contents onto mark stack.      */
 
+<<<<<<< HEAD
 #if defined(MSWIN32) || defined(MSWINCE)
   void __cdecl GC_push_one(word p);
 #else
+=======
+                        /* Push register contents onto mark stack.      */
+#if defined(AMIGA) || defined(MACOS) || defined(GC_DARWIN_THREADS)
+>>>>>>> WIP update linux build dockerfile
   void GC_push_one(word p);
                               /* If p points to an object, mark it    */
                               /* and push contents on the mark stack  */
