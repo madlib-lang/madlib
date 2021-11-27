@@ -103,8 +103,7 @@ generateExp symbolTable exp = case exp of
 
               _ ->
                 0
-        firstArg <- gep (trace ("arg count: "<>show argCount) closuredArgs') [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
-        firstArg' <- load firstArg 8
+
         closuredArgs'' <- mapM (\index -> gep closuredArgs' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)] >>= (`load` 8)) $ List.take argCount [0..]
         let closuredArgs''' = (, []) <$> closuredArgs''
         res <- call fn' (closuredArgs''' ++ [(arg', [])])
@@ -172,7 +171,6 @@ generateExp symbolTable exp = case exp of
   Optimized _ _ (Where exp iss) -> mdo
     (_, exp')     <- generateExp symbolTable exp
     branches <- generateBranches symbolTable defaultBlock exitBlock exp' iss
-    -- branch@(b, _) <- generateBranch symbolTable defaultBlock False exitBlock exp' (List.head iss)
     let (b, _) = List.head branches
 
     defaultBlock <- block `named` "defaultBlock"
@@ -363,10 +361,16 @@ buildLLVMType (Optimized t area e) = case t of
   _ ->
     Type.double
 
+-- updateClosureType :: [InferredType.Type] -> Type.Type -> Type.Type
+-- updateClosureType envArgs t =
+--   let envArgs' = buildLLVMType <$> envArgs
+--   in  t
+
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
-  Optimized _ _ (Assignment fnName (Optimized _ _ (Abs paramName [body]))) -> mdo
+  Optimized _ _ (Assignment fnName (Optimized t _ (Abs paramName [body]))) -> mdo
     let returnType = buildLLVMType body
+    -- let paramType  = InferredType.getParamType t
     f <- function (AST.mkName fnName) [(Type.double, ParameterName (stringToShortByteString paramName))] returnType $ \[param] -> mdo
       entry <- block `named` "entry"; mdo
         var <- alloca Type.double Nothing 4
