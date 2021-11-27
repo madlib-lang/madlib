@@ -64,12 +64,12 @@ Show['Either']['show'] = () => (Show_c54) => (Show_f57) => {
 };
 Show.Tuple_2.show()(Show.Boolean)(Show.Number)(([1, false]));
 Show.Either.show()(Show.Number)(Show.Number)(Right(3));
-let fnWithConstraint = (Show_h85) => {
-  global.Show_h85 = Show_h85
+let fnWithConstraint = (Show_o92) => {
+  global.Show_o92 = Show_o92
 
   return fnWithConstraint__ND__()
 };
-let fnWithConstraint__ND__ = __once__(() => Show_h85.show());
+let fnWithConstraint__ND__ = __once__(() => Show_o92.show());
 Show.Tuple_2.show()(Show.Number)(Show.Number)(([1, 1]));
 Show.Tuple_3.show()(Show.Boolean)(Show.Number)(Show.Boolean)(([false, 42, true]));
 export default {};

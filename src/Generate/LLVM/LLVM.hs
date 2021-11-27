@@ -133,7 +133,7 @@ madlistSingleton =
 
 madlistPush :: Operand
 madlistPush =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8, listType] False) (AST.mkName "MadList_push"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8, listType] False) (AST.mkName "__MadList_push__"))
 
 madlistConcat :: Operand
 madlistConcat =
@@ -181,7 +181,8 @@ buildLLVMType t = case t of
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
     let tLeft  = buildLLVMType left
         tRight = buildLLVMType right
-    in  Type.ptr $ Type.FunctionType tRight [tLeft] False
+    -- in  Type.ptr $ Type.FunctionType tRight [tLeft] False
+    in  boxType
 
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
     let tA = buildLLVMType a
@@ -836,16 +837,6 @@ generateExps symbolTable exps = case exps of
 
 
 
-updateClosureType :: [InferredType.Type] -> Type.Type -> Type.Type
-updateClosureType envArgs t = case t of
-  Type.PointerType (Type.FunctionType ret args _) _ ->
-    let envArgs' = buildLLVMType <$> envArgs
-    in  Type.ptr $ Type.StructureType False [Type.ptr $ Type.FunctionType boxType (boxType <$ envArgs' ++ args) False, Type.StructureType False (boxType <$ envArgs')]
-
-  _ ->
-    t
-
-
 collectDictParams :: Exp -> ([(String, Type.Type)], Exp)
 collectDictParams exp = case exp of
   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) exp') ->
@@ -1374,7 +1365,7 @@ toLLVMModule ast =
   extern (AST.mkName "MadList_hasMinLength") [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_hasLength") [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_singleton") [Type.ptr Type.i8] listType
-  extern (AST.mkName "MadList_push") [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "__MadList_push__") [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat") [listType, listType] listType
 
   global (AST.mkName "$EMPTY_ENV") (Type.StructureType False []) (Constant.Struct Nothing False [])
@@ -1397,7 +1388,7 @@ generate ast = do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx mod $ \mod' -> do
-        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
+        mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 3 } $ \pm -> do
           runPassManager pm mod'
           return mod'
         writeObjectToFile target (File "module.o") mod''

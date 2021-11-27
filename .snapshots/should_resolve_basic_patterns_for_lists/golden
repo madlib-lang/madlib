@@ -73,24 +73,15 @@ Right
                          (Area (Loc 27 2 3) (Loc 36 2 12))
                          (PList
                             [ Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 28 2 4) (Loc 29 2 5))
                                 (PNum "1")
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 31 2 7) (Loc 32 2 8))
                                 (PNum "2")
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 34 2 10) (Loc 35 2 11))
                                 (PNum "3")
                             ]))
@@ -117,17 +108,11 @@ Right
                          (Area (Loc 44 3 3) (Loc 53 3 12))
                          (PList
                             [ Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 45 3 4) (Loc 46 3 5))
                                 (PNum "1")
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 48 3 7) (Loc 49 3 8))
                                 (PNum "2")
                             , Solved
@@ -168,10 +153,7 @@ Right
                                 (Area (Loc 62 4 4) (Loc 63 4 5))
                                 (PVar "n")
                             , Solved
-                                ([] :=>
-                                   TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "Number" Star) "prelude"))
+                                ([] :=> TCon (TC "Number" Star) "prelude")
                                 (Area (Loc 65 4 7) (Loc 66 4 8))
                                 (PNum "3")
                             ]))
