@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5c68addfbfda800b083552218110b3ed564c5e48f6d5b04013b113a50e1f576e
+-- hash: 24d04d4daac93fbe6ec7725b2bf10426819bbe39a5507468c9876eb8568277dc
 
 name:           madlib
 version:        0.11.0
@@ -56,6 +56,7 @@ library
       Generate.Javascript
       Generate.JSInternals
       Generate.Json
+      Generate.LLVM
       Generate.Utils
       Infer.AST
       Infer.Env
@@ -129,6 +130,9 @@ library
     , hpc-lcov
     , hspec
     , hspec-golden
+    , llvm-hs ==9.0.1
+    , llvm-hs-pretty ==0.9.0.0
+    , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative
     , pretty-show
@@ -168,6 +172,7 @@ executable madlib
       Generate.Javascript
       Generate.JSInternals
       Generate.Json
+      Generate.LLVM
       Generate.Utils
       Infer.AST
       Infer.Env
@@ -240,6 +245,9 @@ executable madlib
     , hpc-lcov
     , hspec
     , hspec-golden
+    , llvm-hs ==9.0.1
+    , llvm-hs-pretty ==0.9.0.0
+    , llvm-hs-pure ==9.0.0
     , mtl
     , optparse-applicative
     , pretty-show
@@ -289,6 +297,9 @@ test-suite madlib-test
     , hpc-lcov
     , hspec ==2.7.2
     , hspec-golden
+    , llvm-hs ==9.0.1
+    , llvm-hs-pretty ==0.9.0.0
+    , llvm-hs-pure ==9.0.0
     , madlib
     , mtl
     , optparse-applicative

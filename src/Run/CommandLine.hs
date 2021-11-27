@@ -7,6 +7,7 @@ import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
+import Run.Target (Target(TLLVM))
 
 
 data Command
@@ -83,6 +84,7 @@ parseTargetOption :: ReadM Target
 parseTargetOption = eitherReader $ \case
   "node"    -> Right TNode
   "browser" -> Right TBrowser
+  "llvm"    -> Right TLLVM
   s         -> Left $ "'" <> s <> "' is not a valid target option, possible values are 'browser' or 'node'."
 
 parseTarget :: Parser Target

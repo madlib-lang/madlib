@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Optimize.Optimize where
 
 import           Control.Monad.State
@@ -165,6 +166,7 @@ instance Optimizable Slv.Exp Opt.Exp where
         let tsStr = buildTypeStrForPlaceholder ts
         ts' <- getTypeShortname enabled tsStr
         return $ Opt.CRPNode cls' ts' var ps'
+
 
 
 instance Optimizable Slv.Typing Opt.Typing where
