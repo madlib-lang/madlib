@@ -326,27 +326,85 @@ buildStr s = do
       return ()
 
 
--- TODO: move the dedupping in closure convertion phase
-collectDictArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m ([Operand.Operand], Exp)
-collectDictArgs = collectDictArgs' []
 
-collectDictArgs' :: (MonadIRBuilder m, MonadModuleBuilder m) => [String] -> SymbolTable -> Exp -> m ([Operand.Operand], Exp)
-collectDictArgs' alreadyFound symbolTable exp = case exp of
+-- (Placeholder
+  --  ( ClassRef
+      --  "Applicative"
+      --  [ CRPNode "Semigroup" "List" False []
+      --  , CRPNode "Monoid" "List" False []
+      --  , CRPNode "Functor" "Identity" False []
+      --  , CRPNode "Applicative" "Identity" False []
+      --  ]
+      --  True
+      --  False
+  --  , "WriterT"
+  --  )
+collectCRPDicts :: SymbolTable -> [ClassRefPred] -> [Operand.Operand]
+collectCRPDicts symbolTable crpNodes = case crpNodes of
+  (CRPNode interfaceName typingStr _ _ : next) ->
+    let dictName = "$" <> interfaceName <> "$" <> typingStr
+    in  case Map.lookup dictName symbolTable of
+          Just (Symbol (DictionarySymbol _) dict) ->
+            let nextNodes = collectCRPDicts symbolTable next
+            in  dict : nextNodes
+
+          _ ->
+            undefined
+
+  [] ->
+    []
+
+getMethodsInDict :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand -> m [Operand]
+getMethodsInDict symbolTable index dict = case index of
+  0 -> do
+    method  <- gep dict [i32ConstOp 0, i32ConstOp 0]
+    method' <- box method
+    return [method']
+
+  n -> do
+    method      <- gep dict [i32ConstOp 0, i32ConstOp (fromIntegral n)]
+    method'     <- box method
+    nextMethods <- getMethodsInDict symbolTable (index - 1) dict
+    return $ nextMethods ++ [method']
+
+applyClassRefPreds :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable ->Int -> Operand -> [Operand] -> m Operand
+applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPreds of
+  [] ->
+    return dict
+
+  preds -> do
+    methods        <- getMethodsInDict symbolTable (methodCount - 1) dict
+
+    classRefPreds'  <- mapM box preds
+    appliedMethods  <- mapM (\m -> call applyPAP ([(m, []), (i32ConstOp (fromIntegral $ List.length classRefPreds'), [])] ++ ((,[]) <$> classRefPreds'))) methods
+    let papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+    appliedMethods' <- mapM (`bitcast` papType) appliedMethods
+    appliedMethods'' <- mapM (`load` 8) appliedMethods'
+
+    let appliedDictType = Type.StructureType False (typeOf <$> appliedMethods'')
+    appliedDict  <- call gcMalloc [(Operand.ConstantOperand $ sizeof appliedDictType, [])]
+    appliedDict' <- bitcast appliedDict (Type.ptr appliedDictType)
+    Monad.foldM_ (storeItem appliedDict') () $ List.zip appliedMethods'' [0..]
+
+    return appliedDict'
+
+collectDictArgs :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Exp -> m ([Operand.Operand], Exp)
+collectDictArgs symbolTable exp = case exp of
   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True _, typingStr) exp') -> do
     let dictName = "$" <> interfaceName <> "$" <> typingStr
-    -- if dictName `List.elem` alreadyFound then
-    --   collectDictArgs' alreadyFound symbolTable exp'
-    -- else do
-    (nextArgs, nextExp) <- collectDictArgs' (dictName : alreadyFound) symbolTable exp'
+    -- let crpNodes = collectCRPDicts symbolTable classRefPreds
+    (nextArgs, nextExp) <- collectDictArgs  symbolTable exp'
     case Map.lookup dictName symbolTable of
+      Just (Symbol (DictionarySymbol methodIndices) dict) -> do
+        -- dict' <- applyClassRefPreds symbolTable (Map.size methodIndices) dict crpNodes
+        -- return (dict' : nextArgs, nextExp)
+        return (dict : nextArgs, nextExp)
+
       Just (Symbol _ dict) ->
         return (dict : nextArgs, nextExp)
 
       _ ->
         error $ "dict not found: '" <> dictName <> "'"
-
-  -- Optimized t _ (Placeholder (MethodRef _ _ False , _) _) ->
-  --   return ([], exp)
 
   _ ->
     return ([], exp)
@@ -492,21 +550,12 @@ generateExp env symbolTable exp = case exp of
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
       Just (Symbol _ dict) -> do
-        -- TODO: make this index dynamic, how is still uncertain but most likely we'll need an env containing
-        -- all interfaces, so we could retrieve the index from there.
         let interfaceMap = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
         let index = Maybe.fromMaybe 0 $ Map.lookup methodName interfaceMap
-        dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) boxType))
+        let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+        dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
         method  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
-        method' <- load method 8
-
-        let paramTypes = InferredType.getParamTypes t
-        let arity  = List.length paramTypes
-
-        boxedFn  <- box method'
-        (_, pap) <- buildReferencePAP symbolTable arity method'
-
-        return (symbolTable, pap)
+        return (symbolTable, method)
 
       _ ->
         error $ "dict not found: '"<>dictName<>"'\n\n"<>ppShow symbolTable
@@ -543,7 +592,7 @@ generateExp env symbolTable exp = case exp of
     if isTopLevel then do
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
-      store g 8 (trace ("ASSIGNMENT: "<>ppShow exp'<>"\nName: "<>name) exp')
+      store g 8 exp'
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp')
     else
@@ -766,6 +815,9 @@ generateExp env symbolTable exp = case exp of
     ret <- phi branches
 
     return (symbolTable, ret)
+
+  Optimized _ _ (TypedExp exp _) ->
+    generateExp env symbolTable exp
 
   _ ->
     error $ "not implemented\n\n" ++ ppShow exp
@@ -1178,7 +1230,7 @@ generateConstructor symbolTable (constructor, index) = case constructor of
     let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate arity boxType
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
 
-    constructor <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+    constructor' <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
     -- allocate memory for the structure
       structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
       structPtr'    <- bitcast structPtr $ Type.ptr structType
@@ -1189,8 +1241,8 @@ generateConstructor symbolTable (constructor, index) = case constructor of
       boxed <- box structPtr'
       ret boxed
 
-    Writer.tell $ Map.singleton constructorName (constructorSymbol constructor index arity)
-    return $ Map.insert constructorName (constructorSymbol constructor index arity) symbolTable
+    Writer.tell $ Map.singleton constructorName (constructorSymbol constructor' index arity)
+    return $ Map.insert constructorName (constructorSymbol constructor' index arity) symbolTable
 
   _ ->
     undefined
@@ -1216,13 +1268,16 @@ buildDictValues :: SymbolTable -> [String] -> [Constant.Constant]
 buildDictValues symbolTable methodNames = case methodNames of
   (n : ns) ->
     case Map.lookup n symbolTable of
-      -- Just (Symbol (FunctionSymbol arity) method) ->
-
       Just (Symbol _ method) ->
+        -- This should be a PAP
         let methodType = typeOf method
             methodRef  = Constant.GlobalReference methodType (AST.mkName n)
+            methodRef' = Constant.BitCast methodRef boxType
+            arity      = List.length $ getLLVMParameterTypes methodType
+            papType    = Type.StructureType False [boxType, Type.i32, Type.i32]
+            pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity)]
             next       = buildDictValues symbolTable ns
-        in  methodRef : next
+        in  pap : next
 
       _ ->
         undefined
@@ -1545,22 +1600,3 @@ generateTable outputFolder rootPath astTable entrypoint = do
   let objectFilePathsForCli = List.unwords objectFilePaths
 
   callCommand $ "clang++ -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " generate-llvm/lib.o gc.a -o a.out"
-
-
-
--- generate :: AST -> IO ()
--- generate ast = do
---   Prelude.putStrLn "generate llvm"
---   let (mod, _) = toLLVMModule True Map.empty ast
-
---   T.putStrLn $ ppllvm mod
-
---   withHostTargetMachineDefault $ \target -> do
---     withContext $ \ctx -> do
---       withModuleFromAST ctx mod $ \mod' -> do
---         mod'' <- withPassManager defaultCuratedPassSetSpec { optLevel = Just 1 } $ \pm -> do
---           runPassManager pm mod'
---           return mod'
---         writeObjectToFile target (File "module.o") mod''
-
---   callCommand "clang++ -g -stdlib=libc++ -v module.o generate-llvm/lib.o gc.a -o a.out"
