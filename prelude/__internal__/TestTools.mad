@@ -108,7 +108,7 @@ buildRow = (name, lines, functions) => {
 
   return {
     id: coloredName,
-    cols: [<"lines", formattedLines>, <"functions", formattedFunctions>]
+    cols: [#["lines", formattedLines], #["functions", formattedFunctions]]
   }
 }
 
@@ -126,7 +126,7 @@ allRow = (lcov) => pipe(
     },
     { lf: 0, lh: 0, fnf: 0, fnh: 0 }
   ),
-  (total) => <100 * total.lh / total.lf, 100 * total.fnh / total.fnf>,
+  (total) => #[100 * total.lh / total.lf, 100 * total.fnh / total.fnf],
   (total) => buildRow("All", T.fst(total), T.snd(total))
 )(lcov)
 
@@ -146,7 +146,7 @@ generateTable = (lcov) =>
         fnf: Lcov.FNF(ffound),
         fnh: Lcov.FNH(fhit)
       } =>
-        <computePercents(hit, found), computePercents(fhit, ffound)>
+      #[computePercents(hit, found), computePercents(fhit, ffound)]
           |> (t) => buildRow(path, T.fst(t), T.snd(t))
     },
     lcov
@@ -267,7 +267,7 @@ isCoverageEnabled = pipe(
   W.chainRej(F.always(of(false)))
 )("COVERAGE_MODE")
 
-displayResults :: <List String, List IO.Row> -> List IO.Row
+displayResults :: #[List String, List IO.Row] -> List IO.Row
 displayResults = (results) => {
   map(IO.log, T.fst(results))
   return F.when(

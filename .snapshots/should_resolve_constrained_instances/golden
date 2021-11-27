@@ -4,7 +4,7 @@ Right
     , aexps =
         [ Solved
             ([] :=> TCon (TC "String" Star) "prelude")
-            (Area (Loc 299 17 1) (Loc 315 17 17))
+            (Area (Loc 302 17 1) (Loc 319 17 18))
             (App
                (Solved
                   ([ IsIn "Show" [ TVar (TV "a26" Star) ] Nothing ] :=>
@@ -13,7 +13,7 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "a26" Star)))
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 299 17 1) (Loc 303 17 5))
+                  (Area (Loc 302 17 1) (Loc 306 17 5))
                   (Placeholder
                      ( ClassRef "Show" [] True False
                      , [ TCon (TC "Boolean" Star) "prelude" ]
@@ -25,7 +25,7 @@ Right
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                 (TVar (TV "a26" Star)))
                              (TCon (TC "String" Star) "prelude"))
-                        (Area (Loc 299 17 1) (Loc 303 17 5))
+                        (Area (Loc 302 17 1) (Loc 306 17 5))
                         (Placeholder
                            ( ClassRef "Show" [] True False
                            , [ TCon (TC "Number" Star) "prelude" ]
@@ -37,7 +37,7 @@ Right
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                       (TVar (TV "a26" Star)))
                                    (TCon (TC "String" Star) "prelude"))
-                              (Area (Loc 299 17 1) (Loc 303 17 5))
+                              (Area (Loc 302 17 1) (Loc 306 17 5))
                               (Placeholder
                                  ( MethodRef "Show" "show" False
                                  , [ TApp
@@ -55,7 +55,7 @@ Right
                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                             (TVar (TV "a26" Star)))
                                          (TCon (TC "String" Star) "prelude"))
-                                    (Area (Loc 299 17 1) (Loc 303 17 5))
+                                    (Area (Loc 302 17 1) (Loc 306 17 5))
                                     (Var "show"))))))))
                (Solved
                   ([ IsIn
@@ -66,22 +66,22 @@ Right
                               (TCon (TC "Number" Star) "prelude"))
                            (TCon (TC "Boolean" Star) "prelude")
                        ]
-                       (Just (Area (Loc 299 17 1) (Loc 303 17 5)))
+                       (Just (Area (Loc 302 17 1) (Loc 306 17 5)))
                    ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Number" Star) "prelude"))
                        (TCon (TC "Boolean" Star) "prelude"))
-                  (Area (Loc 304 17 6) (Loc 314 17 16))
+                  (Area (Loc 307 17 6) (Loc 318 17 17))
                   (TupleConstructor
                      [ Solved
                          ([] :=> TCon (TC "Number" Star) "prelude")
-                         (Area (Loc 305 17 7) (Loc 306 17 8))
+                         (Area (Loc 309 17 8) (Loc 310 17 9))
                          (LNum "1")
                      , Solved
                          ([] :=> TCon (TC "Boolean" Star) "prelude")
-                         (Area (Loc 308 17 10) (Loc 313 17 15))
+                         (Area (Loc 312 17 11) (Loc 317 17 16))
                          (LBool "false")
                      ]))
                True)
@@ -223,7 +223,7 @@ Right
                     )
                   ]))
         , Untyped
-            (Area (Loc 183 13 1) (Loc 297 15 2))
+            (Area (Loc 183 13 1) (Loc 300 15 2))
             (Instance
                "Show"
                [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing
@@ -251,7 +251,7 @@ Right
                                         (TVar (TV "i8" Star)))
                                      (TVar (TV "j9" Star))))
                                (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 228 14 3) (Loc 295 14 70))
+                          (Area (Loc 229 14 3) (Loc 298 14 72))
                           (Assignment
                              "show"
                              (Solved
@@ -266,7 +266,7 @@ Right
                                               (TVar (TV "i8" Star)))
                                            (TVar (TV "j9" Star))))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 228 14 3) (Loc 295 14 70))
+                                (Area (Loc 229 14 3) (Loc 298 14 72))
                                 (Placeholder
                                    ( ClassRef "Show" [] False True , [ TVar (TV "j9" Star) ] )
                                    (Solved
@@ -283,7 +283,7 @@ Right
                                                     (TVar (TV "i8" Star)))
                                                  (TVar (TV "j9" Star))))
                                            (TCon (TC "String" Star) "prelude"))
-                                      (Area (Loc 228 14 3) (Loc 295 14 70))
+                                      (Area (Loc 229 14 3) (Loc 298 14 72))
                                       (Placeholder
                                          ( ClassRef "Show" [] False True , [ TVar (TV "i8" Star) ] )
                                          (Solved
@@ -303,17 +303,17 @@ Right
                                                           (TVar (TV "i8" Star)))
                                                        (TVar (TV "j9" Star))))
                                                  (TCon (TC "String" Star) "prelude"))
-                                            (Area (Loc 235 14 10) (Loc 295 14 70))
+                                            (Area (Loc 236 14 10) (Loc 298 14 72))
                                             (Abs
                                                (Solved
                                                   ([ IsIn
                                                        "Show"
                                                        [ TVar (TV "i8" Star) ]
-                                                       (Just (Area (Loc 260 14 35) (Loc 264 14 39)))
+                                                       (Just (Area (Loc 263 14 37) (Loc 267 14 41)))
                                                    , IsIn
                                                        "Show"
                                                        [ TVar (TV "j9" Star) ]
-                                                       (Just (Area (Loc 279 14 54) (Loc 283 14 58)))
+                                                       (Just (Area (Loc 282 14 56) (Loc 286 14 60)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -329,15 +329,15 @@ Right
                                                         "Show"
                                                         [ TVar (TV "p15" Star) ]
                                                         (Just
-                                                           (Area (Loc 260 14 35) (Loc 264 14 39)))
+                                                           (Area (Loc 263 14 37) (Loc 267 14 41)))
                                                     , IsIn
                                                         "Show"
                                                         [ TVar (TV "v21" Star) ]
                                                         (Just
-                                                           (Area (Loc 279 14 54) (Loc 283 14 58)))
+                                                           (Area (Loc 282 14 56) (Loc 286 14 60)))
                                                     ] :=>
                                                       TCon (TC "String" Star) "prelude")
-                                                   (Area (Loc 235 14 10) (Loc 295 14 70))
+                                                   (Area (Loc 236 14 10) (Loc 298 14 72))
                                                    (Where
                                                       (Solved
                                                          ([] :=>
@@ -358,15 +358,15 @@ Right
                                                                [ TVar (TV "i8" Star) ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 260 14 35)
-                                                                     (Loc 264 14 39)))
+                                                                     (Loc 263 14 37)
+                                                                     (Loc 267 14 41)))
                                                            , IsIn
                                                                "Show"
                                                                [ TVar (TV "j9" Star) ]
                                                                (Just
                                                                   (Area
-                                                                     (Loc 279 14 54)
-                                                                     (Loc 283 14 58)))
+                                                                     (Loc 282 14 56)
+                                                                     (Loc 286 14 60)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -388,7 +388,7 @@ Right
                                                                         (TVar (TV "i8" Star)))
                                                                      (TVar (TV "j9" Star))))
                                                                (TCon (TC "String" Star) "prelude"))
-                                                          (Area (Loc 243 14 18) (Loc 293 14 68))
+                                                          (Area (Loc 244 14 18) (Loc 296 14 70))
                                                           (Is
                                                              (Solved
                                                                 ([] :=>
@@ -404,7 +404,7 @@ Right
                                                                         (TVar (TV "i8" Star)))
                                                                      (TVar (TV "j9" Star)))
                                                                 (Area
-                                                                   (Loc 243 14 18) (Loc 249 14 24))
+                                                                   (Loc 244 14 18) (Loc 251 14 25))
                                                                 (PTuple
                                                                    [ Solved
                                                                        ([] :=>
@@ -423,8 +423,8 @@ Right
                                                                                   (TV "i8" Star)))
                                                                             (TVar (TV "j9" Star)))
                                                                        (Area
-                                                                          (Loc 244 14 19)
-                                                                          (Loc 245 14 20))
+                                                                          (Loc 246 14 20)
+                                                                          (Loc 247 14 21))
                                                                        (PVar "a")
                                                                    , Solved
                                                                        ([] :=>
@@ -443,8 +443,8 @@ Right
                                                                                   (TV "i8" Star)))
                                                                             (TVar (TV "j9" Star)))
                                                                        (Area
-                                                                          (Loc 247 14 22)
-                                                                          (Loc 248 14 23))
+                                                                          (Loc 249 14 23)
+                                                                          (Loc 250 14 24))
                                                                        (PVar "b")
                                                                    ]))
                                                              (Solved
@@ -453,20 +453,20 @@ Right
                                                                      [ TVar (TV "p15" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 260 14 35)
-                                                                           (Loc 264 14 39)))
+                                                                           (Loc 263 14 37)
+                                                                           (Loc 267 14 41)))
                                                                  , IsIn
                                                                      "Show"
                                                                      [ TVar (TV "v21" Star) ]
                                                                      (Just
                                                                         (Area
-                                                                           (Loc 279 14 54)
-                                                                           (Loc 283 14 58)))
+                                                                           (Loc 282 14 56)
+                                                                           (Loc 286 14 60)))
                                                                  ] :=>
                                                                    TCon
                                                                      (TC "String" Star) "prelude")
                                                                 (Area
-                                                                   (Loc 253 14 28) (Loc 293 14 68))
+                                                                   (Loc 255 14 29) (Loc 296 14 70))
                                                                 (App
                                                                    (Solved
                                                                       ([] :=>
@@ -488,8 +488,8 @@ Right
                                                                               (TC "String" Star)
                                                                               "prelude"))
                                                                       (Area
-                                                                         (Loc 253 14 28)
-                                                                         (Loc 293 14 68))
+                                                                         (Loc 255 14 29)
+                                                                         (Loc 296 14 70))
                                                                       (App
                                                                          (Solved
                                                                             ([] :=>
@@ -531,8 +531,8 @@ Right
                                                                                           Star)
                                                                                        "prelude")))
                                                                             (Area
-                                                                               (Loc 257 14 32)
-                                                                               (Loc 259 14 34))
+                                                                               (Loc 260 14 34)
+                                                                               (Loc 262 14 36))
                                                                             (Var "++"))
                                                                          (Solved
                                                                             ([] :=>
@@ -540,9 +540,9 @@ Right
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 253 14 28)
-                                                                               (Loc 256 14 31))
-                                                                            (LStr "'<'"))
+                                                                               (Loc 255 14 29)
+                                                                               (Loc 259 14 33))
+                                                                            (LStr "'#['"))
                                                                          False))
                                                                    (Solved
                                                                       ([ IsIn
@@ -550,22 +550,22 @@ Right
                                                                            [ TVar (TV "i8" Star) ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 260 14 35)
-                                                                                 (Loc 264 14 39)))
+                                                                                 (Loc 263 14 37)
+                                                                                 (Loc 267 14 41)))
                                                                        , IsIn
                                                                            "Show"
                                                                            [ TVar (TV "j9" Star) ]
                                                                            (Just
                                                                               (Area
-                                                                                 (Loc 279 14 54)
-                                                                                 (Loc 283 14 58)))
+                                                                                 (Loc 282 14 56)
+                                                                                 (Loc 286 14 60)))
                                                                        ] :=>
                                                                          TCon
                                                                            (TC "String" Star)
                                                                            "prelude")
                                                                       (Area
-                                                                         (Loc 260 14 35)
-                                                                         (Loc 293 14 68))
+                                                                         (Loc 263 14 37)
+                                                                         (Loc 296 14 70))
                                                                       (App
                                                                          (Solved
                                                                             ([ IsIn
@@ -576,11 +576,11 @@ Right
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          260 14 35)
+                                                                                          263 14 37)
                                                                                        (Loc
-                                                                                          264
+                                                                                          267
                                                                                           14
-                                                                                          39)))
+                                                                                          41)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -604,8 +604,8 @@ Right
                                                                                        Star)
                                                                                     "prelude"))
                                                                             (Area
-                                                                               (Loc 260 14 35)
-                                                                               (Loc 293 14 68))
+                                                                               (Loc 263 14 37)
+                                                                               (Loc 296 14 70))
                                                                             (App
                                                                                (Solved
                                                                                   ([] :=>
@@ -647,9 +647,9 @@ Right
                                                                                                 Star)
                                                                                              "prelude")))
                                                                                   (Area
-                                                                                     (Loc 268 14 43)
+                                                                                     (Loc 271 14 45)
                                                                                      (Loc
-                                                                                        270 14 45))
+                                                                                        273 14 47))
                                                                                   (Var "++"))
                                                                                (Solved
                                                                                   ([ IsIn
@@ -662,13 +662,13 @@ Right
                                                                                        (Just
                                                                                           (Area
                                                                                              (Loc
-                                                                                                260
+                                                                                                263
                                                                                                 14
-                                                                                                35)
+                                                                                                37)
                                                                                              (Loc
-                                                                                                264
+                                                                                                267
                                                                                                 14
-                                                                                                39)))
+                                                                                                41)))
                                                                                    ] :=>
                                                                                      TCon
                                                                                        (TC
@@ -676,9 +676,9 @@ Right
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 260 14 35)
+                                                                                     (Loc 263 14 37)
                                                                                      (Loc
-                                                                                        267 14 42))
+                                                                                        270 14 44))
                                                                                   (App
                                                                                      (Solved
                                                                                         ([ IsIn
@@ -712,13 +712,13 @@ Right
                                                                                                 "prelude"))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              260
+                                                                                              263
                                                                                               14
-                                                                                              35)
+                                                                                              37)
                                                                                            (Loc
-                                                                                              264
+                                                                                              267
                                                                                               14
-                                                                                              39))
+                                                                                              41))
                                                                                         (Placeholder
                                                                                            ( MethodRef
                                                                                                "Show"
@@ -762,13 +762,13 @@ Right
                                                                                                       "prelude"))
                                                                                               (Area
                                                                                                  (Loc
-                                                                                                    260
+                                                                                                    263
                                                                                                     14
-                                                                                                    35)
+                                                                                                    37)
                                                                                                  (Loc
-                                                                                                    264
+                                                                                                    267
                                                                                                     14
-                                                                                                    39))
+                                                                                                    41))
                                                                                               (Var
                                                                                                  "show"))))
                                                                                      (Solved
@@ -782,13 +782,13 @@ Right
                                                                                              (Just
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      260
+                                                                                                      263
                                                                                                       14
-                                                                                                      35)
+                                                                                                      37)
                                                                                                    (Loc
-                                                                                                      264
+                                                                                                      267
                                                                                                       14
-                                                                                                      39)))
+                                                                                                      41)))
                                                                                          ] :=>
                                                                                            TVar
                                                                                              (TV
@@ -796,13 +796,13 @@ Right
                                                                                                 Star))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              265
+                                                                                              268
                                                                                               14
-                                                                                              40)
+                                                                                              42)
                                                                                            (Loc
-                                                                                              266
+                                                                                              269
                                                                                               14
-                                                                                              41))
+                                                                                              43))
                                                                                         (Var "a"))
                                                                                      True))
                                                                                False))
@@ -815,11 +815,11 @@ Right
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          260 14 35)
+                                                                                          263 14 37)
                                                                                        (Loc
-                                                                                          264
+                                                                                          267
                                                                                           14
-                                                                                          39)))
+                                                                                          41)))
                                                                              , IsIn
                                                                                  "Show"
                                                                                  [ TVar
@@ -828,18 +828,18 @@ Right
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc
-                                                                                          279 14 54)
+                                                                                          282 14 56)
                                                                                        (Loc
-                                                                                          283
+                                                                                          286
                                                                                           14
-                                                                                          58)))
+                                                                                          60)))
                                                                              ] :=>
                                                                                TCon
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 271 14 46)
-                                                                               (Loc 293 14 68))
+                                                                               (Loc 274 14 48)
+                                                                               (Loc 296 14 70))
                                                                             (App
                                                                                (Solved
                                                                                   ([] :=>
@@ -865,9 +865,9 @@ Right
                                                                                              Star)
                                                                                           "prelude"))
                                                                                   (Area
-                                                                                     (Loc 271 14 46)
+                                                                                     (Loc 274 14 48)
                                                                                      (Loc
-                                                                                        293 14 68))
+                                                                                        296 14 70))
                                                                                   (App
                                                                                      (Solved
                                                                                         ([] :=>
@@ -910,13 +910,13 @@ Right
                                                                                                    "prelude")))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              276
+                                                                                              279
                                                                                               14
-                                                                                              51)
+                                                                                              53)
                                                                                            (Loc
-                                                                                              278
+                                                                                              281
                                                                                               14
-                                                                                              53))
+                                                                                              55))
                                                                                         (Var "++"))
                                                                                      (Solved
                                                                                         ([] :=>
@@ -927,13 +927,13 @@ Right
                                                                                              "prelude")
                                                                                         (Area
                                                                                            (Loc
-                                                                                              271
+                                                                                              274
                                                                                               14
-                                                                                              46)
+                                                                                              48)
                                                                                            (Loc
-                                                                                              275
+                                                                                              278
                                                                                               14
-                                                                                              50))
+                                                                                              52))
                                                                                         (LStr
                                                                                            "', '"))
                                                                                      False))
@@ -948,13 +948,13 @@ Right
                                                                                        (Just
                                                                                           (Area
                                                                                              (Loc
-                                                                                                279
+                                                                                                282
                                                                                                 14
-                                                                                                54)
+                                                                                                56)
                                                                                              (Loc
-                                                                                                283
+                                                                                                286
                                                                                                 14
-                                                                                                58)))
+                                                                                                60)))
                                                                                    ] :=>
                                                                                      TCon
                                                                                        (TC
@@ -962,9 +962,9 @@ Right
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 279 14 54)
+                                                                                     (Loc 282 14 56)
                                                                                      (Loc
-                                                                                        293 14 68))
+                                                                                        296 14 70))
                                                                                   (App
                                                                                      (Solved
                                                                                         ([ IsIn
@@ -977,13 +977,13 @@ Right
                                                                                              (Just
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      279
+                                                                                                      282
                                                                                                       14
-                                                                                                      54)
+                                                                                                      56)
                                                                                                    (Loc
-                                                                                                      283
+                                                                                                      286
                                                                                                       14
-                                                                                                      58)))
+                                                                                                      60)))
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1008,13 +1008,13 @@ Right
                                                                                                 "prelude"))
                                                                                         (Area
                                                                                            (Loc
-                                                                                              279
+                                                                                              282
                                                                                               14
-                                                                                              54)
+                                                                                              56)
                                                                                            (Loc
-                                                                                              293
+                                                                                              296
                                                                                               14
-                                                                                              68))
+                                                                                              70))
                                                                                         (App
                                                                                            (Solved
                                                                                               ([] :=>
@@ -1057,13 +1057,13 @@ Right
                                                                                                          "prelude")))
                                                                                               (Area
                                                                                                  (Loc
-                                                                                                    287
+                                                                                                    290
                                                                                                     14
-                                                                                                    62)
+                                                                                                    64)
                                                                                                  (Loc
-                                                                                                    289
+                                                                                                    292
                                                                                                     14
-                                                                                                    64))
+                                                                                                    66))
                                                                                               (Var
                                                                                                  "++"))
                                                                                            (Solved
@@ -1077,13 +1077,13 @@ Right
                                                                                                    (Just
                                                                                                       (Area
                                                                                                          (Loc
-                                                                                                            279
+                                                                                                            282
                                                                                                             14
-                                                                                                            54)
+                                                                                                            56)
                                                                                                          (Loc
-                                                                                                            283
+                                                                                                            286
                                                                                                             14
-                                                                                                            58)))
+                                                                                                            60)))
                                                                                                ] :=>
                                                                                                  TCon
                                                                                                    (TC
@@ -1092,13 +1092,13 @@ Right
                                                                                                    "prelude")
                                                                                               (Area
                                                                                                  (Loc
-                                                                                                    279
+                                                                                                    282
                                                                                                     14
-                                                                                                    54)
+                                                                                                    56)
                                                                                                  (Loc
-                                                                                                    286
+                                                                                                    289
                                                                                                     14
-                                                                                                    61))
+                                                                                                    63))
                                                                                               (App
                                                                                                  (Solved
                                                                                                     ([ IsIn
@@ -1132,13 +1132,13 @@ Right
                                                                                                             "prelude"))
                                                                                                     (Area
                                                                                                        (Loc
-                                                                                                          279
+                                                                                                          282
                                                                                                           14
-                                                                                                          54)
+                                                                                                          56)
                                                                                                        (Loc
-                                                                                                          283
+                                                                                                          286
                                                                                                           14
-                                                                                                          58))
+                                                                                                          60))
                                                                                                     (Placeholder
                                                                                                        ( MethodRef
                                                                                                            "Show"
@@ -1182,13 +1182,13 @@ Right
                                                                                                                   "prelude"))
                                                                                                           (Area
                                                                                                              (Loc
-                                                                                                                279
+                                                                                                                282
                                                                                                                 14
-                                                                                                                54)
+                                                                                                                56)
                                                                                                              (Loc
-                                                                                                                283
+                                                                                                                286
                                                                                                                 14
-                                                                                                                58))
+                                                                                                                60))
                                                                                                           (Var
                                                                                                              "show"))))
                                                                                                  (Solved
@@ -1202,13 +1202,13 @@ Right
                                                                                                          (Just
                                                                                                             (Area
                                                                                                                (Loc
-                                                                                                                  279
+                                                                                                                  282
                                                                                                                   14
-                                                                                                                  54)
+                                                                                                                  56)
                                                                                                                (Loc
-                                                                                                                  283
+                                                                                                                  286
                                                                                                                   14
-                                                                                                                  58)))
+                                                                                                                  60)))
                                                                                                      ] :=>
                                                                                                        TVar
                                                                                                          (TV
@@ -1216,13 +1216,13 @@ Right
                                                                                                             Star))
                                                                                                     (Area
                                                                                                        (Loc
-                                                                                                          284
+                                                                                                          287
                                                                                                           14
-                                                                                                          59)
+                                                                                                          61)
                                                                                                        (Loc
-                                                                                                          285
+                                                                                                          288
                                                                                                           14
-                                                                                                          60))
+                                                                                                          62))
                                                                                                     (Var
                                                                                                        "b"))
                                                                                                  True))
@@ -1238,13 +1238,13 @@ Right
                                                                                              (Just
                                                                                                 (Area
                                                                                                    (Loc
-                                                                                                      279
+                                                                                                      282
                                                                                                       14
-                                                                                                      54)
+                                                                                                      56)
                                                                                                    (Loc
-                                                                                                      283
+                                                                                                      286
                                                                                                       14
-                                                                                                      58)))
+                                                                                                      60)))
                                                                                          ] :=>
                                                                                            TCon
                                                                                              (TC
@@ -1253,15 +1253,15 @@ Right
                                                                                              "prelude")
                                                                                         (Area
                                                                                            (Loc
-                                                                                              290
-                                                                                              14
-                                                                                              65)
-                                                                                           (Loc
                                                                                               293
                                                                                               14
-                                                                                              68))
+                                                                                              67)
+                                                                                           (Loc
+                                                                                              296
+                                                                                              14
+                                                                                              70))
                                                                                         (LStr
-                                                                                           "'>'"))
+                                                                                           "']'"))
                                                                                      True))
                                                                                True))
                                                                          True))

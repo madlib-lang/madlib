@@ -379,16 +379,15 @@ inferTupleConstructor env (Can.Canonical area (Can.TupleConstructor elems)) = do
           return (s `compose` s', ps ++ ps', ts ++ [t'], es ++ [e'])
       ) (M.empty, [], [], []) elems
 
-  let s  = (\(s, _, _, _) -> s) inferredElems
-  let elemTypes  = (\(_, _, t, _) -> t) inferredElems
-  let elemEXPS   = (\(_, _, _, es) -> es) inferredElems
-  let ps     = (\(_, ps, _, _) -> ps) inferredElems
+  let s         = (\(s, _, _, _) -> s) inferredElems
+  let elemTypes = (\(_, _, t, _) -> t) inferredElems
+  let elemEXPS  = (\(_, _, _, es) -> es) inferredElems
+  let ps        = (\(_, ps, _, _) -> ps) inferredElems
+  let tupleT    = getTupleCtor (length elems)
+  let t         = foldl' TApp tupleT elemTypes
 
-  let tupleT     = getTupleCtor (length elems)
-  let t          = foldl' TApp tupleT elemTypes
 
-
-  return (s, ps, t, Slv.Solved (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
+  return (s, ps, apply s t, Slv.Solved (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
 
 
 -- INFER RECORD

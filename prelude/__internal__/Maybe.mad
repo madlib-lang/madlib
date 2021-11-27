@@ -57,8 +57,8 @@ instance Functor Maybe {
 instance Applicative Maybe {
   pure = Just
 
-  ap = (mf, mx) => where(<mf, mx>) {
-    <Just(f), Just(x)> => pure(f(x))
+  ap = (mf, mx) => where(#[mf, mx]) {
+    #[Just(f), Just(x)] => pure(f(x))
 
     _ => Nothing
   }
