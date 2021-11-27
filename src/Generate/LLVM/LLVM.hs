@@ -76,8 +76,8 @@ sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
 
 
 newtype Env
-  = Env { dictionaryIndices :: Map.Map String (Map.Map String Int) }
-  -- ^ Map InterfaceName (Map MethodName index)
+  = Env { dictionaryIndices :: Map.Map String (Map.Map String (Int, Int)) }
+  -- ^ Map InterfaceName (Map MethodName (index, arity))
   deriving(Eq, Show)
 
 
@@ -339,20 +339,27 @@ buildStr s = do
       --  False
   --  , "WriterT"
   --  )
-collectCRPDicts :: SymbolTable -> [ClassRefPred] -> [Operand.Operand]
+collectCRPDicts :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> [ClassRefPred] -> m [Operand.Operand]
 collectCRPDicts symbolTable crpNodes = case crpNodes of
-  (CRPNode interfaceName typingStr _ _ : next) ->
+  (CRPNode interfaceName typingStr _ subNodes : next) ->
     let dictName = "$" <> interfaceName <> "$" <> typingStr
     in  case Map.lookup dictName symbolTable of
-          Just (Symbol (DictionarySymbol _) dict) ->
-            let nextNodes = collectCRPDicts symbolTable next
-            in  dict : nextNodes
+          Just (Symbol (DictionarySymbol methodIndices) dict) -> case subNodes of
+            [] -> do
+              nextNodes <- collectCRPDicts symbolTable next
+              return $ dict : nextNodes
+
+            subNodes' -> do
+              subNodeDicts <- collectCRPDicts symbolTable subNodes'
+              dict'        <- applyClassRefPreds symbolTable (Map.size methodIndices) dict subNodeDicts
+              nextNodes    <- collectCRPDicts symbolTable next
+              return $ dict' : nextNodes
 
           _ ->
             undefined
 
   [] ->
-    []
+    return []
 
 getMethodsInDict :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand -> m [Operand]
 getMethodsInDict symbolTable index dict = case index of
@@ -367,7 +374,7 @@ getMethodsInDict symbolTable index dict = case index of
     nextMethods <- getMethodsInDict symbolTable (index - 1) dict
     return $ nextMethods ++ [method']
 
-applyClassRefPreds :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable ->Int -> Operand -> [Operand] -> m Operand
+applyClassRefPreds :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand -> [Operand] -> m Operand
 applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPreds of
   [] ->
     return dict
@@ -392,13 +399,12 @@ collectDictArgs :: (Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) =
 collectDictArgs symbolTable exp = case exp of
   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds True _, typingStr) exp') -> do
     let dictName = "$" <> interfaceName <> "$" <> typingStr
-    -- let crpNodes = collectCRPDicts symbolTable classRefPreds
+    crpNodes <- collectCRPDicts symbolTable classRefPreds
     (nextArgs, nextExp) <- collectDictArgs  symbolTable exp'
     case Map.lookup dictName symbolTable of
       Just (Symbol (DictionarySymbol methodIndices) dict) -> do
-        -- dict' <- applyClassRefPreds symbolTable (Map.size methodIndices) dict crpNodes
-        -- return (dict' : nextArgs, nextExp)
-        return (dict : nextArgs, nextExp)
+        dict' <- applyClassRefPreds symbolTable (Map.size methodIndices) dict crpNodes
+        return (dict' : nextArgs, nextExp)
 
       Just (Symbol _ dict) ->
         return (dict : nextArgs, nextExp)
@@ -467,7 +473,7 @@ generateApplicationForKnownFunction env symbolTable returnType arity fnOperand a
 
 buildReferencePAP :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Int -> Operand.Operand -> m (SymbolTable, Operand.Operand)
 buildReferencePAP symbolTable arity fn = do
-  let papType = Type.StructureType False [boxType, Type.i32, Type.i32]
+  let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
   let arity'  = i32ConstOp (fromIntegral arity)
 
   boxedFn  <- box fn
@@ -549,13 +555,36 @@ generateExp env symbolTable exp = case exp of
   Optimized t _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
+      -- Just (Symbol _ dict) | methodName == "mempty" -> do
+        -- let interfaceMap = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
+        -- let index = Maybe.fromMaybe 0 $ Map.lookup methodName interfaceMap
+        -- let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+        -- dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
+        -- methodPAP  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
+        -- methodFn <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
+        -- methodFn' <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
+        -- methodFn'' <- load methodFn' 8
+        -- value <- call methodFn'' []
+        -- return (symbolTable, value)
+
       Just (Symbol _ dict) -> do
-        let interfaceMap = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
-        let index = Maybe.fromMaybe 0 $ Map.lookup methodName interfaceMap
-        let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-        dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
-        method  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
-        return (symbolTable, method)
+        let interfaceMap   = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
+        let (index, arity) = Maybe.fromMaybe (0, 0) $ Map.lookup methodName interfaceMap
+        let papType        = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+        dict'      <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
+        methodPAP  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
+
+        -- If arity is 0 ( ex: mempty ), we need to call the function and get the value as there will be
+        -- no App wrapping the MethodRef. In other words that will never be called and a direct value is
+        -- expected
+        if arity == 0 then do
+          methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
+          methodFn'  <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
+          methodFn'' <- load methodFn' 8
+          value      <- call methodFn'' []
+          return (symbolTable, value)
+        else
+          return (symbolTable, methodPAP)
 
       _ ->
         error $ "dict not found: '"<>dictName<>"'\n\n"<>ppShow symbolTable
@@ -736,11 +765,11 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, ret)
 
   Optimized _ _ (TupleConstructor exps) -> do
-    exps' <- mapM ((snd <$>). generateExp env symbolTable) exps
+    exps'     <- mapM ((snd <$>). generateExp env symbolTable) exps
     boxedExps <- mapM box exps'
     let expsWithIds = List.zip boxedExps [0..]
-        tupleType = Type.StructureType False (typeOf <$> boxedExps)
-    tuplePtr <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
+        tupleType   = Type.StructureType False (typeOf <$> boxedExps)
+    tuplePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
     tuplePtr' <- bitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
@@ -753,7 +782,7 @@ generateExp env symbolTable exp = case exp of
     tail <- case List.last listItems of
       Optimized _ _ (ListItem lastItem) -> do
         (symbolTable', lastItem') <- generateExp env symbolTable lastItem
-        lastItem'' <- box lastItem'
+        lastItem''                <- box lastItem'
         call madlistSingleton [(lastItem'', [])]
 
       Optimized _ _ (ListSpread spread) -> do
@@ -1274,8 +1303,8 @@ buildDictValues symbolTable methodNames = case methodNames of
             methodRef  = Constant.GlobalReference methodType (AST.mkName n)
             methodRef' = Constant.BitCast methodRef boxType
             arity      = List.length $ getLLVMParameterTypes methodType
-            papType    = Type.StructureType False [boxType, Type.i32, Type.i32]
-            pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity)]
+            papType    = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+            pap        = Constant.Struct Nothing False [methodRef', Constant.Int 32 (fromIntegral arity), Constant.Int 32 (fromIntegral arity), Constant.Undef boxType]
             next       = buildDictValues symbolTable ns
         in  pap : next
 
@@ -1352,11 +1381,14 @@ topLevelFunctions =
   List.filter $ \e -> isTopLevelFunction e || isExtern e
 
 
-buildDictionaryIndices :: [Interface] -> Map.Map String (Map.Map String Int)
+buildDictionaryIndices :: [Interface] -> Map.Map String (Map.Map String (Int, Int))
 buildDictionaryIndices interfaces = case interfaces of
   (Untyped _ (Interface name _ _ methods _) : next) ->
     let nextMap   = buildDictionaryIndices next
-        methodMap = Map.fromList $ List.zip (Map.keys methods) [0..]
+        methodMap = Map.fromList
+          $ (\((methodName, InferredType.Forall _ (_ InferredType.:=> t)), index) ->
+              (methodName, (index, List.length $ InferredType.getParamTypes t))
+            ) <$> List.zip (Map.toList methods) [0..]
     in  Map.insert name methodMap nextMap
 
   _ ->

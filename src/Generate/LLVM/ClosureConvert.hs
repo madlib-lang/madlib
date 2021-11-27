@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Generate.LLVM.ClosureConvert where
 
 import           Control.Monad.State
@@ -699,11 +700,27 @@ getMethodNames interface = case interface of
   Slv.Untyped _ (Slv.Interface _ _ _ methods _) ->
     M.keys methods
 
+getConstructorNames :: [Slv.TypeDecl] -> [String]
+getConstructorNames typeDeclarations = case typeDeclarations of
+  (td : tds) -> case td of
+    Slv.Untyped _ Slv.ADT{ Slv.adtconstructors } ->
+      let constructorNames = (\(Slv.Untyped _ (Slv.Constructor name _ _)) -> name) <$> adtconstructors
+          nextNames = getConstructorNames tds
+      in  constructorNames ++ nextNames
+
+    _ ->
+      getConstructorNames tds
+
+  [] ->
+    []
+
 instance Optimizable Slv.AST Opt.AST where
   optimize env ast = do
-    let globalVars    = mapMaybe Slv.getExpName (Slv.aexps ast)
-        globalMethods = concatMap getMethodNames $ Slv.ainterfaces ast
-        env' = env { freeVars = globalVars ++ globalMethods }
+    let globalVars         = mapMaybe Slv.getExpName (Slv.aexps ast)
+        globalMethods      = concatMap getMethodNames $ Slv.ainterfaces ast
+        globalConstructors = getConstructorNames $ Slv.atypedecls ast
+        -- TODO: also generate freevars for imports and rename freeVars env in globalVars
+        env' = env { freeVars = globalVars ++ globalMethods ++ (trace ("GLOBAL CTORS: "<>ppShow globalConstructors) globalConstructors) }
 
     imports    <- mapM (optimize env') $ Slv.aimports ast
     exps       <- mapM (optimize env') $ Slv.aexps ast

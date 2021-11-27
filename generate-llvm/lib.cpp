@@ -741,6 +741,38 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
           }
         }
       }
+      case 10: {
+        void *(*fn)(void *, void *, void *, void *, void*, void*, void*, void*, void*, void*) =
+            (void *(*)(void *, void *, void *, void *, void*, void*, void*, void*, void*, void*))unwrappedPAP->fn;
+        switch (ENV_SIZE) {
+          case 0: {
+            void *result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                              va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            if (argc > 10) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 10, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+        }
+      }
+      case 11: {
+        void *(*fn)(void *, void *, void *, void *, void *, void*, void*, void*, void*, void*, void*) =
+            (void *(*)(void *, void *, void *, void *, void *, void*, void*, void*, void*, void*, void*))unwrappedPAP->fn;
+        switch (ENV_SIZE) {
+          case 0: {
+            void *result = fn(va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *),
+                              va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *), va_arg(argv, void *));
+            if (argc > 11) {
+              va_list *remainingArgs = va_arg(argv, va_list *);
+              result = __applyPAP__(result, argc - 11, remainingArgs);
+            }
+            va_end(argv);
+            return result;
+          }
+        }
+      }
     }
   } else {
     // We push the args to a newly allocated PAP
@@ -750,7 +782,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
 
-    printf("NEW PAP - NEXT_ENV_SIZE: %d, ENV_SIZE: %d, arity: %d, missing: %d\n", NEXT_ENV_SIZE, ENV_SIZE, unwrappedPAP->arity, newPAP->missingArgCount);
+    // printf("NEW PAP - NEXT_ENV_SIZE: %d, argc: %d, ENV_SIZE: %d, arity: %d, missing: %d\n", NEXT_ENV_SIZE, argc, ENV_SIZE, unwrappedPAP->arity, newPAP->missingArgCount);
 
     switch (ENV_SIZE) {
       case 0: {
@@ -1549,6 +1581,7 @@ bool MadList_hasLength(double l, MadListNode_t *list) {
 
   return l == 0 && head->next == NULL;
 }
+
 
 MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
   if (a == NULL) {
