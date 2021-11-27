@@ -10,8 +10,6 @@ import qualified Data.ByteString.Lazy.Char8    as BLChar8
 import           AST.Solved
 import qualified Utils.Hash                    as Hash
 
-import           Text.Show.Pretty
-import           Debug.Trace
 
 
 data Env
@@ -27,14 +25,24 @@ extendScope initialName newName env@Env{ namesInScope } =
   env { namesInScope = Map.insert initialName newName namesInScope }
 
 
+addHashToName :: String -> String -> String
+addHashToName hash name =
+  "__" ++ hash ++ "__" ++ name
+
+
 hashName :: Env -> String -> String
-hashName Env { currentModuleHash } s =
-  "__" ++ currentModuleHash ++ "__" ++ s
+hashName Env { currentModuleHash } =
+  addHashToName currentModuleHash
+
+
+generateHashFromPath :: FilePath -> String
+generateHashFromPath =
+  Hash.hash . BLChar8.pack
 
 
 hashModulePath :: AST -> String
 hashModulePath ast =
-  Hash.hash $ BLChar8.pack $ Maybe.fromMaybe "" (apath ast)
+  generateHashFromPath $ Maybe.fromMaybe "" (apath ast)
 
 
 renameExpsInBody :: Env -> [Exp] -> ([Exp], Env)
@@ -208,7 +216,7 @@ renameTopLevelExps env exps = case exps of
       let (renamedExp, env')  = renameTopLevelAssignment env exp
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (renamedExp : nextExps, nextEnv)
-    
+
     Solved t area (Export assignment@(Solved _ _ (Assignment _ _))) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
@@ -282,33 +290,65 @@ renameInstance env inst = case inst of
     undefined
 
 
+renameSolvedName :: Env -> String -> Solved String -> (Solved String, Env)
+renameSolvedName env hash solvedName = case solvedName of
+  Untyped area name ->
+    let hashedName = addHashToName hash name
+        env'       = extendScope name hashedName env
+    in  (Untyped area hashedName, env')
+
+  _ ->
+    undefined
+
+
+renameSolvedNames :: Env -> String -> [Solved String] -> ([Solved String], Env)
+renameSolvedNames env hash solvedNames = case solvedNames of
+  (name : names) ->
+    let (renamed, env')        = renameSolvedName env hash name
+        (nextRenamed, nextEnv) = renameSolvedNames env hash names
+    in  (renamed : nextRenamed, nextEnv)
+
+  [] ->
+    ([], env)
+
+
+renameImport :: Env -> Import -> (Import, Env)
+renameImport env imp = case imp of
+  Untyped area (NamedImport names relPath absPath) ->
+    let moduleHash           = generateHashFromPath absPath
+        (renamedNames, env') = renameSolvedNames env moduleHash names
+    in  (Untyped area (NamedImport renamedNames relPath absPath), env')
+
+  Untyped area (DefaultImport name relPath absPath) ->
+    let moduleHash          = generateHashFromPath absPath
+        (renamedName, env') = renameSolvedName env moduleHash name
+    in  (Untyped area (DefaultImport renamedName relPath absPath), env')
+
+  _ ->
+    undefined
+
+
+renameImports :: Env -> [Import] -> ([Import], Env)
+renameImports env imports = case imports of
+  (imp : imps) ->
+    let (renamedImport, env')  = renameImport env imp
+        (nextImports, nextEnv) = renameImports env imps
+    in  (renamedImport : nextImports, nextEnv)
+
+  [] ->
+    ([], env)
+
+
+
 renameAST :: Env -> AST -> (AST, Env)
 renameAST env ast =
   let moduleHash                = hashModulePath ast
       env'                      = env { currentModuleHash = moduleHash }
-      (renamedTypeDecls, env'') = renameTypeDecls env' $ atypedecls ast
-      (renamedExps, env''')     = renameTopLevelExps env'' $ aexps ast
-      renamedInstances          = renameInstance env''' <$> ainstances ast
+      (renamedImports, env'')   = renameImports env' $ aimports ast
+      (renamedTypeDecls, env''') = renameTypeDecls env'' $ atypedecls ast
+      (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
+      renamedInstances          = renameInstance env'''' <$> ainstances ast
   in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances }, env)
-  -- TODO: we need to generate hashed names for imports that are to be used for the
-  -- generation of externs in LLVM phase
---   imports    <- mapM (optimize env') $ Slv.aimports ast
---   exps       <- mapM (optimize env') $ Slv.aexps ast
---   typeDecls  <- mapM (optimize env') $ Slv.atypedecls ast
---   interfaces <- mapM (optimize env') $ Slv.ainterfaces ast
---   instances  <- mapM (optimize env') $ Slv.ainstances ast
-  
---   defs <- getTopLevelExps
---   resetTopLevelExps
-  
---   return $ Opt.AST { Opt.aimports    = imports
---                     , Opt.aexps       = defs ++ exps
---                     , Opt.atypedecls  = typeDecls
---                     , Opt.ainterfaces = interfaces
---                     , Opt.ainstances  = instances
---                     , Opt.apath       = Slv.apath ast
---                     }
-
 
 renameTable :: Table -> Table
 renameTable table =
