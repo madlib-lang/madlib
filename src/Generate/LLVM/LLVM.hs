@@ -163,6 +163,14 @@ generateExp symbolTable exp = case exp of
   Optimized _ _ (Var "puts") ->
     return (symbolTable, Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i32 [ptr i8] False) (AST.mkName "puts")))
 
+  Optimized _ _ (AnonymousAbs n) ->
+    case Map.lookup n symbolTable of
+      Just (Symbol FunctionSymbol global) ->
+        return (symbolTable, global)
+
+      _ ->
+        error $ "Var not found " <> n
+
   Optimized _ _ (Var n) ->
     case Map.lookup n (trace ("ST: "<>ppShow symbolTable) symbolTable) of
       Just (Symbol FunctionSymbol global) ->
@@ -284,15 +292,23 @@ generateExp symbolTable exp = case exp of
     addr <- buildStr s
     return (symbolTable, addr)
 
+  -- Optimized _ _ (TupleConstructor exps) -> do
+  --   exps' <- mapM ((snd <$>). generateExp symbolTable) exps
+  --   let expsWithIds = List.zip exps' [0..]
+  --   tuple <- alloca (Type.StructureType False (typeOf <$> exps')) Nothing 8
+  --   Monad.foldM_ (storeItem tuple) () expsWithIds
+
+  --   return (symbolTable, tuple)
+
   Optimized _ _ (TupleConstructor exps) -> do
     exps' <- mapM ((snd <$>). generateExp symbolTable) exps
     let expsWithIds = List.zip exps' [0..]
-    tuple <- alloca (Type.StructureType False (typeOf <$> exps')) Nothing 8
-    Monad.foldM_ (storeItem tuple) () expsWithIds
+        tupleType = Type.StructureType False (typeOf <$> exps')
+    tuplePtr <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
+    tuplePtr' <- bitcast tuplePtr (Type.ptr tupleType)
+    Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
-    -- TODO: should not return allocad
-    return (symbolTable, tuple)
-    where
+    return (symbolTable, tuplePtr')
 
 
   Optimized _ _ (If cond truthy falsy) -> mdo
@@ -316,15 +332,11 @@ generateExp symbolTable exp = case exp of
 
   Optimized _ _ (Where exp iss) -> mdo
     (_, exp') <- generateExp symbolTable exp
-    branches  <- generateBranches symbolTable defaultBlock exitBlock exp' iss
+    branches  <- generateBranches symbolTable exitBlock exp' iss
     let (b, _) = List.head branches
 
-    defaultBlock <- block `named` "defaultBlock"
-    defaultRet <- return $ Operand.ConstantOperand (Constant.Null (typeOf b))
-    br exitBlock
-
     exitBlock <- block `named` "exitBlock"
-    ret <- phi $ branches <> [(defaultRet, defaultBlock)]
+    ret <- phi branches -- <> [(defaultRet, defaultBlock)]
 
     return (symbolTable, ret)
 
@@ -351,43 +363,44 @@ generateExp symbolTable exp = case exp of
     return (symbolTable, closure')
 
   _ ->
-    undefined
+    error $ "not implemented\n\n" ++ ppShow exp
 
 
 
 
-generateBranches :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> AST.Name -> AST.Name -> Operand -> [Is] -> m [(Operand, AST.Name)]
-generateBranches symbolTable defaultBlock exitBlock whereExp iss = case iss of
-  [is] -> do
-    branch <- generateBranch symbolTable defaultBlock False exitBlock whereExp is
-    return [branch]
-
+generateBranches :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> AST.Name -> Operand -> [Is] -> m [(Operand, AST.Name)]
+generateBranches symbolTable exitBlock whereExp iss = case iss of
   (is : next) -> do
-    branch <- generateBranch symbolTable defaultBlock True exitBlock whereExp is
-    next'  <- generateBranches symbolTable defaultBlock exitBlock whereExp next
-    return $ branch : next'
+    branch <- generateBranch symbolTable (not (List.null next)) exitBlock whereExp is
+    next'  <- generateBranches symbolTable exitBlock whereExp next
+    return $ branch ++ next'
 
   [] ->
     return []
 
 
-generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> AST.Name -> Bool -> AST.Name -> Operand -> Is -> m (Operand, AST.Name)
-generateBranch symbolTable defaultBlock hasMore exitBlock whereExp is = case is of
+generateBranch :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Bool -> AST.Name -> Operand -> Is -> m [(Operand, AST.Name)]
+generateBranch symbolTable hasMore exitBlock whereExp is = case is of
   Optimized _ _ (Is pat exp) -> mdo
+    currBlock <- currentBlock
     test <- generateBranchTest symbolTable pat whereExp
-    if hasMore then
-      condBr test branchExpBlock nextBlock
-    else
-      condBr test branchExpBlock defaultBlock
+    condBr test branchExpBlock nextBlock
 
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
     (_, branch) <- generateExp symbolTable' exp
     br exitBlock
 
-    nextBlock <- block `named` "nextBlock"
+    (nextBlock, finalPhi) <-
+      if hasMore then do
+        b <- block `named` "nextBlock"
+        return (b, [])
+      else do
+        let def = Operand.ConstantOperand (Constant.Null (typeOf branch))
+        return (exitBlock, [(def, currBlock)])
 
-    return (branch, branchExpBlock)
+
+    return $ (branch, branchExpBlock) : finalPhi
 
   _ ->
     undefined
@@ -556,6 +569,12 @@ unbox t what = case t of
     int <- ptrtoint what Type.i1
     bitcast int (buildLLVMType t)
 
+  -- This should be called for parameters that are closures
+  -- InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
+  --   let closureType = Type.ptr $ Type.StructureType False [buildLLVMType t, Type.StructureType False []]
+  --   casted <- bitcast what closureType
+  --   load casted 8
+
   _ ->
     bitcast what (buildLLVMType t)
 
@@ -576,6 +595,12 @@ box what = case typeOf what of
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
     return what
+
+  -- closure?
+  t@(Type.StructureType _ _) -> do
+    ptr <- alloca t Nothing 8
+    store ptr 8 what
+    bitcast ptr boxType
 
   -- Any pointer type
   _ ->
