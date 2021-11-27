@@ -4,7 +4,13 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data Source a = Source Area a deriving(Eq, Show)
+data SourceTarget
+  = TargetLLVM
+  | TargetJS
+  | TargetAll
+  deriving(Eq, Show)
+
+data Source a = Source Area SourceTarget a deriving(Eq, Show)
 
 data AST =
   AST
@@ -151,6 +157,9 @@ data Exp_
   | JsxAutoClosedTag Name [JsxProp]
   | Parenthesized Area Exp Area
   | Extern Typing Name Name
+  | IfTarget SourceTarget
+  | ElseIfTarget SourceTarget
+  | EndIfTarget
   deriving(Eq, Show)
 
 
@@ -173,35 +182,87 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
+isMacroExp :: Exp -> Bool
+isMacroExp exp = case exp of
+  Source _ _ (IfTarget _) ->
+    True
+
+  Source _ _ (ElseIfTarget _) ->
+    True
+
+  Source _ _ EndIfTarget ->
+    True
+
+  _ ->
+    False
+
 getImportNames :: Import -> [Source Name]
 getImportNames imp = case imp of
-  Source _ (NamedImport names _ n) -> names
-  Source _ DefaultImport{}         -> []
-  Source _ TypeImport{}            -> []
-  Source _ ImportAll{}             -> []
+  Source _ _ (NamedImport names _ n) ->
+    names
+
+  Source _ _ DefaultImport{}         ->
+    []
+
+  Source _ _ TypeImport{}            ->
+    []
+
+  Source _ _ ImportAll{}             ->
+    []
+
 
 getImportTypeNames :: Import -> [Source Name]
 getImportTypeNames imp = case imp of
-  Source _ (NamedImport names _ _) -> []
-  Source _ (TypeImport  names _ _) -> names
-  Source _ DefaultImport{}         -> []
-  Source _ ImportAll{}             -> []
+  Source _ _ (NamedImport names _ _) ->
+    []
+
+  Source _ _ (TypeImport  names _ _) ->
+    names
+
+  Source _ _ DefaultImport{}         ->
+    []
+
+  Source _ _ ImportAll{}             ->
+    []
+
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
-  Source _ (NamedImport   _ _ n) -> n
-  Source _ (TypeImport    _ _ n) -> n
-  Source _ (DefaultImport _ _ n) -> n
-  Source _ (ImportAll _ n) -> n
+  Source _ _ (NamedImport   _ _ n) ->
+    n
+
+  Source _ _ (TypeImport    _ _ n) ->
+    n
+
+  Source _ _ (DefaultImport _ _ n) ->
+    n
+
+  Source _ _ (ImportAll _ n) ->
+    n
+
 
 getImportPath :: Import -> (Import, FilePath)
-getImportPath imp@(Source _ (NamedImport   _ p _)) = (imp, p)
-getImportPath imp@(Source _ (TypeImport    _ p _)) = (imp, p)
-getImportPath imp@(Source _ (DefaultImport _ p _)) = (imp, p)
-getImportPath imp@(Source _ (ImportAll p _)) = (imp, p)
+getImportPath imp@(Source _ _ (NamedImport   _ p _)) =
+  (imp, p)
+
+getImportPath imp@(Source _ _ (TypeImport    _ p _)) =
+  (imp, p)
+
+getImportPath imp@(Source _ _ (DefaultImport _ p _)) =
+  (imp, p)
+
+getImportPath imp@(Source _ _ (ImportAll p _)) =
+  (imp, p)
+
 
 getArea :: Source a -> Area
-getArea (Source a _) = a
+getArea (Source area _ _) =
+  area
+
+getSourceTarget :: Source a -> SourceTarget
+getSourceTarget (Source _ sourceTarget _) =
+  sourceTarget
 
 getSourceContent :: Source a -> a
-getSourceContent (Source _ a) = a
+getSourceContent (Source _ _ a) =
+  a

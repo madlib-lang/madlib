@@ -251,3 +251,7 @@ IO.prettyLog(#[1, 2] == #[1, 2])
 IO.prettyLog(#[1, 2, 3, 4, 5] == #[1, 2, 3, 4, 5])
 IO.prettyLog(#[1, 2, 3] == #[1, 2, 7])
 IO.prettyLog(#["1", "2", "8"] == #["1", "2", "8"])
+
+
+incM = (x) => x + 1
+IO.prettyLog(incM(3.3))

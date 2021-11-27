@@ -22,6 +22,7 @@ import           Error.Error
 import           Error.Context
 import           Infer.Type
 import qualified Data.Maybe as Maybe
+import Text.Show.Pretty
 
 
 
@@ -30,7 +31,7 @@ class Canonicalizable a b where
 
 
 instance Canonicalizable Src.Exp Can.Exp where
-  canonicalize env target (Src.Source area e) = case e of
+  canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
     Src.LNum  x           -> return $ Can.Canonical area (Can.LNum x)
 
     Src.LFloat x          -> return $ Can.Canonical area (Can.LFloat x)
@@ -143,7 +144,7 @@ instance Canonicalizable Src.Exp Can.Exp where
         canonicalizeDefineExps :: [Src.Exp] -> CanonicalM [Can.Exp]
         canonicalizeDefineExps []     = return []
         canonicalizeDefineExps (e:es) = case e of
-          Src.Source _ (Src.DoAssignment name action) -> do
+          Src.Source _ _ (Src.DoAssignment name action) -> do
             exp' <- canonicalize env target action
             es'  <- canonicalizeDefineExps es
             let fn  = Can.Canonical area (Can.Var "chain")
@@ -166,14 +167,14 @@ instance Canonicalizable Src.Exp Can.Exp where
         env
         target
         area
-        [Src.Source emptyArea "__x__"]
-        [Src.Source area (Src.Where (Src.Source emptyArea (Src.Var "__x__")) iss)]
+        [Src.Source emptyArea sourceTarget "__x__"]
+        [Src.Source area sourceTarget (Src.Where (Src.Source emptyArea sourceTarget (Src.Var "__x__")) iss)]
 
     Src.JsxTag name props children -> do
-      canonicalizeJsxTag env target (Src.Source area e)
+      canonicalizeJsxTag env target (Src.Source area sourceTarget e)
 
     Src.JsxAutoClosedTag name props -> do
-      canonicalizeJsxTag env target (Src.Source area (Src.JsxTag name props []))
+      canonicalizeJsxTag env target (Src.Source area sourceTarget (Src.JsxTag name props []))
 
     Src.Parenthesized _ exp _ ->
       canonicalize env target exp
@@ -207,12 +208,15 @@ instance Canonicalizable Src.Exp Can.Exp where
       scheme  <- typingToScheme env typing
       return $ Can.Canonical area (Can.Extern scheme name originalName)
 
+    _ ->
+      error $ "unhandled node type\n" <> ppShow fullExp
+
 
 buildAbs :: E.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
-buildAbs env target area [Src.Source area' param] body = do
+buildAbs env target area [Src.Source area' _ param] body = do
   body' <- mapM (canonicalize env target) body
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) body')
-buildAbs env target area (Src.Source area' param:xs) body  = do
+buildAbs env target area (Src.Source area' _ param:xs) body  = do
   next <- buildAbs env target area xs body
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) [next])
 
@@ -222,19 +226,19 @@ buildApp env target area f args =
   buildApp' env target (length args) (length args) area f args
 
 buildApp' :: E.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
-buildApp' env target total nth area f@(Src.Source _ f') [arg] = do
+buildApp' env target total nth area f@(Src.Source _ _ f') [arg] = do
   arg' <- canonicalize env target arg
   f'   <- canonicalize env target f
   return $ Can.Canonical area (Can.App f' arg' (total == nth))
-buildApp' env target total nth area f@(Src.Source _ f') xs = do
-  let arg@(Src.Source area' _) = last xs
+buildApp' env target total nth area f@(Src.Source _ _ f') xs = do
+  let arg@(Src.Source area' _ _) = last xs
   arg'   <- canonicalize env target arg
   subApp <- buildApp' env target total (nth - 1) area f (init xs)
   return $ Can.Canonical (mergeAreas area area') (Can.App subApp arg' (total == nth))
 
 canonicalizeJsxTag :: E.Env -> Target -> Src.Exp -> CanonicalM Can.Exp
 canonicalizeJsxTag env target exp = case exp of
-  Src.Source area (Src.JsxTag name props children) -> do
+  Src.Source area _ (Src.JsxTag name props children) -> do
     pushNameAccess name
     pushNameAccess "text" -- fix for now
     let Area (Loc _ l c) (Loc _ l' c') = area
@@ -243,7 +247,7 @@ canonicalizeJsxTag env target exp = case exp of
 
     children' <- mapM canonicalizeJsxChild children
     propFns <- mapM
-      (\(Src.Source a (Src.JsxProp name' exp)) -> do
+      (\(Src.Source a _ (Src.JsxProp name' exp)) -> do
         pushNameAccess name'
         let Area (Loc _ l c) (Loc _ l' c') = a
         arg <- canonicalize env target exp
@@ -287,7 +291,7 @@ canonicalizeJsxTag env target exp = case exp of
 
 
 instance Canonicalizable Src.DictItem Can.ListItem where
-  canonicalize env target (Src.Source area exp) = case exp of
+  canonicalize env target (Src.Source area _ exp) = case exp of
     (Src.DictItem key value) -> do
       key' <- canonicalize env target key
       value' <- canonicalize env target value
@@ -295,7 +299,7 @@ instance Canonicalizable Src.DictItem Can.ListItem where
 
 
 instance Canonicalizable Src.ListItem Can.ListItem where
-  canonicalize env target (Src.Source area item) = case item of
+  canonicalize env target (Src.Source area _ item) = case item of
     Src.ListItem exp -> do
       exp' <- canonicalize env target exp
       return $ Can.Canonical area $ Can.ListItem exp'
@@ -306,7 +310,7 @@ instance Canonicalizable Src.ListItem Can.ListItem where
 
 
 instance Canonicalizable Src.Field Can.Field where
-  canonicalize env target (Src.Source area item) = case item of
+  canonicalize env target (Src.Source area _ item) = case item of
     Src.Field (name, exp) -> do
       exp' <- canonicalize env target exp
       return $ Can.Canonical area $ Can.Field (name, exp')
@@ -321,25 +325,25 @@ instance Canonicalizable Src.Field Can.Field where
 
 
 instance Canonicalizable Src.Is Can.Is where
-  canonicalize env target (Src.Source area (Src.Is pat exp)) = do
+  canonicalize env target (Src.Source area _ (Src.Is pat exp)) = do
     pat' <- canonicalize env target pat
     exp' <- canonicalize env target exp
     return $ Can.Canonical area (Can.Is pat' exp')
 
 
 instance Canonicalizable Src.Pattern Can.Pattern where
-  canonicalize env target (Src.Source area pat) = case pat of
+  canonicalize env target (Src.Source area _ pat) = case pat of
     Src.PVar name       -> return $ Can.Canonical area (Can.PVar name)
 
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
-    Src.PCon (Src.Source _ name) pats -> do
+    Src.PCon (Src.Source _ _ name) pats -> do
       let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PCon name pats')
 
-    Src.PNullaryCon (Src.Source _ name) -> do
+    Src.PNullaryCon (Src.Source _ _ name) -> do
       let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       return $ Can.Canonical area (Can.PCon name [])
@@ -369,18 +373,18 @@ instance Canonicalizable Src.Pattern Can.Pattern where
 
 extractPatternFields :: [Src.PatternField] -> M.Map Src.Name Src.Pattern
 extractPatternFields pats = case pats of
-  (Src.PatternField (Src.Source _ fieldName) pat : ps) ->
+  (Src.PatternField (Src.Source _ _ fieldName) pat : ps) ->
     M.insert fieldName pat (extractPatternFields ps)
 
-  (Src.PatternFieldShorthand (Src.Source area fieldName) : ps) ->
-    M.insert fieldName (Src.Source area (Src.PVar fieldName)) (extractPatternFields ps)
+  (Src.PatternFieldShorthand (Src.Source area sourceTarget fieldName) : ps) ->
+    M.insert fieldName (Src.Source area sourceTarget (Src.PVar fieldName)) (extractPatternFields ps)
 
   [] ->
     mempty
 
 
 instance Canonicalizable Src.Import Can.Import where
-  canonicalize env target (Src.Source area imp) = case imp of
+  canonicalize env target (Src.Source area _ imp) = case imp of
     Src.NamedImport names relPath absPath ->
       return $ Can.Canonical area (Can.NamedImport (canonicalizeName <$> names) relPath absPath)
 
@@ -394,4 +398,4 @@ instance Canonicalizable Src.Import Can.Import where
       return $ Can.Canonical area (Can.ImportAll relPath absPath)
 
 canonicalizeName :: Src.Source Src.Name -> Can.Canonical Can.Name
-canonicalizeName (Src.Source area name) = Can.Canonical area name
+canonicalizeName (Src.Source area _ name) = Can.Canonical area name

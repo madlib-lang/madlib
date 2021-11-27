@@ -88,11 +88,11 @@ argsToDoc comments args = case args of
 
 paramsToDoc :: [Comment] -> [Source String] -> (Pretty.Doc ann, [Comment])
 paramsToDoc comments nodes = case nodes of
-  [Source area name] ->
+  [Source area _ name] ->
     let (commentsDoc, comments') = insertComments False area comments
     in  (commentsDoc <> Pretty.pretty name, comments')
 
-  (Source area name : more) ->
+  (Source area _ name : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         param                    = Pretty.pretty name <> Pretty.pretty ","
         (more', comments'')      = paramsToDoc comments' more
@@ -104,7 +104,7 @@ paramsToDoc comments nodes = case nodes of
 
 listItemsToDoc :: [Comment] -> [ListItem] -> (Pretty.Doc ann, [Comment])
 listItemsToDoc comments nodes = case nodes of
-  (Source _ (ListItem exp) : more) ->
+  (Source _ _ (ListItem exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
         line =
@@ -114,7 +114,7 @@ listItemsToDoc comments nodes = case nodes of
             Pretty.line
     in  (item <> Pretty.pretty "," <> line <> more', comments'')
 
-  (Source _ (ListSpread exp) : more) ->
+  (Source _ _ (ListSpread exp) : more) ->
     let (item, comments')   = expToDoc comments exp
         (more', comments'') = listItemsToDoc comments' more
         line =
@@ -130,7 +130,7 @@ listItemsToDoc comments nodes = case nodes of
 
 fieldsToDoc :: [Comment] -> [Field] -> (Pretty.Doc ann, [Comment])
 fieldsToDoc comments fields = case fields of
-  (Source area (Field (name, exp)) : more) ->
+  (Source area _ (Field (name, exp)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         name'                    = Pretty.pretty name
         (value, comments'')      = expToDoc comments' exp
@@ -144,7 +144,7 @@ fieldsToDoc comments fields = case fields of
         , comments'''
         )
 
-  (Source area (FieldSpread exp) : more) ->
+  (Source area _ (FieldSpread exp) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         (item, comments'')       = expToDoc comments' exp
         line =
@@ -157,7 +157,7 @@ fieldsToDoc comments fields = case fields of
         , comments'''
         )
 
-  (Source area (FieldShorthand name) : more) ->
+  (Source area _ (FieldShorthand name) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         item = Pretty.pretty name
         line =
@@ -176,7 +176,7 @@ fieldsToDoc comments fields = case fields of
 
 dictItemsToDoc :: [Comment] -> [DictItem] -> (Pretty.Doc ann, [Comment])
 dictItemsToDoc comments fields = case fields of
-  (Source area (DictItem key value) : more) ->
+  (Source area _ (DictItem key value) : more) ->
     let (key', comments')    = expToDoc comments key
         (value', comments'') = expToDoc comments' value
         (more', comments''') = dictItemsToDoc comments'' more
@@ -195,12 +195,12 @@ dictItemsToDoc comments fields = case fields of
 
 jsxPropsToDoc :: [Comment] -> [JsxProp] -> (Pretty.Doc ann, [Comment])
 jsxPropsToDoc comments fields = case fields of
-  (Source area (JsxProp key value) : more) ->
+  (Source area _ (JsxProp key value) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         key'                     = Pretty.pretty key
         (value', comments'')     = expToDoc comments' value
         value'' = case value of
-          Source _ (LStr _) ->
+          Source _ _ (LStr _) ->
             value'
 
           _ ->
@@ -221,7 +221,7 @@ jsxPropsToDoc comments fields = case fields of
 
 jsxChildrenToDoc :: [Comment] -> [JsxChild] -> (Pretty.Doc ann, [Comment])
 jsxChildrenToDoc comments children = case children of
-  (JsxChild (Source area (LStr s)) : more) ->
+  (JsxChild (Source area _ (LStr s)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         -- We need to remove the leading and trailing double quote
         s'                       = init (tail s)
@@ -254,15 +254,15 @@ jsxChildrenToDoc comments children = case children of
 
 patternFieldToDoc :: PatternField -> Pretty.Doc ann
 patternFieldToDoc field = case field of
-  PatternField (Source _ n) pat ->
+  PatternField (Source _ _ n) pat ->
     Pretty.pretty n <> Pretty.pretty ": " <> patternToDoc pat
 
-  PatternFieldShorthand (Source _ n) ->
+  PatternFieldShorthand (Source _ _ n) ->
     Pretty.pretty n
 
 
 patternToDoc :: Pattern -> Pretty.Doc ann
-patternToDoc (Source _ pat) = case pat of
+patternToDoc (Source _ _ pat) = case pat of
   PVar name ->
     Pretty.pretty name
 
@@ -278,10 +278,10 @@ patternToDoc (Source _ pat) = case pat of
   PAny ->
     Pretty.pretty "_"
 
-  PNullaryCon (Source _ name) ->
+  PNullaryCon (Source _ _ name) ->
     Pretty.pretty name
 
-  PCon (Source _ name) args ->
+  PCon (Source _ _ name) args ->
     let name' = Pretty.pretty name
         args' = Pretty.hcat $ Pretty.punctuate (Pretty.pretty ", ") (patternToDoc <$> args)
     in  name' <> Pretty.lparen <> args' <> Pretty.rparen
@@ -319,7 +319,7 @@ patternToDoc (Source _ pat) = case pat of
 
 issToDoc :: [Comment] -> [Is] -> (Pretty.Doc ann, [Comment])
 issToDoc comments iss = case iss of
-  (Source area (Is pat exp) : more) ->
+  (Source area _ (Is pat exp) : more) ->
     let pat'                           = patternToDoc pat
         (commentsBeforePat, comments') = insertComments False area comments
         (exp', comments'')             = expToDoc comments' exp
@@ -346,14 +346,14 @@ bodyToDoc comments exps = case exps of
     expToDoc comments exp
 
   (exp : next) ->
-    let (exp', comments') = expToDoc comments exp
+    let (exp', comments')   = expToDoc comments exp
         (next', comments'') = bodyToDoc comments' next
-        breaks = case next of
-          [Source _ Return{}] ->
-            emptyLine <> Pretty.line
+        breaks              = case next of
+          [Source _ _ Return{}] ->
+            emptyLine <> Pretty.hardline
 
           _ ->
-            Pretty.line
+            Pretty.hardline
     in  (exp' <> breaks <> next', comments'')
 
   [] ->
@@ -362,13 +362,13 @@ bodyToDoc comments exps = case exps of
 
 binOpToDocs :: [Comment] -> Exp -> ([Pretty.Doc ann], [Comment])
 binOpToDocs comments exp = case exp of
-  Source _ (BinOp operandL operator operandR) ->
+  Source _ _ (BinOp operandL operator operandR) ->
     let (operandL', comments')   = binOpToDocs comments operandL
         (operator', comments'')  = expToDoc comments' operator
         (operandR', comments''') = binOpToDocs comments'' operandR
         operandL'' =
           case operandL of
-            Source _ BinOp{} ->
+            Source _ _ BinOp{} ->
               operandL'
 
             _ ->
@@ -382,12 +382,12 @@ binOpToDocs comments exp = case exp of
 
 accessToDocs :: [Comment] -> Exp -> ([Pretty.Doc ann], [Comment])
 accessToDocs comments exp = case exp of
-  Source _ (Access rec field) ->
+  Source _ _ (Access rec field) ->
     let (rec', comments')    = accessToDocs comments rec
         (field', comments'') = expToDoc comments' field
     in  (rec' <> [Pretty.line' <> field'], comments'')
 
-  Source _ (App fn args) ->
+  Source _ _ (App fn args) ->
     let (fn', comments')    = accessToDocs comments fn
         (args', comments'') = argsToDoc comments' args
         args'' =
@@ -396,7 +396,7 @@ accessToDocs comments exp = case exp of
           else
             Pretty.lparen <> args' <> Pretty.rparen
         fn'' = case fn of
-          Source _ Access{} ->
+          Source _ _ Access{} ->
             fn' <> [args'']
 
           _ ->
@@ -427,10 +427,10 @@ typingArgsToDoc comments typings = case typings of
   (typing : more) ->
     let (typing', comments') = typingToDoc comments typing
         typing'' = case typing of
-          Source _ TRComp{} ->
+          Source _ _ TRComp{} ->
             Pretty.lparen <> typing' <> Pretty.rparen
 
-          Source _ TRArr{} ->
+          Source _ _ TRArr{} ->
             Pretty.lparen <> typing' <> Pretty.rparen
 
           _ ->
@@ -496,29 +496,29 @@ methodTypingsToDoc comments methods = case methods of
 
 typingToDoc :: [Comment] -> Typing -> (Pretty.Doc ann, [Comment])
 typingToDoc comments typing = case typing of
-  Source _ (TRSingle n) ->
+  Source _ _ (TRSingle n) ->
     (Pretty.pretty n, comments)
 
-  Source _ (TRComp n args) ->
+  Source _ _ (TRComp n args) ->
     let (args', comments') = typingArgsToDoc comments args
     in  (Pretty.pretty n <> Pretty.space <> args', comments')
 
-  Source _ (TRArr left right) ->
+  Source _ _ (TRArr left right) ->
     let (left', comments')   = typingToDoc comments left
         (right', comments'') = typingToDoc comments' right
         left'' = case left of
-          Source _ TRArr{} ->
+          Source _ _ TRArr{} ->
             Pretty.lparen <> left' <> Pretty.rparen
 
           _ ->
             left'
     in  (left'' <> Pretty.pretty " -> " <> right', comments'')
 
-  Source _ (TRTuple typings) ->
+  Source _ _ (TRTuple typings) ->
     let (typings', comments') = typingListToDoc comments typings
     in  (Pretty.pretty "#[" <> typings' <> Pretty.pretty "]", comments')
 
-  Source _ (TRRecord fields maybeExt) ->
+  Source _ _ (TRRecord fields maybeExt) ->
     let (typings', comments')   = recordFieldTypingsToDoc comments (Map.toList fields)
         (maybeExt', comments'') = case maybeExt of
           Just ext ->
@@ -529,7 +529,7 @@ typingToDoc comments typing = case typing of
             (Pretty.emptyDoc, comments')
     in  (Pretty.pretty "{ " <> maybeExt' <> typings' <> Pretty.pretty " }", comments'')
 
-  Source _ (TRConstrained constraints typing) ->
+  Source _ _ (TRConstrained constraints typing) ->
     let (constraints', comments') = typingListToDoc comments constraints
         constraints'' =
           if length constraints > 1 then
@@ -542,7 +542,7 @@ typingToDoc comments typing = case typing of
 
 templateStringExpsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
-  (e@(Source _ LStr{}) : more) ->
+  (e@(Source _ _ LStr{}) : more) ->
     let (e', comments')     = expToDoc comments e
         (more', comments'') = templateStringExpsToDoc comments' more
     in  (e' <> more', comments'')
@@ -567,16 +567,16 @@ templateStringExpsToDoc comments exps = case exps of
 
 shouldNestApp :: [Exp] -> Bool
 shouldNestApp args = case args of
-  [Source _ Record{}] ->
+  [Source _ _ Record{}] ->
     False
 
-  [Source _ Dictionary{}] ->
+  [Source _ _ Dictionary{}] ->
     False
 
-  [Source _ ListConstructor{}] ->
+  [Source _ _ ListConstructor{}] ->
     False
 
-  [Source _ TupleConstructor{}] ->
+  [Source _ _ TupleConstructor{}] ->
     False
 
   _ ->
@@ -601,10 +601,10 @@ expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])
 expToDoc comments exp = 
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
       (exp', comments'') = case exp of
-        Source _ (App fn@(Source _ Access{}) args) ->
+        Source _ _ (App fn@(Source _ _ Access{}) args) ->
           accessAsFNToDoc comments' fn args
 
-        Source _ (App fn args) ->
+        Source _ _ (App fn args) ->
           let (fn', comments'')    = expToDoc comments' fn
               (args', comments''') = argsToDoc comments'' args
               args'' =
@@ -616,19 +616,19 @@ expToDoc comments exp =
               , comments'''
               )
 
-        Source _ (Abs params body) ->
+        Source _ _ (Abs params body) ->
           let (params', comments'') = paramsToDoc comments' params
               (body', comments''')  = expToDoc comments'' (head body)
               params''              = formatParams (length params == 1) params'
               arrowAndBody          = case body of
-                [Source _ BinOp{}] ->
+                [Source _ _ BinOp{}] ->
                   Pretty.pretty " =>" <> Pretty.nest indentSize (Pretty.softline <> body')
 
                 _ ->
                   Pretty.pretty " => " <> body'
           in  ( params'' <> arrowAndBody, comments''')
 
-        Source _ (AbsWithMultilineBody params body) ->
+        Source _ _ (AbsWithMultilineBody params body) ->
           let (params', comments'') = paramsToDoc comments' params
               (body', comments''') = bodyToDoc comments'' body
               params'' = formatParams (length params == 1) params'
@@ -641,7 +641,7 @@ expToDoc comments exp =
               , comments'''
               )
 
-        Source _ (Do exps) ->
+        Source _ _ (Do exps) ->
           let (exps', comments'') = bodyToDoc comments' exps
           in  ( Pretty.pretty "do "
                 <> Pretty.lbrace
@@ -651,21 +651,21 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (Return exp) ->
+        Source _ _ (Return exp) ->
           let (exp', comments'') = expToDoc comments' exp
           in  (Pretty.pretty "return " <> exp', comments'')
 
-        Source _ (Assignment name exp) ->
+        Source _ _ (Assignment name exp) ->
           let name'             = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " = " <> exp', comments'')
 
-        Source _ (DoAssignment name exp) ->
+        Source _ _ (DoAssignment name exp) ->
           let name'             = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " <- " <> exp', comments'')
 
-        Source _ (If cond truthy falsy) ->
+        Source _ _ (If cond truthy falsy) ->
           let (cond', comments'')    = expToDoc comments' cond
               (truthy', comments''') = expToDoc comments'' truthy
               (falsy', comments'''') = expToDoc comments''' falsy
@@ -687,7 +687,7 @@ expToDoc comments exp =
               , comments''''
               )
 
-        Source _ (Ternary cond truthy falsy) ->
+        Source _ _ (Ternary cond truthy falsy) ->
           let (cond', comments'')    = expToDoc comments' cond
               (truthy', comments''') = expToDoc comments'' truthy
               (falsy', comments'''') = expToDoc comments''' falsy
@@ -704,7 +704,7 @@ expToDoc comments exp =
               , comments''''
               )
 
-        Source _ (Record fields) ->
+        Source _ _ (Record fields) ->
           let (fields', comments'') = fieldsToDoc comments' fields
           in  ( Pretty.group
                   (
@@ -716,7 +716,7 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (Dictionary items) ->
+        Source _ _ (Dictionary items) ->
           let (fields', comments'') = dictItemsToDoc comments' items
           in  ( Pretty.group
                   (
@@ -728,7 +728,7 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source area (ListConstructor items) ->
+        Source area _ (ListConstructor items) ->
           let (items', comments'')       = listItemsToDoc comments' items
               (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
           in  ( Pretty.group
@@ -742,7 +742,7 @@ expToDoc comments exp =
               , comments'''
               )
 
-        Source area (TupleConstructor items) ->
+        Source area _ (TupleConstructor items) ->
           let (items', comments')       = argsToDoc comments items
               (commentsDoc, comments'') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments'
           in  ( Pretty.group
@@ -756,7 +756,7 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (Pipe exps) ->
+        Source _ _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
           in  ( Pretty.pretty "pipe("
                   <> Pretty.nest indentSize (Pretty.hardline <> exps')
@@ -765,7 +765,7 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (Where exp iss) ->
+        Source _ _ (Where exp iss) ->
           let (exp', comments'')  = expToDoc comments' exp
               (iss', comments''') = issToDoc comments'' iss
               exp'' =
@@ -782,7 +782,7 @@ expToDoc comments exp =
               , comments'''
               )
 
-        Source _ (WhereAbs iss) ->
+        Source _ _ (WhereAbs iss) ->
           let (iss', comments'') = issToDoc comments' iss
           in  ( Pretty.pretty "where"
                 <> Pretty.pretty " {"
@@ -792,19 +792,22 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (LNum n) ->
+        Source _ _ (LNum n) ->
           (Pretty.pretty n, comments')
 
-        Source _ (LStr s) ->
+        Source _ _ (LFloat n) ->
+          (Pretty.pretty n, comments')
+
+        Source _ _ (LStr s) ->
           (Pretty.pretty s, comments')
 
-        Source _ (LBool b) ->
+        Source _ _ (LBool b) ->
           (Pretty.pretty b, comments')
 
-        Source _ LUnit ->
+        Source _ _ LUnit ->
           (Pretty.pretty "()", comments')
 
-        Source _ (Var n) ->
+        Source _ _ (Var n) ->
           let n' =
                 case n of
                   "unary-minus" ->
@@ -814,42 +817,42 @@ expToDoc comments exp =
                     a
           in (Pretty.pretty n', comments')
 
-        Source _ (Parenthesized _ exp _) ->
+        Source _ _ (Parenthesized _ exp _) ->
           let (exp', comments'') = expToDoc comments' exp
           in  (Pretty.lparen <> exp' <> Pretty.rparen, comments'')
 
-        Source _ (UnOp operator operand) ->
+        Source _ _ (UnOp operator operand) ->
           let (operator', comments'') = expToDoc comments' operator
               (operand', comments''') = expToDoc comments'' operand
           in  (operator' <> operand', comments''')
 
-        binOp@(Source _ BinOp{}) ->
+        binOp@(Source _ _ BinOp{}) ->
           let (parts, comments'') = binOpToDocs comments' binOp
               first               = head parts
               rest                = tail parts
           in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
 
-        access@(Source _ Access{}) ->
+        access@(Source _ _ Access{}) ->
           let (parts, comments'') = accessToDocs comments' access
               first               = head parts
               rest                = tail parts
           in  (Pretty.group (first <> Pretty.nest indentSize (Pretty.hcat rest)), comments'')
 
-        Source _ (TemplateString exps) ->
+        Source _ _ (TemplateString exps) ->
           let (content, comments'') = templateStringExpsToDoc comments' exps
           in  (Pretty.pretty "`" <> content <> Pretty.pretty "`", comments'')
 
-        Source _ (Export exp) ->
+        Source _ _ (Export exp) ->
           let (exp', comments'') = expToDoc comments' exp
           in  (Pretty.pretty "export " <> exp', comments'')
 
-        Source _ (NameExport n) ->
+        Source _ _ (NameExport n) ->
           (Pretty.pretty "export " <> Pretty.pretty n, comments')
 
-        Source _ (TypeExport n) ->
+        Source _ _ (TypeExport n) ->
           (Pretty.pretty "export type " <> Pretty.pretty n, comments')
 
-        Source _ (JSExp js) ->
+        Source _ _ (JSExp js) ->
           let lines' = lines js
               -- js' = Pretty.vcat (Pretty.pretty . Text.unpack . Text.strip . Text.pack <$> lines')
               js' = Pretty.pretty js
@@ -860,7 +863,7 @@ expToDoc comments exp =
               (Pretty.group (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#"), comments')
               -- (Pretty.group (Pretty.pretty "#-" <> Pretty.line <> js' <> Pretty.line <> Pretty.pretty "-#"), comments')
 
-        Source _ (JsxTag name props children) ->
+        Source _ _ (JsxTag name props children) ->
           let (props', comments'')     = jsxPropsToDoc comments' props
               (children', comments''') = jsxChildrenToDoc comments'' children
               lineAfterName           =
@@ -884,7 +887,7 @@ expToDoc comments exp =
               , comments'''
               )
 
-        Source _ (JsxAutoClosedTag name props) ->
+        Source _ _ (JsxAutoClosedTag name props) ->
           let (props', comments'')     = jsxPropsToDoc comments' props
           in  ( Pretty.group
                   (
@@ -896,21 +899,50 @@ expToDoc comments exp =
               , comments''
               )
 
-        Source _ (TypedExp exp typing) ->
+        Source _ _ (Extern typing name name') ->
+          let (typing', comments'') = typingToDoc comments' typing
+          in  (
+                Pretty.pretty name <> Pretty.pretty " :: " <> typing'<> Pretty.hardline
+                <> Pretty.pretty name <> Pretty.pretty " = extern \"" <> Pretty.pretty name' <> Pretty.pretty "\""
+              , comments''
+              )
+
+        Source _ _ (TypedExp exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
               (typing', comments''') = typingToDoc comments'' typing
           in  (Pretty.lparen <> exp' <> Pretty.pretty " :: " <> typing' <> Pretty.rparen, comments''')
 
-        Source _ (NamedTypedExp name exp typing) ->
+        Source _ _ (NamedTypedExp name exp typing) ->
           let (exp', comments'')     = expToDoc comments' exp
               (typing', comments''') = typingToDoc comments'' typing
           in  (Pretty.pretty name <> Pretty.pretty " :: " <> typing' <> Pretty.line' <> exp', comments''')
+
+        Source _ _ (IfTarget sourceTarget) ->
+          (Pretty.pretty ("#iftarget " <> targetToString sourceTarget), comments')
+
+        Source _ _ (ElseIfTarget sourceTarget) ->
+          (Pretty.pretty ("#elseif " <> targetToString sourceTarget), comments')
+
+        Source _ _ EndIfTarget ->
+          (Pretty.pretty "#endif", comments')
   in  (commentsDoc <> exp', comments'')
+
+
+targetToString :: SourceTarget -> String
+targetToString sourceTarget = case sourceTarget of
+  TargetLLVM ->
+    "llvm"
+
+  TargetJS ->
+    "js"
+
+  TargetAll ->
+    "all"
 
 
 importToDoc :: [Comment] -> Import -> (Pretty.Doc ann, [Comment])
 importToDoc comments imp = case imp of
-  Source _ (NamedImport names path _) ->
+  Source _ _ (NamedImport names path _) ->
     let nameDocs = Pretty.pretty . getSourceContent <$> names
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
         lineDoc  =
@@ -928,7 +960,7 @@ importToDoc comments imp = case imp of
         , comments
         )
 
-  Source _ (TypeImport names path _) ->
+  Source _ _ (TypeImport names path _) ->
     let nameDocs = Pretty.pretty . getSourceContent <$> names
         namesDoc = Pretty.vsep (Pretty.punctuate Pretty.comma nameDocs)
     in  ( Pretty.group
@@ -941,7 +973,7 @@ importToDoc comments imp = case imp of
         , comments
         )
 
-  Source _ (DefaultImport name path _) ->
+  Source _ _ (DefaultImport name path _) ->
     let nameDoc = (Pretty.pretty . getSourceContent) name
     in  ( Pretty.pretty "import "
           <> nameDoc
@@ -950,13 +982,13 @@ importToDoc comments imp = case imp of
         , comments
         )
 
-  Source _ (ImportAll path _) ->
+  Source _ _ (ImportAll path _) ->
     (Pretty.pretty "import " <> Pretty.pretty ("\"" ++ path ++ "\""), comments)
 
 
 constructorsToDoc :: [Comment] -> [Constructor] -> (Pretty.Doc ann, [Comment])
 constructorsToDoc comments ctors = case ctors of
-  (Source _ (Constructor name args) : more) ->
+  (Source _ _ (Constructor name args) : more) ->
     let name' = Pretty.pretty name
         (args', comments')  = typingListToDoc comments args
         args''              =
@@ -978,7 +1010,7 @@ constructorsToDoc comments ctors = case ctors of
 
 typeDeclToDoc :: [Comment] -> TypeDecl -> (Pretty.Doc ann, [Comment])
 typeDeclToDoc comments td = case td of
-  Source _ adt@ADT{} ->
+  Source _ _ adt@ADT{} ->
     let name   = Pretty.pretty (adtname adt)
         export =
           if adtexported adt then
@@ -997,7 +1029,7 @@ typeDeclToDoc comments td = case td of
         , comments'
         )
 
-  Source _ alias@Alias{} ->
+  Source _ _ alias@Alias{} ->
     let name = Pretty.pretty (aliasname alias)
         export =
           if aliasexported alias then
@@ -1017,7 +1049,7 @@ typeDeclToDoc comments td = case td of
 
 interfaceToDoc :: [Comment] -> Interface -> (Pretty.Doc ann, [Comment])
 interfaceToDoc comments interface = case interface of
-  Source _ (Interface constraints name vars methods) ->
+  Source _ _ (Interface constraints name vars methods) ->
     let (constraints', comments') = typingListToDoc comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc
@@ -1049,7 +1081,7 @@ methodsToDoc comments methods = case methods of
 
 instanceToDoc :: [Comment] -> Instance -> (Pretty.Doc ann, [Comment])
 instanceToDoc comments inst = case inst of
-  Source _ (Instance constraints name typings methods) ->
+  Source _ _ (Instance constraints name typings methods) ->
     let (constraints', comments') = typingListToDoc comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc

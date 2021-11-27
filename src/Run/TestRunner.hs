@@ -127,30 +127,30 @@ generateTestSuiteName index =
 generateTestSuiteImport :: (Int, FilePath) -> Import
 generateTestSuiteImport (index, path) =
   let importName = generateTestSuiteName index
-  in  Source emptyArea (DefaultImport (Source emptyArea importName) path path)
+  in  Source emptyArea TargetLLVM (DefaultImport (Source emptyArea TargetLLVM importName) path path)
 
 
 -- fulfill(identity, showResult, parallel(__TestSuite1__.__tests__))
 generateRunTestSuiteExp :: Int -> FilePath -> Exp
 generateRunTestSuiteExp index testSuitePath =
-  let testsAccess = Source emptyArea (Access (Source emptyArea (Var $ generateTestSuiteName index)) (Source emptyArea (Var ".__tests__")))
-  in  Source emptyArea (App (Source emptyArea (Var "runTestSuite")) [
-        Source emptyArea (LStr $ "\"" <> testSuitePath <> "\""),
+  let testsAccess = Source emptyArea TargetLLVM (Access (Source emptyArea TargetLLVM (Var $ generateTestSuiteName index)) (Source emptyArea TargetLLVM (Var ".__tests__")))
+  in  Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "runTestSuite")) [
+        Source emptyArea TargetLLVM (LStr $ "\"" <> testSuitePath <> "\""),
         testsAccess
       ])
-  -- in  Source emptyArea (App (Source emptyArea (Var "map")) [
-  --       Source emptyArea (App (Source emptyArea (Var "fulfill")) [
-  --         Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")]),
-  --         Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")])
+  -- in  Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "map")) [
+  --       Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "fulfill")) [
+  --         Source emptyArea TargetLLVM (Abs [Source emptyArea TargetLLVM "a"] [Source emptyArea TargetLLVM (Var "a")]),
+  --         Source emptyArea TargetLLVM (Abs [Source emptyArea TargetLLVM "a"] [Source emptyArea TargetLLVM (Var "a")])
   --       ]),
   --       testsAccess
   --     ])
 
 generateStaticTestMainImports :: (FilePath, FilePath, FilePath) -> [Import]
 generateStaticTestMainImports (wishModulePath, listModulePath, testModulePath) =
-  let wishImports = Source emptyArea (NamedImport [Source emptyArea "fulfill"] "Wish" wishModulePath)
-      listImports = Source emptyArea (NamedImport [] "List" listModulePath)
-      testImports = Source emptyArea (NamedImport [Source emptyArea "runTestSuite"] "TestTools" testModulePath)
+  let wishImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "fulfill"] "Wish" wishModulePath)
+      listImports = Source emptyArea TargetLLVM (NamedImport [] "List" listModulePath)
+      testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runTestSuite"] "TestTools" testModulePath)
   in  [wishImports, listImports, testImports]
 
 
@@ -165,9 +165,9 @@ generateTestMainAST preludeModulePaths suitePaths =
 
 generateTestAssignment :: Int -> Exp -> (Exp, Maybe String)
 generateTestAssignment index exp = case exp of
-  Source _ (App (Source _ (Var "test")) args) ->
+  Source _ _ (App (Source _ _ (Var "test")) args) ->
     let assignmentName = "__t" <> show index <> "__"
-    in  (Source emptyArea (Assignment assignmentName exp), Just assignmentName)
+    in  (Source emptyArea TargetLLVM (Assignment assignmentName exp), Just assignmentName)
 
   _ ->
     (exp, Nothing)
@@ -180,8 +180,8 @@ addTestExports ast@AST{ apath = Just apath } =
         assigned       = uncurry generateTestAssignment <$> zip [0..] exps
         exps'          = fst <$> assigned
         namesForExport = Maybe.mapMaybe snd assigned
-        testsExport    = Source emptyArea (Export (Source emptyArea (Assignment "__tests__" (Source emptyArea (ListConstructor (
-            Source emptyArea . ListItem . Source emptyArea . Var <$> namesForExport
+        testsExport    = Source emptyArea TargetLLVM (Export (Source emptyArea TargetLLVM (Assignment "__tests__" (Source emptyArea TargetLLVM (ListConstructor (
+            Source emptyArea TargetLLVM . ListItem . Source emptyArea TargetLLVM . Var <$> namesForExport
           ))))))
     in  ast { aexps = exps' ++ [testsExport] }
   else

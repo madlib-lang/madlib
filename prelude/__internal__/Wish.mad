@@ -70,11 +70,11 @@ instance Bifunctor Wish {
  * mapRej((x) => x + 1, good(3)) // good(3)
  */
 mapRej :: (e -> f) -> Wish e a -> Wish f a
-export mapRej = (f, m) => (
-  Wish((badCB, goodCB) => (
+export mapRej = (f, m) =>
+  Wish((badCB, goodCB) =>
     where(m) { Wish(run) => run((x) => (badCB(f(x))), goodCB) }
-  ))
-)
+  )
+
 
 /**
  * Chains over the rejected value.
@@ -84,17 +84,16 @@ export mapRej = (f, m) => (
  * chainRej((x) => good(x + 1), bad(3)) // good(4)
  */
 chainRej :: (e -> Wish f a) -> Wish e a -> Wish f a
-export chainRej = (f, m) => (
-  Wish((badCB, goodCB) => (
-    where(m) {
-      Wish(run) => run((x) => (
-        where(f(x)) {
-          Wish(r) => r(badCB, goodCB)
-        }
-      ), goodCB)
-    }
-  ))
+export chainRej = (f, m) => Wish((badCB, goodCB) =>
+  where(m) {
+    Wish(run) => run((x) => (
+      where(f(x)) {
+        Wish(r) => r(badCB, goodCB)
+      }
+    ), goodCB)
+  }
 )
+
 
 bichain :: (a -> Wish c d) -> (b -> Wish c d) -> Wish a b -> Wish c d
 export bichain = (badF, goodF, m) => Wish((badCB, goodCB) =>
