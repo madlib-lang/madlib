@@ -260,8 +260,6 @@ MadListNode_t *MadList_singleton(void *item) {
   head->next = Madlist_empty();
   head->value = item;
 
-  printf("singleton addr: %d\n", head);
-
   return head;
 }
 
