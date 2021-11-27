@@ -36,6 +36,7 @@ import qualified Utils.Tuple                   as T
 import qualified Control.Monad                 as CM
 import Debug.Trace
 import Text.Show.Pretty
+import AST.Solved (getType)
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -45,12 +46,13 @@ infer env lexp = do
   case exp of
     Can.LNum  _               -> do
       t <- newTVar Star
-      return (M.empty, [IsIn "Number" [t] Nothing], t, applyLitSolve lexp t)
+      let ps = [IsIn "Number" [t] Nothing]
+      return (M.empty, ps, t, applyLitSolve lexp (ps :=> t))
 
-    Can.LFloat _              -> return (M.empty, [], tFloat, applyLitSolve lexp tFloat)
-    Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp tStr)
-    Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp tBool)
-    Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp tUnit)
+    Can.LFloat _              -> return (M.empty, [], tFloat, applyLitSolve lexp ([] :=> tFloat))
+    Can.LStr  _               -> return (M.empty, [], tStr, applyLitSolve lexp ([] :=> tStr))
+    Can.LBool _               -> return (M.empty, [], tBool, applyLitSolve lexp ([] :=> tBool))
+    Can.LUnit                 -> return (M.empty, [], tUnit, applyLitSolve lexp ([] :=> tUnit))
     Can.TemplateString _      -> inferTemplateString env' lexp
 
     Can.Var            _      -> inferVar env' lexp
@@ -73,13 +75,13 @@ infer env lexp = do
       return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.JSExp c))
 
 
-applyLitSolve :: Can.Exp -> Type -> Slv.Exp
-applyLitSolve (Can.Canonical area exp) t = case exp of
-  Can.LNum  v  -> Slv.Solved ([] :=> t) area $ Slv.LNum v
-  Can.LFloat v -> Slv.Solved ([] :=> t) area $ Slv.LFloat v
-  Can.LStr  v  -> Slv.Solved ([] :=> t) area $ Slv.LStr v
-  Can.LBool v  -> Slv.Solved ([] :=> t) area $ Slv.LBool v
-  Can.LUnit    -> Slv.Solved ([] :=> t) area Slv.LUnit
+applyLitSolve :: Can.Exp -> Qual Type -> Slv.Exp
+applyLitSolve (Can.Canonical area exp) qt = case exp of
+  Can.LNum  v  -> Slv.Solved qt area $ Slv.LNum v
+  Can.LFloat v -> Slv.Solved qt area $ Slv.LFloat v
+  Can.LStr  v  -> Slv.Solved qt area $ Slv.LStr v
+  Can.LBool v  -> Slv.Solved qt area $ Slv.LBool v
+  Can.LUnit    -> Slv.Solved qt area Slv.LUnit
 
 applyAbsSolve :: Can.Exp -> Slv.Solved Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
 applyAbsSolve (Can.Canonical loc _) param body qt = Slv.Solved qt loc $ Slv.Abs param body
@@ -140,6 +142,7 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
     sc         <- catchError (lookupVar env n) (enhanceVarError env exp area)
     (ps :=> t) <- instantiate sc
 
+    -- let ps' = ps
     let ps' = dedupePreds ps
 
     let e = Slv.Solved (ps' :=> t) area $ Slv.Var n
@@ -189,27 +192,36 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
 
-  return (s, ps, t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
+  -- es'' <- mapM (updatePlaceholders env' True s) es
 
+  return (s, apply s (trace ("PS: "<>ppShow ps) ps), t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
 inferBody env [e] = do
   (s, ps, t, e) <- infer env e
-  return (s, ps, t, [e])
+  e'            <- insertClassPlaceholders env e ps
+  
+  return (s, ps, t, [e'])
 
-inferBody env (e : xs) = do
+inferBody env (e : es) = do
   (s, ps, env', e') <- case e of
-    Can.Canonical _ Can.TypedExp{} -> inferExplicitlyTyped env e
+    Can.Canonical _ Can.TypedExp{} ->
+      inferExplicitlyTyped env e
+
     _ -> do
       (s, (_, ps), env, e') <- inferImplicitlyTyped True env e
       return (s, ps, env, e')
 
-  e''               <- insertClassPlaceholders env' e' ps
-  e'''              <- updatePlaceholders env' True s e''
-  (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') xs
+  -- e''               <- insertClassPlaceholders env' e' ps
+  -- e'''              <- updatePlaceholders env' True s e''
+  -- e'''              <- updatePlaceholders env' True s e'
+  let e''' = e'
+  (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') es
 
-  return (s `compose` sb, ps ++ ps', tb, e''' : eb)
+  let finalS = s `compose` sb
+
+  return (finalS, apply finalS $ ps ++ ps', tb, e''' : eb)
 
 -- Applies a substitution only to types in the env that are not a function.
 -- This is needed for function bodies, so that we can define a function that is generic,
@@ -218,6 +230,7 @@ inferBody env (e : xs) = do
 -- should be applied to the env so that correct type can be inferred.
 updateBodyEnv :: Substitution -> Env -> Env
 updateBodyEnv s e =
+  -- e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> apply s sc) (envVars e) }
   e { envVars = M.map (\sc@(Forall _ (_ :=> t)) -> if isFunctionType t then sc else apply s sc) (envVars e) }
 
 
@@ -777,20 +790,26 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
           -- and then it could resolve instances like Show where before we still had a type var
           -- but after the first pass we have Integer instead.
           (sDef', rs'') = tryDefaults (apply sDef rs')
-      CM.unless (null rs'') $ throwError $ CompilationError
+      CM.unless (null (trace ("RS'': "<>ppShow rs'') rs'')) $ throwError $ CompilationError
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef)
-    else
-      return (ds, M.empty)
+    else if not isLet then do
+      let (sDef, ds')   = tryDefaults ds
+          (sDef', ds'') = tryDefaults (apply sDef ds')
+      return (ds'', sDef)
+    else do
+      return (ds ++ rs, M.empty)
 
-  let fs' = ftv $ ps' :=> t'
-      sc  = if isLet then Forall [] $ ps' :=> t' else quantify fs $ ps' :=> t'
+  let sc  = if isLet then Forall [] $ ds' :=> apply sDefaults t' else quantify fs $ ds' :=> apply sDefaults t'
 
   case Can.getExpName exp of
-    Just n  -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
+    -- Just n  -> return (sDefaults `compose` s'', (ds', ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
+    Just n  -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ds'), extendVars env' (n, sc), updateQualType e (ds' :=> apply sDefaults t'))
 
-    Nothing -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ps'), env', updateQualType e (ds :=> t'))
+    -- Nothing -> return (sDefaults `compose` s'', (ds', ps'), env', updateQualType e (ds :=> t'))
+    Nothing -> return (sDefaults `compose` s'', (dedupePreds ds', dedupePreds ds'), env', updateQualType e (ds' :=> apply sDefaults t'))
+
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -819,6 +838,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
+  -- qs'' <- getAllParentPreds env qs'
   qs'' <- dedupePreds <$> getAllParentPreds env qs'
 
   if sc /= sc' then

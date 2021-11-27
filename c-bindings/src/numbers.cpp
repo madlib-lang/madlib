@@ -50,6 +50,12 @@ double *__multiplyFloats__(double *a, double *b) {
 }
 
 
+int64_t* __numberToInteger__(int64_t *a) {
+  int64_t *result = (int64_t*) malloc(sizeof(double));
+  *result = (int64_t) *a;
+  return result;
+}
+
 int64_t *__addIntegers__(int64_t *a, int64_t *b) {
   int64_t *boxed = (int64_t*) GC_malloc(sizeof(int64_t));
   *boxed = *a + *b;

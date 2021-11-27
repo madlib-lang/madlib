@@ -7,7 +7,8 @@ import qualified Data.Map                      as M
 
 
 data Optimized a
-  = Optimized Ty.Type Area a
+  = Optimized (Ty.Qual Ty.Type) Area a
+  -- = Optimized Ty.Type Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
@@ -157,7 +158,10 @@ getValue (Untyped _ a    ) = a
 
 
 getType :: Optimized a -> Ty.Type
-getType (Optimized t _ _) = t
+getType (Optimized (_ Ty.:=> t) _ _) = t
+
+getQualType :: Optimized a -> Ty.Qual Ty.Type
+getQualType (Optimized qt _ _) = qt
 
 
 isTopLevelFunction :: Exp -> Bool
