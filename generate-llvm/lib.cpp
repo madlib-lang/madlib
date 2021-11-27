@@ -103,6 +103,29 @@ extern "C"
 }
 #endif
 
+typedef struct UnaryEnv
+{
+  void *arg0;
+} UnaryEnv_t;
+
+typedef struct BinaryEnv
+{
+  void *arg0;
+  void *arg1;
+} BinaryEnv_t;
+
+void *makeCall(void *fn, int arity, void *env)
+{
+  switch (arity)
+  {
+  case 1:
+    return ((void *(*)(void *))fn)(((UnaryEnv_t *)env)->arg0);
+  case 2:
+    BinaryEnv_t *binaryEnv = ((BinaryEnv_t *)env);
+    return ((void *(*)(void *, void *))fn)(binaryEnv->arg0, binaryEnv->arg1);
+  }
+}
+
 // List
 
 #ifdef __cplusplus
@@ -166,39 +189,38 @@ extern "C"
     return MadList_push(item, list);
   }
 
-  typedef void* (*ClosureFn)(void*, void*);
+  typedef void *(*ClosureFn)(void *, void *);
 
   typedef struct closure
   {
     // void* fn(void*, void*);
     ClosureFn fn;
-    void* env;
+    void *env;
   } closure_t;
-  
 
-  MadListNode_t *MadList_map(closure_t* cls, MadListNode_t *list)
+  MadListNode_t *MadList_map(closure_t *cls, MadListNode_t *list)
   {
-      MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-      MadListNode_t *head = newList;
-      MadListNode_t *current = list;
+    MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+    MadListNode_t *head = newList;
+    MadListNode_t *current = list;
 
-      newList->value = cls->fn(cls->env, current->value);
-      newList->next = NULL;
+    newList->value = cls->fn(cls->env, current->value);
+    newList->next = NULL;
+    current = current->next;
+
+    while (current != NULL)
+    {
+      MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
+      nextItem->value = cls->fn(cls->env, current->value);
+      nextItem->next = NULL;
+
+      newList->next = nextItem;
+      newList = newList->next;
+
       current = current->next;
+    }
 
-      while (current != NULL)
-      {
-        MadListNode_t *nextItem = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-        nextItem->value = cls->fn(cls->env, current->value);
-        nextItem->next = NULL;
-
-        newList->next = nextItem;
-        newList = newList->next;
-
-        current = current->next;
-      }
-
-      return head;
+    return head;
   }
 
   void *MadList_nth(double index, MadListNode_t *list)
@@ -270,7 +292,7 @@ extern "C"
 
   bool MadList_hasLength(double l, MadListNode_t *list)
   {
-    double *computed = (double*) MadList_length(list);
+    double *computed = (double *)MadList_length(list);
 
     return *computed == l;
   }
