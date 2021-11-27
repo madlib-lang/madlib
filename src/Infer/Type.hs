@@ -276,7 +276,11 @@ isFunctionType t = case t of
 
 getReturnType :: Type -> Type
 getReturnType t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _) _) r -> r
+  TApp (TApp (TCon (TC "(->)" _) _) _) r ->
+    getReturnType r
+
+  or ->
+    or
 
 getParamType :: Type -> Type
 getParamType t = case t of
