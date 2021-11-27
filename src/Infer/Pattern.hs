@@ -111,8 +111,8 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
   Can.PCon n pats -> do
     (pats', ps, vars, ts) <- inferPatterns env pats
-    tv             <- newTVar Star
-    sc             <- catchError
+    tv                    <- newTVar Star
+    sc                    <- catchError
       (lookupVar env n)
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
       )
