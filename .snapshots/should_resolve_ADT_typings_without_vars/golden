@@ -70,16 +70,16 @@ Right
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "a0" Star)))
-                                          (TVar (TV "a0" Star)))
+                                             (TCon (TC "Something" Star) "./ModuleA"))
+                                          (TCon (TC "Something" Star) "./ModuleA"))
                                      (Area (Loc 71 3 13) (Loc 79 3 21))
                                      (Abs
                                         (Solved
-                                           ([] :=> TVar (TV "a0" Star))
+                                           ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                            (Area (Loc 72 3 14) (Loc 73 3 15))
                                            "x")
                                         [ Solved
-                                            ([] :=> TVar (TV "a0" Star))
+                                            ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                             (Area (Loc 78 3 20) (Loc 79 3 21))
                                             (Var "x")
                                         ]))))))

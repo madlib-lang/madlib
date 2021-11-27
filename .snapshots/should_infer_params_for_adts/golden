@@ -50,14 +50,16 @@ Right
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "e4" Star)))
-                       (TVar (TV "e4" Star)))
+                          (TCon (TC "Result" Star) "path"))
+                       (TCon (TC "Result" Star) "path"))
                   (Area (Loc 73 3 2) (Loc 81 3 10))
                   (Abs
                      (Solved
-                        ([] :=> TVar (TV "e4" Star)) (Area (Loc 74 3 3) (Loc 75 3 4)) "a")
+                        ([] :=> TCon (TC "Result" Star) "path")
+                        (Area (Loc 74 3 3) (Loc 75 3 4))
+                        "a")
                      [ Solved
-                         ([] :=> TVar (TV "e4" Star))
+                         ([] :=> TCon (TC "Result" Star) "path")
                          (Area (Loc 80 3 9) (Loc 81 3 10))
                          (Var "a")
                      ]))

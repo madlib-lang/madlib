@@ -83,8 +83,9 @@ Right
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TApp
-                             (TCon (TC "Maybe" (Kfun Star Star)) "path") (TVar (TV "i8" Star))))
-                       (TVar (TV "i8" Star)))
+                             (TCon (TC "Maybe" (Kfun Star Star)) "path")
+                             (TCon (TC "Number" Star) "prelude")))
+                       (TCon (TC "Number" Star) "prelude"))
                   (Area (Loc 83 7 1) (Loc 85 7 3))
                   (Var "fn"))
                (Solved
@@ -99,10 +100,10 @@ Right
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "k10" Star)))
+                                (TCon (TC "Number" Star) "prelude"))
                              (TApp
                                 (TCon (TC "Maybe" (Kfun Star Star)) "path")
-                                (TVar (TV "k10" Star))))
+                                (TCon (TC "Number" Star) "prelude")))
                         (Area (Loc 86 7 4) (Loc 90 7 8))
                         (Var "Just"))
                      (Solved

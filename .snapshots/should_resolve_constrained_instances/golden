@@ -152,7 +152,7 @@ Right
                                        (Area (Loc 84 6 17) (Loc 104 6 37))
                                        (If
                                           (Solved
-                                             ([] :=> TVar (TV "b1" Star))
+                                             ([] :=> TCon (TC "Boolean" Star) "prelude")
                                              (Area (Loc 84 6 17) (Loc 85 6 18))
                                              (Var "b"))
                                           (Solved
@@ -203,11 +203,11 @@ Right
                                 (Area (Loc 140 10 10) (Loc 179 10 49))
                                 (Abs
                                    (Solved
-                                      ([] :=> TVar (TV "d3" Star))
+                                      ([] :=> TCon (TC "Number" Star) "prelude")
                                       (Area (Loc 141 10 11) (Loc 142 10 12))
                                       "n")
                                    [ Solved
-                                       ([] :=> TVar (TV "e4" Star))
+                                       ([] :=> TCon (TC "String" Star) "prelude")
                                        (Area (Loc 148 10 18) (Loc 178 10 48))
                                        (JSExp " new Number(n).toString() ")
                                    ])))
@@ -287,8 +287,8 @@ Right
                                       (Placeholder
                                          ( ClassRef "Show" [] False True , [ TVar (TV "i8" Star) ] )
                                          (Solved
-                                            ([ IsIn "Show" [ TVar (TV "w22" Star) ] Nothing
-                                             , IsIn "Show" [ TVar (TV "x23" Star) ] Nothing
+                                            ([ IsIn "Show" [ TVar (TV "i8" Star) ] Nothing
+                                             , IsIn "Show" [ TVar (TV "j9" Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -450,14 +450,14 @@ Right
                                                              (Solved
                                                                 ([ IsIn
                                                                      "Show"
-                                                                     [ TVar (TV "p15" Star) ]
+                                                                     [ TVar (TV "i8" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 263 14 37)
                                                                            (Loc 267 14 41)))
                                                                  , IsIn
                                                                      "Show"
-                                                                     [ TVar (TV "v21" Star) ]
+                                                                     [ TVar (TV "j9" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 282 14 56)

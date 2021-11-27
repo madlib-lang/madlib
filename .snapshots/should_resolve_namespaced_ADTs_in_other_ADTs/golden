@@ -88,10 +88,10 @@ Right
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "f5" Star)))
+                                             (TCon (TC "String" Star) "prelude"))
                                           (TApp
                                              (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA")
-                                             (TVar (TV "f5" Star))))
+                                             (TCon (TC "String" Star) "prelude")))
                                      (Area (Loc 74 3 12) (Loc 80 3 18))
                                      (Var "M.Just"))
                                   (Solved

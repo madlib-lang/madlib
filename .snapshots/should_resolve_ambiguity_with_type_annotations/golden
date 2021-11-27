@@ -34,7 +34,7 @@ Right
                      (Solved
                         ([ IsIn
                              "Read"
-                             [ TVar (TV "d3" Star) ]
+                             [ TCon (TC "Number" Star) "prelude" ]
                              (Just (Area (Loc 113 9 2) (Loc 117 9 6)))
                          ] :=>
                            TCon (TC "String" Star) "prelude")
@@ -103,11 +103,11 @@ Right
                                 (Area (Loc 76 6 10) (Loc 108 6 42))
                                 (Abs
                                    (Solved
-                                      ([] :=> TVar (TV "b1" Star))
+                                      ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 77 6 11) (Loc 78 6 12))
                                       "s")
                                    [ Solved
-                                       ([] :=> TVar (TV "c2" Star))
+                                       ([] :=> TCon (TC "Number" Star) "prelude")
                                        (Area (Loc 84 6 18) (Loc 107 6 41))
                                        (JSExp " parseFloat(s, 10) ")
                                    ])))
