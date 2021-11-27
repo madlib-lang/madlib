@@ -535,6 +535,12 @@ generateFunction symbolTable fnName abs = case abs of
 
 generateTopLevelFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Exp -> m SymbolTable
 generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
+  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment fnName abs@(Optimized t _ Abs{}))))) _) -> do
+    generateFunction symbolTable fnName abs
+
+  Optimized _ _ (Export (Optimized _ _ (Assignment fnName abs@(Optimized t _ Abs{})))) -> do
+    generateFunction symbolTable fnName abs
+
   Optimized _ _ (TypedExp (Optimized _ _ (Assignment fnName abs@(Optimized t _ Abs{}))) _) -> do
     generateFunction symbolTable fnName abs
 
