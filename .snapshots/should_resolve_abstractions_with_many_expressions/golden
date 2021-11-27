@@ -13,7 +13,7 @@ Right
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TCon (TC "Number" Star) "prelude"))
                     (TCon (TC "Boolean" Star) "prelude")))
-            (Area (Loc 0 1 1) (Loc 163 7 1))
+            (Area (Loc 0 1 1) (Loc 163 7 2))
             (TypedExp
                (Solved
                   ([] :=>
@@ -26,7 +26,7 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TCon (TC "Number" Star) "prelude"))
                           (TCon (TC "Boolean" Star) "prelude")))
-                  (Area (Loc 34 2 1) (Loc 163 7 1))
+                  (Area (Loc 34 2 1) (Loc 163 7 2))
                   (Assignment
                      "fn"
                      (Solved
@@ -40,7 +40,7 @@ Right
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TCon (TC "Number" Star) "prelude"))
                                 (TCon (TC "Boolean" Star) "prelude")))
-                        (Area (Loc 39 2 6) (Loc 163 7 1))
+                        (Area (Loc 39 2 6) (Loc 163 7 2))
                         (Abs
                            (Solved
                               ([] :=> TCon (TC "Number" Star) "prelude")
@@ -53,7 +53,7 @@ Right
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                        (TCon (TC "Number" Star) "prelude"))
                                     (TCon (TC "Boolean" Star) "prelude"))
-                               (Area (Loc 39 2 6) (Loc 163 7 1))
+                               (Area (Loc 39 2 6) (Loc 163 7 2))
                                (Abs
                                   (Solved
                                      ([] :=> TCon (TC "Number" Star) "prelude")

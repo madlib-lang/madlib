@@ -127,6 +127,7 @@ data Exp_ = LNum String
           | Assignment Name Exp
           | Record [Field]
           | If Exp Exp Exp
+          | Do [Exp]
           | Where Exp [Is]
           | Export Exp
           | NameExport Name

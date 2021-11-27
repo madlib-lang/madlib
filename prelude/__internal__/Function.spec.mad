@@ -1,8 +1,5 @@
 import { assertEquals, test } from "./TestTools"
-import { andDo } from "Monad"
 import {} from "MonadState"
-import { runStateT } from "StateT"
-import { runIdentity } from "Identity"
 import {} from "List"
 import {
   always,
@@ -11,7 +8,6 @@ import {
   flip,
   identity,
   ifElse,
-  memoize2,
   memoize,
   not,
   notEquals,
@@ -96,25 +92,6 @@ test("always - map", (_) => assertEquals(
   [true, true, true]
 ))
 
-
-test("memoize2 - good", (_) => {
-  inc = (x) => put(x + 1)
-  spy = memoize2((a) => chain((x) => pipe(
-    chain(inc),
-    andDo(of(x))
-  )(get)))
-  
-  run = pipe((m) => runStateT(m, 0), runIdentity)
-  
-  return pipe(
-    of,
-    spy(3),
-    spy(3),
-    spy(3),
-    run,
-    assertEquals($, <17, 1>)
-  )(17)
-})
 
 test("memoize - should not called the memoized function if called with the same argument", (_) => {
   count = 0

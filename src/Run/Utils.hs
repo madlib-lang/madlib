@@ -10,8 +10,7 @@ import           System.FilePath                ( takeDirectory
                                                 , splitDirectories
                                                 , makeRelative
                                                 )
-import           System.Directory               ( canonicalizePath
-                                                , createDirectoryIfMissing
+import           System.Directory               ( createDirectoryIfMissing
                                                 , getDirectoryContents
                                                 , doesDirectoryExist
                                                 , getCurrentDirectory

@@ -7,7 +7,6 @@ import           Data.Version                   ( showVersion )
 import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
-import Options.Applicative (showDefault)
 
 
 data Command
@@ -27,6 +26,7 @@ data Command
   | Install
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
+  | Format { formatInput :: FilePath, formatTextInput :: String, fix :: Bool, width :: Int }
   | Run { runInput :: FilePath, runArgs :: [String] }
   | Package { packageSubCommand :: PackageSubCommand, rebuild :: Bool }
   deriving (Eq, Show)
@@ -185,6 +185,42 @@ parseDocInput = strOption
 parseDoc :: Parser Command
 parseDoc = Doc <$> parseDocInput
 
+parseWidth :: Parser Int
+parseWidth = option auto
+  (  long "width"
+  <> value 100
+  <> metavar "WIDTH"
+  <> help "target width of document"
+  <> showDefault
+  )
+
+parseFix :: Parser Bool
+parseFix = switch
+  (  long "fix"
+  <> help "Applies the new formatting to the file"
+  <> showDefault
+  )
+
+parseFormatInput :: Parser FilePath
+parseFormatInput = strOption
+  (  long "input"
+  <> short 'i'
+  <> metavar "INPUT"
+  <> value "./src"
+  <> help "What source(s) you want to format"
+  )
+
+parseFormatTextInput :: Parser String
+parseFormatTextInput = strOption
+  (  long "text"
+  <> value "--EMPTY--"
+  <> metavar "CODE"
+  <> help "Code you want to format"
+  )
+
+parseFormat :: Parser Command
+parseFormat = Format <$> parseFormatInput <*> parseFormatTextInput <*> parseFix <*> parseWidth
+
 parseCommand :: Parser Command
 parseCommand =
   subparser
@@ -195,6 +231,7 @@ parseCommand =
     <> command "package" (parsePackage `withInfo` "packages a library")
     <> command "new"     (parseNew `withInfo` "create a new project")
     <> command "doc"     (parseDoc `withInfo` "generate documentation")
+    <> command "format"  (parseFormat `withInfo` "format code")
 
 parseTransform :: Parser Command
 parseTransform = parseCommand

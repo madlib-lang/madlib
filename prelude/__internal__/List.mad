@@ -99,8 +99,8 @@ export unlines = pipe(
  */
 intercalate :: a -> List a -> List a
 export intercalate = (a, xs) => where(xs) {
-  [] => []
-  [one] => [one]
+  [,] => []
+  [one,] => [one]
   [one, two] => [one, a, two]
   [one, ...rest] => [one, a, ...intercalate(a, rest)]
 }

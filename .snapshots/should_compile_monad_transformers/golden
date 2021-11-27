@@ -11,9 +11,9 @@ global.MonadTrans = {};
 global.MonadWriter = {};
 global.MonadState = {};
 Semigroup['List'] = {};
-Semigroup['List']['assoc'] = () => (xs1 => xs2 => xs1.concat(xs2));
+Semigroup['List']['assoc'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
 Monoid['List'] = {};
-Monoid['List']['mappend'] = () => (xs1 => xs2 => xs1.concat(xs2));
+Monoid['List']['mappend'] = () => (xs1 => xs2 =>  xs1.concat(xs2) );
 Monoid['List']['mempty'] = () => ([]);
 Functor['WriterT'] = {};
 let __FunctorWriterTmap = __once__(() => (f => m => WriterT(Functor_i34.map()((__x__ => ((__x__) => {

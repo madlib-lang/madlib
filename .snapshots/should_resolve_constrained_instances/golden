@@ -89,7 +89,7 @@ Right
     , atypedecls = []
     , ainterfaces =
         [ Untyped
-            (Area (Loc 0 1 1) (Loc 42 3 1))
+            (Area (Loc 0 1 1) (Loc 42 3 2))
             (Interface
                "Show"
                []
@@ -117,7 +117,7 @@ Right
         ]
     , ainstances =
         [ Untyped
-            (Area (Loc 44 5 1) (Loc 106 7 1))
+            (Area (Loc 44 5 1) (Loc 106 7 2))
             (Instance
                "Show"
                []
@@ -176,7 +176,7 @@ Right
                     )
                   ]))
         , Untyped
-            (Area (Loc 108 9 1) (Loc 181 11 1))
+            (Area (Loc 108 9 1) (Loc 181 11 2))
             (Instance
                "Show"
                []
@@ -209,7 +209,7 @@ Right
                                    [ Solved
                                        ([] :=> TVar (TV "e4" Star))
                                        (Area (Loc 148 10 18) (Loc 178 10 48))
-                                       (JSExp "new Number(n).toString()")
+                                       (JSExp " new Number(n).toString() ")
                                    ])))
                       , Forall
                           []
@@ -223,7 +223,7 @@ Right
                     )
                   ]))
         , Untyped
-            (Area (Loc 183 13 1) (Loc 297 15 1))
+            (Area (Loc 183 13 1) (Loc 297 15 2))
             (Instance
                "Show"
                [ IsIn "Show" [ TVar (TV "a" Star) ] Nothing

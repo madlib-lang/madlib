@@ -43,7 +43,7 @@ Right
                      True)))
         , Solved
             ([] :=> TCon (TC "Result" Star) "path")
-            (Area (Loc 72 3 1) (Loc 87 3 16))
+            (Area (Loc 72 3 1) (Loc 85 3 14))
             (App
                (Solved
                   ([] :=>
@@ -52,18 +52,18 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TVar (TV "e4" Star)))
                        (TVar (TV "e4" Star)))
-                  (Area (Loc 73 3 2) (Loc 83 3 12))
+                  (Area (Loc 73 3 2) (Loc 81 3 10))
                   (Abs
                      (Solved
                         ([] :=> TVar (TV "e4" Star)) (Area (Loc 74 3 3) (Loc 75 3 4)) "a")
                      [ Solved
                          ([] :=> TVar (TV "e4" Star))
-                         (Area (Loc 81 3 10) (Loc 82 3 11))
+                         (Area (Loc 80 3 9) (Loc 81 3 10))
                          (Var "a")
                      ]))
                (Solved
                   ([] :=> TCon (TC "Result" Star) "path")
-                  (Area (Loc 85 3 14) (Loc 86 3 15))
+                  (Area (Loc 83 3 12) (Loc 84 3 13))
                   (Var "r"))
                True)
         ]

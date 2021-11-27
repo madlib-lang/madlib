@@ -89,7 +89,7 @@ Right
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
                               (TVar (TV "u20" Star)))
-                         (Area (Loc 18 1 19) (Loc 65 5 1))
+                         (Area (Loc 18 1 19) (Loc 65 5 2))
                          (ListConstructor
                             [ Solved
                                 ([] :=> TVar (TV "m12" Star))
@@ -516,7 +516,7 @@ Right
                     , ( "p" , TCon (TC "String" Star) "prelude" )
                     ])
                  (Just (TVar (TV "f31" Star))))
-            (Area (Loc 197 14 1) (Loc 227 14 31))
+            (Area (Loc 197 14 1) (Loc 228 14 32))
             (Assignment
                "r2"
                (Solved
@@ -692,7 +692,7 @@ Right
                                         , ( "c" , TCon (TC "Number" Star) "prelude" )
                                         ])
                                      (Just (TVar (TV "h33" Star))))
-                                (Area (Loc 247 16 18) (Loc 281 20 1))
+                                (Area (Loc 247 16 18) (Loc 281 20 2))
                                 (Record
                                    [ Solved
                                        ([] :=> TVar (TV "h33" Star))
