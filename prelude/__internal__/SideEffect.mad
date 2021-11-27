@@ -97,7 +97,7 @@ export execute = (goodCB, m) => {
 
 
 #iftarget js
-after :: Number -> a -> SideEffect a
+after :: Integer -> a -> SideEffect a
 export after = (time, a) => SideEffect((goodCB) => #- {
   setTimeout(() => goodCB(a), time);
 } -#)

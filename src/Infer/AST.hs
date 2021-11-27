@@ -174,10 +174,8 @@ solveImports previousSolved table (imp : is) = do
   let constructorImports = extractImportedConstructors solvedEnv solvedAST imp
   let solvedVars         = constructorImports <> importedVars
   let solvedMethods      = envMethods solvedEnv
+  let solvedInterfaces   = envInterfaces solvedEnv
 
-  let solvedInterfaces = case imp of
-        Can.Canonical _ Can.TypeImport{} -> mempty
-        _ -> envInterfaces solvedEnv
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
