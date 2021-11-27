@@ -20,7 +20,8 @@ module Parse.Madlib.Lexer
   , alexError
   , alexMonadScan
   , runAlex
-  , tokenToArea
+  , tokenArea
+  , tokenTarget
   , strV
   )
 where
@@ -30,6 +31,7 @@ import           System.Exit
 import qualified Data.Text.Lazy     as T
 import           Data.Char
 import           Explain.Location
+import           AST.Source
 import           Text.Regex.TDFA
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.ByteString.Lazy.UTF8 as BLU
@@ -71,6 +73,11 @@ tokens :-
   <0> type                                                                                    { mapToken (\_ -> TokenType) }
   <0> alias                                                                                   { mapToken (\_ -> TokenAlias) }
   <0> extern                                                                                  { mapToken (\_ -> TokenExtern) }
+  <0> \#iftarget[\ ]*llvm                                                                      { processIfTarget TargetLLVM }
+  <0> \#iftarget[\ ]*js                                                                        { processIfTarget TargetJS }
+  <0> \#elseif[\ ]*llvm                                                                        { processElseIfTarget TargetLLVM }
+  <0> \#elseif[\ ]*js                                                                          { processElseIfTarget TargetJS }
+  <0> \#endif                                                                                 { processEndIfTarget }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                  { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                  { mapToken (\_ -> TokenIf) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> else                                { mapToken (\_ -> TokenElse) }
@@ -191,10 +198,21 @@ isTypeExport = toRegex "\\`export[ ]+type"
 -- (String, Int): (stringBuffer, curlyCount)
 -- Int: jsx depth
 -- Int: start code stack
-data AlexUserState = AlexUserState Int (String, Int) Int [Int] deriving(Eq, Show)
+-- SourceTarget: current source target we're in
+data AlexUserState = AlexUserState Int (String, Int) Int [Int] SourceTarget deriving(Eq, Show)
 
 alexInitUserState :: AlexUserState
-alexInitUserState = AlexUserState 0 ("", 0) 0 []
+alexInitUserState = AlexUserState 0 ("", 0) 0 [] TargetAll
+
+setCurrentSourceTarget :: SourceTarget -> Alex ()
+setCurrentSourceTarget sourceTarget = do
+  (AlexUserState n strState jsxDepth codeStack _) <- getState
+  setState $ AlexUserState n strState jsxDepth codeStack sourceTarget
+
+getCurrentSourceTarget :: Alex SourceTarget
+getCurrentSourceTarget = do
+  (AlexUserState _ _ _ _ sourceTarget) <- getState
+  return sourceTarget
 
 setStartCode :: Int -> Alex ()
 setStartCode code = do
@@ -203,24 +221,24 @@ setStartCode code = do
 
 pushStartCode :: Int -> Alex ()
 pushStartCode code = do
-  (AlexUserState n strState jsxDepth codeStack) <- getState
+  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
   setStartCode code
-  setState $ AlexUserState n strState jsxDepth (codeStack ++ [code])
+  setState $ AlexUserState n strState jsxDepth (codeStack ++ [code]) sourceTarget
 
 popStartCode :: Alex ()
 popStartCode = do
-  (AlexUserState n strState jsxDepth codeStack) <- getState
+  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
   if not (null codeStack) then do
     let popped  = init codeStack
         newCode = if not (null popped) then last popped else 0
-    setState $ AlexUserState n strState jsxDepth popped
+    setState $ AlexUserState n strState jsxDepth popped sourceTarget
     setStartCode newCode
   else
     setStartCode 0
 
 getStartCodeStack :: Alex [Int]
 getStartCodeStack = do
-  (AlexUserState _ _ _ scs) <- getState
+  (AlexUserState _ _ _ scs _) <- getState
   return scs
 
 getPreviousStartCode :: Alex Int
@@ -253,14 +271,14 @@ setState state = Alex $ \s -> Right (s{ alex_ust = state }, ())
 
 jsxTagOpened :: Alex ()
 jsxTagOpened = do
-  (AlexUserState n strState jsxDepth codeStack) <- getState
-  setState (AlexUserState n strState (jsxDepth + 1) codeStack)
+  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
+  setState (AlexUserState n strState (jsxDepth + 1) codeStack sourceTarget)
   pushStartCode jsxOpeningTag
 
 jsxTagClosed :: Alex ()
 jsxTagClosed = do
-  (AlexUserState n strState jsxDepth codeStack) <- getState
-  setState (AlexUserState n strState (jsxDepth - 1) codeStack)
+  (AlexUserState n strState jsxDepth codeStack sourceTarget) <- getState
+  setState (AlexUserState n strState (jsxDepth - 1) codeStack sourceTarget)
   popStartCode
   pushStartCode jsxClosingTag
 
@@ -279,59 +297,64 @@ endComment input n = do
 
 resetStringTemplate :: Alex ()
 resetStringTemplate = do
-  (AlexUserState n (_, curlyCount) jsxDepth codeStack) <- getState
-  setState $ AlexUserState n ("", curlyCount) jsxDepth codeStack
+  (AlexUserState n (_, curlyCount) jsxDepth codeStack sourceTarget) <- getState
+  setState $ AlexUserState n ("", curlyCount) jsxDepth codeStack sourceTarget
 
 resetCurlyCount :: Alex ()
 resetCurlyCount = do
-  (AlexUserState n (strBuffer, _) jsxDepth codeStack) <- getState
-  setState $ AlexUserState n (strBuffer, 0) jsxDepth codeStack
+  (AlexUserState n (strBuffer, _) jsxDepth codeStack sourceTarget) <- getState
+  setState $ AlexUserState n (strBuffer, 0) jsxDepth codeStack sourceTarget
 
 updateCurlyCount :: Int -> Alex ()
 updateCurlyCount n = do
-  (AlexUserState cd (strBuffer, _) jsxDepth codeStack) <- getState
-  setState $ AlexUserState n (strBuffer, n) jsxDepth codeStack
+  (AlexUserState cd (strBuffer, _) jsxDepth codeStack sourceTarget) <- getState
+  setState $ AlexUserState n (strBuffer, n) jsxDepth codeStack sourceTarget
 
 appendStringToTemplate :: String -> Alex ()
 appendStringToTemplate extra = do
-  (AlexUserState n (strBuffer, curlyCount) jsxDepth codeStack) <- getState
-  setState $ AlexUserState n (strBuffer <> extra, curlyCount) jsxDepth codeStack
+  (AlexUserState n (strBuffer, curlyCount) jsxDepth codeStack sourceTarget) <- getState
+  setState $ AlexUserState n (strBuffer <> extra, curlyCount) jsxDepth codeStack sourceTarget
 
 beginStringTemplateMadlib :: AlexInput -> Int -> Alex Token
 beginStringTemplateMadlib i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (strBuffer, _) _ _) <- getState
+  sourceTarget                           <- getCurrentSourceTarget
+  (AlexUserState _ (strBuffer, _) _ _ _) <- getState
   pushStartCode stringTemplateMadlib
   resetStringTemplate
   resetCurlyCount
-  return $ Token (makeArea posn (take len input)) (TokenStr strBuffer)
+  return $ Token (makeArea posn (take len input)) sourceTarget (TokenStr strBuffer)
 
 stringTemplateMadlibLeftCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibLeftCurly i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (_, count) _ _) <- getState
+  sourceTarget                       <- getCurrentSourceTarget
+  (AlexUserState _ (_, count) _ _ _) <- getState
   updateCurlyCount $ count + 1
-  return $ Token (makeArea posn (take len input)) TokenLeftCurly
+  return $ Token (makeArea posn (take len input)) sourceTarget TokenLeftCurly
 
 stringTemplateMadlibRightCurly :: AlexInput -> Int -> Alex Token
 stringTemplateMadlibRightCurly i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (_, count) _ _) <- getState
+  sourceTarget                       <- getCurrentSourceTarget
+  (AlexUserState _ (_, count) _ _ _) <- getState
   if count == 0 then do
     popStartCode
     begin stringTemplate i len
   else do
     updateCurlyCount $ count - 1
-    return $ Token (makeArea posn (take len input)) TokenRightCurly
+    return $ Token (makeArea posn (take len input)) sourceTarget TokenRightCurly
 
 beginStringTemplate :: AlexInput -> Int -> Alex Token
 beginStringTemplate i@(posn, prevChar, pending, input) len = do
+  sourceTarget <- getCurrentSourceTarget
   pushStartCode stringTemplate
-  return $ Token (makeArea posn (take len input)) TokenTemplateStringStart
+  return $ Token (makeArea posn (take len input)) sourceTarget TokenTemplateStringStart
 
 endStringTemplate :: AlexInput -> Int -> Alex Token
 endStringTemplate i@(posn, prevChar, pending, input) len = do
-  (AlexUserState _ (strBuffer, _) _ _) <- getState
+  sourceTarget                           <- getCurrentSourceTarget
+  (AlexUserState _ (strBuffer, _) _ _ _) <- getState
   resetStringTemplate
   popStartCode
-  return $ (Token (makeArea posn (take len input)) (TokenTemplateStringEnd strBuffer))
+  return $ (Token (makeArea posn (take len input)) sourceTarget (TokenTemplateStringEnd strBuffer))
 
 escapedStringTemplateContent :: AlexInput -> Int -> Alex Token
 escapedStringTemplateContent i@(posn, prevChar, pending, input) len = do
@@ -348,20 +371,38 @@ pushStringToTemplate i@(posn, prevChar, pending, input) len = do
   skip i len
 
 
+processIfTarget :: SourceTarget -> AlexInput -> Int -> Alex Token
+processIfTarget sourceTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget sourceTarget
+  return $ Token (makeArea posn (take len input)) sourceTarget TokenMacroIfTarget
+
+processElseIfTarget :: SourceTarget -> AlexInput -> Int -> Alex Token
+processElseIfTarget sourceTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget sourceTarget
+  return $ Token (makeArea posn (take len input)) sourceTarget TokenMacroElseIf
+
+processEndIfTarget :: AlexInput -> Int -> Alex Token
+processEndIfTarget i@(posn, prevChar, pending, input) len = do
+  setCurrentSourceTarget TargetAll
+  return $ Token (makeArea posn (take len input)) TargetAll TokenMacroEndIf
+
+
 jsxTextPopOut :: AlexInput -> Int -> Alex Token
 jsxTextPopOut i@(posn, prevChar, pending, input) len = do
-  token <-
+  sourceTarget <- getCurrentSourceTarget
+  token        <-
         if take len input == ">" then do
           pushStartCode jsxText
           return TokenRightChevron
         else
           return TokenEOF
 
-  return $ (Token (makeArea posn (take len input)) token)
+  return $ (Token (makeArea posn (take len input)) sourceTarget token)
 
 
 decideTokenExport :: AlexInput -> Int -> Alex Token
-decideTokenExport (posn, prevChar, pending, input) len =
+decideTokenExport (posn, prevChar, pending, input) len = do
+  sourceTarget <- getCurrentSourceTarget
   let next           = BLU.fromString $ take 125 input
       matchedTypeExp = match isTypeExport next :: Bool
       matchedTE      = match isTokenExport next :: Bool
@@ -373,12 +414,13 @@ decideTokenExport (posn, prevChar, pending, input) len =
         else
           TokenExport
   
-  in  return $ Token (makeArea posn (take len input)) token
+  return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
 decideTokenName :: AlexInput -> Int -> Alex Token
 decideTokenName (posn, prevChar, pending, input) len = do
-  sc <- getStartCode
+  sc           <- getStartCode
+  sourceTarget <- getCurrentSourceTarget
   let s     = take len input
       token =
         if sc /= instanceHeader then
@@ -392,11 +434,12 @@ decideTokenName (posn, prevChar, pending, input) len = do
             else
               TokenConstraintName s
 
-  return $ Token (makeArea posn (take len input)) token
+  return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
 decideTokenLeftChevron :: AlexInput -> Int -> Alex Token
 decideTokenLeftChevron (posn, prevChar, pending, input) len = do
+  sourceTarget <- getCurrentSourceTarget
   let next          = BLU.fromString $ take 800 input
       matchedOpen   = match jsxTagOpen next :: Bool
       matchedClose  = match jsxTagClose next :: Bool
@@ -413,10 +456,11 @@ decideTokenLeftChevron (posn, prevChar, pending, input) len = do
       return TokenJsxTagOpenEnd
     else
       return TokenLeftChevron
-  return $ Token (makeArea posn (take len input)) token
+  return $ Token (makeArea posn (take len input)) sourceTarget token
 
 decideTokenRightChevron :: AlexInput -> Int -> Alex Token
 decideTokenRightChevron (posn, prevChar, pending, input) len = do
+  sourceTarget <- getCurrentSourceTarget
   let next    = BLU.fromString $ ((tail . (take 200)) input)
       matchWL = match whiteList next :: BS.ByteString
       matchBL = match blackList matchWL :: Bool
@@ -433,13 +477,14 @@ decideTokenRightChevron (posn, prevChar, pending, input) len = do
   else
     return ()
 
-  return $ Token (makeArea posn (take len input)) token
+  return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
 mapToken :: (String -> TokenClass) -> AlexInput -> Int -> Alex Token
 mapToken tokenizer (posn, prevChar, pending, input) len = do
-  sc <- getStartCode
-  scs <- getStartCodeStack
+  sc           <- getStartCode
+  scs          <- getStartCodeStack
+  sourceTarget <- getCurrentSourceTarget
 
   token <- case (tokenizer (take len input)) of
     TokenLeftCurly ->
@@ -470,7 +515,7 @@ mapToken tokenizer (posn, prevChar, pending, input) len = do
         return ()
     _ -> return ()
 
-  return $ Token (makeArea posn (take len input)) token
+  return $ Token (makeArea posn (take len input)) sourceTarget token
 
 
 
@@ -518,10 +563,15 @@ makeArea (AlexPn a l c) tokenContent =
                       else Loc (a + length tokenContent) l (c + length tokenContent)
   in  Area start end
 
-tokenToArea :: Token -> Area
-tokenToArea (Token area _) = area
+tokenArea :: Token -> Area
+tokenArea (Token area _ _) =
+  area
 
-data Token = Token Area TokenClass deriving (Eq, Show)
+tokenTarget :: Token -> SourceTarget
+tokenTarget (Token _ sourceTarget _) =
+  sourceTarget
+
+data Token = Token Area SourceTarget TokenClass deriving (Eq, Show)
 
 data TokenClass
  = TokenConst
@@ -599,20 +649,39 @@ data TokenClass
  | TokenJsxTagOpenStart
  | TokenJsxTagOpenEnd
  | TokenJsxTagOpenSingle
+ | TokenMacroIfTarget
+ | TokenMacroElseIf
+ | TokenMacroEndIf
  deriving (Eq, Show)
 
 
 strV :: Token -> String
-strV (Token _ (TokenStr x))               = x
-strV (Token _ (TokenTemplateStringEnd x)) = x
-strV (Token _ (TokenNumber x))            = x
-strV (Token _ (TokenFloat x))             = x
-strV (Token _ (TokenBool x))              = x
-strV (Token _ (TokenName x))              = x
-strV (Token _ (TokenConstraintName x))    = x
-strV (Token _ (TokenJSBlock x))           = x
+strV (Token _ _ (TokenStr x)) =
+  x
+
+strV (Token _ _ (TokenTemplateStringEnd x)) =
+  x
+
+strV (Token _ _ (TokenNumber x)) =
+  x
+
+strV (Token _ _ (TokenFloat x)) =
+  x
+
+strV (Token _ _ (TokenBool x)) =
+  x
+
+strV (Token _ _ (TokenName x)) =
+  x
+
+strV (Token _ _ (TokenConstraintName x)) =
+  x
+
+strV (Token _ _ (TokenJSBlock x)) =
+  x
+
 
 
 alexEOF :: Alex Token
-alexEOF = return (Token (Area (Loc 1 1 1) (Loc 1 1 1)) TokenEOF)
+alexEOF = return (Token (Area (Loc 1 1 1) (Loc 1 1 1)) TargetAll TokenEOF)
 }

@@ -28,6 +28,9 @@ import           Explain.Location
 import Data.List
 import           Parse.Macro
 import           Run.Target
+import Debug.Trace
+import Text.Show.Pretty
+import Parse.Madlib.TargetMacro
 
 
 
@@ -73,16 +76,15 @@ buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPa
           Left  e    ->
             return $ Left $ CompilationError (ImportNotFound absoluteSrcPath) ctx
 
-          Right code -> do
-            let codeWithoutMacros = parseTargetMacros target code
-            return $ buildAST srcPath codeWithoutMacros
+          Right code ->
+            return $ resolveMacros target <$> buildAST srcPath code
 
 
         getImportsWithAbsolutePaths pathUtils (dropFileName srcPath) ast >>= \case
           Left  x               -> return $ Left x
           Right completeImports -> do
             let (jsonImports, madImports) = partition (\case
-                                                        (Source _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
+                                                        (Source _ _ (DefaultImport _ _ absPath)) -> takeExtension absPath == ".json"
                                                         _ -> False
                                                       ) completeImports
             jsonAssignments <- generateJsonAssignments pathUtils jsonImports
@@ -91,7 +93,7 @@ buildASTTable' target previousTable pathUtils parentPath imp previousPaths srcPa
                   uncurry M.singleton . (absoluteSrcPath, ) . (\ast' -> ast' { aimports = madImports, aexps = jsonAssignments ++ aexps ast' }) <$> ast
 
             childTables <- foldM
-              (\table imp'@(Source area _) ->
+              (\table imp' ->
                 case table of
                   Left e       -> return $ Left e
                   Right table' -> buildChildTable target pathUtils previousPaths srcPath (previousTable <> table') imp'
@@ -131,11 +133,11 @@ escapeJSONString s = case s of
 
 generateJsonAssignments :: PathUtils -> [Import] -> IO [Exp]
 generateJsonAssignments pathUtils [] = return []
-generateJsonAssignments pathUtils ((Source area (DefaultImport (Source _ name) _ absPath)):imps) = do
+generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Source _ _ name) _ absPath)):imps) = do
   next <- generateJsonAssignments pathUtils imps
   jsonContent <- readFile pathUtils absPath
-  let var = Source area (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
-  let assignment = Source area (Assignment name var)
+  let var = Source area sourceTarget (LStr $ "\"" <> escapeJSONString jsonContent <> "\"")
+  let assignment = Source area sourceTarget (Assignment name var)
 
   return $ assignment : next
 
@@ -160,10 +162,18 @@ getImportsWithAbsolutePaths pathUtils ctxPath ast =
 
 setImportAbsolutePath :: Import -> FilePath -> Import
 setImportAbsolutePath imp fp = case imp of
-  Source a (NamedImport   s p _) -> Source a (NamedImport s p fp)
-  Source a (TypeImport   s p _)  -> Source a (TypeImport s p fp)
-  Source a (DefaultImport s p _) -> Source a (DefaultImport s p fp)
-  Source a (ImportAll p _)       -> Source a (ImportAll p fp)
+  Source a sourceTarget (NamedImport   s p _) ->
+    Source a sourceTarget (NamedImport s p fp)
+
+  Source a sourceTarget (TypeImport   s p _)  ->
+    Source a sourceTarget (TypeImport s p fp)
+
+  Source a sourceTarget (DefaultImport s p _) ->
+    Source a sourceTarget (DefaultImport s p fp)
+
+  Source a sourceTarget (ImportAll p _)       ->
+    Source a sourceTarget (ImportAll p fp)
+
 
 
 findAST :: Table -> FilePath -> Either CompilationError AST

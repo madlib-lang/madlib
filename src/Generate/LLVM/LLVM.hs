@@ -762,7 +762,7 @@ generateExp env symbolTable exp = case exp of
       case Map.lookup name symbolTable of
         Just (Symbol (LocalVariableSymbol ptr) value) ->
           -- TODO: handle strings properly here
-          case typeOf (trace ("ASSIGNMENT: "<>name) exp') of
+          case typeOf exp' of
             Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
               ptr' <- bitcast ptr $ Type.ptr stringType
               store ptr' 8 exp'

@@ -45,7 +45,7 @@ verifyTypeVars area astPath adtname ps = do
     ps
 
 canonicalizeTypeDecl :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeTypeDecl env astPath td@(Src.Source area typeDecl) = case typeDecl of
+canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl of
   adt@Src.ADT{} ->
     if isLower . head $ Src.adtname adt then
       throwError $ CompilationError (NotCapitalizedADTName $ Src.adtname adt) (Context astPath area [])
@@ -82,7 +82,7 @@ canonicalizeTypeDecl env astPath td@(Src.Source area typeDecl) = case typeDecl o
 
 
 canonicalizeConstructors :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)
-canonicalizeConstructors env astPath (Src.Source area adt@Src.ADT{}) = do
+canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
   let name   = Src.adtname adt
       ctors  = Src.adtconstructors adt
       params = Src.adtparams adt
@@ -93,7 +93,7 @@ canonicalizeConstructors env astPath (Src.Source area adt@Src.ADT{}) = do
                   (TCon (TC name (buildKind $ length params)) astPath)
                   ((\x -> apply s $ TVar (TV x Star)) <$> params)
   ctors' <- mapM
-    (\(n, ts, _, Src.Source area (Src.Constructor name typings)) -> do
+    (\(n, ts, _, Src.Source area _ (Src.Constructor name typings)) -> do
       let cf = foldr1 fn $ ts <> [rt]
           sc = quantify (collectVars (apply s cf)) ([] :=> apply s cf)
       typings' <- mapM canonicalizeTyping typings
@@ -131,7 +131,7 @@ resolveADTConstructorParams
   -> [Src.Name]
   -> Src.Constructor
   -> CanonicalM (Src.Name, [Type], Substitution, Src.Constructor)
-resolveADTConstructorParams env astPath n params c@(Src.Source area (Src.Constructor cname cparams)) = do
+resolveADTConstructorParams env astPath n params c@(Src.Source area _ (Src.Constructor cname cparams)) = do
   ts <- mapM (typingToType env (KindRequired Star)) cparams
 
   mapM_

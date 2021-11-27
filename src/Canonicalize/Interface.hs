@@ -33,7 +33,7 @@ canonicalizeInterfaces env = foldM
 
 
 canonicalizeInterface :: Env -> Src.Interface -> CanonicalM (Env, Can.Interface)
-canonicalizeInterface env (Src.Source area interface) = case interface of
+canonicalizeInterface env (Src.Source area _ interface) = case interface of
   Src.Interface constraints n vars ms -> do
     ts <- mapM (typingToType env AnyKind) ms
 
@@ -41,7 +41,7 @@ canonicalizeInterface env (Src.Source area interface) = case interface of
     let tvs = rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
 
     let supers = mapMaybe
-          (\(Src.Source _ (Src.TRComp interface' [Src.Source _ (Src.TRSingle v)])) ->
+          (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
             (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs v
           )
           constraints
@@ -93,7 +93,7 @@ canonicalizeInstances env target (i : is) = do
 
 
 canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
-canonicalizeInstance env target (Src.Source area inst) = case inst of
+canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do
     ts <- case M.lookup n (envInterfaces env) of
       Just (Interface tvs _) ->
@@ -108,11 +108,11 @@ canonicalizeInstance env target (Src.Source area inst) = case inst of
     ps <-
       apply subst
         <$> mapM
-              (\(Src.Source area (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
+              (\(Src.Source area _ (Src.TRComp interface' args)) -> case M.lookup interface' (envInterfaces env) of
                 Just (Interface tvs _) -> do
                   vars <- mapM
                     (\case
-                      (Src.Source _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
+                      (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV v k
                       (typing                         , TV _ k) -> typingToType env (KindRequired k) typing
                     )
                     (zip args tvs)
