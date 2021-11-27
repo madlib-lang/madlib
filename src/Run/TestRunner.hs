@@ -71,6 +71,7 @@ runLLVMTests entrypoint coverage = do
   rootPath            <- canonicalizePath $ PathUtils.computeRootPath entrypoint
   Just wishModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
   Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
+  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "TestTools"
   sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
   astTable            <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
   let outputPath              = "./build/"
@@ -80,7 +81,7 @@ runLLVMTests entrypoint coverage = do
   case astTableWithTestExports of
     Right astTable' -> do
       let testSuitePaths          = filter (".spec.mad" `List.isSuffixOf`) $ Map.keys astTable'
-          testMainAST             = generateTestMainAST (wishModulePath, listModulePath) testSuitePaths
+          testMainAST             = generateTestMainAST (wishModulePath, listModulePath, testModulePath) testSuitePaths
           fullASTTable            = Map.insert mainTestPath testMainAST { apath = Just mainTestPath } astTable'
       putStrLn (ppShow fullASTTable)
       putStrLn (ppShow testMainAST)
@@ -130,37 +131,35 @@ generateTestSuiteImport (index, path) =
 
 
 -- fulfill(identity, showResult, parallel(__TestSuite1__.__tests__))
-generateRunTestSuiteExp :: Int -> Exp
-generateRunTestSuiteExp index =
+generateRunTestSuiteExp :: Int -> FilePath -> Exp
+generateRunTestSuiteExp index testSuitePath =
   let testsAccess = Source emptyArea (Access (Source emptyArea (Var $ generateTestSuiteName index)) (Source emptyArea (Var ".__tests__")))
-  in  Source emptyArea (App (Source emptyArea (Var "map")) [
-        Source emptyArea (App (Source emptyArea (Var "fulfill")) [
-          Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")]),
-          Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")])
-        -- Source emptyArea (Var "showResult"),
-        ]),
+  in  Source emptyArea (App (Source emptyArea (Var "runTestSuite")) [
+        Source emptyArea (LStr $ "\"" <> testSuitePath <> "\""),
         testsAccess
       ])
-  -- in  Source emptyArea (App (Source emptyArea (Var "fulfill")) [
-  --       Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")]),
-  --       Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")]),
-  --       -- Source emptyArea (Var "showResult"),
+  -- in  Source emptyArea (App (Source emptyArea (Var "map")) [
+  --       Source emptyArea (App (Source emptyArea (Var "fulfill")) [
+  --         Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")]),
+  --         Source emptyArea (Abs [Source emptyArea "a"] [Source emptyArea (Var "a")])
+  --       ]),
   --       testsAccess
   --     ])
 
-generateStaticTestMainImports :: (FilePath, FilePath) -> [Import]
-generateStaticTestMainImports (wishModulePath, listModulePath) =
+generateStaticTestMainImports :: (FilePath, FilePath, FilePath) -> [Import]
+generateStaticTestMainImports (wishModulePath, listModulePath, testModulePath) =
   let wishImports = Source emptyArea (NamedImport [Source emptyArea "fulfill"] "Wish" wishModulePath)
       listImports = Source emptyArea (NamedImport [] "List" listModulePath)
-  in  [wishImports, listImports]
+      testImports = Source emptyArea (NamedImport [Source emptyArea "runTestSuite"] "TestTools" testModulePath)
+  in  [wishImports, listImports, testImports]
 
 
-generateTestMainAST :: (FilePath, FilePath) -> [FilePath] -> AST
+generateTestMainAST :: (FilePath, FilePath, FilePath) -> [FilePath] -> AST
 generateTestMainAST preludeModulePaths suitePaths =
   let indexedSuitePaths = zip [0..] suitePaths
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
-      runTestSuiteExps  = generateRunTestSuiteExp <$> (fst <$> indexedSuitePaths)
+      runTestSuiteExps  = uncurry generateRunTestSuiteExp <$> indexedSuitePaths
   in  AST { aimports = preludeImports ++ imports, aexps = runTestSuiteExps, atypedecls = [], ainterfaces = [], ainstances = [], apath = Nothing }
 
 

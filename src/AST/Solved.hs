@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE FlexibleInstances #-}
 module AST.Solved where
 
 import qualified Data.Map                      as M
@@ -6,10 +7,20 @@ import qualified Data.Map                      as M
 import qualified Infer.Type                    as Ty
 import           Explain.Location
 
+
+
 data Solved a
   = Solved (Ty.Qual Ty.Type) Area a
   | Untyped Area a
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Ord)
+
+instance Show a => Show (Solved a) where
+  show solved = case solved of
+    Solved _ _ a ->
+      show a
+
+    Untyped _ a ->
+      show a
 
 data AST =
   AST
@@ -134,6 +145,7 @@ data Exp_ = LNum String
           | Placeholder (PlaceholderRef, [Ty.Type]) Exp
           | Extern (Ty.Qual Ty.Type) Name Name
           deriving(Eq, Show, Ord)
+
 
 type Name = String
 
