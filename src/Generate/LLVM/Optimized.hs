@@ -117,7 +117,7 @@ data Exp_ = LNum String
           | App Exp Exp Bool
           | Access Exp Exp
           | Abs Name [Exp]
-          | Assignment Name Exp
+          | Assignment Name Exp Bool
           | Export Exp
           | NameExport Name
           | TypeExport Name
@@ -159,16 +159,16 @@ getType (Optimized t _ _) = t
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Optimized _ _ (Assignment _ (Optimized _ _ Abs{})) ->
+  Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))) _) ->
+  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)) _) ->
     True
 
-  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{})))) ->
+  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _))) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))))) _) ->
+  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)))) _) ->
     True
 
   _ ->
@@ -181,6 +181,7 @@ isClosureDef exp = case exp of
 
   _ ->
     False
+
 
 isExtern :: Exp -> Bool
 isExtern exp = case exp of

@@ -161,7 +161,9 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
   (s, ps, t, es) <- inferBody env' body
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
+
   return (s, ps, t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
+
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
@@ -613,7 +615,9 @@ inferImplicitlyTyped :: Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], 
 inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   (env', tv) <- case Can.getExpName exp of
     Just n -> case M.lookup n (envVars env) of
-      Just (Forall _ (_ :=> t)) -> return (env, t)
+      Just (Forall _ (_ :=> t)) -> do
+        -- t' <- instantiate t
+        return (env, t)
       --  ^ if a var is already present we don't override its type with a fresh var.
       Nothing                   -> do
         tv <- newTVar Star
@@ -623,6 +627,12 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       return (env, tv)
 
   (s, ps, t, e) <- infer env' exp
+
+  -- Once we have gatter clues we update the env types and infer it again
+  -- to handle recursion errors. We probably need to improve that solution at
+  -- some point!
+  infer (apply s env') exp
+
   s'            <- contextualUnify env exp (apply s tv) t
   let s'' = s `compose` s'
       ps' = apply s'' ps
@@ -719,8 +729,9 @@ inferExp env e = do
       inferExplicitlyTyped env e
 
     _ -> do
-      (s, (ds, ps), env, e) <- inferImplicitlyTyped False env e
-      return (s, ps, env, e)
+      (s, (ds, ps), env', e') <- inferImplicitlyTyped False env e
+      -- inferImplicitlyTyped False env' e
+      return (s, ps, env', e')
 
   e''  <- insertClassPlaceholders env e' ps
   e''' <- updatePlaceholders env False s e''
