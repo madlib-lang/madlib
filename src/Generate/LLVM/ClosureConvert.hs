@@ -56,6 +56,10 @@ getTopLevelExps = do
   OptimizationState _ topLevel <- get
   return topLevel
 
+addGlobalFreeVar :: Opt.Name -> Env -> Env
+addGlobalFreeVar fv env =
+  env { freeVars = fv : freeVars env }
+
 
 
 
@@ -77,12 +81,21 @@ findFreeVars env exp = do
     Slv.Solved _ _ (Slv.Var "==") ->
       return []
 
+    Slv.Solved _ _ (Slv.Var "!=") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var ">") ->
+      return []
+
+    Slv.Solved _ _ (Slv.Var "<") ->
+      return []
+
     Slv.Solved _ _ (Slv.Var n) -> do
       var' <- optimize env exp
       return [(n, var')]
 
-    Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) -> do
-      vars <- findFreeVars env body
+    Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
+      vars <- concat <$> mapM (findFreeVars env) body
       return $ filter (\(varName, _) -> varName /= param) vars
 
     Slv.Solved _ _ (Slv.App f arg _) -> do
@@ -109,13 +122,16 @@ findFreeVars env exp = do
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
+    Slv.Solved _ _ (Slv.Assignment n exp) -> do
+      findFreeVars env exp
+
     _ ->
       return []
 
   let globalVars = freeVars env
   let fvs' = M.toList $ M.fromList fvs
 
-  return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs'
+  return $ filter (\(varName, _) -> varName `notElem` ("inner":globalVars)) fvs'
 
 findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
 findFreeVarsInBranches env iss = case iss of

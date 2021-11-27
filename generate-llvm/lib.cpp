@@ -191,6 +191,7 @@ extern "C"
   void *MadList_length(MadListNode_t *list)
   {
     double *total = (double *)GC_malloc(sizeof(double));
+
     if (list == NULL)
     {
       *total = 0;
@@ -206,6 +207,32 @@ extern "C"
     }
 
     return total;
+  }
+
+  bool MadList_hasMinLength(double l, MadListNode_t *list)
+  {
+    MadListNode_t *head = list;
+    if (head == NULL)
+    {
+      return l == 0;
+    }
+
+    l -= 1;
+
+    while (head->next != NULL && l > 0)
+    {
+      l -= 1;
+      head = head->next;
+    }
+
+    return l == 0;
+  }
+
+  bool MadList_hasLength(double l, MadListNode_t *list)
+  {
+    double *computed = (double*) MadList_length(list);
+
+    return *computed == l;
   }
 
   MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b)
