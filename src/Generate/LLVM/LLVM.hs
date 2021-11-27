@@ -44,6 +44,7 @@ import Foreign.C
 import qualified Infer.Type as InferredType
 import Infer.Type (isFunctionType)
 import LLVM.PassManager
+import LLVM.CodeGenOpt (Level)
 
 
 -- TODO: Move to util module
@@ -59,7 +60,6 @@ data SymbolType
   = VariableSymbol
   | FunctionSymbol
   | ConstructorSymbol Int Int
-  | WrappedMethodSymbol
   | ClosureSymbol
   -- ^ unique id ( index ) | arity
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
@@ -107,6 +107,10 @@ gcMalloc :: Operand
 gcMalloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "GC_malloc"))
 
+madlistLength :: Operand
+madlistLength =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [listType] False) (AST.mkName "MadList_length"))
+
 malloc :: Operand
 malloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "malloc"))
@@ -126,6 +130,96 @@ storeItem basePtr _ (item, index) = do
   ptr <- gep basePtr [i32ConstOp 0, i32ConstOp index]
   store ptr 8 item
   return ()
+
+-- Mostly used for boxing/unboxing and therefore does just one Level
+buildLLVMType :: InferredType.Type -> Type.Type
+buildLLVMType t = case t of
+  InferredType.TCon (InferredType.TC "Number" InferredType.Star) "prelude" ->
+    Type.double
+
+  InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" ->
+    Type.ptr Type.i8
+
+  InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" ->
+    Type.i1
+
+  InferredType.TCon (InferredType.TC "()" InferredType.Star) "prelude" ->
+    Type.ptr Type.i8
+
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" (InferredType.Kfun InferredType.Star InferredType.Star)) "prelude") _ ->
+    Type.ptr (Type.StructureType False [boxType, boxType])
+
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
+    let tLeft  = buildLLVMType left
+        tRight = buildLLVMType right
+    in  Type.ptr $ Type.FunctionType tRight [tLeft] False
+
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
+    let tA = buildLLVMType a
+        tB = buildLLVMType b
+    in  Type.ptr $ Type.StructureType False [boxType, boxType]
+
+  _ ->
+    Type.ptr Type.i8
+
+
+boxType :: Type.Type
+boxType =
+  Type.ptr Type.i8
+
+listType :: Type.Type
+listType =
+  Type.ptr $ Type.StructureType False [boxType, boxType]
+
+
+unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
+unbox t what = case t of
+  InferredType.TCon (InferredType.TC "Number" _) _ -> do
+    ptr <- bitcast what $ Type.ptr Type.double
+    load ptr 8
+
+  InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
+    ptr <- bitcast what $ Type.ptr Type.i1
+    load ptr 8
+
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
+    bitcast what listType
+
+  -- TODO: check that we need this
+  -- This should be called for parameters that are closures
+  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b ->
+    return what
+
+  _ ->
+    bitcast what (buildLLVMType t)
+
+box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
+box what = case typeOf what of
+  -- Number
+  Type.FloatingPointType _ -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
+    ptr' <- bitcast ptr (Type.ptr Type.double)
+    store ptr' 8 what
+    bitcast ptr' boxType
+
+  -- Boolean
+  Type.IntegerType 1 -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
+    ptr' <- bitcast ptr (Type.ptr Type.i1)
+    store ptr' 8 what
+    bitcast ptr' boxType
+
+  -- Pointless?
+  Type.PointerType (Type.IntegerType 8) _ ->
+    return what
+
+  -- closure?
+  -- t@(Type.PointerType (Type.StructureType _ _) _) -> do
+  --   return what
+
+  -- Any pointer type
+  _ ->
+    bitcast what boxType
 
 
 
@@ -178,10 +272,6 @@ generateExp symbolTable exp = case exp of
 
       Just (Symbol ClosureSymbol closurePtr) -> do
         return (symbolTable, closurePtr)
-
-      Just (Symbol WrappedMethodSymbol wrapper) -> do
-        unwrapped <- call (trace ("WRAPPER: " <> ppShow wrapper) wrapper) []
-        return (symbolTable, unwrapped)
 
       Just (Symbol _ var) -> do
         return (symbolTable, var)
@@ -254,7 +344,7 @@ generateExp symbolTable exp = case exp of
             undefined
 
       _ -> do
-        (symbolTable', f')    <- generateExp symbolTable (trace ("F: "<>ppShow f) f)
+        (symbolTable', f')    <- generateExp symbolTable f
         (symbolTable'', arg') <- generateExp symbolTable' arg
 
         case typeOf f' of
@@ -278,7 +368,8 @@ generateExp symbolTable exp = case exp of
             env' <- load env 8
 
             res <- call fn' [(env', []), (boxedArg, [])]
-            return (symbolTable'', res)
+            res' <- unbox (InferredType.getReturnType $ getType f) res
+            return (symbolTable'', res')
 
 
   Optimized _ _ (LNum n) -> do
@@ -413,7 +504,30 @@ generateSymbolTableForIndexedData :: (MonadIRBuilder m, MonadModuleBuilder m) =>
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 index)]
   ptr' <- load ptr 8
-  generateSymbolTableForPattern symbolTable ptr' pat
+  ptr'' <- unbox (getType pat) ptr'
+  generateSymbolTableForPattern symbolTable ptr'' pat
+
+
+generateSymbolTableForList :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m SymbolTable
+generateSymbolTableForList symbolTable basePtr pats = case pats of
+  (pat : next) -> case pat of
+    Optimized _ _ (PSpread spread) ->
+      generateSymbolTableForPattern symbolTable basePtr spread
+
+    _ -> do
+      valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+      valuePtr'     <- load valuePtr 8
+      valuePtr''    <- unbox (getType pat) valuePtr'
+      symbolTable'  <- generateSymbolTableForPattern symbolTable valuePtr'' pat
+      nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+      -- i8*
+      nextNodePtr'  <- load nextNodePtr 8
+      -- { i8*, i8* }*
+      nextNodePtr'' <- bitcast nextNodePtr' listType
+      generateSymbolTableForList symbolTable' nextNodePtr'' next
+
+  [] ->
+    return symbolTable
 
 
 
@@ -438,6 +552,9 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
     let patsWithIds = List.zip pats [0..]
     Monad.foldM (generateSymbolTableForIndexedData baseExp) symbolTable patsWithIds
 
+  Optimized _ _ (PList pats) ->
+    generateSymbolTableForList symbolTable baseExp pats
+
   Optimized _ _ (PCon name pats) -> do
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
     constructor' <- bitcast baseExp constructorType
@@ -451,7 +568,7 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
 generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> (Pattern, Operand) -> m Operand
 generateSubPatternTest symbolTable prev (pat', ptr) = do
   v <- load ptr 8
-  v' <- unbox (getType pat') v
+  v' <- unbox (getType (trace ("PAT': "<>ppShow pat') pat')) v
   curr <- generateBranchTest symbolTable pat' v'
   prev `Instruction.and` curr
 
@@ -478,10 +595,25 @@ generateBranchTest symbolTable pat value = case pat of
     return true
 
   Optimized _ _ (PTuple pats) -> do
-    let ids = fromIntegral <$> List.take (List.length pats) [0..]
-    itemPtrs <- getStructPointers ids value
+    let indices = List.take (List.length pats) [0..]
+    itemPtrs <- getStructPointers indices value
     let patsWithPtrs = List.zip pats itemPtrs
     Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
+
+  Optimized _ _ (PList pats) -> do
+    let indices = List.take (List.length pats) [0..]
+    -- i8*
+    listLength <- call madlistLength [(value, [])]
+    -- double*
+    listLength' <- bitcast listLength (Type.ptr Type.double)
+    -- double
+    listLength'' <- load listLength' 8
+
+    -- TODO: Add sub patterns tests
+    -- test that the length of the given list is at least as long as the pattern items
+    -- TODO: verify if we have a spread pattern, if yes we just need to check a minimum length of (length pats - 1)
+    -- otherwise  we need to have an exact count
+    fcmp FloatingPointPredicate.OGE listLength'' (C.double (fromIntegral $ List.length pats))
 
   Optimized _ _ (PCon name pats) -> do
     let constructorId = case Map.lookup name symbolTable of
@@ -533,83 +665,6 @@ generateExps symbolTable exps = case exps of
     return ()
 
 
-buildLLVMType :: InferredType.Type -> Type.Type
-buildLLVMType t = case t of
-  InferredType.TCon (InferredType.TC "Number" InferredType.Star) "prelude" ->
-    Type.double
-
-  InferredType.TCon (InferredType.TC "String" InferredType.Star) "prelude" ->
-    Type.ptr Type.i8
-
-  InferredType.TCon (InferredType.TC "Boolean" InferredType.Star) "prelude" ->
-    Type.i1
-
-  InferredType.TCon (InferredType.TC "()" InferredType.Star) "prelude" ->
-    Type.i1
-
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
-    let tLeft  = buildLLVMType left
-        tRight = buildLLVMType right
-    in  Type.ptr $ Type.FunctionType tRight [tLeft] False
-
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
-    let tA = buildLLVMType a
-        tB = buildLLVMType b
-    in  Type.ptr $ Type.StructureType False [tA, tB]
-
-  _ ->
-    Type.ptr Type.i8
-
-
-boxType :: Type.Type
-boxType = Type.ptr Type.i8
-
-unbox :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => InferredType.Type -> Operand -> m Operand
-unbox t what = case t of
-  InferredType.TCon (InferredType.TC "Number" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.double
-    load ptr 8
-
-  InferredType.TCon (InferredType.TC "Boolean" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.i1
-    load ptr 8
-
-  -- TODO: check that we need this
-  -- This should be called for parameters that are closures
-  InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" _) _) p) b -> do
-    return what
-
-  _ ->
-    bitcast what (buildLLVMType t)
-
-box :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
-box what = case typeOf what of
-  -- Number
-  Type.FloatingPointType _ -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.double)
-    store ptr' 8 what
-    bitcast ptr' boxType
-
-  -- Boolean
-  Type.IntegerType 1 -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.i1)
-    store ptr' 8 what
-    bitcast ptr' boxType
-
-  -- Pointless?
-  Type.PointerType (Type.IntegerType 8) _ ->
-    return what
-
-  -- closure?
-  -- t@(Type.PointerType (Type.StructureType _ _) _) -> do
-  --   return what
-
-  -- Any pointer type
-  _ ->
-    bitcast what boxType
-
 
 updateClosureType :: [InferredType.Type] -> Type.Type -> Type.Type
 updateClosureType envArgs t = case t of
@@ -638,61 +693,23 @@ collectDictParams exp = case exp of
 
 
 
-generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
-generateFunction symbolTable fnName abs = case abs of
-  Optimized t _ (Abs paramName [body]) -> do
-    let param = (boxType, ParameterName (stringToShortByteString paramName))
-        returnType' = case body of
-          Optimized _ _ (Closure n args) ->
-            updateClosureType (getType <$> args) (buildLLVMType $ InferredType.getReturnType t)
-          _ ->
-            boxType
+-- generateFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
+-- generateFunction symbolTable fnName abs = case abs of
+--   Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
+--     let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams abs
+--         dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
+--         param = (boxType, ParameterName (stringToShortByteString paramName))
+--     f <- function (AST.mkName fnName) (dictParams' ++ [param]) boxType $ \params -> do
+--       lastParam <- unbox (InferredType.getParamType t) (List.last params)
+--       let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
+--       let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
+--       (_, exps) <- generateExp symbolTable' body
+--       ret exps
 
-    let closureName = fnName ++ "_closure"
+--     return $ Map.insert fnName (fnSymbol f) symbolTable
 
-    f <- function (AST.mkName closureName) [param] returnType' $ \[param'] -> do
-      entry <- block `named` "entry"; do
-        param'' <- unbox (InferredType.getParamType t) param'
-        (_, exps) <- generateExp (Map.insert paramName (varSymbol param'') symbolTable) body
-        exps' <- case body of
-          Optimized _ _ Closure{} ->
-            return exps
-          _ ->
-            box exps
-        ret exps'
-
-    let closureStruct =
-          Constant.Struct
-            Nothing
-            False
-            [ Constant.GlobalReference
-                (Type.ptr $ Type.FunctionType returnType' [boxType] False)
-                (AST.mkName closureName)
-            , Constant.Struct Nothing False []
-            ]
-
-    g <- global (AST.mkName fnName) (typeOf closureStruct) closureStruct
-
-    return
-      $ Map.insert fnName (closureSymbol g)
-      $ Map.insert closureName (fnSymbol f) symbolTable
-
-  -- TODO: needs to handle closures
-  Optimized t _ (Placeholder (ClassRef interfaceName classRefPreds False True, typingStr) _) -> do
-    let (dictParams, Optimized t _ (Abs paramName [body])) = collectDictParams abs
-        dictParams' = (\(n, t) -> (t, ParameterName (stringToShortByteString n))) <$> dictParams
-        param = (boxType, ParameterName (stringToShortByteString paramName))
-    f <- function (AST.mkName fnName) (dictParams' ++ [param]) boxType $ \params -> do
-      lastParam <- unbox (InferredType.getParamType t) (List.last params)
-      let dictParamsSymbolTable = Map.fromList $ List.zip (fst <$> dictParams) (varSymbol <$> List.init params)
-      let symbolTable' = Map.insert paramName (varSymbol lastParam) $ dictParamsSymbolTable <> symbolTable
-      (_, exps) <- generateExp symbolTable' body
-      ret exps
-
-    return $ Map.insert fnName (fnSymbol f) symbolTable
-
-  _ ->
-    error $ "unhandled function!\n\n" <> ppShow abs
+--   _ ->
+--     error $ "unhandled function!\n\n" <> ppShow abs
 
 
 generateClosuresForExtern :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> [InferredType.Type] -> Int -> Int -> [InferredType.Type] -> Operand -> m SymbolTable
@@ -1083,15 +1100,6 @@ buildDictValues symbolTable methodNames = case methodNames of
     []
 
 
--- generateConstantExp :: SymbolTable -> Exp -> Constant.Constant
--- generateConstantExp symbolTable exp = case exp of
---   Optimized _ _ (Var n) -> case Map.lookup n symbolTable of
---     Symbol _ e ->
---       Constant.GlobalReference (typeOf e) (AST.mkName n)
-
---   _ ->
---     undefined
-
 generateMethod :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> Exp -> m SymbolTable
 generateMethod symbolTable name exp = case exp of
   Optimized t _ (Abs param body) ->
@@ -1115,10 +1123,8 @@ generateMethod symbolTable name exp = case exp of
     f <- function (AST.mkName name) [] emptyClosureType $ \_ -> do
       (symbolTable, exp') <- generateExp symbolTable exp
       ret exp'
-      -- boxed <- box exp'
-      -- ret boxed
 
-    return $ Map.insert name (Symbol WrappedMethodSymbol f) symbolTable
+    return $ Map.insert name (fnSymbol f) symbolTable
 
 generateInstance :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Instance -> m SymbolTable
 generateInstance symbolTable inst = case inst of
@@ -1161,21 +1167,21 @@ toLLVMModule ast =
   buildModule "main" $ do
   let initialSymbolTable = List.foldr (flip addTopLevelFnToSymbolTable) mempty (topLevelFunctions $ aexps ast)
 
-  symbolTable <- generateInstances initialSymbolTable (ainstances ast)
-  symbolTable' <- generateConstructors symbolTable (atypedecls ast)
+  symbolTable   <- generateInstances initialSymbolTable (ainstances ast)
+  symbolTable'  <- generateConstructors symbolTable (atypedecls ast)
   symbolTable'' <- generateTopLevelFunctions symbolTable' (topLevelFunctions $ aexps ast)
 
-  -- extern (AST.mkName "puts") [ptr i8] i32
   extern (AST.mkName "malloc") [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc") [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "calloc") [Type.i32, Type.i32] (Type.ptr Type.i8)
-  extern (AST.mkName "__streq__") [ptr i8, ptr i8] i1
+  extern (AST.mkName "__streq__") [Type.ptr Type.i8, Type.ptr Type.i8] Type.i1
+  extern (AST.mkName "MadList_length") [listType] (Type.ptr Type.i8)
 
   global (AST.mkName "$EMPTY_ENV") (Type.StructureType False []) (Constant.Struct Nothing False [])
 
   function "main" [] void $ \_ -> do
     entry <- block `named` "entry";
-    generateExps (trace ("ST-FOR-EXPS: "<>ppShow symbolTable'') symbolTable'') (expsForMain $ aexps ast)
+    generateExps symbolTable'' (expsForMain $ aexps ast)
     retVoid
 
 
