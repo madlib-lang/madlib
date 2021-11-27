@@ -308,14 +308,35 @@ export assertEquals = (actual, expected) => actual == expected
   : Wish.bad(AssertionError(expected, actual))
 
 
-test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) ()
+// test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) ()
+// export test = (description, testImpl) => pipe(
+//   (run) => run(description),
+//   map((_) => IO.log(green("  \x2713 " ++ description))),
+//   Wish.chainRej((_) => of(IO.log(red("  \x00d7 " ++ description))))
+//   // map(formatSuccessOutput(description)),
+//   // Wish.chainRej(formatFailureOutput(description)),
+//   // Wish.fulfill((_) => IO.log("failed"), (_) => IO.log("passed"))
+// )(testImpl)
+
+test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) String
 export test = (description, testImpl) => pipe(
   (run) => run(description),
-  map((_) => IO.log(green("  \x2713 " ++ description))),
-  Wish.chainRej((_) => of(IO.log(red("  \x00d7 " ++ description))))
+  map((_) => green("\x2713 " ++ description)),
+  Wish.chainRej((_) => of(red("\x00d7 " ++ description)))
   // map(formatSuccessOutput(description)),
   // Wish.chainRej(formatFailureOutput(description)),
   // Wish.fulfill((_) => IO.log("failed"), (_) => IO.log("passed"))
 )(testImpl)
+
+
+runTestSuite :: String -> List (Wish.Wish e String) -> ()
+export runTestSuite = (suitePath, testsInSuite) => pipe(
+  Wish.parallel,
+  Wish.fulfill((a) => a, (testOutputs) => {
+    IO.log(suitePath)
+    map(IO.log, testOutputs)
+    return IO.log("Test suite finished")
+  })
+)(testsInSuite)
 
 #endif

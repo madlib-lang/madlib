@@ -201,7 +201,7 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
 inferBody env [e] = do
   (s, ps, t, e) <- infer env e
-  e'            <- insertClassPlaceholders env e ps
+  e'            <- insertClassPlaceholders env e (dedupePreds ps)
   
   return (s, ps, t, [e'])
 
@@ -214,10 +214,8 @@ inferBody env (e : es) = do
       (s, (_, ps), env, e') <- inferImplicitlyTyped True env e
       return (s, ps, env, e')
 
-  -- e''               <- insertClassPlaceholders env' e' ps
-  -- e'''              <- updatePlaceholders env' True s e''
-  -- e'''              <- updatePlaceholders env' True s e'
-  let e''' = e'
+  e''               <- insertClassPlaceholders env' e' (dedupePreds ps)
+  e'''              <- updatePlaceholders env' (CleanUpEnv False [] [] []) True s e''
   (sb, ps', tb, eb) <- inferBody (updateBodyEnv s env') es
 
   let finalS = s `compose` sb
@@ -793,7 +791,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
 
   (ds', sDefaults) <-
-    if not isLet && not (null (rs ++ ds)) && not (Can.isAssignment exp) then do
+    if not isLet && not (null (rs ++ ds)) && not (Can.isNamedAbs exp) then do
       (sDef, rs')   <- tryDefaults env'' (rs ++ ds)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
@@ -804,24 +802,24 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
         (AmbiguousType (TV "-" Star, rs'))
         (Context (envCurrentPath env) area (envBacktrace env))
       return ([], sDef' `compose` sDef)
-    else if not isLet && not (isFunctionType t) then do
-      (sDef, ds')   <- tryDefaults env'' (ds ++ rs)
-      (sDef', ds'') <- tryDefaults env'' (apply sDef ds')
-      return (ds'', sDef' `compose` sDef)
     else do
       return (ds ++ rs, M.empty)
 
   let ds'' = dedupePreds ds'
   let sFinal = sDefaults `compose` s''
 
-  let sc  = if isLet then Forall [] $ ds'' :=> apply sDefaults t' else quantify fs $ apply sFinal ds'' :=> apply sFinal t'
+  let sc =
+        if isLet then
+          Forall [] $ apply sFinal (ds'' :=> t')
+        else
+          quantify fs $ apply sFinal (ds'' :=> t')
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds'', ds''), extendVars env'' (n, sc), updateQualType e (ds'' :=> apply sDefaults t'))
+      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (ds'' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds'', ds''), env'', updateQualType e (ds'' :=> apply sDefaults t'))
+      return (sFinal, (ds'', ds''), env, updateQualType e (ds'' :=> t'))
 
 
 
@@ -851,7 +849,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
-  qs'' <- dedupePreds <$> getAllParentPreds env qs'
+  qs'' <- dedupePreds <$> getAllParentPreds env (dedupePreds qs')
 
   let scCheck  = quantify (ftv t''') (qs' :=> apply substDefaultResolution t''')
   if sc /= scCheck then
@@ -862,7 +860,8 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
     let e'   = updateQualType e (ds :=> t''')
 
     let qt'  = qs'' :=> t'''
-    let sc'' = quantify (ftv qt') qt'
+    let sc'' = quantify gs qt'
+    -- let sc'' = quantify (ftv qt') qt'
     let env'' = case Can.getExpName exp of
           Just n  -> extendVars env' (n, sc'')
           Nothing -> env'
@@ -898,7 +897,7 @@ inferExp env e = do
       return (s, ps, env', e')
 
   e''  <- insertClassPlaceholders env e' ps
-  e''' <- updatePlaceholders env (CleanUpEnv [] []) False s e''
+  e''' <- updatePlaceholders env (CleanUpEnv False [] [] []) False s e''
 
   return (Just e''', env')
 

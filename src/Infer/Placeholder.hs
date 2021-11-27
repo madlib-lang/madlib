@@ -146,9 +146,20 @@ updateMethodPlaceholder env push s ph@(Slv.Solved qt@(_ :=> t) a (Slv.Placeholde
 
     ps  <- catchError (byInst env $ IsIn cls instanceTypes' Nothing) (const $ return [])
     ps' <- getAllParentPreds env ps
-    pushPlaceholders env
-                     (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.MethodRef cls method var', types) (Slv.Solved (apply s qt') a' exp)))
-                     ps'
+
+    pushPlaceholders
+      env
+      (
+        Slv.Solved
+          (apply s qt)
+          a
+          (
+            Slv.Placeholder
+              (Slv.MethodRef cls method var', types)
+              (Slv.Solved (apply s qt')a' exp)
+          )
+      )
+      ps'
 
 
 pushPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
@@ -174,7 +185,7 @@ collectPlaceholders ph = case ph of
 
 getPlaceholderExp :: Slv.Exp -> Slv.Exp
 getPlaceholderExp ph = case ph of
-  Slv.Solved _ _ (Slv.Placeholder phRef next) ->
+  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef{}, _) next) ->
     getPlaceholderExp next
 
   found ->
@@ -190,20 +201,21 @@ isNameInScope maybeName cleanUpEnv = case maybeName of
     False
 
 
-updateClassPlaceholder :: Env -> CleanUpEnv -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
-updateClassPlaceholder env cleanUpEnv push s ph = case ph of
-  Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes) exp) -> do
+updateClassPlaceholder :: Env -> CleanUpEnv -> Maybe String ->  Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp
+updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = case ph of
+  Slv.Solved qt a (Slv.Placeholder (Slv.ClassRef cls crps call var, instanceTypes) exp) -> do
     let instanceTypes' = apply s instanceTypes
     types <- getCanonicalPlaceholderTypes env $ IsIn cls instanceTypes' Nothing
     var'  <- shouldInsert env $ IsIn cls instanceTypes' Nothing
 
     ps'   <- buildClassRefPreds env cls instanceTypes'
+
     let newRef = (cls, instanceTypes')
     let nextEnv =
           if not call then
             addDict newRef cleanUpEnv
           else
-            cleanUpEnv
+            addAppliedDict (cls, instanceTypes) cleanUpEnv
     exp'  <- updatePlaceholders env nextEnv push s exp
 
     let wrappedExp = getPlaceholderExp ph
@@ -216,34 +228,56 @@ updateClassPlaceholder env cleanUpEnv push s ph = case ph of
             _ ->
               Nothing
 
-    let areConcrete = all isConcrete instanceTypes'
-
-    if (newRef `elem` dictsInScope cleanUpEnv || call && areConcrete) && isNameInScope maybeName cleanUpEnv then
+    if (newRef `elem` dictsInScope cleanUpEnv || call && not var') && isNameInScope maybeName cleanUpEnv then
       -- this class ref is already in scope so we skip the placeholder
       return exp'
     else if not call then
-      return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+      if not var' then
+        -- if the instance is resolve there's no point in having (IntegerDict) => ... and we can
+        -- safely drop the dictionary.
+        return exp'
+      else if newRef `elem` dictsInScope cleanUpEnv && not (isMethodDef cleanUpEnv) then do
+        -- In that case we need to extend the env to express what dictionary was removed so that we can
+        -- remove the dictionaries at call sites
+        -- In the case of method definition, the predicates come from interface declaration and instance
+        -- parents and we don't have a solution right now to dedupe these properly so we don't touch them
+        -- just yet.
+        return exp'
+      else
+        return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
+    else if (cls, instanceTypes) `elem` appliedDicts cleanUpEnv then
+      return exp'
     else
       return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-    -- if not call then
-    --   return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp')
-    -- else
-    --   return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
 
-  _ -> return ph
+
+    -- if not call then
+    --   return (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp'), cleanUpEnv)
+    -- else
+    --   return (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp'), cleanUpEnv)
+
+  _ ->
+    undefined
+
 
 
 buildClassRefPreds :: Env -> String -> [Type] -> Infer [Slv.ClassRefPred]
 buildClassRefPreds env cls ts = do
   maybeInst <- findInst env $ IsIn cls ts Nothing
   instTypes <- case maybeInst of
-    Just (Instance (_ :=> (IsIn _ x _)) _) -> return x
-    Nothing                              -> return ts
+    Just (Instance (_ :=> (IsIn _ x _)) _) ->
+      return x
+
+    Nothing ->
+      return ts
+
 
   s    <- unify instTypes ts
   ps   <- catchError (byInst env $ IsIn cls ts Nothing) (const $ return [])
   pps' <- mapM (getParentPreds env) (reverse (apply s ps))
+
   let ps' = concat $ reverse <$> pps'
+
   mapM
     (\(IsIn cls' ts' _) -> do
       next <- buildClassRefPreds env cls' ts'
@@ -256,11 +290,15 @@ buildClassRefPreds env cls ts = do
 
 
 
-data CleanUpEnv = CleanUpEnv { dictsInScope :: [(String, [Type])], namesInScope :: [String] }
+data CleanUpEnv = CleanUpEnv { isMethodDef :: Bool, dictsInScope :: [(String, [Type])], appliedDicts :: [(String, [Type])], namesInScope :: [String] } deriving(Eq, Show)
 
 addDict :: (String, [Type]) -> CleanUpEnv -> CleanUpEnv
 addDict dict env =
   env { dictsInScope = dict : dictsInScope env }
+
+addAppliedDict :: (String, [Type]) -> CleanUpEnv -> CleanUpEnv
+addAppliedDict dict env =
+  env { appliedDicts = dict : appliedDicts env }
 
 addName :: String -> CleanUpEnv -> CleanUpEnv
 addName name env =
@@ -274,7 +312,7 @@ updatePlaceholdersForExpList env cleanUpEnv push s exps = case exps of
     Slv.Solved qt area (Slv.Assignment name exp) -> do
       let cleanUpEnv' = addName name cleanUpEnv
       next <- updatePlaceholdersForExpList env cleanUpEnv' push s es
-      e' <- updatePlaceholders env cleanUpEnv push s e
+      e' <- updatePlaceholders env cleanUpEnv' push s e
       return (e' : next)
 
     _ -> do
@@ -290,16 +328,20 @@ updatePlaceholders :: Env -> CleanUpEnv -> Bool -> Substitution -> Slv.Exp -> In
 updatePlaceholders _ _ _ _ fullExp@(Slv.Untyped _ _)   = return fullExp
 updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Solved qt a e) = case e of
   Slv.Placeholder (ref, t) exp -> case ref of
-    Slv.MethodRef{} -> updateMethodPlaceholder env push s fullExp
-    _               -> updateClassPlaceholder env cleanUpEnv push s fullExp
+    Slv.MethodRef{} ->
+      updateMethodPlaceholder env push s fullExp
+
+    _  ->
+      updateClassPlaceholder env cleanUpEnv Nothing push s fullExp
+
 
   Slv.App abs arg final -> do
-    abs' <- updatePlaceholders env cleanUpEnv push s abs
-    arg' <- updatePlaceholders env cleanUpEnv push s arg
+    abs' <- updatePlaceholders env cleanUpEnv { appliedDicts = [] } push s abs
+    arg' <- updatePlaceholders env cleanUpEnv { appliedDicts = [] } push s arg
     return $ Slv.Solved (apply s qt) a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
-    es' <- updatePlaceholdersForExpList env cleanUpEnv push s es--mapM (updatePlaceholders env cleanUpEnv push s) es
+    es' <- updatePlaceholdersForExpList env cleanUpEnv push s es
     let param' = Slv.Solved (apply s paramType) paramArea param
     return $ Slv.Solved (apply s qt) a $ Slv.Abs param' es'
 
@@ -311,6 +353,10 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Solved qt a e) = case e of
     exp' <- updatePlaceholders env cleanUpEnv push s exp
     iss' <- mapM (updateIs s) iss
     return $ Slv.Solved qt a $ Slv.Where exp' iss'
+
+  Slv.Assignment n ph@(Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef{}, _) _)) -> do
+    updatedPlaceholder <- updateClassPlaceholder env cleanUpEnv (Just n) push s ph
+    return $ Slv.Solved  (apply s qt) a (Slv.Assignment n updatedPlaceholder)
 
   Slv.Assignment n exp -> do
     exp' <- updatePlaceholders env cleanUpEnv push s exp

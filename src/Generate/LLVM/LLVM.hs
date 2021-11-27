@@ -374,7 +374,7 @@ unbox t what = case t of
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _) p) b ->
     bitcast what papType
 
-  -- That should handle tuples
+  -- That handles tuple types
   _ ->
     bitcast what (buildLLVMType t)
 
@@ -438,22 +438,17 @@ box what = case typeOf what of
 
 buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => String -> m Operand
 buildStr s = do
-  let parser = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
-  let parsed = fst $ List.last $ parser s
-  -- let parsed = read "\"" ++ s ++ "\"" :: String
-  let asText = Text.pack parsed
-      bs2 = TextEncoding.encodeUtf8 asText
-      bytes2 = ByteString.unpack bs2
-  let bs = Char8.pack parsed
-      bytes = ByteString.unpack bs
-  -- we need to add 0 to terminate a C string
-  -- let charCodes = (fromEnum <$> parsed) ++ [0]
-  let charCodes = (fromEnum <$> bytes2) ++ [0]
-  let charCodes''' = toInteger <$> charCodes
-  -- let charCodes''' = toInteger <$> (trace ("CHARCODES: "<>ppShow charCodes<>"\nparsed: "<>ppShow parsed<>"\nBYTES: "<>ppShow bytes<>"\nBYTES2: "<>ppShow bytes2<>"\nINPUT: "<>s) charCodes)
-  addr <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'''), [])]
+  let parser     = ReadP.readP_to_S $ ReadP.many $ ReadP.readS_to_P Char.readLitChar
+      parsed     = fst $ List.last $ parser s
+      asText     = Text.pack parsed
+      bs         = TextEncoding.encodeUtf8 asText
+      bytes      = ByteString.unpack bs
+      charCodes  = (fromEnum <$> bytes) ++ [0]
+      charCodes' = toInteger <$> charCodes
+  addr  <- call gcMalloc [(i64ConstOp (fromIntegral $ List.length charCodes'), [])]
   addr' <- addrspacecast addr stringType
-  let charCodesWithIds = List.zip charCodes''' [0..]
+
+  let charCodesWithIds = List.zip charCodes' [0..]
 
   Monad.foldM_ (storeChar addr') () charCodesWithIds
   return addr'

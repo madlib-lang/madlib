@@ -279,3 +279,15 @@ isSpread field = case field of
 hasSpread :: [Field] -> Bool
 hasSpread =
   any isSpread
+
+
+isNamedAbs :: Exp -> Bool
+isNamedAbs exp = case exp of
+  Canonical _ (Assignment _ (Canonical _ (Abs _ _))) ->
+    True
+
+  Canonical _ (Export (Canonical _ (Assignment _ (Canonical _ (Abs _ _))))) ->
+    True
+
+  _ ->
+    False
