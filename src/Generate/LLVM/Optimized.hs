@@ -117,6 +117,8 @@ data Exp_ = LNum String
           | App Exp Exp Bool
           | Access Exp Exp
           | Abs Name [Exp]
+          | TopLevelAbs Name ([Name], [Exp]) Exp
+          -- ^ name of the function | (params, body) of uncurried function | curried abs
           | Assignment Name Exp Bool
           | Export Exp
           | NameExport Name
@@ -169,6 +171,9 @@ isTopLevelFunction exp = case exp of
     True
 
   Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}) _)))) _) ->
+    True
+
+  Optimized _ _ TopLevelAbs{} ->
     True
 
   _ ->

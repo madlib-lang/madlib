@@ -17,6 +17,7 @@ import Data.Maybe
 import Debug.Trace
 import Text.Show.Pretty
 import Explain.Location
+import Generate.LLVM.Optimized (Exp_(TopLevelAbs))
 
 
 data OptimizationState
@@ -222,6 +223,40 @@ optimizeBody env body = case body of
       return $ exp' : next
 
 
+
+collectAbsParams :: Slv.Exp -> ([String], [Slv.Exp])
+collectAbsParams abs = case abs of
+  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) ->
+    let (nextParams, nextBody) = collectAbsParams body
+    in  (param : nextParams, nextBody)
+
+  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
+    ([param], body)
+
+  b ->
+    ([], [b])
+
+optimizeAbs :: Env -> String -> Slv.Exp -> Optimize Opt.Exp
+optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area (Slv.Abs (Slv.Solved _ _ param) body)) = do
+  let isTopLevel = stillTopLevel env
+  if isTopLevel then do
+    body' <- optimizeBody env { stillTopLevel = False } body
+    let (params, uncurriedBody) = collectAbsParams abs
+    uncurriedBody' <- optimizeBody env { stillTopLevel = False } uncurriedBody
+    return $ Opt.Optimized t area $ TopLevelAbs functionName (params, uncurriedBody') (Opt.Optimized t area (Opt.Abs param body'))-- $ Opt.Optimized t area (Opt.Abs param body')
+  else do
+    body'       <- optimizeBody env body
+    fvs         <- findFreeVars env abs
+    closureName <- generateClosureName
+
+    let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+    addTopLevelExp def
+
+    let vars = snd <$> fvs
+    let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+    return closure
+
+
 instance Optimizable Slv.Exp Opt.Exp where
   optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
   optimize env fullExp@(Slv.Solved qt@(_ :=> t) area e) = case e of
@@ -249,6 +284,19 @@ instance Optimizable Slv.Exp Opt.Exp where
       field' <- optimize env { stillTopLevel = False } field
       return $ Opt.Optimized t area (Opt.Access rec' field')
 
+    Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) -> do
+      optimizeAbs env name abs
+
+    Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))))) _ _ -> do
+      optimizeAbs env name abs
+
+    Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _ -> do
+      optimizeAbs env name abs
+
+    Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
+      optimizeAbs env name abs
+
+    -- unnamed abs, we need to generate a name here
     Slv.Abs (Slv.Solved _ _ param) body -> do
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
