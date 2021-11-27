@@ -37,7 +37,7 @@ showWith = (with, list) => {
 
 
 instance Show a => Show (List a) {
-  show = showWith(show)
+  show = (l) => showWith(show, l)
 }
 
 instance PrettyShow a => PrettyShow (List a) {
@@ -48,6 +48,26 @@ instance PrettyShow a => PrettyShow (List a) {
 instance Functor List {
   map = map_
 }
+
+
+// instance Applicative List {
+//   pure = (x) => [x]
+
+//   ap = (mf, ma) => pipe(
+//     map((f) => map(f, ma)),
+//     flatten
+//   )(mf)
+// }
+
+
+// instance Monad List {
+//   of = pure
+
+//   chain = (f, xs) => pipe(
+//     map(f),
+//     flatten
+//   )(xs)
+// }
 
 
 instance Semigroup (List a) {

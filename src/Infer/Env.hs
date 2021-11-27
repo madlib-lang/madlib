@@ -83,9 +83,9 @@ mergeEnv initial env = Env { envVars        = envVars initial <> envVars env
 initialEnv :: Env
 initialEnv = Env
   { envVars        = M.fromList
-                       [ ("=="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
+                       [ ("&&"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
+                      --  , ("=="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
                        , ("!="           , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
-                       , ("&&"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                        , ("||"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
                        , ("!"            , Forall [] $ [] :=> (tBool `fn` tBool))
                        , (">"            , Forall [Star] $ [] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
@@ -108,13 +108,29 @@ initialEnv = Env
                        , ("$"            , Forall [Star] $ [] :=> TGen 0)
                        , ("__dict_ctor__", Forall [Star, Star] $ [] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
                        ]
-                      --  Instance (Qual Pred) Vars
-  , envInterfaces = M.singleton "Number" (Interface [TV "a" Star] [] [Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tByte] Nothing) M.empty, Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty])
+  , envInterfaces = M.fromList
+      [ ("Number", Interface [TV "a" Star] []
+                    [ Instance ([] :=> IsIn "Number" [tFloat] Nothing) M.empty
+                    , Instance ([] :=> IsIn "Number" [tByte] Nothing) M.empty
+                    , Instance ([] :=> IsIn "Number" [tInteger] Nothing) M.empty
+                    ]
+        )
+      , ("Eq", Interface [TV "a" Star] []
+                [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tFloat] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tByte] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tStr] Nothing) M.empty
+                , Instance ([] :=> IsIn "Eq" [tBool] Nothing) M.empty
+                , Instance ([IsIn "Eq" [TVar (TV "a" Star)] Nothing] :=> IsIn "Eq" [tListOf (TVar (TV "a" Star))] Nothing) M.empty
+                ]
+        )
+      ]
   , envMethods = M.fromList
       [ ("+"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("-"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("*"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("unary-minus"  , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0))
+      , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
       ]
   , envCurrentPath = ""
   , envBacktrace   = mempty

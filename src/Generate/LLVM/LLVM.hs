@@ -213,9 +213,9 @@ malloc :: Operand
 malloc =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (AST.mkName "malloc"))
 
-strEq :: Operand
-strEq =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__streq__"))
+areStringsEqual :: Operand
+areStringsEqual =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__areStringsEqual__"))
 
 strConcat :: Operand
 strConcat =
@@ -876,6 +876,40 @@ generateExp env symbolTable exp = case exp of
   Optimized (_ InferredType.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
+      "==" -> case typingStr of
+        "Integer" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Byte" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "Float" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        "String" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
+          return (symbolTable, result, Nothing)
+
+        "Boolean" -> do
+          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args!!1)
+          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+          return (symbolTable, result, Nothing)
+
+        _ ->
+          undefined
+
       "+" -> case typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
@@ -1401,7 +1435,7 @@ generateBranchTest symbolTable pat value = case pat of
 
   Optimized _ _ (PStr s) -> do
     s' <- buildStr (List.init . List.tail $ s)
-    call strEq [(s', []), (value, [])]
+    call areStringsEqual [(s', []), (value, [])]
 
   Optimized _ _ PAny ->
     return true
@@ -1728,7 +1762,6 @@ buildDictValues symbolTable methodNames = case methodNames of
   (n : ns) ->
     case Map.lookup n symbolTable of
       Just (Symbol _ method) ->
-        -- This should be a PAP
         let methodType = typeOf method
             methodRef  = Constant.GlobalReference methodType (AST.mkName n)
             methodRef' = Constant.BitCast methodRef boxType
@@ -2004,70 +2037,113 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
 
 
 
-buildNumberModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
-buildNumberModule env currentModuleHashes initialSymbolTable = do
+buildRuntimeModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
+buildRuntimeModule env currentModuleHashes initialSymbolTable = do
+  externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+
+  -- Number Integer
   extern (AST.mkName "__addIntegers__")       [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__substractIntegers__") [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] (Type.ptr Type.i64)
   extern (AST.mkName "__numberToInteger__")   [boxType] boxType
 
+  -- Number Byte
   extern (AST.mkName "__addBytes__")          [boxType, boxType] (Type.ptr Type.i8)
   extern (AST.mkName "__substractBytes__")    [boxType, boxType] (Type.ptr Type.i8)
   extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] (Type.ptr Type.i8)
   extern (AST.mkName "__numberToByte__")      [boxType] boxType
 
+  -- Number Float
   extern (AST.mkName "__addFloats__")         [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__substractFloats__")   [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] (Type.ptr Type.double)
   extern (AST.mkName "__numberToFloat__")     [boxType] boxType
 
+  -- Eq
+  extern (AST.mkName "__eqInteger__")         [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqByte__")            [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqFloat__")           [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqString__")          [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqBoolean__")         [boxType, boxType] (Type.ptr Type.i1)
+  extern (AST.mkName "__eqList__")            [boxType, boxType, boxType] (Type.ptr Type.i1)
+
+      -- Number Integer
   let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__addIntegers__")
       substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__substractIntegers__")
       multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i64) [boxType, boxType] False) "__multiplyIntegers__")
       numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToInteger__")
 
+      -- Number Byte
       addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__addBytes__")
       substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__substractBytes__")
       multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType] False) "__multiplyBytes__")
       numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToByte__")
 
+      -- Number Float
       addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__addFloats__")
       substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__substractFloats__")
       multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.double) [boxType, boxType] False) "__multiplyFloats__")
       numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToFloat__")
 
+      -- Eq Integer
+      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+
+      -- Eq Byte
+      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+
+      -- Eq Float
+      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqInteger__")
+
+      -- Eq String
+      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqString__")
+
+      -- Eq Boolean
+      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType] False) "__eqBoolean__")
+
+      -- Eq List
+      eqList         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i1) [boxType, boxType, boxType] False) "__eqList__")
+
       symbolTableWithCBindings =
+        -- Number Float
         Map.insert "__addFloats__" (fnSymbol 2 addFloats)
         $ Map.insert "__substractFloats__" (fnSymbol 2 substractFloats)
         $ Map.insert "__multiplyFloats__" (fnSymbol 2 multiplyFloats)
         $ Map.insert "__numberToFloat__" (fnSymbol 1 numberToFloat)
 
+        -- Number Byte
         $ Map.insert "__addBytes__" (fnSymbol 2 addFloats)
         $ Map.insert "__substractBytes__" (fnSymbol 2 substractFloats)
         $ Map.insert "__multiplyBytes__" (fnSymbol 2 multiplyFloats)
         $ Map.insert "__numberToByte__" (fnSymbol 1 numberToFloat)
 
+        -- Number Integer
         $ Map.insert "__numberToInteger__" (fnSymbol 1 numberToInteger)
         $ Map.insert "__addIntegers__" (fnSymbol 2 addIntegers)
         $ Map.insert "__substractIntegers__" (fnSymbol 2 substractIntegers)
-        $ Map.insert "__multiplyIntegers__" (fnSymbol 2 multiplyIntegers) initialSymbolTable
+        $ Map.insert "__multiplyIntegers__" (fnSymbol 2 multiplyIntegers)
 
-      numberType           = InferredType.TVar (InferredType.TV "a" InferredType.Star)
-      numberPred           = InferredType.IsIn "Number" [numberType] Nothing
-      numberQualType       = [numberPred] InferredType.:=> numberType
-      addNumbersType       = numberType `InferredType.fn` numberType `InferredType.fn` numberType
-      addNumbersQualType   = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` numberType)
-      coerceNumberType     = numberType `InferredType.fn` numberType
-      coerceNumberQualType = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType)
-      addIntegersType      = InferredType.tInteger `InferredType.fn` InferredType.tInteger `InferredType.fn` InferredType.tInteger
+        -- Eq
+        $ Map.insert "__eqInteger__" (fnSymbol 2 eqInteger)
+        $ Map.insert "__eqByte__" (fnSymbol 2 eqByte)
+        $ Map.insert "__eqFloat__" (fnSymbol 2 eqFloat)
+        $ Map.insert "__eqString__" (fnSymbol 2 eqString)
+        $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
+        $ Map.insert "__eqList__" (fnSymbol 3 eqList) initialSymbolTable
+
+      numberType              = InferredType.TVar (InferredType.TV "a" InferredType.Star)
+      numberPred              = InferredType.IsIn "Number" [numberType] Nothing
+      numberQualType          = [numberPred] InferredType.:=> numberType
+      numberOperationQualType = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType `InferredType.fn` numberType)
+      coerceNumberQualType    = [numberPred] InferredType.:=> (numberType `InferredType.fn` numberType)
 
   let integerNumberInstance =
         Untyped emptyArea
           ( Instance "Number" [] "Integer"
               (Map.fromList
                 [ ( "+"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__addIntegers__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2076,8 +2152,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "-"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__substractIntegers__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2086,8 +2162,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "*"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__multiplyIntegers__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyIntegers__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2113,8 +2189,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
           ( Instance "Number" [] "Byte"
               (Map.fromList
                 [ ( "+"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__addBytes__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2123,8 +2199,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "-"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__substractBytes__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2133,8 +2209,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "*"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__multiplyBytes__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyBytes__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2160,8 +2236,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
           ( Instance "Number" [] "Float"
               (Map.fromList
                 [ ( "+"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__addFloats__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2170,8 +2246,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "-"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__substractFloats__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2180,8 +2256,8 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                     )
                   )
                 , ( "*"
-                  , ( Optimized addNumbersQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized addNumbersQualType emptyArea (Var "__multiplyFloats__")) [
+                  , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyFloats__")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2201,7 +2277,138 @@ buildNumberModule env currentModuleHashes initialSymbolTable = do
                 ]
               )
           )
-  symbolTable'  <- generateInstances env symbolTableWithCBindings [integerNumberInstance, byteNumberInstance, floatNumberInstance]
+
+  let varType             = InferredType.TVar (InferredType.TV "a" InferredType.Star)
+      eqPred              = InferredType.IsIn "Eq" [varType] Nothing
+      eqVarQualType       = [eqPred] InferredType.:=> varType
+      eqOperationQualType = [eqPred] InferredType.:=> (varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool)
+
+      integerEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "Integer"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+      byteEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "Byte"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+      floatEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "Float"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+      stringEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "String"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+      booleanEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "Boolean"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+
+      dictType   = InferredType.TVar (InferredType.TV "dict" InferredType.Star)
+      listEqType = dictType `InferredType.fn` varType `InferredType.fn` varType `InferredType.fn` InferredType.tBool
+      listEqQualType = [eqPred] InferredType.:=> listEqType
+
+      listEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [InferredType.IsIn "Eq" [InferredType.TVar (InferredType.TV "a" InferredType.Star)] Nothing] "List"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized listEqQualType emptyArea (TopLevelAbs "+" ["eqDict", "a", "b"] [
+                        Optimized eqVarQualType emptyArea (App (Optimized listEqQualType emptyArea (Var "__eqList__")) [
+                          Optimized ([] InferredType.:=> dictType) emptyArea (Var "eqDict"),
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , InferredType.Forall [InferredType.Star] $ [InferredType.IsIn "Eq" [InferredType.TGen 0] Nothing] InferredType.:=> (InferredType.TGen 0 `InferredType.fn` InferredType.TGen 0 `InferredType.fn` InferredType.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
+  generateInstances
+    env
+    symbolTableWithCBindings
+    [ integerNumberInstance
+    , byteNumberInstance
+    , floatNumberInstance
+    , integerEqInstance
+    , floatEqInstance
+    , stringEqInstance
+    , booleanEqInstance
+    , listEqInstance
+    ]
   return ()
 
 
@@ -2221,7 +2428,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
   extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
-  extern (AST.mkName "__streq__")              [stringType, stringType] Type.i1
+  extern (AST.mkName "__areStringsEqual__")    [stringType, stringType] Type.i1
   extern (AST.mkName "__strConcat__")          [stringType, stringType] stringType
   extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
   extern (AST.mkName "MadList_hasLength")      [Type.double, listType] Type.i1
@@ -2307,9 +2514,9 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildNumberModule Env { dictionaryIndices = Map.empty, isLast = False } [] symbolTable)
+    let (numbersModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildRuntimeModule Env { dictionaryIndices = Map.empty, isLast = False } [] symbolTable)
         numbersModulePath = joinPath [takeDirectory entrypoint, "default", "numbers.mad"]
-        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("__coerceNumber__", (3, 1))]) ]
+        dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("__coerceNumber__", (3, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
         (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
     in  Map.insert numbersModulePath numbersModule moduleTable
 

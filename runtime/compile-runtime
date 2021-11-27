@@ -12,6 +12,7 @@ clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o"
 clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
 clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}numbers.o" "${SRC_DIR}numbers.cpp"
 clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
+clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
 clang++ -g -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
 
 rm -f "$LIB_TARGET"
@@ -21,6 +22,7 @@ llvm-ar-9 rc "$LIB_TARGET"\
     "${BUILD_DIR}record.o"\
     "${BUILD_DIR}numbers.o"\
     "${BUILD_DIR}string.o"\
+    "${BUILD_DIR}boolean.o"\
     "${BUILD_DIR}show.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}apply-pap.o"\

@@ -718,13 +718,19 @@ tryDefaults env ps = case ps of
       let s = M.singleton tv tInteger
       return (nextSubst `compose` s, nextPS)
 
-    IsIn _ [TCon _ _] _ -> do
-      tryDefaults env next
+    -- IsIn _ [TCon _ _] _ -> do
+    --   tryDefaults env next
 
     _ -> do
       (nextSubst, nextPS) <- tryDefaults env next
-      catchError (findInst env p >> return (nextSubst, nextPS)) (\_ -> return (nextSubst, p : nextPS))
-      -- return (nextSubst, p : nextPS)
+      maybeFound <- findInst env p
+      case maybeFound of
+        Just _ ->
+          return (nextSubst, nextPS)
+
+        Nothing ->
+          return (nextSubst, p : nextPS)
+      -- catchError (findInst env p >> return (nextSubst, nextPS)) (\_ -> return (nextSubst, p : nextPS))
 
   [] ->
     return (M.empty, [])
@@ -803,15 +809,13 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     else do
       return (ds ++ rs, M.empty)
 
-  let sc  = if isLet then Forall [] $ ds' :=> apply sDefaults t' else quantify fs $ ds' :=> apply sDefaults t'
-
   let ds'' = dedupePreds ds'
 
+  let sc  = if isLet then Forall [] $ ds'' :=> apply sDefaults t' else quantify fs $ ds'' :=> apply sDefaults t'
+
   case Can.getExpName exp of
-    -- Just n  -> return (sDefaults `compose` s'', (ds', ps'), extendVars env' (n, sc), updateQualType e (ds :=> t'))
     Just n  -> return (sDefaults `compose` s'', (ds'', ds''), extendVars env' (n, sc), updateQualType e (ds'' :=> apply sDefaults t'))
 
-    -- Nothing -> return (sDefaults `compose` s'', (ds', ps'), env', updateQualType e (ds :=> t'))
     Nothing -> return (sDefaults `compose` s'', (ds'', ds''), env', updateQualType e (ds'' :=> apply sDefaults t'))
 
 

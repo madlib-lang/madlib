@@ -8,6 +8,7 @@ extern "C" {
 
 
 
+// instance Number Byte
 
 unsigned char* __numberToByte__(int64_t *a) {
   unsigned char *result = (unsigned char*) malloc(sizeof(unsigned char));
@@ -34,6 +35,8 @@ unsigned char *__multiplyBytes__(unsigned char *a, unsigned char *b) {
 }
 
 
+// instance Number Float
+
 double* __numberToFloat__(int64_t *a) {
   double *result = (double*) malloc(sizeof(double));
   *result = (double) *a;
@@ -59,6 +62,8 @@ double *__multiplyFloats__(double *a, double *b) {
 }
 
 
+// instance Number Integer
+
 int64_t* __numberToInteger__(int64_t *a) {
   int64_t *result = (int64_t*) malloc(sizeof(double));
   *result = (int64_t) *a;
@@ -80,6 +85,29 @@ int64_t *__substractIntegers__(int64_t *a, int64_t *b) {
 int64_t *__multiplyIntegers__(int64_t *a, int64_t *b) {
   int64_t *boxed = (int64_t*) GC_malloc(sizeof(int64_t));
   *boxed = *a * *b;
+  return boxed;
+}
+
+
+// instance Eq Integer
+
+bool *__eqInteger__(int64_t *a, int64_t *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a == *b;
+  return boxed;
+}
+
+
+bool *__eqByte__(unsigned char *a, unsigned char *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a == *b;
+  return boxed;
+}
+
+
+bool *__eqFloat__(double *a, double *b) {
+  bool *boxed = (bool*) GC_malloc(sizeof(bool));
+  *boxed = *a == *b;
   return boxed;
 }
 

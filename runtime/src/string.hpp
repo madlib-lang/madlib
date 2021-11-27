@@ -2,7 +2,9 @@
 extern "C" {
 #endif
 
-bool __streq__(char *s1, char *s2);
+bool *__eqString__(char **s1, char **s2);
+
+bool __areStringsEqual__(char *s1, char *s2);
 
 double *__strLength__(char *s);
 
