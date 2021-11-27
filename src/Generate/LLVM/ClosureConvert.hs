@@ -78,6 +78,9 @@ findFreeVars env exp = do
     Slv.Solved _ _ (Slv.Var "+") ->
       return []
 
+    Slv.Solved _ _ (Slv.Var "++") ->
+      return []
+
     Slv.Solved _ _ (Slv.Var "-") ->
       return []
 
@@ -104,8 +107,25 @@ findFreeVars env exp = do
       return [(n, var')]
 
     Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
-      vars <- concat <$> mapM (findFreeVars env) body
+      vars <- findFreeVarsInBody env body
       return $ filter (\(varName, _) -> varName /= param) vars
+      where
+        findFreeVarsInBody :: Env -> [Slv.Exp] -> Optimize [(String, Opt.Exp)]
+        findFreeVarsInBody env exps = case exps of
+          (e : es) -> case e of
+            Slv.Solved _ _ (Slv.Assignment name exp) -> do
+              fvs     <- findFreeVars (addGlobalFreeVar name env) exp
+              -- nextFVs <- findFreeVarsInBody env es
+              nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
+              return $ fvs ++ nextFVs
+
+            _ -> do
+              fvs     <- findFreeVars env e
+              nextFVs <- findFreeVarsInBody env es
+              return $ fvs ++ nextFVs
+
+          [] ->
+            return []
 
     Slv.Solved _ _ (Slv.App f arg _) -> do
       fFreeVars   <- findFreeVars env f
@@ -149,9 +169,6 @@ findFreeVars env exp = do
               dictName = "$" <> interface <> "$" <> tsStr
           return ([(dictName, Opt.Optimized (tVar "dict") area (Opt.Var dictName))], [methodName])
 
-        -- (Slv.MethodRef interface methodName False, ts) -> do
-        --   return ([], [methodName])
-
         _ ->
           return ([], [])
       expVars <- findFreeVars env exp
@@ -161,6 +178,7 @@ findFreeVars env exp = do
       return []
 
   let globalVars = freeVars env ++ M.keys (lifted env)
+  -- TODO: that line here fucks up with placeholders
   let fvs' = M.toList $ M.fromList fvs
 
   return $ filter (\(varName, _) -> varName `notElem` globalVars) fvs'
@@ -223,13 +241,19 @@ optimizeBody env body = case body of
   (exp : es) -> case exp of
     Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
       exp' <- optimizeAbs env name abs
-      next <- optimizeBody env es
+      next <- optimizeBody (addGlobalFreeVar name env) es
       return $ exp' : next
 
     Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
       exp' <- optimizeAbs env name abs
-      next <- optimizeBody env es
+      next <- optimizeBody (addGlobalFreeVar name env) es
       return $ exp' : next
+
+    Slv.Solved _ _ (Slv.Assignment name e) -> do
+      e'   <- optimize env exp
+      next <- optimizeBody env es
+      -- next <- optimizeBody (addGlobalFreeVar name env) es
+      return $ e' : next
 
     _ -> do
       exp' <- optimize env exp
@@ -247,18 +271,18 @@ collectAbsParams abs = case abs of
   Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
     ([param], body)
 
-  -- Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ _, ts) next) ->
-  --   let (nextParams, nextBody) = collectAbsParams next
-  --       tsStr = buildTypeStrForPlaceholder ts
-  --   in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
-
   b ->
     ([], [b])
 
 collectPlaceholderParams :: Slv.Exp -> ([String], Slv.Exp)
-collectPlaceholderParams ph = case ph of
+collectPlaceholderParams ph =
+  let (params, body) = collectPlaceholderParams' ph
+  in  (S.toList $ S.fromList params, body)
+
+collectPlaceholderParams' :: Slv.Exp -> ([String], Slv.Exp)
+collectPlaceholderParams' ph = case ph of
   Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ True, ts) next) ->
-    let (nextParams, nextBody) = collectPlaceholderParams next
+    let (nextParams, nextBody) = collectPlaceholderParams' next
         tsStr = buildTypeStrForPlaceholder ts
     in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
 
@@ -387,14 +411,41 @@ instance Optimizable Slv.Exp Opt.Exp where
         in  return $ Opt.Optimized t area (Opt.App functionNode fvVarNodes)
 
 
-    Slv.Assignment functionName ph@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ _ _), ts) exp)) -> do
+    Slv.Assignment functionName ph@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ False _), ts) exp)) -> do
       let tsStr = buildTypeStrForPlaceholder ts
-      -- let isTopLevel = stillTopLevel env
-      -- if isTopLevel then do
-      let (params, innerExp)   = collectPlaceholderParams ph
-      let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
-      innerExp' <- optimize env innerExp
-      return $ Opt.Optimized typeWithPlaceholders area $ TopLevelAbs functionName params [innerExp']
+      let isTopLevel = stillTopLevel env
+      if isTopLevel then do
+        let (params, innerExp)   = collectPlaceholderParams ph
+        let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
+        innerExp' <- optimize env { stillTopLevel = False } (trace ("INNER EXP: "<>ppShow innerExp) innerExp)
+        return $ Opt.Optimized typeWithPlaceholders area $ TopLevelAbs functionName params [innerExp']
+      else do
+        let (dictParams, innerExp) = collectPlaceholderParams ph
+        fvs           <- findFreeVars (addGlobalFreeVar functionName env) innerExp
+        functionName' <- generateLiftedName functionName
+        innerExp'     <- optimize (addLiftedLambda functionName functionName' (snd <$> fvs) env) innerExp
+
+        -- Not sure about this, but for now we collect placeholders two times, so probably we should not
+        -- collect them separately and just get them from the free vars.
+        let fvsWithoutDictionary = filter (not . (`elem` dictParams) . fst) fvs
+        let paramsWithFreeVars   = (fst <$> fvsWithoutDictionary) ++ dictParams
+        -- let paramsWithFreeVars = S.toList $ S.fromList $ (fst <$> fvs) ++ dictParams
+
+        let liftedType = foldr fn t (Opt.getType . snd <$> fvs)
+        let lifted = Opt.Optimized liftedType area (Opt.TopLevelAbs functionName' paramsWithFreeVars [innerExp'])
+        addTopLevelExp lifted
+
+        let functionNode = Opt.Optimized t area (Opt.Var functionName')
+
+
+        -- return $ Opt.Optimized t area (Opt.Assignment functionName functionNode False)
+        if null fvsWithoutDictionary then
+          return $ Opt.Optimized t area (Opt.Assignment functionName functionNode False)
+        else
+          -- We need to carry types here
+          let fvVarNodes = snd <$> fvsWithoutDictionary
+          in  return $ Opt.Optimized t area (Opt.Assignment functionName (Opt.Optimized t area (Opt.App functionNode fvVarNodes)) False)
+
 
       -- else do
       --   exp'            <- optimize env exp
