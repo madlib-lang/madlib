@@ -1,7 +1,7 @@
 #include <gc.h>
 #include <iostream>
 
-#include "apply-pap.hpp"
+#include "list.hpp"
 
 
 // List
@@ -9,12 +9,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct MadListNode {
-  void *value;
-  struct MadListNode *next;
-} MadListNode_t;
-
 
 
 MadListNode_t *Madlist_empty() {
@@ -43,17 +37,12 @@ int64_t MadList_length(MadListNode_t *list) {
 }
 
 
-
-typedef struct EqDictionary {
-  PAP_t eq;
-} EqDictionary_t;
-
 bool *__eqList__(EqDictionary_t* eqDict, MadListNode **l1, MadListNode **l2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
 
   int64_t l1Length = MadList_length(*l1);
   int64_t l2Length = MadList_length(*l2);
-  
+
   if (l1Length != l2Length) {
     *boxed = false;
   } else {
