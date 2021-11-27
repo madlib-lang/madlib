@@ -189,8 +189,9 @@ buildLLVMType t = case t of
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(->)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") left) right ->
     let tLeft  = buildLLVMType left
         tRight = buildLLVMType right
+    in  Type.ptr $ Type.FunctionType boxType [boxType] False
     -- in  Type.ptr $ Type.FunctionType tRight [tLeft] False
-    in  boxType
+    -- in  boxType
 
   InferredType.TApp (InferredType.TApp (InferredType.TCon (InferredType.TC "(,)" (InferredType.Kfun InferredType.Star (InferredType.Kfun InferredType.Star InferredType.Star))) "prelude") a) b ->
     let tA = buildLLVMType a
@@ -220,8 +221,8 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr Type.i1
     load ptr 8
 
-  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
-    bitcast what listType
+  -- InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
+  --   bitcast what listType
 
   -- TODO: check that we need this
   -- This should be called for parameters that are closures
@@ -662,23 +663,25 @@ generateExp symbolTable exp = case exp of
     envItems <- mapM (generateExp symbolTable) env
     envItems' <- mapM (box . snd) envItems
     let envWithIds = List.zip envItems' [0..]
-    let envType = Type.StructureType False (typeOf <$> envItems')
-    env' <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-    env'' <- bitcast env' (Type.ptr envType)
-    Monad.foldM_ (storeItem env'') () envWithIds
 
-    -- let envType = Type.StructureType False (List.replicate 5 boxType)
-    -- (size, env') <- case Map.lookup "__current_env__" symbolTable of
-    --   Just (Symbol (EnvSymbol size) found) ->
-    --     return (size, found)
 
-    --   Nothing -> do
-    --     -- if there's no env yet we allocate a new one
-    --     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-    --     return (0, ptr)
+    -- let envType = Type.StructureType False (typeOf <$> envItems')
+    -- env' <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
     -- env'' <- bitcast env' (Type.ptr envType)
+    -- Monad.foldM_ (storeItem env'') () envWithIds
+
+    let envType = Type.StructureType False (List.replicate 5 boxType)
+    (size, env') <- case Map.lookup "__current_env__" symbolTable of
+      Just (Symbol (EnvSymbol size) found) ->
+        return (size, found)
+
+      Nothing -> do
+        -- if there's no env yet we allocate a new one
+        ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
+        return (0, ptr)
+    env'' <- bitcast env' (Type.ptr envType)
     
-    -- Monad.when (size /= List.length env) $ Monad.foldM_ (storeItem env'') () envWithIds
+    Monad.when (size /= List.length env) $ Monad.foldM_ (storeItem env'') () envWithIds
 
     let f = case Map.lookup name symbolTable of
           Just (Symbol _ f') ->
@@ -974,6 +977,29 @@ collectDictParams exp = case exp of
 --     error $ "unhandled function!\n\n" <> ppShow abs
 
 
+generateUncurriedExternFunction :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> InferredType.Type -> String -> Int -> Operand -> m SymbolTable
+generateUncurriedExternFunction symbolTable t functionName paramCount foreignFn = do
+  let paramTypes    = InferredType.getParamTypes t
+      params'       = List.replicate paramCount (boxType, NoParameterName)
+      functionName' = AST.mkName $ functionName ++ "$uncurried"
+
+  uncurriedFunction <- function functionName' params' boxType $ \params -> mdo
+    let typesWithParams = List.zip paramTypes params
+    unboxedParams <- mapM (uncurry unbox) typesWithParams
+
+    -- Generate body
+    result <- call foreignFn ((, []) <$> params)
+
+    -- box the result
+    boxed <- box result
+    ret boxed
+
+  let (Just (Symbol _ closure)) = Map.lookup functionName symbolTable
+      symbolWithUncurried = Symbol (WithExtraUncurried uncurriedFunction paramCount) closure
+
+  return $ Map.insert functionName symbolWithUncurried symbolTable
+
+
 generateClosuresForExtern :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> String -> [InferredType.Type] -> Int -> Int -> [InferredType.Type] -> Operand -> m SymbolTable
 generateClosuresForExtern symbolTable name allParamTypes paramIndex lastIndex paramTypes foreignFn = case paramTypes of
   (t : ts) -> do
@@ -994,8 +1020,8 @@ generateClosuresForExtern symbolTable name allParamTypes paramIndex lastIndex pa
       let nextEnvArgs = envArgs ++ [explicitParam]
 
       if paramIndex == lastIndex then do
-        args <- Monad.zipWithM unbox allParamTypes nextEnvArgs
-        result <- call foreignFn ((, []) <$> args)
+        -- args <- Monad.zipWithM unbox allParamTypes nextEnvArgs
+        result <- call foreignFn ((, []) <$> nextEnvArgs)
 
         boxed <- box result
         ret boxed
@@ -1082,12 +1108,16 @@ generateTopLevelFunction symbolTable topLevelFunction = case topLevelFunction of
 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) -> do
     let paramTypes  = InferredType.getParamTypes t
-        paramTypes' = buildLLVMType <$> paramTypes
+        paramTypes' = boxType <$ paramTypes
+        -- paramTypes' = buildLLVMType <$> paramTypes
         returnType  = InferredType.getReturnType t
-        returnType' = buildLLVMType returnType
+        returnType' = boxType
+        -- returnType' = buildLLVMType returnType
 
     ext <- extern (AST.mkName originalName) paramTypes' returnType'
-    generateClosuresForExtern symbolTable name paramTypes 0 (List.length paramTypes - 1) paramTypes ext
+    symbolTable' <- generateClosuresForExtern symbolTable name paramTypes 0 (List.length paramTypes - 1) paramTypes ext
+    generateUncurriedExternFunction symbolTable' t name (List.length paramTypes) ext
+
 
 
   _ ->
@@ -1112,8 +1142,11 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
     in  Map.insert fnName (Symbol (WithExtraUncurried uncurriedFnRef (List.length uncurriedParams)) closureRef) symbolTable
 
   Optimized _ _ (Extern (_ InferredType.:=> t) name originalName) ->
-    let globalRef = Operand.ConstantOperand (Constant.GlobalReference emptyClosureType (AST.mkName name))
-    in  Map.insert name (fnSymbol globalRef) symbolTable
+    let closureRef = Operand.ConstantOperand (Constant.GlobalReference emptyClosureType (AST.mkName name))
+        paramCount = List.length $ InferredType.getParamTypes t
+        uncurriedFnType = Type.ptr $ Type.FunctionType boxType (List.replicate paramCount boxType) False
+        uncurriedFnRef = Operand.ConstantOperand (Constant.GlobalReference uncurriedFnType (AST.mkName (name ++ "$uncurried")))
+    in  Map.insert name (Symbol (WithExtraUncurried uncurriedFnRef paramCount) closureRef) symbolTable
 
   Optimized _ _ (ClosureDef name closured _ _) ->
     let closureDefType = Type.ptr $ Type.FunctionType boxType [boxType, boxType] False
