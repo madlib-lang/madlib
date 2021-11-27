@@ -144,7 +144,7 @@ Right
                                                                       "(->)"
                                                                       (Kfun Star (Kfun Star Star)))
                                                                    "prelude")
-                                                                (TVar (TV "i8" Star)))
+                                                                (TCon (TC "Number" Star) "prelude"))
                                                              (TApp
                                                                 (TApp
                                                                    (TCon
@@ -153,7 +153,8 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "i8" Star)))
+                                                                   (TCon
+                                                                      (TC "Number" Star) "prelude"))
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 85 4 21) (Loc 86 4 22))
@@ -322,7 +323,7 @@ Right
                                                              (TC
                                                                 "(->)" (Kfun Star (Kfun Star Star)))
                                                              "prelude")
-                                                          (TVar (TV "q16" Star)))
+                                                          (TCon (TC "Number" Star) "prelude"))
                                                        (TApp
                                                           (TApp
                                                              (TCon
@@ -330,7 +331,7 @@ Right
                                                                    "(->)"
                                                                    (Kfun Star (Kfun Star Star)))
                                                                 "prelude")
-                                                             (TVar (TV "q16" Star)))
+                                                             (TCon (TC "Number" Star) "prelude"))
                                                           (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 157 6 23) (Loc 159 6 25))
                                                   (Var "=="))

@@ -200,16 +200,16 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
   Slv.App abs arg final -> do
     abs' <- updatePlaceholders env push s abs
     arg' <- updatePlaceholders env push s arg
-    return $ Slv.Solved qt a $ Slv.App abs' arg' final
+    return $ Slv.Solved (apply s qt) a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    let param' = Slv.Solved paramType paramArea param
-    return $ Slv.Solved qt a $ Slv.Abs param' es'
+    let param' = Slv.Solved (apply s paramType) paramArea param
+    return $ Slv.Solved (apply s qt) a $ Slv.Abs param' es'
 
   Slv.Do exps -> do
     exps' <- mapM (updatePlaceholders env push s) exps
-    return $ Slv.Solved qt a $ Slv.Do exps'
+    return $ Slv.Solved (apply s qt) a $ Slv.Do exps'
 
   Slv.Where exp iss -> do
     exp' <- updatePlaceholders env push s exp
@@ -218,44 +218,44 @@ updatePlaceholders env push s fullExp@(Slv.Solved qt a e) = case e of
 
   Slv.Assignment n exp -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved qt a $ Slv.Assignment n exp'
+    return $ Slv.Solved (apply s qt) a $ Slv.Assignment n exp'
 
   Slv.ListConstructor li -> do
     li' <- mapM (updateListItem s) li
-    return $ Slv.Solved qt a $ Slv.ListConstructor li'
+    return $ Slv.Solved (apply s qt) a $ Slv.ListConstructor li'
 
   Slv.TypedExp exp typing sc -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved qt a $ Slv.TypedExp exp' typing sc
+    return $ Slv.Solved (apply s qt) a $ Slv.TypedExp exp' typing sc
 
   Slv.Export exp -> do
     exp' <- updatePlaceholders env push s exp
-    return $ Slv.Solved qt a $ Slv.Export exp'
+    return $ Slv.Solved (apply s qt) a $ Slv.Export exp'
 
   Slv.If econd eif eelse -> do
     econd' <- updatePlaceholders env push s econd
     eif'   <- updatePlaceholders env push s eif
     eelse' <- updatePlaceholders env push s eelse
-    return $ Slv.Solved qt a $ Slv.If econd' eif' eelse'
+    return $ Slv.Solved (apply s qt) a $ Slv.If econd' eif' eelse'
 
   Slv.TupleConstructor es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    return $ Slv.Solved qt a $ Slv.TupleConstructor es'
+    return $ Slv.Solved (apply s qt) a $ Slv.TupleConstructor es'
 
   Slv.TemplateString es -> do
     es' <- mapM (updatePlaceholders env push s) es
-    return $ Slv.Solved qt a $ Slv.TemplateString es'
+    return $ Slv.Solved (apply s qt) a $ Slv.TemplateString es'
 
   Slv.Access rec field -> do
     rec'   <- updatePlaceholders env push s rec
     field' <- updatePlaceholders env push s field
-    return $ Slv.Solved qt a $ Slv.Access rec' field'
+    return $ Slv.Solved (apply s qt) a $ Slv.Access rec' field'
 
   Slv.Record fields -> do
     fields' <- mapM (updateField s) fields
-    return $ Slv.Solved qt a $ Slv.Record fields'
+    return $ Slv.Solved (apply s qt) a $ Slv.Record fields'
 
-  _ -> return $ Slv.Solved qt a e
+  _ -> return $ Slv.Solved (apply s qt) a e
  where
   updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
   updateIs s (Slv.Solved t a is) = case is of

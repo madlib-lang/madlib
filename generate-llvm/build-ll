@@ -1,1 +1,4 @@
 llvm-as-9 "$1.ll" -o "$1.bc"
+llc-9 -filetype=obj "$1.bc" -o "$1.o"
+clang++ -g -stdlib=libc++ -v "$1.o" -o "$1.out"
+
