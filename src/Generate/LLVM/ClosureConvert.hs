@@ -168,108 +168,24 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.Access rec' field')
 
     Slv.Abs (Slv.Solved _ _ param) body -> do
-      processAbs env True fullExp
-      where
-        processAbs :: Env -> Bool -> Slv.Exp -> Optimize Opt.Exp
-        processAbs env isTop exp = case exp of
-          Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
-            if isTop then do
-              body' <- case body of
-                [abs@(Slv.Solved _ _ Slv.Abs{})] -> do
-                  next <- processAbs env False abs
-                  return [next]
+      let isTopLevel = stillTopLevel env
+      if isTopLevel then do
+        body' <- mapM (optimize (env { stillTopLevel = False })) body
+        return $ Opt.Optimized t area (Opt.Abs param body')
+      else do
+        body'       <- mapM (optimize env) body
+        fvs         <- findFreeVars env fullExp
+        closureName <- generateClosureName
+        let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
+        addTopLevelExp def
 
-                _ ->
-                  mapM (optimize (env { stillTopLevel = False })) body
-              fnName <- generateClosureName
-              addTopLevelExp $ Opt.Optimized t area (Opt.Assignment fnName (Opt.Optimized t area (Opt.Abs param body')))
-              let anonymousAbs = Opt.Optimized t area (Opt.AnonymousAbs fnName)
-              return anonymousAbs
+        let vars = snd <$> fvs
+        let closure = Opt.Optimized t area (Opt.Closure closureName vars)
+        return closure
 
-            else do
-              body'       <- mapM (optimize env) body
-              fvs         <- findFreeVars env fullExp
-              closureName <- generateClosureName
-              let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-              addTopLevelExp def
-
-              let vars = snd <$> fvs
-              let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-              return closure
-      -- let isTopLevel = stillTopLevel env
-      -- if isTopLevel then do
-      --   body' <- mapM (optimize (env { stillTopLevel = False })) body
-      --   return $ Opt.Optimized t area (Opt.Abs param body')
-      -- else do
-      --   body'       <- mapM (optimize env) body
-      --   fvs         <- findFreeVars env fullExp
-      --   closureName <- generateClosureName
-      --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-      --   addTopLevelExp def
-
-      --   let vars = snd <$> fvs
-      --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-      --   return closure
-    -- Slv.Abs (Slv.Solved _ _ param) body -> do
-    --   body'       <- mapM (optimize env) body
-    --   fvs         <- findFreeVars env fullExp
-    --   closureName <- generateClosureName
-    --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-    --   addTopLevelExp def
-
-    --   let vars = snd <$> fvs
-    --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-    --   return closure
-
-    Slv.Assignment name exp -> case exp of
-      Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
-        processAbs env True fullExp
-        where
-          processAbs :: Env -> Bool -> Slv.Exp -> Optimize Opt.Exp
-          processAbs env isTop exp = case exp of
-            Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
-              let isTopLevel = stillTopLevel env
-              if isTop then do
-                body' <- case body of
-                  [abs@(Slv.Solved _ _ Slv.Abs{})] -> do
-                    next <- processAbs env False abs
-                    return [next]
-
-                  _ ->
-                    mapM (optimize (env { stillTopLevel = False })) body
-                fnName <- generateClosureName
-                addTopLevelExp $ Opt.Optimized t area (Opt.Assignment fnName (Opt.Optimized t area (Opt.Abs param body')))
-                let anonymousAbs = Opt.Optimized t area (Opt.AnonymousAbs fnName)
-                return anonymousAbs
-
-              else do
-                body'       <- mapM (optimize env) body
-                fvs         <- findFreeVars env fullExp
-                closureName <- generateClosureName
-                let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-                addTopLevelExp def
-
-                let vars = snd <$> fvs
-                let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-                return closure
-        -- let isTopLevel = stillTopLevel env
-        -- if isTopLevel then do
-        --   body' <- mapM (optimize (env { stillTopLevel = False })) body
-        --   return $ Opt.Optimized t area (Opt.Abs param body')
-        -- else do
-        --   body'       <- mapM (optimize env) body
-        --   fvs         <- findFreeVars env fullExp
-        --   closureName <- generateClosureName
-        --   let def = Opt.Optimized t area (Opt.ClosureDef closureName (snd <$> fvs) param body')
-        --   addTopLevelExp def
-
-        --   let vars = snd <$> fvs
-        --   let closure = Opt.Optimized t area (Opt.Closure closureName vars)
-        --   return closure
-
-      _ -> do
-        exp' <- optimize env exp
-        return $ Opt.Optimized t area (Opt.Assignment name exp')
+    Slv.Assignment name exp -> do
+      exp' <- optimize env exp
+      return $ Opt.Optimized t area (Opt.Assignment name exp')
 
     Slv.Export exp -> do
       exp' <- optimize env exp

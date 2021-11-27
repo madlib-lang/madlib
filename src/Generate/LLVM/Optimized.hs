@@ -131,7 +131,6 @@ data Exp_ = LNum String
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
           | Closure Name [Exp]
-          | AnonymousAbs Name
           | ClosureDef Name [Exp] Name [Exp]
           -- ^ Closure name | env ( Only Var exps ) | param | body
           deriving(Eq, Show, Ord)
