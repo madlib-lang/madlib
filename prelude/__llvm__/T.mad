@@ -193,3 +193,9 @@ IO.prettyLog(cmp({ name: "John" }, { name: "John" }))
 
 IO.prettyLog("ok" != "ok")
 IO.prettyLog("ok" != "ok2")
+
+
+IO.prettyLog(#[1, 2] == #[1, 2])
+IO.prettyLog(#[1, 2, 3, 4, 5] == #[1, 2, 3, 4, 5])
+IO.prettyLog(#[1, 2, 3] == #[1, 2, 7])
+IO.prettyLog(#["1", "2", "8"] == #["1", "2", "8"])
