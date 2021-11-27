@@ -221,8 +221,8 @@ unbox t what = case t of
     ptr <- bitcast what $ Type.ptr Type.i1
     load ptr 8
 
-  -- InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
-  --   bitcast what listType
+  InferredType.TApp (InferredType.TCon (InferredType.TC "List" _) _) vt ->
+    bitcast what listType
 
   -- TODO: check that we need this
   -- This should be called for parameters that are closures
@@ -366,18 +366,20 @@ generateExp symbolTable exp = case exp of
   Optimized ty _ (Assignment name e isTopLevel) -> do
     (symbolTable', exp') <- generateExp symbolTable e
 
-    Monad.when isTopLevel $ do
+    if isTopLevel then do
       let t = case typeOf exp' of
             t'@Type.PointerType{} ->
               t'
 
             t' ->
               Type.ptr t'
-      -- Only do this for top level stuff
-      g <- global (AST.mkName name) (typeOf exp') $ Constant.Undef (typeOf exp')
-      store g 8 exp'
 
-    return (Map.insert name (varSymbol exp') symbolTable, exp')
+      g <- global (AST.mkName name) (typeOf exp') $ Constant.Undef t
+      store g 8 exp'
+      return (Map.insert name (varSymbol exp') symbolTable, exp')
+      -- return (Map.insert name (Symbol TopLevelAssignment exp') symbolTable, exp')
+    else
+      return (Map.insert name (varSymbol exp') symbolTable, exp')
 
   Optimized _ _ (App (Optimized _ _ (App (Optimized _ _ (Var "-")) leftOperand _)) rightOperand _) -> do
     (_, leftOperand') <- generateExp symbolTable leftOperand
@@ -439,7 +441,7 @@ generateExp symbolTable exp = case exp of
           let args''' = (, []) <$> args''
           res <- call uncurriedFn args'''
           res' <- unbox (InferredType.getReturnType $ getType finalFn) res
-          return (symbolTable, res)
+          return (symbolTable, res')
 
         _ -> do
           (symbolTable', f')    <- generateExp symbolTable f
@@ -466,8 +468,10 @@ generateExp symbolTable exp = case exp of
               env' <- load env 8
 
               res <- call fn' [(env', []), (boxedArg, [])]
-              res' <- unbox (InferredType.getReturnType $ getType f) res
-              return (symbolTable'', res')
+              -- TODO: here unbox takes the last parameter only but we want everything after the first,
+              -- if it's a function it means that we got a closure
+              -- res' <- unbox (InferredType.getReturnType $ getType f) res
+              return (symbolTable'', res)
 
       _ -> do
         (symbolTable', f')    <- generateExp symbolTable f
@@ -548,8 +552,10 @@ generateExp symbolTable exp = case exp of
             env' <- load env 8
 
             res <- call fn' [(env', []), (boxedArg, [])]
-            res' <- unbox (InferredType.getReturnType $ getType f) res
-            return (symbolTable'', res')
+            -- TODO: here unbox takes the last parameter only but we want everything after the first,
+            -- if it's a function it means that we got a closure
+            -- res' <- unbox (InferredType.getReturnType $ getType f) res
+            return (symbolTable'', res)
 
 
   Optimized _ _ (LNum n) -> do
@@ -616,7 +622,8 @@ generateExp symbolTable exp = case exp of
       tail
       (List.reverse $ List.init listItems)
 
-    return (symbolTable, list)
+    list' <- bitcast list listType
+    return (symbolTable, list')
 
 
   Optimized t _ (If cond truthy falsy) -> mdo
@@ -649,9 +656,7 @@ generateExp symbolTable exp = case exp of
     exitBlock <- block `named` "exitBlock"
     ret <- phi branches
 
-    ret' <- unbox t ret
-
-    return (symbolTable, ret')
+    return (symbolTable, ret)
 
 
   {-
@@ -723,7 +728,7 @@ generateBranch symbolTable hasMore exitBlock whereExp is = case is of
 
     branchExpBlock <- block `named` "branchExpBlock"
     symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
-    (_, branch) <- generateExp symbolTable' exp
+    (_, branch) <- generateExp (trace ("ST': "<>ppShow symbolTable') symbolTable') exp
     -- the exp might contain a where or if expression generating new blocks in between.
     -- therefore we need to get the block that contains the register reference in which
     -- it is defined. 
@@ -756,7 +761,7 @@ generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
 
 generateSymbolTableForList :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m SymbolTable
 generateSymbolTableForList symbolTable basePtr pats = case pats of
-  (pat : next) -> case pat of
+  (pat : next) -> case trace ("basePtr type: "<>ppShow (typeOf basePtr)) pat of
     Optimized _ _ (PSpread spread) ->
       generateSymbolTableForPattern symbolTable basePtr spread
 
