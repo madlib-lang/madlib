@@ -438,8 +438,8 @@ generateApplicationForKnownFunction env symbolTable returnType arity fnOperand a
       pap <- call fnOperand args''''
 
       let argc = i32ConstOp (fromIntegral $ List.length remainingArgs)
-      remainingArgs' <- mapM (generateExp env symbolTable) remainingArgs
-      remainingArgs''  <- mapM (box . snd) remainingArgs'
+      remainingArgs'  <- mapM (generateExp env symbolTable) remainingArgs
+      remainingArgs'' <- mapM (box . snd) remainingArgs'
       let remainingArgs''' = (, []) <$> remainingArgs''
 
       ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
@@ -555,18 +555,6 @@ generateExp env symbolTable exp = case exp of
   Optimized t _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
-      -- Just (Symbol _ dict) | methodName == "mempty" -> do
-        -- let interfaceMap = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
-        -- let index = Maybe.fromMaybe 0 $ Map.lookup methodName interfaceMap
-        -- let papType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-        -- dict' <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
-        -- methodPAP  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
-        -- methodFn <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
-        -- methodFn' <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
-        -- methodFn'' <- load methodFn' 8
-        -- value <- call methodFn'' []
-        -- return (symbolTable, value)
-
       Just (Symbol _ dict) -> do
         let interfaceMap   = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
         let (index, arity) = Maybe.fromMaybe (0, 0) $ Map.lookup methodName interfaceMap
@@ -835,7 +823,6 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable', ret')
 
-
   Optimized t _ (Where exp iss) -> mdo
     (_, exp') <- generateExp env symbolTable exp
     branches  <- generateBranches env symbolTable exitBlock exp' iss
@@ -847,6 +834,16 @@ generateExp env symbolTable exp = case exp of
 
   Optimized _ _ (TypedExp exp _) ->
     generateExp env symbolTable exp
+
+  Optimized t _ (NameExport n) -> do
+    let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType t) (AST.mkName n)
+    if InferredType.isFunctionType t then do
+      let arity = List.length $ InferredType.getParamTypes t
+      Writer.tell $ Map.singleton n (fnSymbol arity ref)
+    else
+      Writer.tell $ Map.singleton n (varSymbol ref)
+    return (symbolTable, ref)
+
 
   _ ->
     error $ "not implemented\n\n" ++ ppShow exp
@@ -1442,6 +1439,13 @@ generateExternalForName symbolTable name = case Map.lookup name symbolTable of
     emitDefn def
     return ()
 
+  Just (Symbol (DictionarySymbol _) symbol) -> do
+    let (Type.PointerType t _) = typeOf symbol
+    let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
+    let def = AST.GlobalDefinition g
+    emitDefn def
+    return ()
+
   Just (Symbol _ symbol) -> do
     let t = typeOf symbol
     let g = globalVariableDefaults { Global.name = AST.mkName name, Global.type' = t }
@@ -1518,18 +1522,16 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
     return ()
 
 
-buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Bool -> [String] -> SymbolTable -> AST -> m ()
-buildModule' isMain currentModuleHashes initialSymbolTable ast = do
-  let computedDictionaryIndices = buildDictionaryIndices $ ainterfaces ast
-      initialEnv                = Env { dictionaryIndices = computedDictionaryIndices }
-      symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
+buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
+buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
+  let symbolTableWithTopLevel   = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
   symbolTable   <- generateConstructors symbolTableWithTopLevel (atypedecls ast)
-  symbolTable'  <- generateInstances initialEnv symbolTable (ainstances ast)
-  symbolTable'' <- generateTopLevelFunctions initialEnv symbolTable' (topLevelFunctions $ aexps ast)
+  symbolTable'  <- generateInstances env symbolTable (ainstances ast)
+  symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")  [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")               [Type.i64] (Type.ptr Type.i8)
@@ -1554,34 +1556,39 @@ buildModule' isMain currentModuleHashes initialSymbolTable ast = do
   moduleFunction <- function (AST.mkName moduleFunctionName) [] void $ \_ -> do
     entry <- block `named` "entry";
     Monad.when isMain $ callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
-    generateExps initialEnv symbolTable'' (expsForMain $ aexps ast)
+    generateExps env symbolTable'' (expsForMain $ aexps ast)
     retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
   return ()
 
 
-toLLVMModule :: Bool -> [String] -> SymbolTable -> AST -> (AST.Module, SymbolTable)
-toLLVMModule isMain currentModuleHashes symbolTable ast =
+toLLVMModule :: Env -> Bool -> [String] -> SymbolTable -> AST -> (AST.Module, SymbolTable)
+toLLVMModule initialEnv isMain currentModuleHashes symbolTable ast =
   let moduleName =
         if isMain then
           "main"
         else
           hashModulePath ast
-  in  Writer.runWriter $ buildModuleT (stringToShortByteString moduleName) (buildModule' isMain currentModuleHashes symbolTable ast)
+  in  Writer.runWriter $ buildModuleT (stringToShortByteString moduleName) (buildModule' initialEnv isMain currentModuleHashes symbolTable ast)
 
 
-generateAST :: Bool -> Table -> (ModuleTable, SymbolTable, [String]) -> AST -> (ModuleTable, SymbolTable, [String])
-generateAST isMain astTable (moduleTable, symbolTable, processedHashes) ast@AST{ apath = Just apath } =
-  let imports                                                           = aimports ast
-      alreadyProcessedPaths                                             = Map.keys moduleTable
-      importPathsToProcess                                              = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
-      astsForImports                                                    = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
-      (moduleTableWithImports, symbolTableWithImports, importHashes)    = List.foldl (generateAST False astTable) (moduleTable, symbolTable, processedHashes) astsForImports
-      (newModule, newSymbolTableTable)                                  = toLLVMModule isMain (processedHashes ++ importHashes) symbolTableWithImports ast
-      updatedModuleTable                                                = Map.insert apath newModule moduleTableWithImports
-      moduleHash                                                        = hashModulePath ast
-  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable, processedHashes ++ importHashes ++ [moduleHash])
+generateAST :: Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> AST -> (ModuleTable, SymbolTable, [String], Env)
+generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast@AST{ apath = Just apath } =
+  let imports                          = aimports ast
+      alreadyProcessedPaths            = Map.keys moduleTable
+      importPathsToProcess             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
+      astsForImports                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
+      (moduleTableWithImports, symbolTableWithImports, importHashes, envFromImports) =
+        List.foldl (generateAST False astTable) (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
+
+      computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
+      envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports }
+      (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (processedHashes ++ importHashes) symbolTableWithImports ast
+
+      updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
+      moduleHash                       = hashModulePath ast
+  in  (updatedModuleTable, symbolTableWithImports <> newSymbolTableTable, processedHashes ++ importHashes ++ [moduleHash], envForAST)
 
 generateAST _ _ _ _ =
   undefined
@@ -1601,7 +1608,7 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    (\(first, _, _) -> first) $ generateAST True astTable (generatedTable, symbolTable, []) ast
+    (\(first, _, _, _) -> first) $ generateAST True astTable (generatedTable, symbolTable, [], Env { dictionaryIndices = Map.empty }) ast
 
   _ ->
     undefined

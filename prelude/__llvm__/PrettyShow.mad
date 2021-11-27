@@ -1,0 +1,20 @@
+import {} from "./Show"
+
+
+append :: a -> List a -> List a
+append = extern "MadList_append"
+
+withColor :: String -> String -> String
+export withColor = (color, v) => color ++ v ++"\x1b[0m"
+
+export red = withColor("\x1b[31m")
+export green = withColor("\x1b[32m")
+export yellow = withColor("\x1b[33m")
+
+
+
+interface Show a => PrettyShow a {
+  ppShow :: a -> String
+}
+
+

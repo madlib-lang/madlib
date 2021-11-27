@@ -477,7 +477,7 @@ renameAST env ast =
       (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
       renamedInstances           = renameInstance env'''' <$> ainstances ast
       rewrittenImports           = rewriteDefaultImports env'''' renamedImports
-  in  (ast { aexps = (trace ("ENV'''': "<>ppShow env'''') renamedExps), atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = rewrittenImports }, env)
+  in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = rewrittenImports }, env)
 
 renameTable :: Table -> Table
 renameTable table =

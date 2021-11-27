@@ -1,0 +1,11 @@
+import { green } from "./PrettyShow"
+
+instance Show String {
+  show = (a) => "\"" ++ a ++ "\""
+}
+
+instance PrettyShow String {
+  ppShow = (a) => green("\"" ++ a ++ "\"")
+}
+
+
