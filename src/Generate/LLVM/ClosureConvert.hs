@@ -228,6 +228,9 @@ instance Optimizable Slv.Exp Opt.Exp where
       iss' <- mapM (optimize env { stillTopLevel = False }) iss
       return $ Opt.Optimized t area (Opt.Where exp' iss')
 
+    Slv.Extern qt name originalName -> do
+      return $ Opt.Optimized t area (Opt.Extern qt name originalName)
+
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- optimize env exp
       placeholderRef' <- optimizePlaceholderRef placeholderRef

@@ -67,6 +67,7 @@ import Text.Show.Pretty
   '!='        { Token _ TokenExclamationMarkEq }
   false       { Token _ (TokenBool _) }
   true        { Token _ (TokenBool _) }
+  'extern'    { Token _ TokenExtern }
   'import'    { Token _ TokenImport }
   'export'    { Token _ TokenExport }
   'texport'   { Token _ TokenTypeExport }
@@ -309,6 +310,7 @@ exp :: { Src.Exp }
   | operation                                                       { $1 }
   | templateString                                           %shift { $1 }
   | listConstructor                                          %shift { $1 }
+  | extern                                                   %shift { $1 }
   | typedExp                                                 %shift { $1 }
   | js                                                       %shift { Src.Source (tokenToArea $1) (Src.JSExp (strV $1)) }
   | name '=' maybeRet exp                                    %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $4)) (Src.Assignment (strV $1) $4) }
@@ -415,6 +417,9 @@ typedExp :: { Src.Exp }
   : '(' exp '::' typings ')'                       %shift { Src.Source (mergeAreas (Src.getArea $2) (Src.getArea $4)) (Src.TypedExp $2 $4) }
   | '(' name '::' typings ')'                      %shift { Src.Source (mergeAreas (tokenToArea $2) (Src.getArea $4)) (Src.TypedExp (Src.Source (tokenToArea $2) (Src.Var (strV $2))) $4) }
   | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenToArea $1) (Src.getArea $7)) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenToArea $5) (Src.getArea $7)) (Src.Assignment (strV $5) $7)) $3) }
+
+extern :: { Src.Exp }
+  : name '::' constrainedTyping 'ret' name '=' 'extern' str %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $8)) (Src.Extern $3 (strV $5) (sanitizeImportPath $ strV $8)) }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source (mergeAreas (tokenToArea $1) (tokenToArea $9)) (Src.Where $3 $7) }

@@ -63,6 +63,7 @@ infer env lexp = do
     Can.Export           _    -> inferExport env' lexp
     Can.NameExport       name -> inferNameExport env' lexp
     Can.If{}                  -> inferIf env' lexp
+    Can.Extern{}              -> inferExtern env' lexp
     Can.JSExp c               -> do
       t <- newTVar Star
       return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.JSExp c))
@@ -580,6 +581,11 @@ inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
 
   return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
+
+inferExtern :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferExtern env (Can.Canonical area (Can.Extern scheme name originalName)) = do
+  qt@(ps :=> t) <- instantiate scheme
+  return (mempty, ps, t, Slv.Solved qt area (Slv.Extern qt name originalName))
 
 
 type Ambiguity = (TVar, [Pred])
