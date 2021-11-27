@@ -382,15 +382,17 @@ generateExp symbolTable exp = case exp of
 
     -- (Placeholder
     --  ( ClassRef "Functor" [] False True , "b183" )
-  Optimized _ _ (Placeholder (ClassRef interface _ False True, typingStr) exp) -> do
+  Optimized t _ (Placeholder (ClassRef interface _ _ True, typingStr) exp) -> do
+    fnName <- freshName (stringToShortByteString "dictionaryWrapper")
+    let (Name fnName') = fnName
     symbolTable' <-
       generateFunction
         symbolTable
-        (InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
-        "whateva"
+        t --(InferredType.tVar "a" `InferredType.fn` InferredType.tVar "b")
+        (Char8.unpack (ShortByteString.fromShort fnName'))
         ["$" <> interface <> "$" <> typingStr]
         [exp]
-    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) (AST.mkName "whateva")))
+    return (symbolTable', Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) fnName))
     where
       gatherAllPlaceholders :: Exp -> ([(PlaceholderRef, String)], Exp)
       gatherAllPlaceholders = undefined
@@ -403,11 +405,10 @@ generateExp symbolTable exp = case exp of
   Optimized _ _ (Placeholder (MethodRef interface methodName True, typingStr) _) -> do
     let dictName = "$" <> interface <> "$" <> typingStr
     case Map.lookup dictName symbolTable of
-      -- TODO: this should be a DictionarySymbol with indices
       Just (Symbol _ dict) -> do
         let index = 0
         dict' <- bitcast dict (Type.ptr $ Type.StructureType False [boxType])
-        method  <- gep (trace ("DICT': "<>ppShow dict') dict') [i32ConstOp 0, i32ConstOp (fromIntegral index)]
+        method  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
         method' <- load method 8
 
         let papType = Type.StructureType False [boxType, Type.i32, Type.i32]
@@ -421,10 +422,41 @@ generateExp symbolTable exp = case exp of
 
         return (symbolTable, papPtr')
 
-        -- return (symbolTable, method')
+      _ ->
+        undefined
+
+    -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
+  Optimized t _ (Placeholder (ClassRef interface _ True False, typingStr) fn) -> do
+    let dictName    = "$" <> interface <> "$" <> typingStr
+    case Map.lookup dictName symbolTable of
+      Just (Symbol _ dict) -> do
+        (_, pap) <- generateExp symbolTable fn
+        pap' <- bitcast pap boxType
+
+        let argc = i32ConstOp 1
+
+        dict' <- box dict
+
+        ret <- call applyPAP [(pap', []), (argc, []), (dict',[])]
+        unboxed <- unbox t ret
+        return (symbolTable, unboxed)
 
       _ ->
         undefined
+
+  -- Optimized t _ (Placeholder (ClassRef interface _ True False, typingStr) (Opt.Optimized _ _ (Opt.Var fnName))) -> do
+  --   let dictName    = "$" <> interface <> "$" <> typingStr
+  --   case Map.lookup dictName symbolTable of
+  --     Just (Symbol _ dict) -> case Map.lookup fnName symbolTable of
+  --       Just (Symbol _ fn) -> do
+  --         dict' <- box dict
+  --         ret <- call fn [(dict', [])]
+  --         return (symbolTable, ret)
+
+  --       _ ->
+  --         undefined
+  --     _ ->
+  --       undefined
 
   Optimized ty _ (Assignment name e isTopLevel) -> do
     (symbolTable', exp') <- generateExp symbolTable e
@@ -485,42 +517,7 @@ generateExp symbolTable exp = case exp of
     result <- fcmp FloatingPointPredicate.OLT leftOperand' rightOperand'
     return (symbolTable, result)
 
-    -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Optimized t _ (Placeholder (ClassRef interface _ True False, typingStr) (Opt.Optimized _ _ (Opt.Var fnName))) -> do
-    let dictName    = "$" <> interface <> "$" <> typingStr
-    case Map.lookup dictName symbolTable of
-      Just (Symbol _ dict) ->
-        case Map.lookup fnName symbolTable of
-          Just (Symbol _ fn) -> do
-            dict' <- box dict
-            ret <- call fn [(dict', [])]
-
-            -- let papType = Type.StructureType False [boxType, Type.i32, Type.i32]
-            -- let arity'  = i32ConstOp (fromIntegral 1)
-
-            -- boxedFn  <- box ret
-
-            -- papPtr   <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
-            -- papPtr'  <- bitcast papPtr (Type.ptr papType)
-            -- Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
-
-            return (symbolTable, ret)
-
-            -- return (symbolTable, ret)
-
   Optimized t _ (App fn args) -> case fn of
-    -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-    -- Optimized t _ (Placeholder (ClassRef interface _ True False, typingStr) (Opt.Optimized _ _ (Opt.Var fnName))) -> do
-    --   let dictName    = "$" <> interface <> "$" <> typingStr
-    --   case Map.lookup dictName symbolTable of
-    --     Just (Symbol _ dict) ->
-    --       case Map.lookup fnName symbolTable of
-    --         Just (Symbol _ fn) -> do
-    --           dict' <- box dict
-    --           ret <- call fn [(dict', [])]
-
-    --           return (symbolTable, ret)
-
     -- Calling a known method
     Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
       let dictName    = "$" <> interface <> "$" <> typingStr

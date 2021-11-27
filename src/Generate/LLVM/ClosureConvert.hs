@@ -227,6 +227,11 @@ collectAbsParams abs = case abs of
   Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
     ([param], body)
 
+  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ _ _, ts) next) ->
+    let (nextParams, nextBody) = collectAbsParams next
+        tsStr = buildTypeStrForPlaceholder ts
+    in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
+
   b ->
     ([], [b])
 
@@ -245,7 +250,16 @@ optimizeAbs env functionName abs@(Slv.Solved (_ :=> t) area _) = do
   if isTopLevel then do
     let (params, body') = collectAbsParams abs
     body'' <- optimizeBody env { stillTopLevel = False } body'
-    return $ Opt.Optimized t area $ TopLevelAbs functionName params body''
+
+    -- Hacky for now
+    let paramTypes = getParamTypes t
+    let t' =
+          if length (trace ("FN: "<>functionName<>"\nparams: "<>ppShow params) paramTypes) < length params then
+            tVar "a" `fn` t
+          else
+            t
+
+    return $ Opt.Optimized t' area $ TopLevelAbs functionName params body''
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PartialApplication that applies the free vars from the current scope.
@@ -344,6 +358,35 @@ instance Optimizable Slv.Exp Opt.Exp where
       else
         let fvVarNodes = snd <$> fvs
         in  return $ Opt.Optimized t area (Opt.App functionNode fvVarNodes)
+
+
+    Slv.Assignment functionName abs@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ _ _), ts) exp)) -> do
+      let tsStr = buildTypeStrForPlaceholder ts
+      let isTopLevel = stillTopLevel env
+      if isTopLevel then
+        optimizeAbs env functionName abs
+
+      else do
+        exp'            <- optimize env exp
+        placeholderRef' <- optimizePlaceholderRef placeholderRef
+        return $ Opt.Optimized t area (Opt.Placeholder (placeholderRef', tsStr) exp')
+
+     where
+      optimizePlaceholderRef :: Slv.PlaceholderRef -> Optimize Opt.PlaceholderRef
+      optimizePlaceholderRef phr = case phr of
+        Slv.ClassRef cls ps call var -> do
+          ps'  <- mapM optimizeClassRefPred ps
+          return $ Opt.ClassRef cls ps' call var
+
+        Slv.MethodRef cls mtd call -> do
+          return $ Opt.MethodRef cls mtd call
+
+      optimizeClassRefPred :: Slv.ClassRefPred -> Optimize Opt.ClassRefPred
+      optimizeClassRefPred (Slv.CRPNode cls ts var ps) = do
+        ps'  <- mapM optimizeClassRefPred ps
+        let tsStr = buildTypeStrForPlaceholder ts
+        return $ Opt.CRPNode cls tsStr var ps'
+
 
     -- TODO: Add top level info so that we can generate or not the name for the global scope
     Slv.Assignment name exp -> do
