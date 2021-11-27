@@ -125,6 +125,7 @@ i32ConstOp i = Operand.ConstantOperand $ Constant.Int 32 i
 i64ConstOp :: Integer -> Operand
 i64ConstOp i = Operand.ConstantOperand $ Constant.Int 64 i
 
+
 storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
 storeItem basePtr _ (item, index) = do
   ptr <- gep basePtr [i32ConstOp 0, i32ConstOp index]
@@ -573,6 +574,29 @@ generateSubPatternTest symbolTable prev (pat', ptr) = do
   prev `Instruction.and` curr
 
 
+generateListSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Pattern] -> m Operand
+generateListSubPatternTest symbolTable basePtr pats = case pats of
+  (pat : next) -> case pat of
+    Optimized _ _ (PSpread spread) ->
+      return true
+
+    _ -> do
+      valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
+      valuePtr'     <- load valuePtr 8
+      valuePtr''    <- unbox (getType pat) valuePtr'
+      test          <- generateBranchTest symbolTable pat valuePtr''
+      nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
+      -- i8*
+      nextNodePtr'  <- load nextNodePtr 8
+      -- { i8*, i8* }*
+      nextNodePtr'' <- bitcast nextNodePtr' listType
+      nextTest      <- generateListSubPatternTest symbolTable nextNodePtr'' next
+      test `Instruction.and` nextTest
+
+  [] ->
+    return true
+
+
 generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Pattern -> Operand -> m Operand
 generateBranchTest symbolTable pat value = case pat of
   Optimized _ _ (PNum n) ->
@@ -601,19 +625,32 @@ generateBranchTest symbolTable pat value = case pat of
     Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
 
   Optimized _ _ (PList pats) -> do
-    let indices = List.take (List.length pats) [0..]
     -- i8*
-    listLength <- call madlistLength [(value, [])]
+    listLength   <- call madlistLength [(value, [])]
     -- double*
-    listLength' <- bitcast listLength (Type.ptr Type.double)
+    listLength'  <- bitcast listLength (Type.ptr Type.double)
     -- double
     listLength'' <- load listLength' 8
 
-    -- TODO: Add sub patterns tests
+    let hasSpread = List.any isSpread pats
+
     -- test that the length of the given list is at least as long as the pattern items
-    -- TODO: verify if we have a spread pattern, if yes we just need to check a minimum length of (length pats - 1)
-    -- otherwise  we need to have an exact count
-    fcmp FloatingPointPredicate.OGE listLength'' (C.double (fromIntegral $ List.length pats))
+    lengthTest <-
+      if hasSpread then do
+        fcmp FloatingPointPredicate.OGE listLength'' (C.double (fromIntegral $ List.length pats - 1))
+      else
+        fcmp FloatingPointPredicate.OEQ listLength'' (C.double (fromIntegral $ List.length pats))
+
+    subPatternsTest <- generateListSubPatternTest symbolTable value pats
+    lengthTest `Instruction.and` subPatternsTest
+    where
+      isSpread :: Pattern -> Bool
+      isSpread pat = case pat of
+        Optimized _ _ PSpread{} ->
+          True
+
+        _ ->
+          False
 
   Optimized _ _ (PCon name pats) -> do
     let constructorId = case Map.lookup name symbolTable of
