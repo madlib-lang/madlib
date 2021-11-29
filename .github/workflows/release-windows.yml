@@ -139,6 +139,16 @@ jobs:
 
       - run: |
           stack build -v --flag madlib:static
+
+
+          llvm-config.exe --cflags
+          llvm-config.exe --cxxflags
+          llvm-config.exe --includedir
+          llvm-config.exe --libdir
+          llvm-config.exe --libs --link-static
+          llvm-config.exe --system-libs --link-static
+
+
           stack build -v --flag madlib:static
 
 
