@@ -1,0 +1,18 @@
+// file: /madlib_modules/math/src/Main.mad
+export let avg = (a => b => a + b / 2);
+export default { avg };
+// file: /madlib_modules/random/src/Main.mad
+import R from "./Utils/Random.mjs";
+import M from "./../../math/src/Main.mjs";
+
+export let random = (seed => R.random(seed) + M.avg(seed)(seed));
+export default { random };
+// file: /madlib_modules/random/src/Utils/Random.mad
+export let random = (seed => seed / 2);
+export default { random };
+// file: /src/Main.mad
+import {} from "./__internals__.mjs"
+import R from "./.deps/random/src/Main.mjs";
+
+R.random(3);
+export default {};

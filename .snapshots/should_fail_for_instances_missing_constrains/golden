@@ -1,0 +1,202 @@
+Left
+  (CompilationError
+     (ContextTooWeak
+        [ IsIn
+            "Show"
+            [ TVar (TV "j9" Star) ]
+            (Just (Area (Loc 264 14 56) (Loc 268 14 60)))
+        , IsIn
+            "Show"
+            [ TVar (TV "i8" Star) ]
+            (Just (Area (Loc 245 14 37) (Loc 249 14 41)))
+        ])
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 218 14 10) (Loc 280 14 72)
+       , ctxBacktrace =
+           [ BTInstance
+               (Canonical
+                  (Area (Loc 185 13 1) (Loc 282 15 2))
+                  (Instance
+                     "Show"
+                     []
+                     (IsIn
+                        "Show"
+                        [ TApp
+                            (TApp
+                               (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                               (TVar (TV "a" Star)))
+                            (TVar (TV "b" Star))
+                        ]
+                        Nothing)
+                     (fromList
+                        [ ( "show"
+                          , Canonical
+                              (Area (Loc 211 14 3) (Loc 280 14 72))
+                              (Assignment
+                                 "show"
+                                 (Canonical
+                                    (Area (Loc 218 14 10) (Loc 280 14 72))
+                                    (Abs
+                                       (Canonical (Area (Loc 0 0 0) (Loc 0 0 0)) "__x__")
+                                       [ Canonical
+                                           (Area (Loc 218 14 10) (Loc 280 14 72))
+                                           (Where
+                                              (Canonical
+                                                 (Area (Loc 0 0 0) (Loc 0 0 0)) (Var "__x__"))
+                                              [ Canonical
+                                                  (Area (Loc 226 14 18) (Loc 278 14 70))
+                                                  (Is
+                                                     (Canonical
+                                                        (Area (Loc 226 14 18) (Loc 233 14 25))
+                                                        (PTuple
+                                                           [ Canonical
+                                                               (Area
+                                                                  (Loc 228 14 20) (Loc 229 14 21))
+                                                               (PVar "a")
+                                                           , Canonical
+                                                               (Area
+                                                                  (Loc 231 14 23) (Loc 232 14 24))
+                                                               (PVar "b")
+                                                           ]))
+                                                     (Canonical
+                                                        (Area (Loc 237 14 29) (Loc 278 14 70))
+                                                        (App
+                                                           (Canonical
+                                                              (Area (Loc 237 14 29) (Loc 278 14 70))
+                                                              (App
+                                                                 (Canonical
+                                                                    (Area
+                                                                       (Loc 242 14 34)
+                                                                       (Loc 244 14 36))
+                                                                    (Var "++"))
+                                                                 (Canonical
+                                                                    (Area
+                                                                       (Loc 237 14 29)
+                                                                       (Loc 241 14 33))
+                                                                    (LStr "'#['"))
+                                                                 False))
+                                                           (Canonical
+                                                              (Area (Loc 245 14 37) (Loc 278 14 70))
+                                                              (App
+                                                                 (Canonical
+                                                                    (Area
+                                                                       (Loc 245 14 37)
+                                                                       (Loc 278 14 70))
+                                                                    (App
+                                                                       (Canonical
+                                                                          (Area
+                                                                             (Loc 253 14 45)
+                                                                             (Loc 255 14 47))
+                                                                          (Var "++"))
+                                                                       (Canonical
+                                                                          (Area
+                                                                             (Loc 245 14 37)
+                                                                             (Loc 252 14 44))
+                                                                          (App
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 245 14 37)
+                                                                                   (Loc 249 14 41))
+                                                                                (Var "show"))
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 250 14 42)
+                                                                                   (Loc 251 14 43))
+                                                                                (Var "a"))
+                                                                             True))
+                                                                       False))
+                                                                 (Canonical
+                                                                    (Area
+                                                                       (Loc 256 14 48)
+                                                                       (Loc 278 14 70))
+                                                                    (App
+                                                                       (Canonical
+                                                                          (Area
+                                                                             (Loc 256 14 48)
+                                                                             (Loc 278 14 70))
+                                                                          (App
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 261 14 53)
+                                                                                   (Loc 263 14 55))
+                                                                                (Var "++"))
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 256 14 48)
+                                                                                   (Loc 260 14 52))
+                                                                                (LStr "', '"))
+                                                                             False))
+                                                                       (Canonical
+                                                                          (Area
+                                                                             (Loc 264 14 56)
+                                                                             (Loc 278 14 70))
+                                                                          (App
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 264 14 56)
+                                                                                   (Loc 278 14 70))
+                                                                                (App
+                                                                                   (Canonical
+                                                                                      (Area
+                                                                                         (Loc
+                                                                                            272
+                                                                                            14
+                                                                                            64)
+                                                                                         (Loc
+                                                                                            274
+                                                                                            14
+                                                                                            66))
+                                                                                      (Var "++"))
+                                                                                   (Canonical
+                                                                                      (Area
+                                                                                         (Loc
+                                                                                            264
+                                                                                            14
+                                                                                            56)
+                                                                                         (Loc
+                                                                                            271
+                                                                                            14
+                                                                                            63))
+                                                                                      (App
+                                                                                         (Canonical
+                                                                                            (Area
+                                                                                               (Loc
+                                                                                                  264
+                                                                                                  14
+                                                                                                  56)
+                                                                                               (Loc
+                                                                                                  268
+                                                                                                  14
+                                                                                                  60))
+                                                                                            (Var
+                                                                                               "show"))
+                                                                                         (Canonical
+                                                                                            (Area
+                                                                                               (Loc
+                                                                                                  269
+                                                                                                  14
+                                                                                                  61)
+                                                                                               (Loc
+                                                                                                  270
+                                                                                                  14
+                                                                                                  62))
+                                                                                            (Var
+                                                                                               "b"))
+                                                                                         True))
+                                                                                   False))
+                                                                             (Canonical
+                                                                                (Area
+                                                                                   (Loc 275 14 67)
+                                                                                   (Loc 278 14 70))
+                                                                                (LStr "']'"))
+                                                                             True))
+                                                                       True))
+                                                                 True))
+                                                           True)))
+                                              ])
+                                       ])))
+                          )
+                        ])))
+           ]
+       })

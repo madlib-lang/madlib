@@ -12,15 +12,15 @@ import           Explain.Location
 data Solved a
   = Solved (Ty.Qual Ty.Type) Area a
   | Untyped Area a
-  deriving(Eq, Ord)
+  deriving(Eq, Show, Ord)
 
-instance Show a => Show (Solved a) where
-  show solved = case solved of
-    Solved _ _ a ->
-      show a
+-- instance Show a => Show (Solved a) where
+--   show solved = case solved of
+--     Solved _ _ a ->
+--       show a
 
-    Untyped _ a ->
-      show a
+--     Untyped _ a ->
+--       show a
 
 data AST =
   AST

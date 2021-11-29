@@ -290,7 +290,7 @@ mergeRecords t1 t2 = case (t1, t2) of
 
   (TApp l r, TApp l' r') -> TApp (mergeRecords l l') (mergeRecords r r')
 
-  _ -> t1
+  _ -> t2
 
 isFunctionType :: Type -> Bool
 isFunctionType t = case t of

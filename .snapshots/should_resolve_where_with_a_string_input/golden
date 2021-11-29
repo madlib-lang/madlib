@@ -1,0 +1,95 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([] :=> TCon (TC "Integer" Star) "prelude")
+            (Area (Loc 0 1 1) (Loc 63 6 2))
+            (Where
+               (Solved
+                  ([] :=> TCon (TC "String" Star) "prelude")
+                  (Area (Loc 6 1 7) (Loc 10 1 11))
+                  (LStr "\"42\""))
+               [ Solved
+                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TVar (TV "k10" Star)))
+                   (Area (Loc 16 2 3) (Loc 24 2 11))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 16 2 3) (Loc 19 2 6))
+                         (PStr "\"1\""))
+                      (Solved
+                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                          ] :=>
+                            TCon (TC "Integer" Star) "prelude")
+                         (Area (Loc 23 2 10) (Loc 24 2 11))
+                         (LNum "1")))
+               , Solved
+                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TVar (TV "k10" Star)))
+                   (Area (Loc 27 3 3) (Loc 35 3 11))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 27 3 3) (Loc 30 3 6))
+                         (PStr "\"3\""))
+                      (Solved
+                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                          ] :=>
+                            TCon (TC "Integer" Star) "prelude")
+                         (Area (Loc 34 3 10) (Loc 35 3 11))
+                         (LNum "3")))
+               , Solved
+                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TVar (TV "k10" Star)))
+                   (Area (Loc 38 4 3) (Loc 48 4 13))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 38 4 3) (Loc 42 4 7))
+                         (PStr "\"33\""))
+                      (Solved
+                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                          ] :=>
+                            TCon (TC "Integer" Star) "prelude")
+                         (Area (Loc 46 4 11) (Loc 48 4 13))
+                         (LNum "33")))
+               , Solved
+                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "String" Star) "prelude"))
+                        (TVar (TV "k10" Star)))
+                   (Area (Loc 51 5 3) (Loc 61 5 13))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 51 5 3) (Loc 55 5 7))
+                         (PStr "\"42\""))
+                      (Solved
+                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                          ] :=>
+                            TCon (TC "Integer" Star) "prelude")
+                         (Area (Loc 59 5 11) (Loc 61 5 13))
+                         (LNum "42")))
+               ])
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

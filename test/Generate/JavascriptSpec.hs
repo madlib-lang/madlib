@@ -101,13 +101,13 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
 mainCompileFixture :: String
 mainCompileFixture = unlines
   [ "export fn = (b, c) => b + c"
-  , "inc :: Number -> Number"
+  , "inc :: Integer -> Integer"
   , "inc = (x) => x + 1"
-  , "dec :: Number -> Number"
+  , "dec :: Integer -> Integer"
   , "dec = (x) => x - 1"
-  , "double :: Number -> Number"
+  , "double :: Number a => a -> a"
   , "double = (x) => x * 2"
-  , "half :: Number -> Number"
+  , "half :: Float -> Float"
   , "half = (x) => x / 2"
   , "3 |> half |> double"
   , "3 == 5"
@@ -206,7 +206,7 @@ mainCompileFixture = unlines
   , "  #[a, b] => a + b"
   , "}"
   , ""
-  , "fn2 :: Number -> #[Number, Number]"
+  , "fn2 :: Integer -> #[Integer, Integer]"
   , "fn2 = (a) => #[a, a]"
   , ""
   , "fst :: #[a, b] -> a"
@@ -234,8 +234,8 @@ jsxProgram = unlines
   , "  show :: a -> String"
   , "}"
   , ""
-  , "instance Show Number {"
-  , "  show = (x) => #- new Number(x).toString() -#"
+  , "instance Show Integer {"
+  , "  show = (x) => #- new Integer(x).toString() -#"
   , "}"
   , ""
   , "interface Functor m {"
@@ -296,7 +296,7 @@ jsxProgram = unlines
   , "button :: List (Attribute a) -> List (Element a) -> Element a"
   , "export button = (attrs, children) => #- h('button', objectifyAttrs(attrs), children) -#"
   , ""
-  , "alias State = Number"
+  , "alias State = Integer"
   , ""
   , "initialState :: State"
   , "initialState = 0"
@@ -506,19 +506,19 @@ monadTransformersProgram = unlines
   , "  modify = pipe(modify, lift)"
   , "}"
   , ""
-  , "alias Stack a = StateT Number (WriterT (List String) Identity) a"
+  , "alias Stack a = StateT Integer (WriterT (List String) Identity) a"
   , ""
   , "hep :: MonadWriter w m => w -> m ()"
   , "hep = tell"
   , ""
-  , "sumAndLog :: MonadWriter (List String) m => Number -> m Number"
+  , "sumAndLog :: MonadWriter (List String) m => Integer -> m Integer"
   , "sumAndLog = pipe("
   , "  of,"
   , "  chain((x) => of(x + 18)),"
   , "  chain((x) => tell(['Summed 18']) |> andDo(of(x)))"
   , ")"
   , ""
-  , "runStack :: Number -> Stack a -> #[#[a, Number], List String]"
+  , "runStack :: Integer -> Stack a -> #[#[a, Integer], List String]"
   , "runStack = (x) => pipe("
   , "  (m) => runStateT(m, x),"
   , "  runWriterT,"
@@ -606,14 +606,14 @@ spec = do
             , ""
             , "chain((x) => Just(x + 1), Just(3))"
             , ""
-            , "doIt :: Functor m => m Number -> m Number"
+            , "doIt :: Functor m => m Integer -> m Integer"
             , "doIt = (x) => map((k) => k + 1, x)"
             , ""
             , "doIt(Just(3))"
             , ""
             , "p = 1"
             , ""
-            , "fn :: Functor m => m Number -> m Number"
+            , "fn :: Functor m => m Integer -> m Integer"
             , "fn = map(inc)"
             , ""
             , "fn(Just(3))"
@@ -638,8 +638,8 @@ spec = do
             , "  show = (b) => b ? 'True' : 'False'"
             , "}"
             , ""
-            , "instance Show Number {"
-            , "  show = (n) => (#- new Number(n).toString() -#)"
+            , "instance Show Integer {"
+            , "  show = (n) => (#- new Integer(n).toString() -#)"
             , "}"
             , ""
             , "instance (Show a, Show b) => Show #[a, b] {"
@@ -659,7 +659,7 @@ spec = do
             , "  }"
             , "}"
             , ""
-            , "show((Right(3) :: Either Number Number))"
+            , "show((Right(3) :: Either Integer Integer))"
             , ""
             , "fnWithConstraint :: Show a => a -> String"
             , "fnWithConstraint = show"
@@ -697,11 +697,11 @@ spec = do
 
           codeB = unlines
             [ "import ADTs from \"./ADTs\""
-            , "(ADTs.Just(3) :: ADTs.Maybe Number)"
+            , "(ADTs.Just(3) :: ADTs.Maybe Integer)"
             , "ADTs.Nothing"
-            , "fn :: ADTs.Maybe (ADTs.Maybe Number) -> ADTs.Maybe (ADTs.Maybe Number)"
+            , "fn :: ADTs.Maybe (ADTs.Maybe Integer) -> ADTs.Maybe (ADTs.Maybe Integer)"
             , "export fn = (m) => m"
-            , "fn2 :: ADTs.Maybe (ADTs.Maybe Number) -> Number"
+            , "fn2 :: ADTs.Maybe (ADTs.Maybe Integer) -> Integer"
             , "export fn2 = (m) =>"
             , "  where(m) {"
             , "    ADTs.Just(ADTs.Just(n)) => n"
@@ -763,9 +763,9 @@ spec = do
 
         binaryModule = unlines
           [ "export type ByteWord"
-          , "  = Int8Bit(Number)"
-          , "  | Int16Bit(Number)"
-          , "  | Int32Bit(Number)"
+          , "  = Int8Bit(Integer)"
+          , "  | Int16Bit(Integer)"
+          , "  | Int32Bit(Integer)"
           , "export type ByteArray = ByteArray(List ByteWord)"
           ]
 
@@ -822,7 +822,7 @@ spec = do
           defaultPathUtils { readFile = makeReadFile files, byteStringReadFile = makeByteStringReadFile files }
 
       let r = unsafePerformIO
-            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+            $ buildASTTable' TNode mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
             (Right a, Right t) -> tableTester "/root/project/src" t a
@@ -859,7 +859,7 @@ spec = do
             if f == "/madlib_modules/random/madlib.json" || f == "/madlib.json" then return True else return False
           }
 
-      let r = unsafePerformIO $ buildASTTable' mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
+      let r = unsafePerformIO $ buildASTTable' TNode mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of
@@ -903,7 +903,7 @@ spec = do
           }
 
       let r = unsafePerformIO
-            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+            $ buildASTTable' TNode mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -930,7 +930,7 @@ spec = do
                                        }
 
       let r = unsafePerformIO
-            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+            $ buildASTTable' TNode mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -1087,7 +1087,7 @@ spec = do
                                        }
 
       let r = unsafePerformIO
-            $ buildASTTable' mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
+            $ buildASTTable' TNode mempty pathUtils "/root/project/src/Main.mad" Nothing [] "/root/project/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/root/project/src/Main.mad"
       let actual = case (ast, r) of
@@ -1145,7 +1145,7 @@ spec = do
                                        return False
             }
 
-      let r = unsafePerformIO $ buildASTTable' mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
+      let r = unsafePerformIO $ buildASTTable' TNode mempty pathUtils "/src/Main.mad" Nothing [] "/src/Main.mad"
 
       let ast = r >>= flip Parse.findAST "/src/Main.mad"
       let actual = case (ast, r) of

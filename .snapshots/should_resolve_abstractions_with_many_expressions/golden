@@ -1,0 +1,928 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "Float" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "Float" Star) "prelude"))
+                    (TCon (TC "Boolean" Star) "prelude")))
+            (Area (Loc 0 1 1) (Loc 161 7 2))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Float" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "Float" Star) "prelude"))
+                          (TCon (TC "Boolean" Star) "prelude")))
+                  (Area (Loc 32 2 1) (Loc 161 7 2))
+                  (Assignment
+                     "fn"
+                     (Solved
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Float" Star) "prelude" ]
+                             (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                         , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                         , IsIn
+                             "Eq"
+                             [ TCon (TC "Float" Star) "prelude" ]
+                             (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                         , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                         , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Float" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "Float" Star) "prelude"))
+                                (TCon (TC "Boolean" Star) "prelude")))
+                        (Area (Loc 37 2 6) (Loc 161 7 2))
+                        (Abs
+                           (Solved
+                              ([ IsIn
+                                   "Number"
+                                   [ TCon (TC "Float" Star) "prelude" ]
+                                   (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                               , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                               , IsIn
+                                   "Eq"
+                                   [ TCon (TC "Float" Star) "prelude" ]
+                                   (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                               , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                               , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                               ] :=>
+                                 TCon (TC "Float" Star) "prelude")
+                              (Area (Loc 38 2 7) (Loc 39 2 8))
+                              "a")
+                           [ Solved
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Float" Star) "prelude" ]
+                                    (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                , IsIn
+                                    "Eq"
+                                    [ TCon (TC "Float" Star) "prelude" ]
+                                    (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                ] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "Float" Star) "prelude"))
+                                    (TCon (TC "Boolean" Star) "prelude"))
+                               (Area (Loc 37 2 6) (Loc 161 7 2))
+                               (Abs
+                                  (Solved
+                                     ([ IsIn
+                                          "Number"
+                                          [ TCon (TC "Float" Star) "prelude" ]
+                                          (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                      , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      , IsIn
+                                          "Eq"
+                                          [ TCon (TC "Float" Star) "prelude" ]
+                                          (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                      , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TCon (TC "Float" Star) "prelude")
+                                     (Area (Loc 41 2 10) (Loc 42 2 11))
+                                     "b")
+                                  [ Solved
+                                      ([ IsIn
+                                           "Number"
+                                           [ TCon (TC "Float" Star) "prelude" ]
+                                           (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                       ] :=>
+                                         TCon (TC "Float" Star) "prelude")
+                                      (Area (Loc 51 3 3) (Loc 62 3 14))
+                                      (Assignment
+                                         "sum"
+                                         (Solved
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                             ] :=>
+                                               TCon (TC "Float" Star) "prelude")
+                                            (Area (Loc 57 3 9) (Loc 62 3 14))
+                                            (App
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TCon (TC "Float" Star) "prelude"))
+                                                       (TCon (TC "Float" Star) "prelude"))
+                                                  (Area (Loc 57 3 9) (Loc 62 3 14))
+                                                  (App
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TCon
+                                                                      (TC "Float" Star) "prelude"))
+                                                                (TCon (TC "Float" Star) "prelude")))
+                                                        (Area (Loc 59 3 11) (Loc 60 3 12))
+                                                        (Placeholder
+                                                           ( MethodRef "Number" "+" False
+                                                           , [ TCon (TC "Float" Star) "prelude" ]
+                                                           )
+                                                           (Solved
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   Nothing
+                                                               ] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Float" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude")))
+                                                              (Area (Loc 59 3 11) (Loc 60 3 12))
+                                                              (Var "+"))))
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                                         ] :=>
+                                                           TCon (TC "Float" Star) "prelude")
+                                                        (Area (Loc 57 3 9) (Loc 58 3 10))
+                                                        (Var "a"))
+                                                     False))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                                   ] :=>
+                                                     TCon (TC "Float" Star) "prelude")
+                                                  (Area (Loc 61 3 13) (Loc 62 3 14))
+                                                  (Var "b"))
+                                               True)))
+                                  , Solved
+                                      ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                       ] :=>
+                                         TCon (TC "Boolean" Star) "prelude")
+                                      (Area (Loc 65 4 3) (Loc 87 4 25))
+                                      (Assignment
+                                         "moreThanTen"
+                                         (Solved
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 83 4 21) (Loc 84 4 22)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 79 4 17) (Loc 82 4 20)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Boolean" Star) "prelude")
+                                            (Area (Loc 79 4 17) (Loc 87 4 25))
+                                            (App
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 83 4 21) (Loc 84 4 22)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 79 4 17) (Loc 82 4 20)))
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TCon (TC "Float" Star) "prelude"))
+                                                       (TCon (TC "Boolean" Star) "prelude"))
+                                                  (Area (Loc 79 4 17) (Loc 87 4 25))
+                                                  (App
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TCon
+                                                                      (TC "Float" Star) "prelude"))
+                                                                (TCon
+                                                                   (TC "Boolean" Star) "prelude")))
+                                                        (Area (Loc 83 4 21) (Loc 84 4 22))
+                                                        (Placeholder
+                                                           ( MethodRef "Number" ">" False
+                                                           , [ TCon (TC "Float" Star) "prelude" ]
+                                                           )
+                                                           (Solved
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   Nothing
+                                                               ] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Float" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Boolean" Star)
+                                                                         "prelude")))
+                                                              (Area (Loc 83 4 21) (Loc 84 4 22))
+                                                              (Var ">"))))
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area (Loc 59 3 11) (Loc 60 3 12)))
+                                                         ] :=>
+                                                           TCon (TC "Float" Star) "prelude")
+                                                        (Area (Loc 79 4 17) (Loc 82 4 20))
+                                                        (Var "sum"))
+                                                     False))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 83 4 21) (Loc 84 4 22)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 79 4 17) (Loc 82 4 20)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Float" Star) "prelude")
+                                                  (Area (Loc 85 4 23) (Loc 87 4 25))
+                                                  (LNum "10"))
+                                               True)))
+                                  , Solved
+                                      ([] :=> TCon (TC "Float" Star) "prelude")
+                                      (Area (Loc 90 5 3) (Loc 132 5 45))
+                                      (Assignment
+                                         "computed"
+                                         (Solved
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 101 5 14) (Loc 112 5 25)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 119 5 32) (Loc 120 5 33)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 115 5 28) (Loc 118 5 31)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 125 5 38) (Loc 128 5 41)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Float" Star) "prelude")
+                                            (Area (Loc 101 5 14) (Loc 132 5 45))
+                                            (If
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Boolean" Star) "prelude")
+                                                  (Area (Loc 101 5 14) (Loc 112 5 25))
+                                                  (Var "moreThanTen"))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 119 5 32) (Loc 120 5 33)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 115 5 28) (Loc 118 5 31)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Float" Star) "prelude")
+                                                  (Area (Loc 115 5 28) (Loc 122 5 35))
+                                                  (App
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 119 5 32) (Loc 120 5 33)))
+                                                         , IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 115 5 28) (Loc 118 5 31)))
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TCon (TC "Float" Star) "prelude"))
+                                                        (Area (Loc 115 5 28) (Loc 122 5 35))
+                                                        (App
+                                                           (Solved
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   Nothing
+                                                               ] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Float" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude")))
+                                                              (Area (Loc 119 5 32) (Loc 120 5 33))
+                                                              (Placeholder
+                                                                 ( MethodRef "Number" "*" False
+                                                                 , [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                 )
+                                                                 (Solved
+                                                                    ([ IsIn
+                                                                         "Number"
+                                                                         [ TCon
+                                                                             (TC "Float" Star)
+                                                                             "prelude"
+                                                                         ]
+                                                                         Nothing
+                                                                     ] :=>
+                                                                       TApp
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "(->)"
+                                                                                  (Kfun
+                                                                                     Star
+                                                                                     (Kfun
+                                                                                        Star Star)))
+                                                                               "prelude")
+                                                                            (TCon
+                                                                               (TC "Float" Star)
+                                                                               "prelude"))
+                                                                         (TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(->)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TCon
+                                                                                  (TC "Float" Star)
+                                                                                  "prelude"))
+                                                                            (TCon
+                                                                               (TC "Float" Star)
+                                                                               "prelude")))
+                                                                    (Area
+                                                                       (Loc 119 5 32)
+                                                                       (Loc 120 5 33))
+                                                                    (Var "*"))))
+                                                           (Solved
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 119 5 32)
+                                                                         (Loc 120 5 33)))
+                                                               , IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 115 5 28)
+                                                                         (Loc 118 5 31)))
+                                                               ] :=>
+                                                                 TCon (TC "Float" Star) "prelude")
+                                                              (Area (Loc 115 5 28) (Loc 118 5 31))
+                                                              (Var "sum"))
+                                                           False))
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 119 5 32) (Loc 120 5 33)))
+                                                         , IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 115 5 28) (Loc 118 5 31)))
+                                                         , IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TCon (TC "Float" Star) "prelude")
+                                                        (Area (Loc 121 5 34) (Loc 122 5 35))
+                                                        (LNum "2"))
+                                                     True))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 125 5 38) (Loc 128 5 41)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Float" Star) "prelude")
+                                                  (Area (Loc 125 5 38) (Loc 132 5 45))
+                                                  (App
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 125 5 38) (Loc 128 5 41)))
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TCon (TC "Float" Star) "prelude"))
+                                                        (Area (Loc 125 5 38) (Loc 132 5 45))
+                                                        (App
+                                                           (Solved
+                                                              ([] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Float" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude")))
+                                                              (Area (Loc 129 5 42) (Loc 130 5 43))
+                                                              (Var "/"))
+                                                           (Solved
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Float" Star) "prelude"
+                                                                   ]
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 125 5 38)
+                                                                         (Loc 128 5 41)))
+                                                               ] :=>
+                                                                 TCon (TC "Float" Star) "prelude")
+                                                              (Area (Loc 125 5 38) (Loc 128 5 41))
+                                                              (Var "sum"))
+                                                           False))
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 125 5 38) (Loc 128 5 41)))
+                                                         , IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TCon (TC "Float" Star) "prelude")
+                                                        (Area (Loc 131 5 44) (Loc 132 5 45))
+                                                        (LNum "2"))
+                                                     True)))))
+                                  , Solved
+                                      ([ IsIn
+                                           "Eq"
+                                           [ TCon (TC "Float" Star) "prelude" ]
+                                           (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                       ] :=>
+                                         TCon (TC "Boolean" Star) "prelude")
+                                      (Area (Loc 142 6 10) (Loc 159 6 27))
+                                      (App
+                                         (Solved
+                                            ([ IsIn
+                                                 "Eq"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TCon (TC "Float" Star) "prelude"))
+                                                 (TCon (TC "Boolean" Star) "prelude"))
+                                            (Area (Loc 142 6 10) (Loc 159 6 27))
+                                            (App
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Eq"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TCon (TC "Float" Star) "prelude"))
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star)))
+                                                                "prelude")
+                                                             (TCon (TC "Float" Star) "prelude"))
+                                                          (TCon (TC "Boolean" Star) "prelude")))
+                                                  (Area (Loc 155 6 23) (Loc 157 6 25))
+                                                  (Placeholder
+                                                     ( MethodRef "Eq" "==" False
+                                                     , [ TCon (TC "Float" Star) "prelude" ]
+                                                     )
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Eq"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TCon
+                                                                      (TC "Float" Star) "prelude"))
+                                                                (TCon
+                                                                   (TC "Boolean" Star) "prelude")))
+                                                        (Area (Loc 155 6 23) (Loc 157 6 25))
+                                                        (Var "=="))))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Eq"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Float" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Float" Star) "prelude")
+                                                  (Area (Loc 142 6 10) (Loc 154 6 22))
+                                                  (App
+                                                     (Solved
+                                                        ([] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon (TC "Float" Star) "prelude"))
+                                                             (TCon (TC "Float" Star) "prelude"))
+                                                        (Area (Loc 142 6 10) (Loc 154 6 22))
+                                                        (App
+                                                           (Solved
+                                                              ([] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Float" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Float" Star)
+                                                                         "prelude")))
+                                                              (Area (Loc 151 6 19) (Loc 152 6 20))
+                                                              (Var "%"))
+                                                           (Solved
+                                                              ([] :=>
+                                                                 TCon (TC "Float" Star) "prelude")
+                                                              (Area (Loc 142 6 10) (Loc 150 6 18))
+                                                              (Var "computed"))
+                                                           False))
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Float" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TCon (TC "Float" Star) "prelude")
+                                                        (Area (Loc 153 6 21) (Loc 154 6 22))
+                                                        (LNum "2"))
+                                                     True))
+                                               False))
+                                         (Solved
+                                            ([ IsIn
+                                                 "Eq"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             , IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Float" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Float" Star) "prelude")
+                                            (Area (Loc 158 6 26) (Loc 159 6 27))
+                                            (LNum "0"))
+                                         True)
+                                  ])
+                           ]))))
+               (Untyped
+                  (Area (Loc 6 1 7) (Loc 31 1 32))
+                  (TRArr
+                     (Untyped (Area (Loc 6 1 7) (Loc 11 1 12)) (TRSingle "Float"))
+                     (Untyped
+                        (Area (Loc 15 1 16) (Loc 31 1 32))
+                        (TRArr
+                           (Untyped (Area (Loc 15 1 16) (Loc 20 1 21)) (TRSingle "Float"))
+                           (Untyped
+                              (Area (Loc 24 1 25) (Loc 31 1 32)) (TRSingle "Boolean"))))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Float" Star) "prelude"))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TCon (TC "Float" Star) "prelude"))
+                          (TCon (TC "Boolean" Star) "prelude")))))
+        , Solved
+            ([] :=> TCon (TC "Boolean" Star) "prelude")
+            (Area (Loc 162 8 1) (Loc 169 8 8))
+            (App
+               (Solved
+                  ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Float" Star) "prelude"))
+                       (TCon (TC "Boolean" Star) "prelude"))
+                  (Area (Loc 162 8 1) (Loc 170 8 9))
+                  (App
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Float" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "Float" Star) "prelude"))
+                                (TCon (TC "Boolean" Star) "prelude")))
+                        (Area (Loc 162 8 1) (Loc 164 8 3))
+                        (Var "fn"))
+                     (Solved
+                        ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
+                           TCon (TC "Float" Star) "prelude")
+                        (Area (Loc 165 8 4) (Loc 166 8 5))
+                        (LNum "3"))
+                     False))
+               (Solved
+                  ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                   , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                   ] :=>
+                     TCon (TC "Float" Star) "prelude")
+                  (Area (Loc 168 8 7) (Loc 169 8 8))
+                  (LNum "4"))
+               True)
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }
