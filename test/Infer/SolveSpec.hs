@@ -47,7 +47,7 @@ tester code = do
   ast <- buildAST "path" code
   let table = M.singleton "path" ast
   ((table, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table "path")
-                                  (CanonicalState { warnings = [] })
+                                  (CanonicalState { warnings = [], typesToDerive = mempty, derivedTypes = mempty })
   canAST <- Can.findAST table "path"
 
   runEnv canAST >>= (`runInfer` canAST)
@@ -57,7 +57,7 @@ tableTester :: Src.Table -> Src.AST -> Either CompilationError Slv.Table
 tableTester table ast = do
   let astPath = fromMaybe "" $ Src.apath ast
   ((canTable, _, _), _) <- runStateT (canonicalizeAST mempty TNode Can.initialEnv table astPath)
-                                     (CanonicalState { warnings = [] })
+                                     (CanonicalState { warnings = [], typesToDerive = mempty, derivedTypes = mempty })
   canAST <- Can.findAST canTable astPath
 
   let result = runExcept (runStateT (solveTable canTable canAST) InferState { count = 0, errors = [] })
@@ -181,7 +181,7 @@ spec = do
     it "should fail if it uses an ADT not defined" $ do
       let code =
             unlines
-              [ "addNegativeTen :: Maybe Number -> Number"
+              [ "addNegativeTen :: Maybe Integer -> Integer"
               , "export addNegativeTen = (a) => (a + -10)"
               , "addNegativeTen(3)"
               ]
@@ -203,7 +203,7 @@ spec = do
           astA  = buildAST "./ModuleA" codeA
           codeB = unlines
             [ "import M from \"./ModuleA\""
-            , "fn :: M.Maybe Number -> Number"
+            , "fn :: M.Maybe Integer -> Integer"
             , "export fn = (x) => ("
             , "  where(x) {"
             , "    M.Just(a) => a"
@@ -235,7 +235,7 @@ spec = do
 
     it "should allow ADT constructors to have record parameters" $ do
       let
-        codeA = "export type Point = Point(#[Number, Number])"
+        codeA = "export type Point = Point(#[Integer, Integer])"
         astA  = buildAST "./ModuleA" codeA
         codeB = unlines
           ["import P from \"./ModuleA\"", "p = P.Point(#[2, 4])", "where(p) {", "  P.Point(#[a, b]) => a + b", "}"]
@@ -379,7 +379,7 @@ spec = do
           codeB = unlines
             [ "import W from \"./ModuleA\""
             , ""
-            , "double :: Functor f => f Number -> f Number"
+            , "double :: Functor f => f Integer -> f Integer"
             , "double = map((x) => x * 2)"
             , ""
             , "of(3)"
@@ -407,7 +407,7 @@ spec = do
             , "  read :: String -> a"
             , "}"
             , ""
-            , "instance Read Number {"
+            , "instance Read Integer {"
             , "  read = (s) => (#- parseFloat(s, 10) -#)"
             , "}"
             , ""
@@ -422,11 +422,11 @@ spec = do
             , "  read :: String -> a"
             , "}"
             , ""
-            , "instance Read Number {"
+            , "instance Read Integer {"
             , "  read = (s) => (#- parseFloat(s, 10) -#)"
             , "}"
             , ""
-            , "(read('3') :: Number)"
+            , "(read('3') :: Integer)"
             ]
           actual = tester code
       snapshotTest "should resolve ambiguity with type annotations" actual
@@ -441,8 +441,8 @@ spec = do
             , "  show = (b) => b ? 'True' : 'False'"
             , "}"
             , ""
-            , "instance Show Number {"
-            , "  show = (n) => (#- new Number(n).toString() -#)"
+            , "instance Show Integer {"
+            , "  show = (n) => (#- new Integer(n).toString() -#)"
             , "}"
             , ""
             , "instance (Show a, Show b) => Show #[a, b] {"
@@ -464,8 +464,8 @@ spec = do
             , "  show = (b) => b ? 'True' : 'False'"
             , "}"
             , ""
-            , "instance Show Number {"
-            , "  show = (n) => (#- new Number(n).toString() -#)"
+            , "instance Show Integer {"
+            , "  show = (n) => (#- new Integer(n).toString() -#)"
             , "}"
             , ""
             , "instance Show #[a, b] {"
@@ -520,7 +520,7 @@ spec = do
       snapshotTest "should fail to infer record if their fields do not match" actual
 
     it "should infer a record with a type annotation" $ do
-      let code   = "({ x: 3, y: 7 } :: { x :: Number, y :: Number })"
+      let code   = "({ x: 3, y: 7 } :: { x :: Integer, y :: Integer })"
           actual = tester code
       snapshotTest "should infer a record with a type annotation" actual
 
@@ -567,7 +567,7 @@ spec = do
 
     it "should infer complex where expressions with records" $ do
       let code = unlines
-            [ "export alias ComparisonResult = Number"
+            [ "export alias ComparisonResult = Integer"
             , ""
             , "export MORE = 1"
             , "export LESS = -1"
@@ -577,7 +577,7 @@ spec = do
             , "  compare :: a -> a -> ComparisonResult"
             , "}"
             , ""
-            , "instance Comparable Number {"
+            , "instance Comparable Integer {"
             , "  compare = (a, b) => a > b ? MORE : a == b ? EQUAL : LESS"
             , "}"
             , ""
@@ -660,19 +660,19 @@ spec = do
             , ""
             , "alias ShopDiscount = {"
             , "  id :: String,"
-            , "  itemId :: Number,"
-            , "  multiplier :: Number"
+            , "  itemId :: Integer,"
+            , "  multiplier :: Integer"
             , "}"
             , "alias ShopItem = {"
-            , "  id :: Number,"
+            , "  id :: Integer,"
             , "  description :: String,"
-            , "  cost :: Number,"
+            , "  cost :: Integer,"
             , "  discounts :: List ShopDiscount"
             , "}"
             , "alias ShopCustomer = {"
             , "  id :: String,"
             , "  cart :: List ShopItem,"
-            , "  money :: Number"
+            , "  money :: Integer"
             , "}"
             , "alias ShopContext = {"
             , "  customers :: List ShopCustomer,"
@@ -739,7 +739,7 @@ spec = do
             , "  (b, a) => fn(a, b)"
             , ")"
             , ""
-            , "nth :: Number -> List a -> Maybe a"
+            , "nth :: Integer -> List a -> Maybe a"
             , "export nth = (i, xs) => (#- {"
             , "  const x = xs[i];"
             , "  return x === undefined"
@@ -774,13 +774,13 @@ spec = do
             , ""
             , "of = (a) => Wish((bad, good) => good(a))"
             , ""
-            , "nth :: Number -> List a -> Maybe a"
+            , "nth :: Integer -> List a -> Maybe a"
             , "nth = (i, xs) => #- -#"
             , ""
-            , "slice :: Number -> Number -> List a -> List a"
+            , "slice :: Integer -> Integer -> List a -> List a"
             , "export slice = (start, end, xs) => (#- xs.slice(start, end) -#)"
             , ""
-            , "len :: List a -> Number"
+            , "len :: List a -> Integer"
             , "export len = (xs) => (#- xs.length -#)"
             , ""
             , "export alias Action a = a -> String -> List (Wish (a -> a) (a -> a))"
@@ -794,7 +794,7 @@ spec = do
             , "  (x) => x - 1"
             , ")(3)"
             , ""
-            , "toggleTodo :: Number -> Action State"
+            , "toggleTodo :: Integer -> Action State"
             , "toggleTodo = (index, _, __) => ["
             , "  of((state) => pipe("
             , "    .todos,"
@@ -824,18 +824,18 @@ spec = do
     -- TODO: Write tests where implementation and definition don't match to force
     -- implementing it as it's currently not implemented.
     it "should resolve abstractions with a type definition" $ do
-      let code   = unlines ["fn :: Number -> Number -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
+      let code   = unlines ["fn :: Integer -> Integer -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
           actual = tester code
       snapshotTest "should resolve abstractions with a type definition" actual
 
     it "should fail for abstractions with a wrong type definition" $ do
-      let code   = unlines ["fn :: String -> Number -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
+      let code   = unlines ["fn :: String -> Integer -> Boolean", "fn = (a, b) => (a == b)", "fn(3, 4)"]
           actual = tester code
       snapshotTest "should fail for abstractions with a wrong type definition" actual
 
     it "should resolve abstractions with many expressions" $ do
       let code = unlines
-            [ "fn :: Number -> Number -> Boolean"
+            [ "fn :: Float -> Float -> Boolean"
             , "fn = (a, b) => {"
             , "  sum = a + b"
             , "  moreThanTen = sum > 10"
@@ -882,12 +882,12 @@ spec = do
           actual = tester code
       snapshotTest "should resolve where with a Boolean literal" actual
 
-    it "should resolve where with a Number input" $ do
+    it "should resolve where with a Integer input" $ do
       let
         code = unlines
           ["where(42) {", "  1 => \"NOPE\"", "  3 => \"NOPE\"", "  33 => \"NOPE\"", "  42 => \"YEAH\"", "}"]
         actual = tester code
-      snapshotTest "should resolve where with a Number input" actual
+      snapshotTest "should resolve where with a Integer input" actual
 
     it "should resolve where with a string input" $ do
       let code =
@@ -922,10 +922,10 @@ spec = do
 
     it "should fail to resolve a pattern when the pattern constructor does not match the constructor arg types" $ do
       let code = unlines
-            [ "type User = LoggedIn(String, Number)"
+            [ "type User = LoggedIn(String, Integer)"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  LoggedIn(Number, x) => x"
+            , "  LoggedIn(Integer, x) => x"
             , "}"
             ]
           actual = tester code
@@ -935,10 +935,10 @@ spec = do
 
     it "should fail to resolve a constructor pattern with different type variables applied" $ do
       let code = unlines
-            [ "type User a = LoggedIn(a, Number)"
+            [ "type User a = LoggedIn(a, Integer)"
             , "u = LoggedIn(\"John\", 33)"
             , "where(u) {"
-            , "  LoggedIn(Number, x) => x"
+            , "  LoggedIn(Integer, x) => x"
             , "  LoggedIn(String, x) => x"
             , "}"
             ]
@@ -946,7 +946,7 @@ spec = do
       snapshotTest "should fail to resolve a constructor pattern with different type variables applied" actual
 
     it "should fail to resolve if the given constructor does not exist" $ do
-      let code   = unlines ["where(3) {", "  LoggedIn(Number, x) => x", "  LoggedIn(String, x) => x", "}"]
+      let code   = unlines ["where(3) {", "  LoggedIn(Integer, x) => x", "  LoggedIn(String, x) => x", "}"]
           actual = tester code
       snapshotTest "should fail to resolve if the given constructor does not exist" actual
 
@@ -1047,7 +1047,7 @@ spec = do
       snapshotTest "should resolve usage of exported names" actual
 
     it "should resolve usage of exported typed names" $ do
-      let code   = unlines ["inc :: Number -> Number", "export inc = (a) => (a + 1)", "inc(3)"]
+      let code   = unlines ["inc :: Integer -> Integer", "export inc = (a) => (a + 1)", "inc(3)"]
           actual = tester code
       snapshotTest "should resolve usage of exported typed names" actual
 
@@ -1076,45 +1076,45 @@ spec = do
 
     -- Boolean operators:
 
-    it "should resolve the operator &&" $ do
+    it "should resolve the and operator" $ do
       let code   = "true && false"
           actual = tester code
-      snapshotTest "should resolve the operator &&" actual
+      snapshotTest "should resolve the and operator" actual
 
-    it "should resolve the operator ||" $ do
+    it "should resolve the or operator" $ do
       let code   = "true || false"
           actual = tester code
-      snapshotTest "should resolve the operator ||" actual
+      snapshotTest "should resolve the or operator" actual
 
-    it "should resolve the combination of && and ||" $ do
+    it "should resolve the combination of and and or operators" $ do
       let code   = "true || false && true"
           actual = tester code
-      snapshotTest "should resolve the combination of && and ||" actual
+      snapshotTest "should resolve the combination of and and or operators" actual
 
-    it "should resolve the operator >" $ do
+    it "should resolve the gt operator" $ do
       let code   = "1 > 3"
           actual = tester code
-      snapshotTest "should resolve the operator >" actual
+      snapshotTest "should resolve the gt operator" actual
 
-    it "should resolve the operator <" $ do
+    it "should resolve the lt operator" $ do
       let code   = "1 < 3"
           actual = tester code
-      snapshotTest "should resolve the operator <" actual
+      snapshotTest "should resolve the lt operator" actual
 
-    it "should resolve the operator >=" $ do
+    it "should resolve the gte operator" $ do
       let code   = "1 >= 3"
           actual = tester code
-      snapshotTest "should resolve the operator >=" actual
+      snapshotTest "should resolve the gte operator" actual
 
-    it "should resolve the operator <=" $ do
+    it "should resolve the lte operator" $ do
       let code   = "1 <= 3"
           actual = tester code
-      snapshotTest "should resolve the operator <=" actual
+      snapshotTest "should resolve the lte operator" actual
 
-    it "should resolve the operator !" $ do
+    it "should resolve the negation operator" $ do
       let code   = "!false"
           actual = tester code
-      snapshotTest "should resolve the operator !" actual
+      snapshotTest "should resolve the negation operator" actual
 
     ---------------------------------------------------------------------------
 
@@ -1123,14 +1123,14 @@ spec = do
 
     it "should validate correct type annotations" $ do
       let code = unlines
-            [ "inc :: Number -> Number"
+            [ "inc :: Integer -> Integer"
             , "inc = (a) => (a + 1)"
-            , "(3 :: Number)"
+            , "(3 :: Integer)"
             , "type Maybe a = Just(a) | Nothing"
             , "(Nothing :: Maybe a)"
             -- TODO: The surrounded parens are necessary for now as the grammar is too ambiguous.
             -- We need to split the production and reconnect it when building the canonical AST.
-            , "(Just(3) :: Maybe Number)"
+            , "(Just(3) :: Maybe Integer)"
             ]
           actual = tester code
       snapshotTest "should validate correct type annotations" actual
@@ -1233,7 +1233,7 @@ spec = do
       snapshotTest "should fail when accessing a function without typing that is defined after" actual
 
     it "should fail when accessing a executing an expression declared later" $ do
-      let code   = unlines ["definedAfter(3)", "definedAfter :: Number -> Number", "definedAfter = (x) => x + 1"]
+      let code   = unlines ["definedAfter(3)", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
             Left  e      -> Left e
@@ -1247,7 +1247,7 @@ spec = do
       snapshotTest "should fail when shadowing a name even if it's defined after the function" actual
 
     it "should fail when exporting a name not defined yet" $ do
-      let code   = unlines ["export definedAfter", "definedAfter :: Number -> Number", "definedAfter = (x) => x + 1"]
+      let code   = unlines ["export definedAfter", "definedAfter :: Integer -> Integer", "definedAfter = (x) => x + 1"]
           actual = case buildAST "./Module" code of
             Right parsed -> tableTester (M.fromList [("./Module", parsed)]) parsed
             Left  e      -> Left e

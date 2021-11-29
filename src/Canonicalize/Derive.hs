@@ -71,10 +71,10 @@ buildFieldConditions =
           (ec $ App
             (ec $ App
               (ec $ Var "==")
-              (ec $ Access (ec $ Var "a") (ec $ Var ('.':fieldName)))
+              (ec $ Access (ec $ Var "__$a__") (ec $ Var ('.':fieldName)))
               False
             )
-            (ec $ Access (ec $ Var "b") (ec $ Var ('.':fieldName)))
+            (ec $ Access (ec $ Var "__$b__") (ec $ Var ('.':fieldName)))
             True
           )
           False
@@ -119,8 +119,8 @@ deriveEqInstance toDerive = case toDerive of
                     Map.singleton
                     "=="
                     (
-                      ec (Assignment "==" (ec $ Abs (ec "a") [ec $ Abs (ec "b") [
-                        ec $ Where (ec (TupleConstructor [ec $ Var "a", ec $ Var "b"]))
+                      ec (Assignment "==" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
+                        ec $ Where (ec (TupleConstructor [ec $ Var "__$a__", ec $ Var "__$b__"]))
                           (
                             (buildConstructorIs <$> adtconstructors)
                               ++  [
@@ -143,7 +143,7 @@ deriveEqInstance toDerive = case toDerive of
           Map.singleton
           "=="
           (
-            ec (Assignment "==" (ec $ Abs (ec "a") [ec $ Abs (ec "b") [
+            ec (Assignment "==" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
               buildFieldConditions fieldNames
             ]]))
           )

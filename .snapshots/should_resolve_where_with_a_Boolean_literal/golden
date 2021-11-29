@@ -1,0 +1,53 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([] :=> TCon (TC "String" Star) "prelude")
+            (Area (Loc 0 1 1) (Loc 50 4 2))
+            (Where
+               (Solved
+                  ([] :=> TCon (TC "Boolean" Star) "prelude")
+                  (Area (Loc 6 1 7) (Loc 10 1 11))
+                  (LBool "true"))
+               [ Solved
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Boolean" Star) "prelude"))
+                        (TCon (TC "String" Star) "prelude"))
+                   (Area (Loc 16 2 3) (Loc 28 2 15))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
+                         (Area (Loc 16 2 3) (Loc 20 2 7))
+                         (PBool "true"))
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 24 2 11) (Loc 28 2 15))
+                         (LStr "\"OK\"")))
+               , Solved
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Boolean" Star) "prelude"))
+                        (TCon (TC "String" Star) "prelude"))
+                   (Area (Loc 31 3 3) (Loc 48 3 20))
+                   (Is
+                      (Solved
+                         ([] :=> TCon (TC "Boolean" Star) "prelude")
+                         (Area (Loc 31 3 3) (Loc 36 3 8))
+                         (PBool "false"))
+                      (Solved
+                         ([] :=> TCon (TC "String" Star) "prelude")
+                         (Area (Loc 40 3 12) (Loc 48 3 20))
+                         (LStr "\"NOT OK\"")))
+               ])
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

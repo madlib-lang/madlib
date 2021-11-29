@@ -1,0 +1,34 @@
+Left
+  (CompilationError
+     (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+     Context
+       { ctxAstPath = "path"
+       , ctxArea = Area (Loc 0 1 1) (Loc 19 1 20)
+       , ctxBacktrace =
+           [ BTExp
+               (Canonical
+                  (Area (Loc 0 1 1) (Loc 19 1 20))
+                  (ListConstructor
+                     [ Canonical
+                         (Area (Loc 2 1 3) (Loc 3 1 4))
+                         (ListItem (Canonical (Area (Loc 2 1 3) (Loc 3 1 4)) (LNum "1")))
+                     , Canonical
+                         (Area (Loc 5 1 6) (Loc 18 1 19))
+                         (ListSpread
+                            (Canonical
+                               (Area (Loc 8 1 9) (Loc 18 1 19))
+                               (ListConstructor
+                                  [ Canonical
+                                      (Area (Loc 9 1 10) (Loc 12 1 13))
+                                      (ListItem
+                                         (Canonical
+                                            (Area (Loc 9 1 10) (Loc 12 1 13)) (LStr "\"1\"")))
+                                  , Canonical
+                                      (Area (Loc 14 1 15) (Loc 17 1 18))
+                                      (ListItem
+                                         (Canonical
+                                            (Area (Loc 14 1 15) (Loc 17 1 18)) (LStr "\"2\"")))
+                                  ])))
+                     ]))
+           ]
+       })

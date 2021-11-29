@@ -1,0 +1,52 @@
+global.__eq__ = (l, r) => {
+  if (l === r) {
+    return true;
+  }
+  if (typeof l !== typeof r) {
+    return false;
+  }
+  if (typeof l === `object`) {
+    if (Array.isArray(l)) {
+      return l.length === r.length && l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
+    }
+    const keysL = Object.keys(l);
+    const keysR = Object.keys(r);
+    return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq__(l[k], r[k]), true);
+  }
+  return l === r;
+}
+
+global.__dict_ctor__ = (items) => {
+  let addedItems = [];
+  for(const item of items) {
+    if (addedItems.find(([key, _]) => __eq__(key, item[0])) === undefined) {
+      addedItems.push(item);
+    }
+  }
+  return { __constructor: "Dictionary", __args: [addedItems] };
+}
+
+const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
+global.__apMtdDicts__ = (dict, dicts) =>
+  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: () => __applyMany__(dict[k](), dicts) }), {});
+
+global.__once__ = (fn, context) => {
+
+    var result;
+
+    return function() {
+
+        if (fn) {
+
+            result = fn.apply(context || this, arguments);
+
+            fn = null;
+
+        }
+
+        return result;
+
+    };
+
+}
+

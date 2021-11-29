@@ -333,9 +333,12 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
   (s1, ps1, t1, e1) <- infer env' exp
   s2                <- catchError (contextualUnify env' e currentType t1) (const $ return M.empty)
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
-  let s  = s2 `compose` s1
+  let s  = s1 `compose` s2
   let t2 = apply s t1
-  return (s, currentPreds ++ ps1, t2, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t2))
+
+  -- return (s1, ps1, t1, applyAssignmentSolve e name e1 (ps1 :=> t1))
+  -- return (s1, currentPreds ++ ps1, t1, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t1))
+  return (s, currentPreds ++ ps1, apply s t2, applyAssignmentSolve e name e1 ((currentPreds ++ ps1) :=> t2))
 
 
 
@@ -589,7 +592,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
   let s''  = s' `compose` issSubstitution
 
   let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . T.lst <$> pss
-  let wher = Slv.Solved (apply s (ps ++ ps') :=> apply s'' tv) area $ Slv.Where (updateQualType e (apply s'' ps :=> apply s'' t)) iss
+  let wher = Slv.Solved (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss
   return (s'', ps ++ ps', apply s'' tv, wher)
 
 
@@ -648,7 +651,8 @@ inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   (s1, ps1, t1, e1) <- infer env exp
   s2                <- contextualUnify env e t t1
 
-  return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
+  return (s1 `compose` s2, ps1, t1, Slv.Solved (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
+  -- return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
 
 inferExtern :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -789,7 +793,6 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       (CompilationError e c) -> throwError $ CompilationError e c
     )
 
-
   (ds', sDefaults) <-
     if not isLet && not (null (rs ++ ds)) && not (Can.isNamedAbs exp) then do
       (sDef, rs')   <- tryDefaults env'' (rs ++ ds)
@@ -804,10 +807,6 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       return ([], sDef' `compose` sDef)
     else do
       (sDef, rs')   <- tryDefaults env'' rs
-          -- TODO: tryDefaults should handle such a case so that we only call it once.
-          -- What happens is that defaulting may solve some types ( like Number a -> Integer )
-          -- and then it could resolve instances like Show where before we still had a type var
-          -- but after the first pass we have Integer instead.
       (sDef', rs'') <- tryDefaults env'' (apply sDef rs')
       return (ds ++ rs'', sDef' `compose` sDef)
 
@@ -822,11 +821,10 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
 
   case Can.getExpName exp of
     Just n  ->
-      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (ds'' :=> t'))
+      return (sFinal, (ds'', ds''), extendVars env (n, sc), updateQualType e (apply sFinal $ ds'' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds'', ds''), env, updateQualType e (ds'' :=> t'))
-
+      return (sFinal, (ds'', ds''), env, updateQualType e (apply sFinal $ ds'' :=> t'))
 
 
 inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -838,8 +836,8 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp
-  s''           <- catchError (contextualUnify env canExp t t') (flipUnificationError . limitContextArea 2)
-  let s' = s'' `compose` s `compose` s''
+  s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
+  let s' = s `compose` s'' `compose` s''
 
   let qs'  = apply s' qs
       t''  = apply s' t

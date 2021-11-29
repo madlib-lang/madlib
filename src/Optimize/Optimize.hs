@@ -30,6 +30,7 @@ numbers :: [String]
 numbers = show <$> [0 ..]
 
 generateClassShortname :: String -> Optimize String
+generateClassShortname "Eq" = return "Eq"
 generateClassShortname n = do
   s <- get
   let shortName = 'Ι' : numbers !! (1 + classCount s)

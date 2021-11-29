@@ -1,0 +1,1549 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "a0" Star)))
+                       (TVar (TV "b1" Star))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "a0" Star))))
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TVar (TV "b1" Star)))))
+            (Area (Loc 0 1 1) (Loc 68 2 33))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "a0" Star)))
+                             (TVar (TV "b1" Star))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TVar (TV "a0" Star))))
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TVar (TV "b1" Star)))))
+                  (Area (Loc 36 2 1) (Loc 68 2 33))
+                  (Assignment
+                     "map"
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "a0" Star)))
+                                   (TVar (TV "b1" Star))))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "a0" Star))))
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TVar (TV "b1" Star)))))
+                        (Area (Loc 42 2 7) (Loc 68 2 33))
+                        (Abs
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "a0" Star)))
+                                   (TVar (TV "b1" Star)))
+                              (Area (Loc 43 2 8) (Loc 44 2 9))
+                              "f")
+                           [ Solved
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TApp
+                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                          (TVar (TV "a0" Star))))
+                                    (TApp
+                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                       (TVar (TV "b1" Star))))
+                               (Area (Loc 42 2 7) (Loc 68 2 33))
+                               (Abs
+                                  (Solved
+                                     ([] :=>
+                                        TApp
+                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                          (TVar (TV "a0" Star)))
+                                     (Area (Loc 46 2 11) (Loc 48 2 13))
+                                     "xs")
+                                  [ Solved
+                                      ([] :=>
+                                         TApp
+                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                           (TVar (TV "b1" Star)))
+                                      (Area (Loc 54 2 19) (Loc 67 2 32))
+                                      (JSExp " some JS ")
+                                  ])
+                           ]))))
+               (Untyped
+                  (Area (Loc 8 1 9) (Loc 35 1 36))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 8 1 9) (Loc 14 1 15))
+                        (TRArr
+                           (Untyped (Area (Loc 8 1 9) (Loc 9 1 10)) (TRSingle "a"))
+                           (Untyped (Area (Loc 13 1 14) (Loc 14 1 15)) (TRSingle "b"))))
+                     (Untyped
+                        (Area (Loc 19 1 20) (Loc 35 1 36))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 19 1 20) (Loc 25 1 26))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 24 1 25) (Loc 25 1 26)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 29 1 30) (Loc 35 1 36))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 34 1 35) (Loc 35 1 36)) (TRSingle "b") ]))))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                             (TGen 1)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 1))))))
+        , Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TVar (TV "h7" Star))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "h7" Star))))
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TVar (TV "h7" Star)))))
+            (Area (Loc 69 3 1) (Loc 159 4 54))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TVar (TV "h7" Star))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TVar (TV "h7" Star))))
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TVar (TV "h7" Star)))))
+                  (Area (Loc 106 4 1) (Loc 159 4 54))
+                  (Export
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TVar (TV "h7" Star))))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "h7" Star))))
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TVar (TV "h7" Star)))))
+                        (Area (Loc 113 4 8) (Loc 159 4 54))
+                        (Assignment
+                           "concat"
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TVar (TV "h7" Star))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TApp
+                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                            (TVar (TV "h7" Star))))
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TVar (TV "h7" Star)))))
+                              (Area (Loc 122 4 17) (Loc 159 4 54))
+                              (Abs
+                                 (Solved
+                                    ([] :=>
+                                       TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TVar (TV "h7" Star)))
+                                    (Area (Loc 123 4 18) (Loc 126 4 21))
+                                    "xs1")
+                                 [ Solved
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TApp
+                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                (TVar (TV "h7" Star))))
+                                          (TApp
+                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                             (TVar (TV "h7" Star))))
+                                     (Area (Loc 122 4 17) (Loc 159 4 54))
+                                     (Abs
+                                        (Solved
+                                           ([] :=>
+                                              TApp
+                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                (TVar (TV "h7" Star)))
+                                           (Area (Loc 128 4 23) (Loc 131 4 26))
+                                           "xs2")
+                                        [ Solved
+                                            ([] :=>
+                                               TApp
+                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                 (TVar (TV "h7" Star)))
+                                            (Area (Loc 137 4 32) (Loc 158 4 53))
+                                            (JSExp " xs1.concat(xs2) ")
+                                        ])
+                                 ]))))))
+               (Untyped
+                  (Area (Loc 79 3 11) (Loc 105 3 37))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 79 3 11) (Loc 85 3 17))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 84 3 16) (Loc 85 3 17)) (TRSingle "a") ]))
+                     (Untyped
+                        (Area (Loc 89 3 21) (Loc 105 3 37))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 89 3 21) (Loc 95 3 27))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 94 3 26) (Loc 95 3 27)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 99 3 31) (Loc 105 3 37))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 104 3 36) (Loc 105 3 37)) (TRSingle "a")
+                                 ]))))))
+               (Forall
+                  [ Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0))))))
+        , Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "m12" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "n13" Star)))
+                          (TVar (TV "m12" Star)))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "m12" Star)))
+                    (TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TVar (TV "n13" Star))))
+                       (TVar (TV "m12" Star)))))
+            (Area (Loc 160 5 1) (Loc 269 6 66))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "m12" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "n13" Star)))
+                                (TVar (TV "m12" Star)))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "m12" Star)))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TVar (TV "n13" Star))))
+                             (TVar (TV "m12" Star)))))
+                  (Area (Loc 204 6 1) (Loc 269 6 66))
+                  (Export
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV "m12" Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "n13" Star)))
+                                      (TVar (TV "m12" Star)))))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "m12" Star)))
+                                (TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TVar (TV "n13" Star))))
+                                   (TVar (TV "m12" Star)))))
+                        (Area (Loc 211 6 8) (Loc 269 6 66))
+                        (Assignment
+                           "reduce"
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "m12" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "n13" Star)))
+                                            (TVar (TV "m12" Star)))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "m12" Star)))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TApp
+                                               (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                               (TVar (TV "n13" Star))))
+                                         (TVar (TV "m12" Star)))))
+                              (Area (Loc 220 6 17) (Loc 269 6 66))
+                              (Abs
+                                 (Solved
+                                    ([] :=>
+                                       TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TVar (TV "m12" Star)))
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "n13" Star)))
+                                            (TVar (TV "m12" Star))))
+                                    (Area (Loc 221 6 18) (Loc 222 6 19))
+                                    "f")
+                                 [ Solved
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TVar (TV "m12" Star)))
+                                          (TApp
+                                             (TApp
+                                                (TCon
+                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                   "prelude")
+                                                (TApp
+                                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                   (TVar (TV "n13" Star))))
+                                             (TVar (TV "m12" Star))))
+                                     (Area (Loc 220 6 17) (Loc 269 6 66))
+                                     (Abs
+                                        (Solved
+                                           ([] :=> TVar (TV "m12" Star))
+                                           (Area (Loc 224 6 21) (Loc 231 6 28))
+                                           "initial")
+                                        [ Solved
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TApp
+                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                       (TVar (TV "n13" Star))))
+                                                 (TVar (TV "m12" Star)))
+                                            (Area (Loc 220 6 17) (Loc 269 6 66))
+                                            (Abs
+                                               (Solved
+                                                  ([] :=>
+                                                     TApp
+                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                       (TVar (TV "n13" Star)))
+                                                  (Area (Loc 233 6 30) (Loc 235 6 32))
+                                                  "xs")
+                                               [ Solved
+                                                   ([] :=> TVar (TV "m12" Star))
+                                                   (Area (Loc 241 6 38) (Loc 268 6 65))
+                                                   (JSExp " xs.reduce(f, initial) ")
+                                               ])
+                                        ])
+                                 ]))))))
+               (Untyped
+                  (Area (Loc 171 5 12) (Loc 203 5 44))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 171 5 12) (Loc 182 5 23))
+                        (TRArr
+                           (Untyped (Area (Loc 171 5 12) (Loc 172 5 13)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 176 5 17) (Loc 182 5 23))
+                              (TRArr
+                                 (Untyped (Area (Loc 176 5 17) (Loc 177 5 18)) (TRSingle "b"))
+                                 (Untyped (Area (Loc 181 5 22) (Loc 182 5 23)) (TRSingle "a"))))))
+                     (Untyped
+                        (Area (Loc 187 5 28) (Loc 203 5 44))
+                        (TRArr
+                           (Untyped (Area (Loc 187 5 28) (Loc 188 5 29)) (TRSingle "a"))
+                           (Untyped
+                              (Area (Loc 192 5 33) (Loc 203 5 44))
+                              (TRArr
+                                 (Untyped
+                                    (Area (Loc 192 5 33) (Loc 198 5 39))
+                                    (TRComp
+                                       "List"
+                                       [ Untyped (Area (Loc 197 5 38) (Loc 198 5 39)) (TRSingle "b")
+                                       ]))
+                                 (Untyped (Area (Loc 202 5 43) (Loc 203 5 44)) (TRSingle "a"))))))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 1))
+                                (TGen 0))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude") (TGen 0))
+                          (TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 1)))
+                             (TGen 0))))))
+        , Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "u20" Star)))
+                          (TVar (TV "v21" Star)))))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TVar (TV "u20" Star))))
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TVar (TV "v21" Star)))))
+            (Area (Loc 271 8 1) (Loc 416 16 2))
+            (TypedExp
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "u20" Star)))
+                                (TVar (TV "v21" Star)))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp
+                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                (TVar (TV "u20" Star))))
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TVar (TV "v21" Star)))))
+                  (Area (Loc 311 9 1) (Loc 416 16 2))
+                  (Export
+                     (Solved
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV "u20" Star)))
+                                      (TVar (TV "v21" Star)))))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TApp
+                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                      (TVar (TV "u20" Star))))
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TVar (TV "v21" Star)))))
+                        (Area (Loc 318 9 8) (Loc 416 16 2))
+                        (Assignment
+                           "ap"
+                           (Solved
+                              ([] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "u20" Star)))
+                                            (TVar (TV "v21" Star)))))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TApp
+                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                            (TVar (TV "u20" Star))))
+                                      (TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TVar (TV "v21" Star)))))
+                              (Area (Loc 323 9 13) (Loc 416 16 2))
+                              (Abs
+                                 (Solved
+                                    ([] :=>
+                                       TApp
+                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                         (TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TVar (TV "u20" Star)))
+                                            (TVar (TV "v21" Star))))
+                                    (Area (Loc 324 9 14) (Loc 327 9 17))
+                                    "fns")
+                                 [ Solved
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TApp
+                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                (TVar (TV "u20" Star))))
+                                          (TApp
+                                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                             (TVar (TV "v21" Star))))
+                                     (Area (Loc 323 9 13) (Loc 416 16 2))
+                                     (Abs
+                                        (Solved
+                                           ([] :=>
+                                              TApp
+                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                (TVar (TV "u20" Star)))
+                                           (Area (Loc 329 9 19) (Loc 331 9 21))
+                                           "xs")
+                                        [ Solved
+                                            ([] :=>
+                                               TApp
+                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                 (TVar (TV "v21" Star)))
+                                            (Area (Loc 336 9 26) (Loc 414 15 6))
+                                            (App
+                                               (Solved
+                                                  ([] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TApp
+                                                             (TCon
+                                                                (TC "List" (Kfun Star Star))
+                                                                "prelude")
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TVar (TV "u20" Star)))
+                                                                (TVar (TV "v21" Star)))))
+                                                       (TApp
+                                                          (TCon
+                                                             (TC "List" (Kfun Star Star)) "prelude")
+                                                          (TVar (TV "v21" Star))))
+                                                  (Area (Loc 336 9 26) (Loc 407 14 5))
+                                                  (App
+                                                     (Solved
+                                                        ([] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC "List" (Kfun Star Star))
+                                                                      "prelude")
+                                                                   (TVar (TV "v21" Star))))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "List" (Kfun Star Star))
+                                                                         "prelude")
+                                                                      (TApp
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "(->)"
+                                                                                  (Kfun
+                                                                                     Star
+                                                                                     (Kfun
+                                                                                        Star Star)))
+                                                                               "prelude")
+                                                                            (TVar (TV "u20" Star)))
+                                                                         (TVar (TV "v21" Star)))))
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC "List" (Kfun Star Star))
+                                                                      "prelude")
+                                                                   (TVar (TV "v21" Star)))))
+                                                        (Area (Loc 336 9 26) (Loc 416 16 2))
+                                                        (App
+                                                           (Solved
+                                                              ([] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TApp
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "(->)"
+                                                                                  (Kfun
+                                                                                     Star
+                                                                                     (Kfun
+                                                                                        Star Star)))
+                                                                               "prelude")
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "List"
+                                                                                     (Kfun
+                                                                                        Star Star))
+                                                                                  "prelude")
+                                                                               (TVar
+                                                                                  (TV "v21" Star))))
+                                                                         (TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(->)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TApp
+                                                                                  (TApp
+                                                                                     (TCon
+                                                                                        (TC
+                                                                                           "(->)"
+                                                                                           (Kfun
+                                                                                              Star
+                                                                                              (Kfun
+                                                                                                 Star
+                                                                                                 Star)))
+                                                                                        "prelude")
+                                                                                     (TVar
+                                                                                        (TV
+                                                                                           "u20"
+                                                                                           Star)))
+                                                                                  (TVar
+                                                                                     (TV
+                                                                                        "v21"
+                                                                                        Star))))
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "List"
+                                                                                     (Kfun
+                                                                                        Star Star))
+                                                                                  "prelude")
+                                                                               (TVar
+                                                                                  (TV
+                                                                                     "v21"
+                                                                                     Star))))))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "List"
+                                                                                  (Kfun Star Star))
+                                                                               "prelude")
+                                                                            (TVar (TV "v21" Star))))
+                                                                      (TApp
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "(->)"
+                                                                                  (Kfun
+                                                                                     Star
+                                                                                     (Kfun
+                                                                                        Star Star)))
+                                                                               "prelude")
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "List"
+                                                                                     (Kfun
+                                                                                        Star Star))
+                                                                                  "prelude")
+                                                                               (TApp
+                                                                                  (TApp
+                                                                                     (TCon
+                                                                                        (TC
+                                                                                           "(->)"
+                                                                                           (Kfun
+                                                                                              Star
+                                                                                              (Kfun
+                                                                                                 Star
+                                                                                                 Star)))
+                                                                                        "prelude")
+                                                                                     (TVar
+                                                                                        (TV
+                                                                                           "u20"
+                                                                                           Star)))
+                                                                                  (TVar
+                                                                                     (TV
+                                                                                        "v21"
+                                                                                        Star)))))
+                                                                         (TApp
+                                                                            (TCon
+                                                                               (TC
+                                                                                  "List"
+                                                                                  (Kfun Star Star))
+                                                                               "prelude")
+                                                                            (TVar
+                                                                               (TV "v21" Star))))))
+                                                              (Area (Loc 336 9 26) (Loc 342 9 32))
+                                                              (Var "reduce"))
+                                                           (Solved
+                                                              ([] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "List"
+                                                                               (Kfun Star Star))
+                                                                            "prelude")
+                                                                         (TVar (TV "v21" Star))))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TApp
+                                                                            (TApp
+                                                                               (TCon
+                                                                                  (TC
+                                                                                     "(->)"
+                                                                                     (Kfun
+                                                                                        Star
+                                                                                        (Kfun
+                                                                                           Star
+                                                                                           Star)))
+                                                                                  "prelude")
+                                                                               (TVar
+                                                                                  (TV "u20" Star)))
+                                                                            (TVar (TV "v21" Star))))
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "List"
+                                                                               (Kfun Star Star))
+                                                                            "prelude")
+                                                                         (TVar (TV "v21" Star)))))
+                                                              (Area (Loc 346 10 3) (Loc 401 13 8))
+                                                              (Abs
+                                                                 (Solved
+                                                                    ([] :=>
+                                                                       TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "List"
+                                                                               (Kfun Star Star))
+                                                                            "prelude")
+                                                                         (TVar (TV "v21" Star)))
+                                                                    (Area
+                                                                       (Loc 347 10 4)
+                                                                       (Loc 350 10 7))
+                                                                    "agg")
+                                                                 [ Solved
+                                                                     ([] :=>
+                                                                        TApp
+                                                                          (TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "(->)"
+                                                                                   (Kfun
+                                                                                      Star
+                                                                                      (Kfun
+                                                                                         Star
+                                                                                         Star)))
+                                                                                "prelude")
+                                                                             (TApp
+                                                                                (TApp
+                                                                                   (TCon
+                                                                                      (TC
+                                                                                         "(->)"
+                                                                                         (Kfun
+                                                                                            Star
+                                                                                            (Kfun
+                                                                                               Star
+                                                                                               Star)))
+                                                                                      "prelude")
+                                                                                   (TVar
+                                                                                      (TV
+                                                                                         "u20"
+                                                                                         Star)))
+                                                                                (TVar
+                                                                                   (TV
+                                                                                      "v21" Star))))
+                                                                          (TApp
+                                                                             (TCon
+                                                                                (TC
+                                                                                   "List"
+                                                                                   (Kfun Star Star))
+                                                                                "prelude")
+                                                                             (TVar
+                                                                                (TV "v21" Star))))
+                                                                     (Area
+                                                                        (Loc 346 10 3)
+                                                                        (Loc 401 13 8))
+                                                                     (Abs
+                                                                        (Solved
+                                                                           ([] :=>
+                                                                              TApp
+                                                                                (TApp
+                                                                                   (TCon
+                                                                                      (TC
+                                                                                         "(->)"
+                                                                                         (Kfun
+                                                                                            Star
+                                                                                            (Kfun
+                                                                                               Star
+                                                                                               Star)))
+                                                                                      "prelude")
+                                                                                   (TVar
+                                                                                      (TV
+                                                                                         "u20"
+                                                                                         Star)))
+                                                                                (TVar
+                                                                                   (TV "v21" Star)))
+                                                                           (Area
+                                                                              (Loc 352 10 9)
+                                                                              (Loc 354 10 11))
+                                                                           "fn")
+                                                                        [ Solved
+                                                                            ([] :=>
+                                                                               TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "List"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          Star))
+                                                                                    "prelude")
+                                                                                 (TVar
+                                                                                    (TV
+                                                                                       "v21" Star)))
+                                                                            (Area
+                                                                               (Loc 359 10 16)
+                                                                               (Loc 401 13 8))
+                                                                            (App
+                                                                               (Solved
+                                                                                  ([] :=>
+                                                                                     TApp
+                                                                                       (TApp
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "(->)"
+                                                                                                (Kfun
+                                                                                                   Star
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      Star)))
+                                                                                             "prelude")
+                                                                                          (TApp
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "List"
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      Star))
+                                                                                                "prelude")
+                                                                                             (TVar
+                                                                                                (TV
+                                                                                                   "u20"
+                                                                                                   Star))))
+                                                                                       (TApp
+                                                                                          (TCon
+                                                                                             (TC
+                                                                                                "List"
+                                                                                                (Kfun
+                                                                                                   Star
+                                                                                                   Star))
+                                                                                             "prelude")
+                                                                                          (TVar
+                                                                                             (TV
+                                                                                                "v21"
+                                                                                                Star))))
+                                                                                  (Area
+                                                                                     (Loc 359 10 16)
+                                                                                     (Loc 397 13 4))
+                                                                                  (Abs
+                                                                                     (Solved
+                                                                                        ([] :=>
+                                                                                           TApp
+                                                                                             (TCon
+                                                                                                (TC
+                                                                                                   "List"
+                                                                                                   (Kfun
+                                                                                                      Star
+                                                                                                      Star))
+                                                                                                "prelude")
+                                                                                             (TVar
+                                                                                                (TV
+                                                                                                   "u20"
+                                                                                                   Star)))
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              359
+                                                                                              10
+                                                                                              16)
+                                                                                           (Loc
+                                                                                              362
+                                                                                              10
+                                                                                              19))
+                                                                                        "_P_")
+                                                                                     [ Solved
+                                                                                         ([] :=>
+                                                                                            TApp
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "List"
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star))
+                                                                                                 "prelude")
+                                                                                              (TVar
+                                                                                                 (TV
+                                                                                                    "v21"
+                                                                                                    Star)))
+                                                                                         (Area
+                                                                                            (Loc
+                                                                                               359
+                                                                                               10
+                                                                                               16)
+                                                                                            (Loc
+                                                                                               393
+                                                                                               12
+                                                                                               16))
+                                                                                         (App
+                                                                                            (Solved
+                                                                                               ([] :=>
+                                                                                                  TApp
+                                                                                                    (TApp
+                                                                                                       (TCon
+                                                                                                          (TC
+                                                                                                             "(->)"
+                                                                                                             (Kfun
+                                                                                                                Star
+                                                                                                                (Kfun
+                                                                                                                   Star
+                                                                                                                   Star)))
+                                                                                                          "prelude")
+                                                                                                       (TApp
+                                                                                                          (TCon
+                                                                                                             (TC
+                                                                                                                "List"
+                                                                                                                (Kfun
+                                                                                                                   Star
+                                                                                                                   Star))
+                                                                                                             "prelude")
+                                                                                                          (TVar
+                                                                                                             (TV
+                                                                                                                "v21"
+                                                                                                                Star))))
+                                                                                                    (TApp
+                                                                                                       (TCon
+                                                                                                          (TC
+                                                                                                             "List"
+                                                                                                             (Kfun
+                                                                                                                Star
+                                                                                                                Star))
+                                                                                                          "prelude")
+                                                                                                       (TVar
+                                                                                                          (TV
+                                                                                                             "v21"
+                                                                                                             Star))))
+                                                                                               (Area
+                                                                                                  (Loc
+                                                                                                     382
+                                                                                                     12
+                                                                                                     5)
+                                                                                                  (Loc
+                                                                                                     393
+                                                                                                     12
+                                                                                                     16))
+                                                                                               (App
+                                                                                                  (Solved
+                                                                                                     ([] :=>
+                                                                                                        TApp
+                                                                                                          (TApp
+                                                                                                             (TCon
+                                                                                                                (TC
+                                                                                                                   "(->)"
+                                                                                                                   (Kfun
+                                                                                                                      Star
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         Star)))
+                                                                                                                "prelude")
+                                                                                                             (TApp
+                                                                                                                (TCon
+                                                                                                                   (TC
+                                                                                                                      "List"
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         Star))
+                                                                                                                   "prelude")
+                                                                                                                (TVar
+                                                                                                                   (TV
+                                                                                                                      "v21"
+                                                                                                                      Star))))
+                                                                                                          (TApp
+                                                                                                             (TApp
+                                                                                                                (TCon
+                                                                                                                   (TC
+                                                                                                                      "(->)"
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         (Kfun
+                                                                                                                            Star
+                                                                                                                            Star)))
+                                                                                                                   "prelude")
+                                                                                                                (TApp
+                                                                                                                   (TCon
+                                                                                                                      (TC
+                                                                                                                         "List"
+                                                                                                                         (Kfun
+                                                                                                                            Star
+                                                                                                                            Star))
+                                                                                                                      "prelude")
+                                                                                                                   (TVar
+                                                                                                                      (TV
+                                                                                                                         "v21"
+                                                                                                                         Star))))
+                                                                                                             (TApp
+                                                                                                                (TCon
+                                                                                                                   (TC
+                                                                                                                      "List"
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         Star))
+                                                                                                                   "prelude")
+                                                                                                                (TVar
+                                                                                                                   (TV
+                                                                                                                      "v21"
+                                                                                                                      Star)))))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           382
+                                                                                                           12
+                                                                                                           5)
+                                                                                                        (Loc
+                                                                                                           388
+                                                                                                           12
+                                                                                                           11))
+                                                                                                     (Var
+                                                                                                        "concat"))
+                                                                                                  (Solved
+                                                                                                     ([] :=>
+                                                                                                        TApp
+                                                                                                          (TCon
+                                                                                                             (TC
+                                                                                                                "List"
+                                                                                                                (Kfun
+                                                                                                                   Star
+                                                                                                                   Star))
+                                                                                                             "prelude")
+                                                                                                          (TVar
+                                                                                                             (TV
+                                                                                                                "v21"
+                                                                                                                Star)))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           389
+                                                                                                           12
+                                                                                                           12)
+                                                                                                        (Loc
+                                                                                                           392
+                                                                                                           12
+                                                                                                           15))
+                                                                                                     (Var
+                                                                                                        "agg"))
+                                                                                                  True))
+                                                                                            (Solved
+                                                                                               ([] :=>
+                                                                                                  TApp
+                                                                                                    (TCon
+                                                                                                       (TC
+                                                                                                          "List"
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             Star))
+                                                                                                       "prelude")
+                                                                                                    (TVar
+                                                                                                       (TV
+                                                                                                          "v21"
+                                                                                                          Star)))
+                                                                                               (Area
+                                                                                                  (Loc
+                                                                                                     359
+                                                                                                     10
+                                                                                                     16)
+                                                                                                  (Loc
+                                                                                                     376
+                                                                                                     11
+                                                                                                     12))
+                                                                                               (App
+                                                                                                  (Solved
+                                                                                                     ([] :=>
+                                                                                                        TApp
+                                                                                                          (TApp
+                                                                                                             (TCon
+                                                                                                                (TC
+                                                                                                                   "(->)"
+                                                                                                                   (Kfun
+                                                                                                                      Star
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         Star)))
+                                                                                                                "prelude")
+                                                                                                             (TApp
+                                                                                                                (TCon
+                                                                                                                   (TC
+                                                                                                                      "List"
+                                                                                                                      (Kfun
+                                                                                                                         Star
+                                                                                                                         Star))
+                                                                                                                   "prelude")
+                                                                                                                (TVar
+                                                                                                                   (TV
+                                                                                                                      "u20"
+                                                                                                                      Star))))
+                                                                                                          (TApp
+                                                                                                             (TCon
+                                                                                                                (TC
+                                                                                                                   "List"
+                                                                                                                   (Kfun
+                                                                                                                      Star
+                                                                                                                      Star))
+                                                                                                                "prelude")
+                                                                                                             (TVar
+                                                                                                                (TV
+                                                                                                                   "v21"
+                                                                                                                   Star))))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           369
+                                                                                                           11
+                                                                                                           5)
+                                                                                                        (Loc
+                                                                                                           376
+                                                                                                           11
+                                                                                                           12))
+                                                                                                     (App
+                                                                                                        (Solved
+                                                                                                           ([] :=>
+                                                                                                              TApp
+                                                                                                                (TApp
+                                                                                                                   (TCon
+                                                                                                                      (TC
+                                                                                                                         "(->)"
+                                                                                                                         (Kfun
+                                                                                                                            Star
+                                                                                                                            (Kfun
+                                                                                                                               Star
+                                                                                                                               Star)))
+                                                                                                                      "prelude")
+                                                                                                                   (TApp
+                                                                                                                      (TApp
+                                                                                                                         (TCon
+                                                                                                                            (TC
+                                                                                                                               "(->)"
+                                                                                                                               (Kfun
+                                                                                                                                  Star
+                                                                                                                                  (Kfun
+                                                                                                                                     Star
+                                                                                                                                     Star)))
+                                                                                                                            "prelude")
+                                                                                                                         (TVar
+                                                                                                                            (TV
+                                                                                                                               "u20"
+                                                                                                                               Star)))
+                                                                                                                      (TVar
+                                                                                                                         (TV
+                                                                                                                            "v21"
+                                                                                                                            Star))))
+                                                                                                                (TApp
+                                                                                                                   (TApp
+                                                                                                                      (TCon
+                                                                                                                         (TC
+                                                                                                                            "(->)"
+                                                                                                                            (Kfun
+                                                                                                                               Star
+                                                                                                                               (Kfun
+                                                                                                                                  Star
+                                                                                                                                  Star)))
+                                                                                                                         "prelude")
+                                                                                                                      (TApp
+                                                                                                                         (TCon
+                                                                                                                            (TC
+                                                                                                                               "List"
+                                                                                                                               (Kfun
+                                                                                                                                  Star
+                                                                                                                                  Star))
+                                                                                                                            "prelude")
+                                                                                                                         (TVar
+                                                                                                                            (TV
+                                                                                                                               "u20"
+                                                                                                                               Star))))
+                                                                                                                   (TApp
+                                                                                                                      (TCon
+                                                                                                                         (TC
+                                                                                                                            "List"
+                                                                                                                            (Kfun
+                                                                                                                               Star
+                                                                                                                               Star))
+                                                                                                                         "prelude")
+                                                                                                                      (TVar
+                                                                                                                         (TV
+                                                                                                                            "v21"
+                                                                                                                            Star)))))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 369
+                                                                                                                 11
+                                                                                                                 5)
+                                                                                                              (Loc
+                                                                                                                 372
+                                                                                                                 11
+                                                                                                                 8))
+                                                                                                           (Var
+                                                                                                              "map"))
+                                                                                                        (Solved
+                                                                                                           ([] :=>
+                                                                                                              TApp
+                                                                                                                (TApp
+                                                                                                                   (TCon
+                                                                                                                      (TC
+                                                                                                                         "(->)"
+                                                                                                                         (Kfun
+                                                                                                                            Star
+                                                                                                                            (Kfun
+                                                                                                                               Star
+                                                                                                                               Star)))
+                                                                                                                      "prelude")
+                                                                                                                   (TVar
+                                                                                                                      (TV
+                                                                                                                         "u20"
+                                                                                                                         Star)))
+                                                                                                                (TVar
+                                                                                                                   (TV
+                                                                                                                      "v21"
+                                                                                                                      Star)))
+                                                                                                           (Area
+                                                                                                              (Loc
+                                                                                                                 373
+                                                                                                                 11
+                                                                                                                 9)
+                                                                                                              (Loc
+                                                                                                                 375
+                                                                                                                 11
+                                                                                                                 11))
+                                                                                                           (Var
+                                                                                                              "fn"))
+                                                                                                        True))
+                                                                                                  (Solved
+                                                                                                     ([] :=>
+                                                                                                        TApp
+                                                                                                          (TCon
+                                                                                                             (TC
+                                                                                                                "List"
+                                                                                                                (Kfun
+                                                                                                                   Star
+                                                                                                                   Star))
+                                                                                                             "prelude")
+                                                                                                          (TVar
+                                                                                                             (TV
+                                                                                                                "u20"
+                                                                                                                Star)))
+                                                                                                     (Area
+                                                                                                        (Loc
+                                                                                                           359
+                                                                                                           10
+                                                                                                           16)
+                                                                                                        (Loc
+                                                                                                           362
+                                                                                                           10
+                                                                                                           19))
+                                                                                                     (Var
+                                                                                                        "_P_"))
+                                                                                                  True))
+                                                                                            True)
+                                                                                     ]))
+                                                                               (Solved
+                                                                                  ([] :=>
+                                                                                     TApp
+                                                                                       (TCon
+                                                                                          (TC
+                                                                                             "List"
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star))
+                                                                                          "prelude")
+                                                                                       (TVar
+                                                                                          (TV
+                                                                                             "u20"
+                                                                                             Star)))
+                                                                                  (Area
+                                                                                     (Loc 398 13 5)
+                                                                                     (Loc 400 13 7))
+                                                                                  (Var "xs"))
+                                                                               True)
+                                                                        ])
+                                                                 ]))
+                                                           False))
+                                                     (Solved
+                                                        ([] :=>
+                                                           TApp
+                                                             (TCon
+                                                                (TC "List" (Kfun Star Star))
+                                                                "prelude")
+                                                             (TVar (TV "v21" Star)))
+                                                        (Area (Loc 405 14 3) (Loc 407 14 5))
+                                                        (ListConstructor []))
+                                                     False))
+                                               (Solved
+                                                  ([] :=>
+                                                     TApp
+                                                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star)))
+                                                                "prelude")
+                                                             (TVar (TV "u20" Star)))
+                                                          (TVar (TV "v21" Star))))
+                                                  (Area (Loc 411 15 3) (Loc 414 15 6))
+                                                  (Var "fns"))
+                                               True)
+                                        ])
+                                 ]))))))
+               (Untyped
+                  (Area (Loc 277 8 7) (Loc 310 8 40))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 277 8 7) (Loc 290 8 20))
+                        (TRComp
+                           "List"
+                           [ Untyped
+                               (Area (Loc 282 8 12) (Loc 290 8 20))
+                               (TRArr
+                                  (Untyped (Area (Loc 283 8 13) (Loc 284 8 14)) (TRSingle "a"))
+                                  (Untyped (Area (Loc 288 8 18) (Loc 289 8 19)) (TRSingle "b")))
+                           ]))
+                     (Untyped
+                        (Area (Loc 294 8 24) (Loc 310 8 40))
+                        (TRArr
+                           (Untyped
+                              (Area (Loc 294 8 24) (Loc 300 8 30))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 299 8 29) (Loc 300 8 30)) (TRSingle "a") ]))
+                           (Untyped
+                              (Area (Loc 304 8 34) (Loc 310 8 40))
+                              (TRComp
+                                 "List"
+                                 [ Untyped (Area (Loc 309 8 39) (Loc 310 8 40)) (TRSingle "b")
+                                 ]))))))
+               (Forall
+                  [ Star , Star ]
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TGen 0))
+                                (TGen 1))))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
+                          (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 1))))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

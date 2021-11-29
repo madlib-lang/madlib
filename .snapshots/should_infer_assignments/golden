@@ -1,0 +1,268 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV "i8" Star) ]
+                 (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+             ] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TVar (TV "i8" Star)))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TVar (TV "i8" Star)))
+                    (TVar (TV "i8" Star))))
+            (Area (Loc 0 1 1) (Loc 22 1 23))
+            (Assignment
+               "fn"
+               (Solved
+                  ([ IsIn
+                       "Number"
+                       [ TVar (TV "i8" Star) ]
+                       (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                   ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TVar (TV "i8" Star)))
+                       (TApp
+                          (TApp
+                             (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                             (TVar (TV "i8" Star)))
+                          (TVar (TV "i8" Star))))
+                  (Area (Loc 0 1 1) (Loc 22 1 23))
+                  (Placeholder
+                     ( ClassRef "Number" [] False True , [ TVar (TV "i8" Star) ] )
+                     (Solved
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV "i8" Star) ]
+                             (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV "i8" Star)))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TVar (TV "i8" Star)))
+                                (TVar (TV "i8" Star))))
+                        (Area (Loc 5 1 6) (Loc 22 1 23))
+                        (Abs
+                           (Solved
+                              ([ IsIn
+                                   "Number"
+                                   [ TVar (TV "i8" Star) ]
+                                   (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                               ] :=>
+                                 TVar (TV "i8" Star))
+                              (Area (Loc 6 1 7) (Loc 7 1 8))
+                              "b")
+                           [ Solved
+                               ([ IsIn
+                                    "Number"
+                                    [ TVar (TV "i8" Star) ]
+                                    (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                ] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TVar (TV "i8" Star)))
+                                    (TVar (TV "i8" Star)))
+                               (Area (Loc 5 1 6) (Loc 22 1 23))
+                               (Abs
+                                  (Solved
+                                     ([ IsIn
+                                          "Number"
+                                          [ TVar (TV "i8" Star) ]
+                                          (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                      ] :=>
+                                        TVar (TV "i8" Star))
+                                     (Area (Loc 9 1 10) (Loc 10 1 11))
+                                     "c")
+                                  [ Solved
+                                      ([ IsIn
+                                           "Number"
+                                           [ TVar (TV "i8" Star) ]
+                                           (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                       ] :=>
+                                         TVar (TV "i8" Star))
+                                      (Area (Loc 16 1 17) (Loc 21 1 22))
+                                      (App
+                                         (Solved
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TVar (TV "i8" Star) ]
+                                                 (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                             ] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TVar (TV "i8" Star)))
+                                                 (TVar (TV "i8" Star)))
+                                            (Area (Loc 16 1 17) (Loc 21 1 22))
+                                            (App
+                                               (Solved
+                                                  ([ IsIn "Number" [ TVar (TV "i8" Star) ] Nothing
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TVar (TV "i8" Star)))
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "(->)"
+                                                                   (Kfun Star (Kfun Star Star)))
+                                                                "prelude")
+                                                             (TVar (TV "i8" Star)))
+                                                          (TVar (TV "i8" Star))))
+                                                  (Area (Loc 18 1 19) (Loc 19 1 20))
+                                                  (Placeholder
+                                                     ( MethodRef "Number" "+" True
+                                                     , [ TVar (TV "i8" Star) ]
+                                                     )
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TVar (TV "i8" Star) ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TVar (TV "i8" Star)))
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(->)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TVar (TV "i8" Star)))
+                                                                (TVar (TV "i8" Star))))
+                                                        (Area (Loc 18 1 19) (Loc 19 1 20))
+                                                        (Var "+"))))
+                                               (Solved
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TVar (TV "i8" Star) ]
+                                                       (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                                   ] :=>
+                                                     TVar (TV "i8" Star))
+                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
+                                                  (Var "b"))
+                                               False))
+                                         (Solved
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TVar (TV "i8" Star) ]
+                                                 (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                                             ] :=>
+                                               TVar (TV "i8" Star))
+                                            (Area (Loc 20 1 21) (Loc 21 1 22))
+                                            (Var "c"))
+                                         True)
+                                  ])
+                           ])))))
+        , Solved
+            ([] :=> TCon (TC "Integer" Star) "prelude")
+            (Area (Loc 23 2 1) (Loc 30 2 8))
+            (App
+               (Solved
+                  ([ IsIn
+                       "Number"
+                       [ TCon (TC "Integer" Star) "prelude" ]
+                       (Just (Area (Loc 23 2 1) (Loc 25 2 3)))
+                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   ] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TCon (TC "Integer" Star) "prelude"))
+                       (TCon (TC "Integer" Star) "prelude"))
+                  (Area (Loc 23 2 1) (Loc 31 2 9))
+                  (App
+                     (Solved
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Integer" Star) "prelude" ]
+                             (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TCon (TC "Integer" Star) "prelude"))
+                             (TApp
+                                (TApp
+                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                   (TCon (TC "Integer" Star) "prelude"))
+                                (TCon (TC "Integer" Star) "prelude")))
+                        (Area (Loc 23 2 1) (Loc 25 2 3))
+                        (Placeholder
+                           ( ClassRef "Number" [] True False
+                           , [ TCon (TC "Integer" Star) "prelude" ]
+                           )
+                           (Solved
+                              ([ IsIn
+                                   "Number"
+                                   [ TCon (TC "Integer" Star) "prelude" ]
+                                   (Just (Area (Loc 18 1 19) (Loc 19 1 20)))
+                               ] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TCon (TC "Integer" Star) "prelude"))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TCon (TC "Integer" Star) "prelude"))
+                                      (TCon (TC "Integer" Star) "prelude")))
+                              (Area (Loc 23 2 1) (Loc 25 2 3))
+                              (Var "fn"))))
+                     (Solved
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Integer" Star) "prelude" ]
+                             (Just (Area (Loc 23 2 1) (Loc 25 2 3)))
+                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         ] :=>
+                           TCon (TC "Integer" Star) "prelude")
+                        (Area (Loc 26 2 4) (Loc 27 2 5))
+                        (LNum "2"))
+                     False))
+               (Solved
+                  ([ IsIn
+                       "Number"
+                       [ TCon (TC "Integer" Star) "prelude" ]
+                       (Just (Area (Loc 23 2 1) (Loc 25 2 3)))
+                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                   ] :=>
+                     TCon (TC "Integer" Star) "prelude")
+                  (Area (Loc 29 2 7) (Loc 30 2 8))
+                  (LNum "3"))
+               True)
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

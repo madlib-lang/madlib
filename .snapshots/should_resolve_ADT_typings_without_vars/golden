@@ -1,0 +1,351 @@
+Right
+  (fromList
+     [ ( "./ModuleA"
+       , AST
+           { aimports = []
+           , aexps = []
+           , atypedecls =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 33 1 34))
+                   ADT
+                     { adtname = "Something"
+                     , adtparams = []
+                     , adtconstructors =
+                         [ Untyped
+                             (Area (Loc 24 1 25) (Loc 33 1 34))
+                             (Constructor
+                                "Something" [] (TCon (TC "Something" Star) "./ModuleA"))
+                         ]
+                     , adtType = TCon (TC "Something" Star) "./ModuleA"
+                     , adtexported = True
+                     }
+               ]
+           , ainterfaces = []
+           , ainstances =
+               [ Untyped
+                   (Area (Loc 0 0 0) (Loc 0 0 0))
+                   (Instance
+                      "Eq"
+                      []
+                      (IsIn "Eq" [ TCon (TC "Something" Star) "./ModuleA" ] Nothing)
+                      (fromList
+                         [ ( "=="
+                           , ( Solved
+                                 ([] :=>
+                                    TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TCon (TC "Something" Star) "./ModuleA"))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TCon (TC "Something" Star) "./ModuleA"))
+                                         (TCon (TC "Boolean" Star) "prelude")))
+                                 (Area (Loc 0 0 0) (Loc 0 0 0))
+                                 (Assignment
+                                    "=="
+                                    (Solved
+                                       ([] :=>
+                                          TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TCon (TC "Something" Star) "./ModuleA"))
+                                            (TApp
+                                               (TApp
+                                                  (TCon
+                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                     "prelude")
+                                                  (TCon (TC "Something" Star) "./ModuleA"))
+                                               (TCon (TC "Boolean" Star) "prelude")))
+                                       (Area (Loc 0 0 0) (Loc 0 0 0))
+                                       (Abs
+                                          (Solved
+                                             ([] :=> TCon (TC "Something" Star) "./ModuleA")
+                                             (Area (Loc 0 0 0) (Loc 0 0 0))
+                                             "__$a__")
+                                          [ Solved
+                                              ([] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Something" Star) "./ModuleA"))
+                                                   (TCon (TC "Boolean" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Abs
+                                                 (Solved
+                                                    ([] :=> TCon (TC "Something" Star) "./ModuleA")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    "__$b__")
+                                                 [ Solved
+                                                     ([] :=> TCon (TC "Boolean" Star) "prelude")
+                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                     (Where
+                                                        (Solved
+                                                           ([] :=>
+                                                              TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "(,)"
+                                                                         (Kfun
+                                                                            Star (Kfun Star Star)))
+                                                                      "prelude")
+                                                                   (TCon
+                                                                      (TC "Something" Star)
+                                                                      "./ModuleA"))
+                                                                (TCon
+                                                                   (TC "Something" Star)
+                                                                   "./ModuleA"))
+                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                           (TupleConstructor
+                                                              [ Solved
+                                                                  ([] :=>
+                                                                     TCon
+                                                                       (TC "Something" Star)
+                                                                       "./ModuleA")
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  (Var "__$a__")
+                                                              , Solved
+                                                                  ([] :=>
+                                                                     TCon
+                                                                       (TC "Something" Star)
+                                                                       "./ModuleA")
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  (Var "__$b__")
+                                                              ]))
+                                                        [ Solved
+                                                            ([] :=>
+                                                               TApp
+                                                                 (TApp
+                                                                    (TCon
+                                                                       (TC
+                                                                          "(->)"
+                                                                          (Kfun
+                                                                             Star (Kfun Star Star)))
+                                                                       "prelude")
+                                                                    (TApp
+                                                                       (TApp
+                                                                          (TCon
+                                                                             (TC
+                                                                                "(,)"
+                                                                                (Kfun
+                                                                                   Star
+                                                                                   (Kfun
+                                                                                      Star Star)))
+                                                                             "prelude")
+                                                                          (TCon
+                                                                             (TC "Something" Star)
+                                                                             "./ModuleA"))
+                                                                       (TCon
+                                                                          (TC "Something" Star)
+                                                                          "./ModuleA")))
+                                                                 (TCon
+                                                                    (TC "Boolean" Star) "prelude"))
+                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                            (Is
+                                                               (Solved
+                                                                  ([] :=>
+                                                                     TApp
+                                                                       (TApp
+                                                                          (TCon
+                                                                             (TC
+                                                                                "(,)"
+                                                                                (Kfun
+                                                                                   Star
+                                                                                   (Kfun
+                                                                                      Star Star)))
+                                                                             "prelude")
+                                                                          (TCon
+                                                                             (TC "Something" Star)
+                                                                             "./ModuleA"))
+                                                                       (TCon
+                                                                          (TC "Something" Star)
+                                                                          "./ModuleA"))
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  (PTuple
+                                                                     [ Solved
+                                                                         ([] :=>
+                                                                            TCon
+                                                                              (TC "Something" Star)
+                                                                              "./ModuleA")
+                                                                         (Area
+                                                                            (Loc 0 0 0) (Loc 0 0 0))
+                                                                         (PCon "Something" [])
+                                                                     , Solved
+                                                                         ([] :=>
+                                                                            TCon
+                                                                              (TC "Something" Star)
+                                                                              "./ModuleA")
+                                                                         (Area
+                                                                            (Loc 0 0 0) (Loc 0 0 0))
+                                                                         (PCon "Something" [])
+                                                                     ]))
+                                                               (Solved
+                                                                  ([] :=>
+                                                                     TCon
+                                                                       (TC "Boolean" Star)
+                                                                       "prelude")
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  (LBool "true")))
+                                                        , Solved
+                                                            ([] :=>
+                                                               TApp
+                                                                 (TApp
+                                                                    (TCon
+                                                                       (TC
+                                                                          "(->)"
+                                                                          (Kfun
+                                                                             Star (Kfun Star Star)))
+                                                                       "prelude")
+                                                                    (TApp
+                                                                       (TApp
+                                                                          (TCon
+                                                                             (TC
+                                                                                "(,)"
+                                                                                (Kfun
+                                                                                   Star
+                                                                                   (Kfun
+                                                                                      Star Star)))
+                                                                             "prelude")
+                                                                          (TCon
+                                                                             (TC "Something" Star)
+                                                                             "./ModuleA"))
+                                                                       (TCon
+                                                                          (TC "Something" Star)
+                                                                          "./ModuleA")))
+                                                                 (TCon
+                                                                    (TC "Boolean" Star) "prelude"))
+                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                            (Is
+                                                               (Solved
+                                                                  ([] :=>
+                                                                     TApp
+                                                                       (TApp
+                                                                          (TCon
+                                                                             (TC
+                                                                                "(,)"
+                                                                                (Kfun
+                                                                                   Star
+                                                                                   (Kfun
+                                                                                      Star Star)))
+                                                                             "prelude")
+                                                                          (TVar (TV "b1" Star)))
+                                                                       (TVar (TV "c2" Star)))
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  PAny)
+                                                               (Solved
+                                                                  ([] :=>
+                                                                     TCon
+                                                                       (TC "Boolean" Star)
+                                                                       "prelude")
+                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                  (LBool "false")))
+                                                        ])
+                                                 ])
+                                          ])))
+                             , Forall
+                                 []
+                                 ([] :=>
+                                    TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TCon (TC "Something" Star) "./ModuleA"))
+                                      (TApp
+                                         (TApp
+                                            (TCon
+                                               (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                            (TCon (TC "Something" Star) "./ModuleA"))
+                                         (TCon (TC "Boolean" Star) "prelude")))
+                             )
+                           )
+                         ]))
+               ]
+           , apath = Just "./ModuleA"
+           }
+       )
+     , ( "./ModuleB"
+       , AST
+           { aimports =
+               [ Untyped
+                   (Area (Loc 0 1 1) (Loc 25 1 26))
+                   (DefaultImport
+                      (Untyped (Area (Loc 7 1 8) (Loc 8 1 9)) "S")
+                      "./ModuleA"
+                      "./ModuleA")
+               ]
+           , aexps =
+               [ Solved
+                   ([] :=>
+                      TApp
+                        (TApp
+                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                           (TCon (TC "Something" Star) "./ModuleA"))
+                        (TCon (TC "Something" Star) "./ModuleA"))
+                   (Area (Loc 26 2 1) (Loc 79 3 21))
+                   (TypedExp
+                      (Solved
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Something" Star) "./ModuleA"))
+                              (TCon (TC "Something" Star) "./ModuleA"))
+                         (Area (Loc 59 3 1) (Loc 79 3 21))
+                         (Export
+                            (Solved
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TCon (TC "Something" Star) "./ModuleA"))
+                                    (TCon (TC "Something" Star) "./ModuleA"))
+                               (Area (Loc 66 3 8) (Loc 79 3 21))
+                               (Assignment
+                                  "fn"
+                                  (Solved
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TCon (TC "Something" Star) "./ModuleA"))
+                                          (TCon (TC "Something" Star) "./ModuleA"))
+                                     (Area (Loc 71 3 13) (Loc 79 3 21))
+                                     (Abs
+                                        (Solved
+                                           ([] :=> TCon (TC "Something" Star) "./ModuleA")
+                                           (Area (Loc 72 3 14) (Loc 73 3 15))
+                                           "x")
+                                        [ Solved
+                                            ([] :=> TCon (TC "Something" Star) "./ModuleA")
+                                            (Area (Loc 78 3 20) (Loc 79 3 21))
+                                            (Var "x")
+                                        ]))))))
+                      (Untyped
+                         (Area (Loc 32 2 7) (Loc 58 2 33))
+                         (TRArr
+                            (Untyped
+                               (Area (Loc 32 2 7) (Loc 43 2 18)) (TRComp "S.Something" []))
+                            (Untyped
+                               (Area (Loc 47 2 22) (Loc 58 2 33)) (TRComp "S.Something" []))))
+                      (Forall
+                         []
+                         ([] :=>
+                            TApp
+                              (TApp
+                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                 (TCon (TC "Something" Star) "./ModuleA"))
+                              (TCon (TC "Something" Star) "./ModuleA"))))
+               ]
+           , atypedecls = []
+           , ainterfaces = []
+           , ainstances = []
+           , apath = Just "./ModuleB"
+           }
+       )
+     ])

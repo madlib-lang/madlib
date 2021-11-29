@@ -1,0 +1,133 @@
+Right
+  AST
+    { aimports = []
+    , aexps =
+        [ Solved
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList
+                          [ ( "x" , TCon (TC "String" Star) "prelude" )
+                          , ( "y" , TVar (TV "g6" Star) )
+                          ])
+                       (Just (TVar (TV "i8" Star)))))
+                 (TRecord
+                    (fromList
+                       [ ( "x" , TCon (TC "String" Star) "prelude" )
+                       , ( "y" , TVar (TV "g6" Star) )
+                       ])
+                    (Just (TVar (TV "i8" Star)))))
+            (Area (Loc 0 1 1) (Loc 55 1 56))
+            (Assignment
+               "addTodo"
+               (Solved
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList
+                                [ ( "x" , TCon (TC "String" Star) "prelude" )
+                                , ( "y" , TVar (TV "g6" Star) )
+                                ])
+                             (Just (TVar (TV "i8" Star)))))
+                       (TRecord
+                          (fromList
+                             [ ( "x" , TCon (TC "String" Star) "prelude" )
+                             , ( "y" , TVar (TV "g6" Star) )
+                             ])
+                          (Just (TVar (TV "i8" Star)))))
+                  (Area (Loc 10 1 11) (Loc 55 1 56))
+                  (Abs
+                     (Solved
+                        ([] :=>
+                           TRecord
+                             (fromList
+                                [ ( "x" , TCon (TC "String" Star) "prelude" )
+                                , ( "y" , TVar (TV "g6" Star) )
+                                ])
+                             (Just (TVar (TV "i8" Star))))
+                        (Area (Loc 11 1 12) (Loc 16 1 17))
+                        "state")
+                     [ Solved
+                         ([] :=>
+                            TRecord
+                              (fromList
+                                 [ ( "x" , TCon (TC "String" Star) "prelude" )
+                                 , ( "y" , TVar (TV "g6" Star) )
+                                 ])
+                              (Just (TVar (TV "i8" Star))))
+                         (Area (Loc 22 1 23) (Loc 54 1 55))
+                         (Record
+                            [ Solved
+                                ([] :=> TVar (TV "f5" Star))
+                                (Area (Loc 24 1 25) (Loc 32 1 33))
+                                (FieldSpread
+                                   (Solved
+                                      ([] :=>
+                                         TRecord
+                                           (fromList
+                                              [ ( "x" , TCon (TC "String" Star) "prelude" )
+                                              , ( "y" , TVar (TV "g6" Star) )
+                                              ])
+                                           (Just (TVar (TV "i8" Star))))
+                                      (Area (Loc 27 1 28) (Loc 32 1 33))
+                                      (Var "state")))
+                            , Solved
+                                ([] :=> TCon (TC "String" Star) "prelude")
+                                (Area (Loc 34 1 35) (Loc 40 1 41))
+                                (Field
+                                   ( "x"
+                                   , Solved
+                                       ([] :=> TCon (TC "String" Star) "prelude")
+                                       (Area (Loc 37 1 38) (Loc 40 1 41))
+                                       (LStr "\"3\"")
+                                   ))
+                            , Solved
+                                ([] :=> TVar (TV "g6" Star))
+                                (Area (Loc 42 1 43) (Loc 52 1 53))
+                                (Field
+                                   ( "y"
+                                   , Solved
+                                       ([] :=> TVar (TV "g6" Star))
+                                       (Area (Loc 45 1 46) (Loc 52 1 53))
+                                       (Access
+                                          (Solved
+                                             ([] :=>
+                                                TRecord
+                                                  (fromList
+                                                     [ ( "x" , TCon (TC "String" Star) "prelude" )
+                                                     , ( "y" , TVar (TV "g6" Star) )
+                                                     ])
+                                                  (Just (TVar (TV "i8" Star))))
+                                             (Area (Loc 45 1 46) (Loc 50 1 51))
+                                             (Var "state"))
+                                          (Solved
+                                             ([] :=>
+                                                TApp
+                                                  (TApp
+                                                     (TCon
+                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                        "prelude")
+                                                     (TRecord
+                                                        (fromList
+                                                           [ ( "x"
+                                                             , TCon (TC "String" Star) "prelude"
+                                                             )
+                                                           , ( "y" , TVar (TV "g6" Star) )
+                                                           ])
+                                                        (Just (TVar (TV "i8" Star)))))
+                                                  (TVar (TV "g6" Star)))
+                                             (Area (Loc 51 1 52) (Loc 52 1 53))
+                                             (Var ".y")))
+                                   ))
+                            ])
+                     ])))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "path"
+    }

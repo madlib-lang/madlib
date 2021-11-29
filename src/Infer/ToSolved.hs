@@ -13,6 +13,7 @@ tSubst = TVar (TV "-" Star)
 toSolved :: Can.Exp -> Slv.Exp
 toSolved (Can.Canonical area exp) = case exp of
   Can.LNum  v          -> Slv.Solved ([] :=> tNumber) area (Slv.LNum v)
+  Can.LFloat v         -> Slv.Solved ([] :=> tFloat) area (Slv.LFloat v)
   Can.LStr  v          -> Slv.Solved ([] :=> tStr) area (Slv.LStr v)
   Can.LBool v          -> Slv.Solved ([] :=> tBool) area (Slv.LBool v)
   Can.LUnit            -> Slv.Solved ([] :=> tUnit) area Slv.LUnit
@@ -51,6 +52,9 @@ toSolved (Can.Canonical area exp) = case exp of
   Can.JSExp            code  -> Slv.Solved ([] :=> tSubst) area (Slv.JSExp code)
 
   Can.Do               exps  -> Slv.Solved ([] :=> tSubst) area (Slv.Do (toSolved <$> exps))
+
+  Can.Extern (Forall _ qt) localName foreignName ->
+    Slv.Solved ([] :=> tSubst) area (Slv.Extern qt localName foreignName)
 
 
 
