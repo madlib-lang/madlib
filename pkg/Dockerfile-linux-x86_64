@@ -32,7 +32,7 @@ COPY . .
 # will download a new ghc version, which we want to avoid.
 RUN stack install alex happy
 
-# build runtime libs
+# build runtime
 RUN ./scripts/build-runtime-libs
 RUN CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/ ./scripts/build-runtime
 
