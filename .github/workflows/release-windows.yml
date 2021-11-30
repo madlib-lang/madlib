@@ -20,11 +20,11 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          # toolset: 14.25.28610
-          toolset: 14.16.27023
-          # toolset: 14.0
+      # - uses: ilammy/msvc-dev-cmd@v1
+      #   with:
+      #     # toolset: 14.25.28610
+      #     toolset: 14.16.27023
+      #     # toolset: 14.0
 
       # - shell: pwsh
       #   run: echo "mypath" | Out-File -FilePath $env:GITHUB_PATH -Append
@@ -66,6 +66,41 @@ jobs:
           cd llvm-project
           git checkout tags/llvmorg-9.0.1
 
+      - uses: msys2/setup-msys2@v2
+        with:
+          path-type: inherit
+          update: true
+          install: >-
+            git
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-cmake
+            make
+            autoconf
+            libtool
+
+      - name: Build llvm
+        run: |
+          mkdir /c/llvm-build
+          cd llvm-project/llvm
+          cmake -S . -B /c/llvm-build -G "MSYS Makefiles" -DLLVM_BUILD_BENCHMARKS="OFF" -DCXX_STANDARD="C++14" -DLLVM_INCLUDE_BENCHMARKS="OFF" -DCXX_STANDARD_REQUIRED="ON" -DCXX_EXTENSIONS="OFF" -DCMAKE_INSTALL_PREFIX:PATH="/c/Program Files/LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
+          # cmake -S . -B /c/llvm-build -G "MSYS Makefiles" -DCXX_STANDARD="C++14" -DCXX_STANDARD_REQUIRED="ON" -DCXX_EXTENSIONS="OFF" -DCMAKE_INSTALL_PREFIX:PATH="/c/Program Files/LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
+          cmake --build /c/llvm-build
+          cmake --build /c/llvm-build --target install
+          # cmake -S . -B C:\llvm-build -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX:PATH="c:\Program Files\LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
+          # cmake --build C:\llvm-build
+          # cmake --build C:\llvm-build --target install
+        shell: msys2 {0}
+
+      # - name: Add clang path to $PATH env
+      #   shell: bash
+      #   if: runner.os == 'Windows'
+      #   run: echo "PATH=$PATH:C:\msys64\mingw64\bin" >> $GITHUB_ENV
+
+      # - name: Build (with ${{matrix.compiler}}, for ${{matrix.os}})
+      #   shell: bash
+      #   run: make CC=${{matrix.compiler}}
+
 # git clone <LLVM>
 # cd LLVM
 # mkdir build
@@ -73,13 +108,13 @@ jobs:
 #  -DCMAKE_CXX_COMPILER="C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Tools/MSVC/14.25.28610/bin/Hostx64/x64/cl.exe" 
 # cmake .. -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=C:\some_folder -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -Thost=x64
 # cmake --build . --target install
-      - name: Build llvm
-        run: |
-          mkdir C:\llvm-build
-          cd llvm-project/llvm
-          cmake -S . -B C:\llvm-build -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX:PATH="c:\Program Files\LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
-          cmake --build C:\llvm-build
-          cmake --build C:\llvm-build --target install
+      # - name: Build llvm
+      #   run: |
+      #     mkdir C:\llvm-build
+      #     cd llvm-project/llvm
+      #     cmake -S . -B C:\llvm-build -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX:PATH="c:\Program Files\LLVM" -DCMAKE_BUILD_TYPE:STRING=Release -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DLLVM_TARGETS_TO_BUILD=X86
+      #     cmake --build C:\llvm-build
+      #     cmake --build C:\llvm-build --target install
 
       # - name: Update Environment Variables
       #   shell: bash
@@ -140,7 +175,7 @@ jobs:
       - run: |
           stack build -v --flag madlib:static
 
-
+          llvm-config.exe --version
           llvm-config.exe --cflags
           llvm-config.exe --cxxflags
           llvm-config.exe --includedir
@@ -149,8 +184,13 @@ jobs:
           llvm-config.exe --system-libs --link-static
 
 
-          stack build -v --flag madlib:static
-        shell: cmd
+          # stack build -v --flag madlib:static
 
+
+      # - name: Upload madlib executable
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: madlib.exe
+      #     path: math-homework.txt
 
       # - run: ./pkg/build-targets
