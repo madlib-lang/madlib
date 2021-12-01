@@ -2,15 +2,23 @@
 FROM ubuntu:20.04 as build-stage
 
 # install ghc and cabal
-RUN apt-get update
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:hvr/ghc
-RUN apt-get update
-RUN apt-get install -y cabal-install-3.2 ghc-8.8.4
-ENV PATH="/opt/cabal/bin:/opt/ghc/bin:$PATH"
+# RUN apt-get update
+# RUN apt-get install -y software-properties-common
+# RUN add-apt-repository -y ppa:hvr/ghc
+# RUN apt-get update
+# RUN apt-get install -y cabal-install-3.2 ghc-8.10.7
+# ENV PATH="/opt/cabal/bin:/opt/ghc/bin:$PATH"
+
 
 # install common dependencies
+RUN apt-get update --fix-missing
 RUN apt-get install -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev
+RUN apt-get install -y build-essential curl libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+
+RUN echo "Setup Haskell"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+RUN ~/.ghcup/bin/ghcup install 8.10.7
+RUN ~/.ghcup/bin/ghcup set 8.10.7
 
 # install stack
 RUN curl -sSL https://get.haskellstack.org/ | sh
@@ -38,6 +46,7 @@ RUN CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/u
 
 
 RUN stack build --flag madlib:static
+
 
 # build the js tools ( test-runner and package-installer )
 RUN ./scripts/build

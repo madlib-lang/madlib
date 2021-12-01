@@ -1,10 +1,10 @@
 name:                madlib
 version:             0.11.0
-github:              "open-sorcerers/madlib"
+github:              "madlib-lang/madlib"
 license:             BSD3
 author:              "Arnaud Boeglin, Brekk Bockrath"
 maintainer:          "fpopensorcerers@gmail.com"
-copyright:           "2020 Arnaud Boeglin, 2020 Brekk Bockrath"
+copyright:           "2021 Arnaud Boeglin, 2021 Brekk Bockrath"
 
 extra-source-files:
 - README.md
@@ -17,16 +17,15 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
+description:         Please see the README on GitHub at <https://github.com/madlib-lang/madlib#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - pretty-show
-- array == 0.5.4.0
-- containers == 0.6.2.1
+- array >= 0.5.4.0
+- containers >= 0.6.2.1
 - hpc-lcov
 - mtl
-- brittany
 - transformers
 - exceptions
 - either
@@ -34,22 +33,22 @@ dependencies:
 - hspec
 - hspec-golden
 - text
-- optparse-applicative
+- optparse-applicative >= 0.16.1.0
 - directory == 1.3.6.0
-- aeson
+- aeson >= 1.5.6.0
 - bytestring
-- MissingH
-- executable-path == 0.0.3.1
+- MissingH >= 1.4.3.0
+- executable-path >= 0.0.3.1
 - regex-tdfa
-- process == 1.6.9.0
-- ansi-wl-pprint == 0.6.9
+- process >= 1.6.9.0
+- ansi-wl-pprint >= 0.6.9
 - utf8-string
 - process-extras
 - groupBy
 - cryptohash-md5
-- aeson-pretty == 0.8.8
-- Glob
-- prettyprinter == 1.6.2
+- aeson-pretty
+- Glob >= 0.10.2
+- prettyprinter >= 1.6.2
 - llvm-hs == 9.0.1
 - llvm-hs-pure == 9.0.0
 - llvm-hs-pretty == 0.9.0.0
@@ -69,23 +68,18 @@ executables:
     source-dirs: src
     when:
     - condition: flag(static)
-      ld-options: -static
+      ld-options: -static -optl-static -optl-pthread
 
 library:
   source-dirs: src
 
 tests:
   madlib-test:
-    main:        Spec.hs
+    main: Spec.hs
     source-dirs:
-      # - src
       - test
-    # ghc-options:
-    # - -threaded
-    # - -rtsopts
-    # - -with-rtsopts=-N
     dependencies:
-      - hspec == 2.7.2
+      - hspec >= 2.7.2
       - madlib
 
 flags:

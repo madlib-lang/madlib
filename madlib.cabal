@@ -1,19 +1,19 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: af94ec7b38d7700413fb4853be3e14f29848b26024ec33bdbc6ad7371ac747a2
+-- hash: 0eae45447a0ee4fa9c4c4ec7bdecabcd72e77ad55228ed2c138f9f2b7457bf49
 
 name:           madlib
 version:        0.11.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/madlib#readme>
-homepage:       https://github.com/open-sorcerers/madlib#readme
-bug-reports:    https://github.com/open-sorcerers/madlib/issues
+description:    Please see the README on GitHub at <https://github.com/madlib-lang/madlib#readme>
+homepage:       https://github.com/madlib-lang/madlib#readme
+bug-reports:    https://github.com/madlib-lang/madlib/issues
 author:         Arnaud Boeglin, Brekk Bockrath
 maintainer:     fpopensorcerers@gmail.com
-copyright:      2020 Arnaud Boeglin, 2020 Brekk Bockrath
+copyright:      2021 Arnaud Boeglin, 2021 Brekk Bockrath
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/open-sorcerers/madlib
+  location: https://github.com/madlib-lang/madlib
 
 flag static
   description: Pass -static to ghc.
@@ -116,21 +116,20 @@ library
   hs-source-dirs:
       src
   build-depends:
-      Glob
-    , MissingH
-    , aeson
-    , aeson-pretty ==0.8.8
-    , ansi-wl-pprint ==0.6.9
-    , array ==0.5.4.0
+      Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson >=1.5.6.0
+    , aeson-pretty
+    , ansi-wl-pprint >=0.6.9
+    , array >=0.5.4.0
     , base >=4.7 && <5
-    , brittany
     , bytestring
-    , containers ==0.6.2.1
+    , containers >=0.6.2.1
     , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions
-    , executable-path ==0.0.3.1
+    , executable-path >=0.0.3.1
     , filepath
     , groupBy
     , hpc-lcov
@@ -140,10 +139,10 @@ library
     , llvm-hs-pretty ==0.9.0.0
     , llvm-hs-pure ==9.0.0
     , mtl
-    , optparse-applicative
+    , optparse-applicative >=0.16.1.0
     , pretty-show
-    , prettyprinter ==1.6.2
-    , process ==1.6.9.0
+    , prettyprinter >=1.6.2
+    , process >=1.6.9.0
     , process-extras
     , regex-tdfa
     , text
@@ -237,21 +236,20 @@ executable madlib
       src
   ghc-options: -threaded -funbox-strict-fields -O2 -optc-O2
   build-depends:
-      Glob
-    , MissingH
-    , aeson
-    , aeson-pretty ==0.8.8
-    , ansi-wl-pprint ==0.6.9
-    , array ==0.5.4.0
+      Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson >=1.5.6.0
+    , aeson-pretty
+    , ansi-wl-pprint >=0.6.9
+    , array >=0.5.4.0
     , base >=4.7 && <5
-    , brittany
     , bytestring
-    , containers ==0.6.2.1
+    , containers >=0.6.2.1
     , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions
-    , executable-path ==0.0.3.1
+    , executable-path >=0.0.3.1
     , filepath
     , groupBy
     , hpc-lcov
@@ -261,17 +259,17 @@ executable madlib
     , llvm-hs-pretty ==0.9.0.0
     , llvm-hs-pure ==9.0.0
     , mtl
-    , optparse-applicative
+    , optparse-applicative >=0.16.1.0
     , pretty-show
-    , prettyprinter ==1.6.2
-    , process ==1.6.9.0
+    , prettyprinter >=1.6.2
+    , process >=1.6.9.0
     , process-extras
     , regex-tdfa
     , text
     , transformers
     , utf8-string
   if flag(static)
-    ld-options: -static
+    ld-options: -static -optl-static -optl-pthread
   default-language: Haskell2010
 
 test-suite madlib-test
@@ -288,35 +286,34 @@ test-suite madlib-test
   hs-source-dirs:
       test
   build-depends:
-      Glob
-    , MissingH
-    , aeson
-    , aeson-pretty ==0.8.8
-    , ansi-wl-pprint ==0.6.9
-    , array ==0.5.4.0
+      Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson >=1.5.6.0
+    , aeson-pretty
+    , ansi-wl-pprint >=0.6.9
+    , array >=0.5.4.0
     , base >=4.7 && <5
-    , brittany
     , bytestring
-    , containers ==0.6.2.1
+    , containers >=0.6.2.1
     , cryptohash-md5
     , directory ==1.3.6.0
     , either
     , exceptions
-    , executable-path ==0.0.3.1
+    , executable-path >=0.0.3.1
     , filepath
     , groupBy
     , hpc-lcov
-    , hspec ==2.7.2
+    , hspec >=2.7.2
     , hspec-golden
     , llvm-hs ==9.0.1
     , llvm-hs-pretty ==0.9.0.0
     , llvm-hs-pure ==9.0.0
     , madlib
     , mtl
-    , optparse-applicative
+    , optparse-applicative >=0.16.1.0
     , pretty-show
-    , prettyprinter ==1.6.2
-    , process ==1.6.9.0
+    , prettyprinter >=1.6.2
+    , process >=1.6.9.0
     , process-extras
     , regex-tdfa
     , text
