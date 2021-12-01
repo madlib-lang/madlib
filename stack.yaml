@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-16.12
+resolver: lts-18.18 # ghc 8.10.7
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -34,30 +34,30 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
-#
 extra-deps:
-- monad-validate-1.2.0.0@sha256:9850f408431098b28806dd464b6825a88a0b56c84f380d7fe0454c1df9d6f881,3505
-- happy-1.20.0
-- alex-3.2.5
+- regex-posix-clib-2.7
+- MissingH-1.4.3.0@sha256:efbbe7065e17bc01ed925593a0c5b5793ab857585a8e9d5015d0025e526ab55c,4702
 - groupBy-0.1.0.0@sha256:9bd0c5e6bbfaf793f6e816a072bcb085dba1149bf282e998567eaaed8d0efec4,1720
 - llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
-- regex-posix-clib-2.7
 - llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
 - git: https://github.com/madlib-lang/llvm-hs
   commit: 599e3d76dbdcdda15bdd430b8030a618ec5dd401  # llvm-9, with Setup.hs fix
   subdirs:
     - llvm-hs
-    # - llvm-hs-pure
 
 
 # Override default flag values for local packages and extra-deps
 flags:
   llvm-hs:
     shared-llvm: false
-
   # needed for windows build
   regex-posix:
     _regex-posix-clib: true
+  mintty:
+    Win32-2-13-1: false
+
+ghc-options:
+  llvm-hs: -optcxx=-std=c++11
 
 # Extra package databases containing global packages
 # extra-package-dbs: []
