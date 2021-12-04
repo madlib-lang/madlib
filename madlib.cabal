@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0eae45447a0ee4fa9c4c4ec7bdecabcd72e77ad55228ed2c138f9f2b7457bf49
+-- hash: e282dcfb160eb498b76418aa87a3402412787263ede705e724d4cd15c3c2ebf2
 
 name:           madlib
 version:        0.11.0
@@ -269,7 +269,7 @@ executable madlib
     , transformers
     , utf8-string
   if flag(static)
-    ld-options: -static -optl-static -optl-pthread
+    ld-options: -static
   default-language: Haskell2010
 
 test-suite madlib-test

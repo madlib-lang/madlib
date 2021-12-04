@@ -46,8 +46,8 @@ jobs:
 
       - name: Install LLVM 9
         run: |
-          curl https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-mingw64.zip --output LLVM.zip
-          unzip LLVM
+          curl https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/lllvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
+          unzip LLVM.zip
           rm -rf "/c/Program Files/LLVM"
           mv LLVM "/c/Program Files/"
         shell: msys2 {0}
