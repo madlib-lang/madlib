@@ -22,6 +22,9 @@ jobs:
           enable-stack: true
           stack-version: "2.7.3"
 
+      - name: Configure stack
+        run: stack config set system-ghc --global true
+
       - name: Use Node.js ${{ env.node-version }}
         uses: actions/setup-node@v1
         with:
@@ -33,11 +36,17 @@ jobs:
       - name: Install LLVM 9
         run: brew install llvm-hs/llvm/llvm-9
 
+      - name: Fix libffi
+        run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
+
       - name: Install alex and happy
         run: stack install alex happy
 
       - name: Build madlib executable
         run: stack build
+
+      - name: Install automake
+        run: brew install autoconf automake
 
       - name: Build runtime
         run: |
@@ -57,10 +66,18 @@ jobs:
           cp ./tools/test-runner/dist/test-runner.js ./madlib-x86_64-apple-darwin/
           tar -czvf madlib-x86_64-apple-darwin.tar.gz madlib-x86_64-apple-darwin
 
+      - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1
+        id: release_upload_url
+        with:
+          tag: ${{ github.event.inputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload build
-        uses: softprops/action-gh-release@v1
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          files: madlib-x86_64-apple-darwin.tar.gz
+          upload_url: ${{ steps.release_upload_url.outputs.uploadUrl }}
+          asset_path: ./madlib-x86_64-apple-darwin.tar.gz
+          asset_name: madlib-x86_64-apple-darwin.tar.gz
+          asset_content_type: application/tar+gzip

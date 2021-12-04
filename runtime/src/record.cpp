@@ -2,6 +2,7 @@
 #include <iostream>
 #include <inttypes.h>
 #include <string.h>
+#include <cstdarg>
 
 
 // Records

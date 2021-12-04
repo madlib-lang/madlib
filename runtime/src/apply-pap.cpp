@@ -1,5 +1,6 @@
 #include <gc.h>
 #include <iostream>
+#include <cstdarg>
 
 #include "apply-pap.hpp"
 

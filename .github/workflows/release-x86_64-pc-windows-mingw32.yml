@@ -41,45 +41,74 @@ jobs:
           install: >-
             git
             mingw-w64-x86_64-curl
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-toolchain
+            base-devel
+            msys2-devel
             unzip
             tar
 
       - name: Install LLVM 9
         run: |
-          curl https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/lllvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
-          unzip LLVM.zip
+          curl -L https://github.com/madlib-lang/llvm-build-actions/releases/download/v0.0.1/llvm9-x86_64-pc-windows-mingw32.zip --output LLVM.zip
+          ls -l
+          mkdir LLVM
+          cd LLVM
+          unzip ../LLVM.zip
+          cd ..
           rm -rf "/c/Program Files/LLVM"
           mv LLVM "/c/Program Files/"
         shell: msys2 {0}
 
       - name: Update paths
         run: |
-          echo "PATH=c:\Program Files\LLVM\bin;D:\a\_temp\msys64\mingw64\bin;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "PATH=c:\Program Files\LLVM\bin;D:\a\_temp\msys64\mingw64\bin;C:\npm\prefix;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install happy and alex
         run: stack install alex happy
 
-      - run: |
-          stack build -v --flag madlib:static
-          stack run -- --help
+      - name: Build madlib
+        run: stack build -v --flag madlib:static
 
       - name: Build tools
+        shell: msys2 {0}
         run: |
-          export PATH="$(npm get prefix)/bin:$PATH"
-          ./scripts/build
-        shell: msys2 {0}
-        env:
-          MSYS2_PATH_TYPE: inherit
+          export PATH="/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
+          export ROLLUP_PATH="/c/npm/prefix/rollup.cmd"
+          "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/test-runner/src/Main.mad -o ./tools/test-runner/dist/test-runner.js --bundle
+          "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
 
-      - name: Copy executable
-        run: cp "$(stack path --dist-dir)/build/madlib/madlib.exe" ./
+      - name: Build runtime
         shell: msys2 {0}
-        env:
-          MSYS2_PATH_TYPE: inherit
+        run: |
+          TARGET_WINDOWS="ON" ./scripts/build-runtime-libs
+          CXX="g++" ./scripts/build-runtime
 
-      - name: Upload executable
-        uses: actions/upload-artifact@v2
+      - name: Bundle archive
+        shell: msys2 {0}
+        run: |
+          export PATH="/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
+          mkdir madlib-x86_64-pc-windows-mingw32
+          cp "$(stack path --dist-dir)/build/madlib/madlib.exe" ./madlib-x86_64-pc-windows-mingw32/
+          cp -R runtime ./madlib-x86_64-pc-windows-mingw32/
+          cp -R prelude ./madlib-x86_64-pc-windows-mingw32/
+          cp ./tools/package-installer/dist/package-installer.js ./madlib-x86_64-pc-windows-mingw32/
+          cp ./tools/test-runner/dist/test-runner.js ./madlib-x86_64-pc-windows-mingw32/
+          tar -czvf madlib-x86_64-pc-windows-mingw32.tar.gz madlib-x86_64-pc-windows-mingw32
+
+      - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1
+        id: release_upload_url
         with:
-          name: madlib.exe
-          path: madlib.exe
+          tag: ${{ github.event.inputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Upload build
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_upload_url.outputs.uploadUrl }}
+          asset_path: ./madlib-x86_64-pc-windows-mingw32.tar.gz
+          asset_name: madlib-x86_64-pc-windows-mingw32.tar.gz
+          asset_content_type: application/tar+gzip
