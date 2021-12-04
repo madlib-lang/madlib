@@ -68,7 +68,7 @@ executables:
     source-dirs: src
     when:
     - condition: flag(static)
-      ld-options: -static -optl-static -optl-pthread
+      ld-options: -static
 
 library:
   source-dirs: src

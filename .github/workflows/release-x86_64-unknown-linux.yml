@@ -1,0 +1,109 @@
+name: 'Build osx target for release'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release ( ex: v0.0.1 )'
+        required: true
+
+env:
+  node-version: 14.x
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # TODO: need to use the Dockerfile to build
+  #     - uses: actions/setup-haskell@v1.1.3
+  #       with:
+  #         ghc-version: "8.8.4"
+  #         cabal-version: "latest"
+  #         enable-stack: true
+  #         stack-version: "latest"
+
+  #     - uses: actions/cache@v2.1.3
+  #       name: Cache ~/.stack
+  #       with:
+  #         path: ~/.stack
+  #         key: ${{ runner.os }}-8.8.4-stack
+
+  #     - name: Use Node.js ${{ env.node-version }}
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: ${{ env.node-version }}
+
+  #     - uses: docker-practice/actions-setup-docker@v1
+  #       with:
+  #         docker_version: "20.10"
+  #         docker_channel: stable
+
+  #     - run: brew install llvm-hs/llvm/llvm-9
+
+  #     - run: npm i -g rollup @rollup/plugin-node-resolve
+  #     - run: stack install alex happy
+
+  #     - run: ./pkg/build-targets
+
+  #     - name: 'Changelog: generate changelog'
+  #       id: changelog
+  #       uses: TriPSs/conventional-changelog-action@v3.4.1
+  #       with:
+  #         presets: 'conventionalcommits'
+  #         github-token: ${{ secrets.github_token }}
+  #         skip-on-empty: false
+  #         output-file: false
+  #         tag-prefix: 'v'
+  #         skip-commit: true
+  #         skip-version-file: true
+
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: actions/create-release@v1.1.4
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: ${{ github.event.inputs.version }}
+  #         release_name: Release ${{ github.event.inputs.version }}
+  #         body: ${{ steps.changelog.outputs.clean_changelog }}
+  #         draft: false
+  #         prerelease: false
+
+  #     - name: Upload OSX target
+  #       uses: actions/upload-release-asset@v1.0.2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ./pkg/targets/madlib-macos.tar.gz
+  #         asset_name: madlib-macos.tar.gz
+  #         asset_content_type: application/tar+gzip
+     
+  #     - name: Upload Linux target
+  #       uses: actions/upload-release-asset@v1.0.2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #         asset_path: ./pkg/targets/madlib-linux.tar.gz
+  #         asset_name: madlib-linux.tar.gz
+  #         asset_content_type: application/tar+gzip
+
+  # publish:
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./pkg
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Use Node.js ${{ env.node-version }}
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: ${{ env.node-version }}
+  #     - run: cp -R ../prelude ./
+  #     - run: npm install
+  #     - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+  #     - run: npm publish --access public

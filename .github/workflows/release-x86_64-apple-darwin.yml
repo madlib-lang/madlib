@@ -1,0 +1,66 @@
+name: 'Build osx target for release'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release ( ex: v0.0.1 )'
+        required: true
+
+env:
+  node-version: 14.x
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-haskell@v1.1.3
+        with:
+          ghc-version: "8.10.7"
+          cabal-version: "3.4.0.0"
+          enable-stack: true
+          stack-version: "2.7.3"
+
+      - name: Use Node.js ${{ env.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ env.node-version }}
+
+      - name: Install rollup
+        run: npm i -g rollup @rollup/plugin-node-resolve
+
+      - name: Install LLVM 9
+        run: brew install llvm-hs/llvm/llvm-9
+
+      - name: Install alex and happy
+        run: stack install alex happy
+
+      - name: Build madlib executable
+        run: stack build
+
+      - name: Build runtime
+        run: |
+          ./scripts/build-runtime-libs
+          ./scripts/build-runtime
+
+      - name: Build tools
+        run: ./scripts/build
+
+      - name: Bundle archive
+        run: |
+          mkdir madlib-x86_64-apple-darwin
+          cp "$(stack path --dist-dir)/build/madlib/madlib" ./madlib-x86_64-apple-darwin/madlib
+          cp -R runtime ./madlib-x86_64-apple-darwin/
+          cp -R prelude ./madlib-x86_64-apple-darwin/
+          cp ./tools/package-installer/dist/package-installer.js ./madlib-x86_64-apple-darwin/
+          cp ./tools/test-runner/dist/test-runner.js ./madlib-x86_64-apple-darwin/
+          tar -czvf madlib-x86_64-apple-darwin.tar.gz madlib-x86_64-apple-darwin
+
+      - name: Upload build
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          files: madlib-x86_64-apple-darwin.tar.gz
