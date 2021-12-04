@@ -1,0 +1,70 @@
+FROM alpine:3.13.0 as build-musl-runtime
+
+RUN apk add --update git wget unzip cmake musl-dev build-base libuv-static
+
+COPY . .
+
+# build runtime
+RUN sh ./scripts/build-runtime-libs
+RUN cp /usr/lib/libuv.a runtime/lib/
+RUN CXX="g++" ./scripts/build-runtime
+
+
+
+FROM ubuntu:20.04 as build-stage
+
+# install common dependencies
+RUN apt-get update --fix-missing
+# DEBIAN_FRONTEND=noninteractive is necessary to skip geographical questions asked when installing cmake
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl llvm-9 zip wget automake libtool clang gcc-9 g++-9 libstdc++-9-dev libc++abi-9-dev unzip musl-tools cmake git
+RUN apt-get install -y build-essential curl libffi-dev libffi7 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+
+RUN echo "Setup Haskell"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+RUN ~/.ghcup/bin/ghcup install 8.10.7
+RUN ~/.ghcup/bin/ghcup install cabal 3.4.0.0
+RUN ~/.ghcup/bin/ghcup install stack 2.7.3
+RUN ~/.ghcup/bin/ghcup set 8.10.7
+RUN ~/.ghcup/bin/ghcup set cabal 3.4.0.0
+RUN ~/.ghcup/bin/ghcup set stack 2.7.3
+
+# install stack
+RUN curl -sSL https://get.haskellstack.org/ | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# tell stack to use the global ghc, installing GHC with stack fails
+RUN stack config set system-ghc --global true
+ENV PATH="$(stack path --bin-path):$PATH"
+
+# setup node and rollup
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+RUN apt-get install -y nodejs
+RUN npm i -g rollup @rollup/plugin-node-resolve
+
+# run the build
+COPY . .
+
+# note: this needs to happen here as we need the resolved field from the stack.yml or else stack
+# will download a new ghc version, which we want to avoid.
+RUN stack install alex happy
+
+# build runtime
+RUN ./scripts/build-runtime-libs
+RUN CPLUS_INCLUDE_PATH=/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/ ./scripts/build-runtime
+
+
+RUN stack build --jobs 1 --flag madlib:static
+
+
+# build the js tools ( test-runner and package-installer )
+RUN ./scripts/build
+
+RUN cp "$(stack path --dist-dir)/build/madlib/madlib" .
+
+
+FROM scratch AS export-stage
+COPY --from=build-stage ./madlib /
+COPY --from=build-stage ./runtime /runtime
+COPY --from=build-stage ./tools/package-installer/dist/package-installer.js /package-installer.js
+COPY --from=build-stage ./tools/test-runner/dist/test-runner.js /test-runner.js
+COPY --from=build-musl-runtime ./runtime /runtime-musl

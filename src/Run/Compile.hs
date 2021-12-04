@@ -201,23 +201,30 @@ rollupNotFoundMessage = unlines
 
 runBundle :: FilePath -> IO (Either String (String, String))
 runBundle entrypointCompiledPath = do
+  envPATH           <- try $ getEnv "PATH"
+  putStrLn (ppShow (envPATH :: Either IOError String))
   rollupPath        <- try $ getEnv "ROLLUP_PATH"
   rollupPathChecked <- case (rollupPath :: Either IOError String) of
     Left _ -> do
       r <-
         try (readProcessWithExitCode "rollup" ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
       case r of
-        Left  _ -> return $ Left rollupNotFoundMessage
+        Left  err -> do
+          putStrLn $ ppShow err
+          return $ Left rollupNotFoundMessage
         Right _ -> return $ Right "rollup"
     Right p -> do
       r <- try (readProcessWithExitCode p ["--version"] "") :: IO (Either SomeException (ExitCode, String, String))
       case r of
-        Left _ -> do
+        Left err -> do
+          putStrLn $ ppShow err
           r <-
             try (readProcessWithExitCode "rollup" ["--version"] "") :: IO
               (Either SomeException (ExitCode, String, String))
           case r of
-            Left  _ -> return $ Left rollupNotFoundMessage
+            Left  err -> do
+              putStrLn $ ppShow err
+              return $ Left rollupNotFoundMessage
             Right _ -> return $ Right "rollup"
         Right _ -> return $ Right p
 

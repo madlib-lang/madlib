@@ -3103,8 +3103,8 @@ generateTable outputFolder rootPath astTable entrypoint = do
   compilerPath    <- getExecutablePath
 
   let objectFilePathsForCli = List.unwords objectFilePaths
-      runtimeLibPathOpt     = "-L" <> joinPath [takeDirectory compilerPath, "./runtime/lib/"]
-      runtimeBuildPathOpt   = "-L" <> joinPath [takeDirectory compilerPath, "./runtime/build/"]
+      runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "./runtime/lib/"] <> "\""
+      runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "./runtime/build/"] <> "\""
 
   Prelude.putStrLn "Linking.."
 
