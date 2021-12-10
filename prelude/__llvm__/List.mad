@@ -18,22 +18,61 @@ len :: List a -> Integer
 len = extern "MadList_length"
 export len
 
+showInteger :: Integer -> String
+showInteger = extern "__integerToStr__"
+
+
+instance Show Integer {
+  show = showInteger
+}
+
+log :: String -> ()
+log = extern "puts"
+
 
 showWith :: (a -> String) -> List a -> String
 showWith = (with, list) => {
-  processItems = (processed, items) => where(items) {
-    [first, second, ...rest] =>
-      processItems(processed ++ with(first) ++ ", ", push(second, rest))
+  log("showWith")
+  log(showInteger(len(list)))
+  processItems = (processed, items) => {
+    log("processItems")
+    log(showInteger(len(items)))
+    return where(items) {
+      [first, second, ...rest] =>
+        processItems(processed ++ with(first) ++ ", ", push(second, rest))
 
-    [last] =>
-      processed ++ with(last)
+      [last] =>
+        processed ++ with(last)
 
-    [] =>
-      ""
+      [] =>
+        ""
+    }
   }
 
   return "[" ++ processItems("", list) ++ "]"
 }
+
+// processItems = (with, processed, items) => {
+//   log("processItems")
+//   return where(items) {
+//     [first, second, ...rest] =>
+//       processItems(with, processed ++ with(first) ++ ", ", [second, ...rest])
+
+//     [last] =>
+//       processed ++ with(last)
+
+//     [] =>
+//       ""
+//   }
+// }
+
+// showWith :: (a -> String) -> List a -> String
+// showWith = (with, list) => {
+//   log("showWith")
+  
+
+//   return "[" ++ processItems(with, "", list) ++ "]"
+// }
 
 
 instance Show a => Show (List a) {
@@ -48,6 +87,9 @@ instance PrettyShow a => PrettyShow (List a) {
 instance Functor List {
   map = map_
 }
+
+
+log(show([1, 2, 3]))
 
 
 // instance Applicative List {

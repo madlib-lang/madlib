@@ -5,6 +5,7 @@ module Utils.Path
   , computeLLVMTargetPath
   , makeRelativeEx
   , cleanRelativePath
+  , convertWindowsSeparators
   )
 where
 
@@ -16,7 +17,7 @@ import           System.FilePath                ( dropFileName
                                                 , joinPath
                                                 , splitFileName
                                                 , normalise
-                                                , takeExtension
+                                                , takeExtension, pathSeparator
                                                 )
 import qualified MadlibDotJson.MadlibDotJson   as MadlibDotJson
 import           Data.List                      ( isInfixOf
@@ -32,6 +33,12 @@ import qualified Utils.URL                     as URL
 data ModulePath
   = PackagePath
   | FileSystemPath
+
+
+convertWindowsSeparators :: String -> String
+convertWindowsSeparators = map f
+  where f '\\' = '/'
+        f x = x
 
 
 madlibDotJsonFile :: FilePath
@@ -68,8 +75,11 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
           let afterAlias = joinPath . tail $ pathParts
           (madlibDotJsonFile, dir) <- retrieveMadlibDotJson pathUtils rootPath
           let aliasPath = case madlibDotJsonFile of
-                Just MadlibDotJson.MadlibDotJson { MadlibDotJson.importAliases = Just ias } -> M.lookup alias ias
-                _ -> Nothing
+                Just MadlibDotJson.MadlibDotJson { MadlibDotJson.importAliases = Just ias } ->
+                  M.lookup alias ias
+
+                _ ->
+                  Nothing
 
           return $ (\aliasPath' -> joinPath [dir, aliasPath', afterAlias]) <$> aliasPath
 
@@ -77,12 +87,13 @@ resolveAbsoluteSrcPath pathUtils rootPath path = do
 
       case path' of
         Just p  ->
-          Just <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+          Just . normalise <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
 
         Nothing ->
           return Nothing
 
-    PackagePath -> makePathForPackage pathUtils rootPath path
+    PackagePath ->
+      makePathForPackage pathUtils rootPath path
 
 
 -- TODO: Maybe also verify that the .mad file exists first ?
@@ -100,14 +111,16 @@ makePathForPackage pathUtils rootPath pkgName = do
   preludeModulePath <- findPreludeModulePath pathUtils pkgName
   case preludeModulePath of
     Just path ->
-      return $ Just path
+      return $ Just (normalise path)
 
     Nothing   -> do
       (madlibDotJsonFile, _) <- retrieveMadlibDotJson pathUtils rootPath
       case madlibDotJsonFile of
-        Just json -> findMadlibPackage pathUtils pkgName rootPath json
-        _         -> return Nothing
+        Just json ->
+          findMadlibPackage pathUtils pkgName rootPath json
 
+        _ ->
+          return Nothing
 
 
 retrieveMadlibDotJson :: PathUtils -> FilePath -> IO (Maybe MadlibDotJson.MadlibDotJson, FilePath)
@@ -142,8 +155,11 @@ findMadlibPackageMainPath pathUtils file = do
   json <- MadlibDotJson.load pathUtils file
   let folder = takeDirectory file
   case json of
-    Left  _     -> return Nothing
-    Right json' -> Just <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
+    Left  _     ->
+      return Nothing
+
+    Right json' ->
+      Just . normalise <$> canonicalizePath pathUtils (joinPath [folder, MadlibDotJson.main json'])
 
 
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)
@@ -154,7 +170,7 @@ findPreludeModulePath pathUtils moduleName = do
 findPreludeModulePath' :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 findPreludeModulePath' _         _          ""      = return Nothing
 findPreludeModulePath' pathUtils moduleName currDir = do
-  let fullPath = replaceExtension (joinPath [currDir, "prelude/__internal__", moduleName]) ".mad"
+  let fullPath = replaceExtension (joinPath [currDir, "prelude", "__internal__", moduleName]) ".mad"
   found <- doesFileExist pathUtils fullPath
   if found
     then return $ Just fullPath
@@ -175,16 +191,18 @@ computeTargetPath :: FilePath -> FilePath -> FilePath -> FilePath
 computeTargetPath outputPath rootPath path =
   let cleanOutputPath = dropTrailingPathSeparator $ normalise outputPath
   in  case isPackage path of
-        FileSystemPath -> buildLocalPath cleanOutputPath rootPath path
+        FileSystemPath ->
+          buildLocalPath cleanOutputPath rootPath path
 
-        PackagePath    -> if isPreludePath path
-          then
+        PackagePath    ->
+          if isPreludePath path then
             let split        = dropTrailingPathSeparator <$> splitPath path
                 fromInternal = tail $ dropWhile (/= "__internal__") split
                 complete     = [cleanOutputPath, ".prelude"] <> fromInternal
             in  cleanRelativePath $ replaceExtension (joinPath complete) ".mjs"
-          else if rootPath `isPrefixOf` path
-            then buildLocalPath cleanOutputPath rootPath path
+          else
+            if rootPath `isPrefixOf` path then
+              buildLocalPath cleanOutputPath rootPath path
             else
               let split                 = dropTrailingPathSeparator <$> splitPath path
                   fromMadlibModules     = tail $ dropWhile (/= "madlib_modules") split
@@ -227,7 +245,7 @@ computeLLVMTargetPath outputPath rootPath path =
 
 
 isPreludePath :: FilePath -> Bool
-isPreludePath = isInfixOf "prelude/__internal__"
+isPreludePath = isInfixOf $ "prelude" <> (pathSeparator : "__internal__")
 
 
 makeRelativeEx :: FilePath -> FilePath -> FilePath

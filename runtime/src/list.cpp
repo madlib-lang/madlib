@@ -21,14 +21,7 @@ MadListNode_t *MadList_empty() {
 int64_t MadList_length(MadListNode_t *list) {
   int64_t total = 0;
 
-  if (list->value == NULL) {
-    total = 0;
-    return total;
-  }
-
-  total = 1;
-
-  while (list->next->value != NULL) {
+  while (list->value != NULL) {
     total += 1;
     list = list->next;
   }
@@ -147,7 +140,7 @@ void *MadList_nth(double index, MadListNode_t *list) {
   }
 }
 
-bool MadList_hasMinLength(double l, MadListNode_t *list) {
+bool MadList_hasMinLength(int64_t l, MadListNode_t *list) {
   MadListNode_t *head = list;
 
   if (head->value == NULL) {
@@ -164,7 +157,7 @@ bool MadList_hasMinLength(double l, MadListNode_t *list) {
   return l == 0;
 }
 
-bool MadList_hasLength(double l, MadListNode_t *list) {
+bool MadList_hasLength(int64_t l, MadListNode_t *list) {
   MadListNode_t *head = list;
 
   if (head->value == NULL) {

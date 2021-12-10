@@ -19,7 +19,7 @@ import           Error.Error
 import           Error.Context
 
 import           Control.Monad.Except
-import           System.FilePath                ( dropFileName, takeExtension )
+import           System.FilePath                ( dropFileName, takeExtension, normalise )
 import qualified Prelude                       as P
 import           Prelude                       hiding ( readFile )
 import qualified System.Environment.Executable as E
@@ -145,19 +145,31 @@ generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Sou
 getImportsWithAbsolutePaths :: PathUtils -> FilePath -> Either CompilationError AST -> IO (Either CompilationError [Import])
 getImportsWithAbsolutePaths pathUtils ctxPath ast =
   let astPath = case ast of
-        Right x -> fromMaybe "" $ apath x
-        Left  _ -> ""
+        Right x ->
+          fromMaybe "" $ apath x
+
+        Left _ ->
+          ""
+
   in  case ast of
-        Left  x    -> return $ Left x
-        Right ast' -> sequence <$> mapM (updatePath astPath) (aimports ast')
+        Left  x ->
+          return $ Left x
+
+        Right ast' ->
+          sequence <$> mapM (updatePath astPath) (aimports ast')
+
  where
   updatePath :: FilePath -> Import -> IO (Either CompilationError Import)
   updatePath path imp = do
     let importPath = (snd . getImportPath) imp
     absolutePath <- resolveAbsoluteSrcPath pathUtils ctxPath importPath
     case absolutePath of
-      Nothing  -> return $ Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp) [])
-      Just abs -> return $ Right (setImportAbsolutePath imp abs)
+      Nothing -> do
+        return $ Left $ CompilationError (ImportNotFound importPath) (Context path (getArea imp) [])
+
+      Just abs -> do
+        return $ Right (setImportAbsolutePath imp abs)
+
 
 
 setImportAbsolutePath :: Import -> FilePath -> Import
