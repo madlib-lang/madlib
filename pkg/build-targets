@@ -54,7 +54,7 @@ mkdir $PATH_LINUX_TARGET
 # --------------------------------------------------------------------------- #
 # build linux x64_64
 
-DOCKER_BUILDKIT=1 docker build --no-cache -f "./pkg/Dockerfile-x86_64-unknown-linux" -o $PATH_LINUX_TARGET .
+DOCKER_BUILDKIT=1 docker build --no-cache -f "./pkg/Dockerfile-x86_64-linux" -o $PATH_LINUX_TARGET .
 cp -R $PRELUDE_PATH "$PATH_LINUX_TARGET/"
 tar -C $PATH_TARGETS -czvf $LINUX_TAR_FILENAME $LINUX_NAME
 mv $LINUX_TAR_FILENAME $PATH_TARGETS

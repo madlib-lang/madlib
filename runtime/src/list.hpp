@@ -29,9 +29,9 @@ MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list);
 
 void *MadList_nth(double index, MadListNode_t *list);
 
-bool MadList_hasMinLength(double l, MadListNode_t *list);
+bool MadList_hasMinLength(int64_t l, MadListNode_t *list);
 
-bool MadList_hasLength(double l, MadListNode_t *list);
+bool MadList_hasLength(int64_t l, MadListNode_t *list);
 
 MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b);
 

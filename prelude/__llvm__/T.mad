@@ -7,13 +7,40 @@ import {} from "./Boolean"
 import { filter, reject, reverse, len } from "./List"
 import {} from "./Byte"
 
+log :: String -> ()
+log = extern "puts"
+
+processItems = (with, processed, items) => {
+  log("processItems")
+  return where(items) {
+    [first, second, ...rest] =>
+      processItems(with, processed ++ with(first) ++ ", ", [second, ...rest])
+
+    [last] =>
+      processed ++ with(last)
+
+    [] =>
+      ""
+  }
+}
+
+showWith :: (a -> String) -> List a -> String
+showWith = (with, list) => {
+  log("showWith")
+  
+
+  return "[" ++ processItems(with, "", list) ++ "]"
+}
+
 
 IO.prettyLog("Hello world!")
 IO.prettyLog(32)
 IO.prettyLog(true)
 
 IO.prettyLog(len([32, 133, 412]))
-IO.prettyLog(["one string", "another one"])
+log(showWith(show, [1, 2, 3]))
+log(showWith(show, ["one string", "another one"]))
+IO.log(show(["one string", "another one"]))
 IO.prettyLog([true, false, false, false, true, false])
 IO.prettyLog(([] :: List Integer))
 
@@ -35,223 +62,223 @@ export snd = (tuple) => where(tuple) {
     b
 }
 
-IO.prettyLog(map(snd, [#[1, 4]]))
-IO.prettyLog(map((x) => x + 1, [54, 87]))
+// IO.prettyLog(map(snd, [#[1, 4]]))
+// IO.prettyLog(map((x) => x + 1, [54, 87]))
 
-IO.log(show({ stuff: false }))
+// IO.log(show({ stuff: false }))
 
-IO.log(show({ x: 3, y: 4 }))
+// IO.log(show({ x: 3, y: 4 }))
 
-IO.prettyLog([1, 2, 3])
+// IO.prettyLog([1, 2, 3])
 
-reversed = reverse([1, 2, 3, 4, 5, 6])
-IO.prettyLog(reversed)
+// reversed = reverse([1, 2, 3, 4, 5, 6])
+// IO.prettyLog(reversed)
 
-filtered = filter((x) => x > 2, [1, 2, 3, 4, 5, 6])
-IO.prettyLog(filtered)
+// filtered = filter((x) => x > 2, [1, 2, 3, 4, 5, 6])
+// IO.prettyLog(filtered)
 
-rejected = reject((x) => x > 2, [1, 2, 3, 4, 5, 6])
-IO.prettyLog(rejected)
-
-
-IO.prettyLog((127 :: Byte))
-IO.prettyLog(([127, 245, 11, 90, 2, 255] :: List Byte))
+// rejected = reject((x) => x > 2, [1, 2, 3, 4, 5, 6])
+// IO.prettyLog(rejected)
 
 
-
-
-maybe = do {
-  oneDotOne <- Just(1.1)
-  jus2 = oneDotOne + 4
-  return of(jus2)
-}
-
-where(maybe) {
-  Just(x) =>
-    IO.prettyLog(x)
-}
+// IO.prettyLog((127 :: Byte))
+// IO.prettyLog(([127, 245, 11, 90, 2, 255] :: List Byte))
 
 
 
-makeInverter :: () -> (() -> Boolean)
-makeInverter = (_) => {
-  initial = false
 
-  return (_) => {
-    initial = !initial
-    return initial
-  }
-}
+// maybe = do {
+//   oneDotOne <- Just(1.1)
+//   jus2 = oneDotOne + 4
+//   return of(jus2)
+// }
 
-inverter = makeInverter(())
-IO.prettyLog(inverter(()))
-IO.prettyLog(inverter(()))
-IO.prettyLog(inverter(()))
+// where(maybe) {
+//   Just(x) =>
+//     IO.prettyLog(x)
+// }
 
 
 
-makeCounter :: () -> (() -> String)
-makeCounter = (_) => {
-  count = ""
-
-  innerCounter = (_) => {
-    return (_) => {
-      count = count ++ "1"
-      return count
-    }
-  }
-
-  return innerCounter(())
-}
-
-counter = makeCounter(())
-
-IO.prettyLog(counter(()))
-IO.prettyLog(counter(()))
-counter2 = makeCounter(())
-IO.prettyLog(counter2(()))
-IO.prettyLog(counter(()))
-IO.prettyLog(counter(()))
-IO.prettyLog(counter2(()))
-IO.prettyLog(counter2(()))
-IO.prettyLog(counter2(()))
-
-
-makeGrower :: () -> (Integer -> List Integer)
-makeGrower = (_) => {
-  initial = []
-
-  return (n) => {
-    initial = [...initial, n]
-    return initial
-  }
-}
-
-grower = makeGrower(())
-grower(1)
-grower(2)
-grower(3)
-grower(4)
-IO.prettyLog(grower(10))
-IO.prettyLog(grower(21))
-
-
-makeList :: () -> List Integer
-makeList = (_) => {
-  initial = []
-
-  grow = (n) => {
-    initial = [...initial, n]
-    return initial
-  }
-
-  grow(11)
-  grow(22)
-  grow(33)
-
-  return initial
-}
-
-IO.prettyLog(makeList(()))
-
-
-// makeCounterWithRec :: () -> (() -> Integer)
-makeCounterWithRec = (_) => {
-  count = { a: 0 }
-
-  inner = (_) => {
-    count = { a: count.a + 1 }
-    return count.a
-  }
-
-  return inner
-}
-// makeCounterWithRec = (_) => {
-//   count = { a: 0 }
+// makeInverter :: () -> (() -> Boolean)
+// makeInverter = (_) => {
+//   initial = false
 
 //   return (_) => {
-//     count = { a: count.a + 1 }
-//     return count.a
+//     initial = !initial
+//     return initial
 //   }
 // }
 
-c2 = makeCounterWithRec(())
-c2(())
-c2(())
-c2(())
-IO.prettyLog(c2(()))
-
-
-p = (a) => map((x) => x + 1, a)
-
-
-makeCounterWrapper = (_) =>
-  makeCounterWithRec(())
-
-c3 = makeCounterWrapper(())
-c3(())
-c3(())
-IO.prettyLog(c3(()))
-
-
-inc = (a) => {
-  b = "1"
-  b = b ++ a
-  return a ++ b
-}
-
-IO.prettyLog(inc("4"))
-
-
-IO.prettyLog(2.2 == 2.2)
-IO.prettyLog("2.2" == "2.2")
-IO.prettyLog("2.2" == "2.4")
+// inverter = makeInverter(())
+// IO.prettyLog(inverter(()))
+// IO.prettyLog(inverter(()))
+// IO.prettyLog(inverter(()))
 
 
 
-IO.prettyLog(true == true)
+// makeCounter :: () -> (() -> String)
+// makeCounter = (_) => {
+//   count = ""
+
+//   innerCounter = (_) => {
+//     return (_) => {
+//       count = count ++ "1"
+//       return count
+//     }
+//   }
+
+//   return innerCounter(())
+// }
+
+// counter = makeCounter(())
+
+// IO.prettyLog(counter(()))
+// IO.prettyLog(counter(()))
+// counter2 = makeCounter(())
+// IO.prettyLog(counter2(()))
+// IO.prettyLog(counter(()))
+// IO.prettyLog(counter(()))
+// IO.prettyLog(counter2(()))
+// IO.prettyLog(counter2(()))
+// IO.prettyLog(counter2(()))
 
 
-IO.prettyLog([1, 2, 3] == [1, 2, 3])
-IO.prettyLog([1, 2, 3] == [1, 2, 3.3])
+// makeGrower :: () -> (Integer -> List Integer)
+// makeGrower = (_) => {
+//   initial = []
+
+//   return (n) => {
+//     initial = [...initial, n]
+//     return initial
+//   }
+// }
+
+// grower = makeGrower(())
+// grower(1)
+// grower(2)
+// grower(3)
+// grower(4)
+// IO.prettyLog(grower(10))
+// IO.prettyLog(grower(21))
 
 
-IO.prettyLog(Nothing == Nothing)
-IO.prettyLog(Just(4) == Just(4))
+// makeList :: () -> List Integer
+// makeList = (_) => {
+//   initial = []
+
+//   grow = (n) => {
+//     initial = [...initial, n]
+//     return initial
+//   }
+
+//   grow(11)
+//   grow(22)
+//   grow(33)
+
+//   return initial
+// }
+
+// IO.prettyLog(makeList(()))
 
 
-moreThan15 = (a) => a >= 15
+// // makeCounterWithRec :: () -> (() -> Integer)
+// makeCounterWithRec = (_) => {
+//   count = { a: 0 }
 
-IO.prettyLog(moreThan15(15))
+//   inner = (_) => {
+//     count = { a: count.a + 1 }
+//     return count.a
+//   }
 
-IO.prettyLog({ x: 4 } == { x: 4 })
-IO.prettyLog({ xs: [1, 2, 3] } == { xs: [1, 2, 3, 4] })
+//   return inner
+// }
+// // makeCounterWithRec = (_) => {
+// //   count = { a: 0 }
 
-rec = { x: 4 }
-IO.prettyLog(rec == rec)
+// //   return (_) => {
+// //     count = { a: count.a + 1 }
+// //     return count.a
+// //   }
+// // }
 
-
-IO.prettyLog({ y: 4 } != { y: 5 })
-
-
-cmp = (a, b) => a != b
-IO.prettyLog(cmp(3, 4))
-
-IO.prettyLog(cmp(true, false))
-
-IO.prettyLog(cmp({ name: "John" }, { name: "John" }))
-
-
-
-IO.prettyLog("ok" != "ok")
-IO.prettyLog("ok" != "ok2")
-
-
-IO.prettyLog(#[1, 2] == #[1, 2])
-IO.prettyLog(#[1, 2, 3, 4, 5] == #[1, 2, 3, 4, 5])
-IO.prettyLog(#[1, 2, 3] == #[1, 2, 7])
-IO.prettyLog(#["1", "2", "8"] == #["1", "2", "8"])
+// c2 = makeCounterWithRec(())
+// c2(())
+// c2(())
+// c2(())
+// IO.prettyLog(c2(()))
 
 
-incM = (x) => x + 1
-IO.prettyLog(incM(3.3))
+// p = (a) => map((x) => x + 1, a)
+
+
+// makeCounterWrapper = (_) =>
+//   makeCounterWithRec(())
+
+// c3 = makeCounterWrapper(())
+// c3(())
+// c3(())
+// IO.prettyLog(c3(()))
+
+
+// inc = (a) => {
+//   b = "1"
+//   b = b ++ a
+//   return a ++ b
+// }
+
+// IO.prettyLog(inc("4"))
+
+
+// IO.prettyLog(2.2 == 2.2)
+// IO.prettyLog("2.2" == "2.2")
+// IO.prettyLog("2.2" == "2.4")
+
+
+
+// IO.prettyLog(true == true)
+
+
+// IO.prettyLog([1, 2, 3] == [1, 2, 3])
+// IO.prettyLog([1, 2, 3] == [1, 2, 3.3])
+
+
+// IO.prettyLog(Nothing == Nothing)
+// IO.prettyLog(Just(4) == Just(4))
+
+
+// moreThan15 = (a) => a >= 15
+
+// IO.prettyLog(moreThan15(15))
+
+// IO.prettyLog({ x: 4 } == { x: 4 })
+// IO.prettyLog({ xs: [1, 2, 3] } == { xs: [1, 2, 3, 4] })
+
+// rec = { x: 4 }
+// IO.prettyLog(rec == rec)
+
+
+// IO.prettyLog({ y: 4 } != { y: 5 })
+
+
+// cmp = (a, b) => a != b
+// IO.prettyLog(cmp(3, 4))
+
+// IO.prettyLog(cmp(true, false))
+
+// IO.prettyLog(cmp({ name: "John" }, { name: "John" }))
+
+
+
+// IO.prettyLog("ok" != "ok")
+// IO.prettyLog("ok" != "ok2")
+
+
+// IO.prettyLog(#[1, 2] == #[1, 2])
+// IO.prettyLog(#[1, 2, 3, 4, 5] == #[1, 2, 3, 4, 5])
+// IO.prettyLog(#[1, 2, 3] == #[1, 2, 7])
+// IO.prettyLog(#["1", "2", "8"] == #["1", "2", "8"])
+
+
+// incM = (x) => x + 1
+// IO.prettyLog(incM(3.3))

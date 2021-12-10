@@ -22,7 +22,8 @@ const testCount = () => Object.keys(testsToRun).length;
 const areAllTestsDone = (testsToRun) => Object.values(testsToRun).reduce((all, curr) => all && curr, true);
 const areAllTestsSuccess = () => testCount() === successCount;
 
-const runTestSuite = (madlibFile, done) => {
+const runTestSuite = (rawMadlibFile, done) => {
+  const madlibFile = rawMadlibFile.replace(/\\/g, "/");
   let closed = false;
 
   testSuiteCount = testSuiteCount + 1;

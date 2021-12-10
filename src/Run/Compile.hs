@@ -7,7 +7,7 @@ import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State            ( StateT(runStateT) )
 import           System.FilePath                ( takeDirectory
                                                 , joinPath
-                                                , splitDirectories
+                                                , splitDirectories, pathSeparator
                                                 )
 import           System.Directory               ( canonicalizePath
                                                 , createDirectoryIfMissing
@@ -201,8 +201,6 @@ rollupNotFoundMessage = unlines
 
 runBundle :: FilePath -> IO (Either String (String, String))
 runBundle entrypointCompiledPath = do
-  envPATH           <- try $ getEnv "PATH"
-  putStrLn (ppShow (envPATH :: Either IOError String))
   rollupPath        <- try $ getEnv "ROLLUP_PATH"
   rollupPathChecked <- case (rollupPath :: Either IOError String) of
     Left _ -> do
@@ -256,7 +254,7 @@ generate :: Command -> Bool -> FilePath -> Opt.Table -> [FilePath] -> IO ()
 generate options@Compile { compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath table sourcesToCompile
   = do
     mapM_ (generateAST options coverage rootPath sourcesToCompile) $ M.elems table
-    writeFile (takeDirectory compileOutput <> (if compileBundle then "/.bundle" else "") <> "/__internals__.mjs")
+    writeFile (takeDirectory compileOutput <> (if compileBundle then "/.bundle" else "") <> (pathSeparator : "__internals__.mjs"))
       $ generateInternalsModuleContent compileTarget compileOptimize coverage
 
 
@@ -265,7 +263,7 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
   Just s ->
     let dirs = splitDirectories (takeDirectory s)
         minus
-          | "prelude/__internal__" `isInfixOf` astPath = if "prelude/__internal__" `isInfixOf` rootPath then 0 else 2
+          | joinPath ["prelude", "__internal__"] `isInfixOf` astPath = if joinPath ["prelude", "__internal__"] `isInfixOf` rootPath then 0 else 2
           | "madlib_modules" `isInfixOf` astPath && not (rootPath `isPrefixOf` astPath) = -2
           | otherwise = 1
         dirLength = length dirs - minus
@@ -275,7 +273,7 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
 generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
 generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path }
   = do
-    let internalsPath      = computeInternalsPath rootPath path
+    let internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
         entrypointPath     = if path `elem` sourcesToCompile then path else compileInput
         computedOutputPath = if compileBundle
           then computeTargetPath (takeDirectory compileOutput <> "/.bundle") rootPath path

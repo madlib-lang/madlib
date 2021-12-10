@@ -19,6 +19,7 @@ import           AST.Optimized                 as Opt
 import           Utils.Path                     ( cleanRelativePath
                                                 , computeTargetPath
                                                 , makeRelativeEx
+                                                , convertWindowsSeparators
                                                 )
 import           System.FilePath                ( replaceExtension
                                                 , dropFileName
@@ -632,11 +633,6 @@ instance Compilable Constructor where
       in  "({ __constructor: \"" <> n <> "\", __args: [ " <> argStr <> " ] })"
 
 
-removeWindowsSeparators :: String -> String
-removeWindowsSeparators = map f
-  where f '\\' = '/'
-        f x = x
-
 compileImport :: CompilationConfig -> Import -> String
 compileImport config (Untyped _ imp) = case imp of
   NamedImport names _ absPath ->
@@ -655,7 +651,7 @@ buildImportPath config absPath =
       astPath    = ccastPath config
       destPath   = dropFileName $ computeTargetPath outputPath rootPath astPath
       depPath    = computeTargetPath outputPath rootPath absPath
-  in  removeWindowsSeparators $ cleanRelativePath $ replaceExtension (joinPath ["./", makeRelativeEx destPath depPath]) ".mjs"
+  in  convertWindowsSeparators $ cleanRelativePath $ replaceExtension (joinPath ["./", makeRelativeEx destPath depPath]) ".mjs"
 
 
 updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig

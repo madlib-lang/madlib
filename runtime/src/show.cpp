@@ -19,7 +19,6 @@ char *__floatToStr__(double d) {
 }
 
 char *__integerToStr__(int64_t i) {
-  int64_t *ii = (int64_t *) i;
   char *str = (char *)GC_malloc(200);
   sprintf(str, "%" PRId64, i);
 

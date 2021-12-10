@@ -77,6 +77,7 @@ import qualified LLVM.Relocation as Reloc
 import qualified LLVM.CodeModel as CodeModel
 import qualified LLVM.AST.Visibility as CodeGenOptLevel
 import qualified LLVM.CodeGenOpt as CodeGenOpt
+import qualified Distribution.System as DistributionSystem
 
 
 
@@ -204,11 +205,11 @@ selectField =
 
 madlistHasMinLength :: Operand
 madlistHasMinLength =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.double, listType] False) (AST.mkName "MadList_hasMinLength"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "MadList_hasMinLength"))
 
 madlistHasLength :: Operand
 madlistHasLength =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.double, listType] False) (AST.mkName "MadList_hasLength"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "MadList_hasLength"))
 
 madlistSingleton :: Operand
 madlistSingleton =
@@ -345,24 +346,24 @@ unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Type -> Operand -> m Ope
 unbox t what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.double
-    load ptr 8
+    load ptr 0
 
   IT.TCon (IT.TC "Byte" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i8
-    load ptr 8
+    load ptr 0
 
   IT.TCon (IT.TC "Integer" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i64
-    load ptr 8
+    load ptr 0
 
   IT.TCon (IT.TC "Boolean" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.i1
-    load ptr 8
+    load ptr 0
 
   -- boxed strings are char**
   IT.TCon (IT.TC "String" _) _ -> do
     ptr <- bitcast what $ Type.ptr stringType
-    load ptr 8
+    load ptr 0
 
   IT.TCon (IT.TC "Unit" _) _ -> do
     bitcast what $ Type.ptr Type.i1
@@ -371,7 +372,7 @@ unbox t what = case t of
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
     -- -- bitcast what listType
     ptr <- bitcast what (Type.ptr listType)
-    load ptr 8
+    load ptr 0
 
   IT.TRecord fields _ -> do
     bitcast what recordType
@@ -390,28 +391,28 @@ box what = case typeOf what of
   Type.FloatingPointType _ -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
     ptr' <- bitcast ptr (Type.ptr Type.double)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- Integer
   Type.IntegerType 64 -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i64)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- Byte
   Type.IntegerType 8 -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i8)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- Boolean
   Type.IntegerType 1 -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i1)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- String
@@ -425,7 +426,7 @@ box what = case typeOf what of
   Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
     ptr' <- bitcast ptr (Type.ptr listType)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- Pointless?
@@ -462,7 +463,7 @@ buildStr s = do
     storeChar :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> () -> (Integer, Integer) -> m ()
     storeChar basePtr _ (charCode, index) = do
       ptr  <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 index)]
-      store ptr 8 (Operand.ConstantOperand (Constant.Int 8 charCode))
+      store ptr 0 (Operand.ConstantOperand (Constant.Int 8 charCode))
       return ()
 
 
@@ -524,7 +525,7 @@ applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPre
     appliedMethods  <- mapM (\m -> call applyPAP ([(m, []), (i32ConstOp (fromIntegral $ List.length classRefPreds'), [])] ++ ((,[]) <$> classRefPreds'))) methods
     let papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
     appliedMethods' <- mapM (`bitcast` papType) appliedMethods
-    appliedMethods'' <- mapM (`load` 8) appliedMethods'
+    appliedMethods'' <- mapM (`load` 0) appliedMethods'
 
     let appliedDictType = Type.StructureType False (typeOf <$> appliedMethods'')
     appliedDict  <- call gcMalloc [(Operand.ConstantOperand $ sizeof appliedDictType, [])]
@@ -605,7 +606,7 @@ generateApplicationForKnownFunction env symbolTable returnType arity fnOperand a
 
       boxedFn  <- box fnOperand
 
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      args'     <- mapM (generateExp env { isLast = False } symbolTable) args
       boxedArgs <- retrieveArgs args'
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
@@ -655,7 +656,7 @@ generateExp env symbolTable exp = case exp of
         buildReferencePAP symbolTable arity fnPtr
 
       Just (Symbol TopLevelAssignment ptr) -> do
-        loaded <- load ptr 8
+        loaded <- load ptr 0
         return (symbolTable, loaded, Nothing)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
@@ -720,7 +721,7 @@ generateExp env symbolTable exp = case exp of
         if arity == 0 then do
           methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
           methodFn'  <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
-          methodFn'' <- load methodFn' 8
+          methodFn'' <- load methodFn' 0
           value      <- call methodFn'' []
           return (symbolTable, value, Nothing)
         else
@@ -761,7 +762,7 @@ generateExp env symbolTable exp = case exp of
     if isTopLevel then do
       let t = typeOf exp'
       g <- global (AST.mkName name) t $ Constant.Undef t
-      store g 8 exp'
+      store g 0 exp'
       Writer.tell $ Map.singleton name (topLevelSymbol g)
       return (Map.insert name (topLevelSymbol g) symbolTable, exp', Nothing)
     else
@@ -771,30 +772,30 @@ generateExp env symbolTable exp = case exp of
           case typeOf exp' of
             Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
               ptr' <- bitcast ptr $ Type.ptr stringType
-              store ptr' 8 exp'
+              store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             Type.PointerType _ _ | IT.isListType ty -> do
               ptr' <- bitcast ptr $ Type.ptr listType
-              store ptr' 8 exp'
+              store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
 
             Type.PointerType t _  -> do
               ptr'   <- bitcast ptr $ typeOf exp'
-              loaded <- load exp' 8
-              store ptr' 8 loaded
+              loaded <- load exp' 0
+              store ptr' 0 loaded
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             _ | IT.hasNumberPred ps -> do
               ptr'   <- bitcast ptr $ Type.ptr Type.i64
               exp''  <- bitcast exp' Type.i64
-              store ptr' 8 exp''
+              store ptr' 0 exp''
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
             _ -> do
               ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
-              store ptr' 8 exp'
+              store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
         Just (Symbol _ _) ->
@@ -1134,13 +1135,14 @@ generateExp env symbolTable exp = case exp of
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
         generateApplicationForKnownFunction env symbolTable t arity fnOperand args
 
-      Just (Symbol symbolType pap) -> mdo
+      Just (Symbol symbolType pap) -> do
         -- We apply a partial application
         let argsApplied = List.length args
 
         pap' <-
           if symbolType == TopLevelAssignment then
-            load pap 8
+            load pap 0
+            -- load pap 8
           else
             return pap
 
@@ -1247,7 +1249,7 @@ generateExp env symbolTable exp = case exp of
     -- an empty list is { value: null, next: null }
     emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
     emptyList' <- addrspacecast emptyList listType
-    store emptyList' 8 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
+    store emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
 
     return (symbolTable, emptyList', Nothing)
 
@@ -1467,7 +1469,7 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
 generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Pattern, Integer) -> m SymbolTable
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
   ptr  <- gep basePtr [i32ConstOp 0, i32ConstOp index]
-  ptr' <- load ptr 8
+  ptr' <- load ptr 0
   ptr'' <- unbox (getType pat) ptr'
   generateSymbolTableForPattern symbolTable ptr'' pat
 
@@ -1480,12 +1482,12 @@ generateSymbolTableForList symbolTable basePtr pats = case pats of
 
     _ -> do
       valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
-      valuePtr'     <- load valuePtr 8
+      valuePtr'     <- load valuePtr 0
       valuePtr''    <- unbox (getType pat) valuePtr'
       symbolTable'  <- generateSymbolTableForPattern symbolTable valuePtr'' pat
       nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
       -- i8*
-      nextNodePtr'  <- load nextNodePtr 8
+      nextNodePtr'  <- load nextNodePtr 0
       -- { i8*, i8* }*
       nextNodePtr'' <- addrspacecast nextNodePtr' listType
       generateSymbolTableForList symbolTable' nextNodePtr'' next
@@ -1535,7 +1537,7 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
 
 generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> (Pattern, Operand) -> m Operand
 generateSubPatternTest symbolTable prev (pat', ptr) = do
-  v <- load ptr 8
+  v <- load ptr 0
   v' <- unbox (getType pat') v
   curr <- generateBranchTest symbolTable pat' v'
   prev `Instruction.and` curr
@@ -1549,12 +1551,12 @@ generateListSubPatternTest symbolTable basePtr pats = case pats of
 
     _ -> do
       valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
-      valuePtr'     <- load valuePtr 8
+      valuePtr'     <- load valuePtr 0
       valuePtr''    <- unbox (getType pat) valuePtr'
       test          <- generateBranchTest symbolTable pat valuePtr''
       nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
       -- i8*
-      nextNodePtr'  <- load nextNodePtr 8
+      nextNodePtr'  <- load nextNodePtr 0
       -- { i8*, i8* }*
       nextNodePtr'' <- addrspacecast nextNodePtr' listType
       nextTest      <- generateListSubPatternTest symbolTable nextNodePtr'' next
@@ -1598,9 +1600,9 @@ generateBranchTest symbolTable pat value = case pat of
     -- test that the length of the given list is at least as long as the pattern items
     lengthTest <-
       if hasSpread then do
-        call madlistHasMinLength [(C.double (fromIntegral $ List.length pats - 1), []), (value, [])]
+        call madlistHasMinLength [(C.int64 (fromIntegral $ List.length pats - 1), []), (value, [])]
       else
-        call madlistHasLength [(C.double (fromIntegral $ List.length pats), []), (value, [])]
+        call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
 
     subPatternsTest <- generateListSubPatternTest symbolTable value pats
     lengthTest `Instruction.and` subPatternsTest
@@ -1637,7 +1639,7 @@ generateBranchTest symbolTable pat value = case pat of
     let patsWithPtrs = List.zip pats constructorArgPtrs
 
     id              <- gep constructor' [i32ConstOp 0, i32ConstOp 0]
-    id'             <- load id 8
+    id'             <- load id 0
     testIds         <- icmp IntegerPredicate.EQ constructorId id'
 
     testSubPatterns <- Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
@@ -1688,6 +1690,7 @@ generateExternFunction symbolTable t functionName arity foreignFn = do
       functionName' = AST.mkName functionName
 
   function <- function functionName' params' boxType $ \params -> do
+    entry <- block `named` "entry"
     let typesWithParams = List.zip paramTypes params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
 
@@ -1712,7 +1715,8 @@ generateFunction env symbolTable isMethod t functionName paramNames body = do
       params'       = (boxType,) . makeParamName <$> paramNames
       functionName' = AST.mkName functionName
 
-  function <- function functionName' params' boxType $ \params -> mdo
+  function <- function functionName' params' boxType $ \params -> do
+    entry <- block `named` "entry"
     let typesWithParams = List.zip paramTypes params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
     let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
@@ -1856,7 +1860,7 @@ extractEnvArgs :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand.Operand ->
 extractEnvArgs envPtr indices = case indices of
   (index : is) -> do
     itemPtr   <- gep envPtr [i32ConstOp 0, i32ConstOp (fromIntegral index)]
-    item      <- load itemPtr 8
+    item      <- load itemPtr 0
 
     nextItems <- extractEnvArgs envPtr is
 
@@ -1902,6 +1906,7 @@ generateConstructor symbolTable (constructor, index) = case constructor of
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
 
     constructor' <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
+      entry <- block `named` "entry"
     -- allocate memory for the structure
       structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
       structPtr'    <- bitcast structPtr $ Type.ptr structType
@@ -1969,6 +1974,7 @@ generateMethod env symbolTable methodName exp = case exp of
         params'     = (,NoParameterName) <$> (boxType <$ paramTypes)
 
     f <- function (AST.mkName methodName) params' boxType $ \params -> do
+      entry <- block `named` "entry"
       (symbolTable, exp', _) <- generateExp env symbolTable exp
 
       retVal <-
@@ -2950,8 +2956,8 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "__areStringsEqual__")    [stringType, stringType] Type.i1
   extern (AST.mkName "__areStringsNotEqual__") [stringType, stringType] Type.i1
   extern (AST.mkName "__strConcat__")          [stringType, stringType] stringType
-  extern (AST.mkName "MadList_hasMinLength")   [Type.double, listType] Type.i1
-  extern (AST.mkName "MadList_hasLength")      [Type.double, listType] Type.i1
+  extern (AST.mkName "MadList_hasMinLength")   [Type.i64, listType] Type.i1
+  extern (AST.mkName "MadList_hasLength")      [Type.i64, listType] Type.i1
   extern (AST.mkName "MadList_singleton")      [Type.ptr Type.i8] listType
   extern (AST.mkName "__MadList_push__")       [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "MadList_concat")         [listType, listType] listType
@@ -2974,7 +2980,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
           "__" <> hashModulePath ast <> "__moduleFunction"
 
   moduleFunction <- function (AST.mkName moduleFunctionName) [] void $ \_ -> do
-    entry <- block `named` "entry";
+    entry <- block `named` "entry"
     Monad.when isMain $ do
       call initEventLoop []
       callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
@@ -3057,7 +3063,8 @@ compileModule outputFolder rootPath astPath astModule = do
   -- Prelude.putStrLn outputPath
   -- T.putStrLn $ ppllvm astModule
 
-  withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
+  -- withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
+  withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
         dataLayout  <- getTargetMachineDataLayout target
@@ -3066,10 +3073,10 @@ compileModule outputFolder rootPath astPath astModule = do
         mod'' <-
           withPassManager
           defaultCuratedPassSetSpec
-            { optLevel                = Just 2
-            , useInlinerWithThreshold = Just 150
-            , dataLayout              = Just dataLayout
-            , targetLibraryInfo       = Just libraryInfo
+            { optLevel                = Just 1
+            -- , useInlinerWithThreshold = Just 150
+            -- , dataLayout              = Just dataLayout
+            -- , targetLibraryInfo       = Just libraryInfo
             }
           $ \pm -> do
             runPassManager pm mod'
@@ -3103,25 +3110,35 @@ generateTable outputFolder rootPath astTable entrypoint = do
   compilerPath    <- getExecutablePath
 
   let objectFilePathsForCli = List.unwords objectFilePaths
-      runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "./runtime/lib/"] <> "\""
-      runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "./runtime/build/"] <> "\""
+      runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
+      runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
 
   Prelude.putStrLn "Linking.."
 
-  if os == "darwin" then
-    callCommand $
-      "clang++ -dead_strip -foptimize-sibling-calls -g -stdlib=libc++ "
-      <> objectFilePathsForCli
-      <> " " <> runtimeLibPathOpt
-      <> " " <> runtimeBuildPathOpt
-      <> " -lruntime -lgc -luv -o a.out"
-  else
-    callCommand $
-      "g++ -static "
-      <> objectFilePathsForCli
-      <> " " <> runtimeLibPathOpt
-      <> " " <> runtimeBuildPathOpt
-      <> " -lruntime -lgc -luv -pthread -ldl -o a.out"
+  case DistributionSystem.buildOS of
+    DistributionSystem.OSX ->
+      callCommand $
+        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ "
+        <> objectFilePathsForCli
+        <> " " <> runtimeLibPathOpt
+        <> " " <> runtimeBuildPathOpt
+        <> " -lruntime -lgc -luv -o a.out"
+
+    DistributionSystem.Windows ->
+      callCommand $
+        "g++ -static "
+        <> objectFilePathsForCli
+        <> " " <> runtimeLibPathOpt
+        <> " " <> runtimeBuildPathOpt
+        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o a.exe"
+
+    _ ->
+      callCommand $
+        "g++ -static "
+        <> objectFilePathsForCli
+        <> " " <> runtimeLibPathOpt
+        <> " " <> runtimeBuildPathOpt
+        <> " -lruntime -lgc -luv -pthread -ldl -o a.out"
     -- callCommand $ "clang++ -static -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
 
   -- callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"
