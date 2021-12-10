@@ -37,7 +37,6 @@ import qualified Control.Monad                 as CM
 import Debug.Trace
 import Text.Show.Pretty
 import AST.Solved (getType)
-import Data.Int (Int8)
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -398,7 +397,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
     tv <- newTVar Star
-    s2 <- unify t (tListOf tv)
+    s2 <- unify (tListOf tv) t
 
     let s = s1 `compose` s2
 
