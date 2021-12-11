@@ -127,6 +127,9 @@ findFreeVars env exp = do
     Slv.Solved _ _ (Slv.Var "&&") ->
       return []
 
+    Slv.Solved _ _ (Slv.Var "%") ->
+      return []
+
     -- field access should not be registered as a free var
     Slv.Solved _ _ (Slv.Var ('.' : _)) ->
       return []
