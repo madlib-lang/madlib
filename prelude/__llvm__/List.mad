@@ -32,11 +32,7 @@ log = extern "puts"
 
 showWith :: (a -> String) -> List a -> String
 showWith = (with, list) => {
-  log("showWith")
-  log(showInteger(len(list)))
   processItems = (processed, items) => {
-    log("processItems")
-    log(showInteger(len(items)))
     return where(items) {
       [first, second, ...rest] =>
         processItems(processed ++ with(first) ++ ", ", push(second, rest))
@@ -51,28 +47,6 @@ showWith = (with, list) => {
 
   return "[" ++ processItems("", list) ++ "]"
 }
-
-// processItems = (with, processed, items) => {
-//   log("processItems")
-//   return where(items) {
-//     [first, second, ...rest] =>
-//       processItems(with, processed ++ with(first) ++ ", ", [second, ...rest])
-
-//     [last] =>
-//       processed ++ with(last)
-
-//     [] =>
-//       ""
-//   }
-// }
-
-// showWith :: (a -> String) -> List a -> String
-// showWith = (with, list) => {
-//   log("showWith")
-  
-
-//   return "[" ++ processItems(with, "", list) ++ "]"
-// }
 
 
 instance Show a => Show (List a) {
