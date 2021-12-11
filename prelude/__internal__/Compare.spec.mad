@@ -1,6 +1,6 @@
 #iftarget js
 
-import { assertEquals, test } from "TestTools"
+import { assertEquals, test } from "Test"
 import { MORE, LESS, EQUAL } from "./Compare"
 
 test("compare Number - MORE", (_) => assertEquals(compare(3, 2), MORE))

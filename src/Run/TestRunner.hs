@@ -33,6 +33,7 @@ import qualified Data.Maybe                     as Maybe
 import           Control.Monad.State
 import           Control.Monad.Except
 import AST.Source (AST(atypedecls))
+import qualified Distribution.System as DistributionSystem
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -71,10 +72,10 @@ runLLVMTests entrypoint coverage = do
   rootPath            <- canonicalizePath $ PathUtils.computeRootPath entrypoint
   Just wishModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Wish"
   Just listModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "List"
-  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "TestTools"
+  Just testModulePath <- PathUtils.resolveAbsoluteSrcPath PathUtils.defaultPathUtils "" "Test"
   sourcesToCompile    <- getFilesToCompile True canonicalEntrypoint
   astTable            <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
-  let outputPath              = "./build/"
+  let outputPath              = "./.tests/runTests"
       astTableWithTestExports = (addTestExports <$>) <$> astTable
       mainTestPath            = joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
 
@@ -83,8 +84,6 @@ runLLVMTests entrypoint coverage = do
       let testSuitePaths          = filter (".spec.mad" `List.isSuffixOf`) $ Map.keys astTable'
           testMainAST             = generateTestMainAST (wishModulePath, listModulePath, testModulePath) testSuitePaths
           fullASTTable            = Map.insert mainTestPath testMainAST { apath = Just mainTestPath } astTable'
-      putStrLn (ppShow fullASTTable)
-      putStrLn (ppShow testMainAST)
 
       let (canTable, warnings) =
             case astTable of
@@ -102,8 +101,6 @@ runLLVMTests entrypoint coverage = do
               Left e ->
                 Left e
 
-      
-
       case resolvedASTTable of
         Left err ->
           error $ ppShow err
@@ -111,9 +108,21 @@ runLLVMTests entrypoint coverage = do
         Right (solvedTable, _) -> do
           let renamedTable     = Rename.renameTable solvedTable
           let closureConverted = ClosureConvert.optimizeTable renamedTable
-          putStrLn (ppShow closureConverted)
           LLVM.generateTable outputPath rootPath closureConverted mainTestPath
 
+          testOutput <- case DistributionSystem.buildOS of
+            DistributionSystem.Windows -> do
+              try $ callCommand ".tests\runTests"
+
+            _ -> do
+              try $ callCommand ".tests/runTests"
+
+          case (testOutput :: Either IOError ()) of
+            Left _ ->
+              return ()
+
+            Right _ ->
+              return ()
 
     Left _ ->
       error "asts could not be parsed"
@@ -138,19 +147,12 @@ generateRunTestSuiteExp index testSuitePath =
         Source emptyArea TargetLLVM (LStr $ "\"" <> testSuitePath <> "\""),
         testsAccess
       ])
-  -- in  Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "map")) [
-  --       Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "fulfill")) [
-  --         Source emptyArea TargetLLVM (Abs [Source emptyArea TargetLLVM "a"] [Source emptyArea TargetLLVM (Var "a")]),
-  --         Source emptyArea TargetLLVM (Abs [Source emptyArea TargetLLVM "a"] [Source emptyArea TargetLLVM (Var "a")])
-  --       ]),
-  --       testsAccess
-  --     ])
 
 generateStaticTestMainImports :: (FilePath, FilePath, FilePath) -> [Import]
 generateStaticTestMainImports (wishModulePath, listModulePath, testModulePath) =
   let wishImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "fulfill"] "Wish" wishModulePath)
       listImports = Source emptyArea TargetLLVM (NamedImport [] "List" listModulePath)
-      testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runTestSuite"] "TestTools" testModulePath)
+      testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runTestSuite"] "Test" testModulePath)
   in  [wishImports, listImports, testImports]
 
 

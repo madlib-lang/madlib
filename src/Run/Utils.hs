@@ -9,6 +9,7 @@ import           System.FilePath                ( takeDirectory
                                                 , joinPath
                                                 , splitDirectories
                                                 , makeRelative
+                                                , hasTrailingPathSeparator
                                                 )
 import           System.Directory               ( createDirectoryIfMissing
                                                 , getDirectoryContents
@@ -19,8 +20,10 @@ import           System.Environment             ( getEnv )
 import           Control.Exception              ( try )
 import           Control.Monad                  ( filterM )
 import           Data.List                      ( isSuffixOf )
+import qualified Distribution.System            as DistributionSystem
 
 import           Run.CommandLine
+import Run.Target
 
 isCoverageEnabled :: IO Bool
 isCoverageEnabled = do
@@ -29,16 +32,37 @@ isCoverageEnabled = do
     Right "on" -> return True
     _          -> return False
 
+getDefaultExecutableName :: FilePath
+getDefaultExecutableName = case DistributionSystem.buildOS of
+  DistributionSystem.Windows ->
+    "a.exe"
+
+  _ ->
+    "a.out"
+
+
 sanitizeOutputPath :: Command -> Either String FilePath
+sanitizeOutputPath Compile { compileOutput, compileBundle, compileTarget = TLLVM } =
+  if hasTrailingPathSeparator compileOutput then
+    Right $ joinPath [compileOutput, getDefaultExecutableName]
+  else
+    Right compileOutput
+
 sanitizeOutputPath Compile { compileOutput, compileBundle } =
   let ext = takeExtension compileOutput
   in
-    if compileBundle
-      then case ext of
-        ".js" -> Right compileOutput
+    if compileBundle then
+      case ext of
+        ".js" ->
+          Right compileOutput
+
         _ ->
           Left $ "Wrong output. With bundle option the output must have '.js' extension, but '" <> ext <> "' was given!"
-      else if last compileOutput == '/' then Right compileOutput else Right $ compileOutput <> "/"
+    else
+      if hasTrailingPathSeparator compileOutput then
+        Right compileOutput
+      else
+        Right $ compileOutput <> "/"
 
 compilationBlackList :: [FilePath]
 compilationBlackList = ["madlib_modules", "node_modules"]

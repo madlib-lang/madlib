@@ -91,7 +91,7 @@ initialEnv = Env
                        , ("++"           , Forall [] $ [] :=> (tStr `fn` tStr `fn` tStr))
 
                        , ("/"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
-                       , ("%"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
+                       , ("%"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                        , ("^"            , Forall [] $ [] :=> (tFloat `fn` tFloat `fn` tFloat))
                        , ("|"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                        , ("&"            , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))

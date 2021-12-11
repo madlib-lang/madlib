@@ -294,6 +294,8 @@ displayResults = (results) => {
 #elseif llvm
 import Wish from "Wish"
 import IO from "IO"
+import { ifElse } from "Function"
+import List from "List"
 
 export type AssertionError a
   = AssertionError(a, a)
@@ -323,20 +325,22 @@ export test = (description, testImpl) => pipe(
   (run) => run(description),
   map((_) => green("\x2713 " ++ description)),
   Wish.chainRej((_) => of(red("\x00d7 " ++ description)))
-  // map(formatSuccessOutput(description)),
-  // Wish.chainRej(formatFailureOutput(description)),
-  // Wish.fulfill((_) => IO.log("failed"), (_) => IO.log("passed"))
 )(testImpl)
 
 
 runTestSuite :: String -> List (Wish.Wish e String) -> ()
 export runTestSuite = (suitePath, testsInSuite) => pipe(
   Wish.parallel,
-  Wish.fulfill((a) => a, (testOutputs) => {
-    IO.log(suitePath)
-    map(IO.log, testOutputs)
-    return IO.log("Test suite finished")
-  })
+  Wish.fulfill(
+    (a) => a,
+    (testOutputs) => {
+      IO.log(suitePath)
+      map(IO.log, testOutputs)
+      return List.len(testOutputs) > 0
+        ? IO.log("Test suite finished\n")
+        : IO.log("No test found\n")
+    }
+  )
 )(testsInSuite)
 
 #endif

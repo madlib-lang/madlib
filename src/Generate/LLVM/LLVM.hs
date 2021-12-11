@@ -804,27 +804,15 @@ generateExp env symbolTable exp = case exp of
           boxed <- box exp'
           return (Map.insert name (localVarSymbol boxed exp') symbolTable, exp', Just boxed)
 
+  Optimized _ _ (App (Optimized _ _ (Var "%")) [leftOperand, rightOperand]) -> do
+    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
+    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
+    result           <- srem leftOperand' rightOperand'
+    return (symbolTable, result, Nothing)
+
   Optimized _ _ (App (Optimized _ _ (Var "!")) [operand]) -> do
     (_, operand', _) <- generateExp env { isLast = False } symbolTable operand
     result           <- add operand' (Operand.ConstantOperand $ Constant.Int 1 1)
-    return (symbolTable, result, Nothing)
-
-  Optimized _ _ (App (Optimized _ _ (Var "-")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result                <- fsub leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
-
-  Optimized _ _ (App (Optimized _ _ (Var "+")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result                <- fadd leftOperand' rightOperand'
-    return (symbolTable, result, Nothing)
-
-  Optimized _ _ (App (Optimized _ _ (Var "*")) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable rightOperand
-    result             <- fmul leftOperand' rightOperand'
     return (symbolTable, result, Nothing)
 
   Optimized _ _ (App (Optimized _ _ (Var "/")) [leftOperand, rightOperand]) -> do
@@ -2986,6 +2974,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     generateExps env symbolTable'' (expsForMain $ aexps ast)
     Monad.when isMain $ do
       call startEventLoop []
+      ret $ i32ConstOp 0
       return ()
     retVoid
 
@@ -3101,9 +3090,25 @@ compileModule outputFolder rootPath astPath astModule = do
   return outputPath
 
 
+makeExecutablePath :: FilePath -> FilePath
+makeExecutablePath output = case output of
+  "./build/" ->
+    case DistributionSystem.buildOS of
+      DistributionSystem.Windows ->
+        "a.exe"
+
+      _ ->
+        "a.out"
+
+  or ->
+    or
+
+
 generateTable :: FilePath -> FilePath -> Table -> FilePath -> IO ()
-generateTable outputFolder rootPath astTable entrypoint = do
-  let moduleTable  = generateTableModules Map.empty Map.empty astTable entrypoint
+generateTable outputPath rootPath astTable entrypoint = do
+  let moduleTable    = generateTableModules Map.empty Map.empty astTable entrypoint
+      outputFolder   = takeDirectory outputPath
+      executablePath = makeExecutablePath outputPath
 
   objectFilePaths <- mapM (uncurry $ compileModule outputFolder rootPath) $ Map.toList moduleTable
   compilerPath    <- getExecutablePath
@@ -3111,6 +3116,7 @@ generateTable outputFolder rootPath astTable entrypoint = do
   let objectFilePathsForCli = List.unwords objectFilePaths
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
+
 
   Prelude.putStrLn "Linking.."
 
@@ -3121,7 +3127,7 @@ generateTable outputFolder rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -o a.out"
+        <> " -lruntime -lgc -luv -o " <> executablePath
 
     DistributionSystem.Windows ->
       callCommand $
@@ -3129,7 +3135,7 @@ generateTable outputFolder rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o a.exe"
+        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
 
     _ ->
       callCommand $
@@ -3137,7 +3143,4 @@ generateTable outputFolder rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -o a.out"
-    -- callCommand $ "clang++ -static -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " -L./runtime/lib/ ./runtime/build/runtime.a -lgc -luv -pthread -ldl -o a.out"
-
-  -- callCommand $ "clang++ -foptimize-sibling-calls -g -stdlib=libc++ -v " <> objectFilePathsForCli <> " ./runtime/lib/libgc.a ./runtime/lib/libuv.a ./runtime/build/runtime.a -o a.out"
+        <> " -lruntime -lgc -luv -pthread -ldl -o " <> executablePath
