@@ -290,7 +290,14 @@ buildClassRefPreds env cls ts = do
 
 
 
-data CleanUpEnv = CleanUpEnv { isMethodDef :: Bool, dictsInScope :: [(String, [Type])], appliedDicts :: [(String, [Type])], namesInScope :: [String] } deriving(Eq, Show)
+data CleanUpEnv
+  = CleanUpEnv
+  { isMethodDef :: Bool
+  , dictsInScope :: [(String, [Type])]
+  , appliedDicts :: [(String, [Type])]
+  , namesInScope :: [String]
+  }
+  deriving(Eq, Show)
 
 addDict :: (String, [Type]) -> CleanUpEnv -> CleanUpEnv
 addDict dict env =
@@ -341,12 +348,14 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Solved qt a e) = case e of
     return $ Slv.Solved (apply s qt) a $ Slv.App abs' arg' final
 
   Slv.Abs (Slv.Solved paramType paramArea param) es -> do
-    es' <- updatePlaceholdersForExpList env cleanUpEnv push s es
+    -- Once we encountered an Abs we processed all the instance placeholders and we can then
+    -- strip the inner placeholders.
+    es' <- updatePlaceholdersForExpList env cleanUpEnv { isMethodDef = False } push s es
     let param' = Slv.Solved (apply s paramType) paramArea param
     return $ Slv.Solved (apply s qt) a $ Slv.Abs param' es'
 
   Slv.Do exps -> do
-    exps' <- updatePlaceholdersForExpList env cleanUpEnv push s exps --mapM (updatePlaceholders env cleanUpEnv push s) exps
+    exps' <- updatePlaceholdersForExpList env cleanUpEnv push s exps
     return $ Slv.Solved (apply s qt) a $ Slv.Do exps'
 
   Slv.Where exp iss -> do
