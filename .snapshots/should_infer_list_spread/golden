@@ -22,11 +22,11 @@ Right
                          (LNum "1")))
                , Solved
                    ([ IsIn "Number" [ TVar (TV "l11" Star) ] Nothing
-                    , IsIn "Number" [ TVar (TV "m12" Star) ] Nothing
+                    , IsIn "Number" [ TVar (TV "l11" Star) ] Nothing
                     ] :=>
                       TApp
                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                        (TVar (TV "m12" Star)))
+                        (TVar (TV "l11" Star)))
                    (Area (Loc 5 1 6) (Loc 14 1 15))
                    (ListSpread
                       (Solved
