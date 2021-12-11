@@ -840,7 +840,7 @@ spec = do
             , "  sum = a + b"
             , "  moreThanTen = sum > 10"
             , "  computed = moreThanTen ? sum * 2 : sum / 2"
-            , "  return computed % 2 == 0"
+            , "  return computed / 2 == 0"
             , "}"
             , "fn(3, 4)"
             ]

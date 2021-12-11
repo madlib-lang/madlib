@@ -1,7 +1,5 @@
-#iftarget js
-
 import type { Maybe } from "./Maybe"
-import { test, assertEquals } from "TestTools"
+import { test, assertEquals } from "Test"
 import { Just, Nothing, fromMaybe } from "./Maybe"
 import {} from "Number"
 
@@ -28,5 +26,3 @@ test("show - Nothing", (_) => assertEquals(show((Nothing :: Maybe Integer)), "No
 
 test("fromMaybe", (_) => assertEquals(fromMaybe(3, Just(4)), 4))
 test("fromMaybe - Nothing", (_) => assertEquals(fromMaybe(3, Nothing), 3))
-
-#endif

@@ -1,8 +1,8 @@
+import { assertEquals, test } from "./Test"
+import {} from "List"
+
 #iftarget js
 
-import { assertEquals, test } from "./TestTools"
-import {} from "MonadState"
-import {} from "List"
 import {
   always,
   complement,
@@ -15,6 +15,22 @@ import {
   notEquals,
   when
 } from "./Function"
+
+#elseif llvm
+
+import {
+  always,
+  complement,
+  equals,
+  flip,
+  identity,
+  ifElse,
+  not,
+  notEquals,
+  when
+} from "./Function"
+
+#endif
 
 divide :: Float -> Float -> Float
 divide = (a, b) => a / b
@@ -94,6 +110,7 @@ test("always - map", (_) => assertEquals(
   [true, true, true]
 ))
 
+#iftarget js
 
 test("memoize - should not called the memoized function if called with the same argument", (_) => {
   count = 0
