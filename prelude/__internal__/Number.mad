@@ -27,7 +27,7 @@ showInteger = extern "__integerToStr__"
 instance Show Integer {
   show = showInteger
 }
-endif
+#endif
 
 #iftarget js
 instance Read Float {

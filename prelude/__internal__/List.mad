@@ -477,6 +477,30 @@ export push
 map_ :: (a -> b) -> List a -> List b
 map_ = extern "MadList_map"
 
+
+showWith :: (a -> String) -> List a -> String
+showWith = (with, list) => {
+  processItems = (processed, items) => {
+    return where(items) {
+      [first, second, ...rest] =>
+        processItems(processed ++ with(first) ++ ", ", push(second, rest))
+
+      [last] =>
+        processed ++ with(last)
+
+      [] =>
+        ""
+    }
+  }
+
+  return "[" ++ processItems("", list) ++ "]"
+}
+
+
+instance Show a => Show (List a) {
+  show = showWith(show)
+}
+
 instance Functor List {
   map = map_
 }
