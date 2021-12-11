@@ -32,7 +32,7 @@ You can also download the archive of the build directly from the releases [relea
 
 Variables in *madlib* may only be defined once and cannot be re-assigned. All data in *madlib* is immutable. Instead of picking between the different semantics / rules of `var` / `let` / `const` in JavaScript, in *madlib* you can eschew all three:
 
-```
+```madlib
 x = 3
 y = x + 1
 user = { name: "Max" }
@@ -43,7 +43,7 @@ user = { name: "Max" }
 1. Every expression in *madlib* must return a value.
 2. `null` / `undefined` are not valid keywords.
 #### Examples
-```
+```madlib
 x + 1
 
 1
@@ -53,9 +53,13 @@ x + 1
 // else is mandatory as the expression must return a value
 if (a % 2 == 0) { "even" } else { "odd" }
 
-where(maybe)
-  is Just x : x
-  is Nothing: "Hello world"
+where(maybe) {
+  Just(x) =>
+    x
+
+  Nothing =>
+    "Hello world"
+}
 ```
 
 ### Functions
@@ -73,7 +77,7 @@ inc = (x) => x + 1
 
 #### Typing a function:
 ```
-inc :: Number -> Number
+inc :: Integer -> Integer
 inc = (x) => x + 1
 ```
 
@@ -84,18 +88,7 @@ inc(3) // 4
 
 #### Composing functions
 
-We use the `|>` or pipeline operator to partially apply values or compose functions, left to right.
-
-```
-3 |> inc // 4
-// equivalent to:
-inc(3) // 4
-3 |> inc |> inc // 5
-// equivalent to
-inc(inc(3)) // 5
-```
-
-You can also find the pipe expression, which returns a function:
+The special pipe expression, which returns a function.
 
 ```madlib
 compute :: Number -> Number
@@ -105,6 +98,20 @@ compute = pipe(
   divide(2)
 )
 ```
+
+Alternatively you can find use the `|>` or pipeline operator to partially apply values or compose functions, left to right.
+
+```
+3 |> inc
+// equivalent to:
+inc(3)
+
+3 |> inc |> inc
+// equivalent to
+inc(inc(3))
+```
+
+
 
 #### Currying
 All functions are curried, therefore you can always partially apply them:
@@ -150,10 +157,10 @@ NB: note that parenthesis are necessary around the expressions then, otherwise t
 
 Because of *madlib*'s type inference, in the majority of cases you do not need to provide type annotations. However, if needed, you can explicitly define type annotations in the form of `(expression :: type)`:
 
-```
-(1 :: Number)     // here the annotation says that 1 is a Number
-(1 + 1 :: Number) // here the annotation says that 1 + 1 is a Number
-(1 :: Number) + 1 // here the annotation says that the first 1 is a Number, and tells the type checker to infer the type of the second value
+```madlib
+(1 :: Integer)     // here the annotation says that 1 is a Integer
+(1 + 1 :: Integer) // here the annotation says that 1 + 1 is a Integer
+(1 :: Integer) + 1 // here the annotation says that the first 1 is a Integer, and tells the type checker to infer the type of the second value
 ("Madlib" :: String)
 ("Madlib" :: Boolean) // Type error, "Madlib" should be a Boolean
 ```
@@ -162,16 +169,18 @@ Because of *madlib*'s type inference, in the majority of cases you do not need t
 
 *madlib* allows for algebraic data types in the form of:
 
-```
-data Maybe a = Just a | Nothing
+```madlib
+data Maybe a
+  = Just(a)
+  | Nothing
 ```
 
 Here `Maybe a` is the type. This type has a variable, that means that a `Maybe` can have different shapes and contain any other type.
 
-`Just a` and `Nothing` are constructors of the type `Maybe`. They allow us to create values with that type. `data Maybe a = Just a | Nothing` generates these constructor functions for us.
+`Just(a)` and `Nothing` are constructors of the type `Maybe`. They allow us to create values with that type. `data Maybe a = Just a | Nothing` generates these constructor functions for us.
 
 Here is the type above in use:
-```
+```madlib
 might = Just("something") // Maybe String
 nope  = Nothing           // Maybe a
 ```
@@ -181,32 +190,42 @@ nope  = Nothing           // Maybe a
 Pattern matching is a powerful tool for specifying what to do in a given function or [Record](#records).
 
 For functions:
-```
+```madlib
 data User
-  = LoggedIn String
+  = LoggedIn(String)
   | Anonymous
 
-userDisplayName = (u) => (
-  where(u) {
-    is LoggedIn name: name
-    is Anonymous    : "Anonymous"
-  }
-)
+userDisplayName = (u) => where(u) {
+  LoggedIn(name) =>
+    name
+
+  Anonymous =>
+    "Anonymous"
+}
+
 ```
 
 For [Records](#records):
-```
+```madlib
 getStreetName :: { address :: { street :: String } } -> String
-getStreetName = (profile) => where(profile)
-  is { address: { street } }: street
-  is _                      : "Unknown address"
+getStreetName = (profile) => where(profile) {
+  { address: { street } } =>
+    street
+
+  _ =>
+    "Unknown address"
+}
 ```
 Note that you can use where without parameter, in which case it returns a function that takes whatever is matched as a parameter. So the above can be shortened like this:
-```
+```madlib
 getStreetName :: { address :: { street :: String } } -> String
-getStreetName = where
-  is { address: { street } }: street
-  is _                      : "Unknown address"
+getStreetName = where {
+  { address: { street } } =>
+    street
+
+  _ =>
+    "Unknown address"
+}
 ```
 
 ### Records
@@ -218,23 +237,26 @@ language = { name: "Madlib", howIsIt: "cool" }
 
 It can be used as constructor arguments by using Record types:
 ```
-data User = LoggedIn { name :: String, age :: Number, address :: String }
+data User = LoggedIn({ name :: String, age :: Number, address :: String })
 ```
 
 It can be used in patterns:
 ```
 user = LoggedIn({ name: "John", age: 33, address: "Street" })
 
-where(us) {
-  is LoggedIn { name: "John" }: "Hey John !!"
-  is _                        : "It's not John"
+where(user) {
+  LoggedIn({ name: "John" }) =>
+    "Hey John !!"
+
+  _ =>
+    "It's not John"
 }
 ```
 
-As with JavaScript objects, records can be spread:
+Records can be updated:
 ```
-position2D = { x: 3, y: 7 }
-position3D = { ...position2D, z: 1 }
+position = { x: 3, y: 7, z: -1 }
+updatedPosition = { ...position, z: 1 }
 ```
 
 ### Modules
@@ -287,9 +309,9 @@ someSubFn(...)
 #### Default imports
 All exported names are automatically added to a default export that can then be imported as a default import in order to avoid naming collisions. For example, when importing `map` from the standard List module, you can do it like this:
 ```
-import L from 'List'
+import List from 'List'
 
-L.map((x) => (x * 2), [1, 2, 3])
+List.map((x) => (x * 2), [1, 2, 3])
 ```
 
 ### Packages
@@ -298,10 +320,16 @@ A package is a way to share code across projects or create libraries. A package 
 {
   "name": "MadUI",
   "version": "0.0.1",
+  "madlibVersion": "0.11.0", // the minimum madlib version required by the project
   "main": "src/Main.mad", // you must define the main module of your package
-  "dependencies": { // dependencies of your package
-    "SomeDep": "http://some.dep.url.zip"
-  }
+  "dependencies": [ // dependencies of your package
+    {
+      "url": "http://some.dep.url.zip",
+      "description": "...",
+      "minVersion": "0.1.0",
+      "maxVersion": "2.0.7"
+    }
+  ]
 }
 ```
 The main module must export every name that you want to share.
@@ -324,7 +352,7 @@ IO.log("Hello World !")
 ## run
 
 ```
-./scripts/run compile -i "examples/HelloWorld.mad"
+./scripts/run run "examples/HelloWorld.mad"
 node build/HelloWorld.mjs
 ```
 

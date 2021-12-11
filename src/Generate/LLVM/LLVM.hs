@@ -9,7 +9,6 @@ module Generate.LLVM.LLVM where
 import Data.Text.Lazy.IO as T
 import           Data.ByteString.Short as ShortByteString
 import qualified Data.Map              as Map
-import qualified Data.Text             as Text
 import qualified Data.Set              as Set
 import qualified Data.List             as List
 import qualified Data.Maybe            as Maybe

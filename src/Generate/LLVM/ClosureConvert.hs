@@ -216,7 +216,6 @@ findFreeVars env exp = do
 
     Slv.Solved _ area (Slv.Placeholder ph exp) -> do
       (placeholderVars, excludeVars) <- case ph of
-        -- (Slv.ClassRef interface _ True True, ts) ->
         (Slv.ClassRef interface _ _ True, ts) ->
           let tsStr = buildTypeStrForPlaceholder ts
               dictName = "$" <> interface <> "$" <> tsStr
