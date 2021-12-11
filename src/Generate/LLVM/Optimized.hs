@@ -10,7 +10,15 @@ data Optimized a
   = Optimized (Ty.Qual Ty.Type) Area a
   -- = Optimized Ty.Type Area a
   | Untyped Area a
-  deriving(Eq, Show, Ord)
+  deriving(Eq, Ord)
+
+instance Show a => Show (Optimized a) where
+  show solved = case solved of
+    Optimized _ _ a ->
+      show a
+
+    Untyped _ a ->
+      show a
 
 data AST =
   AST
