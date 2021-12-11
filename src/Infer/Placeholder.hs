@@ -22,6 +22,33 @@ import Debug.Trace
 import Text.Show.Pretty
 
 
+{-
+Post type inference traversing of a top level expression or method. It mainly does one thing,
+which is assuring consistency of generated placeholders and update. Because only after
+generalization and instance resolution we have complete knowledge of the types for the placeholder
+types, we need to go through the tree again to update these and generate appropriate types.
+
+For example we may have a parameter placeholder being fully resolved like:
+(Show_a) => ... becomes (Show_Integer) => ...
+In that case we can completely strip it.
+
+Or we may have multiple levels of a dictionary, in which case we simply strip the inner one as
+it's already being captured in the current scope, example:
+(Show_a, a) => {
+  return (Show_a, a) => ...
+}
+In that case we can simply remove the inner one:
+(Show_a) => {
+  return (a) => ...
+}
+The codegen would then capture the usage of it via findFreeVars during closure conversion.
+
+
+The main entrypoint of the module is updatePlaceholders, which mainly traverses the AST and calls
+the updateMethod/ClassPlaceholder whenever a placeholder is encountered.
+-}
+
+
 insertVarPlaceholders :: Env -> Slv.Exp -> [Pred] -> Infer Slv.Exp
 insertVarPlaceholders _   exp                    []       = return exp
 
@@ -249,12 +276,6 @@ updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = cas
       return exp'
     else
       return $ Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp')
-
-
-    -- if not call then
-    --   return (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls [] call var, instanceTypes') exp'), cleanUpEnv)
-    -- else
-    --   return (Slv.Solved (apply s qt) a (Slv.Placeholder (Slv.ClassRef cls ps' call var', types) exp'), cleanUpEnv)
 
   _ ->
     undefined
