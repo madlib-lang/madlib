@@ -42,14 +42,14 @@ spec = do
           (Right ast) = buildAST "./fixtures/source.mad" source
 
           expected    = Right ast
-          files       = M.fromList [("./fixtures/source.mad", source)]
+          files       = M.fromList [("fixtures/source.mad", source)]
 
           rf          = makeReadFile files
 
           pathUtils   = defaultPathUtils { readFile = rf }
 
       r <- buildASTTable' TNode mempty pathUtils "" Nothing [] "./fixtures/source.mad"
-      let actual = r >>= flip findAST "./fixtures/source.mad"
+      let actual = r >>= flip findAST "fixtures/source.mad"
       actual `shouldBe` expected
 
     it "should return a Left ImportNotFound if it does not exist" $ do
@@ -57,14 +57,14 @@ spec = do
 
           (Right ast) = buildAST "fixtures/source.mad" source
 
-          expected    = Left (CompilationError (ImportNotFound "./fixtures/source-not-there.mad") NoContext)
-          files       = M.fromList [("./fixtures/source.mad", source)]
+          expected    = Left (CompilationError (ImportNotFound "fixtures/source-not-there.mad") NoContext)
+          files       = M.fromList [("fixtures/source.mad", source)]
 
           rf          = makeReadFile files
           pathUtils   = defaultPathUtils { readFile = rf }
 
       r <- buildASTTable' TNode mempty pathUtils "" Nothing [] "./fixtures/source.mad"
-      let actual = r >>= flip findAST "./fixtures/source-not-there.mad"
+      let actual = r >>= flip findAST "fixtures/source-not-there.mad"
       actual `shouldBe` expected
 
   describe "buildASTTable" $ do
