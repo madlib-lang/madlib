@@ -1,5 +1,3 @@
-#iftarget js
-
 import { assertEquals, test, ErrorWithMessage } from "Test"
 import { always } from "Function"
 import { bad, good, bichain, mapRej, parallel } from "./Wish"
@@ -75,5 +73,3 @@ test("parallel should return a bad Wish if one of the given wishes is bad", (_) 
     always(bad(ErrorWithMessage("Wish should be bad")))
   )
 )([good(1), bad(2), good(3), bad(4)]))
-
-#endif

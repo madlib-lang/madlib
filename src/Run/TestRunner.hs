@@ -148,12 +148,27 @@ generateRunTestSuiteExp index testSuitePath =
         testsAccess
       ])
 
+generateTestSuiteItemExp :: Int -> FilePath -> ListItem
+generateTestSuiteItemExp index testSuitePath =
+  let testsAccess = Source emptyArea TargetLLVM (Access (Source emptyArea TargetLLVM (Var $ generateTestSuiteName index)) (Source emptyArea TargetLLVM (Var ".__tests__")))
+  in  Source emptyArea TargetLLVM (ListItem (Source emptyArea TargetLLVM (TupleConstructor [
+        Source emptyArea TargetLLVM (LStr $ "\"" <> testSuitePath <> "\""),
+        testsAccess
+      ])))
+
+generateTestSuiteListExp :: [ListItem] -> Exp
+generateTestSuiteListExp items = Source emptyArea TargetLLVM (ListConstructor items)
+
 generateStaticTestMainImports :: (FilePath, FilePath, FilePath) -> [Import]
 generateStaticTestMainImports (wishModulePath, listModulePath, testModulePath) =
   let wishImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "fulfill"] "Wish" wishModulePath)
       listImports = Source emptyArea TargetLLVM (NamedImport [] "List" listModulePath)
-      testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runTestSuite"] "Test" testModulePath)
+      testImports = Source emptyArea TargetLLVM (NamedImport [Source emptyArea TargetLLVM "runAllTestSuites"] "Test" testModulePath)
   in  [wishImports, listImports, testImports]
+
+generateRunTestSuitesExp :: Exp -> Exp
+generateRunTestSuitesExp testSuites =
+  Source emptyArea TargetLLVM (App (Source emptyArea TargetLLVM (Var "runAllTestSuites")) [testSuites])
 
 
 generateTestMainAST :: (FilePath, FilePath, FilePath) -> [FilePath] -> AST
@@ -162,7 +177,10 @@ generateTestMainAST preludeModulePaths suitePaths =
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
       runTestSuiteExps  = uncurry generateRunTestSuiteExp <$> indexedSuitePaths
-  in  AST { aimports = preludeImports ++ imports, aexps = runTestSuiteExps, atypedecls = [], ainterfaces = [], ainstances = [], apath = Nothing }
+      testSuiteItems    = uncurry generateTestSuiteItemExp <$> indexedSuitePaths
+      testSuiteList     = generateTestSuiteListExp testSuiteItems
+      runAllTestSuites  = generateRunTestSuitesExp testSuiteList
+  in  AST { aimports = preludeImports ++ imports, aexps = [runAllTestSuites], atypedecls = [], ainterfaces = [], ainstances = [], apath = Nothing }
 
 
 generateTestAssignment :: Int -> Exp -> (Exp, Maybe String)

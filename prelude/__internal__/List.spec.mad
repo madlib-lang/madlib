@@ -1,5 +1,6 @@
-#iftarget js
 import { test, assertEquals } from "Test"
+#iftarget js
+
 import {
   append,
   concat,
@@ -27,9 +28,39 @@ import {
 import {} from "Boolean" // We need the instance Show Boolean
 import { Just, Nothing } from "Maybe"
 
+#elseif llvm
+import { reduce, len } from "./List"
+#endif
+
+
 test("map should apply a function to all items of a list", (_) =>
   assertEquals(map((x) => x * 2, [1, 2, 3]), [2, 4, 6])
 )
+
+test("reduce - sum", (_) => {
+  add = (a, b) => a + b
+  return assertEquals(reduce(add, 0, [1, 2, 3]), 6)
+})
+
+test("reduce - all", (_) =>
+  assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false)
+)
+
+test("len - 3", (_) => assertEquals(len([1, 2, 3]), 3))
+
+test("len - empty list", (_) => assertEquals(len([]), 0))
+
+test("assoc should concatenate two lists together", (_) =>
+  assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+)
+
+test("mappend should join two lists together", (_) =>
+  assertEquals(mappend(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+)
+
+test("mempty should return an empty list", (_) => assertEquals(mempty, []))
+
+#iftarget js
 
 test("pure should wrap a value in a list", (_) =>
   assertEquals(pure(true), [true])
@@ -48,16 +79,6 @@ test(
   "chain should apply transformation functions that return a list to a list of function and returned a flattened List",
   (_) => assertEquals(chain((x) => [x + 1, x * 2], [1, 2, 3]), [2, 2, 3, 4, 4, 6])
 )
-
-test("assoc should concatenate two lists together", (_) =>
-  assertEquals(assoc(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
-)
-
-test("mappend should join two lists together", (_) =>
-  assertEquals(mappend(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
-)
-
-test("mempty should return an empty list", (_) => assertEquals(mempty, []))
 
 test("singleton should wrap a value in a list", (_) =>
   assertEquals(singleton("one value"), ["one value"])
@@ -99,15 +120,6 @@ test("init without items", (_) => assertEquals(init([]), []))
 test("nth with existing element", (_) => assertEquals(nth(1, [1, 2, 3]), Just(2)))
 test("nth out of bound", (_) => assertEquals(nth(3, [1, 2, 3]), Nothing))
 
-test("reduce - sum", (_) => {
-  add = (a, b) => a + b
-  return assertEquals(reduce(add, 0, [1, 2, 3]), 6)
-})
-
-test("reduce - all", (_) =>
-  assertEquals(reduce((a, b) => a && b, true, [true, false, true]), false)
-)
-
 test("filter - even numbers", (_) =>
   assertEquals(filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [2, 4, 6])
 )
@@ -134,8 +146,6 @@ test("find - John", (_) =>
     Just({ id: 1, name: "John" })
   )
 )
-
-test("len - 3", (_) => assertEquals(len([1, 2, 3]), 3))
 
 test("reject - odd numbers", (_) =>
   assertEquals(reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]), [1, 3, 5])

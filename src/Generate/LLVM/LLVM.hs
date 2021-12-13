@@ -742,12 +742,17 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, unboxed, Just ret)
 
   -- Most likely a method that has to be applied some dictionaries
-  Optimized t _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
+  Optimized (_ IT.:=> t) _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
     let methodName' = "$" <> interface <> "$" <> typingStr <> "$" <> methodName
     case Map.lookup methodName' symbolTable of
+      Just (Symbol (MethodSymbol 0) fnPtr) -> do
+        -- Handle special nullary cases like assignment methods or mempty
+        pap     <- call fnPtr []
+        unboxed <- unbox t pap
+        return (symbolTable, unboxed, Just pap)
+
       Just (Symbol (MethodSymbol arity) fnOperand) -> do
-        (_, pap, boxedPAP) <- buildReferencePAP symbolTable arity fnOperand
-        return (symbolTable, pap, boxedPAP)
+        buildReferencePAP symbolTable arity fnOperand
 
       _ ->
         error $ "method with name '" <> methodName' <> "' not found!"
@@ -1039,7 +1044,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "<" -> case trace ("TYPING-STR: "<>typingStr) typingStr of
+      "<" -> case typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1244,7 +1249,7 @@ generateExp env symbolTable exp = case exp of
     tail <- case List.last listItems of
       Optimized _ _ (ListItem lastItem) -> do
         (symbolTable', lastItem', _) <- generateExp env { isLast = False } symbolTable lastItem
-        lastItem''                <- box lastItem'
+        lastItem''                   <- box lastItem'
         call madlistSingleton [(lastItem'', [])]
 
       Optimized _ _ (ListSpread spread) -> do
@@ -2974,7 +2979,6 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     generateExps env symbolTable'' (expsForMain $ aexps ast)
     Monad.when isMain $ do
       call startEventLoop []
-      ret $ i32ConstOp 0
       return ()
     retVoid
 
