@@ -1,5 +1,3 @@
-#iftarget js
-
 import type { Either } from "./Either"
 import { assertEquals, test } from "Test"
 import {
@@ -70,5 +68,3 @@ test("isRight - Right", (_) => assertEquals(isRight(Right(1)), true))
 
 test("fromRight - Right", (_) => assertEquals(fromRight(1, Right(4)), 4))
 test("fromRight - Left", (_) => assertEquals(fromRight(1, Left(4)), 1))
-
-#endif

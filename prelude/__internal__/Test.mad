@@ -294,8 +294,10 @@ displayResults = (results) => {
 #elseif llvm
 import Wish from "Wish"
 import IO from "IO"
-import { ifElse } from "Function"
+import { always, equals, ifElse } from "Function"
 import List from "List"
+import Tuple from "Tuple"
+import {} from "Number"
 
 export type AssertionError a
   = AssertionError(a, a)
@@ -304,43 +306,114 @@ export type AssertionError a
   | NotImplemented
 
 
+// Contains the accumulated String to be displayed, the amount of tests run, the amount of successful tests, and the amount of failed tests
+type TestReport = TestReport(String, Integer, Integer, Integer)
+
+
+EMPTY_REPORT = TestReport("", 0, 0, 0)
+
+
+updateMessage :: (String -> String) -> TestReport -> TestReport
+updateMessage = (f, report) => where(report) {
+  TestReport(str, total, successful, failed) =>
+    TestReport(f(str), total, successful, failed)
+}
+
+getMessage :: TestReport -> String
+getMessage = where {
+  TestReport(str, _, _, _) =>
+    str
+}
+
+
+getTotal :: TestReport -> Integer
+getTotal = where {
+  TestReport(_, total, _, _) =>
+    total
+}
+
+getSuccessCount :: TestReport -> Integer
+getSuccessCount = where {
+  TestReport(_, _, success, _) =>
+    success
+}
+
+getFailureCount :: TestReport -> Integer
+getFailureCount = where {
+  TestReport(_, _, _, failed) =>
+    failed
+}
+
+
+failureReport :: String -> TestReport
+failureReport = (message) =>
+  TestReport(message, 1, 0, 1)
+  
+  
+successReport :: String -> TestReport
+successReport = (message) =>
+  TestReport(message, 1, 1, 0)
+
+
+mergeReports :: TestReport -> TestReport -> TestReport
+mergeReports = (t1, t2) => TestReport(
+  getMessage(t1) ++ getMessage(t2),
+  getTotal(t1) + getTotal(t2),
+  getSuccessCount(t1) + getSuccessCount(t2),
+  getFailureCount(t1) + getFailureCount(t2)
+)
+
+
 assertEquals :: Eq a => a -> a -> Wish.Wish (AssertionError a) String
 export assertEquals = (actual, expected) => actual == expected
   ? of("")
   : Wish.bad(AssertionError(expected, actual))
 
 
-// test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) ()
-// export test = (description, testImpl) => pipe(
-//   (run) => run(description),
-//   map((_) => IO.log(green("  \x2713 " ++ description))),
-//   Wish.chainRej((_) => of(IO.log(red("  \x00d7 " ++ description))))
-//   // map(formatSuccessOutput(description)),
-//   // Wish.chainRej(formatFailureOutput(description)),
-//   // Wish.fulfill((_) => IO.log("failed"), (_) => IO.log("passed"))
-// )(testImpl)
-
-test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish (AssertionError a) String
+test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   (run) => run(description),
-  map((_) => green("\x2713 " ++ description)),
-  Wish.chainRej((_) => of(red("\x00d7 " ++ description)))
+  map((_) => green(`\x2713 ${description}\n`)),
+  Wish.mapRej((_) => red(`\x00d7 ${description}\n`))
 )(testImpl)
 
 
-runTestSuite :: String -> List (Wish.Wish e String) -> ()
-export runTestSuite = (suitePath, testsInSuite) => pipe(
+generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String
+generateReportSuiteEndMessage = pipe(
+  List.len,
+  ifElse(
+    equals(0),
+    always("No test found\n\n"),
+    always("Test suite finished\n\n")
+  )
+)
+
+
+runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish e TestReport
+runTestSuite = (suitePath, testsInSuite) => pipe(
+  map(Wish.bichain(pipe(failureReport, of), pipe(successReport, of))),
   Wish.parallel,
-  Wish.fulfill(
-    (a) => a,
-    (testOutputs) => {
-      IO.log(suitePath)
-      map(IO.log, testOutputs)
-      return List.len(testOutputs) > 0
-        ? IO.log("Test suite finished\n")
-        : IO.log("No test found\n")
-    }
+  map(
+    pipe(
+      List.reduce(mergeReports, EMPTY_REPORT),
+      updateMessage((str) => `${suitePath}\n${str}${generateReportSuiteEndMessage(testsInSuite)}`)
+    )
   )
 )(testsInSuite)
+
+
+runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> ()
+export runAllTestSuites = (testSuites) => pipe(
+  map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
+  Wish.parallel,
+  map(List.reduce(mergeReports, EMPTY_REPORT)),
+  Wish.fulfill(
+    (_) => (),
+    (report) => {
+      IO.log(getMessage(report))
+      return IO.log(`Test suites: ${show(List.len(testSuites))}  tests: ${show(getTotal(report))}  passed: ${show(getSuccessCount(report))}  failed: ${show(getFailureCount(report))}`)
+    }
+  )
+)(testSuites)
 
 #endif

@@ -1,10 +1,11 @@
+import {} from "Monoid"
+
 #iftarget js
 
 import type { ComparisonResult } from "Compare"
 import type { Maybe } from "Maybe"
 import {} from "Show"
 import {} from "Monad"
-import {} from "Monoid"
 import {} from "String"
 import Fun from "Function"
 import {} from "Compare"
@@ -392,10 +393,20 @@ export uniqueBy = (f) => reduce(
   []
 )
 
+#endif
+
+#iftarget llvm
+
+sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
+sortBy = extern "MadList_sort"
+export sortBy
+
+#elseif js
 
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
 export sortBy = (fn, xs) => #- xs.sort((a, b) => fn(a)(b)) -#
 
+#endif
 
 sort :: Comparable a => List a -> List a
 export sort = sortBy(compare)
@@ -406,6 +417,7 @@ export sortAsc = sort
 sortDesc :: Comparable a => List a -> List a
 export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
+#iftarget js
 
 /**
  * Remove nested Lists from a given List, one level deep. 
@@ -477,6 +489,10 @@ export push
 map_ :: (a -> b) -> List a -> List b
 map_ = extern "MadList_map"
 
+reduce :: (a -> b -> a) -> a -> List b -> a
+reduce = extern "MadList_reduce"
+export reduce
+
 
 showWith :: (a -> String) -> List a -> String
 showWith = (with, list) => {
@@ -501,6 +517,19 @@ instance Show a => Show (List a) {
   show = showWith(show)
 }
 
+
+instance Semigroup (List a) {
+  assoc = (l1, l2) => [...l1, ...l2]
+}
+
+
+instance Monoid (List a) {
+  mappend = (l1, l2) => [...l1, ...l2]
+
+  mempty = []
+}
+
+
 instance Functor List {
   map = map_
 }
@@ -521,19 +550,13 @@ len = extern "MadList_length"
 export len
 
 
-sort_ :: (a -> a -> ComparisonResult) -> List a -> List a
-sort_ = extern "MadList_sort"
+// sort :: Comparable a => List a -> List a
+// export sort = sortBy(compare)
 
-sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-export sortBy = sort_
+// sortAsc :: Comparable a => List a -> List a
+// export sortAsc = sort
 
-sort :: Comparable a => List a -> List a
-export sort = sortBy(compare)
-
-sortAsc :: Comparable a => List a -> List a
-export sortAsc = sort
-
-sortDesc :: Comparable a => List a -> List a
-export sortDesc = sortBy((a, b) => compare(a, b) * -1)
+// sortDesc :: Comparable a => List a -> List a
+// export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
 #endif

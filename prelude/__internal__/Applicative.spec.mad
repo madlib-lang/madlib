@@ -1,5 +1,3 @@
-#iftarget js
-
 import { assertEquals, test } from "Test"
 import { Just } from "Maybe"
 import { apL, liftA2, liftA3 } from "./Applicative"
@@ -18,5 +16,3 @@ test("liftA3", (_) => pipe(
   liftA3((a, b, c) => a + b + c, Just(1), Just(2)),
   assertEquals($, Just(6))
 )(Just(3)))
-
-#endif

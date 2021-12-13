@@ -36,7 +36,7 @@ export divide = (a, b) => (a / b)
  *
  * @since 0.0.5
  */
-mod :: Float -> Float -> Float
+mod :: Integer -> Integer -> Integer
 export mod = (a, b) => (a % b)
 
 
@@ -54,5 +54,5 @@ sqrt = (n) => (#- Math.sqrt(n) -#)
  *
  * @since 0.0.5
  */
-square :: Number a => a -> a -> a
+square :: Number a => a -> a
 square = (n) => n * n
