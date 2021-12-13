@@ -135,8 +135,8 @@ renameExp env what = case what of
     in  (Solved t area (ListConstructor renamedItems), env')
 
   Solved t area (TupleConstructor items) ->
-    let renamedItems = fst . renameExp env <$> items
-    in  (Solved t area (TupleConstructor renamedItems), env)
+    let (renamedItems, env') = renameExps env items
+    in  (Solved t area (TupleConstructor renamedItems), env')
 
   Solved t area (Record fields) ->
     let (renamedFields, env') = renameFields env fields

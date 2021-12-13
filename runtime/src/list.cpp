@@ -119,6 +119,24 @@ MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
   return head;
 }
 
+void *MadList_reduce(PAP_t *pap, void *initialValue, MadListNode_t *list) {
+  if (list->value == NULL) {
+    return initialValue;
+  }
+
+  // printf("initialValue: %d\n", initialValue);
+  // printf("list length: %d\n", MadList_length(list));
+
+  while (list->value != NULL) {
+    initialValue = __applyPAP__(pap, 2, initialValue, list->value);
+
+    list = list->next;
+  }
+  // printf("initialValue: %d\n", initialValue);
+
+  return initialValue;
+}
+
 void *MadList_nth(double index, MadListNode_t *list) {
   // empty list
   if (list->value == NULL) {

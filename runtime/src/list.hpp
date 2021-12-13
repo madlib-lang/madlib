@@ -35,6 +35,8 @@ bool MadList_hasLength(int64_t l, MadListNode_t *list);
 
 MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b);
 
+void *MadList_reduce(PAP_t *pap, void *initialValue, MadListNode_t *list);
+
 #ifdef __cplusplus
 }
 #endif
