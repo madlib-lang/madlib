@@ -10,13 +10,14 @@
 extern "C" {
 #endif
 
-typedef struct Dictionary {
+typedef struct MadDictionary {
   int64_t constructorIndex;
   void *items;
-} Dictionary_t;
+} MadDictionary_t;
 
 
-bool *__eqDictionary__(EqDictionary_t* eqDictA, EqDictionary_t* eqDictB, Dictionary_t *d1, Dictionary_t *d2) {
+// TODO: implement
+bool *__eqDictionary__(EqDictionary_t* eqDictA, EqDictionary_t* eqDictB, MadDictionary_t *d1, MadDictionary_t *d2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
 
   // int64_t l1Length = MadList_length(*l1);
@@ -45,8 +46,8 @@ bool *__eqDictionary__(EqDictionary_t* eqDictA, EqDictionary_t* eqDictB, Diction
 }
 
 
-Dictionary_t *__Dictionary_constructor__(MadListNode_t *items) {
-  Dictionary_t *dictionary = (Dictionary_t*) GC_malloc(sizeof(Dictionary_t));
+MadDictionary_t *__Dictionary_constructor__(MadListNode_t *items) {
+  MadDictionary_t *dictionary = (MadDictionary_t*) GC_malloc(sizeof(MadDictionary_t));
   MadListNode_t **boxedItems = (MadListNode_t**) GC_malloc(sizeof(MadListNode_t*));
   *boxedItems = items;
 
@@ -62,7 +63,7 @@ typedef struct Tuple {
   void *value;
 } Tuple_t;
 
-Dictionary_t *__dict_ctor__(EqDictionary_t* eqDict, MadListNode_t **boxedItems) {
+MadDictionary_t *__dict_ctor__(EqDictionary_t* eqDict, MadListNode_t **boxedItems) {
   MadListNode_t *head = *boxedItems;
   // Result, starting from an empty list, we push items as we go through them
   // if there is no double
@@ -92,7 +93,7 @@ Dictionary_t *__dict_ctor__(EqDictionary_t* eqDict, MadListNode_t **boxedItems) 
   MadListNode_t **boxed = (MadListNode_t **) GC_malloc(sizeof(MadListNode_t *));
   *boxed = withoutDoubles;
 
-  Dictionary_t *dictionary = (Dictionary_t*) GC_malloc(sizeof(Dictionary_t));
+  MadDictionary_t *dictionary = (MadDictionary_t*) GC_malloc(sizeof(MadDictionary_t));
   dictionary->constructorIndex = 0;
   dictionary->items = boxed;
 

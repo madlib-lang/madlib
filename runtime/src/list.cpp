@@ -65,6 +65,7 @@ MadListNode_t *MadList_singleton(void *item) {
   return head;
 }
 
+// TODO: we need to copy the list here
 MadListNode_t *MadList_append(void *item, MadListNode_t *list) {
   if (list->value == NULL) {
     return MadList_singleton(item);
@@ -97,42 +98,31 @@ MadListNode_t *__MadList_push__(void *item, MadListNode_t *list) {
   return MadList_push(item, list);
 }
 
-MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
-  if (list->value == NULL) {
-    return list;
-  }
 
+
+MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list) {
   MadListNode_t *newList = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
   MadListNode_t *head = newList;
-  MadListNode_t *current = list;
 
-  while (current->value != NULL) {
+  while (list->value != NULL) {
     MadListNode_t *nextItem = MadList_empty();
 
-    newList->value = __applyPAP__(pap, 1, current->value);
+    newList->value = __applyPAP__(pap, 1, list->value);
     newList->next = nextItem;
 
     newList = newList->next;
-    current = current->next;
+    list = list->next;
   }
 
   return head;
 }
 
+
 void *MadList_reduce(PAP_t *pap, void *initialValue, MadListNode_t *list) {
-  if (list->value == NULL) {
-    return initialValue;
-  }
-
-  // printf("initialValue: %d\n", initialValue);
-  // printf("list length: %d\n", MadList_length(list));
-
   while (list->value != NULL) {
     initialValue = __applyPAP__(pap, 2, initialValue, list->value);
-
     list = list->next;
   }
-  // printf("initialValue: %d\n", initialValue);
 
   return initialValue;
 }
@@ -146,50 +136,33 @@ void *MadList_nth(double index, MadListNode_t *list) {
   int intIndex = floor(index);
   int currentIndex = 0;
 
-  MadListNode_t *current = list;
-  while (current->next != NULL && currentIndex < intIndex) {
-    current = current->next;
+  while (list->value != NULL && currentIndex < intIndex) {
+    list = list->next;
   }
 
-  if (current != NULL) {
-    return current->value;
+  if (list->value != NULL) {
+    return list->value;
   } else {
     return NULL;
   }
 }
 
 bool MadList_hasMinLength(int64_t l, MadListNode_t *list) {
-  MadListNode_t *head = list;
-
-  if (head->value == NULL) {
-    return l == 0;
-  }
-
-  l -= 1;
-
-  while (head->next->value != NULL && l > 0) {
+  while (list->value != NULL && l > 0) {
     l -= 1;
-    head = head->next;
+    list = list->next;
   }
 
   return l == 0;
 }
 
 bool MadList_hasLength(int64_t l, MadListNode_t *list) {
-  MadListNode_t *head = list;
-
-  if (head->value == NULL) {
-    return l == 0;
-  }
-
-  l -= 1;
-
-  while (head->next->value != NULL && l > 0) {
+  while (list->value != NULL && l > 0) {
     l -= 1;
-    head = head->next;
+    list = list->next;
   }
 
-  return l == 0 && head->next->value == NULL;
+  return l == 0 && list->value == NULL;
 }
 
 MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b) {
