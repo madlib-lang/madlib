@@ -1,0 +1,17 @@
+type IOError
+  = ArgumentListToLong
+  | PermissionDenied
+  | AddressAlreadyInUse
+
+fromLibuvError :: Integer -> IOError
+fromLibuvError = where {
+  1 =>
+    ArgumentListToLong
+
+  2 =>
+    PermissionDenied
+
+  3 =>
+    AddressAlreadyInUse
+}
+

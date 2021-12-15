@@ -15,6 +15,8 @@ extern "C" {
 
 MadListNode_t *MadList_empty();
 
+int64_t MadList_length(MadListNode_t *list);
+
 bool *__eqList__(EqDictionary_t* eqDict, MadListNode **l1, MadListNode **l2);
 
 MadListNode_t *MadList_singleton(void *item);

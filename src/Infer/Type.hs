@@ -79,6 +79,12 @@ tListOf = TApp (TCon (TC "List" (Kfun Star Star)) "prelude")
 tDictionary :: Type
 tDictionary = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") (TVar (TV "a" Star))) (TVar (TV "b" Star))
 
+tArrayOf :: Type -> Type
+tArrayOf = TApp (TCon (TC "Array" (Kfun Star Star)) "prelude")
+
+tArray :: Type
+tArray = tArrayOf (TVar (TV "a" Star))
+
 tDictionaryOf :: Type -> Type -> Type
 tDictionaryOf keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") keyType)
 
