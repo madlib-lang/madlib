@@ -113,7 +113,7 @@ bool *__lteFloats__(double *a, double *b) {
 // instance Number Integer
 
 int64_t* __numberToInteger__(int64_t *a) {
-  int64_t *result = (int64_t*) malloc(sizeof(double));
+  int64_t *result = (int64_t*) malloc(sizeof(int64_t));
   *result = (int64_t) *a;
   return result;
 }

@@ -553,9 +553,9 @@ inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
   (s3, ps3, tfalsy , efalsy ) <- infer (apply (s1 `compose` s2) env) falsy
 
   s4                          <- contextualUnify (pushExpToBT env cond) cond tcond tBool
-  s5                          <- contextualUnify (pushExpToBT env falsy) falsy ttruthy tfalsy
+  s5                          <- contextualUnify (pushExpToBT env falsy) falsy tfalsy ttruthy
 
-  let s = s4 `compose` s5 `compose` s1 `compose` s2 `compose` s3
+  let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
 
   return (s, ps1 ++ ps2 ++ ps3, t, Slv.Solved ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
@@ -793,8 +793,8 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     )
 
   (ds', sDefaults) <-
-    if not isLet && not (null (rs ++ ds)) && not (Can.isNamedAbs exp) then do
-      (sDef, rs')   <- tryDefaults env'' (rs ++ ds)
+    if not isLet && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) then do
+      (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
           -- and then it could resolve instances like Show where before we still had a type var
@@ -896,7 +896,8 @@ inferExp env e = do
       inferExplicitlyTyped env e
 
     _ -> do
-      (s, (ds, ps), env', e') <- inferImplicitlyTyped False env e
+      (_, _, env', _) <- inferImplicitlyTyped False env e
+      (s, (ds, ps), env'', e') <- inferImplicitlyTyped False env' e
       return (s, ps, env', e')
 
   e''  <- insertClassPlaceholders env e' ps
