@@ -1152,6 +1152,10 @@ generateExp env symbolTable exp = case exp of
         error $ "Function not found " <> functionName
 
     _ -> case fn of
+      -- TODO: Add the following:
+      -- Opt.Optimized _ _ (Opt.Placeholder (Opt.ClassRef cls _ True _, _) _) -> do
+      -- Also check that it wraps a Var and make it a direct call
+
       Opt.Optimized _ _ (Opt.Placeholder (Opt.MethodRef "Number" _ True, _) _) -> do
         (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
         pap' <- bitcast pap boxType
