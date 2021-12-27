@@ -132,8 +132,8 @@ ast :: { Src.AST }
   | 'export' name ast         %shift { $3 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.NameExport $ strV $2) : Src.aexps $3 } }
   | 'texport' 'type' name ast %shift { $4 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.TypeExport $ strV $3) : Src.aexps $4 } }
   | 'export' name '=' exp ast %shift { $5 { Src.aexps = (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (Src.getArea $4)) (tokenTarget $1) (Src.Assignment (strV $2) $4)))) : Src.aexps $5 } }
-  | name '::' constrainedTyping maybeRet 'export' name '=' exp ast
-      { $9 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (Src.getArea $8)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $8)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $6) (Src.getArea $8)) (tokenTarget $1) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
+  | name '::' constrainedTyping 'ret' 'export' name '=' exp ast
+      %shift { $9 { Src.aexps = Src.Source (mergeAreas (tokenArea $1) (Src.getArea $8)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $8)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $6) (Src.getArea $8)) (tokenTarget $1) (Src.Assignment (strV $6) $8)))) $3) : Src.aexps $9 } }
 
 importDecls :: { [Src.Import] }
   : importDecl importDecls %shift { $1:$2 }
@@ -427,7 +427,8 @@ typedExp :: { Src.Exp }
   | name '::' constrainedTyping 'ret' name '=' exp %shift { Src.Source (mergeAreas (tokenArea $1) (Src.getArea $7)) (tokenTarget $1) (Src.NamedTypedExp (strV $1) (Src.Source (mergeAreas (tokenArea $5) (Src.getArea $7)) (tokenTarget $1) (Src.Assignment (strV $5) $7)) $3) }
 
 extern :: { Src.Exp }
-  : name '::' constrainedTyping 'ret' name '=' 'extern' str %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.Extern $3 (strV $5) (sanitizeImportPath $ strV $8)) }
+  : name '::' constrainedTyping 'ret' name '=' 'extern' str          %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $8)) (tokenTarget $1) (Src.Extern $3 (strV $5) (sanitizeImportPath $ strV $8)) }
+  | name '::' constrainedTyping 'ret' 'export' name '=' 'extern' str        { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Export (Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Extern $3 (strV $6) (sanitizeImportPath $ strV $9)))) }
 
 where :: { Src.Exp }
   : 'where' '(' exp ')' '{' maybeRet iss maybeRet '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $9)) (tokenTarget $1) (Src.Where $3 $7) }

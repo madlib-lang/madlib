@@ -147,7 +147,7 @@ resolveADTConstructorParams env astPath n params c@(Src.Source area _ (Src.Const
     )
     ts
 
-  let s = foldl' (\s t -> buildCtorSubst t <> s) M.empty ts
+  let s = foldr (\t s -> buildCtorSubst t <> s) M.empty ts
 
   if isLower . head $ cname then
     throwError $ CompilationError (NotCapitalizedConstructorName cname) (Context astPath area [])

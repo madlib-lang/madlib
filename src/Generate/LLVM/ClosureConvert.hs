@@ -213,7 +213,7 @@ findFreeVars env exp = do
           return [(dictName, Opt.Optimized ([] :=> tVar "dict") area (Opt.Var dictName))]
         else
           return []
-      
+
       _ ->
         return []
 
@@ -317,12 +317,12 @@ optimizeBody exclusionVars env body = case body of
 
   (exp : es) -> case exp of
     Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
-      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
+      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
-      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name abs
+      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
@@ -389,27 +389,28 @@ fillClosureParams paramCount t =
   in  foldr fn t $ replicate missingParams (tVar "filledParam")
 
 
-optimizeAbs :: Env -> String -> Slv.Exp -> Optimize Opt.Exp
-optimizeAbs env functionName abs@(Slv.Solved (ps :=> t) area _) = do
+optimizeAbs :: Env -> String -> [String] -> Slv.Exp -> Optimize Opt.Exp
+optimizeAbs env functionName placeholders abs@(Slv.Solved (ps :=> t) area _) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let (params, body') = collectAbsParams abs
+        params' = placeholders ++ params
     body'' <- optimizeBody [] env { stillTopLevel = False } body'
 
     -- Hacky for now
-    let paramTypes = getParamTypes t
-    -- let t' = fillClosureParams (length params) t
+    let paramTypes = (tVar "dict" <$ placeholders) ++ getParamTypes t
     let t' =
-          if length paramTypes < length params then
+          if length paramTypes < length params' then
             tVar "a" `fn` t
           else
-            t
+            foldr fn t $ tVar "dict" <$ placeholders
 
-    return $ Opt.Optimized (ps :=> t') area $ TopLevelAbs functionName params body''
+    return $ Opt.Optimized (ps :=> t') area $ TopLevelAbs functionName params' body''
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
     let (params, body') = collectAbsParams abs
+        -- params' = placeholders ++ params
     fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
     functionName' <- generateLiftedName functionName
     body''        <- optimizeBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body'
@@ -542,16 +543,16 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized qt area (Opt.Access rec' field')
 
     Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) -> do
-      optimizeAbs env name abs
+      optimizeAbs env name [] abs
 
     Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))))) _ _ -> do
-      optimizeAbs env name abs
+      optimizeAbs env name [] abs
 
     Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _ -> do
-      optimizeAbs env name abs
+      optimizeAbs env name [] abs
 
     Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
-      optimizeAbs env name abs
+      optimizeAbs env name [] abs
 
     -- unnamed abs, we need to generate a name here
     Slv.Abs (Slv.Solved _ _ param) body -> do
@@ -580,8 +581,12 @@ instance Optimizable Slv.Exp Opt.Exp where
       if isTopLevel then do
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
-        innerExp' <- optimize env { stillTopLevel = False } innerExp
-        return $ Opt.Optimized (ps :=> typeWithPlaceholders) area $ TopLevelAbs functionName params [innerExp']
+        case innerExp of
+          Slv.Solved _ _ (Slv.Abs _ _) -> do
+            optimizeAbs env functionName params innerExp
+          _ -> do
+            innerExp' <- optimize env { stillTopLevel = False } innerExp
+            return $ Opt.Optimized (ps :=> typeWithPlaceholders) area $ TopLevelAbs functionName params [innerExp']
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
             isFunction = isFunctionType (getType exp)
@@ -614,8 +619,6 @@ instance Optimizable Slv.Exp Opt.Exp where
 
     Slv.Export exp -> do
       optimize env exp
-      -- exp' <- optimize env exp
-      -- return $ Opt.Optimized t area (Opt.Export exp')
 
     Slv.NameExport name     ->
       return $ Opt.Optimized qt area (Opt.NameExport name)

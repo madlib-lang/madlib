@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module Run.TestRunner where
 
 import           GHC.IO                         ( )
@@ -32,7 +30,6 @@ import qualified Data.List                      as List
 import qualified Data.Maybe                     as Maybe
 import           Control.Monad.State
 import           Control.Monad.Except
-import AST.Source (AST(atypedecls))
 import qualified Distribution.System as DistributionSystem
 
 
@@ -91,7 +88,7 @@ runLLVMTests entrypoint coverage = do
                 Can.canonicalizeMany TLLVM Can.initialEnv fullASTTable (mainTestPath : sourcesToCompile)
 
               Left e ->
-                (Left e, [])
+                error $ ppShow e
 
       let resolvedASTTable =
             case canTable of
@@ -99,7 +96,7 @@ runLLVMTests entrypoint coverage = do
                 runExcept (runStateT (solveManyASTs mempty table (mainTestPath : sourcesToCompile)) InferState { count = 0, errors = [] })
 
               Left e ->
-                Left e
+                error $ ppShow e
 
       case resolvedASTTable of
         Left err ->
@@ -118,8 +115,8 @@ runLLVMTests entrypoint coverage = do
               try $ callCommand ".tests/runTests"
 
           case (testOutput :: Either IOError ()) of
-            Left _ ->
-              return ()
+            Left e ->
+              error $ ppShow e
 
             Right _ ->
               return ()
@@ -173,7 +170,7 @@ generateRunTestSuitesExp testSuites =
 
 generateTestMainAST :: (FilePath, FilePath, FilePath) -> [FilePath] -> AST
 generateTestMainAST preludeModulePaths suitePaths =
-  let indexedSuitePaths = zip [0..] suitePaths
+  let indexedSuitePaths = zip [0..] suitePaths --(take 7 suitePaths)
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
       runTestSuiteExps  = uncurry generateRunTestSuiteExp <$> indexedSuitePaths
@@ -206,3 +203,5 @@ addTestExports ast@AST{ apath = Just apath } =
     in  ast { aexps = exps' ++ [testsExport] }
   else
     ast
+addTestExports _ =
+  undefined

@@ -898,7 +898,7 @@ inferExp env e = do
     _ -> do
       (_, _, env', _) <- inferImplicitlyTyped False env e
       (s, (ds, ps), env'', e') <- inferImplicitlyTyped False env' e
-      return (s, ps, env', e')
+      return (s, ps, env'', e')
 
   e''  <- insertClassPlaceholders env e' ps
   e''' <- updatePlaceholders env (CleanUpEnv False [] [] []) False s e''

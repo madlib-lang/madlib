@@ -64,6 +64,9 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
         Can.Extern sc name _ -> do
           safeExtendVars env (name, sc)
 
+        Can.Export (Can.Canonical _ (Can.Extern sc name _)) -> do
+          safeExtendVars env (name, sc)
+
         _ -> return env
 
   nextEnv' <- catchError
@@ -78,7 +81,7 @@ populateTopLevelTypings env (exp@(Can.Canonical _ e) : es) = do
 buildInitialEnv :: Env -> Can.AST -> Infer Env
 buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, Can.ainstances, Can.apath = Just apath }
   = do
-    let methods = foldl' (\mtds (Can.Canonical _ (Can.Interface _ _ _ mtds' _)) -> mtds <> mtds') mempty ainterfaces
+    let methods = foldr (\(Can.Canonical _ (Can.Interface _ _ _ mtds' _)) mtds -> mtds <> mtds') mempty ainterfaces
     env' <- foldM (\env (Can.Canonical _ (Can.Interface id preds vars _ _)) -> addInterface env id vars preds)
                   priorEnv
                   ainterfaces

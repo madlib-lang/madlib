@@ -299,8 +299,14 @@ renameTopLevelExps env exps = case exps of
       in  (Solved t area (TypedExp (Solved t area (Export renamedExp)) typing scheme) : nextExps, nextEnv)
 
     Solved t area (Extern qt name foreignName) ->
-      let hashedName = hashName env name
-          env'       = extendScope name hashedName env
+      let hashedName          = hashName env name
+          env'                = extendScope name hashedName env
+          (nextExps, nextEnv) = renameTopLevelExps env' es
+      in  (Solved t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
+
+    Solved _ _ (Export (Solved t area (Extern qt name foreignName))) ->
+      let hashedName          = hashName env name
+          env'                = extendScope name hashedName env
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (Solved t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
 

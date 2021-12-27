@@ -26,8 +26,8 @@ char *__integerToStr__(int64_t i) {
 }
 
 char *__byteToStr__(unsigned char i) {
-  char *str = (char *)GC_malloc(4);
-  sprintf(str, "%02X", i);
+  char *str = (char *)GC_malloc(4 * sizeof(char));
+  snprintf(str, 4 * sizeof(char), "%02X", i);
 
   return str;
 }
