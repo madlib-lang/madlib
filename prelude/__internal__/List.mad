@@ -483,15 +483,14 @@ import type { ComparisonResult } from "Compare"
 import { MORE, LESS } from "Compare"
 
 push :: a -> List a -> List a
-push = extern "MadList_push"
-export push
+export push = extern "MadList_push"
+
 
 map_ :: (a -> b) -> List a -> List b
 map_ = extern "MadList_map"
 
 reduce :: (a -> b -> a) -> a -> List b -> a
-reduce = extern "MadList_reduce"
-export reduce
+export reduce = extern "MadList_reduce"
 
 
 showWith :: (a -> String) -> List a -> String
@@ -546,8 +545,7 @@ export nth = (index, list) => where(list) {
 }
 
 len :: List a -> Integer
-len = extern "MadList_length"
-export len
+export len = extern "MadList_length"
 
 
 // sort :: Comparable a => List a -> List a

@@ -122,6 +122,7 @@ initialEnv = Env
                     IsIn "Eq" [TVar (TV "b" Star)] Nothing
                   ] :=> IsIn "Eq" [tDictionaryOf (TVar (TV "a" Star)) (TVar (TV "b" Star))] Nothing) M.empty
                 , Instance ([IsIn "Eq" [TVar (TV "a" Star)] Nothing] :=> IsIn "Eq" [tListOf (TVar (TV "a" Star))] Nothing) M.empty
+                , Instance ([IsIn "Eq" [TVar (TV "a" Star)] Nothing] :=> IsIn "Eq" [tArrayOf (TVar (TV "a" Star))] Nothing) M.empty
                 , Instance ([
                       IsIn "Eq" [TVar (TV "a" Star)] Nothing,
                       IsIn "Eq" [TVar (TV "b" Star)] Nothing

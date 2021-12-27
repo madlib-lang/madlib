@@ -76,8 +76,8 @@ instance Substitutable Type where
   ftv TCon{}                       = []
   ftv (TVar a                    ) = [a]
   ftv (t1      `TApp` t2         ) = ftv t1 `union` ftv t2
-  ftv (TRecord fields Nothing    ) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields)
-  ftv (TRecord fields (Just base)) = foldl' (\s v -> union s $ ftv v) [] (M.elems fields) ++ ftv base
+  ftv (TRecord fields Nothing    ) = foldr (\v s -> union s $ ftv v) [] (M.elems fields)
+  ftv (TRecord fields (Just base)) = foldr (\v s -> union s $ ftv v) [] (M.elems fields) ++ ftv base
   ftv t                            = []
 
 instance Substitutable Scheme where
@@ -125,7 +125,7 @@ buildVarSubsts :: Type -> Substitution
 buildVarSubsts t = case t of
   TVar (TV n k)   -> M.singleton (TV n Star) t
   TApp    l  r    -> M.union (buildVarSubsts l) (buildVarSubsts r)
-  TRecord ts base -> foldl (\s t -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
+  TRecord ts base -> foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems ts <> baseToList base)
   _               -> mempty
 
 removeRecordTypes :: Substitution -> Substitution

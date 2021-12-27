@@ -1,15 +1,16 @@
 #iftarget js
 
 import type { Data } from "Data"
-import W from "Wish"
+import type { Wish } from "Wish"
+import { Wish } from "Wish"
 import { BinaryData, TextData } from "Data"
 
 #- import fs from "fs" -#
 
 
-writeFile :: String -> Data -> W.Wish String String
+writeFile :: String -> Data -> Wish String String
 export writeFile = (path, d) => where(d) {
-  BinaryData(bytes) => W.Wish((bad, good) => #- {
+  BinaryData(bytes) => Wish((bad, good) => #- {
       fs.writeFile(path, bytes, (err) => {
         if (err) {
           bad(err);
@@ -20,7 +21,7 @@ export writeFile = (path, d) => where(d) {
       })
     } -#)
 
-  TextData(content) => W.Wish((bad, good) => #- {
+  TextData(content) => Wish((bad, good) => #- {
       fs.writeFile(path, content, (err) => {
         if (err) {
           bad(err);
@@ -33,8 +34,8 @@ export writeFile = (path, d) => where(d) {
   -#)
 }
 
-readFile :: String -> W.Wish String String
-export readFile = (path) => W.Wish((bad, good) => #- {
+readFile :: String -> Wish String String
+export readFile = (path) => Wish((bad, good) => #- {
   fs.readFile(path, "utf8", (err, d) => {
     if (err) {
       bad(err);
@@ -45,8 +46,8 @@ export readFile = (path) => W.Wish((bad, good) => #- {
   })
 }-#)
 
-exists :: String -> W.Wish String String
-export exists = (path) => W.Wish((bad, good) => #- {
+exists :: String -> Wish String String
+export exists = (path) => Wish((bad, good) => #- {
   fs.access(path, fs.constants.F_OK, (err) => {
     if (err) {
       bad(err);
@@ -56,8 +57,8 @@ export exists = (path) => W.Wish((bad, good) => #- {
   });
 } -#)
 
-readDir :: String -> W.Wish String (List String)
-export readDir = (path) => W.Wish((bad, good) => #- {
+readDir :: String -> Wish String (List String)
+export readDir = (path) => Wish((bad, good) => #- {
   fs.readdir(path, (err, files) => {
     if (err) {
       bad(err);
@@ -66,5 +67,38 @@ export readDir = (path) => W.Wish((bad, good) => #- {
     }
   })
 } -#)
+
+#elseif llvm
+import type { Wish } from "Wish"
+import { Wish } from "Wish"
+import IOError from "IOError"
+
+readFile_ :: String -> (Integer -> String -> ()) -> ()
+readFile_ = extern "readFile"
+
+readFile :: String -> Wish IOError.IOError String
+export readFile = (path) => Wish((bad, good) =>
+  readFile_(
+    path,
+    (libuvError, fileContent) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(fileContent)
+  )
+)
+
+readFileRaw_ :: String -> (Integer -> Array Byte -> ()) -> ()
+readFileRaw_ = extern "readFileRaw"
+
+readFileRaw :: String -> Wish IOError.IOError (Array Byte)
+export readFileRaw = (path) => Wish((bad, good) =>
+  readFileRaw_(
+    path,
+    (libuvError, fileContent) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(fileContent)
+  )
+)
 
 #endif

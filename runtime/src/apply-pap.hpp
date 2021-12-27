@@ -85,6 +85,35 @@ typedef struct PAPEnv_10 {
   void *arg9;
 } PAPEnv_10_t;
 
+typedef struct PAPEnv_11 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+} PAPEnv_11_t;
+
+typedef struct PAPEnv_12 {
+  void *arg0;
+  void *arg1;
+  void *arg2;
+  void *arg3;
+  void *arg4;
+  void *arg5;
+  void *arg6;
+  void *arg7;
+  void *arg8;
+  void *arg9;
+  void *arg10;
+  void *arg11;
+} PAPEnv_12_t;
+
 typedef struct PAP {
   void *fn;
   int32_t arity;

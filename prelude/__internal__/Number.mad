@@ -27,6 +27,15 @@ showInteger = extern "__integerToStr__"
 instance Show Integer {
   show = showInteger
 }
+
+
+showByte :: Byte -> String
+showByte = extern "__byteToStr__"
+
+
+instance Show Byte {
+  show = showByte
+}
 #endif
 
 #iftarget js

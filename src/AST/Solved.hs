@@ -274,6 +274,9 @@ getExpName (Solved _ _ exp) = case exp of
   Extern _ name _ ->
     return name
 
+  Export (Solved _ _ (Extern _ name _)) ->
+    return name
+
   _                 ->
     Nothing
 
@@ -302,8 +305,14 @@ extractExportedExps AST { aexps, apath } = case apath of
 
 bundleExports :: Exp -> (Name, Exp)
 bundleExports e'@(Solved _ _ exp) = case exp of
-  Export (Solved _ _ (Assignment n _)) -> (n, e')
+  Export (Solved _ _ (Assignment n _)) ->
+    (n, e')
 
-  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ _ -> (n, e')
+  Export (Solved _ _ (Extern _ n _)) ->
+    (n, e')
 
-  NameExport n -> (n, e')
+  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ _ ->
+    (n, e')
+
+  NameExport n ->
+    (n, e')

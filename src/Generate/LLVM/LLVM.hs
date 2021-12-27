@@ -56,7 +56,7 @@ import           LLVM.PassManager
 import           LLVM.CodeGenOpt (Level)
 import           LLVM.AST.Constant (Constant(Null))
 import qualified LLVM.Prelude as FloatingPointPredicate
-import           LLVM.Transforms (Pass(TailCallElimination), defaultGCOVProfiler)
+import           LLVM.Transforms (Pass(TailCallElimination, AddressSanitizer, AddressSanitizerModule), defaultGCOVProfiler)
 import           Codec.Binary.UTF8.String as UTF8
 import           Codec.Binary.UTF8.Generic as GEN
 import           Text.Show.Pretty
@@ -369,7 +369,6 @@ unbox t what = case t of
 
   -- boxed lists are { i8*, i8* }**
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
-    -- -- bitcast what listType
     ptr <- bitcast what (Type.ptr listType)
     load ptr 0
 
@@ -388,28 +387,28 @@ box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
     ptr' <- bitcast ptr (Type.ptr Type.double)
     store ptr' 0 what
     bitcast ptr' boxType
 
   -- Integer
   Type.IntegerType 64 -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i64)
     store ptr' 0 what
     bitcast ptr' boxType
 
   -- Byte
   Type.IntegerType 8 -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i8)
     store ptr' 0 what
     bitcast ptr' boxType
 
   -- Boolean
   Type.IntegerType 1 -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
+    ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
     ptr' <- bitcast ptr (Type.ptr Type.i1)
     store ptr' 0 what
     bitcast ptr' boxType
@@ -729,18 +728,6 @@ generateExp env symbolTable exp = case exp of
       _ ->
         error $ "dict not found: '"<>dictName <>"\n\n"<>ppShow exp
 
-  -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
-  Optimized (_ IT.:=> t) _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
-    (dictArgs, fn) <- collectDictArgs symbolTable exp
-    (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-    pap' <- bitcast pap boxType
-    let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
-    dictArgs' <- mapM box dictArgs
-    let dictArgs'' = (,[]) <$> dictArgs'
-    ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
-    unboxed <- unbox t ret
-    return (symbolTable, unboxed, Just ret)
-
   -- Most likely a method that has to be applied some dictionaries
   Optimized (_ IT.:=> t) _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> do
     let methodName' = "$" <> interface <> "$" <> typingStr <> "$" <> methodName
@@ -1048,7 +1035,7 @@ generateExp env symbolTable exp = case exp of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.SLT (trace ("LEFT: "<>ppShow leftOperand'<>"\nRIGHT: "<>ppShow rightOperand') leftOperand') rightOperand'
+          result                <- icmp IntegerPredicate.SLT leftOperand' rightOperand'
           return (symbolTable, result, Nothing)
 
         "Byte" -> do
@@ -1152,11 +1139,44 @@ generateExp env symbolTable exp = case exp of
         error $ "Function not found " <> functionName
 
     _ -> case fn of
-      -- TODO: Add the following:
-      -- Opt.Optimized _ _ (Opt.Placeholder (Opt.ClassRef cls _ True _, _) _) -> do
-      -- Also check that it wraps a Var and make it a direct call
+      -- With this we enable tail call optimization for overloaded functions
+      -- because if we apply a PAP we loose the direct call and thus TCO.
+      Optimized _ _ (Placeholder (ClassRef _ _ True _, _) _) -> do
+        (dictArgs, fn') <- collectDictArgs symbolTable fn
+        dictArgs'       <- mapM box dictArgs
 
-      Opt.Optimized _ _ (Opt.Placeholder (Opt.MethodRef "Number" _ True, _) _) -> do
+        args'     <- mapM (generateExp env { isLast = False } symbolTable) args
+        boxedArgs <- retrieveArgs args'
+        let allArgs = dictArgs' ++ boxedArgs
+
+        case fn' of
+          Optimized _ _ (Var functionName) -> case Map.lookup functionName symbolTable of
+            Just (Symbol (FunctionSymbol arity) fnOperand) | arity == List.length allArgs -> do
+              ret <- call fnOperand ((,[]) <$> allArgs)
+              unboxed <- unbox t ret
+              return (symbolTable, unboxed, Just ret)
+
+            _ -> do
+              (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
+
+              pap' <- bitcast pap boxType
+
+              let argc = i32ConstOp (fromIntegral $ List.length allArgs)
+              ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
+              unboxed <- unbox t ret
+              return (symbolTable, unboxed, Just ret)
+
+          _ -> do
+            (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
+
+            pap' <- bitcast pap boxType
+
+            let argc = i32ConstOp (fromIntegral $ List.length allArgs)
+            ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
+            unboxed <- unbox t ret
+            return (symbolTable, unboxed, Just ret)
+
+      Optimized _ _ (Placeholder (MethodRef "Number" _ True, _) _) -> do
         (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
         pap' <- bitcast pap boxType
 
@@ -1181,6 +1201,18 @@ generateExp env symbolTable exp = case exp of
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed <- unbox t ret
         return (symbolTable, unboxed, Just ret)
+
+  -- (Placeholder ( ClassRef "Functor" [] True False , "List" )
+  Optimized (_ IT.:=> t) _ (Placeholder (ClassRef interface _ True _, typingStr) _) -> do
+    (dictArgs, fn) <- collectDictArgs symbolTable exp
+    (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
+    pap' <- bitcast pap boxType
+    let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
+    dictArgs' <- mapM box dictArgs
+    let dictArgs'' = (,[]) <$> dictArgs'
+    ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
+    unboxed <- unbox t ret
+    return (symbolTable, unboxed, Just ret)
 
   Optimized (_ IT.:=> t) _ (LNum n) -> case t of
     IT.TCon (IT.TC "Float" _) _ ->
@@ -1564,9 +1596,18 @@ generateListSubPatternTest symbolTable basePtr pats = case pats of
 
 generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Pattern -> Operand -> m Operand
 generateBranchTest symbolTable pat value = case pat of
-  Optimized _ _ (PNum n) ->
-    -- TODO: depending on the type of the pattern we need to generate fcmp or icmp
-    fcmp FloatingPointPredicate.OEQ (C.double (read n)) value
+  Optimized (_ IT.:=> t) _ (PNum n) -> case t of
+    IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
+      icmp IntegerPredicate.EQ (C.int8 (read n)) value
+
+    IT.TCon (IT.TC "Integer" IT.Star) "prelude" ->
+      icmp IntegerPredicate.EQ (C.int64 (read n)) value
+
+    IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
+      fcmp FloatingPointPredicate.OEQ (C.double (read n)) value
+
+    _ ->
+      icmp IntegerPredicate.EQ (C.int64 (read n)) value
 
   Optimized _ _ (PBool "true") ->
     icmp IntegerPredicate.EQ (Operand.ConstantOperand $ Constant.Int 1 1) value
@@ -2380,6 +2421,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "__eqString__")          [boxType, boxType] boxType
   extern (AST.mkName "__eqBoolean__")         [boxType, boxType] boxType
   extern (AST.mkName "__eqList__")            [boxType, boxType, boxType] boxType
+  extern (AST.mkName "__eqArray__")           [boxType, boxType, boxType] boxType
   extern (AST.mkName "__eqDictionary__")      [boxType, boxType, boxType, boxType] boxType
 
       -- Number Integer
@@ -2430,6 +2472,9 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       -- Eq List
       eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "__eqList__")
 
+      -- Eq Arra
+      eqArray           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "__eqArray__")
+
       -- Eq Dictionary
       eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "__eqDictionary__")
 
@@ -2471,6 +2516,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__eqString__" (fnSymbol 2 eqString)
         $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
         $ Map.insert "__eqList__" (fnSymbol 3 eqList)
+        $ Map.insert "__eqArray__" (fnSymbol 3 eqArray)
         $ Map.insert "__eqDictionary__" (fnSymbol 4 eqDictionary) initialSymbolTable
 
       numberType               = IT.TVar (IT.TV "a" IT.Star)
@@ -2877,6 +2923,25 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
+      arrayEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "Array"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "==" ["eqDict", "a", "b"] [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqArray__")) [
+                          Optimized ([] IT.:=> dictType) emptyArea (Var "eqDict"),
+                          Optimized eqVarQualType emptyArea (Var "a"),
+                          Optimized eqVarQualType emptyArea (Var "b")
+                        ])
+                      ])
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
       dictionaryEqPreds    = [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing, IT.IsIn "Eq" [IT.TVar (IT.TV "b" IT.Star)] Nothing]
       dictionaryEqType     = dictType `IT.fn` dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
       dictionaryEqQualType = dictionaryEqPreds IT.:=> dictionaryEqType
@@ -2925,6 +2990,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       , booleanEqInstance
       , unitEqInstance
       , listEqInstance
+      , arrayEqInstance
       , dictionaryEqInstance
       ] ++ tupleEqInstances
     )
@@ -3000,6 +3066,17 @@ toLLVMModule initialEnv isMain currentModuleHashes symbolTable ast =
   in  Writer.runWriter $ buildModuleT (stringToShortByteString moduleName) (buildModule' initialEnv isMain currentModuleHashes symbolTable ast)
 
 
+generateImportedASTs :: Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> [AST] -> (ModuleTable, SymbolTable, [String], Env)
+generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) asts = case asts of
+  ast : more ->
+    let (moduleTable', symbolTable', processedHashes', initialEnv') = generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) more
+        (moduleTable'', symbolTable'', processedHashes'', initialEnv'') = generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast
+    in  (moduleTable' <> moduleTable'', symbolTable' <> symbolTable'', processedHashes' ++ processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv' <> dictionaryIndices initialEnv'', isLast = False })
+
+  [] ->
+    (moduleTable, symbolTable, processedHashes, initialEnv)
+
+
 generateAST :: Bool -> Table -> (ModuleTable, SymbolTable, [String], Env) -> AST -> (ModuleTable, SymbolTable, [String], Env)
 generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast@AST{ apath = Just apath } =
   if Map.member apath moduleTable then
@@ -3009,8 +3086,9 @@ generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialE
         alreadyProcessedPaths            = Map.keys moduleTable
         importPathsToProcess             = List.filter (`List.notElem` alreadyProcessedPaths) $ getImportAbsolutePath <$> imports
         astsForImports                   = Maybe.mapMaybe (`Map.lookup` astTable) importPathsToProcess
+
         (moduleTableWithImports, symbolTableWithImports, importHashes, envFromImports) =
-          List.foldl' (generateAST False astTable) (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
+          generateImportedASTs False astTable (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
 
         computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
         envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False }
@@ -3057,7 +3135,7 @@ compileModule outputFolder rootPath astPath astModule = do
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
-  -- T.putStrLn $ ppllvm astModule
+  -- Monad.when ("Jordi" `List.isInfixOf` astPath) $ T.putStrLn $ ppllvm astModule
 
   -- withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
   withHostTargetMachineDefault $ \target -> do
@@ -3077,10 +3155,11 @@ compileModule outputFolder rootPath astPath astModule = do
           $ \pm -> do
             runPassManager pm mod'
             return mod'
+
         -- mod'' <-
         --   withPassManager
         --     defaultPassSetSpec
-        --     { transforms        = [defaultGCOVProfiler]
+        --     { transforms        = [AddressSanitizer]
         --     , targetMachine     = Just target
         --     , dataLayout        = Just dataLayout
         --     , targetLibraryInfo = Just libraryInfo
@@ -3090,9 +3169,6 @@ compileModule outputFolder rootPath astPath astModule = do
         --       return mod'
 
         createDirectoryIfMissing True $ takeDirectory outputPath
-        -- writeBitcodeToFile (File ((dropExtension outputPath) ++ ".bc")) mod''
-        -- callCommand $ "opt-9 -O0 --insert-gcov-profiling --instrprof " ++ (dropExtension outputPath) ++ ".bc -o " ++ (dropExtension outputPath) ++ "2.bc"
-        -- callCommand $ "llc-9 -tailcallopt -O0 -filetype=obj " ++ (dropExtension outputPath) ++ ".bc"
         writeObjectToFile target (File outputPath) mod''
 
   return outputPath

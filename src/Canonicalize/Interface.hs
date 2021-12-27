@@ -47,7 +47,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
           constraints
 
     let psTypes = concat $ (\(IsIn _ ts _) -> ts) <$> supers
-    let subst   = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+    let subst   = foldr (\t s -> s `compose` buildVarSubsts t) mempty psTypes
 
     let scs =
           (\(ps :=> t) -> quantify (collectVars (apply subst t)) (apply subst (ps <> supers) :=> apply subst t)) <$> ts'
@@ -103,7 +103,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
         throwError $
           CompilationError (InterfaceNotExisting n) (Context (envCurrentPath env) area [])
 
-    let subst = foldl' (\s t -> s `compose` buildVarSubsts t) mempty ts
+    let subst = foldr (\t s -> s `compose` buildVarSubsts t) mempty ts
 
     ps <-
       apply subst
@@ -124,7 +124,7 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
               constraints
 
     let psTypes = concat $ (\(IsIn _ ts _) -> ts) <$> ps
-    let subst' = foldl' (\s t -> s `compose` buildVarSubsts t) mempty psTypes
+    let subst' = foldr (\t s -> s `compose` buildVarSubsts t) mempty psTypes
 
     let ps'     = apply subst' ps
     let p       = IsIn n (apply subst' ts) Nothing

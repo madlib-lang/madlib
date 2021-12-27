@@ -206,6 +206,9 @@ getExportName exp = case exp of
   Canonical _ (TypedExp (Canonical _ (Export (Canonical _ (Assignment name _)))) _ _) ->
     return name
 
+  Canonical _ (Export (Canonical _ (Extern _ name _))) ->
+    return name
+
   _ ->
     Nothing
 

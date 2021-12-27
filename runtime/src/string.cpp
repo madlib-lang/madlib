@@ -37,14 +37,14 @@ bool __areStringsNotEqual__(char *s1, char *s2) {
 
 
 // currently unused, types need adjustment. The param probably needs to be a char**
-double *__strLength__(char *s) {
-  double *result = (double *)GC_malloc(sizeof(double));
+int64_t *__strLength__(char *s) {
+  int64_t *result = (int64_t *)GC_malloc(sizeof(int64_t));
   *result = strlen(s);
   return result;
 }
 
 char *__strConcat__(char *s1, char *s2) {
-  char *result = (char *)GC_malloc(strlen(s1) + strlen(s2) + 1);
+  char *result = (char *)GC_malloc((strlen(s1) + strlen(s2) + 1) * sizeof(char));
   strcpy(result, s1);
   strcat(result, s2);
   return result;

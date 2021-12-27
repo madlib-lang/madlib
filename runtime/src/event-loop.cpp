@@ -1,11 +1,11 @@
+#include <gc.h>
 #include <stdlib.h>
 #include <uv.h>
-#include <gc.h>
 
 #include <cmath>
 
 #include "apply-pap.hpp"
-
+#include "array.hpp"
 
 // libuv errors:
 
@@ -249,9 +249,8 @@
 // UV_ESOCKTNOSUPPORT
 // socket type not supported
 
-
 int libuvErrorToMadlibIOError(int libuvError) {
-  switch(libuvError) {
+  switch (libuvError) {
     case UV_E2BIG:
       return 1;
     case UV_EACCES:
@@ -413,7 +412,6 @@ int libuvErrorToMadlibIOError(int libuvError) {
   }
 }
 
-
 static uv_loop_t *loop;
 
 #ifdef __cplusplus
@@ -421,7 +419,7 @@ extern "C" {
 #endif
 
 void __initEventLoop__() {
-  loop = (uv_loop_t *)malloc(sizeof(uv_loop_t));
+  loop = (uv_loop_t *)GC_malloc_uncollectable(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }
 
@@ -429,7 +427,7 @@ void __startEventLoop__() {
   uv_run(loop, UV_RUN_DEFAULT);
 
   uv_loop_close(loop);
-  free(loop);
+  // free(loop);
 }
 
 // set timeout
@@ -439,12 +437,11 @@ void forwardTimeoutCallback(uv_timer_t *handle) {
 }
 
 void __setTimeout__(PAP_t *pap, int64_t millis) {
-  uv_timer_t *timer_req1 = (uv_timer_t *)malloc(sizeof(uv_timer_t));
+  uv_timer_t *timer_req1 = (uv_timer_t *)GC_malloc_uncollectable(sizeof(uv_timer_t));
   timer_req1->data = (void *)pap;
   uv_timer_init(loop, timer_req1);
   uv_timer_start(timer_req1, forwardTimeoutCallback, millis, 0);
 }
-
 
 // read file
 typedef struct ReadData {
@@ -454,106 +451,153 @@ typedef struct ReadData {
   uv_buf_t uvBuffer;
   char *dataBuffer;
   char *fileContent;
-  int currentSize;
+  int64_t currentSize;
+
+  // if true returns an Array Byte instead of String
+  bool readBytes;
 } ReadData_t;
 
-
 void onError(uv_fs_t *req) {
-  char **boxedResult = (char **)GC_malloc(sizeof(char*));
-  char *result = (char *)GC_malloc(sizeof(char));
+  char **boxedResult = (char **)GC_malloc_uncollectable(sizeof(char *));
+  char *result = (char *)GC_malloc_uncollectable(sizeof(char));
   *result = 0;
   *boxedResult = result;
 
-  int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int));
+  int64_t *boxedError = (int64_t *)GC_malloc_uncollectable(sizeof(int));
   *boxedError = libuvErrorToMadlibIOError(req->result);
 
   // free resources
-  free(((ReadData_t *)req->data)->dataBuffer);
-  free(req->data);
-  uv_fs_req_cleanup(req);
-  free(((ReadData_t *)req->data)->openRequest);
-  free(req);
+  // free(((ReadData_t *)req->data)->dataBuffer);
+  // free(req->data);
+  // uv_fs_req_cleanup(req);
+  // free(((ReadData_t *)req->data)->openRequest);
+  // free(req);
 
   __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, boxedResult);
 }
 
 void onRead(uv_fs_t *req) {
+  uv_fs_req_cleanup(req);
   if (req->result < 0) {
     onError(req);
   } else if (req->result == 0) {
     // close file
     uv_fs_t closeReq;
-    uv_fs_close(loop, &closeReq, ((ReadData_t *)req->data)->openRequest->result, NULL);
+    uv_fs_close(loop, &closeReq, ((ReadData_t *)req->data)->openRequest->result,
+                NULL);
 
-    // free resources
-    free(((ReadData_t *)req->data)->dataBuffer);
-    free(req->data);
-    uv_fs_req_cleanup(req);
-    free(((ReadData_t *)req->data)->openRequest);
-    free(req);
+    int64_t *boxedError = (int64_t *)GC_malloc_uncollectable(sizeof(int64_t));
 
     // box the result
-    char **boxedResult = (char **)GC_malloc(sizeof(char*));
-    *boxedResult = ((ReadData_t *)req->data)->fileContent;
+    if (((ReadData_t *)req->data)->readBytes) {
+      MadArray_t *arr = (MadArray_t *)GC_malloc_uncollectable(sizeof(MadArray_t));
+      int64_t contentLength = ((ReadData_t *)req->data)->currentSize;
+      arr->items = (void **)GC_malloc_uncollectable(sizeof(void *) * contentLength);
+      arr->length = contentLength;
 
-    int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int));
-    *boxedError = 0;
+      for (int64_t i = 0; i < contentLength; i++) {
+        (arr->items)[i] = (char *)GC_malloc_uncollectable(sizeof(char));
+        memcpy((char*)*(arr->items + i), ((ReadData_t *)req->data)->fileContent + i, sizeof(char));
+      }
 
-    // call the callback
-    __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, boxedResult);
+      GC_free(((ReadData_t *)req->data)->fileContent);
+
+      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, (void*)arr);
+    } else {
+      char **boxedResult = (char **)GC_malloc_uncollectable(sizeof(char *));
+      *boxedResult = ((ReadData_t *)req->data)->fileContent;
+
+      // call the callback
+      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError,
+                   boxedResult);
+    }
+
+    // free resources
+    GC_free(((ReadData_t *)req->data)->dataBuffer);
+    GC_free(((ReadData_t *)req->data)->openRequest);
+    GC_free(req->data);
+    GC_free(req);
   } else if (req->result > 0) {
     // get the byte count already read
-    int currentSize = ((ReadData_t *) req->data)->currentSize;
+    int64_t currentSize = ((ReadData_t *)req->data)->currentSize;
 
     // increase the byte count for the next iteration
-    ((ReadData_t *) req->data)->currentSize = currentSize + req->result;
+    ((ReadData_t *)req->data)->currentSize = currentSize + req->result;
 
     // allocate the next content to the old size + size of current buffer
-    char *nextContent = (char *) GC_malloc(currentSize + req->result);
+    char *nextContent = (char *)GC_malloc(currentSize + req->result);
 
-    // if the fileContent is not empty we copy what was in it in the newly allocated one
+    // if the fileContent is not empty we copy what was in it in the newly
+    // allocated one
     if (currentSize > 0) {
-      memcpy(nextContent, ((ReadData_t *) req->data)->fileContent, currentSize);
+      memcpy(nextContent, ((ReadData_t *)req->data)->fileContent, currentSize);
     }
 
     // then we copy after the already existing content, all data from the buffer
-    memcpy(nextContent + currentSize, ((ReadData_t *) req->data)->dataBuffer, req->result);
+    memcpy(nextContent + currentSize, ((ReadData_t *)req->data)->dataBuffer,
+           req->result);
+
+    GC_free(((ReadData_t *)req->data)->fileContent);
 
     // we assign the fileContent to the newly created structure
-    ((ReadData_t *) req->data)->fileContent = nextContent;
+    ((ReadData_t *)req->data)->fileContent = nextContent;
 
     // we ask to be notified when the buffer has been filled again
-    uv_fs_read(loop, req, ((ReadData_t *)req->data)->openRequest->result, &((ReadData_t *)req->data)->uvBuffer, 1, -1, onRead);
+    uv_fs_read(loop, req, ((ReadData_t *)req->data)->openRequest->result,
+               &((ReadData_t *)req->data)->uvBuffer, 1, -1, onRead);
   }
 }
 
-
 void onOpen(uv_fs_t *req) {
+  uv_fs_req_cleanup(req);
   if (req->result >= 0) {
-    uv_buf_t uvBuffer = uv_buf_init(((ReadData_t *) req->data)->dataBuffer, 1024);
-    ((ReadData_t *) ((ReadData_t *) req->data)->readRequest->data)->uvBuffer = uvBuffer;
-    uv_fs_read(loop, ((ReadData_t *) req->data)->readRequest, req->result, &uvBuffer, 1, -1, onRead);
+    uv_buf_t uvBuffer =
+        uv_buf_init(((ReadData_t *)req->data)->dataBuffer, 1024);
+    ((ReadData_t *)((ReadData_t *)req->data)->readRequest->data)->uvBuffer =
+        uvBuffer;
+    uv_fs_read(loop, ((ReadData_t *)req->data)->readRequest, req->result,
+               &uvBuffer, 1, -1, onRead);
   } else {
     onError(req);
   }
 
-  uv_fs_req_cleanup(req);
 }
-
 
 void readFile(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)malloc(sizeof(char) * 1024);
+  uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
+  uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
+  char *dataBuffer = (char *)GC_malloc_uncollectable(sizeof(char) * 1024);
 
   // we allocate and initialize the data of requests
-  readReq->data = malloc(sizeof(ReadData));
-  ((ReadData_t *) readReq->data)->callback = callback;
-  ((ReadData_t *) readReq->data)->readRequest = readReq;
-  ((ReadData_t *) readReq->data)->openRequest = openReq;
-  ((ReadData_t *) readReq->data)->dataBuffer = dataBuffer;
-  ((ReadData_t *) readReq->data)->currentSize = 0;
+  readReq->data = GC_malloc_uncollectable(sizeof(ReadData));
+  ((ReadData_t *)readReq->data)->callback = callback;
+  ((ReadData_t *)readReq->data)->readRequest = readReq;
+  ((ReadData_t *)readReq->data)->openRequest = openReq;
+  ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
+  ((ReadData_t *)readReq->data)->currentSize = 0;
+  ((ReadData_t *)readReq->data)->readBytes = false;
+
+  openReq->data = readReq->data;
+
+  // we open the file
+  uv_fs_open(loop, openReq, filepath, O_RDONLY, 0, onOpen);
+}
+
+void readFileRaw(char *filepath, PAP_t *callback) {
+  // we allocate request objects and the buffer
+  uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
+  uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
+  char *dataBuffer = (char *)GC_malloc_uncollectable(sizeof(char) * 1024);
+
+  // we allocate and initialize the data of requests
+  readReq->data = GC_malloc_uncollectable(sizeof(ReadData));
+  ((ReadData_t *)readReq->data)->callback = callback;
+  ((ReadData_t *)readReq->data)->readRequest = readReq;
+  ((ReadData_t *)readReq->data)->openRequest = openReq;
+  ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
+  ((ReadData_t *)readReq->data)->currentSize = 0;
+  ((ReadData_t *)readReq->data)->readBytes = true;
 
   openReq->data = readReq->data;
 
