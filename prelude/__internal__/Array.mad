@@ -1,0 +1,27 @@
+#iftarget llvm
+import {} from "Monad"
+
+fromList :: List a -> Array a
+export fromList = extern "MadArray_fromList"
+
+toList :: Array a -> List a
+export toList = extern "MadArray_toList"
+
+len :: Array a -> Integer
+export len = extern "MadArray_length"
+
+map_ :: (a -> b) -> Array a -> Array b
+export map_ = extern "MadArray_map"
+
+reduce :: (a -> b -> a) -> a -> Array b -> a
+export reduce = extern "MadArray_reduce"
+
+concat :: Array a -> Array a -> Array a
+export concat = extern "MadArray_concat"
+
+
+instance Functor Array {
+  map = map_
+}
+
+#endif

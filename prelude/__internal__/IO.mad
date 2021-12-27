@@ -100,8 +100,8 @@ export table = (rows, a) => (#- {
 
 #elseif llvm
 log :: String -> ()
-log = extern "puts"
+export log = extern "puts"
 
-export log
+// export log
 
 #endif

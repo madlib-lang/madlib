@@ -1,0 +1,49 @@
+#iftarget llvm
+
+import { assertEquals, test } from "Test"
+
+import Array from "Array"
+
+test("map", (_) =>
+  assertEquals(
+    map((x) => x * 2, Array.fromList([1, 2, 3])),
+    Array.fromList([2, 4, 6])
+  )
+)
+
+test("map - empty array", (_) =>
+  assertEquals(
+    map((x) => x * 2, Array.fromList([])),
+    Array.fromList([])
+  )
+)
+
+test("reduce", (_) =>
+  assertEquals(
+    Array.reduce((sum, a) => sum + a, 0, Array.fromList([1, 2, 3])),
+    6
+  )
+)
+
+test("concat", (_) =>
+  assertEquals(
+    Array.concat(Array.fromList([1, 2, 3]), Array.fromList([4, 5, 6])),
+    Array.fromList([1, 2, 3, 4, 5, 6])
+  )
+)
+
+test("len", (_) =>
+  assertEquals(
+    Array.len(Array.fromList([1, 2, 3, 4, 5, 6])),
+    6
+  )
+)
+
+test("toList", (_) =>
+  assertEquals(
+    Array.toList(Array.fromList([1, 2, 3, 4, 5, 6])),
+    [1, 2, 3, 4, 5, 6]
+  )
+)
+
+#endif

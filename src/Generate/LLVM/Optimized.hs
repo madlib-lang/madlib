@@ -195,6 +195,9 @@ isExtern exp = case exp of
   Optimized _ _ Extern{} ->
     True
 
+  Optimized _ _ (Export (Optimized _ _ Extern{})) ->
+    True
+
   _ ->
     False
 
