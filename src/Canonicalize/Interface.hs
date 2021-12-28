@@ -20,6 +20,7 @@ import           Control.Monad.Except
 import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.List
+import           Utils.List
 
 
 
@@ -38,7 +39,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     ts <- mapM (typingToType env AnyKind) ms
 
     let ts' = addConstraints n vars <$> ts
-    let tvs = rmdups $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
+    let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars <$> M.elems ts
 
     let supers = mapMaybe
           (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
@@ -60,12 +61,6 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
 
     canMs <- mapM canonicalizeTyping ms
     return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
-
-
-rmdups :: (Eq a) => [a] -> [a]
-rmdups []       = []
-rmdups [x     ] = [x]
-rmdups (x : xs) = x : [ k | k <- rmdups xs, k /= x ]
 
 
 findTypeVar :: [Type] -> String -> Maybe Type
