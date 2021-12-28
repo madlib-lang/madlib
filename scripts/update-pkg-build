@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # copy binary
-cp .stack-work/dist/x86_64-osx/Cabal-3.2.1.0/build/madlib/madlib ./pkg/node_modules/binary-install/bin/madlib
+# deleting first is needed as overwriting weirdly copies a corrupted executable at times ( at least on arm64 macos )
+rm ./pkg/node_modules/binary-install/bin/madlib
+cp "$(stack path --dist-dir)/build/madlib/madlib" ./pkg/node_modules/binary-install/bin/madlib
 
 # copy runtime
 cp -R ./runtime ./pkg/node_modules/binary-install/bin/

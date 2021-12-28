@@ -66,6 +66,7 @@ import qualified Utils.Path        as Path
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
+import Utils.List
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 import qualified Data.Tuple as Tuple
 import Explain.Location
@@ -248,7 +249,7 @@ i64ConstOp i = Operand.ConstantOperand $ Constant.Int 64 i
 storeItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
 storeItem basePtr _ (item, index) = do
   ptr <- gep basePtr [i32ConstOp 0, i32ConstOp index]
-  store ptr 8 item
+  store ptr 0 item
   return ()
 
 
@@ -417,7 +418,7 @@ box what = case typeOf what of
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof stringType, [])]
     ptr' <- bitcast ptr (Type.ptr stringType)
-    store ptr' 8 what
+    store ptr' 0 what
     bitcast ptr' boxType
 
   -- List
@@ -3033,7 +3034,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   Monad.when isMain $ do
     extern (AST.mkName "__initEventLoop__")    [] Type.void
     extern (AST.mkName "__startEventLoop__")   [] Type.void
-    generateModuleFunctionExternals symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+    generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
 
   let moduleFunctionName =
         if isMain then
@@ -3045,7 +3046,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     entry <- block `named` "entry"
     Monad.when isMain $ do
       call initEventLoop []
-      callModuleFunctions symbolTable (Set.toList $ Set.fromList currentModuleHashes)
+      callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
     generateExps env symbolTable'' (expsForMain $ aexps ast)
     Monad.when isMain $ do
       call startEventLoop []
@@ -3092,7 +3093,7 @@ generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialE
 
         computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
         envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False }
-        (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (processedHashes ++ importHashes) symbolTableWithImports ast
+        (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (importHashes ++ processedHashes) symbolTableWithImports ast
 
         updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
         moduleHash                       = hashModulePath ast
@@ -3135,7 +3136,6 @@ compileModule outputFolder rootPath astPath astModule = do
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
-  -- Monad.when ("Jordi" `List.isInfixOf` astPath) $ T.putStrLn $ ppllvm astModule
 
   -- withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
   withHostTargetMachineDefault $ \target -> do

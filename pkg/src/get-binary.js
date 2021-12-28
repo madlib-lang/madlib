@@ -12,6 +12,9 @@ function getTriple() {
   if (type === "Darwin" && arch === "x64") {
     return "x86_64-apple-darwin"
   }
+  if (type === "Darwin" && arch === "arm64") {
+    return "x86_64-apple-darwin"
+  }
   if (type === "Linux" && arch === "x64") {
     return "x86_64-unknown-linux-gnu"
   }
