@@ -74,7 +74,11 @@ runLLVMTests entrypoint coverage = do
   astTable            <- buildManyASTTables TLLVM mempty (listModulePath : wishModulePath : sourcesToCompile)
   let outputPath              = "./.tests/runTests"
       astTableWithTestExports = (addTestExports <$>) <$> astTable
-      mainTestPath            = joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
+      mainTestPath            =
+        if takeExtension canonicalEntrypoint == "" then
+          joinPath [canonicalEntrypoint, "__TestMain__.mad"]
+        else
+          joinPath [takeDirectory canonicalEntrypoint, "__TestMain__.mad"]
 
   case astTableWithTestExports of
     Right astTable' -> do

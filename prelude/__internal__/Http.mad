@@ -258,4 +258,53 @@ deleteWithHeaders :: String -> Data -> List Header -> Wish Response Response
 export deleteWithHeaders = (url, body, headers) =>
   requestWithBodyAndHeaders(DELETE, url, body, headers)
 
+#elseif llvm
+
+alias Status = Integer
+export BadRequest = 400
+export Unauthorized = 401
+export PaymentRequired = 402
+export NotFound = 404
+export OK = 200
+
+export type TransferEncoding
+  = Chunked
+  | Compress
+  | Deflate
+  | Gzip
+
+export type Header
+  = ContentLength(Integer)
+  | ContentType(String)
+  | TransferEncoding(TransferEncoding)
+
+export type Body
+  = TextBody(String)
+  | BinaryBody(Array Byte)
+  | EmptyBody
+
+export type Method
+  = GET
+  | POST
+  | PUT
+  | DELETE
+  | PATCH
+  | HEAD
+  | OPTIONS
+  | CONNECT
+  | TRACE
+
+alias Response = {
+  status :: Status,
+  body :: Body,
+  headers :: List Header
+}
+
+alias Request = {
+  method :: Method,
+  url :: String,
+  headers :: List Header,
+  body :: Body
+}
+
 #endif

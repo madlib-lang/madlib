@@ -1,3 +1,6 @@
+#ifndef LIST_H
+#define LIST_H
+
 #include "apply-pap.hpp"
 
 typedef struct MadListNode {
@@ -42,3 +45,5 @@ void *MadList_reduce(PAP_t *pap, void *initialValue, MadListNode_t *list);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // LIST_H
