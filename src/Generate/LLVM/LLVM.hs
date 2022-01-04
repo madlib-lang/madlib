@@ -70,7 +70,7 @@ import Utils.List
 import LLVM.Internal.ObjectFile (ObjectFile(ObjectFile))
 import qualified Data.Tuple as Tuple
 import Explain.Location
-import System.FilePath (takeDirectory, joinPath, takeFileName, dropExtension)
+import System.FilePath (takeDirectory, takeExtension, joinPath, takeFileName, dropExtension)
 import qualified LLVM.AST.Linkage as Linkage
 import System.Directory
 import qualified LLVM.Relocation as Reloc
@@ -888,42 +888,43 @@ generateExp env symbolTable exp = case exp of
   Optimized (_ IT.:=> t) _ (App fn args) -> case fn of
     -- Calling a known method
     Optimized _ _ (Placeholder (MethodRef interface methodName False, typingStr) _) -> case methodName of
-      "==" -> case typingStr of
-        "Integer" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
+      "==" | methodName `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit"] ->
+        case typingStr of
+          "Integer" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+            return (symbolTable, result, Nothing)
 
-        "Byte" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
+          "Byte" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+            return (symbolTable, result, Nothing)
 
-        "Float" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
+          "Float" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- fcmp FloatingPointPredicate.OEQ leftOperand' rightOperand'
+            return (symbolTable, result, Nothing)
 
-        "String" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
-          return (symbolTable, result, Nothing)
+          "String" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- call areStringsEqual [(leftOperand', []), (rightOperand', [])]
+            return (symbolTable, result, Nothing)
 
-        "Boolean" -> do
-          (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
-          (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
-          result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
-          return (symbolTable, result, Nothing)
+          "Boolean" -> do
+            (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
+            (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
+            result                <- icmp IntegerPredicate.EQ leftOperand' rightOperand'
+            return (symbolTable, result, Nothing)
 
-        "Unit" -> do
-          return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
+          "Unit" -> do
+            return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
-        _ ->
-          undefined
+          _ ->
+            undefined
 
       "+" -> case typingStr of
         "Integer" -> do
@@ -2985,6 +2986,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       [ integerNumberInstance
       , byteNumberInstance
       , floatNumberInstance
+      , byteEqInstance
       , integerEqInstance
       , floatEqInstance
       , stringEqInstance
@@ -3050,6 +3052,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     generateExps env symbolTable'' (expsForMain $ aexps ast)
     Monad.when isMain $ do
       call startEventLoop []
+      ret $ i32ConstOp 0
       return ()
     retVoid
 
@@ -3119,7 +3122,11 @@ generateTableModules generatedTable symbolTable astTable entrypoint = case Map.l
   Just ast ->
     let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
         (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False } [] symbolTable)
-        defaultInstancesModulePath = joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
+        defaultInstancesModulePath =
+          if takeExtension entrypoint == "" then
+            joinPath [entrypoint, "__default__instances__.mad"]
+          else
+            joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
         (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False }) ast
     in  Map.insert defaultInstancesModulePath defaultInstancesModule moduleTable
 
@@ -3137,7 +3144,6 @@ compileModule outputFolder rootPath astPath astModule = do
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
 
-  -- withHostTargetMachine Reloc.PIC CodeModel.Default CodeGenOpt.Default $ \target -> do
   withHostTargetMachineDefault $ \target -> do
     withContext $ \ctx -> do
       withModuleFromAST ctx astModule $ \mod' -> do
@@ -3211,7 +3217,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -o " <> executablePath
+        <> " -lruntime -lgc -luv -lhttp_parser -o " <> executablePath
 
     DistributionSystem.Windows ->
       callCommand $
@@ -3219,7 +3225,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
+        <> " -lruntime -lgc -luv -lhttp_parser -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
 
     _ ->
       callCommand $
@@ -3227,4 +3233,4 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -lhttp_parser -pthread -ldl -o " <> executablePath

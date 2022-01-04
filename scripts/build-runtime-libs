@@ -3,7 +3,7 @@ mkdir .buildlibs
 mkdir -p runtime/lib
 cd .buildlibs
 
-
+# install libuv
 if [ "$TARGET_WINDOWS" = "ON" ]
 then
   # For windows we need to pull a commit that includes a fix related to how mingw changed headers recently
@@ -35,6 +35,26 @@ cd libgc/bdwgc-8.0.6 && git clone git://github.com/ivmai/libatomic_ops.git && ma
 cd ../..
 cp libgc/bdwgc-8.0.6/gc.a ../runtime/lib/libgc.a
 cp -R libgc/bdwgc-8.0.6/include ../runtime/
+
+
+
+# # install llhttp
+# wget https://github.com/nodejs/llhttp/archive/refs/tags/release/v6.0.6.zip
+# unzip v6.0.6.zip
+# cd llhttp-release-v6.0.6
+# mkdir -p build && cd build && cmake .. && cmake --build .
+# cd ../..
+# cp llhttp-release-v6.0.6/build/libllhttp.a ../runtime/lib/
+# cp -R llhttp-release-v6.0.6/include ../runtime/
+
+# install http-parser
+wget https://github.com/nodejs/http-parser/archive/refs/tags/v2.9.4.zip
+unzip v2.9.4.zip
+cd http-parser-2.9.4
+make package
+cd ..
+cp http-parser-2.9.4/libhttp_parser.a ../runtime/lib/
+cp http-parser-2.9.4/http_parser.h ../runtime/include/
 
 cd ..
 rm -rf .buildlibs

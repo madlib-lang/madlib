@@ -1,3 +1,6 @@
+#ifndef APPLY_PAP_H
+#define APPLY_PAP_H
+
 #include <math.h>
 
 typedef struct PAPEnv_1 {
@@ -131,3 +134,5 @@ void *__applyPAP__(void *pap, int32_t argc, ...);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // APPLY_PAP_H

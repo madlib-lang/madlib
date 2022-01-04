@@ -30,8 +30,7 @@ export writeFile = (path, d) => where(d) {
           good(path)
         }
       })
-    }
-  -#)
+    } -#)
 }
 
 readFile :: String -> Wish String String
@@ -87,17 +86,60 @@ export readFile = (path) => Wish((bad, good) =>
   )
 )
 
-readFileRaw_ :: String -> (Integer -> Array Byte -> ()) -> ()
-readFileRaw_ = extern "readFileRaw"
+readBinaryFile_ :: String -> (Integer -> Array Byte -> ()) -> ()
+readBinaryFile_ = extern "readBinaryFile"
 
-readFileRaw :: String -> Wish IOError.IOError (Array Byte)
-export readFileRaw = (path) => Wish((bad, good) =>
-  readFileRaw_(
+readBinaryFile :: String -> Wish IOError.IOError (Array Byte)
+export readBinaryFile = (path) => Wish((bad, good) =>
+  readBinaryFile_(
     path,
     (libuvError, fileContent) =>
       libuvError != 0
         ? bad(IOError.fromLibuvError(libuvError))
         : good(fileContent)
+  )
+)
+
+
+writeFile_ :: String -> String -> (Integer -> () -> ()) -> ()
+writeFile_ = extern "writeFile"
+
+writeFile :: String -> String -> Wish IOError.IOError ()
+export writeFile = (path, content) => Wish((bad, good) =>
+  writeFile_(
+    path,
+    content,
+    (libuvError, result) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(())
+  )
+)
+
+
+writeBinaryFile_ :: String -> Array Byte -> (Integer -> () -> ()) -> ()
+writeBinaryFile_ = extern "writeBinaryFile"
+
+writeBinaryFile :: String -> Array Byte -> Wish IOError.IOError ()
+export writeBinaryFile = (path, content) => Wish((bad, good) =>
+  writeBinaryFile_(
+    path,
+    content,
+    (libuvError, result) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(())
+  )
+)
+
+exists_ :: String -> (Boolean -> ()) -> ()
+exists_ = extern "fileExists"
+
+exists :: String -> Wish () Boolean
+export exists = (path) => Wish((bad, good) =>
+  exists_(
+    path,
+    good
   )
 )
 
