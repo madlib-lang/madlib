@@ -1,3 +1,6 @@
+#ifndef STRING_H
+#define STRING_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,3 +18,5 @@ char *__stripTrailingZeros__(char *number);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // STRING_H
