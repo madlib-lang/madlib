@@ -273,10 +273,7 @@ export type TransferEncoding
   | Deflate
   | Gzip
 
-export type Header
-  = ContentLength(Integer)
-  | ContentType(String)
-  | TransferEncoding(TransferEncoding)
+export type Header = Header(String, String)
 
 export type Body
   = TextBody(String)
