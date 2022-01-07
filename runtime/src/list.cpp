@@ -67,19 +67,16 @@ MadListNode_t *MadList_singleton(void *item) {
 
 // TODO: we need to copy the list here
 MadListNode_t *MadList_append(void *item, MadListNode_t *list) {
-  if (list->value == NULL) {
+  if (list->value == NULL || list->next == NULL) {
     return MadList_singleton(item);
   }
 
   MadListNode_t *current = list;
-  while (current->next != NULL) {
+  while (current->next->value != NULL) {
     current = current->next;
   }
 
-  MadListNode_t *nextNode = (MadListNode_t *)GC_malloc(sizeof(MadListNode_t));
-  nextNode->next = NULL;
-  nextNode->value = item;
-
+  MadListNode_t *nextNode = MadList_singleton(item);
   current->next = nextNode;
 
   return list;
