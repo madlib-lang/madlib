@@ -1,6 +1,7 @@
 #include <gc.h>
 #include <http_parser.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <uv.h>
 
 #include "apply-pap.hpp"
@@ -11,15 +12,17 @@
 extern "C" {
 #endif
 
+// Integer
 typedef enum HeaderName {
-  contentLength = 1,
-  contentType = 2,
-  transferEncoding = 3,
+  CONTENT_LENGTH = 1,
+  CONTENT_TYPE = 2,
+  TRANSFER_ENCODING = 3,
 } HeaderName_t;
 
+// #[Integer, String]
 typedef struct Header {
-  HeaderName_t name;
-  void *value;
+  char **name;
+  char **value;
 } Header_t;
 
 typedef struct RequestData {
@@ -31,9 +34,21 @@ typedef struct RequestData {
   uv_stream_t *tcpStream;
   char *body;
   int currentBodySize;
+
+  int64_t status;
+
+  // List #[String, String]
   MadListNode_t *headers;
   Header_t *currentHeader;
 } RequestData_t;
+
+
+// utility
+void toUpper(char *str, size_t length) {
+  for(int i = 0; i<length; i++) {
+    str[i] = toupper(str[i]);
+  }
+}
 
 static void allocCallback(uv_handle_t *handle, size_t size, uv_buf_t *buf) {
   *buf = uv_buf_init((char *)GC_malloc_uncollectable(size), size);
@@ -46,9 +61,22 @@ void onClose(uv_handle_t *handle) {
 int onMessageComplete(http_parser *parser) {
   uv_close((uv_handle_t *)((RequestData_t *)parser->data)->tcpStream, onClose);
 
-  char **boxedResult = (char **)GC_malloc_uncollectable(sizeof(char *));
-  *boxedResult = ((RequestData_t *)parser->data)->body;
-  __applyPAP__(((RequestData_t *)parser->data)->callback, 1, boxedResult);
+  // box body
+  char **boxedBody = (char **)GC_malloc_uncollectable(sizeof(char *));
+  *boxedBody = ((RequestData_t *)parser->data)->body;
+
+  // box headers
+  MadListNode_t **boxedHeaders = (MadListNode_t **)GC_malloc(sizeof(MadListNode_t *));
+  *boxedHeaders = ((RequestData_t *)parser->data)->headers;
+
+  // box status
+  int64_t *boxedStatus = (int64_t *)GC_malloc(sizeof(int64_t));
+  *boxedStatus = parser->status_code;
+
+  // free resources
+
+  // call the callback
+  __applyPAP__(((RequestData_t *)parser->data)->callback, 3, boxedBody, boxedHeaders, boxedStatus);
 
   return 0;
 }
@@ -71,12 +99,37 @@ int onBodyReceived(http_parser *parser, const char *bodyPart, size_t length) {
   return 0;
 }
 
-int onHeaderFieldReceived(http_parser *parser, const char *bodyPart, size_t length) {
+int onHeaderFieldReceived(http_parser *parser, const char *field, size_t length) {
+  printf("header field: %.*s\n", length, field);
 
+  ((RequestData_t*)parser->data)->currentHeader = (Header_t *)GC_malloc(sizeof(Header_t));
+
+  char *headerField = (char *)GC_malloc(length + 1);
+  strncpy(headerField, field, length);
+  headerField[length] = '\0';
+
+  char **boxed = (char **)GC_malloc(sizeof(char*));
+  *boxed = headerField;
+
+  ((RequestData_t*)parser->data)->currentHeader->name = boxed;
+
+  return 0;
 }
 
-int onHeaderValueReceived(http_parser *parser, const char *bodyPart, size_t length) {
+int onHeaderValueReceived(http_parser *parser, const char *value, size_t length) {
+  printf("header value: %.*s\n", length, value);
+  char *headerValue = (char *)GC_malloc(length + 1);
+  strncpy(headerValue, value, length);
+  headerValue[length] = '\0';
 
+  char **boxed = (char **)GC_malloc(sizeof(char*));
+  *boxed = headerValue;
+
+  ((RequestData_t*)parser->data)->currentHeader->value = boxed;
+
+  ((RequestData_t*)parser->data)->headers = MadList_push(((RequestData_t*)parser->data)->currentHeader, ((RequestData_t*)parser->data)->headers);
+
+  return 0;
 }
 
 void onRead(uv_stream_t *tcp, ssize_t sizeRead, const uv_buf_t *buf) {
@@ -149,6 +202,7 @@ void onDNSResolved(uv_getaddrinfo_t *dnsReq, int status, struct addrinfo *res) {
   uv_tcp_connect(req, stream, (const struct sockaddr *)&dest, onConnect);
 }
 
+// get :: String -> (String -> List #[Integer, String] -> Integer -> ()) -> ()
 void get(char *url, PAP_t *callback) {
   // parse url
   http_parser_url *parser =
@@ -190,17 +244,19 @@ void get(char *url, PAP_t *callback) {
   parserSettings->on_header_value = onHeaderValueReceived;
   http_parser_init(httpParser, HTTP_RESPONSE);
 
-  RequestData_t *httpReq =
+  RequestData_t *requestData =
       (RequestData_t *)GC_malloc_uncollectable(sizeof(RequestData_t));
-  httpReq->path = path;
-  httpReq->port = port;
-  httpReq->callback = callback;
-  httpReq->parser = httpParser;
-  httpReq->parserSettings = parserSettings;
-  httpReq->body = NULL;
-  httpReq->currentBodySize = 0;
+  requestData->path = path;
+  requestData->port = port;
+  requestData->callback = callback;
+  requestData->parser = httpParser;
+  requestData->parserSettings = parserSettings;
+  requestData->body = NULL;
+  requestData->currentBodySize = 0;
+  requestData->currentHeader = NULL;
+  requestData->headers = MadList_empty();
 
-  httpParser->data = httpReq;
+  httpParser->data = requestData;
 
   // DNS resolution:
   struct addrinfo hints;
@@ -211,7 +267,7 @@ void get(char *url, PAP_t *callback) {
 
   uv_getaddrinfo_t *resolver =
       (uv_getaddrinfo_t *)GC_malloc_uncollectable(sizeof(uv_getaddrinfo_t));
-  resolver->data = httpReq;
+  resolver->data = requestData;
 
   int r =
       uv_getaddrinfo(getLoop(), resolver, onDNSResolved, host, NULL, &hints);
