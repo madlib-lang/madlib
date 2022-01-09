@@ -21,6 +21,7 @@ typedef enum HeaderName {
 
 // #[Integer, String]
 typedef struct Header {
+  int64_t index;
   char **name;
   char **value;
 } Header_t;
@@ -38,7 +39,7 @@ typedef struct RequestData {
   int64_t status;
 
   // List #[String, String]
-  MadListNode_t *headers;
+  madlib__list__Node_t *headers;
   Header_t *currentHeader;
 } RequestData_t;
 
@@ -66,7 +67,7 @@ int onMessageComplete(http_parser *parser) {
   *boxedBody = ((RequestData_t *)parser->data)->body;
 
   // box headers
-  MadListNode_t **boxedHeaders = (MadListNode_t **)GC_malloc(sizeof(MadListNode_t *));
+  madlib__list__Node_t **boxedHeaders = (madlib__list__Node_t **)GC_malloc(sizeof(madlib__list__Node_t *));
   *boxedHeaders = ((RequestData_t *)parser->data)->headers;
 
   // box status
@@ -111,6 +112,7 @@ int onHeaderFieldReceived(http_parser *parser, const char *field, size_t length)
   char **boxed = (char **)GC_malloc(sizeof(char*));
   *boxed = headerField;
 
+  ((RequestData_t*)parser->data)->currentHeader->index = 0;
   ((RequestData_t*)parser->data)->currentHeader->name = boxed;
 
   return 0;
@@ -127,7 +129,7 @@ int onHeaderValueReceived(http_parser *parser, const char *value, size_t length)
 
   ((RequestData_t*)parser->data)->currentHeader->value = boxed;
 
-  ((RequestData_t*)parser->data)->headers = MadList_push(((RequestData_t*)parser->data)->currentHeader, ((RequestData_t*)parser->data)->headers);
+  ((RequestData_t*)parser->data)->headers = madlib__list__push(((RequestData_t*)parser->data)->currentHeader, ((RequestData_t*)parser->data)->headers);
 
   return 0;
 }
@@ -202,8 +204,8 @@ void onDNSResolved(uv_getaddrinfo_t *dnsReq, int status, struct addrinfo *res) {
   uv_tcp_connect(req, stream, (const struct sockaddr *)&dest, onConnect);
 }
 
-// get :: String -> (String -> List #[Integer, String] -> Integer -> ()) -> ()
-void get(char *url, PAP_t *callback) {
+// get :: String -> (String -> List Header -> Integer -> ()) -> ()
+void madlib__http__request(char *url, PAP_t *callback) {
   // parse url
   http_parser_url *parser =
       (http_parser_url *)GC_malloc_uncollectable(sizeof(http_parser_url));
@@ -254,7 +256,7 @@ void get(char *url, PAP_t *callback) {
   requestData->body = NULL;
   requestData->currentBodySize = 0;
   requestData->currentHeader = NULL;
-  requestData->headers = MadList_empty();
+  requestData->headers = madlib__list__empty();
 
   httpParser->data = requestData;
 

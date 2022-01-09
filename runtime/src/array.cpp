@@ -5,15 +5,15 @@
 
 #include <cstring>
 
-#include "list.hpp"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int64_t MadArray_length(MadArray_t *array) { return array->length; }
+int64_t madlib__array__length(madlib__array__Array_t *array) { return array->length; }
 
-bool *__eqArray__(EqDictionary_t *eqDict, MadArray_t *arr1, MadArray_t *arr2) {
+bool *madlib__array__internal__eq(EqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
 
   if (arr1->length != arr2->length) {
@@ -32,10 +32,10 @@ bool *__eqArray__(EqDictionary_t *eqDict, MadArray_t *arr1, MadArray_t *arr2) {
   return boxed;
 }
 
-MadArray_t *MadArray_fromList(MadListNode_t *list) {
-  int64_t itemCount = MadList_length(list);
+madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
+  int64_t itemCount = madlib__list__length(list);
 
-  MadArray_t *result = (MadArray_t *)GC_malloc(sizeof(MadArray_t));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
   result->items = (void **)GC_malloc(itemCount * sizeof(void *));
   result->length = itemCount;
 
@@ -47,19 +47,19 @@ MadArray_t *MadArray_fromList(MadListNode_t *list) {
   return result;
 }
 
-MadListNode_t *MadArray_toList(MadArray_t *arr) {
-  int64_t itemCount = MadArray_length(arr);
-  MadListNode_t *result = MadList_empty();
+madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
+  int64_t itemCount = madlib__array__length(arr);
+  madlib__list__Node_t *result = madlib__list__empty();
 
   for (int i = itemCount - 1; i >= 0; i--) {
-    result = MadList_push(arr->items[i], result);
+    result = madlib__list__push(arr->items[i], result);
   }
 
   return result;
 }
 
-MadArray_t *MadArray_concat(MadArray_t *a, MadArray_t *b) {
-  MadArray_t *result = (MadArray_t *)GC_malloc(sizeof(MadArray_t));
+madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib__array__Array_t *b) {
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
   result->items = (void **)GC_malloc((a->length + b->length) * sizeof(void *));
 
   memcpy(result->items, a->items, a->length * sizeof(void *));
@@ -70,8 +70,8 @@ MadArray_t *MadArray_concat(MadArray_t *a, MadArray_t *b) {
   return result;
 }
 
-MadArray_t *MadArray_map(PAP_t *f, MadArray_t *arr) {
-  MadArray_t *result = (MadArray_t *)GC_malloc(sizeof(MadArray_t));
+madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr) {
+  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_malloc(sizeof(madlib__array__Array_t));
   result->length = arr->length;
   result->items = (void **)GC_malloc(arr->length * sizeof(void *));
 
@@ -82,7 +82,7 @@ MadArray_t *MadArray_map(PAP_t *f, MadArray_t *arr) {
   return result;
 }
 
-void *MadArray_reduce(PAP_t *f, void *initialValue, MadArray_t *arr) {
+void *madlib__array__reduce(PAP_t *f, void *initialValue, madlib__array__Array_t *arr) {
   for (int i = 0; i < arr->length; i++) {
     initialValue = __applyPAP__(f, 2, initialValue, arr->items[i]);
   }

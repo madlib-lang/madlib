@@ -1,25 +1,15 @@
 #include <gc.h>
 #include <iostream>
-#include <inttypes.h>
 #include <string.h>
 #include <cstdarg>
 
+#include "record.hpp"
 
 // Records
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct RecordField {
-  char *name;
-  void *value;
-} RecordField_t;
-
-typedef struct Record {
-  int32_t fieldCount;
-  RecordField_t **fields;
-} Record_t;
 
 RecordField_t *__findField__(char *name, Record_t *record) {
   for (int i = 0; i < record->fieldCount; i++) {
