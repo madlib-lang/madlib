@@ -205,23 +205,23 @@ selectField =
 
 madlistHasMinLength :: Operand
 madlistHasMinLength =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "MadList_hasMinLength"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "madlib__internal__list__hasMinLength"))
 
 madlistHasLength :: Operand
 madlistHasLength =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "MadList_hasLength"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [Type.i64, listType] False) (AST.mkName "madlib__internal__list__hasLength"))
 
 madlistSingleton :: Operand
 madlistSingleton =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8] False) (AST.mkName "MadList_singleton"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8] False) (AST.mkName "madlib__list__singleton"))
 
 madlistPush :: Operand
 madlistPush =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8, listType] False) (AST.mkName "__MadList_push__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [Type.ptr Type.i8, listType] False) (AST.mkName "madlib__list__internal__push"))
 
 madlistConcat :: Operand
 madlistConcat =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [listType, listType] False) (AST.mkName "MadList_concat"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType listType [listType, listType] False) (AST.mkName "madlib__list__concat"))
 
 malloc :: Operand
 malloc =
@@ -1252,7 +1252,16 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, addr, Nothing)
 
   Optimized _ _ (TemplateString parts) -> do
-    parts' <- mapM (generateExp env { isLast = False } symbolTable) parts
+    parts' <-
+      mapM
+        (\part -> case part of
+          Optimized _ _ (LStr s) -> do
+            strOperand <- buildStr s
+            return (symbolTable, strOperand, Nothing)
+          _ ->
+            generateExp env { isLast = False } symbolTable part
+        )
+        parts
     let parts'' = (\(_, a, _) -> a) <$> parts'
     asOne  <- Monad.foldM
       (\prev next -> call strConcat [(prev, []), (next, [])])
@@ -1966,7 +1975,8 @@ generateConstructor symbolTable (constructor, index) = case constructor of
 generateConstructorsForADT :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> TypeDecl -> m SymbolTable
 generateConstructorsForADT symbolTable adt = case adt of
   Untyped _ ADT { adtconstructors } ->
-    let indexedConstructors = List.zip adtconstructors [0..]
+    let sortedConstructors  = List.sortBy (\a b -> compare (getConstructorName a) (getConstructorName b)) adtconstructors
+        indexedConstructors = List.zip sortedConstructors [0..]
     in  Monad.foldM generateConstructor symbolTable indexedConstructors
 
   _ ->
@@ -2248,7 +2258,7 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
     let functionName = "__" <> hash <> "__moduleFunction"
     case Map.lookup functionName symbolTable of
       Just (Symbol _ f) -> do
-        extern (AST.mkName functionName) [] Type.void
+        extern (AST.mkName functionName) [] Type.i32
 
       _ ->
         undefined
@@ -2417,14 +2427,14 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "__numberToFloat__")     [boxType] boxType
 
   -- Eq
-  extern (AST.mkName "__eqInteger__")         [boxType, boxType] boxType
-  extern (AST.mkName "__eqByte__")            [boxType, boxType] boxType
-  extern (AST.mkName "__eqFloat__")           [boxType, boxType] boxType
-  extern (AST.mkName "__eqString__")          [boxType, boxType] boxType
-  extern (AST.mkName "__eqBoolean__")         [boxType, boxType] boxType
-  extern (AST.mkName "__eqList__")            [boxType, boxType, boxType] boxType
-  extern (AST.mkName "__eqArray__")           [boxType, boxType, boxType] boxType
-  extern (AST.mkName "__eqDictionary__")      [boxType, boxType, boxType, boxType] boxType
+  extern (AST.mkName "__eqInteger__")               [boxType, boxType] boxType
+  extern (AST.mkName "__eqByte__")                  [boxType, boxType] boxType
+  extern (AST.mkName "__eqFloat__")                 [boxType, boxType] boxType
+  extern (AST.mkName "__eqString__")                [boxType, boxType] boxType
+  extern (AST.mkName "__eqBoolean__")               [boxType, boxType] boxType
+  extern (AST.mkName "madlib__internal__list__eq")  [boxType, boxType, boxType] boxType
+  extern (AST.mkName "madlib__array__internal__eq") [boxType, boxType, boxType] boxType
+  extern (AST.mkName "__eqDictionary__")            [boxType, boxType, boxType, boxType] boxType
 
       -- Number Integer
   let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addIntegers__")
@@ -2472,10 +2482,10 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqBoolean__")
 
       -- Eq List
-      eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "__eqList__")
+      eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__internal__list__eq")
 
       -- Eq Arra
-      eqArray           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "__eqArray__")
+      eqArray           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__array__internal__eq")
 
       -- Eq Dictionary
       eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "__eqDictionary__")
@@ -2517,8 +2527,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "__eqFloat__" (fnSymbol 2 eqFloat)
         $ Map.insert "__eqString__" (fnSymbol 2 eqString)
         $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
-        $ Map.insert "__eqList__" (fnSymbol 3 eqList)
-        $ Map.insert "__eqArray__" (fnSymbol 3 eqArray)
+        $ Map.insert "madlib__internal__list__eq" (fnSymbol 3 eqList)
+        $ Map.insert "madlib__array__internal__eq" (fnSymbol 3 eqArray)
         $ Map.insert "__eqDictionary__" (fnSymbol 4 eqDictionary) initialSymbolTable
 
       numberType               = IT.TVar (IT.TV "a" IT.Star)
@@ -2912,7 +2922,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "==" ["eqDict", "a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqList__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "madlib__internal__list__eq")) [
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDict"),
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
@@ -2931,7 +2941,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized overloadedEqQualType emptyArea (TopLevelAbs "==" ["eqDict", "a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "__eqArray__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized overloadedEqQualType emptyArea (Var "madlib__array__internal__eq")) [
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDict"),
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
@@ -3015,17 +3025,17 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
 
-  extern (AST.mkName "__dict_ctor__")          [boxType, boxType] boxType
-  externVarArgs (AST.mkName "__buildRecord__") [Type.i32, boxType] recordType
-  extern (AST.mkName "__selectField__")        [stringType, recordType] boxType
-  extern (AST.mkName "__areStringsEqual__")    [stringType, stringType] Type.i1
-  extern (AST.mkName "__areStringsNotEqual__") [stringType, stringType] Type.i1
-  extern (AST.mkName "__strConcat__")          [stringType, stringType] stringType
-  extern (AST.mkName "MadList_hasMinLength")   [Type.i64, listType] Type.i1
-  extern (AST.mkName "MadList_hasLength")      [Type.i64, listType] Type.i1
-  extern (AST.mkName "MadList_singleton")      [Type.ptr Type.i8] listType
-  extern (AST.mkName "__MadList_push__")       [Type.ptr Type.i8, listType] listType
-  extern (AST.mkName "MadList_concat")         [listType, listType] listType
+  extern (AST.mkName "__dict_ctor__")                        [boxType, boxType] boxType
+  externVarArgs (AST.mkName "__buildRecord__")               [Type.i32, boxType] recordType
+  extern (AST.mkName "__selectField__")                      [stringType, recordType] boxType
+  extern (AST.mkName "__areStringsEqual__")                  [stringType, stringType] Type.i1
+  extern (AST.mkName "__areStringsNotEqual__")               [stringType, stringType] Type.i1
+  extern (AST.mkName "__strConcat__")                        [stringType, stringType] stringType
+  extern (AST.mkName "madlib__internal__list__hasMinLength") [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__internal__list__hasLength")    [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__list__singleton")              [Type.ptr Type.i8] listType
+  extern (AST.mkName "madlib__list__internal__push")         [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "madlib__list__concat")                 [listType, listType] listType
 
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
@@ -3044,7 +3054,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         else
           "__" <> hashModulePath ast <> "__moduleFunction"
 
-  moduleFunction <- function (AST.mkName moduleFunctionName) [] void $ \_ -> do
+  moduleFunction <- function (AST.mkName moduleFunctionName) [] Type.i32 $ \_ -> do
     entry <- block `named` "entry"
     Monad.when isMain $ do
       call initEventLoop []
@@ -3052,9 +3062,8 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     generateExps env symbolTable'' (expsForMain $ aexps ast)
     Monad.when isMain $ do
       call startEventLoop []
-      ret $ i32ConstOp 0
       return ()
-    retVoid
+    ret $ i32ConstOp 0
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
   return ()

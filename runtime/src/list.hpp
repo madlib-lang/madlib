@@ -3,10 +3,10 @@
 
 #include "apply-pap.hpp"
 
-typedef struct MadListNode {
+typedef struct madlib__list__Node {
   void *value;
-  struct MadListNode *next;
-} MadListNode_t;
+  struct madlib__list__Node *next;
+} madlib__list__Node_t;
 
 typedef struct EqDictionary {
   PAP_t eq;
@@ -16,31 +16,35 @@ typedef struct EqDictionary {
 extern "C" {
 #endif
 
-MadListNode_t *MadList_empty();
+madlib__list__Node_t *madlib__list__empty();
 
-int64_t MadList_length(MadListNode_t *list);
+int64_t madlib__list__length(madlib__list__Node_t *list);
 
-bool *__eqList__(EqDictionary_t* eqDict, MadListNode **l1, MadListNode **l2);
+bool *madlib__internal__list__eq(EqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2);
 
-MadListNode_t *MadList_singleton(void *item);
+madlib__list__Node_t *madlib__list__singleton(void *item);
 
-MadListNode_t *MadList_append(void *item, MadListNode_t *list);
+madlib__list__Node_t *madlib__list__append(void *item, madlib__list__Node_t *list);
 
-MadListNode_t *MadList_push(void *item, MadListNode_t *list);
+madlib__list__Node_t *madlib__list__push(void *item, madlib__list__Node_t *list);
 
-MadListNode_t *__MadList_push__(void *item, MadListNode_t *list);
+madlib__list__Node_t *madlib__list__internal__push(void *item, madlib__list__Node_t *list);
 
-MadListNode_t *MadList_map(PAP_t *pap, MadListNode_t *list);
+madlib__list__Node_t *madlib__list__map(PAP_t *pap, madlib__list__Node_t *list);
 
-void *MadList_nth(double index, MadListNode_t *list);
+void *madlib__list__nth(double index, madlib__list__Node_t *list);
 
-bool MadList_hasMinLength(int64_t l, MadListNode_t *list);
+bool madlib__internal__list__hasMinLength(int64_t l, madlib__list__Node_t *list);
 
-bool MadList_hasLength(int64_t l, MadListNode_t *list);
+bool madlib__internal__list__hasLength(int64_t l, madlib__list__Node_t *list);
 
-MadListNode_t *MadList_concat(MadListNode_t *a, MadListNode_t *b);
+madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list__Node_t *b);
 
-void *MadList_reduce(PAP_t *pap, void *initialValue, MadListNode_t *list);
+void *madlib__list__reduce(PAP_t *pap, void *initialValue, madlib__list__Node_t *list);
+
+madlib__list__Node_t *madlib__internal__list__copy(madlib__list__Node_t *list);
+
+madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *list);
 
 #ifdef __cplusplus
 }

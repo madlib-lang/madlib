@@ -259,6 +259,9 @@ export deleteWithHeaders = (url, body, headers) =>
   requestWithBodyAndHeaders(DELETE, url, body, headers)
 
 #elseif llvm
+import {} from "List"
+import {} from "String"
+import {} from "Number"
 
 alias Status = Integer
 export BadRequest = 400
@@ -275,26 +278,54 @@ export type TransferEncoding
 
 export type Header = Header(String, String)
 
+instance Show Header {
+  show = (header) => where(header) {
+    Header(key, value) =>
+      `Header(${key}, ${value})`
+  }
+}
+
 export type Body
   = TextBody(String)
   | BinaryBody(Array Byte)
   | EmptyBody
 
+instance Show Body {
+  show = (body) => where(body) {
+    TextBody(s) =>
+      `TextBody(${show(s)})`
+
+      BinaryBody(_) =>
+        "BinaryBody([Bytes])"
+
+      EmptyBody =>
+        "EmptyBody"
+  }
+}
+
 export type Method
-  = GET
-  | POST
-  | PUT
+  = CONNECT
   | DELETE
-  | PATCH
+  | GET
   | HEAD
   | OPTIONS
-  | CONNECT
+  | PATCH
+  | POST
+  | PUT
   | TRACE
 
 alias Response = {
   status :: Status,
   body :: Body,
   headers :: List Header
+}
+
+instance Show Response {
+  show = (response) => `{
+  status: ${show(response.status)},
+  body: ${show(response.body)},
+  headers: ${show(response.headers)}
+}`
 }
 
 alias Request = {

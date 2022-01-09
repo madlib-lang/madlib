@@ -86,13 +86,24 @@ instance Compilable Exp where
         TemplateString exps ->
           let parts = foldl'
                 (\full e -> case e of
-                  Opt.Optimized _ _ (LStr v) -> full <> v
+                  Opt.Optimized _ _ (LStr v) -> full <> escapeBackTicks v
 
                   _                          -> full <> "${" <> compile env config e <> "}"
                 )
                 ""
                 exps
           in  "`" <> parts <> "`"
+          where
+            escapeBackTicks :: String -> String
+            escapeBackTicks s = case s of
+              '`' : more ->
+                "\\`" <> escapeBackTicks more
+
+              c : more ->
+                c : escapeBackTicks more
+
+              [] ->
+                []
 
         App abs arg final -> case abs of
           Optimized _ _ (App (Optimized _ _ (Var "++")) arg' _) ->

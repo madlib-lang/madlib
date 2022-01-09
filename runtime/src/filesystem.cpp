@@ -464,8 +464,8 @@ void onRead(uv_fs_t *req) {
 
     // box the result
     if (((ReadData_t *)req->data)->readBytes) {
-      MadArray_t *arr =
-          (MadArray_t *)GC_malloc_uncollectable(sizeof(MadArray_t));
+      madlib__array__Array_t *arr =
+          (madlib__array__Array_t *)GC_malloc_uncollectable(sizeof(madlib__array__Array_t));
       int64_t contentLength = ((ReadData_t *)req->data)->currentSize;
       arr->items =
           (void **)GC_malloc_uncollectable(sizeof(void *) * contentLength);
@@ -663,7 +663,7 @@ void writeFile(char *filepath, char *content, PAP_t *callback) {
 }
 
 // Callback receives unit in case of success
-void writeBinaryFile(char *filepath, MadArray_t *content, PAP_t *callback) {
+void writeBinaryFile(char *filepath, madlib__array__Array_t *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));

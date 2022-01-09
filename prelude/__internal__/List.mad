@@ -398,7 +398,7 @@ export uniqueBy = (f) => reduce(
 #iftarget llvm
 
 sortBy :: (a -> a -> ComparisonResult) -> List a -> List a
-sortBy = extern "MadList_sort"
+sortBy = extern "madlib__list__sort"
 export sortBy
 
 #elseif js
@@ -483,14 +483,14 @@ import type { ComparisonResult } from "Compare"
 import { MORE, LESS } from "Compare"
 
 push :: a -> List a -> List a
-export push = extern "MadList_push"
+export push = extern "madlib__list__push"
 
 
 map_ :: (a -> b) -> List a -> List b
-map_ = extern "MadList_map"
+map_ = extern "madlib__list__map"
 
 reduce :: (a -> b -> a) -> a -> List b -> a
-export reduce = extern "MadList_reduce"
+export reduce = extern "madlib__list__reduce"
 
 
 showWith :: (a -> String) -> List a -> String
@@ -545,7 +545,7 @@ export nth = (index, list) => where(list) {
 }
 
 len :: List a -> Integer
-export len = extern "MadList_length"
+export len = extern "madlib__list__length"
 
 
 // sort :: Comparable a => List a -> List a
