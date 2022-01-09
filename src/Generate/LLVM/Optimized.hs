@@ -216,3 +216,11 @@ getImportAbsolutePath imp = case imp of
 
   _ ->
     undefined
+
+getConstructorName :: Constructor -> String
+getConstructorName constructor = case constructor of
+  Optimized _ _ (Constructor name _ _) ->
+    name
+
+  Untyped _ (Constructor name _ _) ->
+    name

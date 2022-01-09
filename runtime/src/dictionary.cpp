@@ -46,9 +46,9 @@ bool *__eqDictionary__(EqDictionary_t* eqDictA, EqDictionary_t* eqDictB, MadDict
 }
 
 
-MadDictionary_t *__Dictionary_constructor__(MadListNode_t *items) {
+MadDictionary_t *__Dictionary_constructor__(madlib__list__Node_t *items) {
   MadDictionary_t *dictionary = (MadDictionary_t*) GC_malloc(sizeof(MadDictionary_t));
-  MadListNode_t **boxedItems = (MadListNode_t**) GC_malloc(sizeof(MadListNode_t*));
+  madlib__list__Node_t **boxedItems = (madlib__list__Node_t**) GC_malloc(sizeof(madlib__list__Node_t*));
   *boxedItems = items;
 
   dictionary->constructorIndex = 0;
@@ -63,16 +63,16 @@ typedef struct Tuple {
   void *value;
 } Tuple_t;
 
-MadDictionary_t *__dict_ctor__(EqDictionary_t* eqDict, MadListNode_t **boxedItems) {
-  MadListNode_t *head = *boxedItems;
+MadDictionary_t *__dict_ctor__(EqDictionary_t* eqDict, madlib__list__Node_t **boxedItems) {
+  madlib__list__Node_t *head = *boxedItems;
   // Result, starting from an empty list, we push items as we go through them
   // if there is no double
-  MadListNode_t *withoutDoubles = MadList_empty();
+  madlib__list__Node_t *withoutDoubles = madlib__list__empty();
 
   while (head->value != NULL) {
     Tuple_t *tuple = (Tuple_t *) head->value;
     bool isAlreadyThere = false;
-    MadListNode_t *withoutDoublesHead = withoutDoubles;
+    madlib__list__Node_t *withoutDoublesHead = withoutDoubles;
 
     while (withoutDoublesHead->value != NULL) {
       Tuple_t *tupleInner = (Tuple_t *) withoutDoublesHead->value;
@@ -84,13 +84,13 @@ MadDictionary_t *__dict_ctor__(EqDictionary_t* eqDict, MadListNode_t **boxedItem
     }
 
     if (!isAlreadyThere) {
-      withoutDoubles = __MadList_push__(tuple, withoutDoubles);
+      withoutDoubles = madlib__list__internal__push(tuple, withoutDoubles);
     }
 
     head = head->next;
   }
 
-  MadListNode_t **boxed = (MadListNode_t **) GC_malloc(sizeof(MadListNode_t *));
+  madlib__list__Node_t **boxed = (madlib__list__Node_t **) GC_malloc(sizeof(madlib__list__Node_t *));
   *boxed = withoutDoubles;
 
   MadDictionary_t *dictionary = (MadDictionary_t*) GC_malloc(sizeof(MadDictionary_t));

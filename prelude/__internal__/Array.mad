@@ -1,27 +1,32 @@
 #iftarget llvm
+
 import {} from "Monad"
 
 fromList :: List a -> Array a
-export fromList = extern "MadArray_fromList"
+export fromList = extern "madlib__array__fromList"
 
 toList :: Array a -> List a
-export toList = extern "MadArray_toList"
+export toList = extern "madlib__array__toList"
 
 len :: Array a -> Integer
-export len = extern "MadArray_length"
+export len = extern "madlib__array__length"
 
-map_ :: (a -> b) -> Array a -> Array b
-export map_ = extern "MadArray_map"
+mapFFI :: (a -> b) -> Array a -> Array b
+mapFFI = extern "madlib__array__map"
 
 reduce :: (a -> b -> a) -> a -> Array b -> a
-export reduce = extern "MadArray_reduce"
+export reduce = extern "madlib__array__reduce"
 
 concat :: Array a -> Array a -> Array a
-export concat = extern "MadArray_concat"
+export concat = extern "madlib__array__concat"
 
 
 instance Functor Array {
-  map = map_
+  map = mapFFI
 }
+
+#elseif js
+
+// TODO: implement Array for JS
 
 #endif
