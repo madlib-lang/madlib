@@ -120,6 +120,7 @@ _intercalateWithIndex = (i, f, xs) => where(xs) {
 intercalateWithIndex :: (Integer -> a) -> List a -> List a
 export intercalateWithIndex = _intercalateWithIndex(0)
 
+
 /**
  * Joins a list with a separator and returns a String.
  *
@@ -134,10 +135,9 @@ export intercalateWithIndex = _intercalateWithIndex(0)
  * join(" and ", ["cats", "dogs"])   // "cats and dogs"
  * join("", ["one", "two", "three"]) // "onetwothree"
  */
-join :: (Show a, Show b) => a -> List b -> String
+join :: String -> List String -> String
 export join = (a, xs) => pipe(
-  map(show),
-  intercalate(show(a)),
+  intercalate(a),
   reduce(mappend, "")
 )(xs)
 

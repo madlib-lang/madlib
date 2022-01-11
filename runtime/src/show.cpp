@@ -13,7 +13,7 @@ extern "C" {
 char *__floatToStr__(double d) {
   char *str = (char *)GC_malloc(200);
   sprintf(str, "%.20f", d);
-  char *stripped = __stripTrailingZeros__(str);
+  char *stripped = stripTrailingZeros(str);
 
   return stripped;
 }

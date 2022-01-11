@@ -10,7 +10,7 @@ import {} from "./Integer"
  */
 
 dictConstructor :: List #[k, v] -> Dictionary k v
-dictConstructor = extern "__Dictionary_constructor__"
+dictConstructor = extern "madlib__dictionary__typeConstructor"
 
 Dictionary :: List #[k, v] -> Dictionary k v
 Dictionary = dictConstructor

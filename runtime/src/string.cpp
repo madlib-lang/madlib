@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-bool *__eqString__(char **s1, char **s2) {
+bool *madlib__string__internal__eq(char **s1, char **s2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
   if (strcmp(*s1, *s2) == 0) {
     *boxed = true;
@@ -19,7 +19,7 @@ bool *__eqString__(char **s1, char **s2) {
   return boxed;
 }
 
-bool __areStringsEqual__(char *s1, char *s2) {
+bool madlib__string__internal__areStringsEqual(char *s1, char *s2) {
   if (strcmp(s1, s2) == 0) {
     return true;
   } else {
@@ -27,7 +27,7 @@ bool __areStringsEqual__(char *s1, char *s2) {
   }
 }
 
-bool __areStringsNotEqual__(char *s1, char *s2) {
+bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2) {
   if (strcmp(s1, s2) == 0) {
     return false;
   } else {
@@ -37,20 +37,18 @@ bool __areStringsNotEqual__(char *s1, char *s2) {
 
 
 // currently unused, types need adjustment. The param probably needs to be a char**
-int64_t *__strLength__(char *s) {
-  int64_t *result = (int64_t *)GC_malloc(sizeof(int64_t));
-  *result = strlen(s);
-  return result;
+int64_t madlib__string__length(char *s) {
+  return strlen(s);
 }
 
-char *__strConcat__(char *s1, char *s2) {
+char *madlib__string__internal__concat(char *s1, char *s2) {
   char *result = (char *)GC_malloc((strlen(s1) + strlen(s2) + 1) * sizeof(char));
   strcpy(result, s1);
   strcat(result, s2);
   return result;
 }
 
-char *__stripTrailingZeros__(char *number) {
+char *stripTrailingZeros(char *number) {
   int length = strlen(number);
   char *end = number + strlen(number) - 1;
   int charsToRemove = 0;
