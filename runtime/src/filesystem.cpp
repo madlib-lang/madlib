@@ -2,10 +2,8 @@
 #include <stdlib.h>
 #include <uv.h>
 
+#include "filesystem.hpp"
 #include "event-loop.hpp"
-#include "apply-pap.hpp"
-#include "array.hpp"
-
 
 
 // libuv errors:
@@ -250,6 +248,7 @@
 // UV_ESOCKTNOSUPPORT
 // socket type not supported
 
+// TODO: remove this and directly build an IOError out of a libuv error
 int libuvErrorToMadlibIOError(int libuvError) {
   switch (libuvError) {
     case UV_E2BIG:
@@ -540,7 +539,7 @@ void onReadFileOpen(uv_fs_t *req) {
   }
 }
 
-void readFile(char *filepath, PAP_t *callback) {
+void madlib__filesystem__readFile(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
@@ -561,7 +560,7 @@ void readFile(char *filepath, PAP_t *callback) {
   uv_fs_open(getLoop(), openReq, filepath, O_RDONLY, 0, onReadFileOpen);
 }
 
-void readBinaryFile(char *filepath, PAP_t *callback) {
+void madlib__filesystem__readBinaryFile(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
@@ -642,7 +641,7 @@ void onWriteFileOpen(uv_fs_t *req) {
 }
 
 // Callback receives unit in case of success
-void writeFile(char *filepath, char *content, PAP_t *callback) {
+void madlib__filesystem__writeFile(char *filepath, char *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
@@ -663,7 +662,7 @@ void writeFile(char *filepath, char *content, PAP_t *callback) {
 }
 
 // Callback receives unit in case of success
-void writeBinaryFile(char *filepath, madlib__array__Array_t *content, PAP_t *callback) {
+void madlib__filesystem__writeBinaryFile(char *filepath, madlib__array__Array_t *content, PAP_t *callback) {
   // we allocate request objects and the buffer
   uv_fs_t *openReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
   uv_fs_t *readReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
@@ -691,7 +690,6 @@ void writeBinaryFile(char *filepath, madlib__array__Array_t *content, PAP_t *cal
 
 
 
-// write file
 typedef struct FileExistData {
   void *callback;
 } FileExistData_t;
@@ -713,7 +711,7 @@ void onFileExists(uv_fs_t *req) {
   GC_free(req);
 }
 
-void fileExists(char *filepath, PAP_t *callback) {
+void madlib__filesystem__fileExists(char *filepath, PAP_t *callback) {
   uv_fs_t *accessReq = (uv_fs_t *)GC_malloc_uncollectable(sizeof(uv_fs_t));
 
   accessReq->data = GC_malloc_uncollectable(sizeof(FileExistData_t));

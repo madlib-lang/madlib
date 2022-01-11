@@ -96,10 +96,6 @@ test("join should transform a list into a string by intercalating a value betwee
   assertEquals(join(" and ", ["cats", "dogs"]), "cats and dogs")
 )
 
-test("join should work with different types that are instances of Show", (_) =>
-  assertEquals(join(true, [1, 2, 3]), "1true2true3")
-)
-
 test("mapWithIndex", (_) =>
   assertEquals(mapWithIndex((x, i) => x ++ show(i), ["a", "b", "c"]), ["a0", "b1", "c2"])
 )

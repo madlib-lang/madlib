@@ -30,7 +30,7 @@ int64_t madlib__list__length(madlib__list__Node_t *list) {
 }
 
 
-bool *madlib__internal__list__eq(EqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2) {
+bool *madlib__internal__list__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
 
   int64_t l1Length = madlib__list__length(*l1);

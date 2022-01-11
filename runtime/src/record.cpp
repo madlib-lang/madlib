@@ -11,9 +11,9 @@
 extern "C" {
 #endif
 
-RecordField_t *__findField__(char *name, Record_t *record) {
+madlib__record__Field_t *retrieveField(char *name, madlib__record__Record_t *record) {
   for (int i = 0; i < record->fieldCount; i++) {
-    RecordField_t *currentField = record->fields[i];
+    madlib__record__Field_t *currentField = record->fields[i];
     if (strcmp(name, currentField->name) == 0) {
       return currentField;
     }
@@ -26,16 +26,16 @@ RecordField_t *__findField__(char *name, Record_t *record) {
  * low level function for { name: value }
  * TODO: need to also handle update eg. { ...base, updatedField: newValue }
  */
-Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...) {
+madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCount, madlib__record__Record_t *base, ...) {
   va_list fieldArgs;
   va_start(fieldArgs, base);
 
   int32_t actualFieldCount = base == NULL ? fieldCount : base->fieldCount;
 
-  Record_t *record = (Record_t *)GC_malloc(sizeof(Record_t));
+  madlib__record__Record_t *record = (madlib__record__Record_t *)GC_malloc(sizeof(madlib__record__Record_t));
 
-  RecordField_t **fields =
-      (RecordField **)GC_malloc(sizeof(RecordField_t) * actualFieldCount);
+  madlib__record__Field_t **fields =
+      (madlib__record__Field_t **)GC_malloc(sizeof(madlib__record__Field_t) * actualFieldCount);
   record->fieldCount = actualFieldCount;
   record->fields = fields;
 
@@ -43,21 +43,21 @@ Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...) {
     // if there is no base then all fields are provided ( closed record ) and we
     // simply push all fields
     for (int i = 0; i < fieldCount; i++) {
-      RecordField_t *currentField = va_arg(fieldArgs, RecordField_t *);
+      madlib__record__Field_t *currentField = va_arg(fieldArgs, madlib__record__Field_t *);
       fields[i] = currentField;
     }
   } else {
     // If it's an extension we need to overwrite the update fields
     // first we copy all fields
     for (int i = 0; i < base->fieldCount; i++) {
-      record->fields[i] = (RecordField_t *)GC_malloc(sizeof(RecordField_t));
+      record->fields[i] = (madlib__record__Field_t *)GC_malloc(sizeof(madlib__record__Field_t));
       record->fields[i]->name = base->fields[i]->name;
       record->fields[i]->value = base->fields[i]->value;
     }
 
     for (int i = 0; i < fieldCount; i++) {
-      RecordField_t *currentField = va_arg(fieldArgs, RecordField_t *);
-      RecordField_t *targetField = __findField__(currentField->name, record);
+      madlib__record__Field_t *currentField = va_arg(fieldArgs, madlib__record__Field_t *);
+      madlib__record__Field_t *targetField = retrieveField(currentField->name, record);
       targetField->value = currentField->value;
     }
   }
@@ -69,9 +69,9 @@ Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...) {
 /**
  * low level function for record.field
  */
-void *__selectField__(char *name, Record_t *record) {
+void *madlib__record__internal__selectField(char *name, madlib__record__Record_t *record) {
   for (int i = 0; i < record->fieldCount; i++) {
-    RecordField_t *currentField = record->fields[i];
+    madlib__record__Field_t *currentField = record->fields[i];
     if (strcmp(name, currentField->name) == 0) {
       return currentField->value;
     }

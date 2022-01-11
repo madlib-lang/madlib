@@ -5,15 +5,16 @@
 extern "C" {
 #endif
 
-bool *__eqString__(char **s1, char **s2);
+bool *madlib__string__internal__eq(char **s1, char **s2);
 
-bool __areStringsEqual__(char *s1, char *s2);
+bool madlib__string__internal__areStringsEqual(char *s1, char *s2);
+bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2);
 
-double *__strLength__(char *s);
+int64_t madlib__string__length(char *s);
 
-char *__strConcat__(char *s1, char *s2);
+char *madlib__string__internal__concat(char *s1, char *s2);
 
-char *__stripTrailingZeros__(char *number);
+char *stripTrailingZeros(char *number);
 
 #ifdef __cplusplus
 }

@@ -7,19 +7,19 @@
 extern "C" {
 #endif
 
-typedef struct RecordField {
+typedef struct madlib__record__Field {
   char *name;
   void *value;
-} RecordField_t;
+} madlib__record__Field_t;
 
-typedef struct Record {
+typedef struct madlib__record__Record {
   int32_t fieldCount;
-  RecordField_t **fields;
-} Record_t;
+  madlib__record__Field_t **fields;
+} madlib__record__Record_t;
 
-Record_t *__buildRecord__(int32_t fieldCount, Record_t *base, ...);
+madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCount, madlib__record__Record_t *base, ...);
 
-void *__selectField__(char *name, Record_t *record);
+void *madlib__record__internal__selectField(char *name, madlib__record__Record_t *record);
 
 #ifdef __cplusplus
 }

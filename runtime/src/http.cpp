@@ -4,27 +4,15 @@
 #include <ctype.h>
 #include <uv.h>
 
-#include "apply-pap.hpp"
+#include "http.hpp"
 #include "event-loop.hpp"
 #include "list.hpp"
+#include "record.hpp"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// Integer
-typedef enum HeaderName {
-  CONTENT_LENGTH = 1,
-  CONTENT_TYPE = 2,
-  TRANSFER_ENCODING = 3,
-} HeaderName_t;
-
-// #[Integer, String]
-typedef struct Header {
-  int64_t index;
-  char **name;
-  char **value;
-} Header_t;
 
 typedef struct RequestData {
   char *path;
@@ -38,9 +26,9 @@ typedef struct RequestData {
 
   int64_t status;
 
-  // List #[String, String]
+  // List Header
   madlib__list__Node_t *headers;
-  Header_t *currentHeader;
+  madlib__http__Header_t *currentHeader;
 } RequestData_t;
 
 
@@ -57,6 +45,26 @@ static void allocCallback(uv_handle_t *handle, size_t size, uv_buf_t *buf) {
 
 void onClose(uv_handle_t *handle) {
   // release memory?
+}
+
+madlib__record__Record_t *buildResponse(char **boxedBody, madlib__list__Node_t **boxedHeaders, int64_t *boxedStatus) {
+  madlib__record__Field_t *bodyField = (madlib__record__Field_t*)GC_malloc(sizeof(madlib__record__Field_t));
+  madlib__record__Field_t *headerField = (madlib__record__Field_t*)GC_malloc(sizeof(madlib__record__Field_t));
+  madlib__record__Field_t *statusField = (madlib__record__Field_t*)GC_malloc(sizeof(madlib__record__Field_t));
+
+  bodyField->name = (char *)GC_malloc(sizeof(char) * 5);
+  strcpy(bodyField->name, "body");
+  bodyField->value = boxedBody;
+
+  headerField->name = (char *)GC_malloc(sizeof(char) * 8);
+  strcpy(headerField->name, "headers");
+  headerField->value = boxedHeaders;
+
+  statusField->name = (char *)GC_malloc(sizeof(char) * 7);
+  strcpy(statusField->name, "status");
+  statusField->value = boxedStatus;
+
+  return madlib__record__internal__buildRecord(3, NULL, bodyField, headerField, statusField);
 }
 
 int onMessageComplete(http_parser *parser) {
@@ -77,7 +85,7 @@ int onMessageComplete(http_parser *parser) {
   // free resources
 
   // call the callback
-  __applyPAP__(((RequestData_t *)parser->data)->callback, 3, boxedBody, boxedHeaders, boxedStatus);
+  __applyPAP__(((RequestData_t *)parser->data)->callback, 1, buildResponse(boxedBody, boxedHeaders, boxedStatus));
 
   return 0;
 }
@@ -101,9 +109,7 @@ int onBodyReceived(http_parser *parser, const char *bodyPart, size_t length) {
 }
 
 int onHeaderFieldReceived(http_parser *parser, const char *field, size_t length) {
-  printf("header field: %.*s\n", length, field);
-
-  ((RequestData_t*)parser->data)->currentHeader = (Header_t *)GC_malloc(sizeof(Header_t));
+  ((RequestData_t*)parser->data)->currentHeader = (madlib__http__Header_t *)GC_malloc(sizeof(madlib__http__Header_t));
 
   char *headerField = (char *)GC_malloc(length + 1);
   strncpy(headerField, field, length);
@@ -204,7 +210,6 @@ void onDNSResolved(uv_getaddrinfo_t *dnsReq, int status, struct addrinfo *res) {
   uv_tcp_connect(req, stream, (const struct sockaddr *)&dest, onConnect);
 }
 
-// get :: String -> (String -> List Header -> Integer -> ()) -> ()
 void madlib__http__request(char *url, PAP_t *callback) {
   // parse url
   http_parser_url *parser =

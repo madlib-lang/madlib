@@ -72,12 +72,12 @@ import type { Wish } from "Wish"
 import { Wish } from "Wish"
 import IOError from "IOError"
 
-readFile_ :: String -> (Integer -> String -> ()) -> ()
-readFile_ = extern "readFile"
+readFileFFI :: String -> (Integer -> String -> ()) -> ()
+readFileFFI = extern "madlib__filesystem__readFile"
 
 readFile :: String -> Wish IOError.IOError String
 export readFile = (path) => Wish((bad, good) =>
-  readFile_(
+  readFileFFI(
     path,
     (libuvError, fileContent) =>
       libuvError != 0
@@ -86,12 +86,12 @@ export readFile = (path) => Wish((bad, good) =>
   )
 )
 
-readBinaryFile_ :: String -> (Integer -> Array Byte -> ()) -> ()
-readBinaryFile_ = extern "readBinaryFile"
+readBinaryFileFFI :: String -> (Integer -> Array Byte -> ()) -> ()
+readBinaryFileFFI = extern "madlib__filesystem__readBinaryFile"
 
 readBinaryFile :: String -> Wish IOError.IOError (Array Byte)
 export readBinaryFile = (path) => Wish((bad, good) =>
-  readBinaryFile_(
+  readBinaryFileFFI(
     path,
     (libuvError, fileContent) =>
       libuvError != 0
@@ -101,12 +101,12 @@ export readBinaryFile = (path) => Wish((bad, good) =>
 )
 
 
-writeFile_ :: String -> String -> (Integer -> () -> ()) -> ()
-writeFile_ = extern "writeFile"
+writeFileFFI :: String -> String -> (Integer -> () -> ()) -> ()
+writeFileFFI = extern "madlib__filesystem__writeFile"
 
 writeFile :: String -> String -> Wish IOError.IOError ()
 export writeFile = (path, content) => Wish((bad, good) =>
-  writeFile_(
+  writeFileFFI(
     path,
     content,
     (libuvError, result) =>
@@ -117,12 +117,12 @@ export writeFile = (path, content) => Wish((bad, good) =>
 )
 
 
-writeBinaryFile_ :: String -> Array Byte -> (Integer -> () -> ()) -> ()
-writeBinaryFile_ = extern "writeBinaryFile"
+writeBinaryFileFFI :: String -> Array Byte -> (Integer -> () -> ()) -> ()
+writeBinaryFileFFI = extern "madlib__filesystem__writeBinaryFile"
 
 writeBinaryFile :: String -> Array Byte -> Wish IOError.IOError ()
 export writeBinaryFile = (path, content) => Wish((bad, good) =>
-  writeBinaryFile_(
+  writeBinaryFileFFI(
     path,
     content,
     (libuvError, result) =>
@@ -132,12 +132,12 @@ export writeBinaryFile = (path, content) => Wish((bad, good) =>
   )
 )
 
-exists_ :: String -> (Boolean -> ()) -> ()
-exists_ = extern "fileExists"
+existsFFI :: String -> (Boolean -> ()) -> ()
+existsFFI = extern "madlib__filesystem__fileExists"
 
 exists :: String -> Wish () Boolean
 export exists = (path) => Wish((bad, good) =>
-  exists_(
+  existsFFI(
     path,
     good
   )

@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "list.hpp"
+#include "eq.hpp"
 
 typedef struct madlib__array__Array {
   int64_t length;
@@ -18,7 +19,7 @@ extern "C" {
 
 int64_t madlib__array__length(madlib__array__Array_t *array);
 
-bool *madlib__array__internal__eq(EqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2);
+bool *madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2);
 
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list);
 
