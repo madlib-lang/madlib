@@ -1,10 +1,9 @@
-#include "array.hpp"
 
 #include <gc.h>
 #include <stdio.h>
-
 #include <cstring>
 
+#include "array.hpp"
 
 
 #ifdef __cplusplus
@@ -13,7 +12,7 @@ extern "C" {
 
 int64_t madlib__array__length(madlib__array__Array_t *array) { return array->length; }
 
-bool *madlib__array__internal__eq(EqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2) {
+bool *madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2) {
   bool *boxed = (bool *)GC_malloc(sizeof(bool));
 
   if (arr1->length != arr2->length) {

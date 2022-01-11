@@ -1,6 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include "eq.hpp"
 #include "apply-pap.hpp"
 
 typedef struct madlib__list__Node {
@@ -8,9 +9,6 @@ typedef struct madlib__list__Node {
   struct madlib__list__Node *next;
 } madlib__list__Node_t;
 
-typedef struct EqDictionary {
-  PAP_t eq;
-} EqDictionary_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,7 +18,7 @@ madlib__list__Node_t *madlib__list__empty();
 
 int64_t madlib__list__length(madlib__list__Node_t *list);
 
-bool *madlib__internal__list__eq(EqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2);
+bool *madlib__internal__list__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2);
 
 madlib__list__Node_t *madlib__list__singleton(void *item);
 

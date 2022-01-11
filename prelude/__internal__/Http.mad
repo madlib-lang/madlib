@@ -316,7 +316,8 @@ export type Method
 
 alias Response = {
   status :: Status,
-  body :: Body,
+  body :: String,
+  // body :: Body,
   headers :: List Header
 }
 

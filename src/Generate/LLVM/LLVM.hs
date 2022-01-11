@@ -197,11 +197,11 @@ dictCtor =
 
 buildRecord :: Operand
 buildRecord =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType recordType [Type.i32, boxType] True) (AST.mkName "__buildRecord__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType recordType [Type.i32, boxType] True) (AST.mkName "madlib__record__internal__buildRecord"))
 
 selectField :: Operand
 selectField =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [stringType, recordType] False) (AST.mkName "__selectField__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [stringType, recordType] False) (AST.mkName "madlib__record__internal__selectField"))
 
 madlistHasMinLength :: Operand
 madlistHasMinLength =
@@ -229,15 +229,15 @@ malloc =
 
 areStringsEqual :: Operand
 areStringsEqual =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__areStringsEqual__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "madlib__string__internal__areStringsEqual"))
 
 areStringsNotEqual :: Operand
 areStringsNotEqual =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "__areStringsNotEqual__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.i1 [stringType, stringType] False) (AST.mkName "madlib__string__internal__areStringsNotEqual"))
 
 strConcat :: Operand
 strConcat =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (AST.mkName "__strConcat__"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (AST.mkName "madlib__string__internal__concat"))
 
 i32ConstOp :: Integer -> Operand
 i32ConstOp i = Operand.ConstantOperand $ Constant.Int 32 i
@@ -2397,89 +2397,89 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
 
   -- Number Integer
-  extern (AST.mkName "__addIntegers__")       [boxType, boxType] boxType
-  extern (AST.mkName "__substractIntegers__") [boxType, boxType] boxType
-  extern (AST.mkName "__multiplyIntegers__")  [boxType, boxType] boxType
-  extern (AST.mkName "__gtIntegers__")        [boxType, boxType] boxType
-  extern (AST.mkName "__ltIntegers__")        [boxType, boxType] boxType
-  extern (AST.mkName "__gteIntegers__")       [boxType, boxType] boxType
-  extern (AST.mkName "__lteIntegers__")       [boxType, boxType] boxType
-  extern (AST.mkName "__numberToInteger__")   [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__addIntegers")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__substractIntegers") [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__multiplyIntegers")  [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gtIntegers")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__ltIntegers")        [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gteIntegers")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__lteIntegers")       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__numberToInteger")   [boxType] boxType
 
   -- Number Byte
-  extern (AST.mkName "__addBytes__")          [boxType, boxType] boxType
-  extern (AST.mkName "__substractBytes__")    [boxType, boxType] boxType
-  extern (AST.mkName "__multiplyBytes__")     [boxType, boxType] boxType
-  extern (AST.mkName "__gtBytes__")           [boxType, boxType] boxType
-  extern (AST.mkName "__ltBytes__")           [boxType, boxType] boxType
-  extern (AST.mkName "__gteBytes__")          [boxType, boxType] boxType
-  extern (AST.mkName "__lteBytes__")          [boxType, boxType] boxType
-  extern (AST.mkName "__numberToByte__")      [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__addBytes")          [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__substractBytes")    [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__multiplyBytes")     [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gtBytes")           [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__ltBytes")           [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gteBytes")          [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__lteBytes")          [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__numberToByte")      [boxType] boxType
 
   -- Number Float
-  extern (AST.mkName "__addFloats__")         [boxType, boxType] boxType
-  extern (AST.mkName "__substractFloats__")   [boxType, boxType] boxType
-  extern (AST.mkName "__multiplyFloats__")    [boxType, boxType] boxType
-  extern (AST.mkName "__gtFloats__")          [boxType, boxType] boxType
-  extern (AST.mkName "__ltFloats__")          [boxType, boxType] boxType
-  extern (AST.mkName "__gteFloats__")         [boxType, boxType] boxType
-  extern (AST.mkName "__lteFloats__")         [boxType, boxType] boxType
-  extern (AST.mkName "__numberToFloat__")     [boxType] boxType
+  extern (AST.mkName "madlib__number__internal__addFloats")         [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__substractFloats")   [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__multiplyFloats")    [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gtFloats")          [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__ltFloats")          [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__gteFloats")         [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__lteFloats")         [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__numberToFloat")     [boxType] boxType
 
   -- Eq
-  extern (AST.mkName "__eqInteger__")               [boxType, boxType] boxType
-  extern (AST.mkName "__eqByte__")                  [boxType, boxType] boxType
-  extern (AST.mkName "__eqFloat__")                 [boxType, boxType] boxType
-  extern (AST.mkName "__eqString__")                [boxType, boxType] boxType
-  extern (AST.mkName "__eqBoolean__")               [boxType, boxType] boxType
-  extern (AST.mkName "madlib__internal__list__eq")  [boxType, boxType, boxType] boxType
-  extern (AST.mkName "madlib__array__internal__eq") [boxType, boxType, boxType] boxType
-  extern (AST.mkName "__eqDictionary__")            [boxType, boxType, boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__eqInteger")                    [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__eqByte")                       [boxType, boxType] boxType
+  extern (AST.mkName "madlib__number__internal__eqFloat")                      [boxType, boxType] boxType
+  extern (AST.mkName "madlib__string__internal__eq")                     [boxType, boxType] boxType
+  extern (AST.mkName "madlib__boolean__internal__eq")    [boxType, boxType] boxType
+  extern (AST.mkName "madlib__internal__list__eq")       [boxType, boxType, boxType] boxType
+  extern (AST.mkName "madlib__array__internal__eq")      [boxType, boxType, boxType] boxType
+  extern (AST.mkName "madlib__dictionary__internal__eq") [boxType, boxType, boxType, boxType] boxType
 
       -- Number Integer
-  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addIntegers__")
-      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractIntegers__")
-      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyIntegers__")
-      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtIntegers__")
-      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltIntegers__")
-      gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteIntegers__")
-      lteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteIntegers__")
-      numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToInteger__")
+  let addIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addIntegers")
+      substractIntegers = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractIntegers")
+      multiplyIntegers  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyIntegers")
+      gtIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtIntegers")
+      ltIntegers        = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltIntegers")
+      gteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteIntegers")
+      lteIntegers       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteIntegers")
+      numberToInteger   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToInteger")
 
       -- Number Byte
-      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addBytes__")
-      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractBytes__")
-      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyBytes__")
-      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtBytes__")
-      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltBytes__")
-      gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteBytes__")
-      lteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteBytes__")
-      numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToByte__")
+      addBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addBytes")
+      substractBytes    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractBytes")
+      multiplyBytes     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyBytes")
+      gtBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtBytes")
+      ltBytes           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltBytes")
+      gteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteBytes")
+      lteBytes          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteBytes")
+      numberToByte      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToByte")
 
       -- Number Float
-      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__addFloats__")
-      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__substractFloats__")
-      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__multiplyFloats__")
-      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gtFloats__")
-      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__ltFloats__")
-      gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__gteFloats__")
-      lteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__lteFloats__")
-      numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "__numberToFloat__")
+      addFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__addFloats")
+      substractFloats   = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__substractFloats")
+      multiplyFloats    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__multiplyFloats")
+      gtFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gtFloats")
+      ltFloats          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__ltFloats")
+      gteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__gteFloats")
+      lteFloats         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__lteFloats")
+      numberToFloat     = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__numberToFloat")
 
       -- Eq Integer
-      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
+      eqInteger         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqInteger")
 
       -- Eq Byte
-      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
+      eqByte            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqByte")
 
       -- Eq Float
-      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqInteger__")
+      eqFloat           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__number__internal__eqFloat")
 
       -- Eq String
-      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqString__")
+      eqString          = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__string__internal__eq")
 
       -- Eq Boolean
-      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "__eqBoolean__")
+      eqBoolean         = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__boolean__internal__eq")
 
       -- Eq List
       eqList            = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__internal__list__eq")
@@ -2488,48 +2488,48 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       eqArray           = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__array__internal__eq")
 
       -- Eq Dictionary
-      eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "__eqDictionary__")
+      eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "madlib__dictionary__internal__eq")
 
       symbolTableWithCBindings =
         -- Number Float
-        Map.insert "__addFloats__" (fnSymbol 2 addFloats)
-        $ Map.insert "__substractFloats__" (fnSymbol 2 substractFloats)
-        $ Map.insert "__multiplyFloats__" (fnSymbol 2 multiplyFloats)
-        $ Map.insert "__gtFloats__" (fnSymbol 2 gtFloats)
-        $ Map.insert "__ltFloats__" (fnSymbol 2 ltFloats)
-        $ Map.insert "__gteFloats__" (fnSymbol 2 gteFloats)
-        $ Map.insert "__lteFloats__" (fnSymbol 2 lteFloats)
-        $ Map.insert "__numberToFloat__" (fnSymbol 1 numberToFloat)
+        Map.insert "madlib__number__internal__addFloats" (fnSymbol 2 addFloats)
+        $ Map.insert "madlib__number__internal__substractFloats" (fnSymbol 2 substractFloats)
+        $ Map.insert "madlib__number__internal__multiplyFloats" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "madlib__number__internal__gtFloats" (fnSymbol 2 gtFloats)
+        $ Map.insert "madlib__number__internal__ltFloats" (fnSymbol 2 ltFloats)
+        $ Map.insert "madlib__number__internal__gteFloats" (fnSymbol 2 gteFloats)
+        $ Map.insert "madlib__number__internal__lteFloats" (fnSymbol 2 lteFloats)
+        $ Map.insert "madlib__number__internal__numberToFloat" (fnSymbol 1 numberToFloat)
 
         -- Number Byte
-        $ Map.insert "__addBytes__" (fnSymbol 2 addFloats)
-        $ Map.insert "__substractBytes__" (fnSymbol 2 substractFloats)
-        $ Map.insert "__multiplyBytes__" (fnSymbol 2 multiplyFloats)
-        $ Map.insert "__gtBytes__" (fnSymbol 2 gtFloats)
-        $ Map.insert "__ltBytes__" (fnSymbol 2 ltFloats)
-        $ Map.insert "__gteBytes__" (fnSymbol 2 gteFloats)
-        $ Map.insert "__lteBytes__" (fnSymbol 2 lteFloats)
-        $ Map.insert "__numberToByte__" (fnSymbol 1 numberToFloat)
+        $ Map.insert "madlib__number__internal__addBytes" (fnSymbol 2 addFloats)
+        $ Map.insert "madlib__number__internal__substractBytes" (fnSymbol 2 substractFloats)
+        $ Map.insert "madlib__number__internal__multiplyBytes" (fnSymbol 2 multiplyFloats)
+        $ Map.insert "madlib__number__internal__gtBytes" (fnSymbol 2 gtFloats)
+        $ Map.insert "madlib__number__internal__ltBytes" (fnSymbol 2 ltFloats)
+        $ Map.insert "madlib__number__internal__gteBytes" (fnSymbol 2 gteFloats)
+        $ Map.insert "madlib__number__internal__lteBytes" (fnSymbol 2 lteFloats)
+        $ Map.insert "madlib__number__internal__numberToByte" (fnSymbol 1 numberToFloat)
 
         -- Number Integer
-        $ Map.insert "__numberToInteger__" (fnSymbol 1 numberToInteger)
-        $ Map.insert "__addIntegers__" (fnSymbol 2 addIntegers)
-        $ Map.insert "__substractIntegers__" (fnSymbol 2 substractIntegers)
-        $ Map.insert "__multiplyIntegers__" (fnSymbol 2 multiplyIntegers)
-        $ Map.insert "__gtIntegers__" (fnSymbol 2 gtIntegers)
-        $ Map.insert "__ltIntegers__" (fnSymbol 2 ltIntegers)
-        $ Map.insert "__gteIntegers__" (fnSymbol 2 gteIntegers)
-        $ Map.insert "__lteIntegers__" (fnSymbol 2 lteIntegers)
+        $ Map.insert "madlib__number__internal__numberToInteger" (fnSymbol 1 numberToInteger)
+        $ Map.insert "madlib__number__internal__addIntegers" (fnSymbol 2 addIntegers)
+        $ Map.insert "madlib__number__internal__substractIntegers" (fnSymbol 2 substractIntegers)
+        $ Map.insert "madlib__number__internal__multiplyIntegers" (fnSymbol 2 multiplyIntegers)
+        $ Map.insert "madlib__number__internal__gtIntegers" (fnSymbol 2 gtIntegers)
+        $ Map.insert "madlib__number__internal__ltIntegers" (fnSymbol 2 ltIntegers)
+        $ Map.insert "madlib__number__internal__gteIntegers" (fnSymbol 2 gteIntegers)
+        $ Map.insert "madlib__number__internal__lteIntegers" (fnSymbol 2 lteIntegers)
 
         -- Eq
-        $ Map.insert "__eqInteger__" (fnSymbol 2 eqInteger)
-        $ Map.insert "__eqByte__" (fnSymbol 2 eqByte)
-        $ Map.insert "__eqFloat__" (fnSymbol 2 eqFloat)
-        $ Map.insert "__eqString__" (fnSymbol 2 eqString)
-        $ Map.insert "__eqBoolean__" (fnSymbol 2 eqBoolean)
+        $ Map.insert "madlib__number__internal__eqInteger" (fnSymbol 2 eqInteger)
+        $ Map.insert "madlib__number__internal__eqByte" (fnSymbol 2 eqByte)
+        $ Map.insert "madlib__number__internal__eqFloat" (fnSymbol 2 eqFloat)
+        $ Map.insert "madlib__string__internal__eq" (fnSymbol 2 eqString)
+        $ Map.insert "madlib__boolean__internal__eq" (fnSymbol 2 eqBoolean)
         $ Map.insert "madlib__internal__list__eq" (fnSymbol 3 eqList)
         $ Map.insert "madlib__array__internal__eq" (fnSymbol 3 eqArray)
-        $ Map.insert "__eqDictionary__" (fnSymbol 4 eqDictionary) initialSymbolTable
+        $ Map.insert "madlib__dictionary__internal__eq" (fnSymbol 4 eqDictionary) initialSymbolTable
 
       numberType               = IT.TVar (IT.TV "a" IT.Star)
       numberPred               = IT.IsIn "Number" [numberType] Nothing
@@ -2545,7 +2545,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addIntegers__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__addIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2555,7 +2555,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractIntegers__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__substractIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2565,7 +2565,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyIntegers__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__multiplyIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2575,7 +2575,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gtIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2585,7 +2585,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__ltIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2595,7 +2595,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gteIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2605,7 +2605,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteIntegers__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__lteIntegers")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2615,7 +2615,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Optimized coerceNumberQualType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
-                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "__numberToInteger__")) [
+                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "madlib__number__internal__numberToInteger")) [
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
@@ -2632,7 +2632,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addBytes__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__addBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2642,7 +2642,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractBytes__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__substractBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2652,7 +2652,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyBytes__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__multiplyBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2662,7 +2662,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gtBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2672,7 +2672,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__ltBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2682,7 +2682,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gteBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2692,7 +2692,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteBytes__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__lteBytes")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2702,7 +2702,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Optimized coerceNumberQualType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
-                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "__numberToByte__")) [
+                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "madlib__number__internal__numberToByte")) [
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
@@ -2719,7 +2719,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "+"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "+" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__addFloats__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__addFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2729,7 +2729,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "-"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "-" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__substractFloats__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__substractFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2739,7 +2739,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "*"
                   , ( Optimized numberOperationQualType emptyArea (TopLevelAbs "*" ["a", "b"] [
-                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "__multiplyFloats__")) [
+                        Optimized numberQualType emptyArea (App (Optimized numberOperationQualType emptyArea (Var "madlib__number__internal__multiplyFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2749,7 +2749,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gtFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gtFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2759,7 +2759,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<"
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__ltFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__ltFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2769,7 +2769,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( ">="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs ">=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__gteFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__gteFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2779,7 +2779,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "<="
                   , ( Optimized numberComparisonQualType emptyArea (TopLevelAbs "<=" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "__lteFloats__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized numberComparisonQualType emptyArea (Var "madlib__number__internal__lteFloats")) [
                           Optimized numberQualType emptyArea (Var "a"),
                           Optimized numberQualType emptyArea (Var "b")
                         ])
@@ -2789,7 +2789,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                   )
                 , ( "__coerceNumber__"
                   , ( Optimized coerceNumberQualType emptyArea (TopLevelAbs "__coerceNumber__" ["a"] [
-                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "__numberToFloat__")) [
+                        Optimized numberQualType emptyArea (App (Optimized coerceNumberQualType emptyArea (Var "madlib__number__internal__numberToFloat")) [
                           Optimized numberQualType emptyArea (Var "a")
                         ])
                     ])
@@ -2812,7 +2812,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqInteger__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "madlib__number__internal__eqInteger")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2830,7 +2830,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqByte__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "madlib__number__internal__eqByte")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2848,7 +2848,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqFloat__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "madlib__number__internal__eqFloat")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2866,7 +2866,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqString__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "madlib__string__internal__eq")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2884,7 +2884,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "__eqBoolean__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized eqOperationQualType emptyArea (Var "madlib__boolean__internal__eq")) [
                           Optimized eqVarQualType emptyArea (Var "a"),
                           Optimized eqVarQualType emptyArea (Var "b")
                         ])
@@ -2964,7 +2964,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               (Map.fromList
                 [ ( "=="
                   , ( Optimized dictionaryEqQualType emptyArea (TopLevelAbs "==" ["eqDictA", "eqDictB", "a", "b"] [
-                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized dictionaryEqQualType emptyArea (Var "__eqDictionary__")) [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized dictionaryEqQualType emptyArea (Var "madlib__dictionary__internal__eq")) [
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictA"),
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictB"),
                           Optimized eqVarQualType emptyArea (Var "a"),
@@ -3025,17 +3025,17 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
 
-  extern (AST.mkName "__dict_ctor__")                        [boxType, boxType] boxType
-  externVarArgs (AST.mkName "__buildRecord__")               [Type.i32, boxType] recordType
-  extern (AST.mkName "__selectField__")                      [stringType, recordType] boxType
-  extern (AST.mkName "__areStringsEqual__")                  [stringType, stringType] Type.i1
-  extern (AST.mkName "__areStringsNotEqual__")               [stringType, stringType] Type.i1
-  extern (AST.mkName "__strConcat__")                        [stringType, stringType] stringType
-  extern (AST.mkName "madlib__internal__list__hasMinLength") [Type.i64, listType] Type.i1
-  extern (AST.mkName "madlib__internal__list__hasLength")    [Type.i64, listType] Type.i1
-  extern (AST.mkName "madlib__list__singleton")              [Type.ptr Type.i8] listType
-  extern (AST.mkName "madlib__list__internal__push")         [Type.ptr Type.i8, listType] listType
-  extern (AST.mkName "madlib__list__concat")                 [listType, listType] listType
+  extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
+  externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
+  extern (AST.mkName "madlib__record__internal__selectField")        [stringType, recordType] boxType
+  extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
+  extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
+  extern (AST.mkName "madlib__string__internal__concat")             [stringType, stringType] stringType
+  extern (AST.mkName "madlib__internal__list__hasMinLength")         [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__internal__list__hasLength")            [Type.i64, listType] Type.i1
+  extern (AST.mkName "madlib__list__singleton")                      [Type.ptr Type.i8] listType
+  extern (AST.mkName "madlib__list__internal__push")                 [Type.ptr Type.i8, listType] listType
+  extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
 
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "malloc")                 [Type.i64] (Type.ptr Type.i8)
