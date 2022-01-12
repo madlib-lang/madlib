@@ -3,6 +3,11 @@
 ## Description
 Runtime library that powers madlib's native code. It is based on libuv.
 
+## Note on naming
+Names in header files must be defined as follow:
+- for functions -> madlib__{module_name}[__internal]__functionName
+- for types -> madlib__{module_name}[__internal]__TypeName_t
+
 ## Madlib data structures
 
 ### List
