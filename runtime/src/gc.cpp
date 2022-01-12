@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 void __setFreeSpaceDivisor__() {
-  GC_free_space_divisor = 2;
+  GC_set_free_space_divisor(2);
 }
 
 #ifdef __cplusplus
