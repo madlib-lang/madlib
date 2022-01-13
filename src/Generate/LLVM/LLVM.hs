@@ -3215,6 +3215,7 @@ generateTable outputPath rootPath astTable entrypoint = do
   let objectFilePathsForCli = List.unwords objectFilePaths
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
+      -- curlConfigPath        = joinPath [takeDirectory compilerPath, "runtime", "bin", "curl-config"]
 
 
   Prelude.putStrLn "Linking.."
@@ -3226,7 +3227,9 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lhttp_parser -o " <> executablePath
+        <> " -lruntime -lgc -luv -lhttp_parser"
+        <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
+        <>" -o " <> executablePath
 
     DistributionSystem.Windows ->
       callCommand $
