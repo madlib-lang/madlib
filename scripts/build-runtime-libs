@@ -1,60 +1,89 @@
 #!/bin/bash
-mkdir .buildlibs
+mkdir -p .buildlibs
 mkdir -p runtime/lib
 cd .buildlibs
 
-# install libuv
+# # install libuv
+# if [ "$TARGET_WINDOWS" = "ON" ]
+# then
+#   # For windows we need to pull a commit that includes a fix related to how mingw changed headers recently
+#   wget https://github.com/libuv/libuv/archive/0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2.zip
+#   unzip 0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2.zip -d libuv
+#   cd libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2
+#   mkdir -p build
+#   cd build && cmake .. -G "Ninja" -DBUILD_TESTING="OFF"
+#   cd ..
+#   cmake --build build
+#   cmake --build build --target install
+#   cd ../..
+#   cp libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2/build/libuv_a.a ../runtime/lib/libuv.a
+#   cp -R libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2/include ../runtime/
+# else
+#   wget https://github.com/libuv/libuv/archive/refs/tags/v1.42.0.zip
+#   unzip v1.42.0.zip -d libuv
+#   cd libuv/libuv-1.42.0 && sh autogen.sh && ./configure --enable-static && make -j
+#   cd ../..
+#   cp libuv/libuv-1.42.0/.libs/libuv.a ../runtime/lib/libuv.a
+#   cp -R libuv/libuv-1.42.0/include ../runtime/
+# fi
+
+
+# # install libgc
+# wget https://github.com/ivmai/bdwgc/archive/refs/tags/v8.0.6.zip
+# unzip v8.0.6.zip -d libgc
+# cd libgc/bdwgc-8.0.6 && git clone git://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
+# cd ../..
+# cp libgc/bdwgc-8.0.6/gc.a ../runtime/lib/libgc.a
+# cp -R libgc/bdwgc-8.0.6/include ../runtime/
+
+
+
+# # # install llhttp
+# # wget https://github.com/nodejs/llhttp/archive/refs/tags/release/v6.0.6.zip
+# # unzip v6.0.6.zip
+# # cd llhttp-release-v6.0.6
+# # mkdir -p build && cd build && cmake .. && cmake --build .
+# # cd ../..
+# # cp llhttp-release-v6.0.6/build/libllhttp.a ../runtime/lib/
+# # cp -R llhttp-release-v6.0.6/include ../runtime/
+
+# # install http-parser
+# wget https://github.com/nodejs/http-parser/archive/refs/tags/v2.9.4.zip
+# unzip v2.9.4.zip
+# cd http-parser-2.9.4
+# make package
+# cd ..
+# cp http-parser-2.9.4/libhttp_parser.a ../runtime/lib/
+# cp http-parser-2.9.4/http_parser.h ../runtime/include/
+
+
+# install libcurl
 if [ "$TARGET_WINDOWS" = "ON" ]
 then
-  # For windows we need to pull a commit that includes a fix related to how mingw changed headers recently
-  wget https://github.com/libuv/libuv/archive/0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2.zip
-  unzip 0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2.zip -d libuv
-  cd libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2
-  mkdir -p build
-  cd build && cmake .. -G "Ninja" -DBUILD_TESTING="OFF"
+  # TODO:
+  echo "not implemented"
+elif [ "$TARGET_LINUX" = "ON" ]
+then
+  # TODO:
+  echo "not implemented"
+elif [ "$TARGET_MACOS_ARM" = "ON" ]
+then
+  wget https://github.com/curl/curl/releases/download/curl-7_81_0/curl-7.81.0.zip
+  unzip curl-7.81.0.zip
+  cd curl-7.81.0
+
+  export ARCH=arm64
+  export SDK=macosx
+  export DEPLOYMENT_TARGET=11.0
+
+  export CFLAGS="-arch $ARCH -isysroot $(xcrun -sdk $SDK --show-sdk-path) -m$SDK-version-min=$DEPLOYMENT_TARGET"
+  # export LDFLAGS="-static"
+  ./configure --disable-shared --enable-static --disable-ldap --disable-sspi --host=arm-apple-darwin --prefix $(pwd)/build --with-secure-transport
+  make -j10
+  make install
   cd ..
-  cmake --build build
-  cmake --build build --target install
-  cd ../..
-  cp libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2/build/libuv_a.a ../runtime/lib/libuv.a
-  cp -R libuv/libuv-0a47e4c7714c9d1cf62efef3efafd3fc3ad354c2/include ../runtime/
-else
-  wget https://github.com/libuv/libuv/archive/refs/tags/v1.42.0.zip
-  unzip v1.42.0.zip -d libuv
-  cd libuv/libuv-1.42.0 && sh autogen.sh && ./configure --enable-static && make -j
-  cd ../..
-  cp libuv/libuv-1.42.0/.libs/libuv.a ../runtime/lib/libuv.a
-  cp -R libuv/libuv-1.42.0/include ../runtime/
+  cp -R curl-7.81.0/build/* ../runtime/
 fi
-
-
-# install libgc
-wget https://github.com/ivmai/bdwgc/archive/refs/tags/v8.0.6.zip
-unzip v8.0.6.zip -d libgc
-cd libgc/bdwgc-8.0.6 && git clone git://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
-cd ../..
-cp libgc/bdwgc-8.0.6/gc.a ../runtime/lib/libgc.a
-cp -R libgc/bdwgc-8.0.6/include ../runtime/
-
-
-
-# # install llhttp
-# wget https://github.com/nodejs/llhttp/archive/refs/tags/release/v6.0.6.zip
-# unzip v6.0.6.zip
-# cd llhttp-release-v6.0.6
-# mkdir -p build && cd build && cmake .. && cmake --build .
-# cd ../..
-# cp llhttp-release-v6.0.6/build/libllhttp.a ../runtime/lib/
-# cp -R llhttp-release-v6.0.6/include ../runtime/
-
-# install http-parser
-wget https://github.com/nodejs/http-parser/archive/refs/tags/v2.9.4.zip
-unzip v2.9.4.zip
-cd http-parser-2.9.4
-make package
-cd ..
-cp http-parser-2.9.4/libhttp_parser.a ../runtime/lib/
-cp http-parser-2.9.4/http_parser.h ../runtime/include/
 
 cd ..
 rm -rf .buildlibs
