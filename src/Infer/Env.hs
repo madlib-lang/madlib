@@ -45,7 +45,7 @@ extendVars env (x, s) = env { envVars = M.insert x s $ envVars env }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
-safeExtendVars env (i, sc) = case M.lookup i (envVars env) of
+safeExtendVars env (i, sc) = case M.lookup i (envVars env <> envMethods env) of
   Just _  -> throwError $ CompilationError (NameAlreadyDefined i) NoContext
   Nothing -> return $ extendVars env (i, sc)
 

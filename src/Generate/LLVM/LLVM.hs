@@ -1447,7 +1447,6 @@ generateExp env symbolTable exp = case exp of
       Writer.tell $ Map.singleton n (varSymbol ref)
     return (symbolTable, ref, Nothing)
 
-
   _ ->
     error $ "not implemented\n\n" ++ ppShow exp
 
@@ -2116,7 +2115,7 @@ addInstancesToSymbolTable env =
 
 expsForMain :: [Exp] -> [Exp]
 expsForMain =
-  List.filter (not . \e -> isTopLevelFunction e || isExtern e)
+  List.filter (not . \e -> isTopLevelFunction e || isExtern e || isTypeExport e)
 
 
 topLevelFunctions :: [Exp] -> [Exp]

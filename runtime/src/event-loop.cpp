@@ -1,6 +1,7 @@
 #include <gc.h>
 #include <stdlib.h>
 #include <uv.h>
+#include <curl/curl.h>
 
 #include <cmath>
 
@@ -18,6 +19,7 @@ extern "C" {
 #endif
 
 void __initEventLoop__() {
+  curl_global_init(CURL_GLOBAL_ALL);
   loop = (uv_loop_t *)GC_malloc_uncollectable(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }
@@ -27,6 +29,7 @@ void __startEventLoop__() {
 
   uv_loop_close(loop);
   GC_free(loop);
+  curl_global_cleanup();
 }
 
 // set timeout
