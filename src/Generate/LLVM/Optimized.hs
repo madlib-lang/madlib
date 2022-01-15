@@ -201,6 +201,15 @@ isExtern exp = case exp of
   _ ->
     False
 
+isTypeExport :: Exp -> Bool
+isTypeExport exp = case exp of
+  Untyped _ (TypeExport _) ->
+    True
+
+  _ ->
+    False
+
+
 isADT :: TypeDecl -> Bool
 isADT td = case td of
   Untyped _ ADT {} -> True

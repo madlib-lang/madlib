@@ -16,6 +16,7 @@ then
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
@@ -26,6 +27,7 @@ then
   gcc-ar rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
     "${BUILD_DIR}array.o"\
+    "${BUILD_DIR}bytearray.o"\
     "${BUILD_DIR}dictionary.o"\
     "${BUILD_DIR}record.o"\
     "${BUILD_DIR}number.o"\
@@ -44,6 +46,7 @@ else
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
+  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
@@ -55,6 +58,7 @@ else
   eval $LLVM_AR rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
     "${BUILD_DIR}array.o"\
+    "${BUILD_DIR}bytearray.o"\
     "${BUILD_DIR}dictionary.o"\
     "${BUILD_DIR}record.o"\
     "${BUILD_DIR}number.o"\
