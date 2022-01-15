@@ -99,7 +99,7 @@ export table = (rows, a) => (#- {
 } -#)
 
 #elseif llvm
-log :: String -> ()
+log :: String -> {}
 export log = extern "puts"
 
 // export log

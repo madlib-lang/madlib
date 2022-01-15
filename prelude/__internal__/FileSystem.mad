@@ -72,7 +72,7 @@ import type { Wish } from "Wish"
 import { Wish } from "Wish"
 import IOError from "IOError"
 
-readFileFFI :: String -> (Integer -> String -> ()) -> ()
+readFileFFI :: String -> (Integer -> String -> {}) -> {}
 readFileFFI = extern "madlib__filesystem__readFile"
 
 readFile :: String -> Wish IOError.IOError String
@@ -86,7 +86,7 @@ export readFile = (path) => Wish((bad, good) =>
   )
 )
 
-readBinaryFileFFI :: String -> (Integer -> Array Byte -> ()) -> ()
+readBinaryFileFFI :: String -> (Integer -> Array Byte -> {}) -> {}
 readBinaryFileFFI = extern "madlib__filesystem__readBinaryFile"
 
 readBinaryFile :: String -> Wish IOError.IOError (Array Byte)
@@ -101,10 +101,10 @@ export readBinaryFile = (path) => Wish((bad, good) =>
 )
 
 
-writeFileFFI :: String -> String -> (Integer -> () -> ()) -> ()
+writeFileFFI :: String -> String -> (Integer -> {} -> {}) -> {}
 writeFileFFI = extern "madlib__filesystem__writeFile"
 
-writeFile :: String -> String -> Wish IOError.IOError ()
+writeFile :: String -> String -> Wish IOError.IOError {}
 export writeFile = (path, content) => Wish((bad, good) =>
   writeFileFFI(
     path,
@@ -112,15 +112,15 @@ export writeFile = (path, content) => Wish((bad, good) =>
     (libuvError, result) =>
       libuvError != 0
         ? bad(IOError.fromLibuvError(libuvError))
-        : good(())
+        : good({})
   )
 )
 
 
-writeBinaryFileFFI :: String -> Array Byte -> (Integer -> () -> ()) -> ()
+writeBinaryFileFFI :: String -> Array Byte -> (Integer -> {} -> {}) -> {}
 writeBinaryFileFFI = extern "madlib__filesystem__writeBinaryFile"
 
-writeBinaryFile :: String -> Array Byte -> Wish IOError.IOError ()
+writeBinaryFile :: String -> Array Byte -> Wish IOError.IOError {}
 export writeBinaryFile = (path, content) => Wish((bad, good) =>
   writeBinaryFileFFI(
     path,
@@ -128,14 +128,14 @@ export writeBinaryFile = (path, content) => Wish((bad, good) =>
     (libuvError, result) =>
       libuvError != 0
         ? bad(IOError.fromLibuvError(libuvError))
-        : good(())
+        : good({})
   )
 )
 
-existsFFI :: String -> (Boolean -> ()) -> ()
+existsFFI :: String -> (Boolean -> {}) -> {}
 existsFFI = extern "madlib__filesystem__fileExists"
 
-exists :: String -> Wish () Boolean
+exists :: String -> Wish {} Boolean
 export exists = (path) => Wish((bad, good) =>
   existsFFI(
     path,

@@ -206,7 +206,7 @@ formatFailureOutput = (description, result) => where(result) {
 const generateId = () => Math.random().toString().substr(2, 10)
 -#
 
-test :: String -> (String -> W.Wish (AssertionError a) String) -> ()
+test :: String -> (String -> W.Wish (AssertionError a) String) -> {}
 export test = (description, testImpl) => {
   id = #- generateId() -#
   #-
@@ -232,11 +232,11 @@ export test = (description, testImpl) => {
   })
   -#
 
-  return ()
+  return {}
 }
 
 
-reportBad :: String -> String -> ()
+reportBad :: String -> String -> {}
 reportBad = (id, err) => #-{
   const context = Context.getContext()
   process.send({
@@ -248,7 +248,7 @@ reportBad = (id, err) => #-{
   })
 }-#
 
-reportGood :: String -> String -> ()
+reportGood :: String -> String -> {}
 reportGood = (id, good) => #-{
   const context = Context.getContext()
   process.send({
@@ -402,13 +402,13 @@ runTestSuite = (suitePath, testsInSuite) => pipe(
 )(testsInSuite)
 
 
-runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> ()
+runAllTestSuites :: List #[String, List (Wish.Wish String String)] -> {}
 export runAllTestSuites = (testSuites) => pipe(
   map((testSuite) => runTestSuite(Tuple.fst(testSuite), Tuple.snd(testSuite))),
   Wish.parallel,
   map(List.reduce(mergeReports, EMPTY_REPORT)),
   Wish.fulfill(
-    (_) => (),
+    (_) => ({}),
     (report) => {
       IO.log(getMessage(report))
       return IO.log(`Test suites: ${show(List.len(testSuites))}  tests: ${show(getTotal(report))}  passed: ${show(getSuccessCount(report))}  failed: ${show(getFailureCount(report))}`)

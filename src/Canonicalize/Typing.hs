@@ -103,7 +103,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
   | t == "Byte"    = return tByte
   | t == "Boolean" = return tBool
   | t == "String"  = return tStr
-  | t == "()" = return tUnit
+  | t == "{}" = return tUnit
   | isLower $ head t = return (TVar $ TV t Star)
   | otherwise = do
     pushTypeAccess t

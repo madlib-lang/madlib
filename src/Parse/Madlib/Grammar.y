@@ -272,7 +272,7 @@ typings :: { Src.Typing }
 
 typing :: { Src.Typing }
   : name                                                %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.TRSingle $ strV $1) }
-  | '(' ')'                                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.TRSingle "()") }
+  | '{' '}'                                             %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) (Src.TRSingle "{}") }
   | '(' typings ')'                                     %shift { $2 }
   | '{' recordTypingArgs maybeComma '}'                 %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $4)) (tokenTarget $1) (Src.TRRecord $2 Nothing) }
   | '{' '...' name ','  recordTypingArgs maybeComma '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.TRRecord $5 (Just (Src.Source (mergeAreas (tokenArea $2) (tokenArea $3)) (tokenTarget $1) (Src.TRSingle $ strV $3)))) }
@@ -593,7 +593,7 @@ literal :: { Src.Exp }
   | str     %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LStr $ strV $1) }
   | true    %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LBool $ strV $1) }
   | false   %shift { Src.Source (tokenArea $1) (tokenTarget $1) (Src.LBool $ strV $1) }
-  | '(' ')' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) Src.LUnit }
+  | '{' '}' %shift { Src.Source (mergeAreas (tokenArea $1) (tokenArea $2)) (tokenTarget $1) Src.LUnit }
 
 argsWithPlaceholder :: { [Src.Exp] }
   : '$'                                     %shift { [Src.Source (tokenArea $1) (tokenTarget $1) (Src.Var "$")] }

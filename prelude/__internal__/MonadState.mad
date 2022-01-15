@@ -4,17 +4,17 @@ import type { WriterT } from "WriterT"
 import {} from "WriterT"
 
 interface Monad m => MonadState s m {
-  put :: s -> m ()
+  put :: s -> m {}
   get :: m s
-  modify :: (s -> s) -> m ()
+  modify :: (s -> s) -> m {}
 }
 
 instance Monad m => MonadState s (StateT s m) {
-  put = (s) => StateT((_) => of(#[(), s]))
+  put = (s) => StateT((_) => of(#[{}, s]))
 
   get = StateT((s) => of(#[s, s]))
 
-  modify = (f) => StateT((s) => of(#[(), f(s)]))
+  modify = (f) => StateT((s) => of(#[{}, f(s)]))
 }
 
 instance (Monoid w, Monad m, MonadState s m) => MonadState s (WriterT w m) {

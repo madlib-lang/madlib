@@ -215,7 +215,7 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
                                    , Can.aexps       = exps
                                    , Can.atypedecls  = typeDecls
                                    , Can.ainterfaces = interfaces
-                                   , Can.ainstances  = instances ++ derivedEqInstances
+                                   , Can.ainstances  = derivedEqInstances ++ instances
                                    , Can.apath       = Src.apath ast
                                    }
 

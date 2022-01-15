@@ -1,10 +1,12 @@
 type ByteArray = PrivateConstructor
+
+
 export type ByteArray
 
 
 fromList :: List Byte -> ByteArray
 export fromList = extern "madlib__bytearray__fromList"
 
+
 mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
 export mapBytes = extern "madlib__bytearray__map"
-
