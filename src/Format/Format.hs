@@ -805,7 +805,7 @@ expToDoc comments exp =
           (Pretty.pretty b, comments')
 
         Source _ _ LUnit ->
-          (Pretty.pretty "()", comments')
+          (Pretty.pretty "{}", comments')
 
         Source _ _ (Var n) ->
           let n' =
@@ -841,6 +841,14 @@ expToDoc comments exp =
         Source _ _ (TemplateString exps) ->
           let (content, comments'') = templateStringExpsToDoc comments' exps
           in  (Pretty.pretty "`" <> content <> Pretty.pretty "`", comments'')
+
+        Source _ _ (Export (Source _ _ (Extern typing name name'))) ->
+          let (typing', comments'') = typingToDoc comments' typing
+          in  (
+                Pretty.pretty name <> Pretty.pretty " :: " <> typing'<> Pretty.hardline
+                <> Pretty.pretty "export " <> Pretty.pretty name <> Pretty.pretty " = extern \"" <> Pretty.pretty name' <> Pretty.pretty "\""
+              , comments''
+              )
 
         Source _ _ (Export exp) ->
           let (exp', comments'') = expToDoc comments' exp

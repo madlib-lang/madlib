@@ -73,10 +73,10 @@ tokens :-
   <0> type                                                                                    { mapToken (\_ -> TokenType) }
   <0> alias                                                                                   { mapToken (\_ -> TokenAlias) }
   <0> extern                                                                                  { mapToken (\_ -> TokenExtern) }
-  <0> \#iftarget[\ ]*llvm                                                                      { processIfTarget TargetLLVM }
-  <0> \#iftarget[\ ]*js                                                                        { processIfTarget TargetJS }
-  <0> \#elseif[\ ]*llvm                                                                        { processElseIfTarget TargetLLVM }
-  <0> \#elseif[\ ]*js                                                                          { processElseIfTarget TargetJS }
+  <0> \#iftarget[\ ]*llvm                                                                     { processIfTarget TargetLLVM }
+  <0> \#iftarget[\ ]*js                                                                       { processIfTarget TargetJS }
+  <0> \#elseif[\ ]*llvm                                                                       { processElseIfTarget TargetLLVM }
+  <0> \#elseif[\ ]*js                                                                         { processElseIfTarget TargetJS }
   <0> \#endif                                                                                 { processEndIfTarget }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> \$                                  { mapToken (\_ -> TokenDollar) }
   <0, stringTemplateMadlib, jsxOpeningTag, jsxAutoClosed> if                                  { mapToken (\_ -> TokenIf) }

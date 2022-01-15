@@ -344,26 +344,26 @@ validateHashes = (validationInput) => {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedBuildHash), not),
-        always(NotValid([InvalidBuildHash], ())),
-        always(Valid(())),
+        always(NotValid([InvalidBuildHash], {})),
+        always(Valid({})),
         versionDotLock.buildHash
       )
 
     Nothing =>
-      Valid(())
+      Valid({})
   }
 
   validatedVersionHash = where(validationInput.versionDotLock) {
     Just(versionDotLock) =>
       ifElse(
         pipe(equals(validationInput.computedVersionHash), not),
-        always(NotValid([InvalidVersionHash], ())),
-        always(Valid(())),
+        always(NotValid([InvalidVersionHash], {})),
+        always(Valid({})),
         versionDotLock.versionHash
       )
 
     Nothing =>
-      Valid(())
+      Valid({})
   }
 
   return setValidationResultValue(
