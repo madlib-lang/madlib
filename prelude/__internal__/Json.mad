@@ -335,8 +335,8 @@ export maybe = (parser, input) => (#-{
 }-#)
 
 
-lazy :: (() -> Parser a) -> Parser a
-export lazy = (wrapped, input) => wrapped((), input)
+lazy :: ({} -> Parser a) -> Parser a
+export lazy = (wrapped, input) => wrapped({}, input)
 
 
 field :: String -> Parser b -> Parser b

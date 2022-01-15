@@ -896,7 +896,7 @@ getTypeHeadName t = case t of
     n
 
   TCon (TC n _) _ -> case n of
-    "()"          ->
+    "{}"          ->
       "Unit"
 
     "(,)"         ->

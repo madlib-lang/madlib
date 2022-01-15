@@ -10,7 +10,7 @@ import {} from "Compare"
  * cold and will only be run when fulfilled.
  */
 
-export type Wish e a = Wish((e -> f) -> (a -> b) -> ())
+export type Wish e a = Wish((e -> f) -> (a -> b) -> {})
 
 /**
  * The functor instance of Wish provides a way to map over the value it contains.
@@ -131,9 +131,9 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
           map(Tuple.snd),
           goodCB
         )(result)
-      : ()
+      : {}
 
-  // fork :: Integer -> List (Wish e a) -> ()
+  // fork :: Integer -> List (Wish e a) -> {}
   fork = (index, ws) => where(ws) {
     [wish, ...nextWishes] =>
       do {
@@ -146,7 +146,7 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
                       ko = true
                       return badCB(err)
                     }
-                  : ()
+                  : {}
               ,
               (x) => {
                 result = [#[index, x], ...result]
@@ -162,7 +162,7 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
     [] =>
       amountOfWishesToProcess == 0
         ? goodCB([])
-        : ()
+        : {}
   }
 
   return fork(0, wishes)
@@ -170,13 +170,13 @@ export parallel = (wishes) => Wish((badCB, goodCB) => {
 
 #iftarget js
 
-fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
+fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) => #- setTimeout(() => run(badCB)(goodCB), 0); -#
   }
 
-  return ()
+  return {}
 }
 
 
@@ -187,16 +187,16 @@ export after = (time, a) => Wish((_, goodCB) => #- {
 
 #elseif llvm
 
-fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()
+fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
     Wish(run) => run(badCB, goodCB)
   }
 
-  return ()
+  return {}
 }
 
-setTimeout :: (() -> a) -> Integer -> ()
+setTimeout :: ({} -> a) -> Integer -> {}
 setTimeout = extern "__setTimeout__"
 
 after :: Integer -> a -> Wish e a

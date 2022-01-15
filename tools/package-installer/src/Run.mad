@@ -378,14 +378,14 @@ prepare = (config, packageDotJsonPath) => pipe(
 )(packageDotJsonPath)
 
 
-restorePackageDotJson :: Config -> String -> Wish () String
+restorePackageDotJson :: Config -> String -> Wish {} String
 restorePackageDotJson = (config, content) => pipe(
   (c) => config.writeFile("package.json", TextData(c)),
-  mapRej(always(()))
+  mapRej(always({}))
 )(content)
 
 
-run :: Config -> Wish () ()
+run :: Config -> Wish {} {}
 export run = (config) => {
   IO.log("Installing dependencies ...")
 
@@ -400,6 +400,6 @@ export run = (config) => {
         chainRej((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(bad(x)))
       )("madlib.json")
     ),
-    andDo(of(()))
+    andDo(of({}))
   )("package.json")
 }

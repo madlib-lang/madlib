@@ -68,7 +68,7 @@ tStr :: Type
 tStr = TCon (TC "String" Star) "prelude"
 
 tUnit :: Type
-tUnit = TCon (TC "()" Star) "prelude"
+tUnit = TCon (TC "{}" Star) "prelude"
 
 tList :: Type
 tList = tListOf (TVar (TV "a" Star))

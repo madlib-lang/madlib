@@ -8,8 +8,8 @@ import { methodStr, GET } from "Http"
 import { good, Wish } from "Wish"
 import { TextData } from "Data"
 
-unit :: ()
-unit = ()
+unit :: {}
+unit = {}
 
 #- import http from "http" -#
 
@@ -30,7 +30,7 @@ export defaultConfig = {
   statusCode: 200
 }
 
-createMockRequest :: MockRequestConfig -> Wish String ()
+createMockRequest :: MockRequestConfig -> Wish String {}
 export createMockRequest = (config) => Wish((badCB, goodCB) => #-{
   const host = 'localhost'
   const port = config.port

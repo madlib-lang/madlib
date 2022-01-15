@@ -271,7 +271,7 @@ buildLLVMType t = case t of
   IT.TCon (IT.TC "Boolean" IT.Star) "prelude" ->
     Type.i1
 
-  IT.TCon (IT.TC "()" IT.Star) "prelude" ->
+  IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
     Type.ptr Type.i1
 
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->

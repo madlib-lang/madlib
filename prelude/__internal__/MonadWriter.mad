@@ -6,11 +6,11 @@ import type { StateT } from "StateT"
 import {} from "StateT"
 
 interface (Monoid w, Monad m) => MonadWriter w m {
-  tell :: w -> m ()
+  tell :: w -> m {}
 }
 
 instance (Monoid w, Monad m) => MonadWriter w (WriterT w m) {
-  tell = (v) => WriterT(of(#[(), v]))
+  tell = (v) => WriterT(of(#[{}, v]))
 }
 
 /**

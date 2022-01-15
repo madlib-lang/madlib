@@ -8,7 +8,7 @@ import { Wish } from "Wish"
  * cold and will only be run when fulfilled.
  */
 
-export type SideEffect a = SideEffect((a -> b) -> ())
+export type SideEffect a = SideEffect((a -> b) -> {})
 
 /**
  * The functor instance of SideEffect provides a way to map over the value it contains.
@@ -85,13 +85,13 @@ export parallel = (effects) => (
 #endif
 
 #iftarget js
-execute :: (a -> b) -> SideEffect a -> ()
+execute :: (a -> b) -> SideEffect a -> {}
 export execute = (goodCB, m) => {
   where(m) {
     SideEffect(run) => #- setTimeout(() => run(goodCB), 0); -#
   }
 
-  return ()
+  return {}
 }
 #endif
 
