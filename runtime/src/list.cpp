@@ -30,7 +30,7 @@ int64_t madlib__list__length(madlib__list__Node_t *list) {
 }
 
 
-bool *madlib__internal__list__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2) {
+bool *madlib__list__internal__eq(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **l1, madlib__list__Node_t **l2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
 
   int64_t l1Length = madlib__list__length(*l1);
@@ -146,7 +146,7 @@ void *madlib__list__nth(double index, madlib__list__Node_t *list) {
   }
 }
 
-bool madlib__internal__list__hasMinLength(int64_t l, madlib__list__Node_t *list) {
+bool madlib__list__internal__hasMinLength(int64_t l, madlib__list__Node_t *list) {
   while (list->value != NULL && l > 0) {
     l -= 1;
     list = list->next;
@@ -155,7 +155,7 @@ bool madlib__internal__list__hasMinLength(int64_t l, madlib__list__Node_t *list)
   return l == 0;
 }
 
-bool madlib__internal__list__hasLength(int64_t l, madlib__list__Node_t *list) {
+bool madlib__list__internal__hasLength(int64_t l, madlib__list__Node_t *list) {
   while (list->value != NULL && l > 0) {
     l -= 1;
     list = list->next;
@@ -196,7 +196,7 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a, madlib__list
 }
 
 
-madlib__list__Node_t *madlib__internal__list__copy(madlib__list__Node_t *list) {
+madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
   if (list->value == NULL) {
     return madlib__list__empty();
   }
@@ -224,7 +224,7 @@ madlib__list__Node_t *madlib__internal__list__copy(madlib__list__Node_t *list) {
  * currently a bubble sort algorithm, needs to be improved at some point
  */
 madlib__list__Node_t *madlib__list__sort(PAP_t *compare, madlib__list__Node_t *list) {
-  madlib__list__Node_t *copy = madlib__internal__list__copy(list);
+  madlib__list__Node_t *copy = madlib__list__internal__copy(list);
   bool hadPermutation = true;
 
   while (hadPermutation != false) {
