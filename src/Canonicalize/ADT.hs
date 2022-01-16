@@ -66,6 +66,8 @@ canonicalizeTypeDecl env astPath td@(Src.Source area _ typeDecl) = case typeDecl
     let params = (`TV` Star) <$> Src.aliasparams alias
     let typing = Src.aliastype alias
     typingType <- typingToType env (KindRequired Star) typing
+    when (isRecordType typingType) $ do
+      pushRecordToDerive (getTRecordFieldNames typingType)
     let env' = addADT env name (TAlias astPath name params typingType)
     typing' <- canonicalizeTyping typing
     let alias' = Can.Canonical

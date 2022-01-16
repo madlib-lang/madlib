@@ -37,8 +37,8 @@ snapshotTest name actualOutput = Golden { output        = pack $ ppShow actualOu
                                         , encodePretty  = ppShow
                                         , writeToFile   = T.writeFile
                                         , readFromFile  = T.readFile
-                                        , testName      = unpack $ replace (pack " ") (pack "_") (pack name)
-                                        , directory     = ".snapshots"
+                                        , goldenFile    = ".snapshots/" <> unpack (replace (pack " ") (pack "_") (pack name)) <> "/golden"
+                                        , actualFile    = Just $ ".snapshots/" <> unpack (replace (pack " ") (pack "_") (pack name)) <> "/actual"
                                         , failFirstTime = False
                                         }
 
@@ -269,7 +269,7 @@ spec = do
             , "  chain :: (a -> m b) -> m a -> m b"
             , "}"
             , ""
-            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
+            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> {})"
             , ""
             , ""
             , "instance Functor (Wish e) {"
@@ -366,13 +366,13 @@ spec = do
             , ")"
             , ""
             , ""
-            , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> ()"
+            , "fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}"
             , "export fulfill = (badCB, goodCB, m) => {"
             , "  where(m) {"
             , "    Wish(run) => run(badCB, goodCB)"
             , "  }"
             , ""
-            , "  return ()"
+            , "  return {}"
             , "}"
             ]
           astA  = buildAST "./ModuleA" codeA
@@ -385,7 +385,7 @@ spec = do
             , "of(3)"
             , "  |> map((x) => (x + 3))"
             , "  |> chain((x) => (of(x * 3)))"
-            , "  |> W.fulfill((a) => (()), (a) => (()))"
+            , "  |> W.fulfill((a) => ({}), (a) => ({}))"
             ]
           astB   = buildAST "./ModuleB" codeB
           actual = case (astA, astB) of
@@ -770,7 +770,7 @@ spec = do
             , "fromMaybe :: a -> Maybe a -> a"
             , "fromMaybe = (a, maybe) => #- -#"
             , ""
-            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> ())"
+            , "export type Wish e a = Wish((e -> f) -> (a -> b) -> {})"
             , ""
             , "of = (a) => Wish((bad, good) => good(a))"
             , ""

@@ -19,8 +19,8 @@ snapshotTest name actualOutput = Golden { output        = pack actualOutput
                                         , encodePretty  = unpack
                                         , writeToFile   = T.writeFile
                                         , readFromFile  = T.readFile
-                                        , testName      = unpack $ replace (pack " ") (pack "_") (pack name)
-                                        , directory     = ".snapshots"
+                                        , goldenFile    = ".snapshots/" <> unpack (replace (pack " ") (pack "_") (pack name)) <> "/golden"
+                                        , actualFile    = Just $ ".snapshots/" <> unpack (replace (pack " ") (pack "_") (pack name)) <> "/actual"
                                         , failFirstTime = False
                                         }
 

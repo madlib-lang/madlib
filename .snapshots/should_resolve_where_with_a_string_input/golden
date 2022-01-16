@@ -11,12 +11,12 @@ Right
                   (Area (Loc 6 1 7) (Loc 10 1 11))
                   (LStr "\"42\""))
                [ Solved
-                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                   ([ IsIn "Number" [ TVar (TV "v21" Star) ] Nothing ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
-                        (TVar (TV "k10" Star)))
+                        (TVar (TV "v21" Star)))
                    (Area (Loc 16 2 3) (Loc 24 2 11))
                    (Is
                       (Solved
@@ -30,12 +30,12 @@ Right
                          (Area (Loc 23 2 10) (Loc 24 2 11))
                          (LNum "1")))
                , Solved
-                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                   ([ IsIn "Number" [ TVar (TV "v21" Star) ] Nothing ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
-                        (TVar (TV "k10" Star)))
+                        (TVar (TV "v21" Star)))
                    (Area (Loc 27 3 3) (Loc 35 3 11))
                    (Is
                       (Solved
@@ -49,12 +49,12 @@ Right
                          (Area (Loc 34 3 10) (Loc 35 3 11))
                          (LNum "3")))
                , Solved
-                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                   ([ IsIn "Number" [ TVar (TV "v21" Star) ] Nothing ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
-                        (TVar (TV "k10" Star)))
+                        (TVar (TV "v21" Star)))
                    (Area (Loc 38 4 3) (Loc 48 4 13))
                    (Is
                       (Solved
@@ -68,12 +68,12 @@ Right
                          (Area (Loc 46 4 11) (Loc 48 4 13))
                          (LNum "33")))
                , Solved
-                   ([ IsIn "Number" [ TVar (TV "k10" Star) ] Nothing ] :=>
+                   ([ IsIn "Number" [ TVar (TV "v21" Star) ] Nothing ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TCon (TC "String" Star) "prelude"))
-                        (TVar (TV "k10" Star)))
+                        (TVar (TV "v21" Star)))
                    (Area (Loc 51 5 3) (Loc 61 5 13))
                    (Is
                       (Solved

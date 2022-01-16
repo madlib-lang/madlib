@@ -41,11 +41,11 @@ Right
                      , Solved
                          ([ IsIn
                               "Number"
-                              [ TVar (TV "g32" Star) ]
+                              [ TVar (TV "m38" Star) ]
                               (Just (Area (Loc 20 1 21) (Loc 21 1 22)))
-                          , IsIn "Number" [ TVar (TV "h33" Star) ] Nothing
+                          , IsIn "Number" [ TVar (TV "n39" Star) ] Nothing
                           ] :=>
-                            TVar (TV "f31" Star))
+                            TVar (TV "l37" Star))
                          (Area (Loc 17 1 18) (Loc 24 1 25))
                          (Field
                             ( "y"
@@ -127,7 +127,7 @@ Right
                                 [ ( "x" , TCon (TC "Float" Star) "prelude" )
                                 , ( "y" , TCon (TC "Integer" Star) "prelude" )
                                 ])
-                             (Just (TVar (TV "o40" Star)))))
+                             (Just (TVar (TV "b53" Star)))))
                        (TCon (TC "Float" Star) "prelude"))
                   (Area (Loc 29 2 3) (Loc 30 2 4))
                   (Var ".x")))

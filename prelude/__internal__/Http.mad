@@ -259,6 +259,7 @@ export deleteWithHeaders = (url, body, headers) =>
   requestWithBodyAndHeaders(DELETE, url, body, headers)
 
 #elseif llvm
+import type { Maybe } from "Maybe"
 import {} from "List"
 import {} from "String"
 import {} from "Number"
@@ -321,45 +322,46 @@ alias Response = {
 }
 
 type ClientError
-  = UnsupportedProtocol
-  // all libcurl errors not fitting the other constructors 
-  | InternalError
-  // libcurl 3
-  | MalformedUrl
-  // libcurl 4
-  | NotSupported
-  // libcurl 5
-  | UnresolvedProxy
+  // libcurl 9
+  = AccessDenied
   // libcurl 6
-  | UnresolvedHost
+  | AddressNotFound
+  // libcurl 61
+  | BadTransferEncoding
+  // libcurl 3
+  | BadUrl(String)
   // libcurl 7
   | ConnectionFailed
-  // libcurl 8
-  | MalformedResponse
-  // libcurl 9
-  | AccessDenied
   // libcurl 16, 92
   | Http2FramingError
   // libcurl 18
   | IncompleteResponse
-  // libcurl 28
-  | Timeout
-  // libcurl 35
-  | SSLConnectionFailed
-  // libcurl 47
-  | TooManyRedirects
-  // libcurl 53
-  | SSLEngineNotFound
+  // all libcurl errors not fitting the other constructors 
+  | InternalError
   // libcurl 58
   | InvalidSSLCertificate
-  // libcurl 61
-  | UnrecognizedTransferEncoding
+  // libcurl 8
+  | MalformedResponse
+  // libcurl 4
+  | NotSupported
+  // libcurl 35
+  | SSLConnectionFailed
+  // libcurl 53
+  | SSLEngineNotFound
   // libcurl 66
   | SSLInitializationFailed
+  // libcurl 28
+  | Timeout
+  // libcurl 47
+  | TooManyRedirects
+  // libcurl 5
+  | UnresolvedProxy
+  // libcurl 1
+  | UnsupportedProtocol
 
 type Error
   = BadResponse(Response)
-  | ClientError(ClientError)
+  | ClientError(ClientError, Maybe Response)
 
 
 instance Show Response {
