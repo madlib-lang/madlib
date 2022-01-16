@@ -9,6 +9,7 @@
 
 #include "event-loop.hpp"
 #include "list.hpp"
+#include "maybe.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,12 +21,14 @@ static const int64_t JUST = 0;
 typedef struct RequestData {
   // Request
   curl_slist *requestHeaders;
-  void *callback;
+  void *goodCallback;
+  void *badCallback;
 
   // Internals
   uv_poll_t *pollHandle;
   uv_timer_t *timerHandle;
   CURLM *curlHandle;
+  CURLU *curlUrl;
   curl_socket_t curlSocket;
 
   // Response
@@ -112,9 +115,10 @@ void onTimeout(uv_timer_t *req) {
 
   if (runningHandles == 0) {
     curl_slist_free_all(requestData->requestHeaders);
+    curl_multi_cleanup(requestData->curlHandle);
+    curl_url_cleanup(requestData->curlUrl);
     GC_free(requestData->pollHandle);
     GC_free(requestData->timerHandle);
-    curl_multi_cleanup(requestData->curlHandle);
     GC_free(requestData);
   }
 }
@@ -145,7 +149,7 @@ void callCallback(RequestData_t *requestData) {
   *boxedStatus = requestData->status;
 
   // call the callback
-  __applyPAP__(requestData->callback, 1,
+  __applyPAP__(requestData->goodCallback, 1,
                buildResponse(boxedBody, boxedHeaders, boxedStatus));
 }
 
@@ -305,7 +309,8 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
   return lcurlHeaders;
 }
 
-void madlib__http__request(madlib__record__Record_t *request, PAP_t *callback) {
+// madlib__http__request :: Request -> (Error -> {}) -> (Response -> {}) -> {}
+void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
   char **boxedUrl =
       (char **)madlib__record__internal__selectField((char *)"url", request);
   char *url = *boxedUrl;
@@ -320,8 +325,8 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *callback) {
           (char *)"headers", request);
   curl_slist *lcurlHeaders = buildLibCurlHeaders(*boxedHeaders);
 
-  madlib__http__Body_t *boxedBody =
-      (madlib__http__Body_t *)madlib__record__internal__selectField(
+  madlib__maybe__Maybe_Just_t *boxedBody =
+      (madlib__maybe__Maybe_Just_t *)madlib__record__internal__selectField(
           (char *)"body", request);
 
   CURLM *multiHandle = curl_multi_init();
@@ -336,7 +341,8 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *callback) {
   uv_timer_init(getLoop(), requestData->timerHandle);
   requestData->timerHandle->data = requestData;
   requestData->headers = madlib__list__empty();
-  requestData->callback = callback;
+  requestData->badCallback = badCallback;
+  requestData->goodCallback = goodCallback;
   requestData->requestHeaders = lcurlHeaders;
   requestData->body = (char *)GC_malloc(sizeof(char) * 1);
   requestData->body[0] = '\0';
@@ -354,14 +360,47 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *callback) {
   curl_easy_setopt(handle, CURLOPT_HTTPHEADER, lcurlHeaders);
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, methodString);
   curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "gzip,deflate,zstd");
-  if (boxedBody->index == JUST) {
+  if (boxedBody->index == madlib__maybe__Maybe_JUST_INDEX) {
     curl_easy_setopt(handle, CURLOPT_POSTFIELDS,
-                     *((char **)boxedBody->bodyData));
+                     *((char **)boxedBody->data));
     curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, -1L);
   }
-  curl_easy_setopt(handle, CURLOPT_URL, url);
 
-  curl_multi_add_handle(multiHandle, handle);
+  CURLU *urlp = curl_url();
+  CURLUcode urlParseResponse = curl_url_set(urlp, CURLUPART_URL, url, 0);
+
+  if (urlParseResponse == 0) {
+    requestData->curlUrl = urlp;
+    curl_easy_setopt(handle, CURLOPT_CURLU, urlp);
+    curl_multi_add_handle(multiHandle, handle);
+  } else {
+    printf("bad url\n");
+
+
+    // call bad callback
+    madlib__maybe__Maybe_Nothing_t* nothing = (madlib__maybe__Maybe_Nothing_t*)GC_malloc(sizeof(madlib__maybe__Maybe_Nothing_t));
+    nothing->index = madlib__maybe__Maybe_NOTHING_INDEX;
+
+    madlib__http__ClientError_1_t *clientError = (madlib__http__ClientError_1_t*)GC_malloc(sizeof(madlib__http__ClientError_1_t));
+    clientError->index = madlib__http__ClientError_BAD_URL_INDEX;
+    clientError->arg0 = boxedUrl;
+
+    madlib__http__Error_ClientError_t *error = (madlib__http__Error_ClientError_t*)GC_malloc(sizeof(madlib__http__Error_ClientError_t));
+    error->index = madlib__http__Error_CLIENT_ERROR_INDEX;
+    error->maybeResponse = nothing;
+    error->clientError = clientError;
+
+    __applyPAP__(requestData->badCallback, 1, error);
+
+    // free resources
+    curl_slist_free_all(requestData->requestHeaders);
+    curl_multi_cleanup(requestData->curlHandle);
+    curl_easy_cleanup(handle);
+    curl_url_cleanup(urlp);
+    GC_free(requestData->pollHandle);
+    GC_free(requestData->timerHandle);
+    GC_free(requestData);
+  }
 }
 
 #ifdef __cplusplus

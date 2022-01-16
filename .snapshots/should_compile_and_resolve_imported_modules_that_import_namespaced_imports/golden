@@ -2,8 +2,8 @@
 export let Int8Bit = (a => ({ __constructor: "Int8Bit", __args: [ a ] }));
 export let Int16Bit = (a => ({ __constructor: "Int16Bit", __args: [ a ] }));
 export let Int32Bit = (a => ({ __constructor: "Int32Bit", __args: [ a ] }));
-export let ByteArray = (a => ({ __constructor: "ByteArray", __args: [ a ] }));
-export default { Int8Bit, Int16Bit, Int32Bit, ByteArray };
+export let Bytes = (a => ({ __constructor: "Bytes", __args: [ a ] }));
+export default { Int8Bit, Int16Bit, Int32Bit, Bytes };
 // file: /root/project/src/FileSystem.mad
 import W from "./Wish.mjs";
 import B from "./Binary.mjs";

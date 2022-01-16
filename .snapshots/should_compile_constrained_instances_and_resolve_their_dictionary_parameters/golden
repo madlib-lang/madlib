@@ -10,7 +10,7 @@ Show['Tuple_2'] = {};
 let __ShowTuple_2show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return '#[' + Show_i8.show()(a) + ', ' + Show_j9.show()(b) + ']';
+    return '#[' + Show_p41.show()(a) + ', ' + Show_q42.show()(b) + ']';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -18,16 +18,16 @@ let __ShowTuple_2show = __once__(() => (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__)));
-Show['Tuple_2']['show'] = () => (Show_j9) => (Show_i8) => {
-  global.Show_i8 = Show_i8
-  global.Show_j9 = Show_j9
+Show['Tuple_2']['show'] = () => (Show_q42) => (Show_p41) => {
+  global.Show_p41 = Show_p41
+  global.Show_q42 = Show_q42
   return __ShowTuple_2show();
 };
 Show['Tuple_3'] = {};
 let __ShowTuple_3show = __once__(() => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return '#[' + Show_b27.show()(a) + ', ' + Show_c28.show()(b) + ', ' + Show_d29.show()(c) + ']';
+    return '#[' + Show_i60.show()(a) + ', ' + Show_j61.show()(b) + ', ' + Show_k62.show()(c) + ']';
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -35,21 +35,21 @@ let __ShowTuple_3show = __once__(() => (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__)));
-Show['Tuple_3']['show'] = () => (Show_d29) => (Show_c28) => (Show_b27) => {
-  global.Show_b27 = Show_b27
-  global.Show_c28 = Show_c28
-  global.Show_d29 = Show_d29
+Show['Tuple_3']['show'] = () => (Show_k62) => (Show_j61) => (Show_i60) => {
+  global.Show_i60 = Show_i60
+  global.Show_j61 = Show_j61
+  global.Show_k62 = Show_k62
   return __ShowTuple_3show();
 };
 Show['Either'] = {};
 let __ShowEithershow = __once__(() => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
-    return 'Right ' + Show_c54.show()(a);
+    return 'Right ' + Show_j87.show()(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
-    return 'Left ' + Show_f57.show()(e);
+    return 'Left ' + Show_m90.show()(e);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -57,19 +57,19 @@ let __ShowEithershow = __once__(() => (__x__ => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__x__)));
-Show['Either']['show'] = () => (Show_c54) => (Show_f57) => {
-  global.Show_f57 = Show_f57
-  global.Show_c54 = Show_c54
+Show['Either']['show'] = () => (Show_j87) => (Show_m90) => {
+  global.Show_m90 = Show_m90
+  global.Show_j87 = Show_j87
   return __ShowEithershow();
 };
 Show.Tuple_2.show()(Show.Boolean)(Show.Integer)(([1, false]));
 Show.Either.show()(Show.Integer)(Show.Integer)(Right(3));
-let fnWithConstraint = (Show_z129) => {
-  global.Show_z129 = Show_z129
+let fnWithConstraint = (Show_t149) => {
+  global.Show_t149 = Show_t149
 
   return fnWithConstraint__ND__()
 };
-let fnWithConstraint__ND__ = __once__(() => Show_z129.show());
+let fnWithConstraint__ND__ = __once__(() => Show_t149.show());
 Show.Tuple_2.show()(Show.Integer)(Show.Integer)(([1, 1]));
 Show.Tuple_3.show()(Show.Boolean)(Show.Integer)(Show.Boolean)(([false, 42, true]));
 export default {};

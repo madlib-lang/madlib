@@ -225,12 +225,12 @@ Right
                         (Area (Loc 69 3 1) (Loc 85 3 17))
                         (ListConstructor
                            [ Solved
-                               ([ IsIn "Number" [ TVar (TV "k36" Star) ] Nothing
-                                , IsIn "Number" [ TVar (TV "l37" Star) ] Nothing
+                               ([ IsIn "Number" [ TVar (TV "d81" Star) ] Nothing
+                                , IsIn "Number" [ TVar (TV "e82" Star) ] Nothing
                                 ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "l37" Star)))
+                                    (TVar (TV "e82" Star)))
                                (Area (Loc 70 3 2) (Loc 76 3 8))
                                (ListItem
                                   (Solved
@@ -243,8 +243,8 @@ Right
                                      (Area (Loc 70 3 2) (Loc 76 3 8))
                                      (ListConstructor
                                         [ Solved
-                                            ([ IsIn "Number" [ TVar (TV "k36" Star) ] Nothing ] :=>
-                                               TVar (TV "k36" Star))
+                                            ([ IsIn "Number" [ TVar (TV "d81" Star) ] Nothing ] :=>
+                                               TVar (TV "d81" Star))
                                             (Area (Loc 71 3 3) (Loc 72 3 4))
                                             (ListItem
                                                (Solved
@@ -257,8 +257,8 @@ Right
                                                   (Area (Loc 71 3 3) (Loc 72 3 4))
                                                   (LNum "1")))
                                         , Solved
-                                            ([ IsIn "Number" [ TVar (TV "l37" Star) ] Nothing ] :=>
-                                               TVar (TV "l37" Star))
+                                            ([ IsIn "Number" [ TVar (TV "e82" Star) ] Nothing ] :=>
+                                               TVar (TV "e82" Star))
                                             (Area (Loc 74 3 6) (Loc 75 3 7))
                                             (ListItem
                                                (Solved
@@ -272,12 +272,12 @@ Right
                                                   (LNum "2")))
                                         ])))
                            , Solved
-                               ([ IsIn "Number" [ TVar (TV "n39" Star) ] Nothing
-                                , IsIn "Number" [ TVar (TV "o40" Star) ] Nothing
+                               ([ IsIn "Number" [ TVar (TV "g84" Star) ] Nothing
+                                , IsIn "Number" [ TVar (TV "h85" Star) ] Nothing
                                 ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                    (TVar (TV "o40" Star)))
+                                    (TVar (TV "h85" Star)))
                                (Area (Loc 78 3 10) (Loc 84 3 16))
                                (ListItem
                                   (Solved
@@ -290,8 +290,8 @@ Right
                                      (Area (Loc 78 3 10) (Loc 84 3 16))
                                      (ListConstructor
                                         [ Solved
-                                            ([ IsIn "Number" [ TVar (TV "n39" Star) ] Nothing ] :=>
-                                               TVar (TV "n39" Star))
+                                            ([ IsIn "Number" [ TVar (TV "g84" Star) ] Nothing ] :=>
+                                               TVar (TV "g84" Star))
                                             (Area (Loc 79 3 11) (Loc 80 3 12))
                                             (ListItem
                                                (Solved
@@ -304,8 +304,8 @@ Right
                                                   (Area (Loc 79 3 11) (Loc 80 3 12))
                                                   (LNum "3")))
                                         , Solved
-                                            ([ IsIn "Number" [ TVar (TV "o40" Star) ] Nothing ] :=>
-                                               TVar (TV "o40" Star))
+                                            ([ IsIn "Number" [ TVar (TV "h85" Star) ] Nothing ] :=>
+                                               TVar (TV "h85" Star))
                                             (Area (Loc 82 3 14) (Loc 83 3 15))
                                             (ListItem
                                                (Solved
