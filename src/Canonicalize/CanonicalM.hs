@@ -30,7 +30,7 @@ data CanonicalState
       { warnings :: [CompilationWarning]
       , namesAccessed :: Set.Set Accessed
       , accumulatedJS :: String
-      , typesToDerive :: Set.Set ToDerive
+      , typesToDerive :: [ToDerive]
       -- List of ToDerive for which an instance of Eq has been defined.
       -- This will mostly be useful for records since for a record such as:
       -- { x :: Integer, y :: Integer } we would generate the general Eq instance:
@@ -103,21 +103,21 @@ getAllTypeAccesses = gets (Set.map getAccessName . Set.filter isTypeAccess . nam
 pushTypeDeclToDerive :: TypeDecl -> CanonicalM ()
 pushTypeDeclToDerive td = do
   s <- get
-  put s { typesToDerive = typesToDerive s <> Set.singleton (TypeDeclToDerive td) }
+  put s { typesToDerive = typesToDerive s <> [TypeDeclToDerive td] }
 
 pushRecordToDerive :: [String] -> CanonicalM ()
 pushRecordToDerive fieldNames = do
   s <- get
-  put s { typesToDerive = typesToDerive s <> Set.singleton (RecordToDerive fieldNames) }
+  put s { typesToDerive = typesToDerive s <> [RecordToDerive fieldNames] }
 
-getTypeDeclarationsToDerive :: CanonicalM (Set.Set ToDerive)
+getTypeDeclarationsToDerive :: CanonicalM [ToDerive]
 getTypeDeclarationsToDerive =
   gets typesToDerive
 
 resetToDerive :: CanonicalM ()
 resetToDerive = do
   s <- get
-  put s { typesToDerive = Set.empty }
+  put s { typesToDerive = [] }
 
 addDerivedTypes :: Set.Set ToDerive -> CanonicalM ()
 addDerivedTypes derived = do

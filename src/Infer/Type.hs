@@ -265,8 +265,28 @@ searchVarInType id t = case t of
 
 isTVar :: Type -> Bool
 isTVar t = case t of
-  TVar _ -> True
-  _      -> False
+  TVar _ ->
+    True
+
+  _ ->
+    False
+
+
+isRecordType :: Type -> Bool
+isRecordType t = case t of
+  TRecord _ _ ->
+    True
+
+  _ ->
+    False
+
+getTRecordFieldNames :: Type -> [String]
+getTRecordFieldNames t = case t of
+  TRecord fields _ ->
+    M.keys fields
+
+  _ ->
+    []
 
 
 baseToList :: Maybe Type -> [Type]

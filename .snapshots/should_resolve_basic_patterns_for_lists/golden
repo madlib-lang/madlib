@@ -19,8 +19,8 @@ Right
                   (Area (Loc 6 1 7) (Loc 21 1 22))
                   (ListConstructor
                      [ Solved
-                         ([ IsIn "Number" [ TVar (TV "z25" Star) ] Nothing ] :=>
-                            TVar (TV "z25" Star))
+                         ([ IsIn "Number" [ TVar (TV "u72" Star) ] Nothing ] :=>
+                            TVar (TV "u72" Star))
                          (Area (Loc 7 1 8) (Loc 8 1 9))
                          (ListItem
                             (Solved
@@ -30,8 +30,8 @@ Right
                                (Area (Loc 7 1 8) (Loc 8 1 9))
                                (LNum "1")))
                      , Solved
-                         ([ IsIn "Number" [ TVar (TV "a26" Star) ] Nothing ] :=>
-                            TVar (TV "a26" Star))
+                         ([ IsIn "Number" [ TVar (TV "v73" Star) ] Nothing ] :=>
+                            TVar (TV "v73" Star))
                          (Area (Loc 10 1 11) (Loc 11 1 12))
                          (ListItem
                             (Solved
@@ -41,8 +41,8 @@ Right
                                (Area (Loc 10 1 11) (Loc 11 1 12))
                                (LNum "2")))
                      , Solved
-                         ([ IsIn "Number" [ TVar (TV "b27" Star) ] Nothing ] :=>
-                            TVar (TV "b27" Star))
+                         ([ IsIn "Number" [ TVar (TV "w74" Star) ] Nothing ] :=>
+                            TVar (TV "w74" Star))
                          (Area (Loc 13 1 14) (Loc 14 1 15))
                          (ListItem
                             (Solved
@@ -52,8 +52,8 @@ Right
                                (Area (Loc 13 1 14) (Loc 14 1 15))
                                (LNum "3")))
                      , Solved
-                         ([ IsIn "Number" [ TVar (TV "c28" Star) ] Nothing ] :=>
-                            TVar (TV "c28" Star))
+                         ([ IsIn "Number" [ TVar (TV "x75" Star) ] Nothing ] :=>
+                            TVar (TV "x75" Star))
                          (Area (Loc 16 1 17) (Loc 17 1 18))
                          (ListItem
                             (Solved
@@ -63,8 +63,8 @@ Right
                                (Area (Loc 16 1 17) (Loc 17 1 18))
                                (LNum "5")))
                      , Solved
-                         ([ IsIn "Number" [ TVar (TV "d29" Star) ] Nothing ] :=>
-                            TVar (TV "d29" Star))
+                         ([ IsIn "Number" [ TVar (TV "y76" Star) ] Nothing ] :=>
+                            TVar (TV "y76" Star))
                          (Area (Loc 19 1 20) (Loc 20 1 21))
                          (ListItem
                             (Solved
@@ -75,33 +75,33 @@ Right
                                (LNum "8")))
                      ]))
                [ Solved
-                   ([ IsIn "Number" [ TVar (TV "p41" Star) ] Nothing ] :=>
+                   ([ IsIn "Number" [ TVar (TV "k88" Star) ] Nothing ] :=>
                       TApp
                         (TApp
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "p41" Star))))
-                        (TVar (TV "p41" Star)))
+                              (TVar (TV "k88" Star))))
+                        (TVar (TV "k88" Star)))
                    (Area (Loc 27 2 3) (Loc 41 2 17))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "d29" Star)))
+                              (TVar (TV "y76" Star)))
                          (Area (Loc 27 2 3) (Loc 36 2 12))
                          (PList
                             [ Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 28 2 4) (Loc 29 2 5))
                                 (PNum "1")
                             , Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 31 2 7) (Loc 32 2 8))
                                 (PNum "2")
                             , Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 34 2 10) (Loc 35 2 11))
                                 (PNum "3")
                             ]))
@@ -118,15 +118,15 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "p41" Star))))
-                        (TVar (TV "p41" Star)))
+                              (TVar (TV "k88" Star))))
+                        (TVar (TV "k88" Star)))
                    (Area (Loc 44 3 3) (Loc 58 3 17))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "d29" Star)))
+                              (TVar (TV "y76" Star)))
                          (Area (Loc 44 3 3) (Loc 53 3 12))
                          (PList
                             [ Solved
@@ -138,7 +138,7 @@ Right
                                 (Area (Loc 48 3 7) (Loc 49 3 8))
                                 (PNum "2")
                             , Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 51 3 10) (Loc 52 3 11))
                                 (PVar "n")
                             ]))
@@ -153,23 +153,23 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "p41" Star))))
-                        (TVar (TV "p41" Star)))
+                              (TVar (TV "k88" Star))))
+                        (TVar (TV "k88" Star)))
                    (Area (Loc 61 4 3) (Loc 72 4 14))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "d29" Star)))
+                              (TVar (TV "y76" Star)))
                          (Area (Loc 61 4 3) (Loc 67 4 9))
                          (PList
                             [ Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 62 4 4) (Loc 63 4 5))
                                 (PVar "n")
                             , Solved
-                                ([] :=> TVar (TV "d29" Star))
+                                ([] :=> TVar (TV "y76" Star))
                                 (Area (Loc 65 4 7) (Loc 66 4 8))
                                 (PNum "3")
                             ]))
@@ -180,11 +180,11 @@ Right
                , Solved
                    ([ IsIn
                         "Number"
-                        [ TVar (TV "p41" Star) ]
+                        [ TVar (TV "k88" Star) ]
                         (Just (Area (Loc 94 5 22) (Loc 95 5 23)))
                     , IsIn
                         "Number"
-                        [ TVar (TV "p41" Star) ]
+                        [ TVar (TV "k88" Star) ]
                         (Just (Area (Loc 90 5 18) (Loc 91 5 19)))
                     ] :=>
                       TApp
@@ -192,27 +192,27 @@ Right
                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                            (TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "p41" Star))))
-                        (TVar (TV "p41" Star)))
+                              (TVar (TV "k88" Star))))
+                        (TVar (TV "k88" Star)))
                    (Area (Loc 75 5 3) (Loc 97 5 25))
                    (Is
                       (Solved
                          ([] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                              (TVar (TV "p41" Star)))
+                              (TVar (TV "k88" Star)))
                          (Area (Loc 75 5 3) (Loc 84 5 12))
                          (PList
                             [ Solved
-                                ([] :=> TVar (TV "p41" Star))
+                                ([] :=> TVar (TV "k88" Star))
                                 (Area (Loc 76 5 4) (Loc 77 5 5))
                                 (PVar "x")
                             , Solved
-                                ([] :=> TVar (TV "p41" Star))
+                                ([] :=> TVar (TV "k88" Star))
                                 (Area (Loc 79 5 7) (Loc 80 5 8))
                                 (PVar "y")
                             , Solved
-                                ([] :=> TVar (TV "p41" Star))
+                                ([] :=> TVar (TV "k88" Star))
                                 (Area (Loc 82 5 10) (Loc 83 5 11))
                                 (PVar "z")
                             ]))

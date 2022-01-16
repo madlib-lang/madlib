@@ -37,7 +37,7 @@ Right
             ([] :=>
                TApp
                  (TCon (TC "Result" (Kfun Star Star)) "path")
-                 (TVar (TV "c28" Star)))
+                 (TVar (TV "k36" Star)))
             (Area (Loc 65 3 1) (Loc 80 3 16))
             (Assignment
                "result2"
@@ -45,7 +45,7 @@ Right
                   ([] :=>
                      TApp
                        (TCon (TC "Result" (Kfun Star Star)) "path")
-                       (TVar (TV "c28" Star)))
+                       (TVar (TV "k36" Star)))
                   (Area (Loc 75 3 11) (Loc 80 3 16))
                   (Var "Error")))
         , Solved
@@ -401,10 +401,10 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "v47" Star)))
+                               (TVar (TV "u72" Star)))
                             (TApp
                                (TCon (TC "Result" (Kfun Star Star)) "path")
-                               (TVar (TV "v47" Star)))))
+                               (TVar (TV "u72" Star)))))
                   , Untyped
                       (Area (Loc 29 1 30) (Loc 34 1 35))
                       (Constructor
@@ -412,7 +412,7 @@ Right
                          []
                          (TApp
                             (TCon (TC "Result" (Kfun Star Star)) "path")
-                            (TVar (TV "w48" Star))))
+                            (TVar (TV "v73" Star))))
                   ]
               , adtType =
                   TApp

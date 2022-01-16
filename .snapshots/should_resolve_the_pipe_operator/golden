@@ -3,102 +3,102 @@ Right
     { aimports = []
     , aexps =
         [ Solved
-            ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+            ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TVar (TV "h7" Star)))
-                 (TVar (TV "h7" Star)))
+                    (TVar (TV "t19" Star)))
+                 (TVar (TV "t19" Star)))
             (Area (Loc 0 1 1) (Loc 20 1 21))
             (Assignment
                "inc"
                (Solved
-                  ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                  ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TVar (TV "h7" Star)))
-                       (TVar (TV "h7" Star)))
+                          (TVar (TV "t19" Star)))
+                       (TVar (TV "t19" Star)))
                   (Area (Loc 0 1 1) (Loc 20 1 21))
                   (Placeholder
-                     ( ClassRef "Number" [] False True , [ TVar (TV "h7" Star) ] )
+                     ( ClassRef "Number" [] False True , [ TVar (TV "t19" Star) ] )
                      (Solved
                         ([ IsIn
                              "Number"
-                             [ TVar (TV "h7" Star) ]
+                             [ TVar (TV "t19" Star) ]
                              (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
-                         , IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                         , IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                          ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                (TVar (TV "h7" Star)))
-                             (TVar (TV "h7" Star)))
+                                (TVar (TV "t19" Star)))
+                             (TVar (TV "t19" Star)))
                         (Area (Loc 6 1 7) (Loc 20 1 21))
                         (Abs
                            (Solved
                               ([ IsIn
                                    "Number"
-                                   [ TVar (TV "h7" Star) ]
+                                   [ TVar (TV "t19" Star) ]
                                    (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
-                               , IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                               , IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                                ] :=>
-                                 TVar (TV "h7" Star))
+                                 TVar (TV "t19" Star))
                               (Area (Loc 7 1 8) (Loc 8 1 9))
                               "a")
                            [ Solved
                                ([ IsIn
                                     "Number"
-                                    [ TVar (TV "h7" Star) ]
+                                    [ TVar (TV "t19" Star) ]
                                     (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
-                                , IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                                , IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                                 ] :=>
-                                  TVar (TV "h7" Star))
+                                  TVar (TV "t19" Star))
                                (Area (Loc 14 1 15) (Loc 19 1 20))
                                (App
                                   (Solved
                                      ([ IsIn
                                           "Number"
-                                          [ TVar (TV "h7" Star) ]
+                                          [ TVar (TV "t19" Star) ]
                                           (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
                                       ] :=>
                                         TApp
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TVar (TV "h7" Star)))
-                                          (TVar (TV "h7" Star)))
+                                             (TVar (TV "t19" Star)))
+                                          (TVar (TV "t19" Star)))
                                      (Area (Loc 14 1 15) (Loc 19 1 20))
                                      (App
                                         (Solved
-                                           ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing ] :=>
+                                           ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing ] :=>
                                               TApp
                                                 (TApp
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TVar (TV "h7" Star)))
+                                                   (TVar (TV "t19" Star)))
                                                 (TApp
                                                    (TApp
                                                       (TCon
                                                          (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                          "prelude")
-                                                      (TVar (TV "h7" Star)))
-                                                   (TVar (TV "h7" Star))))
+                                                      (TVar (TV "t19" Star)))
+                                                   (TVar (TV "t19" Star))))
                                            (Area (Loc 16 1 17) (Loc 17 1 18))
                                            (Placeholder
                                               ( MethodRef "Number" "+" True
-                                              , [ TVar (TV "h7" Star) ]
+                                              , [ TVar (TV "t19" Star) ]
                                               )
                                               (Solved
-                                                 ([ IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                                                 ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                                                   ] :=>
                                                     TApp
                                                       (TApp
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TVar (TV "h7" Star)))
+                                                         (TVar (TV "t19" Star)))
                                                       (TApp
                                                          (TApp
                                                             (TCon
@@ -106,28 +106,28 @@ Right
                                                                   "(->)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV "h7" Star)))
-                                                         (TVar (TV "h7" Star))))
+                                                            (TVar (TV "t19" Star)))
+                                                         (TVar (TV "t19" Star))))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var "+"))))
                                         (Solved
                                            ([ IsIn
                                                 "Number"
-                                                [ TVar (TV "h7" Star) ]
+                                                [ TVar (TV "t19" Star) ]
                                                 (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
                                             ] :=>
-                                              TVar (TV "h7" Star))
+                                              TVar (TV "t19" Star))
                                            (Area (Loc 14 1 15) (Loc 15 1 16))
                                            (Var "a"))
                                         False))
                                   (Solved
                                      ([ IsIn
                                           "Number"
-                                          [ TVar (TV "h7" Star) ]
+                                          [ TVar (TV "t19" Star) ]
                                           (Just (Area (Loc 16 1 17) (Loc 17 1 18)))
-                                      , IsIn "Number" [ TVar (TV "h7" Star) ] Nothing
+                                      , IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                                       ] :=>
-                                        TVar (TV "h7" Star))
+                                        TVar (TV "t19" Star))
                                      (Area (Loc 18 1 19) (Loc 19 1 20))
                                      (LNum "1"))
                                   True)

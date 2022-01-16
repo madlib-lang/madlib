@@ -130,10 +130,10 @@ Right
                                  (TApp
                                     (TCon
                                        (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
-                                    (TVar (TV "j61" Star)))
-                                 (TVar (TV "k62" Star)))
-                              (TVar (TV "l63" Star))))
-                        (TVar (TV "l63" Star)))
+                                    (TVar (TV "s96" Star)))
+                                 (TVar (TV "t97" Star)))
+                              (TVar (TV "u98" Star))))
+                        (TVar (TV "u98" Star)))
                    (Area (Loc 64 3 3) (Loc 82 3 21))
                    (Is
                       (Solved
@@ -143,20 +143,20 @@ Right
                                  (TApp
                                     (TCon
                                        (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
-                                    (TVar (TV "j61" Star)))
-                                 (TVar (TV "k62" Star)))
-                              (TVar (TV "l63" Star)))
+                                    (TVar (TV "s96" Star)))
+                                 (TVar (TV "t97" Star)))
+                              (TVar (TV "u98" Star)))
                          (Area (Loc 64 3 3) (Loc 77 3 16))
                          (PCon
                             "Wish"
                             [ Solved
-                                ([] :=> TVar (TV "j61" Star)) (Area (Loc 69 3 8) (Loc 70 3 9)) PAny
+                                ([] :=> TVar (TV "s96" Star)) (Area (Loc 69 3 8) (Loc 70 3 9)) PAny
                             , Solved
-                                ([] :=> TVar (TV "k62" Star))
+                                ([] :=> TVar (TV "t97" Star))
                                 (Area (Loc 72 3 11) (Loc 73 3 12))
                                 PAny
                             , Solved
-                                ([] :=> TVar (TV "l63" Star))
+                                ([] :=> TVar (TV "u98" Star))
                                 (Area (Loc 75 3 14) (Loc 76 3 15))
                                 (PVar "c")
                             ]))
@@ -184,24 +184,24 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "u72" Star)))
+                               (TVar (TV "d107" Star)))
                             (TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TVar (TV "v73" Star)))
+                                  (TVar (TV "e108" Star)))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "w74" Star)))
+                                     (TVar (TV "f109" Star)))
                                   (TApp
                                      (TApp
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                               "path")
-                                           (TVar (TV "u72" Star)))
-                                        (TVar (TV "v73" Star)))
-                                     (TVar (TV "w74" Star)))))))
+                                           (TVar (TV "d107" Star)))
+                                        (TVar (TV "e108" Star)))
+                                     (TVar (TV "f109" Star)))))))
                   ]
               , adtType =
                   TApp
