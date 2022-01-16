@@ -85,6 +85,9 @@ tArrayOf = TApp (TCon (TC "Array" (Kfun Star Star)) "prelude")
 tArray :: Type
 tArray = tArrayOf (TVar (TV "a" Star))
 
+tByteArray :: Type
+tByteArray = TCon (TC "ByteArray" Star) "prelude"
+
 tDictionaryOf :: Type -> Type -> Type
 tDictionaryOf keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star Star))) "prelude") keyType)
 
