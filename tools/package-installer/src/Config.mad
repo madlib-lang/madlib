@@ -3,7 +3,7 @@ import type { Data } from "Data"
 import type { CommandError } from "System"
 import type { Response } from "Http"
 
-import { exists, readFile, writeFile, readDir } from "FileSystem"
+import { exists, read, write, readDir } from "File"
 import { exec } from "System"
 import { get } from "Http"
 
@@ -19,8 +19,8 @@ export alias Config = {
 
 defaultConfig :: Config
 export defaultConfig = {
-  readFile,
-  writeFile,
+  readFile: read,
+  writeFile: write,
   readDir,
   exec,
   exists,

@@ -64,11 +64,6 @@ const int64_t madlib__http__ClientError_TOO_MANY_REDIRECTS_INDEX = 15;
 const int64_t madlib__http__ClientError_UNRESOLVED_PROXY_INDEX = 16;
 const int64_t madlib__http__ClientError_UNSUPPORTED_PROTOCOL_INDEX = 17;
 
-// nullary constructors
-typedef struct madlib__http__ClientError_0 {
-  int64_t index;
-} madlib__http__ClientError_0_t;
-
 // unary constructors
 typedef struct madlib__http__ClientError_1 {
   int64_t index;
@@ -92,7 +87,6 @@ typedef struct madlib__http__Error_BadResponse {
 typedef struct madlib__http__Error_ClientError {
   int64_t index; // 1
   void *clientError;
-  void *maybeResponse;
 } madlib__http__Error_ClientError_t;
 
 /**

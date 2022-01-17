@@ -7,7 +7,7 @@ import S from "String"
 import System from "System"
 import L from "List"
 import F from "Function"
-import FS from "FileSystem"
+import File from "File"
 import N from "Number"
 import T from "Tuple"
 import Lcov from "LcovDotInfo"
@@ -162,14 +162,14 @@ stdoutReport = (lcov) => generateTable(lcov)
 
 collectCoverage :: List HP.HitPoint -> W.Wish String (List IO.Row)
 export collectCoverage = (hitPoints) =>
-  FS.readFile(".coverage/lcov.info")
+  File.read(".coverage/lcov.info")
     |> map(Lcov.parseLcov)
     |> map(collect(hitPoints))
     |> chain((lcov) =>
          of(lcov)
            |> map(Lcov.stringify)
            |> map(TextData)
-           |> chain(FS.writeFile(".coverage/lcov.info"))
+           |> chain(File.write(".coverage/lcov.info"))
            |> andDo(of(stdoutReport(lcov)))
        )
 
