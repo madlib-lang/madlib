@@ -3,10 +3,10 @@
 import W from "Wish"
 import type { Wish } from "Wish"
 import { Wish } from "Wish"
-import B from "Binary"
 import type { Maybe } from "Maybe"
 import { Just, Nothing, isJust } from "Maybe"
-import S from "String"
+import String from "String"
+import ByteArray from "ByteArray"
 import L from "List"
 import type { Data } from "Data"
 import { BinaryData, TextData } from "Data"
@@ -76,8 +76,11 @@ headerValue = where { Header(_, val) => val }
 
 bodyLength :: Data -> Integer
 bodyLength = where {
-  TextData(s) => S.len(s)
-  BinaryData(bytes) => B.len(bytes)
+  TextData(s) =>
+    String.len(s)
+
+  BinaryData(bytes) =>
+    ByteArray.len(bytes)
 }
 
 #-
@@ -91,7 +94,7 @@ const buildHeaderObj = (headerItems) => {
 }
 -#
 
-isBinary = (mimeType) => where(S.split("/", mimeType)) {
+isBinary = (mimeType) => where(String.split("/", mimeType)) {
   ["text", _] =>
     false
   

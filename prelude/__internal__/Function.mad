@@ -99,6 +99,9 @@ export when = (predicate, truthy, value) =>
 not :: Boolean -> Boolean
 export not = (b) => !b
 
+noop :: a -> {}
+export noop = (_) => ({})
+
 /**
  * Inverts the parameters of a binary function.
  *
