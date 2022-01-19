@@ -1,0 +1,90 @@
+import { assertEquals, test } from "Test"
+import ByteArray from "ByteArray"
+
+
+
+test(
+  "mapBytes",
+  (_) => assertEquals(
+    ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([1, 2, 3,])),
+    ByteArray.fromList([2, 4, 6,])
+  )
+)
+
+
+test(
+  "mapBytes - empty ByteAray",
+  (_) => assertEquals(
+    ByteArray.mapBytes((x) => x * 2, ByteArray.fromList([])),
+    ByteArray.fromList([])
+  )
+)
+
+
+test(
+  "reduce",
+  (_) => assertEquals(ByteArray.reduce((sum, a) => sum + a, 0, ByteArray.fromList([1, 2, 3,])), 6)
+)
+
+
+test(
+  "concat",
+  (_) => assertEquals(
+    ByteArray.concat(ByteArray.fromList([1, 2, 3,]), ByteArray.fromList([4, 5, 6,])),
+    ByteArray.fromList([1, 2, 3, 4, 5, 6,])
+  )
+)
+
+
+test(
+  "len",
+  (_) => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.len
+    )([1, 2, 3, 4, 5, 6,]),
+    6
+  )
+)
+
+
+test(
+  "toList",
+  (_) => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.toList
+    )([1, 2, 3, 4, 5, 6,]),
+    [1, 2, 3, 4, 5, 6,]
+  )
+)
+
+
+test(
+  "fromString",
+  (_) => assertEquals(ByteArray.fromString("ABC"), ByteArray.fromList([65, 66, 67,]))
+)
+
+
+test(
+  "toString",
+  (_) => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.toString
+    )([65, 66, 67,]),
+    "ABC"
+  )
+)
+
+
+test(
+  "toString - unicode",
+  (_) => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.toString
+    )([226, 130, 172,]),
+    "€"
+  )
+)

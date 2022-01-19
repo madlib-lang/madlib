@@ -86,8 +86,8 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concat(madlib__bytearray__Byt
       (madlib__bytearray__ByteArray_t *)GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
   result->bytes = (unsigned char *)GC_malloc((a->length + b->length) * sizeof(unsigned char));
 
-  memcpy(result->bytes, a->bytes, a->length * sizeof(void *));
-  memcpy(result->bytes + a->length, b->bytes, b->length * sizeof(void *));
+  memcpy(result->bytes, a->bytes, a->length * sizeof(unsigned char));
+  memcpy(result->bytes + a->length, b->bytes, b->length * sizeof(unsigned char));
 
   result->length = a->length + b->length;
 

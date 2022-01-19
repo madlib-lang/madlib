@@ -131,9 +131,14 @@ extern "C" {
 #endif
 
 /**
- * madlib__http__request :: Request -> (Response -> ()) -> ()
+ * madlib__http__request :: Request -> (Response String -> ()) -> ()
  */
 void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+
+/**
+ * madlib__http__requestBytes :: Request -> (Response ByteArray -> ()) -> ()
+ */
+void madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback);
 
 #ifdef __cplusplus
 }

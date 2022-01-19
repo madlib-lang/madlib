@@ -358,14 +358,34 @@ renameTypeDecls env typeDecls = case typeDecls of
     ([], env)
 
 
-renameInstance :: Env -> Instance -> Instance
+renameInstance :: Env -> Instance -> (Instance, Env)
 renameInstance env inst = case inst of
   Untyped area (Instance name ps p methods) ->
-    let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
-    in  Untyped area (Instance name ps p renamedMethods)
+    -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
+    let (renamedMethods, env') =
+          Map.foldrWithKey
+            (\methodName (method, sc) (renamedMethods, env') ->
+              let (renamedMethod, env'') = renameExp env method
+              in  ((methodName, (renamedMethod, sc)) : renamedMethods, env'')
+            )
+            ([], env)
+            methods
+        renamedMethods' = Map.fromList renamedMethods
+    -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
+    in  (Untyped area (Instance name ps p renamedMethods'), env')
 
   _ ->
     undefined
+
+renameInstances :: Env -> [Instance] -> ([Instance], Env)
+renameInstances env instances = case instances of
+  (inst : insts) ->
+    let (renamed, env') = renameInstance env inst
+        (next, env'') = renameInstances env' insts
+    in  (renamed : next, env'')
+
+  [] ->
+    ([], env)
 
 
 renameSolvedName :: Env -> String -> Solved String -> (Solved String, Env)
@@ -476,13 +496,13 @@ rewriteDefaultImports env imports = case imports of
 
 renameAST :: Env -> AST -> (AST, Env)
 renameAST env ast =
-  let moduleHash                 = hashModulePath ast
-      env'                       = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
-      (renamedImports, env'')    = renameImports env' $ aimports ast
-      (renamedTypeDecls, env''') = renameTypeDecls env'' $ atypedecls ast
-      (renamedExps, env'''')     = renameTopLevelExps env''' $ aexps ast
-      renamedInstances           = renameInstance env'''' <$> ainstances ast
-      rewrittenImports           = rewriteDefaultImports env'''' renamedImports
+  let moduleHash                   = hashModulePath ast
+      env'                         = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
+      (renamedImports, env'')      = renameImports env' $ aimports ast
+      (renamedTypeDecls, env''')   = renameTypeDecls env'' $ atypedecls ast
+      (renamedExps, env'''')       = renameTopLevelExps env''' $ aexps ast
+      (renamedInstances, env''''') = renameInstances env'''' (ainstances ast)
+      rewrittenImports             = rewriteDefaultImports env''''' renamedImports
   in  (ast { aexps = renamedExps, atypedecls = renamedTypeDecls, ainstances = renamedInstances, aimports = rewrittenImports }, env)
 
 renameTable :: Table -> Table
