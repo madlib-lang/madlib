@@ -1,6 +1,8 @@
 ![build](https://github.com/madlib-lang/madlib/workflows/build/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/madlib-lang/madlib/badge.svg?branch=master)](https://coveralls.io/github/madlib-lang/madlib?branch=master)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md) 
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
+
+[![Discord](https://img.shields.io/discord/530598289813536771?label=discord%20madlib%20channel)](https://discord.com/channels/530598289813536771/932841899914571787)
 
 # madlib
 > madlib is a general purpose language that compiles to Javascript.
@@ -91,7 +93,7 @@ inc(3) // 4
 The special pipe expression, which returns a function.
 
 ```madlib
-compute :: Number -> Number
+compute :: Float -> Float
 compute = pipe(
   inc,
   add(10),
@@ -237,7 +239,7 @@ language = { name: "Madlib", howIsIt: "cool" }
 
 It can be used as constructor arguments by using Record types:
 ```
-data User = LoggedIn({ name :: String, age :: Number, address :: String })
+data User = LoggedIn({ name :: String, age :: Integer, address :: String })
 ```
 
 It can be used in patterns:
