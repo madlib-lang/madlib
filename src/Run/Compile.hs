@@ -172,10 +172,10 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                   if target == TLLVM then do
                     let renamedTable     = Rename.renameTable table
+                    -- -- TODO: only do this in verbose mode?
+                    -- putStrLn (ppShow renamedTable)
                     let closureConverted = ClosureConvert.optimizeTable renamedTable
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
-                    -- TODO: only do this in verbose mode?
-                    -- putStrLn (ppShow closureConverted)
                   else do
                     let optimizedTable = optimizeTable optimized table
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile

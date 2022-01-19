@@ -9,6 +9,7 @@
 
 #include "event-loop.hpp"
 #include "list.hpp"
+#include "bytearray.hpp"
 #include "maybe.hpp"
 
 #ifdef __cplusplus
@@ -23,6 +24,7 @@ typedef struct RequestData {
   curl_slist *requestHeaders;
   void *goodCallback;
   void *badCallback;
+  bool asBytes;
 
   // Internals
   uv_poll_t *pollHandle;
@@ -46,7 +48,7 @@ void toUpper(char *dest, char *src, size_t length) {
   }
 }
 
-madlib__record__Record_t *buildResponse(char **boxedBody, madlib__list__Node_t **boxedHeaders, int64_t *boxedStatus) {
+madlib__record__Record_t *buildResponse(void *boxedBody, madlib__list__Node_t **boxedHeaders, int64_t *boxedStatus) {
   madlib__record__Field_t *bodyField = (madlib__record__Field_t *)GC_malloc(sizeof(madlib__record__Field_t));
   madlib__record__Field_t *headerField = (madlib__record__Field_t *)GC_malloc(sizeof(madlib__record__Field_t));
   madlib__record__Field_t *statusField = (madlib__record__Field_t *)GC_malloc(sizeof(madlib__record__Field_t));
@@ -203,8 +205,15 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
     __applyPAP__(requestData->badCallback, 1, error);
   } else {
     // box body
-    char **boxedBody = (char **)GC_malloc(sizeof(char *));
-    *boxedBody = requestData->body;
+    void *boxedBody = NULL;
+    if (requestData->asBytes) {
+      boxedBody = GC_malloc(sizeof(madlib__bytearray__ByteArray_t));
+      ((madlib__bytearray__ByteArray_t*)boxedBody)->bytes = (unsigned char*) requestData->body;
+      ((madlib__bytearray__ByteArray_t*)boxedBody)->length = requestData->responseSize;
+    } else {
+      boxedBody = GC_malloc(sizeof(char *));
+      *(char **)boxedBody = requestData->body;
+    }
 
     // box headers
     madlib__list__Node_t **boxedHeaders = (madlib__list__Node_t **)GC_malloc(sizeof(madlib__list__Node_t *));
@@ -380,9 +389,8 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
   return lcurlHeaders;
 }
 
-// madlib__http__request :: Request -> (Error -> {}) -> (Response -> {}) -> {}
-void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
-  char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", request);
+void makeRequest(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
+char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", request);
   char *url = *boxedUrl;
 
   madlib__http__Method_t *boxedMethod =
@@ -404,6 +412,7 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback
   requestData->pollHandle = (uv_poll_t *)GC_malloc_uncollectable(sizeof(uv_poll_t));
   uv_timer_init(getLoop(), requestData->timerHandle);
   requestData->timerHandle->data = requestData;
+  requestData->asBytes = asBytes;
   requestData->headers = madlib__list__empty();
   requestData->badCallback = badCallback;
   requestData->goodCallback = goodCallback;
@@ -425,8 +434,13 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, methodString);
   curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "gzip,deflate,zstd");
   if (boxedBody->index == madlib__maybe__Maybe_JUST_INDEX) {
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDS, *((char **)boxedBody->data));
-    curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, -1L);
+    if (asBytes) {
+      curl_easy_setopt(handle, CURLOPT_POSTFIELDS, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->bytes);
+      curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->length);
+    } else {
+      curl_easy_setopt(handle, CURLOPT_POSTFIELDS, *((char **)boxedBody->data));
+      curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, -1L);
+    }
   }
 
   CURLU *urlp = curl_url();
@@ -459,6 +473,16 @@ void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback
     GC_free(requestData->timerHandle);
     GC_free(requestData);
   }
+}
+
+// madlib__http__request :: Request String -> (Error String) -> (Response String -> ()) -> ()
+void madlib__http__request(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+  makeRequest(request, badCallback, goodCallback, false);
+}
+
+// madlib__http__requestBytes :: Request ByteArray -> (Error ByteArray) -> (Response ByteArray -> ()) -> ()
+void madlib__http__requestBytes(madlib__record__Record_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
+  makeRequest(request, badCallback, goodCallback, true);
 }
 
 #ifdef __cplusplus
