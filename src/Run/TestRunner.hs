@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Run.TestRunner where
 
 import           GHC.IO                         ( )
@@ -31,6 +32,8 @@ import qualified Data.Maybe                     as Maybe
 import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Distribution.System as DistributionSystem
+import qualified Explain.Format as Explain
+import qualified System.Exit as Exit
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -106,24 +109,29 @@ runLLVMTests entrypoint coverage = do
         Left err ->
           error $ ppShow err
 
-        Right (solvedTable, _) -> do
-          let renamedTable     = Rename.renameTable solvedTable
-          let closureConverted = ClosureConvert.optimizeTable renamedTable
-          LLVM.generateTable outputPath rootPath closureConverted mainTestPath
+        Right (solvedTable, InferState { errors }) -> do
+          if not (null errors) then do
+            formattedErrors <- mapM (Explain.format readFile False) errors
+            let fullError = List.intercalate "\n\n\n" formattedErrors
+            putStrLn fullError >> Exit.exitFailure
+          else do
+            let renamedTable     = Rename.renameTable solvedTable
+            let closureConverted = ClosureConvert.optimizeTable renamedTable
+            LLVM.generateTable outputPath rootPath closureConverted mainTestPath
 
-          testOutput <- case DistributionSystem.buildOS of
-            DistributionSystem.Windows -> do
-              try $ callCommand ".tests\runTests"
+            testOutput <- case DistributionSystem.buildOS of
+              DistributionSystem.Windows -> do
+                try $ callCommand ".tests\runTests"
 
-            _ -> do
-              try $ callCommand ".tests/runTests"
+              _ -> do
+                try $ callCommand ".tests/runTests"
 
-          case (testOutput :: Either IOError ()) of
-            Left e ->
-              error $ ppShow e
+            case (testOutput :: Either IOError ()) of
+              Left e ->
+                error $ ppShow e
 
-            Right _ ->
-              return ()
+              Right _ ->
+                return ()
 
     Left _ ->
       error "asts could not be parsed"

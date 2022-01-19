@@ -27,6 +27,32 @@ export reduce = extern "madlib__bytearray__reduce"
 
 #elseif js
 
+toString :: ByteArray -> String
+export toString = (byteArray) => #- new TextDecoder().decode(byteArray) -#
+
+fromString :: String -> ByteArray
+export fromString = (str) => #- new TextEncoder().encode(str) -#
+
+toList :: ByteArray -> List Byte
+export toList = (byteArray) => #- Array.from(byteArray) -#
+
+fromList :: List Byte -> ByteArray
+export fromList = (bytes) => #- Uint8Array.from(bytes) -#
+
+concat :: ByteArray -> ByteArray -> ByteArray
+export concat = (byteArray1, byteArray2) => #- {
+  const result = new Uint8Array(byteArray1.length + byteArray2.length);
+  result.set(byteArray1);
+  result.set(byteArray2, byteArray1.length);
+  return result;
+} -#
+
+mapBytes :: (Byte -> Byte) -> ByteArray -> ByteArray
+export mapBytes = (f, byteArray) => #- byteArray.map(f) -#
+
+reduce :: (Byte -> Byte -> a) -> a -> ByteArray -> a
+export reduce = (f, initialValue, byteArray) => #- byteArray.reduce((a, b) => f(a)(b), initialValue) -#
+
 /**
  * Returns the length of a ByteArray.
  *
