@@ -208,6 +208,7 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
     typeDeclarationsToDerive <- getTypeDeclarationsToDerive
     let typeDeclarationsToDerive' = typeDeclarationsToDerive \\ S.toList derivedTypes
         derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
+        derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
     
     addDerivedTypes (S.fromList typeDeclarationsToDerive')
     resetToDerive
@@ -216,7 +217,7 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
                                    , Can.aexps       = exps
                                    , Can.atypedecls  = typeDecls
                                    , Can.ainterfaces = interfaces
-                                   , Can.ainstances  = derivedEqInstances ++ instances
+                                   , Can.ainstances  = derivedInspectInstances ++ derivedEqInstances ++ instances
                                    , Can.apath       = Src.apath ast
                                    }
 
