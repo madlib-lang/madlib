@@ -1,6 +1,28 @@
 // file: path
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
+Inspect['Maybe'] = {};
+Inspect['Maybe']['inspect'] = () => (Inspect_n13) => (__$a__ => ((__x__) => {
+  if (__x__.__constructor === "Just" && true) {
+    let a0 = __x__.__args[0];
+    return `Just(${Inspect_n13.inspect()(a0)})`;
+  }
+  else if (__x__.__constructor === "Nothing") {
+    return "Nothing";
+  }
+  else if (true) {
+    return "Unknown";
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__$a__))
+Inspect['Record_carsa'] = {};
+Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => (__$a__ => `{ ${"cars: " + Inspect_c28.inspect()(__$a__.cars)} }`)
+Inspect['Record_nameb_xa'] = {};
+Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => (__$a__ => `{ ${"x: " + Inspect_m38.inspect()(__$a__.x)}, ${"name: " + Inspect_t45.inspect()(__$a__.name)} }`)
 export let fn = (b => c => b + c);
 let inc = (x => x + 1);
 let dec = (x => x - 1);
