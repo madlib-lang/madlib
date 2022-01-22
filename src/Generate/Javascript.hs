@@ -696,35 +696,55 @@ instance Compilable Opt.Instance where
             then "__hpFnWrap('" <> ccastPath config <> "', " <> show line <> ", '" <> n <> "')(" <> content <> ")"
             else content
           instRoot = interface <> "['" <> typings <> "']"
-          compiledNDMethod =
-            "let __"
-              <> interface
-              <> typings
-              <> n
-              <> " = "
-              <> onceFnName (ccoptimize config)
-              <> "(() => "
-              <> content'
-              <> ");\n"
           compiledMethod =
             instRoot
               <> "['"
               <> n
               <> "'] = () => "
               <> placeholders
-              <> "{\n  "
-              <> intercalate
-                   "\n  "
-                   ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
-              <> "\n  return __"
-              <> interface
-              <> typings
-              <> n
-              <> "();\n};\n"
+              <> content'
+              <> "\n"
         in
           if not (null dicts)
-            then compiledNDMethod <> compiledMethod
+            then compiledMethod
             else instRoot <> "['" <> n <> "'] = () => " <> content' <> ";\n"
+      -- compileMethod :: Name -> Exp -> String
+      -- compileMethod n (Opt.Optimized t (Area (Loc _ line _) _) (Opt.Assignment _ exp)) =
+      --   let
+      --     (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
+      --     content'                       = if cccoverage config && isFunctionType t
+      --       then "__hpFnWrap('" <> ccastPath config <> "', " <> show line <> ", '" <> n <> "')(" <> content <> ")"
+      --       else content
+      --     instRoot = interface <> "['" <> typings <> "']"
+      --     compiledNDMethod =
+      --       "let __"
+      --         <> interface
+      --         <> typings
+      --         <> n
+      --         <> " = "
+      --         <> onceFnName (ccoptimize config)
+      --         <> "(() => "
+      --         <> content'
+      --         <> ");\n"
+      --     compiledMethod =
+      --       instRoot
+      --         <> "['"
+      --         <> n
+      --         <> "'] = () => "
+      --         <> placeholders
+      --         <> "{\n  "
+      --         <> intercalate
+      --              "\n  "
+      --              ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
+      --         <> "\n  return __"
+      --         <> interface
+      --         <> typings
+      --         <> n
+      --         <> "();\n};\n"
+      --   in
+      --     if not (null dicts)
+      --       then compiledNDMethod <> compiledMethod
+      --       else instRoot <> "['" <> n <> "'] = () => " <> content' <> ";\n"
 
 
 compileAssignmentWithPlaceholder :: Env -> CompilationConfig -> Exp -> (String, [String], String)

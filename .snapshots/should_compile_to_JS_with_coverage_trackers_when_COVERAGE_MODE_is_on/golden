@@ -1,6 +1,28 @@
 // file: path
 let Just = (a => ({ __constructor: "Just", __args: [ a ] }));
 let Nothing = ({ __constructor: "Nothing", __args: [  ] });
+Inspect['Maybe'] = {};
+Inspect['Maybe']['inspect'] = () => (Inspect_n13) => __hpFnWrap('path', 0, 'inspect')((__$a__ => ((__x__) => {
+  if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Just" && true) {
+    let a0 = __x__.__args[0];
+    return `Just(${__hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_n13.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, a0))))})`;
+  }
+  else if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Nothing") {
+    return __hpLineWrap('path', 0, "Nothing");
+  }
+  else if (__hp('path', 'line', 0, 0) || true) {
+    return __hpLineWrap('path', 0, "Unknown");
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__hpLineWrap('path', 0, __$a__))))
+Inspect['Record_carsa'] = {};
+Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => __hpFnWrap('path', 0, 'inspect')((__$a__ => `{ ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "cars: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_c28.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).cars)))))} }`))
+Inspect['Record_nameb_xa'] = {};
+Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => __hpFnWrap('path', 0, 'inspect')((__$a__ => `{ ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "x: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_m38.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).x)))))}, ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "name: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_t45.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).name)))))} }`))
 export let fn = __hpFnWrap('path', 1, 'fn')((b => c => __hpLineWrap('path', 1, __hpLineWrap('path', 1, b)) + __hpLineWrap('path', 1, __hpLineWrap('path', 1, c))));
 let inc = __hpFnWrap('path', 3, 'inc')((x => __hpLineWrap('path', 3, __hpLineWrap('path', 3, x)) + __hpLineWrap('path', 3, __hpLineWrap('path', 3, 1))));
 let dec = __hpFnWrap('path', 5, 'dec')((x => __hpLineWrap('path', 5, __hpLineWrap('path', 5, x)) - __hpLineWrap('path', 5, __hpLineWrap('path', 5, 1))));
