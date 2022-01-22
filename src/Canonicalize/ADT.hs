@@ -99,7 +99,7 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
       let cf = foldr1 fn $ ts <> [rt]
           sc = quantify (collectVars (apply s cf)) ([] :=> apply s cf)
       typings' <- mapM canonicalizeTyping typings
-      return $ Can.Canonical area $ Can.Constructor name typings' sc
+      return $ Can.Canonical area $ Can.Constructor name typings' sc cf
     )
     is
 

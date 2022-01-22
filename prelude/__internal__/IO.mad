@@ -34,16 +34,16 @@ export err = (e) => (#- { console.log(e); return e; } -#)
 warn :: a -> a
 export warn = (w) => (#- { console.warn(w); return w; } -#)
 
-inspect :: a -> a
-export inspect = (a) => (#-{
-  {Browser}
-  console.log(a)
-  {/Browser}
-  {Node}
-  console.log(util.inspect(a, {showHidden: false, depth: null}))
-  {/Node}
-  return a
-}-#)
+// inspect :: a -> a
+// export inspect = (a) => (#-{
+//   {Browser}
+//   console.log(a)
+//   {/Browser}
+//   {Node}
+//   console.log(util.inspect(a, {showHidden: false, depth: null}))
+//   {/Node}
+//   return a
+// }-#)
 
 
 #-

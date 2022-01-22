@@ -3063,6 +3063,21 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
+      fnInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "a_arr_b"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized unitInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "\"[Function]\"")
+                      ])
+                    , IT.Forall [] unitInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
       byteArrayInspectInstance =
         Untyped emptyArea
           ( Instance "Inspect" [] "ByteArray"
@@ -3247,6 +3262,21 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
+      fnEqInstance =
+        Untyped emptyArea
+          ( Instance "Eq" [] "a_arr_b"
+              (Map.fromList
+                [ ( "=="
+                  , ( Optimized eqOperationQualType emptyArea (TopLevelAbs "==" ["a", "b"] [
+                        Optimized ([] IT.:=> IT.tBool) emptyArea (LBool "true")
+                      ])
+                    , IT.Forall [IT.Star] $ [IT.IsIn "Eq" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.tBool)
+                    )
+                  )
+                ]
+              )
+          )
+
 
       overloadedEqType     = dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
       overloadedEqQualType = [eqPred] IT.:=> overloadedEqType
@@ -3363,6 +3393,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       , arrayEqInstance
       , byteArrayEqInstance
       , dictionaryEqInstance
+      , fnEqInstance
 
         -- Inspect
       , stringInspectInstance
@@ -3375,6 +3406,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       , listInspectInstance
       , arrayInspectInstance
       , dictionaryInspectInstance
+      , fnInspectInstance
       ] ++ tupleEqInstances ++ tupleInspectInstances
     )
   return ()

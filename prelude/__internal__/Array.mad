@@ -27,6 +27,9 @@ instance Functor Array {
 
 #elseif js
 
+fromList :: List a -> Array a
+export fromList = (array) => #- array -#
+
 // TODO: implement Array for JS
 
 #endif
