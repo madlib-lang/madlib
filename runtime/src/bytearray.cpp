@@ -28,6 +28,55 @@ bool *madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madl
   return result;
 }
 
+char **madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytearray) {
+  int64_t length = bytearray->length;
+
+  if (length == 0) {
+    char **boxed = (char **)GC_malloc(sizeof(char*));
+    *boxed = (char*)"ByteArray([])";
+    return boxed;
+  }
+
+  int currentIndex = 0;
+  char *inspectedItems[length];
+  size_t sizeOfItems = 0;
+
+  for (int i = 0; i < length; i++) {
+    // inspectedItems[i] = *(char **)__applyPAP__((void *)&inspectDict->inspect, 1, array->items[i]);
+    inspectedItems[i] = madlib__number__internal__showByte(bytearray->bytes[i]);
+    sizeOfItems += strlen(inspectedItems[i]);
+  }
+
+  size_t sizeOfSpacesAndCommas = (length - 1) * 2;
+  char *result = (char*)GC_malloc(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
+
+  // Leading "ByteArray(["
+  strncpy(result, "ByteArray(", sizeof(char) * 10);
+  size_t currentPosition = 10;
+
+  // Items
+  for (int i = 0; i < length - 1; i++) {
+    size_t lengthOfItem = strlen(inspectedItems[i]);
+    strncpy(result + currentPosition, inspectedItems[i], lengthOfItem);
+    if ((i + 1) % 8 == 0 && i > 0 && i < length - 1) {
+      // add space separator
+      strncpy(result + currentPosition + lengthOfItem, " ", sizeof(char));
+      currentPosition += lengthOfItem + 1;
+    } else {
+      currentPosition += lengthOfItem;
+    }
+  }
+
+  // Last item does not have ", " at the end
+  size_t lengthOfItem = strlen(inspectedItems[length - 1]);
+  strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
+  strncpy(result + currentPosition + lengthOfItem, ")\0", sizeof(char) * 2);
+
+  char **boxed = (char **)GC_malloc(sizeof(char*));
+  *boxed = result;
+  return boxed;
+}
+
 char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
   char *string = (char*) arr->bytes;
 
