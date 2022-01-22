@@ -8,6 +8,8 @@ extern "C" {
 #endif
 
 // Byte
+char *madlib__number__internal__showByte(unsigned char i);
+char **madlib__number__internal__inspectByte(unsigned char *i);
 
 unsigned char *madlib__number__internal__numberToByte(int64_t *a);
 unsigned char *madlib__number__internal__addBytes(unsigned char *a,
@@ -24,6 +26,9 @@ bool *madlib__number__internal__lteBytes(unsigned char *a, unsigned char *b);
 bool *madlib__number__internal__eqByte(unsigned char *a, unsigned char *b);
 
 // Float
+char *madlib__number__internal__showFloat(double d);
+char **madlib__number__internal__inspectFloat(double *i);
+
 double *madlib__number__internal__numberToFloat(int64_t *a);
 double *madlib__number__internal__addFloats(double *a, double *b);
 double *madlib__number__internal__substractFloats(double *a, double *b);
@@ -36,6 +41,9 @@ bool *madlib__number__internal__lteFloats(double *a, double *b);
 bool *madlib__number__internal__eqFloat(double *a, double *b);
 
 // Integer
+char *madlib__number__internal__showInteger(int64_t i);
+char **madlib__number__internal__inspectInteger(int64_t *i);
+
 int64_t *madlib__number__internal__numberToInteger(int64_t *a);
 int64_t *madlib__number__internal__addIntegers(int64_t *a, int64_t *b);
 int64_t *madlib__number__internal__substractIntegers(int64_t *a, int64_t *b);

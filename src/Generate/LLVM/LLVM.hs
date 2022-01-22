@@ -78,6 +78,7 @@ import qualified LLVM.CodeModel as CodeModel
 import qualified LLVM.AST.Visibility as CodeGenOptLevel
 import qualified LLVM.CodeGenOpt as CodeGenOpt
 import qualified Distribution.System as DistributionSystem
+import qualified Data.Text.Lazy.IO as Text
 
 
 
@@ -1241,10 +1242,10 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 value, Nothing)
 
   Optimized _ _ LUnit -> do
-    return (symbolTable, Operand.ConstantOperand $ Constant.Null (Type.ptr Type.i1), Nothing)
+    return (symbolTable, Operand.ConstantOperand $ Constant.Int 1 1, Nothing)
 
   Optimized _ _ (LStr (leading : s)) | leading == '"' || leading == '\'' -> do
-    addr <- buildStr (List.init s)
+    addr <- if List.null s then buildStr [] else buildStr (List.init s)
     return (symbolTable, addr, Nothing)
 
   Optimized _ _ (LStr s) -> do
@@ -2269,11 +2270,11 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
 
 
 
-eqVars :: [String]
-eqVars = (:"") <$> ['a'..]
+tupleVars :: [String]
+tupleVars = (:"") <$> ['a'..]
 
-eqNumbers :: [String]
-eqNumbers = show <$> [1..]
+tupleNumbers :: [String]
+tupleNumbers = show <$> [1..]
 
 getTupleName :: Int -> String
 getTupleName arity = case arity of
@@ -2310,7 +2311,7 @@ getTupleName arity = case arity of
 -- generates AST for a tupleN instance. n must be >= 2
 buildTupleNEqInstance :: Int -> Instance
 buildTupleNEqInstance n =
-  let tvarNames          = List.take n eqVars
+  let tvarNames          = List.take n tupleVars
       eqDictNames        = ("$Eq$" ++) <$> tvarNames
       tvars              = (\name -> IT.TVar (IT.TV name IT.Star)) <$> tvarNames
       dictTVars          = IT.TVar (IT.TV "eqDict" IT.Star) <$ eqDictNames
@@ -2322,8 +2323,8 @@ buildTupleNEqInstance n =
       tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
       whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
       isQualType         = preds IT.:=> (IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType `IT.fn` IT.tBool)
-      leftTupleVarNames  = ("a" ++) <$> eqNumbers
-      rightTupleVarNames = ("b" ++) <$> eqNumbers
+      leftTupleVarNames  = ("a" ++) <$> tupleNumbers
+      rightTupleVarNames = ("b" ++) <$> tupleNumbers
       leftTuplePatterns  =
         (\(tvName, var) ->
           Optimized ([IT.IsIn "Eq" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (PVar var)
@@ -2359,14 +2360,14 @@ buildTupleNEqInstance n =
       andApp = \left right -> Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized ([] IT.:=> (IT.tBool `IT.fn` IT.tBool `IT.fn` IT.tBool)) emptyArea (Var "&&")) [left, right])
       condition = List.foldr andApp (Optimized ([] IT.:=> IT.tBool) emptyArea (LBool "true")) conditions
 
-
   in  Untyped emptyArea (Instance
         "Eq"
         preds
         tupleName
         (Map.fromList
           [ ( "=="
-            , ( Optimized methodQualType emptyArea (TopLevelAbs "==" (eqDictNames ++ ["a", "b"]) [
+            -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
+            , ( Optimized methodQualType emptyArea (TopLevelAbs "==" (List.reverse eqDictNames ++ ["a", "b"]) [
                   Optimized ([] IT.:=> IT.tBool) emptyArea (Where (
                     Optimized whereExpQualType emptyArea (TupleConstructor [
                       Optimized tupleQualType emptyArea (Var "a"),
@@ -2389,11 +2390,102 @@ buildTupleNEqInstance n =
         )
       )
 
+-- generates AST for a tupleN instance. n must be >= 2
+buildTupleNInspectInstance :: Int -> Instance
+buildTupleNInspectInstance n =
+  let tvarNames          = List.take n tupleVars
+      inspectDictNames   = ("$Inspect$" ++) <$> tvarNames
+      tvars              = (\name -> IT.TVar (IT.TV name IT.Star)) <$> tvarNames
+      dictTVars          = IT.TVar (IT.TV "inspectDict" IT.Star) <$ inspectDictNames
+      preds              = (\var -> IT.IsIn "Inspect" [var] Nothing) <$> tvars
+      tupleName          = getTupleName n
+      tupleType          = List.foldl' IT.TApp tupleHeadType tvars
+      methodQualType     = preds IT.:=> List.foldr IT.fn IT.tStr (dictTVars ++ (tupleType <$ tvars))
+      tupleHeadType      = IT.getTupleCtor n
+      tupleQualType      = preds IT.:=> List.foldl' IT.TApp tupleHeadType tvars
+      whereExpQualType   = preds IT.:=> IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType
+      isQualType         = preds IT.:=> (IT.TApp (IT.TApp IT.tTuple2 tupleType) tupleType `IT.fn` IT.tStr)
+      tupleVarNames  = ("a" ++) <$> tupleNumbers
+      tuplePatterns  =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (PVar var)
+        ) <$> List.zip tvarNames tupleVarNames
+
+      vars =
+        (\(tvName, var) ->
+          Optimized ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> IT.TVar (IT.TV tvName IT.Star)) emptyArea (Var var)
+        ) <$> List.zip tvarNames tupleVarNames
+
+      inspectMethods =
+        (\tvName ->
+          Optimized
+            ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tStr))
+            emptyArea
+            (Placeholder (MethodRef "Inspect" "inspect" True, tvName) (
+              Optimized
+              ([IT.IsIn "Inspect" [IT.TVar (IT.TV tvName IT.Star)] Nothing] IT.:=> (IT.TVar (IT.TV tvName IT.Star) `IT.fn` IT.tStr))
+              emptyArea
+              (Var "inspect")
+            ))
+        ) <$> tvarNames
+
+      inspectedItems = (\(method, var) -> Optimized ([] IT.:=> IT.tStr) emptyArea (App method [var])) <$> List.zip inspectMethods vars
+      commaSeparatedItems = List.intersperse (Optimized ([] IT.:=> IT.tStr) emptyArea (LStr ", ")) inspectedItems
+      wrappedItems = [Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "#[")] ++ commaSeparatedItems ++ [Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "]")]
+      inspectedTuple = Optimized ([] IT.:=> IT.tStr) emptyArea (TemplateString wrappedItems)
+
+  in  Untyped emptyArea (Instance
+        "Inspect"
+        preds
+        tupleName
+        (Map.fromList
+          [ ( "inspect"
+            -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
+            , ( Optimized methodQualType emptyArea (TopLevelAbs "==" (List.reverse inspectDictNames ++ ["tuple"]) [
+                  Optimized ([] IT.:=> IT.tStr) emptyArea (Where (
+                    Optimized whereExpQualType emptyArea (TupleConstructor [
+                      Optimized tupleQualType emptyArea (Var "tuple")
+                    ])
+                  ) [
+                    Optimized isQualType emptyArea (Is
+                      (Optimized whereExpQualType emptyArea (PTuple [
+                        Optimized tupleQualType emptyArea (PTuple tuplePatterns)
+                      ]))
+                      inspectedTuple
+                    )
+                  ])
+                ])
+              , IT.Forall [IT.Star] $ [IT.IsIn "Number" [IT.TGen 0] Nothing] IT.:=> (IT.TGen 0 `IT.fn` IT.TGen 0 `IT.fn` IT.TGen 0)
+              )
+            )
+          ]
+        )
+      )
+
 
 buildDefaultInstancesModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
 buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
-  externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
+  externVarArgs (AST.mkName "__applyPAP__")               [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
+  extern (AST.mkName "GC_malloc")                         [Type.i64] (Type.ptr Type.i8)
+
+  extern (AST.mkName "madlib__string__internal__concat")  [stringType, stringType] stringType
+
+  -- Inspect Integer
+  extern (AST.mkName "madlib__number__internal__inspectInteger")   [boxType] boxType
+  -- Inspect Byte
+  extern (AST.mkName "madlib__number__internal__inspectByte")      [boxType] boxType
+  -- Inspect Float
+  extern (AST.mkName "madlib__number__internal__inspectFloat")     [boxType] boxType
+  -- Inspect Boolean
+  extern (AST.mkName "madlib__boolean__internal__inspectBoolean")  [boxType] boxType
+  -- Inspect ByteArray
+  extern (AST.mkName "madlib__bytearray__internal__inspect")       [boxType] boxType
+  -- Inspect List
+  extern (AST.mkName "madlib__list__internal__inspect")            [boxType, boxType] boxType
+  -- Inspect Array
+  extern (AST.mkName "madlib__array__internal__inspect")           [boxType, boxType] boxType
+  -- Inspect Dictionary
+  extern (AST.mkName "madlib__dictionary__internal__inspect")      [boxType, boxType, boxType] boxType
 
   -- Number Integer
   extern (AST.mkName "madlib__number__internal__addIntegers")       [boxType, boxType] boxType
@@ -2493,9 +2585,50 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       -- Eq Dictionary
       eqDictionary      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType, boxType] False) "madlib__dictionary__internal__eq")
 
+      -- Inspect Integer
+      inspectInteger    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectInteger")
+
+      -- Inspect Byte
+      inspectByte       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectByte")
+
+      -- Inspect Float
+      inspectFloat      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectFloat")
+
+      -- Inspect Boolean
+      inspectBoolean    = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__boolean__internal__inspectBoolean")
+
+      -- Inspect ByteArray
+      inspectByteArray  = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__bytearray__internal__inspect")
+
+      -- Inspect List
+      inspectList       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__list__internal__inspect")
+
+      -- Inspect Array
+      inspectArray      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) "madlib__array__internal__inspect")
+
+      -- Inspect Dictionary
+      inspectDictionary = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType, boxType] False) "madlib__dictionary__internal__inspect")
+
+
       symbolTableWithCBindings =
+        -- Inspect Integer
+        Map.insert "madlib__number__internal__inspectInteger" (fnSymbol 1 inspectInteger)
+        -- Inspect Byte
+        $ Map.insert "madlib__number__internal__inspectByte" (fnSymbol 1 inspectByte)
+        -- Inspect Float
+        $ Map.insert "madlib__number__internal__inspectFloat" (fnSymbol 1 inspectFloat)
+        -- Inspect Boolean
+        $ Map.insert "madlib__boolean__internal__inspectBoolean" (fnSymbol 1 inspectBoolean)
+        -- Inspect ByteArray
+        $ Map.insert "madlib__bytearray__internal__inspect" (fnSymbol 1 inspectByteArray)
+        -- Inspect List
+        $ Map.insert "madlib__list__internal__inspect" (fnSymbol 2 inspectList)
+        -- Inspect Array
+        $ Map.insert "madlib__array__internal__inspect" (fnSymbol 2 inspectArray)
+        -- Inspect Dictionary
+        $ Map.insert "madlib__dictionary__internal__inspect" (fnSymbol 3 inspectDictionary)
         -- Number Float
-        Map.insert "madlib__number__internal__addFloats" (fnSymbol 2 addFloats)
+        $ Map.insert "madlib__number__internal__addFloats" (fnSymbol 2 addFloats)
         $ Map.insert "madlib__number__internal__substractFloats" (fnSymbol 2 substractFloats)
         $ Map.insert "madlib__number__internal__multiplyFloats" (fnSymbol 2 multiplyFloats)
         $ Map.insert "madlib__number__internal__gtFloats" (fnSymbol 2 gtFloats)
@@ -2804,8 +2937,207 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
               )
           )
 
-  let varType             = IT.TVar (IT.TV "a" IT.Star)
-      eqPred              = IT.IsIn "Eq" [varType] Nothing
+  let varType  = IT.TVar (IT.TV "a" IT.Star)
+      dictType = IT.TVar (IT.TV "dict" IT.Star)
+
+  let inspectPred               = IT.IsIn "Inspect" [varType] Nothing
+      inspectVarQualType        = [inspectPred] IT.:=> varType
+      inspectFnQualType         = [inspectPred] IT.:=> (varType `IT.fn` IT.tStr)
+      strConcatQualType         = [] IT.:=> (IT.tStr `IT.fn` IT.tStr `IT.fn` IT.tStr)
+      stringInspectQualType     = [] IT.:=> (IT.tStr `IT.fn` IT.tStr)
+      integerInspectQualType    = [] IT.:=> (IT.tInteger `IT.fn` IT.tStr)
+      byteInspectQualType       = [] IT.:=> (IT.tByte `IT.fn` IT.tStr)
+      floatInspectQualType      = [] IT.:=> (IT.tFloat `IT.fn` IT.tStr)
+      boolInspectQualType       = [] IT.:=> (IT.tBool `IT.fn` IT.tStr)
+      unitInspectQualType       = [] IT.:=> (IT.tUnit `IT.fn` IT.tStr)
+      byteArrayInspectQualType  = [] IT.:=> (IT.tByteArray `IT.fn` IT.tStr)
+      listInspectQualType       = [inspectPred] IT.:=> (IT.tListOf varType `IT.fn` IT.tStr)
+      arrayInspectQualType      = [inspectPred] IT.:=> (IT.tArrayOf varType `IT.fn` IT.tStr)
+      overloadedInspectType     = dictType `IT.fn` varType `IT.fn` IT.tStr
+      overloadedInspectQualType = [inspectPred] IT.:=> overloadedInspectType
+      dictionaryInspectPreds    = [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing, IT.IsIn "Inspect" [IT.TVar (IT.TV "b" IT.Star)] Nothing]
+      dictionaryInspectType     = dictType `IT.fn` dictType `IT.fn` IT.tDictionaryOf (IT.TVar (IT.TV "a" IT.Star)) (IT.TVar (IT.TV "b" IT.Star)) `IT.fn` IT.tStr
+      dictionaryInspectQualType = dictionaryInspectPreds IT.:=> dictionaryInspectType
+
+      stringInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "String"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized stringInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized strConcatQualType emptyArea (Var "++")) [
+                          Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "\"\\\"\""),
+                          Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized strConcatQualType emptyArea (Var "++")) [
+                            Optimized inspectVarQualType emptyArea (Var "a"),
+                            Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "\"\\\"\"")
+                          ])
+                        ])
+                      ])
+                    , IT.Forall [] stringInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      integerInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "Integer"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized integerInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized integerInspectQualType emptyArea (Var "madlib__number__internal__inspectInteger")) [
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [] integerInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      byteInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "Byte"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized byteInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized byteInspectQualType emptyArea (Var "madlib__number__internal__inspectByte")) [
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [] byteInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      floatInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "Float"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized floatInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized floatInspectQualType emptyArea (Var "madlib__number__internal__inspectFloat")) [
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [] floatInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      boolInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "Boolean"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized boolInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized boolInspectQualType emptyArea (Var "madlib__boolean__internal__inspectBoolean")) [
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [] boolInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      unitInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "Unit"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized unitInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (LStr "\"{}\"")
+                      ])
+                    , IT.Forall [] unitInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      byteArrayInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [] "ByteArray"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized byteArrayInspectQualType emptyArea (TopLevelAbs "inspect" ["a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized byteArrayInspectQualType emptyArea (Var "madlib__bytearray__internal__inspect")) [
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [] byteArrayInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      listInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "List"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized overloadedInspectQualType emptyArea (TopLevelAbs "inspect" ["inspectDict", "a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized overloadedInspectQualType emptyArea (Var "madlib__list__internal__inspect")) [
+                            Optimized ([] IT.:=> dictType) emptyArea (Var "inspectDict"),
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [IT.Star] overloadedInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      arrayInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "Array"
+              (Map.fromList
+                [ ( "inspect"
+                  , ( Optimized overloadedInspectQualType emptyArea (TopLevelAbs "inspect" ["inspectDict", "a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized overloadedInspectQualType emptyArea (Var "madlib__array__internal__inspect")) [
+                            Optimized ([] IT.:=> dictType) emptyArea (Var "inspectDict"),
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [IT.Star] overloadedInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+
+      dictionaryInspectInstance =
+        Untyped emptyArea
+          ( Instance "Inspect" dictionaryInspectPreds "Dictionary"
+              (Map.fromList
+                [ ( "inspect"
+                  -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
+                  , ( Optimized dictionaryInspectQualType emptyArea (TopLevelAbs "inspect" ["inspectDictB", "inspectDictA", "a"] [
+                        Optimized ([] IT.:=> IT.tStr) emptyArea (App (Optimized dictionaryInspectQualType emptyArea (Var "madlib__dictionary__internal__inspect")) [
+                            Optimized ([] IT.:=> dictType) emptyArea (Var "inspectDictA"),
+                            Optimized ([] IT.:=> dictType) emptyArea (Var "inspectDictB"),
+                            Optimized inspectVarQualType emptyArea (Var "a")
+                        ])
+                      ])
+                    , IT.Forall [IT.Star] dictionaryInspectQualType
+                    )
+                  )
+                ]
+              )
+          )
+      tupleInspectInstances = buildTupleNInspectInstance <$> [2..10]
+
+  let eqPred              = IT.IsIn "Eq" [varType] Nothing
       eqVarQualType       = [eqPred] IT.:=> varType
       eqOperationQualType = [eqPred] IT.:=> (varType `IT.fn` varType `IT.fn` IT.tBool)
       eqOperationType     = varType `IT.fn` varType `IT.fn` IT.tBool
@@ -2916,7 +3248,6 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
           )
 
 
-      dictType             = IT.TVar (IT.TV "dict" IT.Star)
       overloadedEqType     = dictType `IT.fn` varType `IT.fn` varType `IT.fn` IT.tBool
       overloadedEqQualType = [eqPred] IT.:=> overloadedEqType
 
@@ -2985,7 +3316,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
           ( Instance "Eq" dictionaryEqPreds "Dictionary"
               (Map.fromList
                 [ ( "=="
-                  , ( Optimized dictionaryEqQualType emptyArea (TopLevelAbs "==" ["eqDictA", "eqDictB", "a", "b"] [
+                  -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
+                  , ( Optimized dictionaryEqQualType emptyArea (TopLevelAbs "==" ["eqDictB", "eqDictA", "a", "b"] [
                         Optimized ([] IT.:=> IT.tBool) emptyArea (App (Optimized dictionaryEqQualType emptyArea (Var "madlib__dictionary__internal__eq")) [
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictA"),
                           Optimized ([] IT.:=> dictType) emptyArea (Var "eqDictB"),
@@ -3015,9 +3347,12 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
     env
     symbolTableWithCBindings
     (
+        -- Number
       [ integerNumberInstance
       , byteNumberInstance
       , floatNumberInstance
+
+        -- Eq
       , byteEqInstance
       , integerEqInstance
       , floatEqInstance
@@ -3028,7 +3363,19 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       , arrayEqInstance
       , byteArrayEqInstance
       , dictionaryEqInstance
-      ] ++ tupleEqInstances
+
+        -- Inspect
+      , stringInspectInstance
+      , integerInspectInstance
+      , byteInspectInstance
+      , floatInspectInstance
+      , boolInspectInstance
+      , unitInspectInstance
+      , byteArrayInspectInstance
+      , listInspectInstance
+      , arrayInspectInstance
+      , dictionaryInspectInstance
+      ] ++ tupleEqInstances ++ tupleInspectInstances
     )
   return ()
 
@@ -3054,6 +3401,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__concat")             [stringType, stringType] stringType
+
   extern (AST.mkName "madlib__list__internal__hasMinLength")         [Type.i64, listType] Type.i1
   extern (AST.mkName "madlib__list__internal__hasLength")            [Type.i64, listType] Type.i1
   extern (AST.mkName "madlib__list__singleton")                      [Type.ptr Type.i8] listType
@@ -3152,7 +3500,7 @@ type ModuleTable = Map.Map FilePath AST.Module
 generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> ModuleTable
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
-    let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]) ]
+    let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]), ("Inspect", Map.fromList [("inspect", (0, 1))]) ]
         (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False } [] symbolTable)
         defaultInstancesModulePath =
           if takeExtension entrypoint == "" then
@@ -3172,6 +3520,8 @@ compileModule outputFolder rootPath astPath astModule = do
 
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
+
+  -- Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
@@ -3238,8 +3588,6 @@ generateTable outputPath rootPath astTable entrypoint = do
   let objectFilePathsForCli = List.unwords objectFilePaths
       runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
       runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
-      -- curlConfigPath        = joinPath [takeDirectory compilerPath, "runtime", "bin", "curl-config"]
-
 
   Prelude.putStrLn "Linking.."
 

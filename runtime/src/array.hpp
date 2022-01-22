@@ -20,6 +20,7 @@ extern "C" {
 int64_t madlib__array__length(madlib__array__Array_t *array);
 
 bool *madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__array__Array_t *arr1, madlib__array__Array_t *arr2);
+char **madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__array__Array_t *list);
 
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list);
 
