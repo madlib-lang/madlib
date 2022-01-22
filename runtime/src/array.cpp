@@ -31,6 +31,51 @@ bool *madlib__array__internal__eq(madlib__eq__eqDictionary_t *eqDict, madlib__ar
   return boxed;
 }
 
+char **madlib__array__internal__inspect(madlib__inspect__inspectDictionary_t *inspectDict, madlib__array__Array_t *array) {
+  int64_t length = array->length;
+
+  if (length == 0) {
+    char **boxed = (char **)GC_malloc(sizeof(char*));
+    *boxed = (char*)"Array([])";
+    return boxed;
+  }
+
+  int currentIndex = 0;
+  char *inspectedItems[length];
+  size_t sizeOfItems = 0;
+
+  for (int i = 0; i < length; i++) {
+    inspectedItems[i] = *(char **)__applyPAP__((void *)&inspectDict->inspect, 1, array->items[i]);
+    sizeOfItems += strlen(inspectedItems[i]);
+  }
+
+  size_t sizeOfSpacesAndCommas = (length - 1) * 2;
+  char *result = (char*)GC_malloc(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 10));
+
+  // Leading "["
+  strncpy(result, "Array([", sizeof(char) * 7);
+  size_t currentPosition = 7;
+
+  // Items
+  for (int i = 0; i < length - 1; i++) {
+    size_t lengthOfItem = strlen(inspectedItems[i]);
+    strncpy(result + currentPosition, inspectedItems[i], lengthOfItem);
+    strncpy(result + currentPosition + lengthOfItem, ", ", sizeof(char) * 2);
+    currentPosition += lengthOfItem + 2;
+  }
+
+  // Last item does not have ", " at the end
+  size_t lengthOfItem = strlen(inspectedItems[length - 1]);
+  strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
+  strncpy(result + currentPosition + lengthOfItem, "])\0", sizeof(char) * 3);
+
+  char **boxed = (char **)GC_malloc(sizeof(char*));
+  *boxed = result;
+
+
+  return boxed;
+}
+
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   int64_t itemCount = madlib__list__length(list);
 

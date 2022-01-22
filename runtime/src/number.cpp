@@ -1,5 +1,7 @@
 #include "number.hpp"
+#include "string.hpp"
 
+#include <inttypes.h>
 #include <gc.h>
 
 #ifdef __cplusplus
@@ -7,6 +9,20 @@ extern "C" {
 #endif
 
 // Byte
+
+char *madlib__number__internal__showByte(unsigned char i) {
+  char *str = (char *)GC_malloc(4 * sizeof(char));
+  snprintf(str, 4 * sizeof(char), "%02X", i);
+
+  return str;
+}
+
+char **madlib__number__internal__inspectByte(unsigned char *i) {
+  char *str = madlib__number__internal__showByte(*i);
+  char **boxed = (char**)GC_malloc(sizeof(char*));
+  *boxed = str;
+  return boxed;
+}
 
 unsigned char *madlib__number__internal__numberToByte(int64_t *a) {
   unsigned char *result = (unsigned char *)malloc(sizeof(unsigned char));
@@ -67,6 +83,21 @@ bool *madlib__number__internal__eqByte(unsigned char *a, unsigned char *b) {
 
 // Float
 
+char *madlib__number__internal__showFloat(double d) {
+  char *str = (char *)GC_malloc(200);
+  sprintf(str, "%.20f", d);
+  char *stripped = stripTrailingZeros(str);
+
+  return stripped;
+}
+
+char **madlib__number__internal__inspectFloat(double *d) {
+  char *str = madlib__number__internal__showFloat(*d);
+  char **boxed = (char**)GC_malloc(sizeof(char*));
+  *boxed = str;
+  return boxed;
+}
+
 double *madlib__number__internal__numberToFloat(int64_t *a) {
   double *result = (double *)malloc(sizeof(double));
   *result = (double)*a;
@@ -122,6 +153,20 @@ bool *madlib__number__internal__eqFloat(double *a, double *b) {
 }
 
 // Integer
+
+char *madlib__number__internal__showInteger(int64_t i) {
+  char *str = (char *)GC_malloc(200);
+  sprintf(str, "%" PRId64, i);
+
+  return str;
+}
+
+char **madlib__number__internal__inspectInteger(int64_t *i) {
+  char *str = madlib__number__internal__showInteger(*i);
+  char **boxed = (char**)GC_malloc(sizeof(char*));
+  *boxed = str;
+  return boxed;
+}
 
 int64_t *madlib__number__internal__numberToInteger(int64_t *a) {
   int64_t *result = (int64_t *)malloc(sizeof(int64_t));

@@ -5,6 +5,7 @@
 
 #include "eq.hpp"
 #include "list.hpp"
+#include "number.hpp"
 
 typedef struct madlib__bytearray__ByteArray {
   int64_t length;
@@ -18,6 +19,7 @@ extern "C" {
 int64_t madlib__bytearray__length(madlib__bytearray__ByteArray_t *array);
 
 bool *madlib__bytearray__internal__eq(madlib__bytearray__ByteArray_t *arr1, madlib__bytearray__ByteArray_t *arr2);
+char **madlib__bytearray__internal__inspect(madlib__bytearray__ByteArray_t *bytearray);
 
 madlib__bytearray__ByteArray_t *madlib__bytearray__fromString(char *string);
 char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr);

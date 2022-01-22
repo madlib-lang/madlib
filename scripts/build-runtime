@@ -9,7 +9,6 @@ rm -f "$LIB_TARGET"
 
 if [ "$CXX" = "g++" ]
 then
-  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}show.o" "${SRC_DIR}show.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
@@ -33,14 +32,12 @@ then
     "${BUILD_DIR}number.o"\
     "${BUILD_DIR}string.o"\
     "${BUILD_DIR}boolean.o"\
-    "${BUILD_DIR}show.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}file.o"\
     "${BUILD_DIR}http.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"
 else
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}show.o" "${SRC_DIR}show.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
@@ -64,7 +61,6 @@ else
     "${BUILD_DIR}number.o"\
     "${BUILD_DIR}string.o"\
     "${BUILD_DIR}boolean.o"\
-    "${BUILD_DIR}show.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}file.o"\
     "${BUILD_DIR}http.o"\

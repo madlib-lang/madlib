@@ -13,7 +13,8 @@ instance Monoid String {
 }
 
 instance Show String {
-  show = (a) => `"${a}"`
+  show = (a) => "\"" ++ a ++ "\""
+  // show = (a) => `"${a}"`
 }
 
 #iftarget js

@@ -9,7 +9,7 @@ instance Show Float {
 }
 #elseif llvm
 showFloat :: Float -> String
-showFloat = extern "__floatToStr__"
+showFloat = extern "madlib__number__internal__showFloat"
 
 instance Show Float {
   show = showFloat
@@ -22,7 +22,7 @@ instance Show Integer {
 }
 #elseif llvm
 showInteger :: Integer -> String
-showInteger = extern "__integerToStr__"
+showInteger = extern "madlib__number__internal__showInteger"
 
 instance Show Integer {
   show = showInteger
@@ -30,7 +30,7 @@ instance Show Integer {
 
 
 showByte :: Byte -> String
-showByte = extern "__byteToStr__"
+showByte = extern "madlib__number__internal__showByte"
 
 
 instance Show Byte {
