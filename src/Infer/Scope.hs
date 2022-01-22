@@ -114,16 +114,24 @@ hasAbs e = case e of
 
 verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
 verifyScope env globalAccesses globalScope dependencies exp =
-  if shouldSkip env exp then return () else foldM (verifyScope' env globalScope dependencies exp) () globalAccesses
+  if shouldSkip env exp then
+    return ()
+  else
+    foldM (verifyScope' env S.empty globalScope dependencies exp) () globalAccesses
 
-verifyScope' :: Env -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
-verifyScope' _ _ _ (Untyped _ _) _ _ = return ()
-verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _)
-  = if nameToVerify `S.member` globalScope
-    then case M.lookup nameToVerify dependencies of
-      Just names -> foldM_ (verifyScope' env globalScope (removeAccessFromDeps access dependencies) originExp) () names
+verifyScope' :: Env -> S.Set String -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
+verifyScope' _ _ _ _ (Untyped _ _) _ _ =
+  return ()
 
-      Nothing    -> return ()
+verifyScope' env verified globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _)
+  = if nameToVerify `S.member` verified then
+      return ()
+    else if nameToVerify `S.member` globalScope then
+      case M.lookup nameToVerify dependencies of
+        Just names ->
+          foldM_ (verifyScope' env (verified <> S.singleton nameToVerify) globalScope dependencies originExp) () names
+
+        Nothing    -> return ()
     else do
       currentErrors <- getErrors
       let isErrorReported = any
@@ -136,6 +144,9 @@ verifyScope' env globalScope dependencies originExp@(Solved _ originArea _) _ ac
         then return ()
         else throwError $ CompilationError (NotInScope nameToVerify loc)
                                            (Context (envCurrentPath env) originArea (envBacktrace env))
+
+verifyScope' _ _ _ _ _ _ _ =
+  return ()
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
 removeAccessFromDeps access = M.map (S.filter (/= access))

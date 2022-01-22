@@ -21,6 +21,8 @@ import           Data.List
 import           Control.Monad
 import           Control.Monad.Except
 import           Control.Monad.Trans.Maybe
+import Debug.Trace
+import Text.Show.Pretty
 
 
 -- defined :: Maybe a -> Bool
@@ -41,9 +43,13 @@ verifyInstancePredicates env p' p@(IsIn cls ts _) = do
   case M.lookup cls (envInterfaces env) of
     Nothing                     -> throwError $ CompilationError (InterfaceNotExisting cls) NoContext
 
-    Just (Interface tvs ps' is) -> catchError
-      (unify (TVar <$> tvs) ts >> return True)
-      (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
+    -- Just (Interface tvs ps' is) ->
+      -- unify (TVar <$> tvs) (trace ("TVS: "<>ppShow tvs) ts) >> return True
+    Just (Interface tvs ps' is) -> do
+      let tvs' = (\(TV n k) -> TV ("_" <> n) k) <$> tvs
+      catchError
+        (unify (TVar <$> tvs') ts >> return True)
+        (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Infer Env

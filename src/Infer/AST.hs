@@ -107,7 +107,7 @@ buildInitialEnv priorEnv Can.AST { Can.aexps, Can.atypedecls, Can.ainterfaces, C
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
 addConstructors env ctors = do
   foldM
-    (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc)) -> do
+    (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc _)) -> do
       catchError
         (safeExtendVars env'' (name, sc))
         (\(CompilationError e _) ->
@@ -253,7 +253,7 @@ updateADT (Can.Canonical area alias@Can.Alias{}) = return $ Slv.Untyped
             }
 
 updateADTConstructor :: Can.Constructor -> Infer Slv.Constructor
-updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme)) = do
+updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme _)) = do
   (ps :=> t) <- instantiate scheme
   return $ Slv.Untyped area $ Slv.Constructor cname (updateTyping <$> cparams) t
 
