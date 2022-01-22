@@ -3,6 +3,21 @@ export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
 global.Functor = {};
 global.Applicative = {};
 global.Monad = {};
+Inspect['Wish'] = {};
+Inspect['Wish']['inspect'] = () => (Inspect_g6) => (Inspect_i8) => (__$a__ => ((__x__) => {
+  if (__x__.__constructor === "Wish" && true) {
+    let a0 = __x__.__args[0];
+    return `Wish(${Inspect.a_arr_b.inspect()(a0)})`;
+  }
+  else if (true) {
+    return "Unknown";
+  }
+  else {
+    console.log('non exhaustive patterns for value: ', __x__.toString()); 
+    console.trace(); 
+    throw 'non exhaustive patterns!';
+  }
+})(__$a__))
 Functor['Wish'] = {};
 Functor['Wish']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {

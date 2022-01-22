@@ -38,6 +38,96 @@ Right
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
+               "Inspect"
+               []
+               (IsIn "Inspect" [ TCon (TC "X" Star) "path" ] Nothing)
+               (fromList
+                  [ ( "inspect"
+                    , ( Solved
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "X" Star) "path"))
+                               (TCon (TC "String" Star) "prelude"))
+                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                          (Assignment
+                             "inspect"
+                             (Solved
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TCon (TC "X" Star) "path"))
+                                     (TCon (TC "String" Star) "prelude"))
+                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                (Abs
+                                   (Solved
+                                      ([] :=> TCon (TC "X" Star) "path")
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      "__$a__")
+                                   [ Solved
+                                       ([] :=> TCon (TC "String" Star) "prelude")
+                                       (Area (Loc 0 0 0) (Loc 0 0 0))
+                                       (Where
+                                          (Solved
+                                             ([] :=> TCon (TC "X" Star) "path")
+                                             (Area (Loc 0 0 0) (Loc 0 0 0))
+                                             (Var "__$a__"))
+                                          [ Solved
+                                              ([] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "X" Star) "path"))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Is
+                                                 (Solved
+                                                    ([] :=> TCon (TC "X" Star) "path")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (PCon "X" []))
+                                                 (Solved
+                                                    ([] :=> TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (LStr "\"X\"")))
+                                          , Solved
+                                              ([] :=>
+                                                 TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "X" Star) "path"))
+                                                   (TCon (TC "String" Star) "prelude"))
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (Is
+                                                 (Solved
+                                                    ([] :=> TVar (TV "c2" Star))
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    PAny)
+                                                 (Solved
+                                                    ([] :=> TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (LStr "\"Unknown\"")))
+                                          ])
+                                   ])))
+                      , Forall
+                          []
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TCon (TC "X" Star) "path"))
+                               (TCon (TC "String" Star) "prelude"))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (Instance
                "Eq"
                []
                (IsIn "Eq" [ TCon (TC "X" Star) "path" ] Nothing)
@@ -197,8 +287,8 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "c2" Star)))
-                                                                (TVar (TV "d3" Star)))
+                                                                   (TVar (TV "h7" Star)))
+                                                                (TVar (TV "i8" Star)))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
                                                         (Solved

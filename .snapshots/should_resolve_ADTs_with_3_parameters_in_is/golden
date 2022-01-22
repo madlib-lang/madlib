@@ -130,10 +130,10 @@ Right
                                  (TApp
                                     (TCon
                                        (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
-                                    (TVar (TV "s96" Star)))
-                                 (TVar (TV "t97" Star)))
-                              (TVar (TV "u98" Star))))
-                        (TVar (TV "u98" Star)))
+                                    (TVar (TV "m116" Star)))
+                                 (TVar (TV "n117" Star)))
+                              (TVar (TV "o118" Star))))
+                        (TVar (TV "o118" Star)))
                    (Area (Loc 64 3 3) (Loc 82 3 21))
                    (Is
                       (Solved
@@ -143,20 +143,22 @@ Right
                                  (TApp
                                     (TCon
                                        (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
-                                    (TVar (TV "s96" Star)))
-                                 (TVar (TV "t97" Star)))
-                              (TVar (TV "u98" Star)))
+                                    (TVar (TV "m116" Star)))
+                                 (TVar (TV "n117" Star)))
+                              (TVar (TV "o118" Star)))
                          (Area (Loc 64 3 3) (Loc 77 3 16))
                          (PCon
                             "Wish"
                             [ Solved
-                                ([] :=> TVar (TV "s96" Star)) (Area (Loc 69 3 8) (Loc 70 3 9)) PAny
+                                ([] :=> TVar (TV "m116" Star))
+                                (Area (Loc 69 3 8) (Loc 70 3 9))
+                                PAny
                             , Solved
-                                ([] :=> TVar (TV "t97" Star))
+                                ([] :=> TVar (TV "n117" Star))
                                 (Area (Loc 72 3 11) (Loc 73 3 12))
                                 PAny
                             , Solved
-                                ([] :=> TVar (TV "u98" Star))
+                                ([] :=> TVar (TV "o118" Star))
                                 (Area (Loc 75 3 14) (Loc 76 3 15))
                                 (PVar "c")
                             ]))
@@ -184,24 +186,24 @@ Right
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TVar (TV "d107" Star)))
+                               (TVar (TV "x127" Star)))
                             (TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TVar (TV "e108" Star)))
+                                  (TVar (TV "y128" Star)))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TVar (TV "f109" Star)))
+                                     (TVar (TV "z129" Star)))
                                   (TApp
                                      (TApp
                                         (TApp
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                               "path")
-                                           (TVar (TV "d107" Star)))
-                                        (TVar (TV "e108" Star)))
-                                     (TVar (TV "f109" Star)))))))
+                                           (TVar (TV "x127" Star)))
+                                        (TVar (TV "y128" Star)))
+                                     (TVar (TV "z129" Star)))))))
                   ]
               , adtType =
                   TApp
@@ -219,10 +221,844 @@ Right
         [ Untyped
             (Area (Loc 0 0 0) (Loc 0 0 0))
             (Instance
+               "Inspect"
+               [ IsIn "Inspect" [ TVar (TV "a" Star) ] Nothing
+               , IsIn "Inspect" [ TVar (TV "c" Star) ] Nothing
+               , IsIn "Inspect" [ TVar (TV "e" Star) ] Nothing
+               ]
+               (IsIn
+                  "Inspect"
+                  [ TApp
+                      (TApp
+                         (TApp
+                            (TCon (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star)))) "path")
+                            (TVar (TV "e" Star)))
+                         (TVar (TV "a" Star)))
+                      (TVar (TV "c" Star))
+                  ]
+                  Nothing)
+               (fromList
+                  [ ( "inspect"
+                    , ( Solved
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TApp
+                                     (TApp
+                                        (TApp
+                                           (TCon
+                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                              "path")
+                                           (TVar (TV "d3" Star)))
+                                        (TVar (TV "e4" Star)))
+                                     (TVar (TV "f5" Star))))
+                               (TCon (TC "String" Star) "prelude"))
+                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                          (Assignment
+                             "inspect"
+                             (Solved
+                                ([] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TApp
+                                           (TApp
+                                              (TApp
+                                                 (TCon
+                                                    (TC
+                                                       "Wish"
+                                                       (Kfun Star (Kfun Star (Kfun Star Star))))
+                                                    "path")
+                                                 (TVar (TV "d3" Star)))
+                                              (TVar (TV "e4" Star)))
+                                           (TVar (TV "f5" Star))))
+                                     (TCon (TC "String" Star) "prelude"))
+                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                (Placeholder
+                                   ( ClassRef "Inspect" [] False True , [ TVar (TV "d3" Star) ] )
+                                   (Solved
+                                      ([] :=>
+                                         TApp
+                                           (TApp
+                                              (TCon
+                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                              (TApp
+                                                 (TApp
+                                                    (TApp
+                                                       (TCon
+                                                          (TC
+                                                             "Wish"
+                                                             (Kfun
+                                                                Star (Kfun Star (Kfun Star Star))))
+                                                          "path")
+                                                       (TVar (TV "d3" Star)))
+                                                    (TVar (TV "e4" Star)))
+                                                 (TVar (TV "f5" Star))))
+                                           (TCon (TC "String" Star) "prelude"))
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      (Placeholder
+                                         ( ClassRef "Inspect" [] False True
+                                         , [ TVar (TV "f5" Star) ]
+                                         )
+                                         (Solved
+                                            ([] :=>
+                                               TApp
+                                                 (TApp
+                                                    (TCon
+                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                       "prelude")
+                                                    (TApp
+                                                       (TApp
+                                                          (TApp
+                                                             (TCon
+                                                                (TC
+                                                                   "Wish"
+                                                                   (Kfun
+                                                                      Star
+                                                                      (Kfun Star (Kfun Star Star))))
+                                                                "path")
+                                                             (TVar (TV "d3" Star)))
+                                                          (TVar (TV "e4" Star)))
+                                                       (TVar (TV "f5" Star))))
+                                                 (TCon (TC "String" Star) "prelude"))
+                                            (Area (Loc 0 0 0) (Loc 0 0 0))
+                                            (Placeholder
+                                               ( ClassRef "Inspect" [] False True
+                                               , [ TVar (TV "e4" Star) ]
+                                               )
+                                               (Solved
+                                                  ([ IsIn "Inspect" [ TVar (TV "e4" Star) ] Nothing
+                                                   , IsIn "Inspect" [ TVar (TV "f5" Star) ] Nothing
+                                                   , IsIn "Inspect" [ TVar (TV "d3" Star) ] Nothing
+                                                   ] :=>
+                                                     TApp
+                                                       (TApp
+                                                          (TCon
+                                                             (TC
+                                                                "(->)" (Kfun Star (Kfun Star Star)))
+                                                             "prelude")
+                                                          (TApp
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "Wish"
+                                                                         (Kfun
+                                                                            Star
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star))))
+                                                                      "path")
+                                                                   (TVar (TV "d3" Star)))
+                                                                (TVar (TV "e4" Star)))
+                                                             (TVar (TV "f5" Star))))
+                                                       (TCon (TC "String" Star) "prelude"))
+                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                  (Abs
+                                                     (Solved
+                                                        ([ IsIn
+                                                             "Inspect"
+                                                             [ TVar (TV "d3" Star) ]
+                                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                         , IsIn
+                                                             "Inspect"
+                                                             [ TVar (TV "e4" Star) ]
+                                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                         , IsIn
+                                                             "Inspect"
+                                                             [ TVar (TV "f5" Star) ]
+                                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TApp
+                                                                   (TCon
+                                                                      (TC
+                                                                         "Wish"
+                                                                         (Kfun
+                                                                            Star
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star))))
+                                                                      "path")
+                                                                   (TVar (TV "d3" Star)))
+                                                                (TVar (TV "e4" Star)))
+                                                             (TVar (TV "f5" Star)))
+                                                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                        "__$a__")
+                                                     [ Solved
+                                                         ([ IsIn
+                                                              "Inspect"
+                                                              [ TVar (TV "d3" Star) ]
+                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                          , IsIn
+                                                              "Inspect"
+                                                              [ TVar (TV "e4" Star) ]
+                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                          , IsIn
+                                                              "Inspect"
+                                                              [ TVar (TV "f5" Star) ]
+                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                          ] :=>
+                                                            TCon (TC "String" Star) "prelude")
+                                                         (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                         (Where
+                                                            (Solved
+                                                               ([] :=>
+                                                                  TApp
+                                                                    (TApp
+                                                                       (TApp
+                                                                          (TCon
+                                                                             (TC
+                                                                                "Wish"
+                                                                                (Kfun
+                                                                                   Star
+                                                                                   (Kfun
+                                                                                      Star
+                                                                                      (Kfun
+                                                                                         Star
+                                                                                         Star))))
+                                                                             "path")
+                                                                          (TVar (TV "d3" Star)))
+                                                                       (TVar (TV "e4" Star)))
+                                                                    (TVar (TV "f5" Star)))
+                                                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                               (Var "__$a__"))
+                                                            [ Solved
+                                                                ([ IsIn
+                                                                     "Inspect"
+                                                                     [ TVar (TV "d3" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 0 0 0) (Loc 0 0 0)))
+                                                                 , IsIn
+                                                                     "Inspect"
+                                                                     [ TVar (TV "e4" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 0 0 0) (Loc 0 0 0)))
+                                                                 , IsIn
+                                                                     "Inspect"
+                                                                     [ TVar (TV "f5" Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 0 0 0) (Loc 0 0 0)))
+                                                                 ] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TApp
+                                                                           (TApp
+                                                                              (TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "Wish"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star))))
+                                                                                    "path")
+                                                                                 (TVar
+                                                                                    (TV "d3" Star)))
+                                                                              (TVar (TV "e4" Star)))
+                                                                           (TVar (TV "f5" Star))))
+                                                                     (TCon
+                                                                        (TC "String" Star)
+                                                                        "prelude"))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (Is
+                                                                   (Solved
+                                                                      ([] :=>
+                                                                         TApp
+                                                                           (TApp
+                                                                              (TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "Wish"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star))))
+                                                                                    "path")
+                                                                                 (TVar
+                                                                                    (TV "d3" Star)))
+                                                                              (TVar (TV "e4" Star)))
+                                                                           (TVar (TV "f5" Star)))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (PCon
+                                                                         "Wish"
+                                                                         [ Solved
+                                                                             ([] :=>
+                                                                                TVar (TV "d3" Star))
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (PVar "a0")
+                                                                         , Solved
+                                                                             ([] :=>
+                                                                                TVar (TV "e4" Star))
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (PVar "a1")
+                                                                         , Solved
+                                                                             ([] :=>
+                                                                                TVar (TV "f5" Star))
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (PVar "a2")
+                                                                         ]))
+                                                                   (Solved
+                                                                      ([ IsIn
+                                                                           "Inspect"
+                                                                           [ TVar (TV "d3" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 0 0 0)
+                                                                                 (Loc 0 0 0)))
+                                                                       , IsIn
+                                                                           "Inspect"
+                                                                           [ TVar (TV "e4" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 0 0 0)
+                                                                                 (Loc 0 0 0)))
+                                                                       , IsIn
+                                                                           "Inspect"
+                                                                           [ TVar (TV "f5" Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 0 0 0)
+                                                                                 (Loc 0 0 0)))
+                                                                       ] :=>
+                                                                         TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude")
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (TemplateString
+                                                                         [ Solved
+                                                                             ([] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (LStr "Wish(")
+                                                                         , Solved
+                                                                             ([ IsIn
+                                                                                  "Inspect"
+                                                                                  [ TVar
+                                                                                      (TV "d3" Star)
+                                                                                  ]
+                                                                                  (Just
+                                                                                     (Area
+                                                                                        (Loc 0 0 0)
+                                                                                        (Loc
+                                                                                           0 0 0)))
+                                                                              ] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (App
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "d3"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        Nothing
+                                                                                    ] :=>
+                                                                                      TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(->)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "d3"
+                                                                                                 Star)))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Placeholder
+                                                                                      ( MethodRef
+                                                                                          "Inspect"
+                                                                                          "inspect"
+                                                                                          True
+                                                                                      , [ TVar
+                                                                                            (TV
+                                                                                               "d3"
+                                                                                               Star)
+                                                                                        ]
+                                                                                      )
+                                                                                      (Solved
+                                                                                         ([ IsIn
+                                                                                              "Inspect"
+                                                                                              [ TVar
+                                                                                                  (TV
+                                                                                                     "d3"
+                                                                                                     Star)
+                                                                                              ]
+                                                                                              Nothing
+                                                                                          ] :=>
+                                                                                            TApp
+                                                                                              (TApp
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "(->)"
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             Star)))
+                                                                                                    "prelude")
+                                                                                                 (TVar
+                                                                                                    (TV
+                                                                                                       "d3"
+                                                                                                       Star)))
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star)
+                                                                                                 "prelude"))
+                                                                                         (Area
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0)
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0))
+                                                                                         (Var
+                                                                                            "inspect"))))
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "d3"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
+                                                                                    ] :=>
+                                                                                      TVar
+                                                                                        (TV
+                                                                                           "d3"
+                                                                                           Star))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Var "a0"))
+                                                                                True)
+                                                                         , Solved
+                                                                             ([] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (LStr ", ")
+                                                                         , Solved
+                                                                             ([ IsIn
+                                                                                  "Inspect"
+                                                                                  [ TVar
+                                                                                      (TV "e4" Star)
+                                                                                  ]
+                                                                                  (Just
+                                                                                     (Area
+                                                                                        (Loc 0 0 0)
+                                                                                        (Loc
+                                                                                           0 0 0)))
+                                                                              ] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (App
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "e4"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        Nothing
+                                                                                    ] :=>
+                                                                                      TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(->)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "e4"
+                                                                                                 Star)))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Placeholder
+                                                                                      ( MethodRef
+                                                                                          "Inspect"
+                                                                                          "inspect"
+                                                                                          True
+                                                                                      , [ TVar
+                                                                                            (TV
+                                                                                               "e4"
+                                                                                               Star)
+                                                                                        ]
+                                                                                      )
+                                                                                      (Solved
+                                                                                         ([ IsIn
+                                                                                              "Inspect"
+                                                                                              [ TVar
+                                                                                                  (TV
+                                                                                                     "e4"
+                                                                                                     Star)
+                                                                                              ]
+                                                                                              Nothing
+                                                                                          ] :=>
+                                                                                            TApp
+                                                                                              (TApp
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "(->)"
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             Star)))
+                                                                                                    "prelude")
+                                                                                                 (TVar
+                                                                                                    (TV
+                                                                                                       "e4"
+                                                                                                       Star)))
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star)
+                                                                                                 "prelude"))
+                                                                                         (Area
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0)
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0))
+                                                                                         (Var
+                                                                                            "inspect"))))
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "e4"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
+                                                                                    ] :=>
+                                                                                      TVar
+                                                                                        (TV
+                                                                                           "e4"
+                                                                                           Star))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Var "a1"))
+                                                                                True)
+                                                                         , Solved
+                                                                             ([] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (LStr ", ")
+                                                                         , Solved
+                                                                             ([ IsIn
+                                                                                  "Inspect"
+                                                                                  [ TVar
+                                                                                      (TV "f5" Star)
+                                                                                  ]
+                                                                                  (Just
+                                                                                     (Area
+                                                                                        (Loc 0 0 0)
+                                                                                        (Loc
+                                                                                           0 0 0)))
+                                                                              ] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (App
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "f5"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        Nothing
+                                                                                    ] :=>
+                                                                                      TApp
+                                                                                        (TApp
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "(->)"
+                                                                                                 (Kfun
+                                                                                                    Star
+                                                                                                    (Kfun
+                                                                                                       Star
+                                                                                                       Star)))
+                                                                                              "prelude")
+                                                                                           (TVar
+                                                                                              (TV
+                                                                                                 "f5"
+                                                                                                 Star)))
+                                                                                        (TCon
+                                                                                           (TC
+                                                                                              "String"
+                                                                                              Star)
+                                                                                           "prelude"))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Placeholder
+                                                                                      ( MethodRef
+                                                                                          "Inspect"
+                                                                                          "inspect"
+                                                                                          True
+                                                                                      , [ TVar
+                                                                                            (TV
+                                                                                               "f5"
+                                                                                               Star)
+                                                                                        ]
+                                                                                      )
+                                                                                      (Solved
+                                                                                         ([ IsIn
+                                                                                              "Inspect"
+                                                                                              [ TVar
+                                                                                                  (TV
+                                                                                                     "f5"
+                                                                                                     Star)
+                                                                                              ]
+                                                                                              Nothing
+                                                                                          ] :=>
+                                                                                            TApp
+                                                                                              (TApp
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "(->)"
+                                                                                                       (Kfun
+                                                                                                          Star
+                                                                                                          (Kfun
+                                                                                                             Star
+                                                                                                             Star)))
+                                                                                                    "prelude")
+                                                                                                 (TVar
+                                                                                                    (TV
+                                                                                                       "f5"
+                                                                                                       Star)))
+                                                                                              (TCon
+                                                                                                 (TC
+                                                                                                    "String"
+                                                                                                    Star)
+                                                                                                 "prelude"))
+                                                                                         (Area
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0)
+                                                                                            (Loc
+                                                                                               0
+                                                                                               0
+                                                                                               0))
+                                                                                         (Var
+                                                                                            "inspect"))))
+                                                                                (Solved
+                                                                                   ([ IsIn
+                                                                                        "Inspect"
+                                                                                        [ TVar
+                                                                                            (TV
+                                                                                               "f5"
+                                                                                               Star)
+                                                                                        ]
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
+                                                                                    ] :=>
+                                                                                      TVar
+                                                                                        (TV
+                                                                                           "f5"
+                                                                                           Star))
+                                                                                   (Area
+                                                                                      (Loc 0 0 0)
+                                                                                      (Loc 0 0 0))
+                                                                                   (Var "a2"))
+                                                                                True)
+                                                                         , Solved
+                                                                             ([] :=>
+                                                                                TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                             (Area
+                                                                                (Loc 0 0 0)
+                                                                                (Loc 0 0 0))
+                                                                             (LStr ")")
+                                                                         ])))
+                                                            , Solved
+                                                                ([] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TApp
+                                                                           (TApp
+                                                                              (TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "Wish"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star))))
+                                                                                    "path")
+                                                                                 (TVar
+                                                                                    (TV "d3" Star)))
+                                                                              (TVar (TV "e4" Star)))
+                                                                           (TVar (TV "f5" Star))))
+                                                                     (TCon
+                                                                        (TC "String" Star)
+                                                                        "prelude"))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (Is
+                                                                   (Solved
+                                                                      ([] :=> TVar (TV "b1" Star))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      PAny)
+                                                                   (Solved
+                                                                      ([] :=>
+                                                                         TCon
+                                                                           (TC "String" Star)
+                                                                           "prelude")
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (LStr "\"Unknown\"")))
+                                                            ])
+                                                     ])))))))))
+                      , Forall
+                          [ Star , Star , Star ]
+                          ([ IsIn "Inspect" [ TGen 0 ] Nothing
+                           , IsIn "Inspect" [ TGen 1 ] Nothing
+                           , IsIn "Inspect" [ TGen 2 ] Nothing
+                           ] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TApp
+                                     (TApp
+                                        (TApp
+                                           (TCon
+                                              (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
+                                              "path")
+                                           (TGen 2))
+                                        (TGen 0))
+                                     (TGen 1)))
+                               (TCon (TC "String" Star) "prelude"))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (Instance
                "Eq"
-               [ IsIn "Eq" [ TVar (TV "e" Star) ] Nothing
-               , IsIn "Eq" [ TVar (TV "a" Star) ] Nothing
+               [ IsIn "Eq" [ TVar (TV "a" Star) ] Nothing
                , IsIn "Eq" [ TVar (TV "c" Star) ] Nothing
+               , IsIn "Eq" [ TVar (TV "e" Star) ] Nothing
                ]
                (IsIn
                   "Eq"
@@ -248,9 +1084,9 @@ Right
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                               "path")
-                                           (TVar (TV "l11" Star)))
-                                        (TVar (TV "m12" Star)))
-                                     (TVar (TV "n13" Star))))
+                                           (TVar (TV "f31" Star)))
+                                        (TVar (TV "g32" Star)))
+                                     (TVar (TV "h33" Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -261,9 +1097,9 @@ Right
                                                  (TC
                                                     "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                                  "path")
-                                              (TVar (TV "l11" Star)))
-                                           (TVar (TV "m12" Star)))
-                                        (TVar (TV "n13" Star))))
+                                              (TVar (TV "f31" Star)))
+                                           (TVar (TV "g32" Star)))
+                                        (TVar (TV "h33" Star))))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
@@ -281,9 +1117,9 @@ Right
                                                        "Wish"
                                                        (Kfun Star (Kfun Star (Kfun Star Star))))
                                                     "path")
-                                                 (TVar (TV "l11" Star)))
-                                              (TVar (TV "m12" Star)))
-                                           (TVar (TV "n13" Star))))
+                                                 (TVar (TV "f31" Star)))
+                                              (TVar (TV "g32" Star)))
+                                           (TVar (TV "h33" Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -295,13 +1131,13 @@ Right
                                                           "Wish"
                                                           (Kfun Star (Kfun Star (Kfun Star Star))))
                                                        "path")
-                                                    (TVar (TV "l11" Star)))
-                                                 (TVar (TV "m12" Star)))
-                                              (TVar (TV "n13" Star))))
+                                                    (TVar (TV "f31" Star)))
+                                                 (TVar (TV "g32" Star)))
+                                              (TVar (TV "h33" Star))))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
-                                   ( ClassRef "Eq" [] False True , [ TVar (TV "n13" Star) ] )
+                                   ( ClassRef "Eq" [] False True , [ TVar (TV "f31" Star) ] )
                                    (Solved
                                       ([] :=>
                                          TApp
@@ -317,9 +1153,9 @@ Right
                                                              (Kfun
                                                                 Star (Kfun Star (Kfun Star Star))))
                                                           "path")
-                                                       (TVar (TV "l11" Star)))
-                                                    (TVar (TV "m12" Star)))
-                                                 (TVar (TV "n13" Star))))
+                                                       (TVar (TV "f31" Star)))
+                                                    (TVar (TV "g32" Star)))
+                                                 (TVar (TV "h33" Star))))
                                            (TApp
                                               (TApp
                                                  (TCon
@@ -335,13 +1171,13 @@ Right
                                                                    Star
                                                                    (Kfun Star (Kfun Star Star))))
                                                              "path")
-                                                          (TVar (TV "l11" Star)))
-                                                       (TVar (TV "m12" Star)))
-                                                    (TVar (TV "n13" Star))))
+                                                          (TVar (TV "f31" Star)))
+                                                       (TVar (TV "g32" Star)))
+                                                    (TVar (TV "h33" Star))))
                                               (TCon (TC "Boolean" Star) "prelude")))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
-                                         ( ClassRef "Eq" [] False True , [ TVar (TV "m12" Star) ] )
+                                         ( ClassRef "Eq" [] False True , [ TVar (TV "h33" Star) ] )
                                          (Solved
                                             ([] :=>
                                                TApp
@@ -359,9 +1195,9 @@ Right
                                                                       Star
                                                                       (Kfun Star (Kfun Star Star))))
                                                                 "path")
-                                                             (TVar (TV "l11" Star)))
-                                                          (TVar (TV "m12" Star)))
-                                                       (TVar (TV "n13" Star))))
+                                                             (TVar (TV "f31" Star)))
+                                                          (TVar (TV "g32" Star)))
+                                                       (TVar (TV "h33" Star))))
                                                  (TApp
                                                     (TApp
                                                        (TCon
@@ -378,19 +1214,19 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star))))
                                                                    "path")
-                                                                (TVar (TV "l11" Star)))
-                                                             (TVar (TV "m12" Star)))
-                                                          (TVar (TV "n13" Star))))
+                                                                (TVar (TV "f31" Star)))
+                                                             (TVar (TV "g32" Star)))
+                                                          (TVar (TV "h33" Star))))
                                                     (TCon (TC "Boolean" Star) "prelude")))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Placeholder
                                                ( ClassRef "Eq" [] False True
-                                               , [ TVar (TV "l11" Star) ]
+                                               , [ TVar (TV "g32" Star) ]
                                                )
                                                (Solved
-                                                  ([ IsIn "Eq" [ TVar (TV "l11" Star) ] Nothing
-                                                   , IsIn "Eq" [ TVar (TV "m12" Star) ] Nothing
-                                                   , IsIn "Eq" [ TVar (TV "n13" Star) ] Nothing
+                                                  ([ IsIn "Eq" [ TVar (TV "g32" Star) ] Nothing
+                                                   , IsIn "Eq" [ TVar (TV "h33" Star) ] Nothing
+                                                   , IsIn "Eq" [ TVar (TV "f31" Star) ] Nothing
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -410,9 +1246,9 @@ Right
                                                                                Star
                                                                                (Kfun Star Star))))
                                                                       "path")
-                                                                   (TVar (TV "l11" Star)))
-                                                                (TVar (TV "m12" Star)))
-                                                             (TVar (TV "n13" Star))))
+                                                                   (TVar (TV "f31" Star)))
+                                                                (TVar (TV "g32" Star)))
+                                                             (TVar (TV "h33" Star))))
                                                        (TApp
                                                           (TApp
                                                              (TCon
@@ -433,24 +1269,24 @@ Right
                                                                                   (Kfun
                                                                                      Star Star))))
                                                                          "path")
-                                                                      (TVar (TV "l11" Star)))
-                                                                   (TVar (TV "m12" Star)))
-                                                                (TVar (TV "n13" Star))))
+                                                                      (TVar (TV "f31" Star)))
+                                                                   (TVar (TV "g32" Star)))
+                                                                (TVar (TV "h33" Star))))
                                                           (TCon (TC "Boolean" Star) "prelude")))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   (Abs
                                                      (Solved
                                                         ([ IsIn
                                                              "Eq"
-                                                             [ TVar (TV "l11" Star) ]
+                                                             [ TVar (TV "f31" Star) ]
                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                          , IsIn
                                                              "Eq"
-                                                             [ TVar (TV "m12" Star) ]
+                                                             [ TVar (TV "g32" Star) ]
                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                          , IsIn
                                                              "Eq"
-                                                             [ TVar (TV "n13" Star) ]
+                                                             [ TVar (TV "h33" Star) ]
                                                              (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                          ] :=>
                                                            TApp
@@ -465,23 +1301,23 @@ Right
                                                                                Star
                                                                                (Kfun Star Star))))
                                                                       "path")
-                                                                   (TVar (TV "l11" Star)))
-                                                                (TVar (TV "m12" Star)))
-                                                             (TVar (TV "n13" Star)))
+                                                                   (TVar (TV "f31" Star)))
+                                                                (TVar (TV "g32" Star)))
+                                                             (TVar (TV "h33" Star)))
                                                         (Area (Loc 0 0 0) (Loc 0 0 0))
                                                         "__$a__")
                                                      [ Solved
                                                          ([ IsIn
                                                               "Eq"
-                                                              [ TVar (TV "l11" Star) ]
+                                                              [ TVar (TV "f31" Star) ]
                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                           , IsIn
                                                               "Eq"
-                                                              [ TVar (TV "m12" Star) ]
+                                                              [ TVar (TV "g32" Star) ]
                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                           , IsIn
                                                               "Eq"
-                                                              [ TVar (TV "n13" Star) ]
+                                                              [ TVar (TV "h33" Star) ]
                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                           ] :=>
                                                             TApp
@@ -505,28 +1341,28 @@ Right
                                                                                          Star
                                                                                          Star))))
                                                                              "path")
-                                                                          (TVar (TV "l11" Star)))
-                                                                       (TVar (TV "m12" Star)))
-                                                                    (TVar (TV "n13" Star))))
+                                                                          (TVar (TV "f31" Star)))
+                                                                       (TVar (TV "g32" Star)))
+                                                                    (TVar (TV "h33" Star))))
                                                               (TCon (TC "Boolean" Star) "prelude"))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          (Abs
                                                             (Solved
                                                                ([ IsIn
                                                                     "Eq"
-                                                                    [ TVar (TV "l11" Star) ]
+                                                                    [ TVar (TV "f31" Star) ]
                                                                     (Just
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0)))
                                                                 , IsIn
                                                                     "Eq"
-                                                                    [ TVar (TV "m12" Star) ]
+                                                                    [ TVar (TV "g32" Star) ]
                                                                     (Just
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0)))
                                                                 , IsIn
                                                                     "Eq"
-                                                                    [ TVar (TV "n13" Star) ]
+                                                                    [ TVar (TV "h33" Star) ]
                                                                     (Just
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0)))
@@ -545,27 +1381,27 @@ Right
                                                                                          Star
                                                                                          Star))))
                                                                              "path")
-                                                                          (TVar (TV "l11" Star)))
-                                                                       (TVar (TV "m12" Star)))
-                                                                    (TVar (TV "n13" Star)))
+                                                                          (TVar (TV "f31" Star)))
+                                                                       (TVar (TV "g32" Star)))
+                                                                    (TVar (TV "h33" Star)))
                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                "__$b__")
                                                             [ Solved
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV "l11" Star) ]
+                                                                     [ TVar (TV "f31" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  , IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV "m12" Star) ]
+                                                                     [ TVar (TV "g32" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  , IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV "n13" Star) ]
+                                                                     [ TVar (TV "h33" Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -603,15 +1439,15 @@ Right
                                                                                           "path")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             "l11"
+                                                                                             "f31"
                                                                                              Star)))
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "m12"
+                                                                                          "g32"
                                                                                           Star)))
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "n13"
+                                                                                       "h33"
                                                                                        Star))))
                                                                            (TApp
                                                                               (TApp
@@ -629,13 +1465,13 @@ Right
                                                                                        "path")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          "l11"
+                                                                                          "f31"
                                                                                           Star)))
                                                                                  (TVar
                                                                                     (TV
-                                                                                       "m12" Star)))
+                                                                                       "g32" Star)))
                                                                               (TVar
-                                                                                 (TV "n13" Star))))
+                                                                                 (TV "h33" Star))))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (TupleConstructor
                                                                          [ Solved
@@ -656,15 +1492,15 @@ Right
                                                                                            "path")
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "l11"
+                                                                                              "f31"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "m12"
+                                                                                           "g32"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "n13"
+                                                                                        "h33"
                                                                                         Star)))
                                                                              (Area
                                                                                 (Loc 0 0 0)
@@ -688,15 +1524,15 @@ Right
                                                                                            "path")
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "l11"
+                                                                                              "f31"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "m12"
+                                                                                           "g32"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "n13"
+                                                                                        "h33"
                                                                                         Star)))
                                                                              (Area
                                                                                 (Loc 0 0 0)
@@ -706,21 +1542,21 @@ Right
                                                                    [ Solved
                                                                        ([ IsIn
                                                                             "Eq"
-                                                                            [ TVar (TV "l11" Star) ]
+                                                                            [ TVar (TV "f31" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 0 0 0)
                                                                                   (Loc 0 0 0)))
                                                                         , IsIn
                                                                             "Eq"
-                                                                            [ TVar (TV "m12" Star) ]
+                                                                            [ TVar (TV "g32" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 0 0 0)
                                                                                   (Loc 0 0 0)))
                                                                         , IsIn
                                                                             "Eq"
-                                                                            [ TVar (TV "n13" Star) ]
+                                                                            [ TVar (TV "h33" Star) ]
                                                                             (Just
                                                                                (Area
                                                                                   (Loc 0 0 0)
@@ -764,15 +1600,15 @@ Right
                                                                                                  "path")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "l11"
+                                                                                                    "f31"
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "m12"
+                                                                                                 "g32"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "n13"
+                                                                                              "h33"
                                                                                               Star))))
                                                                                   (TApp
                                                                                      (TApp
@@ -790,15 +1626,15 @@ Right
                                                                                               "path")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "l11"
+                                                                                                 "f31"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "m12"
+                                                                                              "g32"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "n13"
+                                                                                           "h33"
                                                                                            Star)))))
                                                                             (TCon
                                                                                (TC "Boolean" Star)
@@ -835,15 +1671,15 @@ Right
                                                                                                  "path")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "l11"
+                                                                                                    "f31"
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "m12"
+                                                                                                 "g32"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "n13"
+                                                                                              "h33"
                                                                                               Star))))
                                                                                   (TApp
                                                                                      (TApp
@@ -861,15 +1697,15 @@ Right
                                                                                               "path")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "l11"
+                                                                                                 "f31"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "m12"
+                                                                                              "g32"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "n13"
+                                                                                           "h33"
                                                                                            Star))))
                                                                              (Area
                                                                                 (Loc 0 0 0)
@@ -893,15 +1729,15 @@ Right
                                                                                                   "path")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "l11"
+                                                                                                     "f31"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "m12"
+                                                                                                  "g32"
                                                                                                   Star)))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "n13"
+                                                                                               "h33"
                                                                                                Star)))
                                                                                     (Area
                                                                                        (Loc 0 0 0)
@@ -912,7 +1748,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "l11"
+                                                                                                   "f31"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -929,7 +1765,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "m12"
+                                                                                                   "g32"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -946,7 +1782,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "n13"
+                                                                                                   "h33"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -978,15 +1814,15 @@ Right
                                                                                                   "path")
                                                                                                (TVar
                                                                                                   (TV
-                                                                                                     "l11"
+                                                                                                     "f31"
                                                                                                      Star)))
                                                                                             (TVar
                                                                                                (TV
-                                                                                                  "m12"
+                                                                                                  "g32"
                                                                                                   Star)))
                                                                                          (TVar
                                                                                             (TV
-                                                                                               "n13"
+                                                                                               "h33"
                                                                                                Star)))
                                                                                     (Area
                                                                                        (Loc 0 0 0)
@@ -997,7 +1833,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "l11"
+                                                                                                   "f31"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -1014,7 +1850,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "m12"
+                                                                                                   "g32"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -1031,7 +1867,7 @@ Right
                                                                                            ([] :=>
                                                                                               TVar
                                                                                                 (TV
-                                                                                                   "n13"
+                                                                                                   "h33"
                                                                                                    Star))
                                                                                            (Area
                                                                                               (Loc
@@ -1051,7 +1887,7 @@ Right
                                                                                   "Eq"
                                                                                   [ TVar
                                                                                       (TV
-                                                                                         "l11" Star)
+                                                                                         "f31" Star)
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -1062,7 +1898,7 @@ Right
                                                                                   "Eq"
                                                                                   [ TVar
                                                                                       (TV
-                                                                                         "m12" Star)
+                                                                                         "g32" Star)
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -1073,7 +1909,7 @@ Right
                                                                                   "Eq"
                                                                                   [ TVar
                                                                                       (TV
-                                                                                         "n13" Star)
+                                                                                         "h33" Star)
                                                                                   ]
                                                                                   (Just
                                                                                      (Area
@@ -1094,7 +1930,7 @@ Right
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "l11"
+                                                                                               "f31"
                                                                                                Star)
                                                                                         ]
                                                                                         (Just
@@ -1187,7 +2023,7 @@ Right
                                                                                               "Eq"
                                                                                               [ TVar
                                                                                                   (TV
-                                                                                                     "l11"
+                                                                                                     "f31"
                                                                                                      Star)
                                                                                               ]
                                                                                               (Just
@@ -1221,7 +2057,7 @@ Right
                                                                                                     "Eq"
                                                                                                     [ TVar
                                                                                                         (TV
-                                                                                                           "l11"
+                                                                                                           "f31"
                                                                                                            Star)
                                                                                                     ]
                                                                                                     (Just
@@ -1248,7 +2084,7 @@ Right
                                                                                                           "prelude")
                                                                                                        (TVar
                                                                                                           (TV
-                                                                                                             "l11"
+                                                                                                             "f31"
                                                                                                              Star)))
                                                                                                     (TCon
                                                                                                        (TC
@@ -1270,7 +2106,7 @@ Right
                                                                                                           "Eq"
                                                                                                           [ TVar
                                                                                                               (TV
-                                                                                                                 "l11"
+                                                                                                                 "f31"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                           Nothing
@@ -1288,7 +2124,7 @@ Right
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "l11"
+                                                                                                                   "f31"
                                                                                                                    Star)))
                                                                                                           (TApp
                                                                                                              (TApp
@@ -1303,7 +2139,7 @@ Right
                                                                                                                    "prelude")
                                                                                                                 (TVar
                                                                                                                    (TV
-                                                                                                                      "l11"
+                                                                                                                      "f31"
                                                                                                                       Star)))
                                                                                                              (TCon
                                                                                                                 (TC
@@ -1326,7 +2162,7 @@ Right
                                                                                                             True
                                                                                                         , [ TVar
                                                                                                               (TV
-                                                                                                                 "l11"
+                                                                                                                 "f31"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                         )
@@ -1335,7 +2171,7 @@ Right
                                                                                                                 "Eq"
                                                                                                                 [ TVar
                                                                                                                     (TV
-                                                                                                                       "l11"
+                                                                                                                       "f31"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                                 Nothing
@@ -1353,7 +2189,7 @@ Right
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "l11"
+                                                                                                                         "f31"
                                                                                                                          Star)))
                                                                                                                 (TApp
                                                                                                                    (TApp
@@ -1368,7 +2204,7 @@ Right
                                                                                                                          "prelude")
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "l11"
+                                                                                                                            "f31"
                                                                                                                             Star)))
                                                                                                                    (TCon
                                                                                                                       (TC
@@ -1391,7 +2227,7 @@ Right
                                                                                                           "Eq"
                                                                                                           [ TVar
                                                                                                               (TV
-                                                                                                                 "l11"
+                                                                                                                 "f31"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                           (Just
@@ -1407,7 +2243,7 @@ Right
                                                                                                       ] :=>
                                                                                                         TVar
                                                                                                           (TV
-                                                                                                             "l11"
+                                                                                                             "f31"
                                                                                                              Star))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1426,7 +2262,7 @@ Right
                                                                                                     "Eq"
                                                                                                     [ TVar
                                                                                                         (TV
-                                                                                                           "l11"
+                                                                                                           "f31"
                                                                                                            Star)
                                                                                                     ]
                                                                                                     (Just
@@ -1442,7 +2278,7 @@ Right
                                                                                                 ] :=>
                                                                                                   TVar
                                                                                                     (TV
-                                                                                                       "l11"
+                                                                                                       "f31"
                                                                                                        Star))
                                                                                                (Area
                                                                                                   (Loc
@@ -1462,7 +2298,7 @@ Right
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "l11"
+                                                                                               "f31"
                                                                                                Star)
                                                                                         ]
                                                                                         (Just
@@ -1479,7 +2315,7 @@ Right
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "m12"
+                                                                                               "g32"
                                                                                                Star)
                                                                                         ]
                                                                                         (Just
@@ -1496,7 +2332,7 @@ Right
                                                                                         "Eq"
                                                                                         [ TVar
                                                                                             (TV
-                                                                                               "n13"
+                                                                                               "h33"
                                                                                                Star)
                                                                                         ]
                                                                                         (Just
@@ -1524,7 +2360,7 @@ Right
                                                                                               "Eq"
                                                                                               [ TVar
                                                                                                   (TV
-                                                                                                     "m12"
+                                                                                                     "g32"
                                                                                                      Star)
                                                                                               ]
                                                                                               (Just
@@ -1624,7 +2460,7 @@ Right
                                                                                                     "Eq"
                                                                                                     [ TVar
                                                                                                         (TV
-                                                                                                           "m12"
+                                                                                                           "g32"
                                                                                                            Star)
                                                                                                     ]
                                                                                                     (Just
@@ -1658,7 +2494,7 @@ Right
                                                                                                           "Eq"
                                                                                                           [ TVar
                                                                                                               (TV
-                                                                                                                 "m12"
+                                                                                                                 "g32"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                           (Just
@@ -1685,7 +2521,7 @@ Right
                                                                                                                 "prelude")
                                                                                                              (TVar
                                                                                                                 (TV
-                                                                                                                   "m12"
+                                                                                                                   "g32"
                                                                                                                    Star)))
                                                                                                           (TCon
                                                                                                              (TC
@@ -1707,7 +2543,7 @@ Right
                                                                                                                 "Eq"
                                                                                                                 [ TVar
                                                                                                                     (TV
-                                                                                                                       "m12"
+                                                                                                                       "g32"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                                 Nothing
@@ -1725,7 +2561,7 @@ Right
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "m12"
+                                                                                                                         "g32"
                                                                                                                          Star)))
                                                                                                                 (TApp
                                                                                                                    (TApp
@@ -1740,7 +2576,7 @@ Right
                                                                                                                          "prelude")
                                                                                                                       (TVar
                                                                                                                          (TV
-                                                                                                                            "m12"
+                                                                                                                            "g32"
                                                                                                                             Star)))
                                                                                                                    (TCon
                                                                                                                       (TC
@@ -1763,7 +2599,7 @@ Right
                                                                                                                   True
                                                                                                               , [ TVar
                                                                                                                     (TV
-                                                                                                                       "m12"
+                                                                                                                       "g32"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                               )
@@ -1772,7 +2608,7 @@ Right
                                                                                                                       "Eq"
                                                                                                                       [ TVar
                                                                                                                           (TV
-                                                                                                                             "m12"
+                                                                                                                             "g32"
                                                                                                                              Star)
                                                                                                                       ]
                                                                                                                       Nothing
@@ -1790,7 +2626,7 @@ Right
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "m12"
+                                                                                                                               "g32"
                                                                                                                                Star)))
                                                                                                                       (TApp
                                                                                                                          (TApp
@@ -1805,7 +2641,7 @@ Right
                                                                                                                                "prelude")
                                                                                                                             (TVar
                                                                                                                                (TV
-                                                                                                                                  "m12"
+                                                                                                                                  "g32"
                                                                                                                                   Star)))
                                                                                                                          (TCon
                                                                                                                             (TC
@@ -1828,7 +2664,7 @@ Right
                                                                                                                 "Eq"
                                                                                                                 [ TVar
                                                                                                                     (TV
-                                                                                                                       "m12"
+                                                                                                                       "g32"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                                 (Just
@@ -1844,7 +2680,7 @@ Right
                                                                                                             ] :=>
                                                                                                               TVar
                                                                                                                 (TV
-                                                                                                                   "m12"
+                                                                                                                   "g32"
                                                                                                                    Star))
                                                                                                            (Area
                                                                                                               (Loc
@@ -1863,7 +2699,7 @@ Right
                                                                                                           "Eq"
                                                                                                           [ TVar
                                                                                                               (TV
-                                                                                                                 "m12"
+                                                                                                                 "g32"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                           (Just
@@ -1879,7 +2715,7 @@ Right
                                                                                                       ] :=>
                                                                                                         TVar
                                                                                                           (TV
-                                                                                                             "m12"
+                                                                                                             "g32"
                                                                                                              Star))
                                                                                                      (Area
                                                                                                         (Loc
@@ -1899,7 +2735,7 @@ Right
                                                                                               "Eq"
                                                                                               [ TVar
                                                                                                   (TV
-                                                                                                     "m12"
+                                                                                                     "g32"
                                                                                                      Star)
                                                                                               ]
                                                                                               (Just
@@ -1916,7 +2752,7 @@ Right
                                                                                               "Eq"
                                                                                               [ TVar
                                                                                                   (TV
-                                                                                                     "n13"
+                                                                                                     "h33"
                                                                                                      Star)
                                                                                               ]
                                                                                               (Just
@@ -1950,7 +2786,7 @@ Right
                                                                                                     "Eq"
                                                                                                     [ TVar
                                                                                                         (TV
-                                                                                                           "n13"
+                                                                                                           "h33"
                                                                                                            Star)
                                                                                                     ]
                                                                                                     (Just
@@ -2050,7 +2886,7 @@ Right
                                                                                                           "Eq"
                                                                                                           [ TVar
                                                                                                               (TV
-                                                                                                                 "n13"
+                                                                                                                 "h33"
                                                                                                                  Star)
                                                                                                           ]
                                                                                                           (Just
@@ -2084,7 +2920,7 @@ Right
                                                                                                                 "Eq"
                                                                                                                 [ TVar
                                                                                                                     (TV
-                                                                                                                       "n13"
+                                                                                                                       "h33"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                                 (Just
@@ -2111,7 +2947,7 @@ Right
                                                                                                                       "prelude")
                                                                                                                    (TVar
                                                                                                                       (TV
-                                                                                                                         "n13"
+                                                                                                                         "h33"
                                                                                                                          Star)))
                                                                                                                 (TCon
                                                                                                                    (TC
@@ -2133,7 +2969,7 @@ Right
                                                                                                                       "Eq"
                                                                                                                       [ TVar
                                                                                                                           (TV
-                                                                                                                             "n13"
+                                                                                                                             "h33"
                                                                                                                              Star)
                                                                                                                       ]
                                                                                                                       Nothing
@@ -2151,7 +2987,7 @@ Right
                                                                                                                             "prelude")
                                                                                                                          (TVar
                                                                                                                             (TV
-                                                                                                                               "n13"
+                                                                                                                               "h33"
                                                                                                                                Star)))
                                                                                                                       (TApp
                                                                                                                          (TApp
@@ -2166,7 +3002,7 @@ Right
                                                                                                                                "prelude")
                                                                                                                             (TVar
                                                                                                                                (TV
-                                                                                                                                  "n13"
+                                                                                                                                  "h33"
                                                                                                                                   Star)))
                                                                                                                          (TCon
                                                                                                                             (TC
@@ -2189,7 +3025,7 @@ Right
                                                                                                                         True
                                                                                                                     , [ TVar
                                                                                                                           (TV
-                                                                                                                             "n13"
+                                                                                                                             "h33"
                                                                                                                              Star)
                                                                                                                       ]
                                                                                                                     )
@@ -2198,7 +3034,7 @@ Right
                                                                                                                             "Eq"
                                                                                                                             [ TVar
                                                                                                                                 (TV
-                                                                                                                                   "n13"
+                                                                                                                                   "h33"
                                                                                                                                    Star)
                                                                                                                             ]
                                                                                                                             Nothing
@@ -2216,7 +3052,7 @@ Right
                                                                                                                                   "prelude")
                                                                                                                                (TVar
                                                                                                                                   (TV
-                                                                                                                                     "n13"
+                                                                                                                                     "h33"
                                                                                                                                      Star)))
                                                                                                                             (TApp
                                                                                                                                (TApp
@@ -2231,7 +3067,7 @@ Right
                                                                                                                                      "prelude")
                                                                                                                                   (TVar
                                                                                                                                      (TV
-                                                                                                                                        "n13"
+                                                                                                                                        "h33"
                                                                                                                                         Star)))
                                                                                                                                (TCon
                                                                                                                                   (TC
@@ -2254,7 +3090,7 @@ Right
                                                                                                                       "Eq"
                                                                                                                       [ TVar
                                                                                                                           (TV
-                                                                                                                             "n13"
+                                                                                                                             "h33"
                                                                                                                              Star)
                                                                                                                       ]
                                                                                                                       (Just
@@ -2270,7 +3106,7 @@ Right
                                                                                                                   ] :=>
                                                                                                                     TVar
                                                                                                                       (TV
-                                                                                                                         "n13"
+                                                                                                                         "h33"
                                                                                                                          Star))
                                                                                                                  (Area
                                                                                                                     (Loc
@@ -2289,7 +3125,7 @@ Right
                                                                                                                 "Eq"
                                                                                                                 [ TVar
                                                                                                                     (TV
-                                                                                                                       "n13"
+                                                                                                                       "h33"
                                                                                                                        Star)
                                                                                                                 ]
                                                                                                                 (Just
@@ -2305,7 +3141,7 @@ Right
                                                                                                             ] :=>
                                                                                                               TVar
                                                                                                                 (TV
-                                                                                                                   "n13"
+                                                                                                                   "h33"
                                                                                                                    Star))
                                                                                                            (Area
                                                                                                               (Loc
@@ -2325,7 +3161,7 @@ Right
                                                                                                     "Eq"
                                                                                                     [ TVar
                                                                                                         (TV
-                                                                                                           "n13"
+                                                                                                           "h33"
                                                                                                            Star)
                                                                                                     ]
                                                                                                     (Just
@@ -2398,15 +3234,15 @@ Right
                                                                                                  "path")
                                                                                               (TVar
                                                                                                  (TV
-                                                                                                    "l11"
+                                                                                                    "f31"
                                                                                                     Star)))
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "m12"
+                                                                                                 "g32"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "n13"
+                                                                                              "h33"
                                                                                               Star))))
                                                                                   (TApp
                                                                                      (TApp
@@ -2424,15 +3260,15 @@ Right
                                                                                               "path")
                                                                                            (TVar
                                                                                               (TV
-                                                                                                 "l11"
+                                                                                                 "f31"
                                                                                                  Star)))
                                                                                         (TVar
                                                                                            (TV
-                                                                                              "m12"
+                                                                                              "g32"
                                                                                               Star)))
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "n13"
+                                                                                           "h33"
                                                                                            Star)))))
                                                                             (TCon
                                                                                (TC "Boolean" Star)
@@ -2455,11 +3291,12 @@ Right
                                                                                         "prelude")
                                                                                      (TVar
                                                                                         (TV
-                                                                                           "b1"
+                                                                                           "v21"
                                                                                            Star)))
                                                                                   (TVar
                                                                                      (TV
-                                                                                        "c2" Star)))
+                                                                                        "w22"
+                                                                                        Star)))
                                                                              (Area
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
@@ -2492,9 +3329,9 @@ Right
                                            (TCon
                                               (TC "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                               "path")
-                                           (TGen 0))
-                                        (TGen 1))
-                                     (TGen 2)))
+                                           (TGen 2))
+                                        (TGen 0))
+                                     (TGen 1)))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -2505,9 +3342,9 @@ Right
                                                  (TC
                                                     "Wish" (Kfun Star (Kfun Star (Kfun Star Star))))
                                                  "path")
-                                              (TGen 0))
-                                           (TGen 1))
-                                        (TGen 2)))
+                                              (TGen 2))
+                                           (TGen 0))
+                                        (TGen 1)))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
