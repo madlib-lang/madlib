@@ -14,7 +14,7 @@ import {} from "MonadState"
 
 alias Stack a = StateT Integer (WriterT (List String) Identity) a
 
-hep :: MonadWriter w m => w -> m ()
+hep :: MonadWriter w m => w -> m {}
 hep = tell
 
 sumAndLog :: MonadWriter (List String) m => Integer -> m Integer
