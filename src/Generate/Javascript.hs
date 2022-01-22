@@ -423,24 +423,33 @@ instance Compilable Exp where
                   <> safeName
                   <> " = "
                   <> placeholders
-                  <> "{"
-                  <> "\n  "
-                  <> intercalate
-                       "\n  "
-                       ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
-                  <> "\n\n"
-                  <> "  return "
-                  <> safeName
-                  <> "__ND__()"
-                  <> "\n};\n"
-                  <> "let "
-                  <> safeName
-                  <> "__ND__"
-                  <> " = "
-                  <> onceFnName optimized
-                  <> "(() => "
                   <> content'
-                  <> ")"
+
+                  -- NB: this commented solution enables memoizing for overloaded functions
+                  -- but also it does weird things wrt concurrency and Wish, which led tests
+                  -- to use the wrong instance of Inspect to display diffs.
+                  -- (if needsModifier then "let " else "")
+                  -- <> safeName
+                  -- <> " = "
+                  -- <> placeholders
+                  -- <> "{"
+                  -- <> "\n  "
+                  -- <> intercalate
+                  --      "\n  "
+                  --      ((\dict -> getGlobalForTarget (cctarget config) <> "." <> dict <> " = " <> dict) <$> dicts)
+                  -- <> "\n\n"
+                  -- <> "  return "
+                  -- <> safeName
+                  -- <> "__ND__()"
+                  -- <> "\n};\n"
+                  -- <> "let "
+                  -- <> safeName
+                  -- <> "__ND__"
+                  -- <> " = "
+                  -- <> onceFnName optimized
+                  -- <> "(() => "
+                  -- <> content'
+                  -- <> ")"
                 else (if needsModifier then "let " else "") <> safeName <> " = " <> content'
 
         TypedExp exp _    -> compile env config exp

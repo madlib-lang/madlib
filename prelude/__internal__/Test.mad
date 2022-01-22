@@ -175,27 +175,27 @@ export collectCoverage = (hitPoints) =>
 
 formatSuccessOutput = (description, result) => green("\u2713 " ++ description)
 
-formatFailureOutput :: String -> AssertionError a -> W.Wish String String
+formatFailureOutput :: Inspect a => String -> AssertionError a -> W.Wish String String
 formatFailureOutput = (description, result) => where(result) {
   AssertionError(expected, actual) =>
     W.bad(
       red("\u00d7 " ++ description)
       ++ "\n  expected:\n    "
-      ++ #- green(JSON.stringify(expected)) -#
+      ++ green(inspect(expected))
       ++ "\n  actual:\n    "
-      ++ #- red(JSON.stringify(actual)) -#
+      ++ red(inspect(actual))
     )
 
   Error(msg) =>
     W.bad(
       red("\u00d7 " ++ description)
-      ++ "\n  error: " ++ #- JSON.stringify(msg) -#
+      ++ "\n  error: " ++ inspect(msg)
     )
 
   ErrorWithMessage(msg) =>
     W.bad(
       red("\u00d7 " ++ description)
-      ++ "\n  error: " ++ #- JSON.stringify(msg) -#
+      ++ "\n  error: " ++ msg
     )
 
   NotImplemented =>
@@ -206,7 +206,7 @@ formatFailureOutput = (description, result) => where(result) {
 const generateId = () => Math.random().toString().substr(2, 10)
 -#
 
-test :: String -> (String -> W.Wish (AssertionError a) String) -> {}
+test :: Inspect a => String -> (String -> W.Wish (AssertionError a) {}) -> {}
 export test = (description, testImpl) => {
   id = #- generateId() -#
   #-
@@ -260,9 +260,9 @@ reportGood = (id, good) => #-{
   })
 }-#
 
-assertEquals :: Eq a => a -> a -> W.Wish (AssertionError a) String
+assertEquals :: Eq a => a -> a -> W.Wish (AssertionError a) {}
 export assertEquals = (actual, expected) => actual == expected
-  ? of("")
+  ? of({})
   : W.bad(AssertionError(expected, actual))
 
 isCoverageEnabled :: W.Wish String Boolean
