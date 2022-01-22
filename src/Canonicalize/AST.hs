@@ -27,6 +27,7 @@ import           Text.Regex.TDFA
 import AST.Solved (Import_(NamedImport))
 import Canonicalize.Derive
 import Data.List
+import Utils.List
 
 
 type TableCache = M.Map FilePath (Env, Can.AST)
@@ -206,7 +207,7 @@ canonicalizeAST tableCache target env table astPath = case M.lookup astPath tabl
 
     derivedTypes             <- getDerivedTypes
     typeDeclarationsToDerive <- getTypeDeclarationsToDerive
-    let typeDeclarationsToDerive' = typeDeclarationsToDerive \\ S.toList derivedTypes
+    let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
         derivedEqInstances        = mapMaybe deriveEqInstance typeDeclarationsToDerive'
         derivedInspectInstances   = mapMaybe deriveInspectInstance typeDeclarationsToDerive'
     

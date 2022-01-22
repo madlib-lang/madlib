@@ -252,8 +252,12 @@ unqualify (_ :=> a) = a
 
 searchVarInType :: Id -> Type -> Maybe Type
 searchVarInType id t = case t of
-  TVar (TV n _) -> if n == id then Just t else Nothing
-  TCon _ _      -> Nothing
+  TVar (TV n _) ->
+    if n == id then Just t else Nothing
+
+  TCon _ _ ->
+    Nothing
+
   TApp l r ->
     let l' = searchVarInType id l
         r' = searchVarInType id r
@@ -261,6 +265,9 @@ searchVarInType id t = case t of
           (Just x, _     ) -> Just x
           (_     , Just x) -> Just x
           _                -> Nothing
+
+  _ ->
+    Nothing
 
 
 isTVar :: Type -> Bool

@@ -364,19 +364,28 @@ mergeReports = (t1, t2) => TestReport(
 )
 
 
-assertEquals :: Eq a => a -> a -> Wish.Wish (AssertionError a) String
+assertEquals :: Eq a => a -> a -> Wish.Wish (AssertionError a) {}
 export assertEquals = (actual, expected) => actual == expected
-  ? of("")
+  ? of({})
   : Wish.bad(AssertionError(expected, actual))
 
 
-test :: String -> (String -> Wish.Wish (AssertionError a) String) -> Wish.Wish String String
+test :: Inspect a => String -> (String -> Wish.Wish (AssertionError a) {}) -> Wish.Wish String String
 export test = (description, testImpl) => pipe(
   (run) => run(description),
   map((_) => green(`\x2713 ${description}\n`)),
-  Wish.mapRej((_) => red(`\x00d7 ${description}\n`))
+  Wish.mapRej(
+    where{
+      AssertionError(expected, actual) => 
+        red(`\x00d7 ${description}`)
+        ++ "\n  expected:\n    "
+        ++ green(inspect(expected))
+        ++ "\n  actual:\n    "
+        ++ red(inspect(actual))
+        ++ "\n"
+    }
+  )
 )(testImpl)
-
 
 generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String
 generateReportSuiteEndMessage = pipe(

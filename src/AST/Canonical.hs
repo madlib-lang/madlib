@@ -37,13 +37,16 @@ data Import_
   deriving(Eq, Show, Ord)
 
 type Constructor = Canonical Constructor_
-data Constructor_ = Constructor Name [Typing] Ty.Scheme deriving(Eq, Show, Ord)
+data Constructor_ = Constructor Name [Typing] Ty.Scheme Ty.Type deriving(Eq, Show, Ord)
 
 getCtorScheme :: Constructor -> Ty.Scheme
-getCtorScheme (Canonical _ (Constructor _ _ sc)) = sc
+getCtorScheme (Canonical _ (Constructor _ _ sc _)) = sc
 
 getCtorName :: Constructor -> Name
-getCtorName (Canonical _ (Constructor name _ _)) = name
+getCtorName (Canonical _ (Constructor name _ _ _)) = name
+
+getCtorType :: Constructor -> Ty.Type
+getCtorType (Canonical _ (Constructor _ _ _ t)) = t
 
 getCtors :: TypeDecl -> [Constructor]
 getCtors (Canonical _ td) = case td of
