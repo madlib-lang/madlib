@@ -86,8 +86,8 @@ installNodeModules = (config, pkgName) => pipe(
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
   map(mappend("npm install ")),
   chain(pipe(config.exec, mapRej(System.getCommandErrorMessage))),
-  map((x) => IO.log(`nodejs modules installed for '${pkgName}'`) |> always(x)),
-  fromWish((_) =>IO.log(`No node modules to install for '${pkgName}'`))
+  map((x) => IO.logAndPass(`nodejs modules installed for '${pkgName}'`, x)),
+  fromWish((x) =>IO.logAndPass(`No node modules to install for '${pkgName}'`, x))
 )(pkgName)
 
 

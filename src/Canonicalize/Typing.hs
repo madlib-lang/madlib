@@ -28,9 +28,14 @@ import qualified Data.Maybe as Maybe
 
 canonicalizeTyping :: Src.Typing -> CanonicalM Can.Typing
 canonicalizeTyping (Src.Source area _ t) = case t of
-  Src.TRSingle name       -> return $ Can.Canonical area (Can.TRSingle name)
+  Src.TRSingle name -> do
+    let nameToPush = if "." `isInfixOf` name then takeWhile (/= '.') name else name
+    pushNameAccess nameToPush
+    return $ Can.Canonical area (Can.TRSingle name)
 
   Src.TRComp name typings -> do
+    let nameToPush = if "." `isInfixOf` name then takeWhile (/= '.') name else name
+    pushNameAccess nameToPush
     typings' <- mapM canonicalizeTyping typings
     return $ Can.Canonical area (Can.TRComp name typings')
 
