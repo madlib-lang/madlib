@@ -7,5 +7,5 @@ import { defaultConfig } from "./Config"
 
 pipe(
   run,
-  fulfill(IO.log, identity)
+  fulfill(IO.trace("error"), identity)
 )(defaultConfig)

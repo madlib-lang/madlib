@@ -9,6 +9,7 @@ import           Error.Warning
 import qualified Data.Set                      as Set
 import           AST.Canonical
 import Infer.Type
+import qualified Data.List as List
 
 
 data Accessed

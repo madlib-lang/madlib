@@ -11,6 +11,7 @@ if [ "$CXX" = "g++" ]
 then
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
@@ -34,12 +35,14 @@ then
     "${BUILD_DIR}boolean.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}file.o"\
+    "${BUILD_DIR}stdio.o"\
     "${BUILD_DIR}http.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"
 else
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
+  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
@@ -63,6 +66,7 @@ else
     "${BUILD_DIR}boolean.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}file.o"\
+    "${BUILD_DIR}stdio.o"\
     "${BUILD_DIR}http.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"

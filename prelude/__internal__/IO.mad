@@ -1,10 +1,6 @@
-#iftarget js
-
-#-
-{Node}
-import util from "util"
-{/Node}
--#
+import type { Wish } from "Wish"
+import { Wish } from "Wish"
+import IOError from "IOError"
 
 
 withColor :: String -> String -> String
@@ -15,68 +11,89 @@ export green = withColor("\x1b[32m")
 export yellow = withColor("\x1b[33m")
 export grey = withColor("\x1b[90m")
 
-
-log :: a -> a
-export log = (a) => (#- { console.log(a); return a; } -#)
-
-logAndPass :: String -> a -> a
-export logAndPass = (v, a) => (#- { console.log(v); return a; } -#)
-
-newLine :: a -> a
-export newLine = logAndPass("")
-
-trace :: String -> a -> a
-export trace = (v, a) => (#- { console.log(v, a); return a; } -#)
-
-err :: a -> a
-export err = (e) => (#- { console.log(e); return e; } -#)
-
-warn :: a -> a
-export warn = (w) => (#- { console.warn(w); return w; } -#)
-
-// inspect :: a -> a
-// export inspect = (a) => (#-{
-//   {Browser}
-//   console.log(a)
-//   {/Browser}
-//   {Node}
-//   console.log(util.inspect(a, {showHidden: false, depth: null}))
-//   {/Node}
-//   return a
-// }-#)
-
+#iftarget js
 
 #-
-const stringify = (x) => {
-  if (typeof x === "object") {
-    if (Array.isArray(x)) {
-      const items = x.map(stringify).reduce((acc, xx) => acc + ",\n    " + xx)
-      return items.length < 80
-        ? `[${items.replace("\n    ", " ")}]`
-        : `[\n    ${items}\n]`
-    }
-    else {
-      if (x.__constructor) {
-        return x.__constructor + " " + x.__args.map(stringify).reduce((acc, xx) => acc + " " + xx, "")
-      }
-      else {
-        const items = Object
-          .keys(x)
-          .map((k) => k + ": " + x[k])
-          .reduce((acc, xx) => acc + ",\n    " + xx, "")
-
-        return `{\n  ${items}\n}`
-      }
-    }
-  } else return JSON.stringify(x)
-}
+{Node}
+import util from "util"
+import readline from "readline"
+{/Node}
 -#
 
-prettyPrint :: a -> a
-export prettyPrint = (a) => #-{
-  console.log(stringify(a))
-  return a
-}-#
+
+log :: String -> {}
+export log = (a) => #- console.log(a) -#
+
+put :: String -> {}
+export put = (a) => #- {
+  {Node}
+    process.stdout.write(a)
+  {/Node}
+  {Browser}
+    console.log(a)
+  {/Browser}
+} -#
+
+putLine :: String -> {}
+export putLine = log
+
+
+err :: String -> {}
+export err = (e) => #- {
+  {Node}
+    process.stderr.write(e)
+  {/Node}
+  {Browser}
+    console.error(e)
+  {/Browser}
+} -#
+
+
+getLine :: Wish IOError.IOError String
+export getLine = Wish((bad, good) => #- {
+  {Node}
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: false
+    })
+
+    rl.on("line", (line) => {
+      rl.close()
+      good(line)
+    })
+  {/Node}
+  {Browser}
+    bad("Not implemented for browsers!")
+  {/Browser}
+} -#)
+
+get :: Wish IOError.IOError String
+export get = Wish((bad, good) => #- {
+  {Node}
+    const lines = [];
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: false
+    })
+
+    rl.on("line", (line) => {
+      lines.push(line)
+    })
+
+    rl.on("close", () => {
+      rl.close()
+      good(lines.join("\n"))
+    })
+  {/Node}
+  {Browser}
+    bad("Not implemented for browsers!")
+  {/Browser}
+} -#)
+
+
 
 export alias Row = { id :: String, cols :: List #[String, String] }
 
@@ -99,9 +116,62 @@ export table = (rows, a) => (#- {
 } -#)
 
 #elseif llvm
+
+getLineFFI :: (Integer -> String -> {}) -> {}
+getLineFFI = extern "madlib__stdio__getLine"
+
+getLine :: Wish IOError.IOError String
+export getLine = Wish((bad, good) =>
+  getLineFFI(
+    (libuvError, line) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(line)
+  )
+)
+
+getFFI :: (Integer -> String -> {}) -> {}
+getFFI = extern "madlib__stdio__get"
+
+get :: Wish IOError.IOError String
+export get = Wish((bad, good) =>
+  getFFI(
+    (libuvError, line) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(line)
+  )
+)
+
 log :: String -> {}
 export log = extern "puts"
 
-// export log
+putLine :: String -> {}
+export putLine = log
+
+put :: String -> {}
+export put = extern "madlib__stdio__put"
+
+err :: String -> {}
+export err = extern "madlib__stdio__err"
+
 
 #endif
+
+errLine :: String -> {}
+export errLine = (error) => err(error ++ "\n")
+
+logAndPass :: String -> a -> a
+export logAndPass = (v, a) => {
+  log(v)
+  return a
+}
+
+putEmptyLine :: a -> a
+export newLine = logAndPass("")
+
+trace :: Inspect a => String -> a -> a
+export trace = (v, a) => {
+  log(`${v}: ${inspect(a)}`)
+  return a
+}

@@ -3457,6 +3457,8 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         else
           "__" <> hashModulePath ast <> "__moduleFunction"
 
+  -- if isMain
+  -- i32 @main(i32 %argc, i8** %argv)
   moduleFunction <- function (AST.mkName moduleFunctionName) [] Type.i32 $ \_ -> do
     entry <- block `named` "entry"
     Monad.when isMain $ do
