@@ -148,7 +148,12 @@ formatTypeError json err = case err of
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
     in  "Infinite type " <> printedN <> " -> " <> printedT
 
-  UnboundVariable n       -> "The variable '" <> n <> "' has not been declared, you might have a typo!"
+  UnboundVariable n ->
+    "The variable '" <> n <> "' has not been declared, you might have a typo."
+
+  UnboundVariableFromNamespace namespace name ->
+    "The default import '" <> namespace <> "' does not export the function '" <> name <> "'.\n\n"
+    <> "Hint: Verify that is it exported or that you spelled it correctly."
 
   CapitalizedADTTVar adtname param ->
     "The type parameter '" <> param <> "' in the type declaration '" <> adtname <> "' is capitalized.\n"

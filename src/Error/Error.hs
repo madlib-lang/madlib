@@ -13,6 +13,7 @@ data CompilationError = CompilationError TypeError Context deriving(Eq, Show)
 data TypeError
   = InfiniteType TVar Type
   | UnboundVariable String
+  | UnboundVariableFromNamespace String String
   | UnboundType String
   | UnificationError Type Type
   -- Pred: The instance we add

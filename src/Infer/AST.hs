@@ -30,6 +30,7 @@ import           Infer.Instantiate
 import           Infer.Scope
 import Debug.Trace
 import Text.Show.Pretty
+import qualified Data.Set as Set
 
 {-|
 Module      : AST
@@ -203,9 +204,14 @@ updateInterface :: Can.Interface -> Slv.Interface
 updateInterface (Can.Canonical area (Can.Interface name preds vars methods methodTypings)) =
   Slv.Untyped area $ Slv.Interface name preds vars methods (M.map updateTyping methodTypings)
 
+namespacesInScopeFromImports :: [Can.Import] -> Set.Set String
+namespacesInScopeFromImports imports = Set.fromList $ mapMaybe Can.getImportNamespace imports
+
 inferAST :: M.Map FilePath (Slv.AST, Env) -> Env -> Can.AST -> Infer (Slv.AST, Env)
 inferAST solvedTable env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
-  (env'        , inferredInstances) <- resolveInstances env { envBacktrace = [] } ainstances
+  let namespacesInScope = namespacesInScopeFromImports aimports
+      envWithNamespaces = setNamespacesInScope env namespacesInScope
+  (env'        , inferredInstances) <- resolveInstances envWithNamespaces { envBacktrace = [] } ainstances
   (inferredExps, env'             ) <- inferExps env' aexps
   let updatedInterfaces = updateInterface <$> ainterfaces
 
@@ -303,6 +309,7 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
                       , envInterfaces  = interfaces
                       , envMethods     = methods
                       , envBacktrace   = mempty
+                      , envNamespacesInScope = mempty
                       }
 
   -- Then we infer the ast
