@@ -12,7 +12,6 @@ import N from "Number"
 import T from "Tuple"
 import Lcov from "LcovDotInfo"
 import { andDo } from "Monad"
-import { TextData } from "Data"
 import Context from "HitPointContext"
 
 #endif
@@ -168,7 +167,6 @@ export collectCoverage = (hitPoints) =>
     |> chain((lcov) =>
          of(lcov)
            |> map(Lcov.stringify)
-           |> map(TextData)
            |> chain(File.write(".coverage/lcov.info"))
            |> andDo(of(stdoutReport(lcov)))
        )

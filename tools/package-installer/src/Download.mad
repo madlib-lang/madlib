@@ -1,13 +1,11 @@
 import type { Wish } from "Wish"
 import type { SideEffect } from "SideEffect"
-import type { Data } from "Data"
 import type { CommandError } from "System"
 
 import { mapRej } from "Wish"
 import { fromWish } from "SideEffect"
 import { always } from "Function"
 import { andDo } from "Monad"
-import { Response } from "Http"
 
 import type { Dependency } from "./Dependency"
 import type { Config } from "./Config"
@@ -60,10 +58,10 @@ extractArchive = (config, sanitizedUrl) => pipe(
 )(sanitizedUrl)
 
 
-getPackageData :: Config -> String -> Wish String Data
+getPackageData :: Config -> String -> Wish String String
 getPackageData = (config, url) => pipe(
   config.get,
-  map(where { Response({ data }) => data }),
+  map(.body),
   mapRej(always("Could not download package"))
 )(url)
 

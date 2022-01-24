@@ -1,7 +1,6 @@
 import type { Wish } from "Wish"
-import type { Data } from "Data"
 import type { CommandError } from "System"
-import type { Response } from "Http"
+import type { Response, Error } from "Http"
 
 import { exists, read, write, readDir } from "File"
 import { exec } from "System"
@@ -10,11 +9,11 @@ import { get } from "Http"
 
 export alias Config = {
   readFile :: String -> Wish String String,
-  writeFile :: String -> Data -> Wish String String,
+  writeFile :: String -> String -> Wish String String,
   readDir :: String -> Wish String (List String),
   exec :: String -> Wish CommandError String,
   exists :: String -> Wish String String,
-  get :: String -> Wish Response Response
+  get :: String -> Wish (Error String) (Response String)
 }
 
 defaultConfig :: Config
