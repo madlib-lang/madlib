@@ -12,6 +12,7 @@ import           Error.Backtrace
 import           Error.Context
 import qualified Data.Map                      as M
 import           Control.Monad.Except           ( MonadError(throwError) )
+import qualified Data.Set as Set
 
 
 data Interface = Interface [TVar] [Pred] [Instance] deriving(Eq, Show)
@@ -31,6 +32,7 @@ data Env
     , envMethods      :: Methods
     , envCurrentPath  :: FilePath
     , envBacktrace    :: Backtrace
+    , envNamespacesInScope :: Set.Set String
     }
     deriving(Eq, Show)
 
@@ -71,12 +73,17 @@ mergeVars :: Env -> Vars -> Env
 mergeVars env vs = env { envVars = vs <> envVars env }
 
 
+setNamespacesInScope :: Env -> Set.Set String -> Env
+setNamespacesInScope env ns = env { envNamespacesInScope = ns }
+
+
 mergeEnv :: Env -> Env -> Env
 mergeEnv initial env = Env { envVars        = envVars initial <> envVars env
                            , envMethods     = envMethods initial <> envMethods env
                            , envInterfaces  = envInterfaces initial <> envInterfaces env
                            , envBacktrace   = mempty
                            , envCurrentPath = envCurrentPath env
+                           , envNamespacesInScope = envNamespacesInScope initial <> envNamespacesInScope env
                            }
 
 
@@ -357,6 +364,7 @@ initialEnv = Env
       ]
   , envCurrentPath = ""
   , envBacktrace   = mempty
+  , envNamespacesInScope = mempty
   }
 
 pushExpToBT :: Env -> Can.Exp -> Env

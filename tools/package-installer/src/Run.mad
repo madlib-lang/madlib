@@ -14,7 +14,6 @@ import System from "System"
 import Tuple from "Tuple"
 import { always, identity, ifElse, not } from "Function"
 import { andDo } from "Monad"
-import { TextData } from "Data"
 import { gt } from "Compare"
 import { liftA3 } from "Applicative"
 
@@ -380,7 +379,7 @@ prepare = (config, packageDotJsonPath) => pipe(
 
 restorePackageDotJson :: Config -> String -> Wish {} String
 restorePackageDotJson = (config, content) => pipe(
-  (c) => config.writeFile("package.json", TextData(c)),
+  config.writeFile("package.json"),
   mapRej(always({}))
 )(content)
 

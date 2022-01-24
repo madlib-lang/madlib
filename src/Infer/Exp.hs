@@ -37,6 +37,7 @@ import qualified Control.Monad                 as CM
 import Debug.Trace
 import Text.Show.Pretty
 import AST.Solved (getType)
+import qualified Data.Set as Set
 
 
 infer :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
@@ -503,9 +504,15 @@ inferRecordField env (Can.Canonical area field) = case field of
 
 inferAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferAccess env e@(Can.Canonical area (Can.Access ns field)) =
-  let inferredFieldAccess = inferFieldAccess env e
-  in  catchError inferredFieldAccess (\err -> catchError (inferNamespaceAccess env e) (throwError . const err))
+  case ns of
+    Can.Canonical _ (Can.Var ns') ->
+      if ns' `Set.member` envNamespacesInScope env then
+        inferNamespaceAccess env e
+      else
+        inferFieldAccess env e
 
+    _ ->
+      inferFieldAccess env e
 
 
 -- INFER NAMESPACE ACCESS
@@ -513,7 +520,10 @@ inferAccess env e@(Can.Canonical area (Can.Access ns field)) =
 inferNamespaceAccess :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferNamespaceAccess env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var field))))
   = do
-    sc         <- catchError (lookupVar env (ns <> field)) (enhanceVarError env e area)
+    sc <-
+      catchError
+        (lookupVar env (ns <> field))
+        (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
     (ps :=> t) <- instantiate sc
 
     let e = Slv.Solved (ps :=> t) area $ Slv.Var (ns <> field)

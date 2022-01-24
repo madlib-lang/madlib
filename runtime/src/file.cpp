@@ -32,13 +32,15 @@ void onReadError(uv_fs_t *req) {
   int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int));
   *boxedError = libuvErrorToMadlibIOError(req->result);
 
+  void *callback = ((ReadData_t *)req->data)->callback;
+
   // free resources
   GC_free(((ReadData_t *)req->data)->dataBuffer);
   GC_free(((ReadData_t *)req->data)->openRequest);
   GC_free(req->data);
   GC_free(req);
 
-  __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, boxedResult);
+  __applyPAP__(callback, 2, boxedError, boxedResult);
 }
 
 void onRead(uv_fs_t *req) {
@@ -174,12 +176,14 @@ void onWriteError(uv_fs_t *req) {
   int64_t *boxedError = (int64_t *)GC_malloc_uncollectable(sizeof(int));
   *boxedError = libuvErrorToMadlibIOError(req->result);
 
+  void *callback = ((WriteData_t *)req->data)->callback;
+
   // free resources
   GC_free(((WriteData_t *)req->data)->openRequest);
   GC_free(req->data);
   GC_free(req);
 
-  __applyPAP__(((WriteData_t *)req->data)->callback, 2, boxedError, boxedResult);
+  __applyPAP__(callback, 2, boxedError, boxedResult);
 }
 
 void onWrite(uv_fs_t *req) {

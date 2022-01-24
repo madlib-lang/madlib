@@ -155,24 +155,38 @@ type Table = M.Map FilePath AST
 
 getImportNames :: Import -> [Canonical Name]
 getImportNames imp = case imp of
-  Canonical _ (NamedImport names _ _) -> names
-  Canonical _ TypeImport{}            -> []
-  Canonical _ DefaultImport{}         -> []
-  Canonical _ ImportAll{}             -> []
+  Canonical _ (NamedImport names _ _) ->
+    names
+
+  _ ->
+    []
+
 
 getImportAlias :: Import -> Maybe (Canonical Name)
 getImportAlias imp = case imp of
-  Canonical _ NamedImport{}             -> Nothing
-  Canonical _ TypeImport{}              -> Nothing
-  Canonical _ (DefaultImport alias _ _) -> Just alias
-  Canonical _ (ImportAll _ _)           -> Nothing
+  Canonical _ (DefaultImport alias _ _) ->
+    Just alias
+
+  _->
+    Nothing
+
 
 getImportTypeNames :: Import -> [Canonical Name]
 getImportTypeNames imp = case imp of
-  Canonical _ (NamedImport names _ _) -> []
-  Canonical _ (TypeImport  names _ _) -> names
-  Canonical _ DefaultImport{}         -> []
-  Canonical _ ImportAll{}             -> []
+  Canonical _ (TypeImport  names _ _) ->
+    names
+
+  _ ->
+    []
+
+getImportNamespace :: Import -> Maybe String
+getImportNamespace imp = case imp of
+  Canonical _ (DefaultImport (Canonical _ name) _ _) ->
+    Just name
+
+  _ ->
+    Nothing
+
 
 isTypeImport :: Import -> Bool
 isTypeImport imp = case imp of

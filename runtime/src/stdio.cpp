@@ -22,8 +22,10 @@ void onError(StdinData_t *stdinData, int libUvError) {
   char **boxedResult = (char **)GC_malloc(sizeof(char *));
   *boxedResult = (char*)"\0";
 
-  int64_t *boxedError = (int64_t *)GC_malloc_uncollectable(sizeof(int));
+  int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int));
   *boxedError = libuvErrorToMadlibIOError(libUvError);
+
+  void *callback = stdinData->callback;
 
   // free resources
   if (stdinData->data) {
@@ -31,15 +33,13 @@ void onError(StdinData_t *stdinData, int libUvError) {
   }
   GC_free(stdinData);
 
-  __applyPAP__(((StdinData_t *)stdinData->data)->callback, 2, boxedError, boxedResult);
+  __applyPAP__(callback, 2, boxedError, boxedResult);
 }
 
-void onReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
+void onStdinReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
   StdinData_t *stdinData = (StdinData_t*)stream->data;
 
   if (nread < 0) {
-    // if (nread == UV_EOF) {
-
     // error
     uv_read_stop(stream);
     onError(stdinData, nread);
@@ -84,20 +84,23 @@ void onReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
   }
 }
 
-void onRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
+void onStdinRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
   StdinData_t *stdinData = (StdinData_t*)stream->data;
 
   if (nread < 0) {
     if (nread == UV_EOF) {
       uv_read_stop(stream);
       char **boxedResult = (char **)GC_malloc(sizeof(char *));
-      *boxedResult = stdinData->data;
+      if (stdinData->data == NULL) {
+        *boxedResult = (char*)"\0";
+      } else {
+        *boxedResult = stdinData->data;
+      }
       void *cb = stdinData->callback;
       GC_free(stdinData);
 
       int64_t *boxedError = (int64_t *)GC_malloc(sizeof(int64_t));
       *boxedError = 0;
-
       __applyPAP__(cb, 2, boxedError, boxedResult);
     } else {
       // error
@@ -117,7 +120,7 @@ void onRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
     stdinData->currentSize += nread;
   }
 
-  if (buffer->base) {
+  if (buffer->base != NULL) {
     GC_free(buffer->base);
   }
 }
@@ -137,7 +140,7 @@ void madlib__stdio__getLine(PAP_t *callback) {
   stdin->data = data;
 
   uv_tty_init(getLoop(), stdin, STDIN, 1);
-  uv_read_start((uv_stream_t*)stdin, allocBuffer, onReadLine);
+  uv_read_start((uv_stream_t*)stdin, allocBuffer, onStdinReadLine);
 }
 
 void madlib__stdio__get(PAP_t *callback) {
@@ -151,7 +154,7 @@ void madlib__stdio__get(PAP_t *callback) {
   stdin->data = data;
 
   uv_tty_init(getLoop(), stdin, STDIN, 1);
-  uv_read_start((uv_stream_t*)stdin, allocBuffer, onRead);
+  uv_read_start((uv_stream_t*)stdin, allocBuffer, onStdinRead);
 }
 
 void madlib__stdio__put(char *str) {

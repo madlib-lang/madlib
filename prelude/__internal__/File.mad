@@ -1,37 +1,38 @@
 #iftarget js
 
-import type { Data } from "Data"
 import type { Wish } from "Wish"
 import { Wish } from "Wish"
-import { BinaryData, TextData } from "Data"
 
 #- import fs from "fs" -#
 
 
-write :: String -> Data -> Wish String String
-export write = (path, d) => where(d) {
-  BinaryData(bytes) => Wish((bad, good) => #- {
-      fs.writeFile(path, bytes, (err) => {
-        if (err) {
-          bad(err);
-        }
-        else {
-          good(path)
-        }
-      })
-    } -#)
+write :: String -> String -> Wish String String
+export write = (path, content) =>
+  Wish((bad, good) => #- {
+    fs.writeFile(path, content, (err) => {
+      if (err) {
+        bad(err);
+      }
+      else {
+        good(path)
+      }
+    })
+  } -#)
 
-  TextData(content) => Wish((bad, good) => #- {
-      fs.writeFile(path, content, (err) => {
-        if (err) {
-          bad(err);
-        }
-        else {
-          good(path)
-        }
-      })
-    } -#)
-}
+
+writeBytes :: String -> ByteArray -> Wish String String
+export writeBytes = (path, bytes) =>
+  Wish((bad, good) => #- {
+    fs.writeFile(path, bytes, (err) => {
+      if (err) {
+        bad(err);
+      }
+      else {
+        good(path)
+      }
+    })
+  } -#)
+
 
 read :: String -> Wish String String
 export read = (path) => Wish((bad, good) => #- {
