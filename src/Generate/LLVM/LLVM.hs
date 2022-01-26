@@ -180,6 +180,10 @@ initEventLoop :: Operand
 initEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__initEventLoop__"))
 
+registerArgs :: Operand
+registerArgs =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "madlib__process__internal__registerArgs"))
+
 startEventLoop :: Operand
 startEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__startEventLoop__"))
@@ -2258,7 +2262,7 @@ generateModuleFunctionExternals symbolTable allModuleHashes = case allModuleHash
     let functionName = "__" <> hash <> "__moduleFunction"
     case Map.lookup functionName symbolTable of
       Just (Symbol _ f) -> do
-        extern (AST.mkName functionName) [] Type.i32
+        extern (AST.mkName functionName) [] Type.void
 
       _ ->
         undefined
@@ -3447,8 +3451,9 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do
-    extern (AST.mkName "__initEventLoop__")    [] Type.void
-    extern (AST.mkName "__startEventLoop__")   [] Type.void
+    extern (AST.mkName "madlib__process__internal__registerArgs") [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
+    extern (AST.mkName "__initEventLoop__")                      [] Type.void
+    extern (AST.mkName "__startEventLoop__")                     [] Type.void
     generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
 
   let moduleFunctionName =
@@ -3457,18 +3462,24 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         else
           "__" <> hashModulePath ast <> "__moduleFunction"
 
-  -- if isMain
-  -- i32 @main(i32 %argc, i8** %argv)
-  moduleFunction <- function (AST.mkName moduleFunctionName) [] Type.i32 $ \_ -> do
-    entry <- block `named` "entry"
-    Monad.when isMain $ do
-      call initEventLoop []
-      callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
-    generateExps env symbolTable'' (expsForMain $ aexps ast)
-    Monad.when isMain $ do
-      call startEventLoop []
-      return ()
-    ret $ i32ConstOp 0
+
+  moduleFunction <-
+    if isMain then do
+      let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
+          argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
+      function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+        entry <- block `named` "entry"
+        call registerArgs [(argc, []), (argv, [])]
+        call initEventLoop []
+        callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
+        generateExps env symbolTable'' (expsForMain $ aexps ast)
+        call startEventLoop []
+        ret $ i32ConstOp 0
+    else do
+      function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
+        entry <- block `named` "entry"
+        generateExps env symbolTable'' (expsForMain $ aexps ast)
+        retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
   return ()

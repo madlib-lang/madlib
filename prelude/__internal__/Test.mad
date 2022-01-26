@@ -1,10 +1,12 @@
 #iftarget js
 
+import type { IOError } from "IOError"
+
 import HP from "HitPoint"
 import W from "Wish"
 import IO from "IO"
 import S from "String"
-import System from "System"
+import Process from "Process"
 import L from "List"
 import F from "Function"
 import File from "File"
@@ -13,6 +15,7 @@ import T from "Tuple"
 import Lcov from "LcovDotInfo"
 import { andDo } from "Monad"
 import Context from "HitPointContext"
+import { Just } from "Maybe"
 
 #endif
 
@@ -159,7 +162,7 @@ generateTable = (lcov) =>
 stdoutReport :: Lcov.LcovInfo -> List IO.Row
 stdoutReport = (lcov) => generateTable(lcov)
 
-collectCoverage :: List HP.HitPoint -> W.Wish String (List IO.Row)
+collectCoverage :: List HP.HitPoint -> W.Wish IOError (List IO.Row)
 export collectCoverage = (hitPoints) =>
   File.read(".coverage/lcov.info")
     |> map(Lcov.parseLcov)
@@ -263,11 +266,16 @@ export assertEquals = (actual, expected) => actual == expected
   ? of({})
   : W.bad(AssertionError(expected, actual))
 
-isCoverageEnabled :: W.Wish String Boolean
+isCoverageEnabled :: W.Wish {} Boolean
 isCoverageEnabled = pipe(
-  System.getEnv,
-  map(F.equals("on")),
-  W.chainRej(F.always(of(false)))
+  Process.getEnv,
+  where {
+    Just("on") =>
+      of(true)
+
+    _ =>
+      of(false)
+  }
 )("COVERAGE_MODE")
 
 displayResults :: #[List String, List IO.Row] -> List IO.Row
@@ -417,8 +425,8 @@ export runAllTestSuites = (testSuites) => pipe(
   Wish.fulfill(
     (_) => ({}),
     (report) => {
-      IO.log(getMessage(report))
-      return IO.log(`Test suites: ${show(List.len(testSuites))}  tests: ${show(getTotal(report))}  passed: ${show(getSuccessCount(report))}  failed: ${show(getFailureCount(report))}`)
+      IO.putLine(getMessage(report))
+      return IO.putLine(`Test suites: ${show(List.len(testSuites))}  tests: ${show(getTotal(report))}  passed: ${show(getSuccessCount(report))}  failed: ${show(getFailureCount(report))}`)
     }
   )
 )(testSuites)

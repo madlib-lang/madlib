@@ -185,61 +185,111 @@ getConstructorName (Untyped _ (Constructor name _ _)) = name
 
 isADTExported :: TypeDecl -> Bool
 isADTExported adt = case adt of
-  Untyped _ ADT { adtexported } -> adtexported
-  _                             -> False
+  Untyped _ ADT { adtexported } ->
+    adtexported
+
+  _ ->
+    False
+
 
 isAliasExported :: TypeDecl -> Bool
 isAliasExported alias = case alias of
-  Untyped _ Alias { aliasexported } -> aliasexported
-  _                                 -> False
+  Untyped _ Alias { aliasexported } ->
+    aliasexported
+
+  _ ->
+    False
+
 
 isAlias :: TypeDecl -> Bool
 isAlias td = case td of
-  Untyped _ Alias {} -> True
-  _                  -> False
+  Untyped _ Alias {} ->
+    True
+
+  _                  ->
+    False
+
 
 isADT :: TypeDecl -> Bool
 isADT td = case td of
-  Untyped _ ADT {} -> True
-  _                -> False
+  Untyped _ ADT {} ->
+    True
+
+  _ ->
+    False
 
 
 isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
-  (Solved _ _ (Export _)) -> True
+  (Solved _ _ (Export _)) ->
+    True
 
-  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) -> True
+  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) ->
+    True
 
-  _ -> False
+  _ ->
+    False
 
 
 isNameExport :: Exp -> Bool
 isNameExport a = case a of
-  (Solved _ _ (NameExport _)) -> True
+  (Solved _ _ (NameExport _)) ->
+    True
 
-  _                           -> False
+  _ ->
+    False
+
 
 isTypeExport :: Exp -> Bool
 isTypeExport a = case a of
-  (Untyped _ (TypeExport _)) -> True
+  (Untyped _ (TypeExport _)) ->
+    True
 
-  _                           -> False
+  _ ->
+    False
+
+
+isExtern :: Exp -> Bool
+isExtern a = case a of
+  (Solved _ _ Extern {}) ->
+    True
+
+  _ ->
+    False
 
 getTypeExportName :: Exp -> Name
 getTypeExportName a = case a of
-  (Untyped _ (TypeExport name)) -> name
+  Untyped _ (TypeExport name) ->
+    name
+
+  _ ->
+    undefined
 
 isTypeOrNameExport :: Exp -> Bool
 isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
-  (Solved _ _ TypedExp{}) -> True
-  _                       -> False
+  Solved _ _ TypedExp{} ->
+    True
+
+  Solved _ _ Extern{} ->
+    True
+
+  Solved _ _ (Export (Solved _ _ Extern{})) ->
+    True
+
+  _ ->
+    False
+  
 
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of
-  (Solved _ _ (NameExport name)) -> name
+  Solved _ _ (NameExport name) ->
+    name
+
+  _ ->
+    undefined
 
 
 isExport :: Exp -> Bool

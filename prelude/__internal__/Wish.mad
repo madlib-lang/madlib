@@ -187,17 +187,20 @@ export after = (time, a) => Wish((_, goodCB) => #- {
 
 #elseif llvm
 
+
 fulfill :: (e -> f) -> (a -> b) -> Wish e a -> {}
 export fulfill = (badCB, goodCB, m) => {
   where(m) {
-    Wish(run) => run(badCB, goodCB)
+    Wish(run) => setTimeout((_) => run(badCB, goodCB), 0)
   }
 
   return {}
 }
 
+
 setTimeout :: ({} -> a) -> Integer -> {}
 setTimeout = extern "__setTimeout__"
+
 
 after :: Integer -> a -> Wish e a
 export after = (time, a) => Wish((_, goodCB) => setTimeout((_) => goodCB(a), time))

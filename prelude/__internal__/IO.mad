@@ -21,9 +21,6 @@ import readline from "readline"
 -#
 
 
-log :: String -> {}
-export log = (a) => #- console.log(a) -#
-
 put :: String -> {}
 export put = (a) => #- {
   {Node}
@@ -35,7 +32,7 @@ export put = (a) => #- {
 } -#
 
 putLine :: String -> {}
-export putLine = log
+export putLine = (a) => #- console.log(a) -#
 
 
 err :: String -> {}
@@ -143,11 +140,8 @@ export get = Wish((bad, good) =>
   )
 )
 
-log :: String -> {}
-export log = extern "puts"
-
 putLine :: String -> {}
-export putLine = log
+export putLine = extern "puts"
 
 put :: String -> {}
 export put = extern "madlib__stdio__put"
@@ -158,20 +152,23 @@ export err = extern "madlib__stdio__err"
 
 #endif
 
+log :: Inspect a => a -> {}
+export log = pipe(inspect, putLine)
+
 errLine :: String -> {}
 export errLine = (error) => err(error ++ "\n")
 
-logAndPass :: String -> a -> a
-export logAndPass = (v, a) => {
-  log(v)
+putLineAndPass :: String -> a -> a
+export putLineAndPass = (v, a) => {
+  putLine(v)
   return a
 }
 
 putEmptyLine :: a -> a
-export newLine = logAndPass("")
+export newLine = putLineAndPass("")
 
 trace :: Inspect a => String -> a -> a
 export trace = (v, a) => {
-  log(`${v}: ${inspect(a)}`)
+  putLine(`${v} ${inspect(a)}`)
   return a
 }
