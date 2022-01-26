@@ -6,10 +6,11 @@ import { Nothing } from "Maybe"
 import {} from "ByteArray"
 import List from "List"
 import {} from "Number"
+import { Just } from "Maybe"
 
 #iftarget js
 import { fulfill } from "Wish"
-import { Just, isJust } from "Maybe"
+import { isJust } from "Maybe"
 
 #-
 {Node}
@@ -410,46 +411,8 @@ export requestBytes = (config) => Wish((bad, good) => #-{
   {/Node}
 }-#)
 
-// requestWithBody :: Method -> String -> Data -> Wish Response Response
-// requestWithBody = (method, url, body) =>
-//   requestWithBodyAndHeaders(method, url, body, [])
 
-// requestWithBodyAndHeaders :: Method -> String -> Data -> List Header -> Wish Response Response
-// requestWithBodyAndHeaders = (method, url, body, headers) => request({
-//   method,
-//   url,
-//   body: Just(body),
-//   headers
-// })
 
-// getWithHeaders :: String -> List Header -> Wish Response Response
-// export getWithHeaders = (url, headers) => request({
-//   method: GET,
-//   url,
-//   headers,
-//   body: Nothing
-// })
-
-// post :: String -> Data -> Wish Response Response
-// export post = (url, body) => requestWithBody(POST, url, body)
-
-// postWithHeaders :: String -> Data -> List Header -> Wish Response Response
-// export postWithHeaders = (url, body, headers) =>
-//   requestWithBodyAndHeaders(POST, url, body, headers)
-
-// put :: String -> Data -> Wish Response Response
-// export put = (url, body) => requestWithBody(PUT, url, body)
-
-// putWithHeaders :: String -> Data -> List Header -> Wish Response Response
-// export putWithHeaders = (url, body, headers) =>
-//   requestWithBodyAndHeaders(PUT, url, body, headers)
-
-// delete :: String -> Data -> Wish Response Response
-// export delete = (url, body) => requestWithBody(DELETE, url, body)
-
-// deleteWithHeaders :: String -> Data -> List Header -> Wish Response Response
-// export deleteWithHeaders = (url, body, headers) =>
-//   requestWithBodyAndHeaders(DELETE, url, body, headers)
 
 #elseif llvm
 
@@ -476,5 +439,117 @@ export get = (url) => request({
   method: GET,
   url,
   headers: [],
-  body: Nothing
+  body: Nothing,
+})
+
+getBytes :: String -> Wish (Error ByteArray) (Response ByteArray)
+export getBytes = (url) => requestBytes({
+  method: GET,
+  url,
+  headers: [],
+  body: Nothing,
+})
+
+getWithHeaders :: String -> List Header -> Wish (Error String) (Response String)
+export getWithHeaders = (url, headers) => request({
+  method: GET,
+  url,
+  headers,
+  body: Nothing,
+})
+
+getBytesWithHeaders :: String -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+export getBytesWithHeaders = (url, headers) => requestBytes({
+  method: GET,
+  url,
+  headers,
+  body: Nothing,
+})
+
+post :: String -> String -> Wish (Error String) (Response String)
+export post = (url, body) => request({
+  method: POST,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+postBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
+export postBytes = (url, body) => requestBytes({
+  method: POST,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+postWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
+export postWithHeaders = (url, body, headers) => request({
+  method: POST,
+  url,
+  headers,
+  body: Just(body),
+})
+
+postBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+export postBytesWithHeaders = (url, body, headers) => requestBytes({
+  method: POST,
+  url,
+  headers,
+  body: Just(body),
+})
+
+put :: String -> String -> Wish (Error String) (Response String)
+export put = (url, body) => request({
+  method: PUT,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+putBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
+export putBytes = (url, body) => requestBytes({
+  method: PUT,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+putWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
+export putWithHeaders = (url, body, headers) => request({
+  method: PUT,
+  url,
+  body: Just(body),
+  headers
+})
+
+putBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+export putBytesWithHeaders = (url, body, headers) => requestBytes({
+  method: PUT,
+  url,
+  body: Just(body),
+  headers
+})
+
+deleteBytes :: String -> ByteArray -> Wish (Error ByteArray) (Response ByteArray)
+export deleteBytes = (url, body) => requestBytes({
+  method: DELETE,
+  url,
+  headers: [],
+  body: Just(body),
+})
+
+deleteWithHeaders :: String -> String -> List Header -> Wish (Error String) (Response String)
+export deleteWithHeaders = (url, body, headers) => request({
+  method: DELETE,
+  url,
+  body: Just(body),
+  headers
+})
+
+deleteBytesWithHeaders :: String -> ByteArray -> List Header -> Wish (Error ByteArray) (Response ByteArray)
+export deleteBytesWithHeaders = (url, body, headers) => requestBytes({
+  method: DELETE,
+  url,
+  body: Just(body),
+  headers
 })

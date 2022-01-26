@@ -1,6 +1,10 @@
 #iftarget js
 
+import type { Maybe } from "Maybe"
+
 import W from "Wish"
+import { Nothing, Just } from "Maybe"
+import Dictionary from "Dictionary"
 
 #- import { exec as execJs, spawn as spawnJs } from "child_process" -#
 
@@ -49,19 +53,45 @@ export spawn = (command) => W.Wish((bad, good) => #- {
 -#)
 
 
-getArgs :: W.Wish String (List String)
-export getArgs = of(#-process.argv.slice(2)-#)
+Argv :: List String
+export Argv = #- process.argv.slice(2) -#
 
-getEnv :: String -> W.Wish String String
+
+getEnv :: String -> Maybe String
 export getEnv = (name) => (#- {
   const envVar = process.env[name];
-  return envVar === undefined ? W.bad("Not found") : W.good(envVar)
+  return envVar === undefined ? Nothing : Just(envVar)
 } -#)
+
+
+Env :: Dictionary String String
+export Env = #-
+  Dictionary.fromList(Object.keys(process.env).map((key) => ([key, process.env[key]])))
+-#
+
 
 getCurrentPath :: W.Wish String String
 export getCurrentPath = of(#- process.cwd() -#)
 
+
 getExecutablePath :: W.Wish String String
 export getExecutablePath = of(#- process.argv[1] -#)
+
+#elseif llvm
+
+getArgsFFI :: {} -> List String
+getArgsFFI = extern "madlib__process__internal__getArgs"
+
+
+Argv :: List String
+export Argv = getArgsFFI({})
+
+
+getEnvFFI :: {} -> Dictionary String String
+getEnvFFI = extern "madlib__process__internal__getEnv"
+
+
+Env :: Dictionary String String
+export Env = getEnvFFI({})
 
 #endif

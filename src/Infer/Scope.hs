@@ -38,7 +38,8 @@ findAssignmentByName name (e : es) = case getExpName e of
 
 
 getAllTopLevelAssignments :: AST -> S.Set String
-getAllTopLevelAssignments ast = S.fromList $ mapMaybe getExpName (aexps ast)
+getAllTopLevelAssignments ast =
+  S.fromList $ mapMaybe getExpName (aexps ast)
 
 
 checkAST :: Env -> AST -> Infer ()
@@ -62,14 +63,16 @@ checkExps env ast topLevelAssignments globalScope dependencies (e : es) = do
 
   catchError (verifyScope env collectedAccesses globalScope' dependencies e) pushError
 
-  let shouldBeTypedOrAbove = if isMethod env e
-        then S.empty
-        else S.filter
-          (\(name, exp) ->
-            let isTyped = maybe False isTypedExp (findAssignmentByName name (aexps ast))
-            in  name `notElem` globalScope' && not isTyped && not (isTypeOrNameExport exp)
-          )
-          collectedAccesses
+  let shouldBeTypedOrAbove =
+        if isMethod env e then
+          S.empty
+        else
+          S.filter
+            (\(name, exp) ->
+              let isTyped = maybe False isTypedExp (findAssignmentByName name (aexps ast))
+              in  name `notElem` globalScope' && not isTyped && not (isTypeOrNameExport exp)
+            )
+            collectedAccesses
 
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
@@ -198,7 +201,9 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         exps
       return $ foldr S.union S.empty globalNamesAccessed
 
-    (Solved tipe area (Var ('.' : _))) -> return S.empty
+    (Solved tipe area (Var ('.' : _))) ->
+      return S.empty
+
     (Solved tipe area (Var name))      -> do
       case nameToFind of
         Just n -> when
@@ -340,11 +345,27 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
     (Solved tipe area (Placeholder _ exp)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
-    (Solved tipe area (NameExport name)) -> if name `S.member` globalScope then return S.empty else return $ S.singleton (name, solvedExp)
+    (Solved tipe area (NameExport name)) ->
+      if name `S.member` globalScope then
+        return S.empty
+      else
+        return $ S.singleton (name, solvedExp)
 
-    (Untyped area (TypeExport name)) -> if name `S.member` globalScope then return S.empty else return $ S.singleton (name, solvedExp)
+    (Untyped area (TypeExport name)) ->
+      if name `S.member` globalScope then
+        return S.empty
+      else
+        return $ S.singleton (name, solvedExp)
 
-    _               -> return S.empty
+    (Solved _ area (Extern _ _ name)) -> do
+      when
+        (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
+        (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
+
+      return S.empty
+
+    _ ->
+      return S.empty
 
 
 collectFromField

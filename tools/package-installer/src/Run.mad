@@ -10,7 +10,7 @@ import IO from "IO"
 import Json from "Json"
 import Either from "Either"
 import { Just, Nothing, fromMaybe } from "Maybe"
-import System from "System"
+import Process from "Process"
 import Tuple from "Tuple"
 import { always, identity, ifElse, not } from "Function"
 import { andDo } from "Monad"
@@ -49,7 +49,7 @@ import { hashVersion } from "./Hash"
 
 
 
-copyPackageToMadlibModules :: Config -> Dependency -> Wish System.CommandError String
+copyPackageToMadlibModules :: Config -> Dependency -> Wish Process.CommandError String
 copyPackageToMadlibModules = (config, dependency) => pipe(
   (d) => ({
     destination: `${Constants.MADLIB_MODULES_PATH}${fromMaybe("", d.name)}`,
@@ -83,17 +83,18 @@ installNodeModules :: Config -> String -> SideEffect String
 installNodeModules = (config, pkgName) => pipe(
   (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
   (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
+  mapRej(always("")),
   map(mappend("npm install ")),
-  chain(pipe(config.exec, mapRej(System.getCommandErrorMessage))),
-  map((x) => IO.logAndPass(`nodejs modules installed for '${pkgName}'`, x)),
-  fromWish((x) =>IO.logAndPass(`No node modules to install for '${pkgName}'`, x))
+  chain(pipe(config.exec, mapRej(Process.getCommandErrorMessage))),
+  map((x) => IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`, x)),
+  fromWish((x) => IO.putLineAndPass(`No node modules to install for '${pkgName}'`, x))
 )(pkgName)
 
 
 initMadlibModulesFolder :: Config -> String -> a -> Wish String a
 initMadlibModulesFolder = (config, path, a) => pipe(
   (p) => config.exec(`mkdir -p ${p}`),
-  mapRej(where { System.CommandError(_, msg) => msg }),
+  mapRej(where { Process.CommandError(_, msg) => msg }),
   andDo(of(a))
 )(path)
 
@@ -180,7 +181,7 @@ copyPackageFromTmp = (config, validationResult) => where(validationResult) {
         .name,
         (n) => failWithRecoverable(
           CopyToMadlibModulesFailed(
-            `Failed to copy '${n}'\n${formatCopyError(System.getCommandErrorMessage(commandError))}`
+            `Failed to copy '${n}'\n${formatCopyError(Process.getCommandErrorMessage(commandError))}`
           ),
           validationResult
         )
@@ -195,7 +196,7 @@ displayInstalling = (validation) => {
   name = validationOutput.madlibDotJson.name
   version = show(validationOutput.madlibDotJson.version)
 
-  IO.log(`Installing ${name} version ${version}`)
+  IO.putLine(`Installing ${name} version ${version}`)
 
   return validation
 }
@@ -206,14 +207,14 @@ displayResult = (validation) => where(validation) {
   Valid(a) =>
     pipe(
       displayInstalling,
-      IO.logAndPass(`  - ${IO.green("installed!")}`)
+      IO.putLineAndPass(`  - ${IO.green("installed!")}`)
     )(validation)
 
   NotValid(warnings, a) =>
     pipe(
       displayInstalling,
       List.reduce(printWarning, $, warnings),
-      IO.logAndPass(`  - ${IO.green("installed!")}`)
+      IO.putLineAndPass(`  - ${IO.green("installed!")}`)
     )(validation)
 
   ValidationError(warnings, err, maybeA) =>
@@ -302,7 +303,7 @@ processDependencies = (config, context, dependencies) => pipe(
   map(
     pipe(
       List.filter(where {
-        DownloadError(err) => IO.logAndPass(IO.red(`${err}\n`), false)
+        DownloadError(err) => IO.putLineAndPass(IO.red(`${err}\n`), false)
 
         Downloaded(_) => true
       }),
@@ -348,7 +349,7 @@ installPackages = (config, context, madlibDotJsonPath) => pipe(
         )(dependencies)
 
         Either.Left(e) => pipe(
-          IO.log,
+          IO.putLine,
           always(of([]))
         )(e)
       }
@@ -366,14 +367,14 @@ prepare :: Config -> String -> Wish String String
 prepare = (config, packageDotJsonPath) => pipe(
   always(config.exec(`mkdir -p ${Constants.TEMPORARY_MODULES_PATH}`)),
   andDo(of(packageDotJsonPath)),
-  mapRej(System.getCommandErrorMessage),
-  chain(config.exists),
+  mapRej(Process.getCommandErrorMessage),
+  chain(pipe(config.exists, mapRej(always("")))),
   chain((path) => pipe(
     config.exec,
-    mapRej(System.getCommandErrorMessage),
+    mapRej(Process.getCommandErrorMessage),
     andDo(of(path))
   )("npm i")),
-  chain(config.readFile)
+  chain(pipe(config.readFile, mapRej(always(""))))
 )(packageDotJsonPath)
 
 
@@ -386,7 +387,7 @@ restorePackageDotJson = (config, content) => pipe(
 
 run :: Config -> Wish {} {}
 export run = (config) => {
-  IO.log("Installing dependencies ...")
+  IO.putLine("Installing dependencies ...")
 
   return pipe(
     prepare(config),

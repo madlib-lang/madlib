@@ -1,27 +1,29 @@
 import type { Wish } from "Wish"
-import type { CommandError } from "System"
+import type { CommandError } from "Process"
 import type { Response, Error } from "Http"
+import type { IOError } from "IOError"
 
-import { exists, read, write, readDir } from "File"
-import { exec } from "System"
+import File from "File"
+import Directory from "Directory"
+import { exec } from "Process"
 import { get } from "Http"
 
 
 export alias Config = {
-  readFile :: String -> Wish String String,
-  writeFile :: String -> String -> Wish String String,
-  readDir :: String -> Wish String (List String),
+  readFile :: String -> Wish IOError String,
+  writeFile :: String -> String -> Wish IOError String,
+  readDir :: String -> Wish IOError (List String),
   exec :: String -> Wish CommandError String,
-  exists :: String -> Wish String String,
+  exists :: String -> Wish IOError String,
   get :: String -> Wish (Error String) (Response String)
 }
 
 defaultConfig :: Config
 export defaultConfig = {
-  readFile: read,
-  writeFile: write,
-  readDir,
+  readFile: File.read,
+  writeFile: File.write,
+  readDir: Directory.read,
   exec,
-  exists,
+  exists: File.exists,
   get
 }

@@ -78,6 +78,10 @@ inferPattern env (Can.Canonical area pat) = case pat of
    where
     inferPListItem :: Env -> Type -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
     inferPListItem env listType pat@(Can.Canonical spreadArea p) = case p of
+      Can.PSpread (Can.Canonical varArea Can.PAny) -> do
+        let t' = tListOf listType
+        return (Slv.Solved ([] :=> t') spreadArea (Slv.PSpread (Slv.Solved ([] :=> t') varArea Slv.PAny)), [], M.empty, listType)
+
       Can.PSpread (Can.Canonical varArea (Can.PVar i)) -> do
         let t' = tListOf listType
         return (Slv.Solved ([] :=> t') spreadArea (Slv.PSpread (Slv.Solved ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
@@ -88,9 +92,6 @@ inferPattern env (Can.Canonical area pat) = case pat of
   Can.PRecord pats -> do
     fields <- mapM (inferFieldPattern env) pats
     tv <- newTVar Star
-    -- let vars = foldr (<>) M.empty $ T.mid . snd <$> M.toList li
-    -- let ps   = foldr (<>) [] $ T.beg . snd <$> M.toList li
-    -- let ts   = T.lst . snd <$> M.toList li
     let ts     = (\(_, _, _, a) -> a) <$> fields
     let ps     = foldr (<>) [] ((\(_, a, _, _) -> a) <$> fields)
     let vars   = foldr (<>) M.empty ((\(_, _, a, _) -> a) <$> fields)
@@ -103,6 +104,10 @@ inferPattern env (Can.Canonical area pat) = case pat of
    where
     inferFieldPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
     inferFieldPattern env pat@(Can.Canonical spreadArea p) = case p of
+      Can.PSpread (Can.Canonical varArea Can.PAny) -> do
+        tv <- newTVar Star
+        return (Slv.Solved ([] :=> tv) spreadArea (Slv.PSpread (Slv.Solved ([] :=> tv) varArea Slv.PAny)), [], M.empty, tv)
+
       Can.PSpread (Can.Canonical varArea (Can.PVar i)) -> do
         tv <- newTVar Star
         return (Slv.Solved ([] :=> tv) spreadArea (Slv.PSpread (Slv.Solved ([] :=> tv) varArea (Slv.PVar i))), [], M.singleton i (toScheme tv), tv)

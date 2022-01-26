@@ -1,17 +1,24 @@
+import type { Wish } from "Wish"
+import type { IOError } from "IOError"
+
+import { Wish } from "Wish"
+import IOError from "IOError"
+
 #iftarget js
 
-import type { Wish } from "Wish"
-import { Wish } from "Wish"
+#-
+{Node}
+import fs from "fs"
+{/Node}
+-#
 
-#- import fs from "fs" -#
 
-
-write :: String -> String -> Wish String String
+write :: String -> String -> Wish IOError String
 export write = (path, content) =>
   Wish((bad, good) => #- {
     fs.writeFile(path, content, (err) => {
       if (err) {
-        bad(err);
+        bad(IOError.UnknownError);
       }
       else {
         good(path)
@@ -20,12 +27,12 @@ export write = (path, content) =>
   } -#)
 
 
-writeBytes :: String -> ByteArray -> Wish String String
+writeBytes :: String -> ByteArray -> Wish IOError String
 export writeBytes = (path, bytes) =>
   Wish((bad, good) => #- {
     fs.writeFile(path, bytes, (err) => {
       if (err) {
-        bad(err);
+        bad(IOError.UnknownError);
       }
       else {
         good(path)
@@ -34,49 +41,47 @@ export writeBytes = (path, bytes) =>
   } -#)
 
 
-read :: String -> Wish String String
+read :: String -> Wish IOError String
 export read = (path) => Wish((bad, good) => #- {
-  fs.readFile(path, "utf8", (err, d) => {
+  fs.readFile(path, "binary", (err, d) => {
     if (err) {
-      bad(err);
+      bad(IOError.UnknownError);
     }
     else {
       good(d)
     }
   })
-}-#)
+} -#)
 
-exists :: String -> Wish String String
+readBytes :: String -> Wish IOError ByteArray
+export readBytes = (path) => Wish((bad, good) => #- {
+  fs.readFile(path, (err, d) => {
+    if (err) {
+      bad(IOError.UnknownError);
+    }
+    else {
+      good(d)
+    }
+  })
+} -#)
+
+exists :: String -> Wish IOError String
 export exists = (path) => Wish((bad, good) => #- {
   fs.access(path, fs.constants.F_OK, (err) => {
     if (err) {
-      bad(err);
+      bad(IOError.UnknownError);
     } else {
       good(path);
     }
   });
 } -#)
 
-readDir :: String -> Wish String (List String)
-export readDir = (path) => Wish((bad, good) => #- {
-  fs.readdir(path, (err, files) => {
-    if (err) {
-      bad(err);
-    } else {
-      good(files);
-    }
-  })
-} -#)
-
 #elseif llvm
-import type { Wish } from "Wish"
-import { Wish } from "Wish"
-import IOError from "IOError"
 
 readFFI :: String -> (Integer -> String -> {}) -> {}
 readFFI = extern "madlib__file__read"
 
-read :: String -> Wish IOError.IOError String
+read :: String -> Wish IOError String
 export read = (path) => Wish((bad, good) =>
   readFFI(
     path,
@@ -90,7 +95,7 @@ export read = (path) => Wish((bad, good) =>
 readBytesFFI :: String -> (Integer -> ByteArray -> {}) -> {}
 readBytesFFI = extern "madlib__file__readBytes"
 
-readBytes :: String -> Wish IOError.IOError ByteArray
+readBytes :: String -> Wish IOError ByteArray
 export readBytes = (path) => Wish((bad, good) =>
   readBytesFFI(
     path,
@@ -105,7 +110,7 @@ export readBytes = (path) => Wish((bad, good) =>
 writeFFI :: String -> String -> (Integer -> {} -> {}) -> {}
 writeFFI = extern "madlib__file__write"
 
-write :: String -> String -> Wish IOError.IOError {}
+write :: String -> String -> Wish IOError {}
 export write = (path, content) => Wish((bad, good) =>
   writeFFI(
     path,
@@ -121,7 +126,7 @@ export write = (path, content) => Wish((bad, good) =>
 writeBytesFFI :: String -> ByteArray -> (Integer -> {} -> {}) -> {}
 writeBytesFFI = extern "madlib__file__writeBytes"
 
-writeBytes :: String -> ByteArray -> Wish IOError.IOError {}
+writeBytes :: String -> ByteArray -> Wish IOError {}
 export writeBytes = (path, content) => Wish((bad, good) =>
   writeBytesFFI(
     path,

@@ -1,0 +1,42 @@
+import type { Wish } from "Wish"
+import type { IOError } from "IOError"
+
+import { Wish } from "Wish"
+import IOError from "IOError"
+
+#iftarget js
+
+#-
+{Node}
+import fs from "fs"
+{/Node}
+-#
+
+read :: String -> Wish IOError (List String)
+export read = (path) => Wish((bad, good) => #- {
+  fs.readdir(path, (err, files) => {
+    if (err) {
+      bad(IOError.UnknownError);
+    } else {
+      good(files);
+    }
+  })
+} -#)
+
+#elseif llvm
+
+readFFI :: String -> (Integer -> List String -> {}) -> {}
+readFFI = extern "madlib__directory__read"
+
+read :: String -> Wish IOError (List String)
+export read = (path) => Wish((bad, good) =>
+  readFFI(
+    path,
+    (libuvError, result) =>
+      libuvError != 0
+        ? bad(IOError.fromLibuvError(libuvError))
+        : good(result)
+  )
+)
+
+#endif
