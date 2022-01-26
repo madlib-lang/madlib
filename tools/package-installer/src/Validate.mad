@@ -129,29 +129,29 @@ instance Monad Validate {
 printError :: a -> Error -> a
 export printError = (a, error) => where(error) {
   CopyToMadlibModulesFailed(msg) =>
-    IO.logAndPass(`  - ${IO.red(msg)}`, a)
+    IO.putLineAndPass(`  - ${IO.red(msg)}`, a)
 
   MadlibDotJsonCouldNotBeLoaded(msg) =>
-    IO.logAndPass(`  - ${IO.red(msg)}`, a)
+    IO.putLineAndPass(`  - ${IO.red(msg)}`, a)
 }
 
 
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>
-    IO.logAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
+    IO.putLineAndPass(`  - ${IO.yellow("Package version does not match constraints")}`, a)
 
   InvalidVersionHash =>
-    IO.logAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
+    IO.putLineAndPass(`  - ${IO.yellow("Package version hash is corrupted")}`, a)
 
   InvalidBuildHash =>
-    IO.logAndPass(
+    IO.putLineAndPass(
       `  - ${IO.yellow("Build hash is corrupted")}`,
       a
     )
 
   VersionDotLockMissing =>
-    IO.logAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
+    IO.putLineAndPass(`  - ${IO.yellow("version.lock file missing")}`, a)
 }
 
 

@@ -1,6 +1,5 @@
 import type { Wish } from "Wish"
 import type { SideEffect } from "SideEffect"
-import type { CommandError } from "System"
 
 import { mapRej } from "Wish"
 import { fromWish } from "SideEffect"
@@ -13,6 +12,7 @@ import type { Config } from "./Config"
 import Constants from "./Constants"
 
 
+export type DownloadFailure = DownloadFailure
 
 export type DownloadResult
   = Downloaded(Dependency)
@@ -20,57 +20,69 @@ export type DownloadResult
 
 
 
-cleanUp :: Config -> String -> Wish CommandError String
+cleanUp :: Config -> String -> Wish DownloadFailure String
 cleanUp = (config, sanitizedUrl) => pipe(
   (url) => `rm -r ${Constants.TEMPORARY_MODULES_PATH}${url}.zip ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
-  config.exec
+  config.exec,
+  mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
 
-copyPackageToTmpRoot :: Config -> String -> Wish CommandError String
+copyPackageToTmpRoot :: Config -> String -> Wish DownloadFailure String
 copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
   (url) => `cp -R ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url} ${Constants.TEMPORARY_MODULES_PATH}`,
-  config.exec
+  config.exec,
+  mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
 
-unzipPkg :: Config -> String -> Wish CommandError String
+unzipPkg :: Config -> String -> Wish DownloadFailure String
 unzipPkg = (config, sanitizedUrl) => pipe(
   (url) => `unzip -d ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp ${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
-  config.exec
+  config.exec,
+  mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
 
-renameInnerFolder :: Config -> String -> Wish CommandError String
+renameInnerFolder :: Config -> String -> Wish DownloadFailure String
 renameInnerFolder = (config, sanitizedUrl) => pipe(
   (url) => `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
-  config.exec
+  config.exec,
+  mapRej(always(DownloadFailure))
 )(sanitizedUrl)
 
 
-extractArchive :: Config -> String -> Wish String String
+extractArchive :: Config -> String -> Wish DownloadFailure String
 extractArchive = (config, sanitizedUrl) => pipe(
   unzipPkg(config),
   andDo(renameInnerFolder(config, sanitizedUrl)),
   andDo(copyPackageToTmpRoot(config, sanitizedUrl)),
-  andDo(cleanUp(config, sanitizedUrl)),
-  mapRej(always("Error processing archive"))
+  andDo(cleanUp(config, sanitizedUrl))
 )(sanitizedUrl)
 
 
-getPackageData :: Config -> String -> Wish String String
+getPackageData :: Config -> String -> Wish DownloadFailure String
 getPackageData = (config, url) => pipe(
+  // TODO: this needs to get bytes
   config.get,
   map(.body),
-  mapRej(always("Could not download package"))
+  mapRej(always(DownloadFailure))
 )(url)
+
+
+saveArchive :: Config -> Dependency -> String -> Wish DownloadFailure String
+saveArchive = (config, dependency, data) => pipe(
+  // TODO: This needs to write binary
+  config.writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
+  mapRej(always(DownloadFailure))
+)(data)
 
 
 downloadPackage :: Config -> Dependency -> SideEffect DownloadResult
 downloadPackage = (config, dependency) => pipe(
   .url,
   getPackageData(config),
-  chain(config.writeFile(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`)),
+  chain(saveArchive(config, dependency)),
   andDo(extractArchive(config, dependency.sanitizedUrl)),
   andDo(of(Downloaded(dependency))),
   fromWish(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`)))
