@@ -511,6 +511,7 @@ recordFields :: { [Src.Field] }
 
 dict :: { Src.Exp }
   : '{{' rets dictItems maybeComma rets '}' '}' { Src.Source (mergeAreas (tokenArea $1) (tokenArea $7)) (tokenTarget $1) (Src.Dictionary $3) }
+  | '{{' '}' '}'                                { Src.Source (mergeAreas (tokenArea $1) (tokenArea $3)) (tokenTarget $1) (Src.Dictionary []) }
 
 dictItems :: { [Src.DictItem] }
   : exp ':' exp                            { [Src.Source (mergeAreas (Src.getArea $1) (Src.getArea $3)) (Src.getSourceTarget $1) $ Src.DictItem $1 $3] }

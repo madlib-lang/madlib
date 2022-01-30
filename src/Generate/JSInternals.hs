@@ -63,7 +63,7 @@ inspectStaticInstances target optimized = unlines
   , "  const items = dict.__args[0]"
   , "    .map(([key, value]) => `${Inspect_key.inspect()(key)}: ${Inspect_value.inspect()(value)}`)"
   , "    .join(', ')"
-  , "  return `{{ ${items} }}`"
+  , "  return dict.__args[0].length === 0 ? '{{}}' : `{{ ${items} }}`"
   , "}"
   , ""
   , "Inspect['Tuple_2'] = {}"

@@ -188,8 +188,10 @@ isMethod env (Solved _ _ e) = case e of
   To find illegal shadowing, we start with all topLevelAssignments and eventually the currentTopLevelAssignment
   if the current top level expression we collect from is an assignment. Then everytime we get to an assignment,
   we validate that it is not in the topLevelAssignments.
-  NB: In case of Abs, we just extend topLevelAssignments with the name of the parameter, so that we also catch
-  shadowing of parameters.
+
+
+  NB: In case of Abs, we used to just extend topLevelAssignments with the name of the parameter, so that we also catch
+  shadowing of parameters. This has been removed so that for closures we can now directly reassign a parameter.
 -}
 collect
   :: Env -> S.Set String -> Maybe String -> [String] -> Maybe String -> InScope -> InScope -> Exp -> Infer Accesses
@@ -244,7 +246,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       collectFromBody foundNames ntf globalScope localScope (e : es) = do
         let localScope' = extendScope localScope e
         access <- collect env
-                          (topLevelAssignments <> S.singleton name)
+                          topLevelAssignments
                           currentTopLevelAssignment
                           foundNames
                           ntf

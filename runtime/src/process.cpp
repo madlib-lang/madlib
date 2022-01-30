@@ -56,14 +56,11 @@ madlib__dictionary__Dictionary_t *madlib__process__internal__getEnv() {
     envItems = madlib__list__append(item, envItems);
   }
 
-  madlib__list__Node_t **boxedItems = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
-  *boxedItems = envItems;
-
   PAP_t stringEqPAP = { .fn = (void*)madlib__string__internal__eq, .arity = 2, .missingArgCount = 2, .env = NULL };
   madlib__eq__eqDictionary_t *stringEqDictionary = (madlib__eq__eqDictionary_t*)GC_malloc(sizeof(madlib__eq__eqDictionary_t));
   stringEqDictionary->eq = stringEqPAP;
 
-  return madlib__dictionary__fromList(stringEqDictionary, boxedItems);
+  return madlib__dictionary__fromList(stringEqDictionary, envItems);
 }
 
 #ifdef __cplusplus

@@ -721,6 +721,18 @@ tryDefaults env ps = case ps of
             s    = M.fromList $ zip tvs' (tUnit <$ tvs')
         return (nextSubst `compose` s, nextPS)
 
+    IsIn "Inspect" [t] _ -> do
+      (nextSubst, nextPS) <- tryDefaults env next
+
+      let vars = getTypeVarsInType t
+      if null vars then
+        return (nextSubst, nextPS)
+      else do
+        let tvs  = getTV <$> vars
+            tvs' = filter (`M.notMember` nextSubst) tvs
+            s    = M.fromList $ zip tvs' (tUnit <$ tvs')
+        return (nextSubst `compose` s, nextPS)
+
     _ -> do
       maybeFound <- findInst env p
       case maybeFound of
@@ -798,12 +810,15 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   (ds, rs, _) <- catchError
     (split False env'' fs vs ps')
     (\case
-      (CompilationError e NoContext) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
-      (CompilationError e c) -> throwError $ CompilationError e c
+      (CompilationError e NoContext) ->
+        throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+
+      (CompilationError e c) ->
+        throwError $ CompilationError e c
     )
 
   (ds', sDefaults) <-
-    if not isLet && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) then do
+    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) then do
       (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )
@@ -858,8 +873,11 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
   (ds, rs, substDefaultResolution) <- catchError
     (split True env' fs gs ps')
     (\case
-      (CompilationError e NoContext) -> throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
-      (CompilationError e c) -> throwError $ CompilationError e c
+      (CompilationError e NoContext) ->
+        throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+
+      (CompilationError e c) ->
+        throwError $ CompilationError e c
     )
 
   qs'' <- dedupePreds <$> getAllParentPreds env (dedupePreds qs')
@@ -906,6 +924,7 @@ inferExp env e = do
       inferExplicitlyTyped env e
 
     _ -> do
+      -- NB: Currently handles Extern nodes as well
       (_, _, env', _) <- inferImplicitlyTyped False env e
       (s, (ds, ps), env'', e') <- inferImplicitlyTyped False env' e
       return (s, ps, env'', e')
