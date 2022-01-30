@@ -2,6 +2,7 @@
 
 #include "dictionary.hpp"
 #include "tuple.hpp"
+#include "apply-pap.hpp"
 
 
 #ifdef __cplusplus
@@ -108,8 +109,19 @@ madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__li
   return dictionary;
 }
 
-madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **boxedItems) {
-  madlib__list__Node_t *head = *boxedItems;
+madlib__dictionary__Dictionary_t *madlib__dictionary__empty(bool unit) {
+  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*)GC_malloc(sizeof(madlib__dictionary__Dictionary_t));
+  madlib__list__Node_t **boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
+  *boxedList = madlib__list__empty();
+
+  dictionary->constructorIndex = 0;
+  dictionary->items = boxedList;
+
+  return dictionary;
+}
+
+madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t *items) {
+  madlib__list__Node_t *head = items;
   // Result, starting from an empty list, we push items as we go through them
   // if there is no double
   madlib__list__Node_t *withoutDoubles = madlib__list__empty();
@@ -145,9 +157,92 @@ madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDic
   return dictionary;
 }
 
+
+madlib__list__Node_t *madlib__dictionary__toList(madlib__dictionary__Dictionary_t *boxedItems) {
+  return *boxedItems->items;
+}
+
+
+madlib__dictionary__Dictionary_t *madlib__dictionary__insert(madlib__comparable__comparableDictionary_t* comparableDict, void *key, void *value, madlib__dictionary__Dictionary_t *dictionary) {
+  madlib__list__Node_t *newItems = madlib__list__empty();
+  madlib__list__Node_t *resultItems = newItems;
+  madlib__list__Node_t *items = *dictionary->items;
+
+  bool alreadyAdded = false;
+
+  while (items->value != NULL) {
+    madlib__list__Node_t *next = madlib__list__empty();
+
+    int64_t compareResult = *((int64_t *)__applyPAP__(&comparableDict->compare, 2, key, ((madlib__tuple__Tuple_2_t*)items->value)->first));
+    bool mustInsert = false;
+
+    if (items->next->value != NULL) {
+      int64_t compareResult = *((int64_t *)__applyPAP__(&comparableDict->compare, 2, key, ((madlib__tuple__Tuple_2_t*)items->next->value)->first));
+      if (compareResult == -1) {
+        mustInsert = true;
+      }
+    }
+
+    if (compareResult == 0) {
+      alreadyAdded = true;
+      // we replace the existing value
+      madlib__tuple__Tuple_2_t *tuple = (madlib__tuple__Tuple_2_t*)GC_malloc(sizeof(madlib__tuple__Tuple_2_t));
+      tuple->first = key;
+      tuple->second = value;
+
+      newItems->value = tuple;
+      items = items->next;
+    } else if (compareResult == 1 && !alreadyAdded && mustInsert) {
+      alreadyAdded = true;
+      // we insert a new value
+      madlib__tuple__Tuple_2_t *tuple = (madlib__tuple__Tuple_2_t*)GC_malloc(sizeof(madlib__tuple__Tuple_2_t));
+      tuple->first = key;
+      tuple->second = value;
+
+      madlib__list__Node_t *next_ = madlib__list__empty();
+
+      // TODO: we need to build the tuple #[key, value]
+      newItems->value = items->value;
+      newItems->next = next_;
+      newItems = newItems->next;
+
+      newItems->value = tuple;
+      items = items->next;
+    } else {
+      // we simply copy the old value
+      newItems->value = items->value;
+      items = items->next;
+    }
+
+    newItems->next = next;
+    newItems = newItems->next;
+  }
+
+  if (!alreadyAdded) {
+    // it needs to be inserted at the end
+    madlib__list__Node_t *next = madlib__list__empty();
+    madlib__tuple__Tuple_2_t *tuple = (madlib__tuple__Tuple_2_t*)GC_malloc(sizeof(madlib__tuple__Tuple_2_t));
+    tuple->first = key;
+    tuple->second = value;
+
+    newItems->value = tuple;
+    newItems->next = next;
+  }
+
+  madlib__list__Node_t **boxedResultItems = (madlib__list__Node_t **) GC_malloc(sizeof(madlib__list__Node_t *));
+  *boxedResultItems = resultItems;
+
+  madlib__dictionary__Dictionary_t *result = (madlib__dictionary__Dictionary_t*)GC_malloc(sizeof(madlib__dictionary__Dictionary_t));
+  result->constructorIndex = 0;
+  result->items = boxedResultItems;
+
+  return result;
+}
+
+
 // fromList
 madlib__dictionary__Dictionary_t *__dict_ctor__(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t **boxedItems) {
-  return madlib__dictionary__fromList(eqDict, boxedItems);
+  return madlib__dictionary__fromList(eqDict, *boxedItems);
 }
 
 #ifdef __cplusplus

@@ -301,7 +301,7 @@ export reduceM = (fn, initial, xs) => pipe(
  * filter((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [2, 4, 6]
  */
 filter :: (a -> Boolean) -> List a -> List a
-export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
+export filter = (predicate, xs) => #- xs.filter(predicate) -#
 
 
 /**
@@ -313,7 +313,7 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
  * reject((a) => a % 2 == 0, [1, 2, 3, 4, 5, 6]) // [1, 3, 5]
  */
  reject :: (a -> Boolean) -> List a -> List a
- export reject = (predicate, xs) => (#- xs.filter(Fun.complement(predicate)) -#)
+ export reject = (predicate, xs) => #- xs.filter(Fun.complement(predicate)) -#
 
 
 /**
@@ -326,7 +326,7 @@ export filter = (predicate, xs) => (#- xs.filter(predicate) -#)
  * find((a) => a == 0, [1, 2, 3, 4, 5, 6])     // Nothing
  */
 find :: (a -> Boolean) -> List a -> Maybe a
-export find = (predicate, xs) => (#- {
+export find = (predicate, xs) => #- {
   const found = xs.find(predicate);
   if (found === undefined) {
     return Nothing
@@ -334,7 +334,7 @@ export find = (predicate, xs) => (#- {
   else {
     return Just(found)
   }
-} -#)
+} -#
 
 
 /**
@@ -345,7 +345,7 @@ export find = (predicate, xs) => (#- {
  * len([1, 2, 3]) // 3
  */
 len :: List a -> Integer
-export len = (xs) => (#- xs.length -#)
+export len = (xs) => #- xs.length -#
 
 
 /**
@@ -546,15 +546,5 @@ export nth = (index, list) => where(list) {
 
 len :: List a -> Integer
 export len = extern "madlib__list__length"
-
-
-// sort :: Comparable a => List a -> List a
-// export sort = sortBy(compare)
-
-// sortAsc :: Comparable a => List a -> List a
-// export sortAsc = sort
-
-// sortDesc :: Comparable a => List a -> List a
-// export sortDesc = sortBy((a, b) => compare(a, b) * -1)
 
 #endif

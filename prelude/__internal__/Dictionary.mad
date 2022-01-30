@@ -1,8 +1,8 @@
-#iftarget js
-
 import type { Maybe } from "Maybe"
-import L from "List"
-import T from "Tuple"
+
+import {} from "Compare"
+import List from "List"
+import Tuple from "Tuple"
 
 /**
  * Dictionary represents a key - value data structure.
@@ -11,11 +11,22 @@ import T from "Tuple"
  */
 
 
+#iftarget js // Dictionary
+
 Dictionary :: List #[k, v] -> Dictionary k v
 Dictionary = (items) => #- ({
   __constructor: "Dictionary",
   __args: [items],
 }) -#
+
+#elseif llvm
+
+Dictionary :: List #[k, v] -> Dictionary k v
+Dictionary = extern "madlib__dictionary__typeConstructor"
+
+#endif
+
+#iftarget js // fromList
 
 /**
  * Creates a Dictionary from a list of <key, value> tuples
@@ -25,20 +36,71 @@ Dictionary = (items) => #- ({
  * fromList([#["one", 2], #["two", 2]])
  * fromList([#["a", 2], #["b", 2], #["c", 3]])
  */
-fromList :: Eq k =>  List (#[k, v]) -> Dictionary k v
+fromList :: Comparable k =>  List (#[k, v]) -> Dictionary k v
 export fromList = pipe(
-  L.uniqueBy((a, b) => T.fst(a) == T.fst(b)),
+  List.uniqueBy((a, b) => Tuple.fst(a) == Tuple.fst(b)),
   Dictionary
 )
+
+#endif
+
+#iftarget js // empty
 
 /**
  * The empty Dictionary
  *
  * @since 0.0.5
  */
-empty ::Eq k => Dictionary k v
-export empty = fromList([])
+empty :: Dictionary k v
+export empty = Dictionary([])
 
+#elseif llvm
+
+emptyFFI :: {} -> Dictionary k v
+emptyFFI = extern "madlib__dictionary__empty"
+
+
+empty :: Dictionary k v
+export empty = emptyFFI({})
+
+#endif
+
+#iftarget js // insert
+
+#-
+const insertFFI = comparableDict => key => value => dictionary => {
+  let inserted = false
+  let i = 0
+  let resultItems = Array(dictionary.__args.length)
+
+  for (const [itemIndex, item] of dictionary.__args[0].entries()) {
+    let mustInsert = dictionary.__args[0][itemIndex + 1] !== undefined
+      ? comparableDict.compare()(key)(dictionary.__args[0][itemIndex + 1][0]) == -1
+      : true
+
+    const [currentKey, currentValue] = item
+    if (comparableDict.compare()(key)(currentKey) == 0) {
+      resultItems[i] = [currentKey, value]
+      inserted = true
+    } else if (comparableDict.compare()(key)(currentKey) == 1 && !inserted && mustInsert) {
+      resultItems[i] = item
+      i = i + 1
+      resultItems[i] = [key, value]
+      inserted = true
+    } else {
+      resultItems[i] = item
+    }
+
+    i = i + 1
+  }
+
+  if (!inserted) {
+    resultItems[i] = [key, value]
+  }
+
+  return Dictionary(resultItems)
+}
+-#
 
 /**
  * Inserts a value into the Dictionary at a given key.
@@ -49,18 +111,17 @@ export empty = fromList([])
  * insert(1, 2, empty)              // fromList([#[1, 2]])
  * insert(1, 7, fromList([#[1, 2]])) // fromList([#[1, 7]])
  */
-insert :: Eq k => k -> v -> Dictionary k v -> Dictionary k v
-export insert = (k, v, m) => where(m) {
-  Dictionary(items) =>
-    L.reject(
-      (item) => where(item) {
-        #[kk, _] => kk == k
-      },
-      items
-    )
-    |> L.append(#[k, v])
-    |> Dictionary
-}
+insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+export insert = extern "insertFFI"
+
+#elseif llvm
+
+insert :: Comparable k => k -> v -> Dictionary k v -> Dictionary k v
+export insert = extern "madlib__dictionary__insert"
+
+#endif
+
+#iftarget js // get
 
 /**
  * Get a value from a Dictionary given a key.
@@ -70,41 +131,32 @@ export insert = (k, v, m) => where(m) {
  * get("john", fromList([#["john", { age: 32 }]])) // Just({ age: 32 })
  * get("paul", fromList([#["john", { age: 32 }]])) // Nothing
  */
-get :: Eq k => k -> Dictionary k v -> Maybe v
+get :: Comparable k => k -> Dictionary k v -> Maybe v
 export get = (k) => where {
   Dictionary(items) => pipe(
-    L.find((item) => where(item) {
+    List.find((item) => where(item) {
       #[kk, _] => k == kk
     }),
-    map(T.snd)
+    map(Tuple.snd)
   )(items)
 }
 
+#endif
+
+
+#iftarget js // merge
 
 /**
- * List all keys in a Dictionary
+ * Combine two Dictionaries together.
  *
  * @since 0.0.5
- * @example
- * keys(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // [true, false]
  */
-keys :: Dictionary k v -> List k
-export keys = (m) => where(m) {
-  Dictionary(items) => map(T.fst, items)
+merge :: Comparable k => Dictionary k v -> Dictionary k v -> Dictionary k v
+export merge = (a, b) => where(#[a, b]) {
+  #[Dictionary(itemsA), Dictionary(itemsB)] => List.concat(itemsA, itemsB) |> fromList
 }
 
-/**
- * List all values in a Dictionary
- *
- * @since 0.0.5
- * @example
- * values(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // ["Go for it", "NOGO"]
- */
-values :: Dictionary k v -> List v
-export values = (m) => where(m) {
-  Dictionary(items) => map(T.snd, items)
-}
-
+#endif
 
 /**
  * Enumerate the number of keys in a Dictionary
@@ -114,7 +166,17 @@ export values = (m) => where(m) {
  * len(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])) // 3
  */
 len :: Dictionary k v -> Integer
-export len = (m) => (m |> keys |> L.len)
+export len = (dictionary) => where(dictionary) {
+  Dictionary(items) =>
+    List.len(items)
+}
+
+
+toList :: Dictionary k v -> List #[k, v]
+export toList = (dict) => where(dict) {
+  Dictionary(items) =>
+    items
+}
 
 
 /**
@@ -125,11 +187,16 @@ export len = (m) => (m |> keys |> L.len)
  * map((x) => x / 2, fromList([#["Sidney", 3], #["New York", 18], #["London", 2]]))
  * // fromList([#["Sidney", 1.5], #["New York", 9], #["London", 1]])
  */
-instance Eq k => Functor (Dictionary k) {
+instance Functor (Dictionary k) {
   map = (fn) => where {
-    Dictionary(items) => map((i) => #[T.fst(i), fn(T.snd(i))], items) |> fromList
+    Dictionary(items) =>
+      pipe(
+        map((i) => #[Tuple.fst(i), fn(Tuple.snd(i))]),
+        Dictionary
+      )(items)
   }
 }
+
 
 /**
  * Map over a Dictionary with a function that takes the key and value and returns the new value. 
@@ -142,19 +209,39 @@ instance Eq k => Functor (Dictionary k) {
  * )
  * // fromList([#["Sidney", 9], #["New York", 9], #["London", 1]])
  */
-mapWithKey :: Eq k => (k -> v -> w) -> Dictionary k v -> Dictionary k w
+mapWithKey :: (k -> v -> w) -> Dictionary k v -> Dictionary k w
 export mapWithKey = (fn) => where {
-  Dictionary(items) => map((i) => #[T.fst(i), fn(T.fst(i), T.snd(i))], items) |> fromList
+  Dictionary(items) =>
+    pipe(
+      map((i) => #[Tuple.fst(i), fn(Tuple.fst(i), Tuple.snd(i))]),
+      Dictionary
+    )(items)
 }
+
 
 /**
- * Combine two Dictionaries together.
+ * List all keys in a Dictionary
  *
  * @since 0.0.5
+ * @example
+ * keys(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // [true, false]
  */
-merge :: Eq k => Dictionary k v -> Dictionary k v -> Dictionary k v
-export merge = (a, b) => where(#[a, b]) {
-  #[Dictionary(itemsA), Dictionary(itemsB)] => L.concat(itemsA, itemsB) |> fromList
+keys :: Dictionary k v -> List k
+export keys = (m) => where(m) {
+  Dictionary(items) =>
+    map(Tuple.fst, items)
 }
 
-#endif
+
+/**
+ * List all values in a Dictionary
+ *
+ * @since 0.0.5
+ * @example
+ * values(fromList([#[true, "Go for it"], #[false, "NOGO"]])) // ["Go for it", "NOGO"]
+ */
+values :: Dictionary k v -> List v
+export values = (m) => where(m) {
+  Dictionary(items) =>
+   map(Tuple.snd, items)
+}

@@ -1735,26 +1735,30 @@ generateExps env symbolTable exps = case exps of
     return ()
 
 
-generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> IT.Type -> String -> Int -> Operand -> m SymbolTable
-generateExternFunction symbolTable t functionName arity foreignFn = do
+-- TODO: get the predicates and generate dict params for them
+generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
+generateExternFunction symbolTable (ps IT.:=> t) functionName arity foreignFn = do
   let paramTypes    = IT.getParamTypes t
-      params'       = List.replicate arity (boxType, NoParameterName)
+      dictTypes     = boxType <$ ps
+      amountOfDicts = List.length ps
+      params'       = List.replicate (arity + amountOfDicts) (boxType, NoParameterName)
       functionName' = AST.mkName functionName
 
   function <- function functionName' params' boxType $ \params -> do
     entry <- block `named` "entry"
-    let typesWithParams = List.zip paramTypes params
+    let typesWithParams = List.zip paramTypes (List.drop amountOfDicts params)
+    let dictParams      = List.take amountOfDicts params
     unboxedParams <- mapM (uncurry unbox) typesWithParams
 
     -- Generate body
-    result <- call foreignFn ((, []) <$> unboxedParams)
+    result <- call foreignFn ((, []) <$> (dictParams ++ unboxedParams))
 
     -- box the result
     boxed <- box result
     ret boxed
 
-  Writer.tell $ Map.singleton functionName (fnSymbol arity function)
-  return $ Map.insert functionName (fnSymbol arity function) symbolTable
+  Writer.tell $ Map.singleton functionName (fnSymbol (arity + amountOfDicts) function)
+  return $ Map.insert functionName (fnSymbol (arity + amountOfDicts) function) symbolTable
 
 
 makeParamName :: String -> ParameterName
@@ -1801,14 +1805,15 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
   Optimized (_ IT.:=> t) _ (TopLevelAbs functionName params body) -> do
     generateFunction env symbolTable False t functionName params body
 
-  Optimized _ _ (Extern (_ IT.:=> t) name originalName) -> do
+  Optimized _ _ (Extern (ps IT.:=> t) name originalName) -> do
     let paramTypes  = IT.getParamTypes t
         paramTypes' = buildLLVMParamType <$> paramTypes
+        dictTypes   = boxType <$ ps
         returnType  = IT.getReturnType t
         returnType' = buildLLVMParamType returnType
 
-    ext <- extern (AST.mkName originalName) paramTypes' returnType'
-    generateExternFunction symbolTable t name (List.length paramTypes) ext
+    ext <- extern (AST.mkName originalName) (dictTypes ++ paramTypes') returnType'
+    generateExternFunction symbolTable (ps IT.:=> t) name (List.length paramTypes) ext
 
   _ ->
     return symbolTable
@@ -3643,7 +3648,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lhttp_parser"
+        <> " -lruntime -lgc -luv"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -framework Security -lz"
         <>" -o " <> executablePath
 
@@ -3653,7 +3658,7 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lhttp_parser -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
+        <> " -lruntime -lgc -luv -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -o " <> executablePath
 
     _ ->
       callCommand $
@@ -3661,4 +3666,4 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -lhttp_parser -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -pthread -ldl -o " <> executablePath

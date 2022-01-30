@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <curl/curl.h>
 #include <gc.h>
-#include <http_parser.h>
 #include <stdlib.h>
 #include <uv.h>
 

@@ -139,22 +139,30 @@ madlib__list__Node_t *madlib__list__internal__push(void *item, madlib__list__Nod
   return madlib__list__push(item, list);
 }
 
+
 madlib__list__Node_t *madlib__list__map(PAP_t *pap, madlib__list__Node_t *list) {
-  madlib__list__Node_t *newList = (madlib__list__Node_t *)GC_malloc(sizeof(madlib__list__Node_t));
+  size_t itemCount = madlib__list__length(list);
+  int nodesIndex = 1;
+  madlib__list__Node_t *nodes = (madlib__list__Node_t*)GC_malloc(sizeof(madlib__list__Node_t) * (itemCount + 1));
+  madlib__list__Node_t *newList = nodes;
   madlib__list__Node_t *head = newList;
 
   while (list->value != NULL) {
-    madlib__list__Node_t *nextItem = madlib__list__empty();
+    madlib__list__Node_t *nextItem = nodes + nodesIndex;
+    nextItem->value = NULL;
+    nextItem->next = NULL;
 
     newList->value = __applyPAP__(pap, 1, list->value);
     newList->next = nextItem;
 
     newList = newList->next;
     list = list->next;
+    nodesIndex += 1;
   }
 
   return head;
 }
+
 
 void *madlib__list__reduce(PAP_t *pap, void *initialValue, madlib__list__Node_t *list) {
   while (list->value != NULL) {
