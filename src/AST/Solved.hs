@@ -254,6 +254,9 @@ isExtern a = case a of
   (Solved _ _ Extern {}) ->
     True
 
+  Solved _ _ (Export (Solved _ _ Extern {})) ->
+    True
+
   _ ->
     False
 

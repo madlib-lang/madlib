@@ -343,7 +343,7 @@ instance Compilable Exp where
                   Nothing -> "(" <> param
                 next = case head body of
                   (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  _ -> " => " <> compileBody env body <> ")"
+                  _ -> " => " <> compileBody env{ varsInScope = varsInScope env <> S.singleton param} body <> ")"
             in  start <> next
 
           compileBody :: Env -> [Exp] -> String
@@ -616,6 +616,14 @@ instance Compilable Exp where
           compileCtorArg :: String -> String -> (Int, Pattern) -> String
           compileCtorArg scope _ (x, p) = compilePattern (scope <> ".__args[" <> show x <> "]") p
 
+        Extern (ps :=> t) name foreignName ->
+          let paramTypes = getParamTypes t
+              paramCount = length ps + length paramTypes
+              params = take paramCount ((:"")<$> ['a' ..])
+              compiledParams = concat $ (<> " => ") <$> params
+              body = foreignName <> concat ((\arg -> "(" <> arg <> ")") <$> params)
+          in  "let " <> name <> " = " <> compiledParams <> body
+
         _ -> "/* Not implemented: " <> ppShow exp <> "*/\n"
 
 
@@ -846,6 +854,8 @@ buildDefaultExport as es =
   getExportName :: Exp -> String
   getExportName (Optimized _ _ (Export (Optimized _ _ (Assignment n _))                             )) = n
   getExportName (Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment n _)))) _)) = n
+  getExportName (Optimized _ _ (Export (Optimized _ _ (Extern _ n _))                             )) = n
+  
 
   getConstructorName :: Constructor -> String
   getConstructorName (Untyped _ (Constructor cname _)) = cname

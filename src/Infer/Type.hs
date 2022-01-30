@@ -94,6 +94,9 @@ tDictionaryOf keyType = TApp (TApp (TCon (TC "Dictionary" (Kfun Star (Kfun Star 
 tTuple2 :: Type
 tTuple2 = TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude"
 
+tTuple2Of :: Type -> Type -> Type
+tTuple2Of tKey tValue = TApp (TApp tTuple2 tKey) tValue
+
 tTuple3 :: Type
 tTuple3 = TCon (TC "(,,)" (Kfun Star (Kfun Star (Kfun Star Star)))) "prelude"
 

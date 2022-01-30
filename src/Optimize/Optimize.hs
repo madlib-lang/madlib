@@ -143,6 +143,9 @@ instance Optimizable Slv.Exp Opt.Exp where
       iss' <- mapM (optimize enabled) iss
       return $ Opt.Optimized t area (Opt.Where exp' iss')
 
+    Slv.Extern qt name foreignName ->
+      return $ Opt.Optimized t area (Opt.Extern qt name foreignName)
+
     Slv.Placeholder (Slv.ClassRef "Number" _ _ _, ts) exp ->
       optimize enabled exp
 
