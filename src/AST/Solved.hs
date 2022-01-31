@@ -284,7 +284,7 @@ isTypedExp a = case a of
 
   _ ->
     False
-  
+
 
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of

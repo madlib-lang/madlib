@@ -28,13 +28,14 @@ else
 fi
 
 
+LIBGC_VERSION="8.2.0"
 # install libgc
-wget https://github.com/ivmai/bdwgc/archive/refs/tags/v8.0.6.zip
-unzip v8.0.6.zip -d libgc
-cd libgc/bdwgc-8.0.6 && git clone git://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
+wget "https://github.com/ivmai/bdwgc/archive/refs/tags/v${LIBGC_VERSION}.zip"
+unzip "v${LIBGC_VERSION}.zip" -d libgc
+cd "libgc/bdwgc-${LIBGC_VERSION}" && git clone git://github.com/ivmai/libatomic_ops.git && make -f Makefile.direct
 cd ../..
-cp libgc/bdwgc-8.0.6/gc.a ../runtime/lib/libgc.a
-cp -R libgc/bdwgc-8.0.6/include ../runtime/
+cp "libgc/bdwgc-${LIBGC_VERSION}/gc.a" ../runtime/lib/libgc.a
+cp -R "libgc/${LIBGC_VERSION}/include" ../runtime/
 
 
 # install libcurl
