@@ -25,7 +25,7 @@ char **madlib__number__internal__inspectByte(unsigned char *i) {
 }
 
 unsigned char *madlib__number__internal__numberToByte(int64_t *a) {
-  unsigned char *result = (unsigned char *)malloc(sizeof(unsigned char));
+  unsigned char *result = (unsigned char *)GC_malloc(sizeof(unsigned char));
   *result = (unsigned char)*a;
   return result;
 }
@@ -99,7 +99,7 @@ char **madlib__number__internal__inspectFloat(double *d) {
 }
 
 double *madlib__number__internal__numberToFloat(int64_t *a) {
-  double *result = (double *)malloc(sizeof(double));
+  double *result = (double *)GC_malloc(sizeof(double));
   *result = (double)*a;
   return result;
 }
@@ -169,7 +169,7 @@ char **madlib__number__internal__inspectInteger(int64_t *i) {
 }
 
 int64_t *madlib__number__internal__numberToInteger(int64_t *a) {
-  int64_t *result = (int64_t *)malloc(sizeof(int64_t));
+  int64_t *result = (int64_t *)GC_malloc(sizeof(int64_t));
   *result = (int64_t)*a;
   return result;
 }

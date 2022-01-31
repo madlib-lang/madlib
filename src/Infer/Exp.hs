@@ -860,15 +860,15 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp
-  s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
+  s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (flipUnificationError . limitContextArea 2)
+  -- s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
 
   let qs'  = apply s' qs
       t''  = apply s' t
       t''' = mergeRecords (apply s' t') t''
-      fs   = ftv (apply s' env)
-      gs   = ftv t''' \\ fs
-      sc'  = quantify gs (qs' :=> t''')
+      fs   = ftv (apply s'' env)
+      gs   = ftv (apply s'' t') \\ fs
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' ps)
   (ds, rs, substDefaultResolution) <- catchError
     (split True env' fs gs ps')
@@ -882,7 +882,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
 
   qs'' <- dedupePreds <$> getAllParentPreds env (dedupePreds qs')
 
-  let scCheck  = quantify (ftv t''') (qs' :=> apply substDefaultResolution t''')
+  let scCheck  = quantify (ftv (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   if sc /= scCheck then
     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area (envBacktrace env))
   else if not (null rs) then
@@ -900,6 +900,61 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
     return (substDefaultResolution `compose` s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped env _ = undefined
+-- inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
+-- inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
+--   qt@(qs :=> t') <- instantiate sc
+
+--   let env' = case Can.getExpName exp of
+--         Just n  -> extendVars env (n, Forall [] qt)
+--         -- Just n  -> extendVars env (n, sc)
+--         Nothing -> env
+
+--   (s, ps, t, e) <- infer env' exp
+--   -- (s, ps, t, e) <- infer env' (Can.getTypedExpExp exp)
+--   s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
+--   let s' = s `compose` s'' `compose` s''
+
+--   let qs'  = apply s' qs
+--       t''  = apply s' t
+--       -- t''  = apply s' (trace ("T: "<>ppShow t<>"\ns': "<>ppShow s') t)
+--       t''' = mergeRecords (apply s' t') t''
+--       -- fs   = ftv (apply s' env')
+--       fs   = concat $ ftv <$> s'
+--       gs   = ftv t''' \\ fs
+--   ps'      <- filterM ((not <$>) . entail env' []) (apply s' ps)
+--   (ds, rs, substDefaultResolution) <- catchError
+--     (split True env' fs gs ps')
+--     (\case
+--       (CompilationError e NoContext) ->
+--         throwError $ CompilationError e (Context (envCurrentPath env) area (envBacktrace env))
+
+--       (CompilationError e c) ->
+--         throwError $ CompilationError e c
+--     )
+
+--   qs'' <- dedupePreds <$> getAllParentPreds env' (dedupePreds (ds ++ rs))
+
+--   let scCheck  = quantify (ftv t''') (apply substDefaultResolution ((ds ++ rs) :=> t'''))
+--   -- let scCheck  = quantify (ftv (trace ("GS: "<>ppShow gs<>"\nFS: "<>ppShow fs<>"\nRS: "<>ppShow rs<>"\nDS: "<>ppShow ds<>"\nQT: "<>ppShow ((ps') :=> t''')) t''')) (apply substDefaultResolution ((ds ++ rs) :=> t'''))
+--   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (trace ("T1: "<>ppShow (ps :=> t)<>"\ndefaultS: "<>ppShow substDefaultResolution<>"\nQT: "<>ppShow (qs :=> t')) t'''))
+--   -- let scCheck  = quantify (ftv $ apply substDefaultResolution (qs' :=> apply s' t''')) (apply substDefaultResolution qs' :=> apply substDefaultResolution (apply s' t'''))
+--   if sc /= scCheck then
+--     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area (envBacktrace env))
+--   else if not (null rs) then
+--     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area (envBacktrace env))
+--   else do
+--     let e'   = updateQualType e (ds :=> t''')
+
+--     let qt'  = qs'' :=> t'''
+--     let sc'' = quantify gs qt'
+--     -- let sc'' = quantify (ftv qt') qt'
+--     let env'' = case Can.getExpName exp of
+--           Just n  -> extendVars env' (n, sc'')
+--           Nothing -> env'
+
+--     return (substDefaultResolution `compose` s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+
+-- inferExplicitlyTyped env _ = undefined
 
 
 

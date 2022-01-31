@@ -3587,8 +3587,8 @@ compileModule outputFolder rootPath astPath astModule = do
           defaultCuratedPassSetSpec
             { optLevel                = Just 2
             , useInlinerWithThreshold = Just 150
-            -- , dataLayout              = Just dataLayout
-            -- , targetLibraryInfo       = Just libraryInfo
+            , dataLayout              = Just dataLayout
+            , targetLibraryInfo       = Just libraryInfo
             }
           $ \pm -> do
             runPassManager pm mod'

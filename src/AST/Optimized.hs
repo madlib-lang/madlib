@@ -115,8 +115,10 @@ data Exp_ = LNum String
           | TemplateString [Exp]
           | JSExp String
           | App Exp Exp Bool
+          | TailCall Exp [Exp]
           | Access Exp Exp
           | Abs Name [Exp]
+          | TCEDefinition [Name] [Exp]
           | Assignment Name Exp
           | Export Exp
           | NameExport Name
@@ -130,6 +132,7 @@ data Exp_ = LNum String
           | Do [Exp]
           | Where Exp [Is]
           | Placeholder (PlaceholderRef, String) Exp
+          | Extern (Ty.Qual Ty.Type) Name Name
           deriving(Eq, Show)
 
 type Name = String
@@ -147,6 +150,29 @@ getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 getValue :: Optimized a -> a
 getValue (Optimized _ _ a) = a
 getValue (Untyped _ a    ) = a
+
+
+getListItemExp :: ListItem -> Exp
+getListItemExp li = case li of
+  Optimized _ _ (ListItem e) ->
+    e
+
+  Optimized _ _ (ListSpread e) ->
+    e
+
+getFieldExp :: Field -> Exp
+getFieldExp li = case li of
+  Optimized _ _ (Field (_, e)) ->
+    e
+
+  Optimized _ _ (FieldSpread e) ->
+    e
+
+
+getIsExpression :: Is -> Exp
+getIsExpression is = case is of
+  Optimized _ _ (Is _ exp) ->
+    exp
 
 
 isTopLevelFunction :: Exp -> Bool

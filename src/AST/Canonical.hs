@@ -279,6 +279,16 @@ getExportNameAndScheme (Canonical _ exp) = case exp of
 
 
 
+getTypedExpExp :: Exp -> Exp
+getTypedExpExp exp = case exp of
+  Canonical _ (Export (Canonical _ (TypedExp e _ _))) ->
+    e
+
+  Canonical _ (TypedExp e _ _) ->
+    e
+
+
+
 getFieldName :: Field -> Maybe String
 getFieldName field = case field of
   Canonical _ (Field (name, _)) ->
