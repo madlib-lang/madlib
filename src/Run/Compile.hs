@@ -45,6 +45,7 @@ import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.Rename          as Rename
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
+import qualified Optimize.TCE                  as TCE
 import           Optimize.Optimize
 import qualified Explain.Format                as Explain
 import           Error.Warning
@@ -179,6 +180,8 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
                     let optimizedTable = optimizeTable optimized table
+                        withTCE = TCE.resolve <$> optimizedTable
+                    -- putStrLn (ppShow withTCE)
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
                   when bundle $ do
