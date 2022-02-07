@@ -12,86 +12,86 @@ tSubst = TVar (TV "-" Star)
 
 toSolved :: Can.Exp -> Slv.Exp
 toSolved (Can.Canonical area exp) = case exp of
-  Can.LNum  v          -> Slv.Solved ([] :=> tNumber) area (Slv.LNum v)
-  Can.LFloat v         -> Slv.Solved ([] :=> tFloat) area (Slv.LFloat v)
-  Can.LStr  v          -> Slv.Solved ([] :=> tStr) area (Slv.LStr v)
-  Can.LBool v          -> Slv.Solved ([] :=> tBool) area (Slv.LBool v)
-  Can.LUnit            -> Slv.Solved ([] :=> tUnit) area Slv.LUnit
+  Can.LNum  v          -> Slv.Typed ([] :=> tNumber) area (Slv.LNum v)
+  Can.LFloat v         -> Slv.Typed ([] :=> tFloat) area (Slv.LFloat v)
+  Can.LStr  v          -> Slv.Typed ([] :=> tStr) area (Slv.LStr v)
+  Can.LBool v          -> Slv.Typed ([] :=> tBool) area (Slv.LBool v)
+  Can.LUnit            -> Slv.Typed ([] :=> tUnit) area Slv.LUnit
 
-  Can.Var v            -> Slv.Solved ([] :=> tSubst) area (Slv.Var v)
+  Can.Var v            -> Slv.Typed ([] :=> tSubst) area (Slv.Var v)
 
-  Can.App f arg closed -> Slv.Solved ([] :=> tSubst) area (Slv.App (toSolved f) (toSolved arg) closed)
+  Can.App f arg closed -> Slv.Typed ([] :=> tSubst) area (Slv.App (toSolved f) (toSolved arg) closed)
 
   Can.Abs (Can.Canonical area param) body ->
-    Slv.Solved ([] :=> tSubst) area (Slv.Abs (Slv.Solved ([] :=> tSubst) area param) (toSolved <$> body))
+    Slv.Typed ([] :=> tSubst) area (Slv.Abs (Slv.Typed ([] :=> tSubst) area param) (toSolved <$> body))
 
-  Can.TemplateString exps    -> Slv.Solved ([] :=> tSubst) area (Slv.TemplateString (toSolved <$> exps))
+  Can.TemplateString exps    -> Slv.Typed ([] :=> tSubst) area (Slv.TemplateString (toSolved <$> exps))
 
-  Can.Access     rec  field  -> Slv.Solved ([] :=> tSubst) area (Slv.Access (toSolved rec) (toSolved field))
+  Can.Access     rec  field  -> Slv.Typed ([] :=> tSubst) area (Slv.Access (toSolved rec) (toSolved field))
 
-  Can.Assignment name exp    -> Slv.Solved ([] :=> tSubst) area (Slv.Assignment name (toSolved exp))
+  Can.Assignment name exp    -> Slv.Typed ([] :=> tSubst) area (Slv.Assignment name (toSolved exp))
 
-  Can.TypedExp exp typing sc -> Slv.Solved ([] :=> tSubst) area (Slv.TypedExp (toSolved exp) (updateTyping typing) sc)
+  Can.TypedExp exp typing sc -> Slv.Typed ([] :=> tSubst) area (Slv.TypedExp (toSolved exp) (updateTyping typing) sc)
 
-  Can.Record fields          -> Slv.Solved ([] :=> tSubst) area (Slv.Record (fieldToSolved <$> fields))
+  Can.Record fields          -> Slv.Typed ([] :=> tSubst) area (Slv.Record (fieldToSolved <$> fields))
 
-  Can.If cond truthy falsy   -> Slv.Solved ([] :=> tSubst) area (Slv.If (toSolved cond) (toSolved truthy) (toSolved falsy))
+  Can.If cond truthy falsy   -> Slv.Typed ([] :=> tSubst) area (Slv.If (toSolved cond) (toSolved truthy) (toSolved falsy))
 
-  Can.Where exp iss          -> Slv.Solved ([] :=> tSubst) area (Slv.Where (toSolved exp) (isToSolved <$> iss))
+  Can.Where exp iss          -> Slv.Typed ([] :=> tSubst) area (Slv.Where (toSolved exp) (isToSolved <$> iss))
 
-  Can.Export           exp   -> Slv.Solved ([] :=> tSubst) area (Slv.Export (toSolved exp))
+  Can.Export           exp   -> Slv.Typed ([] :=> tSubst) area (Slv.Export (toSolved exp))
 
-  Can.NameExport       name  -> Slv.Solved ([] :=> tSubst) area (Slv.NameExport name)
+  Can.NameExport       name  -> Slv.Typed ([] :=> tSubst) area (Slv.NameExport name)
 
-  Can.TypeExport       name  -> Slv.Solved ([] :=> tSubst) area (Slv.TypeExport name)
+  Can.TypeExport       name  -> Slv.Typed ([] :=> tSubst) area (Slv.TypeExport name)
 
-  Can.ListConstructor  items -> Slv.Solved ([] :=> tSubst) area (Slv.ListConstructor (liToSolved <$> items))
+  Can.ListConstructor  items -> Slv.Typed ([] :=> tSubst) area (Slv.ListConstructor (liToSolved <$> items))
 
-  Can.TupleConstructor exps  -> Slv.Solved ([] :=> tSubst) area (Slv.TupleConstructor (toSolved <$> exps))
+  Can.TupleConstructor exps  -> Slv.Typed ([] :=> tSubst) area (Slv.TupleConstructor (toSolved <$> exps))
 
-  Can.JSExp            code  -> Slv.Solved ([] :=> tSubst) area (Slv.JSExp code)
+  Can.JSExp            code  -> Slv.Typed ([] :=> tSubst) area (Slv.JSExp code)
 
-  Can.Do               exps  -> Slv.Solved ([] :=> tSubst) area (Slv.Do (toSolved <$> exps))
+  Can.Do               exps  -> Slv.Typed ([] :=> tSubst) area (Slv.Do (toSolved <$> exps))
 
   Can.Extern (Forall _ qt) localName foreignName ->
-    Slv.Solved ([] :=> tSubst) area (Slv.Extern qt localName foreignName)
+    Slv.Typed ([] :=> tSubst) area (Slv.Extern qt localName foreignName)
 
 
 
 liToSolved :: Can.ListItem -> Slv.ListItem
 liToSolved (Can.Canonical area li) = case li of
-  Can.ListItem   exp -> Slv.Solved ([] :=> tSubst) area (Slv.ListItem $ toSolved exp)
+  Can.ListItem   exp -> Slv.Typed ([] :=> tSubst) area (Slv.ListItem $ toSolved exp)
 
-  Can.ListSpread exp -> Slv.Solved ([] :=> tSubst) area (Slv.ListSpread $ toSolved exp)
+  Can.ListSpread exp -> Slv.Typed ([] :=> tSubst) area (Slv.ListSpread $ toSolved exp)
 
 
 fieldToSolved :: Can.Field -> Slv.Field
 fieldToSolved (Can.Canonical area field) = case field of
-  Can.Field       (name, exp) -> Slv.Solved ([] :=> tSubst) area $ Slv.Field (name, toSolved exp)
+  Can.Field       (name, exp) -> Slv.Typed ([] :=> tSubst) area $ Slv.Field (name, toSolved exp)
 
-  Can.FieldSpread exp         -> Slv.Solved ([] :=> tSubst) area $ Slv.FieldSpread (toSolved exp)
+  Can.FieldSpread exp         -> Slv.Typed ([] :=> tSubst) area $ Slv.FieldSpread (toSolved exp)
 
 isToSolved :: Can.Is -> Slv.Is
-isToSolved (Can.Canonical area (Can.Is pat exp)) = Slv.Solved ([] :=> tSubst) area (Slv.Is (patternToSolved pat) (toSolved exp))
+isToSolved (Can.Canonical area (Can.Is pat exp)) = Slv.Typed ([] :=> tSubst) area (Slv.Is (patternToSolved pat) (toSolved exp))
 
 patternToSolved :: Can.Pattern -> Slv.Pattern
 patternToSolved (Can.Canonical area pat) = case pat of
-  Can.PVar name       -> Slv.Solved ([] :=> tSubst) area (Slv.PVar name)
+  Can.PVar name       -> Slv.Typed ([] :=> tSubst) area (Slv.PVar name)
 
-  Can.PAny            -> Slv.Solved ([] :=> tSubst) area Slv.PAny
+  Can.PAny            -> Slv.Typed ([] :=> tSubst) area Slv.PAny
 
-  Can.PCon name pats  -> Slv.Solved ([] :=> tSubst) area (Slv.PCon name (patternToSolved <$> pats))
+  Can.PCon name pats  -> Slv.Typed ([] :=> tSubst) area (Slv.PCon name (patternToSolved <$> pats))
 
-  Can.PNum    v       -> Slv.Solved ([] :=> tSubst) area (Slv.PNum v)
+  Can.PNum    v       -> Slv.Typed ([] :=> tSubst) area (Slv.PNum v)
 
-  Can.PStr    v       -> Slv.Solved ([] :=> tSubst) area (Slv.PStr v)
+  Can.PStr    v       -> Slv.Typed ([] :=> tSubst) area (Slv.PStr v)
 
-  Can.PBool   v       -> Slv.Solved ([] :=> tSubst) area (Slv.PBool v)
+  Can.PBool   v       -> Slv.Typed ([] :=> tSubst) area (Slv.PBool v)
 
-  Can.PRecord fields  -> Slv.Solved ([] :=> tSubst) area (Slv.PRecord (M.map patternToSolved fields))
+  Can.PRecord fields  -> Slv.Typed ([] :=> tSubst) area (Slv.PRecord (M.map patternToSolved fields))
 
-  Can.PList   items   -> Slv.Solved ([] :=> tSubst) area (Slv.PList (patternToSolved <$> items))
+  Can.PList   items   -> Slv.Typed ([] :=> tSubst) area (Slv.PList (patternToSolved <$> items))
 
-  Can.PTuple  items   -> Slv.Solved ([] :=> tSubst) area (Slv.PTuple (patternToSolved <$> items))
+  Can.PTuple  items   -> Slv.Typed ([] :=> tSubst) area (Slv.PTuple (patternToSolved <$> items))
 
-  Can.PSpread pat     -> Slv.Solved ([] :=> tSubst) area (Slv.PSpread (patternToSolved pat))
+  Can.PSpread pat     -> Slv.Typed ([] :=> tSubst) area (Slv.PSpread (patternToSolved pat))

@@ -1,4 +1,4 @@
-module AST.Optimized where
+module AST.PostProcessed where
 
 
 import qualified Infer.Type                    as Ty
@@ -7,7 +7,7 @@ import qualified Data.Map                      as M
 
 
 data Optimized a
-  = Optimized Ty.Type Area a
+  = Typed Ty.Type Area a
   | Untyped Area a
   deriving(Eq, Show)
 
@@ -149,49 +149,49 @@ type Table = M.Map FilePath AST
 -- Functions
 
 getStartLine :: Exp -> Int
-getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line
+getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
 getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
 getValue :: Optimized a -> a
-getValue (Optimized _ _ a) = a
+getValue (Typed _ _ a) = a
 getValue (Untyped _ a    ) = a
 
 
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
-  Optimized _ _ (ListItem e) ->
+  Typed _ _ (ListItem e) ->
     e
 
-  Optimized _ _ (ListSpread e) ->
+  Typed _ _ (ListSpread e) ->
     e
 
 getFieldExp :: Field -> Exp
 getFieldExp li = case li of
-  Optimized _ _ (Field (_, e)) ->
+  Typed _ _ (Field (_, e)) ->
     e
 
-  Optimized _ _ (FieldSpread e) ->
+  Typed _ _ (FieldSpread e) ->
     e
 
 
 getIsExpression :: Is -> Exp
 getIsExpression is = case is of
-  Optimized _ _ (Is _ exp) ->
+  Typed _ _ (Is _ exp) ->
     exp
 
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Optimized _ _ (Assignment _ (Optimized _ _ Definition{})) ->
+  Typed _ _ (Assignment _ (Typed _ _ Definition{})) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Definition{}))) _) ->
+  Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ Definition{}))) _) ->
     True
 
-  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Definition{})))) ->
+  Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ Definition{})))) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Definition{}))))) _) ->
+  Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ Definition{}))))) _) ->
     True
 
   _ ->

@@ -283,7 +283,7 @@ updateImportAll solvedTable (Can.Canonical area (Can.ImportAll path absPath)) = 
         exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
     in  Slv.Untyped area (Slv.NamedImport (Slv.Untyped area <$> exportedNames <> exportedCtorNames) path absPath)
 
-updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
+updateImportName :: Can.Canonical Can.Name -> Slv.Typed Slv.Name
 updateImportName (Can.Canonical area name) = Slv.Untyped area name
 
 -- |The 'solveTable' function is the main function of this module.

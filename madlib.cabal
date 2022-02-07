@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8222e0ce2d64b03a8892af93ecaad3028aab8aeffa798487f6ca189ace54033b
+-- hash: 5f7be05480f897caee0ff98eb0b9bec452fc6493c62bd87a5e6225b919f378a2
 
 name:           madlib
 version:        0.11.0
@@ -33,7 +33,8 @@ flag static
 library
   exposed-modules:
       AST.Canonical
-      AST.Optimized
+      AST.ClosureConverted
+      AST.PostProcessed
       AST.Solved
       AST.Source
       Canonicalize.ADT
@@ -60,7 +61,6 @@ library
       Generate.LLVM.ClosureConvert
       Generate.LLVM.CPS
       Generate.LLVM.LLVM
-      Generate.LLVM.Optimized
       Generate.LLVM.Rename
       Generate.Utils
       Infer.AST
@@ -82,7 +82,7 @@ library
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
       Main
-      Optimize.Optimize
+      Optimize.PostProcess
       Optimize.TCE
       Parse.Comments.Lexer
       Parse.DocString.DocString
@@ -158,7 +158,8 @@ executable madlib
   main-is: Main.hs
   other-modules:
       AST.Canonical
-      AST.Optimized
+      AST.ClosureConverted
+      AST.PostProcessed
       AST.Solved
       AST.Source
       Canonicalize.ADT
@@ -185,7 +186,6 @@ executable madlib
       Generate.LLVM.ClosureConvert
       Generate.LLVM.CPS
       Generate.LLVM.LLVM
-      Generate.LLVM.Optimized
       Generate.LLVM.Rename
       Generate.Utils
       Infer.AST
@@ -206,7 +206,7 @@ executable madlib
       Infer.Unify
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
-      Optimize.Optimize
+      Optimize.PostProcess
       Optimize.TCE
       Parse.Comments.Lexer
       Parse.DocString.DocString

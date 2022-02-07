@@ -73,60 +73,60 @@ infer env lexp = do
     Can.Extern{}              -> inferExtern env' lexp
     Can.JSExp c               -> do
       t <- newTVar Star
-      return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.JSExp c))
+      return (M.empty, [], t, Slv.Typed ([] :=> t) area (Slv.JSExp c))
 
 
 applyLitSolve :: Can.Exp -> Qual Type -> Slv.Exp
 applyLitSolve (Can.Canonical area exp) qt = case exp of
-  Can.LNum  v  -> Slv.Solved qt area $ Slv.LNum v
-  Can.LFloat v -> Slv.Solved qt area $ Slv.LFloat v
-  Can.LStr  v  -> Slv.Solved qt area $ Slv.LStr v
-  Can.LBool v  -> Slv.Solved qt area $ Slv.LBool v
-  Can.LUnit    -> Slv.Solved qt area Slv.LUnit
+  Can.LNum  v  -> Slv.Typed qt area $ Slv.LNum v
+  Can.LFloat v -> Slv.Typed qt area $ Slv.LFloat v
+  Can.LStr  v  -> Slv.Typed qt area $ Slv.LStr v
+  Can.LBool v  -> Slv.Typed qt area $ Slv.LBool v
+  Can.LUnit    -> Slv.Typed qt area Slv.LUnit
 
-applyAbsSolve :: Can.Exp -> Slv.Solved Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
-applyAbsSolve (Can.Canonical loc _) param body qt = Slv.Solved qt loc $ Slv.Abs param body
+applyAbsSolve :: Can.Exp -> Slv.Typed Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
+applyAbsSolve (Can.Canonical loc _) param body qt = Slv.Typed qt loc $ Slv.Abs param body
 
 applyAssignmentSolve :: Can.Exp -> Slv.Name -> Slv.Exp -> Qual Type -> Slv.Exp
-applyAssignmentSolve (Can.Canonical loc _) n exp qt = Slv.Solved qt loc $ Slv.Assignment n exp
+applyAssignmentSolve (Can.Canonical loc _) n exp qt = Slv.Typed qt loc $ Slv.Assignment n exp
 
 
 updateQualType :: Slv.Exp -> Qual Type -> Slv.Exp
-updateQualType (Slv.Solved _ a e) qt = Slv.Solved qt a e
+updateQualType (Slv.Typed _ a e) qt = Slv.Typed qt a e
 
 
 -- TODO: handle this properly so that code generation can rely on it
 updatePattern :: Qual Type -> Can.Pattern -> Slv.Pattern
 updatePattern qt (Can.Canonical area pat) = case pat of
   Can.PVar name             ->
-    Slv.Solved qt area $ Slv.PVar name
+    Slv.Typed qt area $ Slv.PVar name
 
   Can.PAny                  ->
-    Slv.Solved qt area Slv.PAny
+    Slv.Typed qt area Slv.PAny
 
   Can.PCon name patterns    ->
-    Slv.Solved qt area $ Slv.PCon name (updatePattern qt <$> patterns)
+    Slv.Typed qt area $ Slv.PCon name (updatePattern qt <$> patterns)
 
   Can.PNum    n             ->
-    Slv.Solved ([] :=> tNumber) area $ Slv.PNum n
+    Slv.Typed ([] :=> tNumber) area $ Slv.PNum n
 
   Can.PStr    n             ->
-    Slv.Solved ([] :=> tStr) area $ Slv.PStr n
+    Slv.Typed ([] :=> tStr) area $ Slv.PStr n
 
   Can.PBool   n             ->
-    Slv.Solved ([] :=> tBool) area $ Slv.PBool n
+    Slv.Typed ([] :=> tBool) area $ Slv.PBool n
 
   Can.PRecord fieldPatterns ->
-    Slv.Solved qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
+    Slv.Typed qt area $ Slv.PRecord (updatePattern qt <$> fieldPatterns)
 
   Can.PList   patterns      ->
-    Slv.Solved qt area $ Slv.PList (updatePattern qt <$> patterns)
+    Slv.Typed qt area $ Slv.PList (updatePattern qt <$> patterns)
 
   Can.PTuple  patterns      ->
-    Slv.Solved qt area $ Slv.PTuple (updatePattern qt <$> patterns)
+    Slv.Typed qt area $ Slv.PTuple (updatePattern qt <$> patterns)
 
   Can.PSpread pat'          ->
-    Slv.Solved qt area $ Slv.PSpread (updatePattern qt pat')
+    Slv.Typed qt area $ Slv.PSpread (updatePattern qt pat')
 
 
 
@@ -137,7 +137,7 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) `fn` TGen 0)
     (ps :=> t) <- instantiate s
-    return (M.empty, ps, t, Slv.Solved (ps :=> t) area $ Slv.Var n)
+    return (M.empty, ps, t, Slv.Typed (ps :=> t) area $ Slv.Var n)
 
   _ -> do
     sc         <- catchError (lookupVar env n) (enhanceVarError env exp area)
@@ -146,7 +146,7 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
     -- let ps' = ps
     let ps' = dedupePreds ps
 
-    let e = Slv.Solved (ps' :=> t) area $ Slv.Var n
+    let e = Slv.Typed (ps' :=> t) area $ Slv.Var n
     e' <- insertVarPlaceholders env e ps'
 
     let ps'' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps'
@@ -165,7 +165,7 @@ inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
   sc         <- catchError (lookupVar env name) (enhanceVarError env exp area)
   (ps :=> t) <- instantiate sc
 
-  let e = Slv.Solved (ps :=> t) area $ Slv.NameExport name
+  let e = Slv.Typed (ps :=> t) area $ Slv.NameExport name
 
   return (M.empty, ps, t, e)
 
@@ -195,7 +195,7 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
 
   -- es'' <- mapM (updatePlaceholders env' True s) es
 
-  return (s, apply s ps, t', applyAbsSolve l (Slv.Solved (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
+  return (s, apply s ps, t', applyAbsSolve l (Slv.Typed (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
 
 
 inferBody :: Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
@@ -258,7 +258,7 @@ inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg
   let t          = apply s3 tv
   let s          = s3 `compose` s2 `compose` s1
 
-  let solved = Slv.Solved (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg $ apply s (ps1 ++ ps2) :=> apply s t2) final
+  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg $ apply s (ps1 ++ ps2) :=> apply s t2) final
 
   let skippedArg = [ (s2, ps2, apply s t2) | isPlaceholder arg ]
 
@@ -311,7 +311,7 @@ inferTemplateString env e@(Can.Canonical area (Can.TemplateString exps)) = do
 
   let qs = uncurry (:=>) <$> zip elemPS elemTypes
 
-  let updatedExp = Slv.Solved
+  let updatedExp = Slv.Typed
         ([] :=> tStr)
         area
         (Slv.TemplateString ((\(t, e) -> updateQualType e (apply fullSubst t)) <$> zip qs elemExps))
@@ -347,7 +347,7 @@ inferAssignment env e@(Can.Canonical _ (Can.Assignment name exp)) = do
 inferExport :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferExport env (Can.Canonical area (Can.Export exp)) = do
   (s, ps, t, e) <- infer env exp
-  return (s, ps, t, Slv.Solved (ps :=> t) area (Slv.Export e))
+  return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.Export e))
 
 
 
@@ -358,7 +358,7 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
   [] -> do
     tv <- newTVar Star
     let t = tListOf tv
-    return (M.empty, [], t, Slv.Solved ([] :=> t) area (Slv.ListConstructor []))
+    return (M.empty, [], t, Slv.Typed ([] :=> t) area (Slv.ListConstructor []))
 
   elems -> do
     tv               <- newTVar Star
@@ -386,14 +386,14 @@ inferListConstructor env (Can.Canonical area (Can.ListConstructor elems)) = case
 
     let t = tListOf (apply s''' tv)
 
-    return (s''', ps, t, Slv.Solved (ps :=> t) area (Slv.ListConstructor es))
+    return (s''', ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
 
 
 inferListItem :: Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
 inferListItem env ty (Can.Canonical area li) = case li of
   Can.ListItem exp -> do
     (s1, ps, t, e) <- infer env exp
-    return (s1, ps, t, Slv.Solved (ps :=> t) area $ Slv.ListItem e)
+    return (s1, ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
     (s1, ps, t, e) <- infer env exp
@@ -402,7 +402,7 @@ inferListItem env ty (Can.Canonical area li) = case li of
 
     let s = s1 `compose` s2
 
-    return (s, ps, apply s tv, Slv.Solved (apply s ps :=> apply s t) area $ Slv.ListSpread e)
+    return (s, ps, apply s tv, Slv.Typed (apply s ps :=> apply s t) area $ Slv.ListSpread e)
 
 
 pickJSXChild :: Type -> Type -> Type
@@ -433,7 +433,7 @@ inferTupleConstructor env (Can.Canonical area (Can.TupleConstructor elems)) = do
   let t         = foldl' TApp tupleT elemTypes
 
 
-  return (s, ps, apply s t, Slv.Solved (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
+  return (s, ps, apply s t, Slv.Typed (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
 
 
 -- INFER RECORD
@@ -475,23 +475,23 @@ inferRecord env exp = do
 
   let allPS = concat fieldPS
 
-  return (subst `compose` extraSubst, allPS, recordType, Slv.Solved (allPS :=> recordType) area (Slv.Record fieldEXPS))
+  return (subst `compose` extraSubst, allPS, recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
 
 
 inferRecordField :: Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
 inferRecordField env (Can.Canonical area field) = case field of
   Can.Field (name, exp) -> do
     (s, ps, t, e) <- infer env exp
-    return (s, ps, [(name, t)], Slv.Solved (ps :=> t) area $ Slv.Field (name, e))
+    return (s, ps, [(name, t)], Slv.Typed (ps :=> t) area $ Slv.Field (name, e))
 
   Can.FieldSpread exp -> do
     (s, ps, t, e) <- infer env exp
     case t of
       TRecord _ _ ->
-        return (s, ps, [("...", t)], Slv.Solved (ps :=> t) area $ Slv.FieldSpread e)
+        return (s, ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
 
       TVar _      ->
-        return (s, ps, [("...", t)], Slv.Solved (ps :=> t) area $ Slv.FieldSpread e)
+        return (s, ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
 
       _ ->
         throwError $ CompilationError
@@ -526,7 +526,7 @@ inferNamespaceAccess env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can
         (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
     (ps :=> t) <- instantiate sc
 
-    let e = Slv.Solved (ps :=> t) area $ Slv.Var (ns <> field)
+    let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field)
     e' <- insertVarPlaceholders env e ps
 
     return (M.empty, ps, t, e')
@@ -548,7 +548,7 @@ inferFieldAccess env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ re)
     let s      = s3 `compose` s2 `compose` s1
     let t      = apply s tv
 
-    let solved = Slv.Solved (ps2 :=> t) area (Slv.Access earg eabs)
+    let solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)
 
     return (s, ps2, t, solved)
 
@@ -568,7 +568,7 @@ inferIf env exp@(Can.Canonical area (Can.If cond truthy falsy)) = do
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
   let t = apply s ttruthy
 
-  return (s, ps1 ++ ps2 ++ ps3, t, Slv.Solved ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
+  return (s, ps1 ++ ps2 ++ ps3, t, Slv.Typed ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
 
 
 
@@ -578,7 +578,7 @@ inferDo :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferDo env (Can.Canonical area (Can.Do exps)) = do
   (s, ps, t, exps') <- inferBody env exps
 
-  return (s, ps, t, Slv.Solved (ps :=> t) area (Slv.Do exps'))
+  return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.Do exps'))
 
 
 -- INFER WHERE
@@ -600,8 +600,8 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let s''  = s' `compose` issSubstitution
 
-  let iss = (\(Slv.Solved t a is) -> Slv.Solved (apply s'' t) a is) . T.lst <$> pss
-  let wher = Slv.Solved (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss
+  let iss = (\(Slv.Typed t a is) -> Slv.Typed (apply s'' t) a is) . T.lst <$> pss
+  let wher = Slv.Typed (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss
   return (s'', ps ++ ps', apply s'' tv, wher)
 
 
@@ -618,37 +618,37 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   return
     ( subst
     , ps ++ ps'
-    , Slv.Solved ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
+    , Slv.Typed ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
       $ Slv.Is (updatePatternTypes subst vars pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
 updatePatternTypes :: Substitution -> Vars -> Slv.Pattern -> Slv.Pattern
 updatePatternTypes s vars pat = case pat of
-  Slv.Solved t area (Slv.PCon n pats) ->
-    Slv.Solved (apply s t) area (Slv.PCon n (updatePatternTypes s vars <$> pats))
+  Slv.Typed t area (Slv.PCon n pats) ->
+    Slv.Typed (apply s t) area (Slv.PCon n (updatePatternTypes s vars <$> pats))
 
-  Slv.Solved t area (Slv.PRecord fields) ->
-    Slv.Solved (apply s t) area (Slv.PRecord (updatePatternTypes s vars <$> fields))
+  Slv.Typed t area (Slv.PRecord fields) ->
+    Slv.Typed (apply s t) area (Slv.PRecord (updatePatternTypes s vars <$> fields))
 
-  Slv.Solved t area (Slv.PList items) ->
-    Slv.Solved (apply s t) area (Slv.PList (updatePatternTypes s vars <$> items))
+  Slv.Typed t area (Slv.PList items) ->
+    Slv.Typed (apply s t) area (Slv.PList (updatePatternTypes s vars <$> items))
 
-  Slv.Solved t area (Slv.PTuple items) ->
-    Slv.Solved (apply s t) area (Slv.PTuple (updatePatternTypes s vars <$> items))
+  Slv.Typed t area (Slv.PTuple items) ->
+    Slv.Typed (apply s t) area (Slv.PTuple (updatePatternTypes s vars <$> items))
 
-  Slv.Solved t area (Slv.PSpread pat) ->
-    Slv.Solved (apply s t) area (Slv.PSpread (updatePatternTypes s vars pat))
+  Slv.Typed t area (Slv.PSpread pat) ->
+    Slv.Typed (apply s t) area (Slv.PSpread (updatePatternTypes s vars pat))
 
-  Slv.Solved t area (Slv.PVar n) ->
+  Slv.Typed t area (Slv.PVar n) ->
     case M.lookup n vars of
       Just (Forall _ qt) ->
-        Slv.Solved (apply s qt) area (Slv.PVar n)
+        Slv.Typed (apply s qt) area (Slv.PVar n)
 
       Nothing ->
-        Slv.Solved (apply s t) area (Slv.PVar n)
+        Slv.Typed (apply s t) area (Slv.PVar n)
 
-  Slv.Solved t area p ->
-    Slv.Solved (apply s t) area p
+  Slv.Typed t area p ->
+    Slv.Typed (apply s t) area p
 
 
 -- INFER TYPEDEXP
@@ -660,14 +660,14 @@ inferTypedExp env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   (s1, ps1, t1, e1) <- infer env exp
   s2                <- contextualUnify env e t t1
 
-  return (s1 `compose` s2, ps1, t1, Slv.Solved (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
-  -- return (s1 `compose` s2, ps, t, Slv.Solved (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
+  return (s1 `compose` s2, ps1, t1, Slv.Typed (ps1 :=> t1) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t1)) (updateTyping typing) sc))
+  -- return (s1 `compose` s2, ps, t, Slv.Typed (ps :=> t) area (Slv.TypedExp (updateQualType e1 (ps1 :=> t)) (updateTyping typing) sc))
 
 
 inferExtern :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferExtern env (Can.Canonical area (Can.Extern scheme name originalName)) = do
   qt@(ps :=> t) <- instantiate scheme
-  return (mempty, ps, t, Slv.Solved qt area (Slv.Extern qt name originalName))
+  return (mempty, ps, t, Slv.Typed qt area (Slv.Extern qt name originalName))
 
 
 type Ambiguity = (TVar, [Pred])
@@ -897,7 +897,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
           Just n  -> extendVars env' (n, sc'')
           Nothing -> env'
 
-    return (substDefaultResolution `compose` s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+    return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped env _ = undefined
 -- inferExplicitlyTyped :: Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -952,7 +952,7 @@ inferExplicitlyTyped env _ = undefined
 --           Just n  -> extendVars env' (n, sc'')
 --           Nothing -> env'
 
---     return (substDefaultResolution `compose` s', qs'', env'', Slv.Solved (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+--     return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 -- inferExplicitlyTyped env _ = undefined
 
