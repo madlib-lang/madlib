@@ -407,6 +407,23 @@ convertAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Defin
       in  return $ CC.Typed (ps :=> t) area (CC.Assignment functionName (CC.Typed (ps :=> t) area (CC.Call CC.SimpleCall functionNode fvVarNodes)) False)
 
 
+-- When a lifted lambda is fetched from the env via Var, we apply the captured args to it
+-- which results in codegen generating a PAP for it and then doing the real call with the
+-- explicit args from the source language. With this we contract it back to one single call.
+dedupeCallFn :: CC.Exp -> CC.Exp
+dedupeCallFn exp = case exp of
+  CC.Typed qt area (CC.Call ct fn args) ->
+    case fn of
+      CC.Typed qt' area' (CC.Call ct' fn' args') ->
+        dedupeCallFn $ CC.Typed qt area (CC.Call ct' fn' (args' ++ args))
+
+      _ ->
+        exp
+
+  _ ->
+    exp
+
+
 instance Convertable PP.Exp CC.Exp where
   convert _ (PP.Untyped area (PP.TypeExport name)) = return $ CC.Untyped area (CC.TypeExport name)
   convert env fullExp@(PP.Typed qt@(ps :=> t) area e) = case e of
@@ -448,7 +465,7 @@ instance Convertable PP.Exp CC.Exp where
     PP.Call callType fn args -> do
         fn'   <- convert env { stillTopLevel = False } fn
         args' <- mapM (convert env { stillTopLevel = False }) args
-        return $ CC.Typed qt area (CC.Call (convertCallType callType) fn' args')
+        return $ dedupeCallFn $ CC.Typed qt area (CC.Call (convertCallType callType) fn' args')
 
     PP.Access rec field -> do
       rec'   <- convert env { stillTopLevel = False } rec
