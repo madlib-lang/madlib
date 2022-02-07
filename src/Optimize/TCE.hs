@@ -6,25 +6,13 @@ newtype Env
   = Env { envCurrentFunction :: Maybe String }
 
 
-collectAbsParams :: Exp -> [String]
-collectAbsParams exp = case exp of
-  Optimized _ _ (Abs param [bodyExp]) ->
-    let nextParams = collectAbsParams bodyExp
-    in  param : nextParams
-
-  Optimized _ _ (Abs param bodyExp) ->
-    [param]
-
-  _ ->
-    []
-
 
 getAppName :: Exp -> Maybe String
 getAppName exp = case exp of
-  Optimized _ _ (App (Optimized _ _ (Var n)) _ _) ->
+  Optimized _ _ (Call (Optimized _ _ (Var n)) _) ->
     Just n
 
-  Optimized _ _ (App fn _ _) ->
+  Optimized _ _ (Call fn _) ->
     getAppName fn
 
   _ ->
@@ -40,13 +28,11 @@ resolve ast =
 
 markDefinition :: Env -> Exp -> Exp
 markDefinition env exp = case exp of
-  Optimized assType assArea (Assignment fnName abs@(Optimized absType absArea (Abs param body))) ->
-    let params   = collectAbsParams abs
-        bodyExps = getAbsBody body
-    in  if isCandidate fnName params bodyExps then
-          Optimized assType assArea (Assignment fnName (Optimized absType absArea (TCEDefinition params (markDefinition env <$> bodyExps))))
-        else
-          Optimized assType assArea (Assignment fnName (Optimized absType absArea (Abs param (markDefinition env <$> body))))
+  Optimized assType assArea (Assignment fnName abs@(Optimized absType absArea (Definition params body))) ->
+    if isCandidate fnName params body then
+      Optimized assType assArea (Assignment fnName (Optimized absType absArea (TCEDefinition params (markDefinition env <$> body))))
+    else
+      Optimized assType assArea (Assignment fnName (Optimized absType absArea (Definition params (markDefinition env <$> body))))
 
   _ ->
     exp
@@ -54,7 +40,7 @@ markDefinition env exp = case exp of
 
 getAbsBody :: [Exp] -> [Exp]
 getAbsBody exps = case exps of
-  [Optimized _ _ (Abs _ bodyExps)] ->
+  [Optimized _ _ (Definition _ bodyExps)] ->
     getAbsBody bodyExps
 
   _ ->
@@ -84,7 +70,7 @@ isCandidate fnName params exps = case exps of
     True
 
   [lastExp] -> case lastExp of
-    Optimized _ _ App {} ->
+    Optimized _ _ Call {} ->
       containsRecursion True fnName lastExp
 
     Optimized _ _ (If cond truthy falsy) ->
@@ -110,7 +96,7 @@ isCandidate fnName params exps = case exps of
 
 containsRecursion :: Bool -> String  -> Exp -> Bool
 containsRecursion direct fnName exp = case exp of
-  Optimized _ _ App {} ->
+  Optimized _ _ Call {} ->
     Just fnName == getAppName exp
 
   Optimized _ _ (TemplateString exps) ->
@@ -119,7 +105,7 @@ containsRecursion direct fnName exp = case exp of
   Optimized _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnName rec || containsRecursion direct fnName accessor)
 
-  Optimized _ _ (Abs _ exps) ->
+  Optimized _ _ (Definition _ exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
   Optimized _ _ (Assignment _ exp) ->

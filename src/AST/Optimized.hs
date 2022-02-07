@@ -107,17 +107,22 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show)
 
+data Literal
+  = LNum String
+  | LFloat String
+  | LStr String
+  | LBool String
+  | LUnit
+  deriving(Eq, Show)
+
 type Exp = Optimized Exp_
-data Exp_ = LNum String
-          | LStr String
-          | LBool String
-          | LUnit
+data Exp_ = Literal Literal
           | TemplateString [Exp]
           | JSExp String
-          | App Exp Exp Bool
+          | Call Exp [Exp]
           | TailCall Exp [Exp]
           | Access Exp Exp
-          | Abs Name [Exp]
+          | Definition [Name] [Exp]
           | TCEDefinition [Name] [Exp]
           | Assignment Name Exp
           | Export Exp
@@ -177,16 +182,16 @@ getIsExpression is = case is of
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Optimized _ _ (Assignment _ (Optimized _ _ Abs{})) ->
+  Optimized _ _ (Assignment _ (Optimized _ _ Definition{})) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))) _) ->
+  Optimized _ _ (TypedExp (Optimized _ _ (Assignment _ (Optimized _ _ Definition{}))) _) ->
     True
 
-  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{})))) ->
+  Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Definition{})))) ->
     True
 
-  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Abs{}))))) _) ->
+  Optimized _ _ (TypedExp (Optimized _ _ (Export (Optimized _ _ (Assignment _ (Optimized _ _ Definition{}))))) _) ->
     True
 
   _ ->

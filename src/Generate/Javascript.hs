@@ -44,12 +44,6 @@ allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "l
 generateSafeName :: String -> String
 generateSafeName n = if n `elem` allowedJSNames then "_$_" <> n <> "_$_" else n
 
-
-data Arg = Arg String Bool
-         | PlaceholderArg String Bool
-         deriving(Eq, Show)
-
-
 hpWrapLine :: Bool -> FilePath -> Int -> String -> String
 hpWrapLine coverage astPath line compiled =
   if coverage then "__hpLineWrap('" <> astPath <> "', " <> show line <> ", " <> compiled <> ")" else compiled
@@ -78,17 +72,29 @@ instance Compilable Exp where
       optimized = ccoptimize config
     in
       case exp of
-        LNum  v -> hpWrapLine coverage astPath l v
-        LStr  v -> hpWrapLine coverage astPath l v
-        LBool v -> hpWrapLine coverage astPath l v
-        LUnit   -> hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
+        Literal (LNum v) ->
+          hpWrapLine coverage astPath l v
+
+        Literal (LFloat v) ->
+          hpWrapLine coverage astPath l v
+
+        Literal (LStr v) ->
+          hpWrapLine coverage astPath l v
+
+        Literal (LBool v) ->
+          hpWrapLine coverage astPath l v
+
+        Literal LUnit ->
+          hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
         TemplateString exps ->
           let parts = foldl'
                 (\full e -> case e of
-                  Opt.Optimized _ _ (LStr v) -> full <> escapeBackTicks v
+                  Opt.Optimized _ _ (Literal (LStr v)) ->
+                    full <> escapeBackTicks v
 
-                  _                          -> full <> "${" <> compile env config e <> "}"
+                  _ ->
+                    full <> "${" <> compile env config e <> "}"
                 )
                 ""
                 exps
@@ -105,225 +111,135 @@ instance Compilable Exp where
               [] ->
                 []
 
-        App abs arg final -> case abs of
-          Optimized _ _ (App (Optimized _ _ (Var "++")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " + " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg')
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "+")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " + " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (Var "unary-minus") ->
-            "-" <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "-")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " - " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "*")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " * " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "/")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " / " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "%")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " % " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "==")) arg' _) ->
-            eqFnName optimized
-              <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg') (compile env config arg')
-              <> ", "
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
-              <> ")"
-          Optimized _ _ (App (Optimized _ _ (Var "!=")) arg' _) ->
-            "!"
-              <> eqFnName optimized
-              <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg') (compile env config arg')
-              <> ", "
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
-              <> ")"
-          Optimized _ _ (App (Optimized _ _ (Var "&&")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " && " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "||")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " || " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "|")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " | " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "&")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " & " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "^")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ^ " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "~")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " ~ " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "<<")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " << " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var ">>")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >> " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var ">>>")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >>> " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var ">")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " > " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "<")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " < " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var ">=")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " >= " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
-          Optimized _ _ (App (Optimized _ _ (Var "<=")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg') <> " <= " <> hpWrapLine
-              coverage
-              astPath
-              (getStartLine arg)
-              (compile env config arg)
+        Call (Optimized _ _ (Var "++")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " + "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          Optimized _ _ (App (Optimized _ _ (Var "|>")) arg' _) ->
-            hpWrapLine coverage astPath (getStartLine arg') (compile env config arg)
-              <> "("
-              <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg')
-              <> ")"
-          _ -> compileApp [] [] abs arg final
-         where
-          compileApp :: [Bool] -> [Arg] -> Exp -> Exp -> Bool -> String
-          compileApp prevPaceholders prevArgs abs arg final =
-            let newArg = if isPlaceholder arg
-                  then PlaceholderArg "" final
-                  else Arg (hpWrapLine coverage astPath (getStartLine arg) $ compile env config arg) final
-                args         = [newArg] <> prevArgs
-                placeholders = prevPaceholders <> [isPlaceholder arg]
-                next         = case abs of
-                  (Optimized _ _ (App abs' arg' final')) -> compileApp placeholders args abs' arg' final'
+        Call (Optimized _ _ (Var "unary-minus")) [arg] ->
+          "-" <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
 
-                  _ ->
-                    let processedArgs   = generatePlaceholderArgNames 0 args
-                        hasPlaceholders = containsPlaceholders processedArgs
-                    in  generatePlaceholderParams processedArgs
-                          <> compile env config abs
-                          <> buildParams True hasPlaceholders processedArgs
-            in  hpWrapLine coverage astPath (getStartLine abs) next
+        Call (Optimized _ _ (Var "+")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " + "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          buildParams :: Bool -> Bool -> [Arg] -> String
-          buildParams _ _ [] = ""
-          buildParams start hasPlaceholders (arg : args) =
-            let (argName, final) = case arg of
-                  Arg            n f -> (n, f)
-                  PlaceholderArg n f -> (n, f)
-            in  if null args
-                  then if hasPlaceholders then "(" <> argName <> "))" else "(" <> argName <> ")"
-                  else if final && hasPlaceholders
-                    then
-                      let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
-                      in  "(" <> argName <> "))" <> buildParams final hasPlaceholders' args
-                    else
-                      let hasPlaceholders' = if final then containsPlaceholders args else hasPlaceholders
-                      in  "(" <> argName <> ")" <> buildParams final hasPlaceholders' args
+        Call (Optimized _ _ (Var "-")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " - "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          generatePlaceholderParams :: [Arg] -> String
-          generatePlaceholderParams args =
-            let splitByFinal = groupBy
-                  (\l r -> case (l, r) of
-                    (PlaceholderArg _ final, _) -> not final
-                    (Arg            _ final, _) -> not final
-                  )
-                  args
-                onlyPlaceholders =
-                    filter (not . null) $ getPlaceholderNames <$> reverse (filter isPlaceholderArg <$> splitByFinal)
-                built = (("(" <>) . (<> " => ")) . intercalate " => " <$> onlyPlaceholders
-            in  concat built
+        Call (Optimized _ _ (Var "*")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " * "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          isPlaceholder :: Exp -> Bool
-          isPlaceholder (Optimized _ _ exp) = exp == Var "$"
+        Call (Optimized _ _ (Var "/")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " / "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          isPlaceholderArg :: Arg -> Bool
-          isPlaceholderArg (PlaceholderArg _ _) = True
-          isPlaceholderArg _                    = False
+        Call (Optimized _ _ (Var "%")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " % "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          placeholderArgName :: Int -> String
-          placeholderArgName pos = "__ph" <> show ([0 ..] !! pos) <> "__"
+        Call (Optimized _ _ (Var "==")) [left, right] ->
+          eqFnName optimized
+          <> "("
+          <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> ", "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+          <> ")"
 
-          containsPlaceholders :: [Arg] -> Bool
-          containsPlaceholders args = case args of
-            (Arg            _ True : _   ) -> False
-            (Arg            _ _    : rest) -> containsPlaceholders rest
-            (PlaceholderArg _ _    : _   ) -> True
+        Call (Optimized _ _ (Var "!=")) [left, right] ->
+          "!"
+          <> eqFnName optimized
+          <> "("
+          <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> ", "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+          <> ")"
 
-          getPlaceholderNames :: [Arg] -> [String]
-          getPlaceholderNames args = case args of
-            []                            -> []
-            ((PlaceholderArg n _) : rest) -> n : getPlaceholderNames rest
-            (_                    : rest) -> getPlaceholderNames rest
+        Call (Optimized _ _ (Var "!=")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " != "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-          generatePlaceholderArgNames :: Int -> [Arg] -> [Arg]
-          generatePlaceholderArgNames pos args = case args of
-            []                               -> []
-            ((PlaceholderArg _ True) : rest) -> generatePlaceholderArgNames (pos + 1) rest
-            --  ^ we eliminate placeholders in final position eg. fn(3, $) as mainly it's just like not applying anything
-            ((PlaceholderArg _ final) : rest) ->
-              PlaceholderArg (placeholderArgName pos) final : generatePlaceholderArgNames (pos + 1) rest
-            (arg : rest) -> arg : generatePlaceholderArgNames (pos + 1) rest
+        Call (Optimized _ _ (Var "&&")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " && "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
+        Call (Optimized _ _ (Var "||")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " || "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
+        Call (Optimized _ _ (Var "|")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " | "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "&")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " & "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "^")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " ^ "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "~")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " ~ "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "<<")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " << "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var ">>")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " >> "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var ">>>")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " >>> "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var ">")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " > "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "<")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " < "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var ">=")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " >= "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "<=")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+          <> " <= "
+          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+
+        Call (Optimized _ _ (Var "|>")) [left, right] ->
+          hpWrapLine coverage astPath (getStartLine right) (compile env config right)
+            <> "("
+            <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
+            <> ")"
+
+        Call fn args ->
+          let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
+          in  compile env config fn <> concat compiledArgs
 
         If cond truthy falsy ->
           "("
@@ -334,17 +250,16 @@ instance Compilable Exp where
             <> compile env config falsy
             <> ")"
 
-        Abs param body -> compileAbs Nothing param body
+        Definition params body -> compileAbs Nothing params body
          where
-          compileAbs :: Maybe [Exp] -> Name -> [Exp] -> String
-          compileAbs parent param body =
-            let start = case parent of
-                  Just _  -> " => " <> param
-                  Nothing -> "(" <> param
-                next = case head body of
-                  (Optimized _ _ (Abs param' body')) -> compileAbs (Just body) param' body'
-                  _ -> " => " <> compileBody env{ varsInScope = varsInScope env <> S.singleton param} body <> ")"
-            in  start <> next
+          compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String
+          compileAbs parent params body =
+            let params' = intercalate " => " params
+            in  "("
+                <> params'
+                <> " => "
+                <> compileBody env{ varsInScope = varsInScope env <> S.fromList params} body
+                <> ")"
 
           compileBody :: Env -> [Exp] -> String
           compileBody env [exp] = compile env config exp
