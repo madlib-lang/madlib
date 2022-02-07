@@ -9,14 +9,14 @@ import           Explain.Location
 
 
 
-data Solved a
-  = Solved (Ty.Qual Ty.Type) Area a
+data Typed a
+  = Typed (Ty.Qual Ty.Type) Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
--- instance Show a => Show (Solved a) where
+-- instance Show a => Show (Typed a) where
 --   show solved = case solved of
---     Solved _ _ a ->
+--     Typed _ _ a ->
 --       show a
 
 --     Untyped _ a ->
@@ -33,19 +33,19 @@ data AST =
     }
     deriving(Eq, Show, Ord)
 
-type Import = Solved Import_
+type Import = Typed Import_
 data Import_
-  = NamedImport [Solved Name] FilePath FilePath
-  | DefaultImport (Solved Name) FilePath FilePath
+  = NamedImport [Typed Name] FilePath FilePath
+  | DefaultImport (Typed Name) FilePath FilePath
   deriving(Eq, Show, Ord)
 
-type Interface = Solved Interface_
+type Interface = Typed Interface_
 data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
-type Instance = Solved Instance_
+type Instance = Typed Instance_
 data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
 
-type TypeDecl = Solved TypeDecl_
+type TypeDecl = Typed TypeDecl_
 data TypeDecl_
   = ADT
       { adtname :: Name
@@ -62,14 +62,14 @@ data TypeDecl_
       }
     deriving(Eq, Show, Ord)
 
-type Constructor = Solved Constructor_
+type Constructor = Typed Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show, Ord)
 
 type Constraints = [Typing]
 
-type Typing = Solved Typing_
+type Typing = Typed Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -80,10 +80,10 @@ data Typing_
   deriving(Eq, Show, Ord)
 
 
-type Is = Solved Is_
+type Is = Typed Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
-type Pattern = Solved Pattern_
+type Pattern = Typed Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -97,13 +97,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show, Ord)
 
-type Field = Solved Field_
+type Field = Typed Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show, Ord)
 
-type ListItem = Solved ListItem_
+type ListItem = Typed ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
@@ -119,7 +119,7 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show, Ord)
 
-type Exp = Solved Exp_
+type Exp = Typed Exp_
 data Exp_ = LNum String
           | LFloat String
           | LStr String
@@ -129,7 +129,7 @@ data Exp_ = LNum String
           | JSExp String
           | App Exp Exp Bool
           | Access Exp Exp
-          | Abs (Solved Name) [Exp]
+          | Abs (Typed Name) [Exp]
           | Assignment Name Exp
           | Export Exp
           | NameExport Name
@@ -157,24 +157,24 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
-getType :: Solved a -> Ty.Type
-getType (Solved (_ Ty.:=> t) _ _) = t
+getType :: Typed a -> Ty.Type
+getType (Typed (_ Ty.:=> t) _ _) = t
 
-getQualType :: Solved a -> Ty.Qual Ty.Type
-getQualType (Solved t _ _) = t
+getQualType :: Typed a -> Ty.Qual Ty.Type
+getQualType (Typed t _ _) = t
 
-getArea :: Solved a -> Area
-getArea (Solved _ a _) = a
+getArea :: Typed a -> Area
+getArea (Typed _ a _) = a
 
 extractExp :: Exp -> Exp_
-extractExp (Solved _ (Area _ _) e) = e
+extractExp (Typed _ (Area _ _) e) = e
 
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
-  Solved _ _ (ListItem exp) ->
+  Typed _ _ (ListItem exp) ->
     exp
 
-  Solved _ _ (ListSpread exp) ->
+  Typed _ _ (ListSpread exp) ->
     exp
 
   _ ->
@@ -221,10 +221,10 @@ isADT td = case td of
 
 isExportOnly :: Exp -> Bool
 isExportOnly a = case a of
-  (Solved _ _ (Export _)) ->
+  (Typed _ _ (Export _)) ->
     True
 
-  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) ->
+  (Typed _ _ (TypedExp (Typed _ _ (Export _)) _ _)) ->
     True
 
   _ ->
@@ -233,7 +233,7 @@ isExportOnly a = case a of
 
 isNameExport :: Exp -> Bool
 isNameExport a = case a of
-  (Solved _ _ (NameExport _)) ->
+  (Typed _ _ (NameExport _)) ->
     True
 
   _ ->
@@ -251,10 +251,10 @@ isTypeExport a = case a of
 
 isExtern :: Exp -> Bool
 isExtern a = case a of
-  (Solved _ _ Extern {}) ->
+  (Typed _ _ Extern {}) ->
     True
 
-  Solved _ _ (Export (Solved _ _ Extern {})) ->
+  Typed _ _ (Export (Typed _ _ Extern {})) ->
     True
 
   _ ->
@@ -273,13 +273,13 @@ isTypeOrNameExport exp = isNameExport exp || isTypeExport exp
 
 isTypedExp :: Exp -> Bool
 isTypedExp a = case a of
-  Solved _ _ TypedExp{} ->
+  Typed _ _ TypedExp{} ->
     True
 
-  Solved _ _ Extern{} ->
+  Typed _ _ Extern{} ->
     True
 
-  Solved _ _ (Export (Solved _ _ Extern{})) ->
+  Typed _ _ (Export (Typed _ _ Extern{})) ->
     True
 
   _ ->
@@ -288,7 +288,7 @@ isTypedExp a = case a of
 
 getNameExportName :: Exp -> Name
 getNameExportName a = case a of
-  Solved _ _ (NameExport name) ->
+  Typed _ _ (NameExport name) ->
     name
 
   _ ->
@@ -297,37 +297,37 @@ getNameExportName a = case a of
 
 isExport :: Exp -> Bool
 isExport a = case a of
-  (Solved _ _ (Export _)) -> True
+  (Typed _ _ (Export _)) -> True
 
-  (Solved _ _ (TypedExp (Solved _ _ (Export _)) _ _)) -> True
+  (Typed _ _ (TypedExp (Typed _ _ (Export _)) _ _)) -> True
 
-  (Solved _ _ (NameExport _)) -> True
+  (Typed _ _ (NameExport _)) -> True
 
   _ -> False
 
-getValue :: Solved a -> a
-getValue (Solved _ _ a) = a
+getValue :: Typed a -> a
+getValue (Typed _ _ a) = a
 getValue (Untyped _ a ) = a
 
 getExpName :: Exp -> Maybe String
 getExpName (Untyped _ _)    = Nothing
-getExpName (Solved _ _ exp) = case exp of
+getExpName (Typed _ _ exp) = case exp of
   Assignment name _ ->
     return name
 
-  TypedExp (Solved _ _ (Assignment name _)) _ _ ->
+  TypedExp (Typed _ _ (Assignment name _)) _ _ ->
     return name
 
-  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ _ ->
+  TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _ _ ->
     return name
 
-  Export (Solved _ _ (Assignment name _)) ->
+  Export (Typed _ _ (Assignment name _)) ->
     return name
 
   Extern _ name _ ->
     return name
 
-  Export (Solved _ _ (Extern _ name _)) ->
+  Export (Typed _ _ (Extern _ name _)) ->
     return name
 
   _                 ->
@@ -357,14 +357,14 @@ extractExportedExps AST { aexps, apath } = case apath of
   Just p -> M.fromList $ bundleExports <$> filter isExport aexps
 
 bundleExports :: Exp -> (Name, Exp)
-bundleExports e'@(Solved _ _ exp) = case exp of
-  Export (Solved _ _ (Assignment n _)) ->
+bundleExports e'@(Typed _ _ exp) = case exp of
+  Export (Typed _ _ (Assignment n _)) ->
     (n, e')
 
-  Export (Solved _ _ (Extern _ n _)) ->
+  Export (Typed _ _ (Extern _ n _)) ->
     (n, e')
 
-  TypedExp (Solved _ _ (Export (Solved _ _ (Assignment n _)))) _ _ ->
+  TypedExp (Typed _ _ (Export (Typed _ _ (Assignment n _)))) _ _ ->
     (n, e')
 
   NameExport n ->

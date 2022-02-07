@@ -93,16 +93,16 @@ shouldSkip env e = isMethod env e || case e of
   Untyped _ _ ->
     True
 
-  Solved _ _ (Assignment _ shouldHaveAbs) ->
+  Typed _ _ (Assignment _ shouldHaveAbs) ->
     hasAbs shouldHaveAbs
 
-  Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs))) ->
+  Typed _ _ (Export (Typed _ _ (Assignment _ shouldHaveAbs))) ->
     hasAbs shouldHaveAbs
 
-  Solved _ _ (TypedExp (Solved _ _ (Assignment _ shouldHaveAbs)) _ _) ->
+  Typed _ _ (TypedExp (Typed _ _ (Assignment _ shouldHaveAbs)) _ _) ->
     hasAbs shouldHaveAbs
 
-  Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment _ shouldHaveAbs)))) _ _) ->
+  Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ shouldHaveAbs)))) _ _) ->
     hasAbs shouldHaveAbs
 
   _ ->
@@ -111,8 +111,8 @@ shouldSkip env e = isMethod env e || case e of
 
 hasAbs :: Exp -> Bool
 hasAbs e = case e of
-  Solved _ _ (Placeholder _ exp) -> hasAbs exp
-  Solved _ _ (Abs         _ _  ) -> True
+  Typed _ _ (Placeholder _ exp) -> hasAbs exp
+  Typed _ _ (Abs         _ _  ) -> True
   _                              -> False
 
 verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
@@ -126,7 +126,7 @@ verifyScope' :: Env -> S.Set String -> InScope -> Dependencies -> Exp -> () -> (
 verifyScope' _ _ _ _ (Untyped _ _) _ _ =
   return ()
 
-verifyScope' env verified globalScope dependencies originExp@(Solved _ originArea _) _ access@(nameToVerify, Solved _ area@(Area loc _) _)
+verifyScope' env verified globalScope dependencies originExp@(Typed _ originArea _) _ access@(nameToVerify, Typed _ area@(Area loc _) _)
   = if nameToVerify `S.member` verified then
       return ()
     else if nameToVerify `S.member` globalScope then
@@ -168,7 +168,7 @@ extendDependencies globalAccesses dependencies exp = case getExpName exp of
 
 isMethod :: Env -> Exp -> Bool
 isMethod env (Untyped _ _)  = False
-isMethod env (Solved _ _ e) = case e of
+isMethod env (Typed _ _ e) = case e of
   Var n          -> Just True == (M.lookup n (envMethods env) >> return True)
   Assignment n _ -> Just True == (M.lookup n (envMethods env) >> return True)
   _              -> False
@@ -197,16 +197,16 @@ collect
   :: Env -> S.Set String -> Maybe String -> [String] -> Maybe String -> InScope -> InScope -> Exp -> Infer Accesses
 collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope solvedExp
   = case solvedExp of
-    (Solved tipe area (TemplateString exps)) -> do
+    (Typed tipe area (TemplateString exps)) -> do
       globalNamesAccessed <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
       return $ foldr S.union S.empty globalNamesAccessed
 
-    (Solved tipe area (Var ('.' : _))) ->
+    (Typed tipe area (Var ('.' : _))) ->
       return S.empty
 
-    (Solved tipe area (Var name))      -> do
+    (Typed tipe area (Var name))      -> do
       case nameToFind of
         Just n -> when
           (n == name && notElem n foundNames && not (isMethod env solvedExp))
@@ -214,7 +214,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         Nothing -> return ()
       if name `S.member` localScope then return S.empty else return $ S.singleton (name, solvedExp)
 
-    (Solved tipe area (App fn arg _)) -> do
+    (Typed tipe area (App fn arg _)) -> do
       fnGlobalNamesAccessed <- collect env
                                        topLevelAssignments
                                        currentTopLevelAssignment
@@ -233,7 +233,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
                                         arg
       return $ fnGlobalNamesAccessed <> argGlobalNamesAccessed
 
-    (Solved tipe area (Abs (Solved t _ name) body)) -> do
+    (Typed tipe area (Abs (Typed t _ name) body)) -> do
       let (nameToFind', foundNames') = case nameToFind of
             Just n  -> (Nothing, n : foundNames)
             Nothing -> (Nothing, foundNames)
@@ -259,7 +259,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         next <- collectFromBody nextFound ntf globalScope localScope' es
         return $ access <> next
 
-    (Solved tipe area (If cond truthy falsy)) -> do
+    (Typed tipe area (If cond truthy falsy)) -> do
       condAccesses <- collect env
                               topLevelAssignments
                               currentTopLevelAssignment
@@ -287,23 +287,23 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
       return $ condAccesses <> truthyAccesses <> falsyAccesses
 
-    (Solved tipe area (Assignment name exp)) -> do
+    (Typed tipe area (Assignment name exp)) -> do
       when
         (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
 
       collect env topLevelAssignments currentTopLevelAssignment foundNames (Just name) globalScope localScope exp
 
-    (Solved tipe area (TypedExp exp _ _)) ->
+    (Typed tipe area (TypedExp exp _ _)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
-    (Solved tipe area (Export exp)) ->
+    (Typed tipe area (Export exp)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
-    (Solved tipe area (Access record fieldAccessor)) -> do
+    (Typed tipe area (Access record fieldAccessor)) -> do
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope record
 
-    (Solved tipe area (Where exp iss)) -> do
+    (Typed tipe area (Where exp iss)) -> do
       expAccess <- collect env
                            topLevelAssignments
                            currentTopLevelAssignment
@@ -318,13 +318,13 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       let issAccesses' = foldr S.union S.empty issAccesses
       return $ expAccess <> issAccesses'
 
-    (Solved tipe area (TupleConstructor exps)) -> do
+    (Typed tipe area (TupleConstructor exps)) -> do
       accesses <- mapM
         (collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope)
         exps
       return $ foldr S.union S.empty accesses
 
-    (Solved tipe area (ListConstructor items)) -> do
+    (Typed tipe area (ListConstructor items)) -> do
       listItemAccesses <- mapM
         (collectFromListItem env
                              topLevelAssignments
@@ -337,17 +337,17 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         items
       return $ foldr S.union S.empty listItemAccesses
 
-    (Solved tipe area (Record fields)) -> do
+    (Typed tipe area (Record fields)) -> do
       fieldAccesses <- mapM
         (collectFromField env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope
         )
         fields
       return $ foldr S.union S.empty fieldAccesses
 
-    (Solved tipe area (Placeholder _ exp)) ->
+    (Typed tipe area (Placeholder _ exp)) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
 
-    (Solved tipe area (NameExport name)) ->
+    (Typed tipe area (NameExport name)) ->
       if name `S.member` globalScope then
         return S.empty
       else
@@ -359,7 +359,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
       else
         return $ S.singleton (name, solvedExp)
 
-    (Solved _ area (Extern _ _ name)) -> do
+    (Typed _ area (Extern _ _ name)) -> do
       when
         (Just name /= currentTopLevelAssignment && name `S.member` topLevelAssignments)
         (pushError $ CompilationError (NameAlreadyDefined name) (Context (envCurrentPath env) area (envBacktrace env)))
@@ -372,7 +372,7 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
 
 collectFromField
   :: Env -> S.Set String -> Maybe String -> [String] -> Maybe String -> InScope -> InScope -> Field -> Infer Accesses
-collectFromField env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Solved _ _ field)
+collectFromField env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Typed _ _ field)
   = case field of
     Field (name, exp) ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
@@ -381,7 +381,7 @@ collectFromField env topLevelAssignments currentTopLevelAssignment foundNames na
 
 collectFromListItem
   :: Env -> S.Set String -> Maybe String -> [String] -> Maybe String -> InScope -> InScope -> ListItem -> Infer Accesses
-collectFromListItem env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Solved _ _ li)
+collectFromListItem env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Typed _ _ li)
   = case li of
     ListItem exp ->
       collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope exp
@@ -390,14 +390,14 @@ collectFromListItem env topLevelAssignments currentTopLevelAssignment foundNames
 
 collectFromIs
   :: Env -> S.Set String -> Maybe String -> [String] -> Maybe String -> InScope -> InScope -> Is -> Infer Accesses
-collectFromIs env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Solved _ _ (Is pat exp))
+collectFromIs env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope (Typed _ _ (Is pat exp))
   = do
     let patternScope = buildPatternScope pat
         localScope'  = localScope <> patternScope
     collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind globalScope localScope' exp
 
 buildPatternScope :: Pattern -> S.Set String
-buildPatternScope (Solved _ _ pat) = case pat of
+buildPatternScope (Typed _ _ pat) = case pat of
   PVar name             -> S.singleton name
   PCon _ pats          -> foldr S.union S.empty $ buildPatternScope <$> pats
   PRecord fieldPatterns -> foldr S.union S.empty $ buildPatternScope <$> M.elems fieldPatterns

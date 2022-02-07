@@ -44,9 +44,9 @@ import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.Rename          as Rename
 import qualified AST.Solved                    as Slv
-import qualified AST.Optimized                 as Opt
+import qualified AST.PostProcessed             as PP
 import qualified Optimize.TCE                  as TCE
-import           Optimize.Optimize
+import           Optimize.PostProcess
 import qualified Explain.Format                as Explain
 import           Error.Warning
 import           Coverage.Coverable             ( collectFromAST
@@ -179,11 +179,11 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
-                    let optimizedTable = optimizeTable optimized table
-                        withTCE = TCE.resolve <$> optimizedTable
+                    let postProcessedTable = postProcessTable optimized table
+                        -- withTCE = TCE.resolve <$> optimizedTable
                     -- putStrLn (ppShow optimizedTable)
                     -- putStrLn (ppShow withTCE)
-                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
+                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath postProcessedTable sourcesToCompile
 
                   when bundle $ do
                     let entrypointOutputPath =
@@ -255,7 +255,7 @@ runBundle entrypointCompiledPath = do
     Left e -> return $ Left e
 
 
-generate :: Command -> Bool -> FilePath -> Opt.Table -> [FilePath] -> IO ()
+generate :: Command -> Bool -> FilePath -> PP.Table -> [FilePath] -> IO ()
 generate options@Compile { compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath table sourcesToCompile
   = do
     mapM_ (generateAST options coverage rootPath sourcesToCompile) $ M.elems table
@@ -275,8 +275,8 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
     in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
   Nothing -> "./__internals__.mjs"
 
-generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Opt.AST -> IO ()
-generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@Opt.AST { Opt.apath = Just path }
+generateAST :: Command -> Bool -> FilePath -> [FilePath] -> PP.AST -> IO ()
+generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@PP.AST { PP.apath = Just path }
   = do
     let internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
         entrypointPath     = if path `elem` sourcesToCompile then path else compileInput
