@@ -73,6 +73,7 @@ data Typing_
 type Is = ClosureConverted Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
+
 type Pattern = ClosureConverted Pattern_
 data Pattern_
   = PVar Name
@@ -87,11 +88,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show, Ord)
 
+
 type Field = ClosureConverted Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show, Ord)
+
 
 type ListItem = ClosureConverted ListItem_
 data ListItem_
@@ -104,10 +107,23 @@ data ClassRefPred
   = CRPNode String String Bool [ClassRefPred] -- Bool to control if it's a var or a concrete dictionary
   deriving(Eq, Show, Ord)
 
+
 data PlaceholderRef
   = ClassRef String [ClassRefPred] Bool Bool -- first bool is call (Class...), second bool is var (class_var vs class.selector)
   | MethodRef String String Bool
   deriving(Eq, Show, Ord)
+
+
+data DefinitionType
+  = BasicDefinition
+  | TCEOptimizableDefinition
+  deriving(Eq, Show, Ord)
+
+data CallType
+  = SimpleCall
+  | RecursiveTailCall
+  deriving(Eq, Show, Ord)
+
 
 type Exp = ClosureConverted Exp_
 data Exp_ = LNum String
@@ -117,10 +133,10 @@ data Exp_ = LNum String
           | LUnit
           | TemplateString [Exp]
           | JSExp String
-          | App Exp [Exp]
+          | Call CallType Exp [Exp]
           | Access Exp Exp
           -- TODO: probably add an export boolean here?
-          | TopLevelAbs Name [Name] [Exp]
+          | Definition DefinitionType Name [Name] [Exp]
           -- ^ name of the function | params | body
           | Assignment Name Exp Bool
           -- ^ name | exp assigned | isTopLevel
@@ -167,7 +183,7 @@ getQualType (Typed qt _ _) = qt
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Typed _ _ TopLevelAbs{} ->
+  Typed _ _ Definition{} ->
     True
 
   _ ->

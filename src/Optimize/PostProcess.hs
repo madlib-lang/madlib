@@ -111,24 +111,6 @@ buildApp' total nth f@(Slv.Typed (ps :=> t) _ f') xs =
   in  Slv.Typed (ps :=> dropNFirstParamTypes nth t) area (Slv.App subApp arg (total == nth))
 
 
--- Checks for Var "$" placeholders
--- Returns all the args to be applied, as well as the name of params to wrap it
-placeholderArgCheck :: Int -> [Slv.Exp] -> ([Slv.Exp], [(String, Qual Type)])
-placeholderArgCheck phIndex args = case args of
-  (arg : next) -> case arg of
-    Slv.Typed t area (Slv.Var "$") ->
-      let paramName          = "__$" ++ show phIndex ++ "__"
-          (nextArgs, params) = placeholderArgCheck (phIndex + 1) next
-      in  (Slv.Typed t area (Slv.Var paramName) : nextArgs, (paramName, t) : params)
-
-    _ ->
-      let (nextArgs, params) = placeholderArgCheck phIndex next
-      in  (arg : nextArgs, params)
-
-  [] ->
-    ([], [])
-
-
 class Processable a b where
   -- Bool is True when we need to contract names for JS output
   postProcess :: Bool -> a -> PostProcess b
@@ -153,18 +135,10 @@ instance Processable Slv.Exp PP.Exp where
     Slv.JSExp js         -> return $ PP.Typed qt area (PP.JSExp js)
 
     Slv.App fn arg close -> do
-      let (fn', args)                       = collectAppArgs True fullExp
-          (args', wrapperPlaceholderParams) = placeholderArgCheck 0 args
-      if null wrapperPlaceholderParams then do
-        fn''  <- postProcess enabled fn'
-        args' <- mapM (postProcess enabled) args
-        return $ PP.Typed qt area (PP.Call PP.SimpleCall fn'' args')
-      else do
-        -- if we found some Var "$" args we need to wrap it in an Abs
-        -- params
-        let appWithRenamedArgs = buildApp fn' args'
-            wrapperAbs         = buildAbs wrapperPlaceholderParams [appWithRenamedArgs]
-        postProcess enabled wrapperAbs
+      let (fn', args) = collectAppArgs True fullExp
+      fn''  <- postProcess enabled fn'
+      args' <- mapM (postProcess enabled) args
+      return $ PP.Typed qt area (PP.Call PP.SimpleCall fn'' args')
 
     Slv.Access rec field -> do
       rec'   <- postProcess enabled rec

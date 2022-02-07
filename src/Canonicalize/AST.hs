@@ -262,7 +262,7 @@ runCanonicalization
   -> (Either CompilationError (Can.Table, TableCache), [CompilationWarning])
 runCanonicalization tableCache target env table entrypoint = do
   let (canonicalized, s) = runState (runExceptT (canonicalizeAST tableCache target env table entrypoint))
-                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = [], derivedTypes = S.empty })
+                                    (CanonicalState { warnings = [], namesAccessed = S.empty, accumulatedJS = "", typesToDerive = [], derivedTypes = S.empty, placeholderIndex = 0 })
   ((\(table, _, cache) -> (table, cache)) <$> canonicalized, warnings s)
 
 

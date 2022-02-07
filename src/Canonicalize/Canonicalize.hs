@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE LambdaCase #-}
 module Canonicalize.Canonicalize where
 
 import           Run.Target
@@ -10,24 +11,23 @@ import qualified AST.Canonical                 as Can
 import qualified AST.Source                    as Src
 import           Canonicalize.JSExp
 import           Canonicalize.CanonicalM
-import qualified Canonicalize.Env              as E
+import qualified Canonicalize.Env              as Env
 import           Canonicalize.Typing
-import qualified Data.Map                      as M
-import qualified Data.List                     as L
+import qualified Data.Map                      as Map
+import qualified Data.List                     as List
 import           Parse.Madlib.Grammar           ( mergeAreas )
 import           AST.Canonical                  ( getArea )
 import           Explain.Location
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
-import           Infer.Type
 import qualified Data.Maybe as Maybe
 import Text.Show.Pretty
 
 
 
 class Canonicalizable a b where
-  canonicalize :: E.Env -> Target -> a -> CanonicalM b
+  canonicalize :: Env.Env -> Target -> a -> CanonicalM b
 
 
 instance Canonicalizable Src.Exp Can.Exp where
@@ -87,9 +87,9 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.TypeExport name -> do
       pushTypeAccess name
-      case M.lookup name (E.envTypeDecls env) of
+      case Map.lookup name (Env.envTypeDecls env) of
         Just found -> return $ Can.Canonical area (Can.TypeExport name)
-        Nothing    -> throwError $ CompilationError (UnboundType name) (Context (E.envCurrentPath env) area [])
+        Nothing    -> throwError $ CompilationError (UnboundType name) (Context (Env.envCurrentPath env) area [])
 
       return $ Can.Canonical area (Can.TypeExport name)
 
@@ -212,7 +212,7 @@ instance Canonicalizable Src.Exp Can.Exp where
       error $ "unhandled node type\n" <> ppShow fullExp
 
 
-buildAbs :: E.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
+buildAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
 buildAbs env target area [Src.Source area' _ param] body = do
   body' <- mapM (canonicalize env target) body
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) body')
@@ -221,22 +221,63 @@ buildAbs env target area (Src.Source area' _ param:xs) body  = do
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) [next])
 
 
-buildApp :: E.Env -> Target -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
-buildApp env target area f args =
-  buildApp' env target (length args) (length args) area f args
+placeholderArgCheck :: [Src.Exp] -> CanonicalM ([Src.Exp], [Src.Source String])
+placeholderArgCheck args = case args of
+  (arg : next) -> case arg of
+    Src.Source area target (Src.Var "$") -> do
+      phIndex <- generatePlaceholderIndex
+      let paramName = "__$PH" ++ show phIndex ++ "__"
+      (nextArgs, params) <- placeholderArgCheck next
+      return (Src.Source area target (Src.Var paramName) : nextArgs, Src.Source area target paramName : params)
 
-buildApp' :: E.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
-buildApp' env target total nth area f@(Src.Source _ _ f') [arg] = do
-  arg' <- canonicalize env target arg
-  f'   <- canonicalize env target f
-  return $ Can.Canonical area (Can.App f' arg' (total == nth))
-buildApp' env target total nth area f@(Src.Source _ _ f') xs = do
-  let arg@(Src.Source area' _ _) = last xs
-  arg'   <- canonicalize env target arg
-  subApp <- buildApp' env target total (nth - 1) area f (init xs)
-  return $ Can.Canonical (mergeAreas area area') (Can.App subApp arg' (total == nth))
+    _ -> do
+      (nextArgs, params) <- placeholderArgCheck next
+      return (arg : nextArgs, params)
 
-canonicalizeJsxTag :: E.Env -> Target -> Src.Exp -> CanonicalM Can.Exp
+  [] ->
+    return ([], [])
+
+
+buildApp :: Env.Env -> Target -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
+buildApp env target area f args = do
+  (args', wrapperPlaceholderParams) <- placeholderArgCheck args
+  let (droppable, _) =
+        span (\case
+                (Src.Source _ _ (Src.Var n)) ->
+                  "__$PH" `List.isPrefixOf` n
+
+                _ ->
+                  False
+             ) $ reverse args'
+  let canDrop = length droppable
+
+  let args'' = (reverse . drop canDrop . reverse) args'
+      wrapperPlaceholderParams' = (reverse . drop canDrop . reverse) wrapperPlaceholderParams
+
+  if null args'' then
+    canonicalize env target f
+  else if null wrapperPlaceholderParams' then
+    buildApp' env target (length args'') (length args'') area f args''
+  else
+    let app = Src.Source area (Src.getSourceTarget f) (Src.App f args'')
+    in  buildAbs env target area wrapperPlaceholderParams' [app]
+
+
+buildApp' :: Env.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
+buildApp' env target total nth area f@(Src.Source _ _ f') args = case args of
+  [arg] -> do
+    arg' <- canonicalize env target arg
+    f'   <- canonicalize env target f
+    return $ Can.Canonical area (Can.App f' arg' (total == nth))
+
+  _ -> do
+    let arg@(Src.Source area' _ _) = last args
+    arg'   <- canonicalize env target arg
+    subApp <- buildApp' env target total (nth - 1) area f (init args)
+    return $ Can.Canonical (mergeAreas area area') (Can.App subApp arg' (total == nth))
+
+
+canonicalizeJsxTag :: Env.Env -> Target -> Src.Exp -> CanonicalM Can.Exp
 canonicalizeJsxTag env target exp = case exp of
   Src.Source area _ (Src.JsxTag name props children) -> do
     pushNameAccess name
@@ -338,13 +379,13 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PAny            -> return $ Can.Canonical area Can.PAny
 
     Src.PCon (Src.Source _ _ name) pats -> do
-      let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
+      let nameToPush = if "." `List.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       pats' <- mapM (canonicalize env target) pats
       return $ Can.Canonical area (Can.PCon name pats')
 
     Src.PNullaryCon (Src.Source _ _ name) -> do
-      let nameToPush = if "." `L.isInfixOf` name then takeWhile (/= '.') name else name
+      let nameToPush = if "." `List.isInfixOf` name then takeWhile (/= '.') name else name
       pushNameAccess nameToPush
       return $ Can.Canonical area (Can.PCon name [])
 
@@ -371,13 +412,13 @@ instance Canonicalizable Src.Pattern Can.Pattern where
       return $ Can.Canonical area (Can.PSpread pat')
 
 
-extractPatternFields :: [Src.PatternField] -> M.Map Src.Name Src.Pattern
+extractPatternFields :: [Src.PatternField] -> Map.Map Src.Name Src.Pattern
 extractPatternFields pats = case pats of
   (Src.PatternField (Src.Source _ _ fieldName) pat : ps) ->
-    M.insert fieldName pat (extractPatternFields ps)
+    Map.insert fieldName pat (extractPatternFields ps)
 
   (Src.PatternFieldShorthand (Src.Source area sourceTarget fieldName) : ps) ->
-    M.insert fieldName (Src.Source area sourceTarget (Src.PVar fieldName)) (extractPatternFields ps)
+    Map.insert fieldName (Src.Source area sourceTarget (Src.PVar fieldName)) (extractPatternFields ps)
 
   [] ->
     mempty
