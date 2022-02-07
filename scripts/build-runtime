@@ -9,6 +9,7 @@ rm -f "$LIB_TARGET"
 
 if [ "$CXX" = "g++" ]
 then
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
@@ -35,6 +36,7 @@ then
     "${BUILD_DIR}number.o"\
     "${BUILD_DIR}string.o"\
     "${BUILD_DIR}boolean.o"\
+    "${BUILD_DIR}control.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}process.o"\
     "${BUILD_DIR}file.o"\
@@ -44,22 +46,23 @@ then
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"
 else
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
-  clang++ -O1 -g -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}event-loop.o" "${SRC_DIR}event-loop.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}process.o" "${SRC_DIR}process.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}file.o" "${SRC_DIR}file.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}dictionary.o" "${SRC_DIR}dictionary.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}record.o" "${SRC_DIR}record.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}number.o" "${SRC_DIR}number.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}string.o" "${SRC_DIR}string.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}boolean.o" "${SRC_DIR}boolean.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}gc.o" "${SRC_DIR}gc.cpp"
 
   eval $LLVM_AR rc "$LIB_TARGET"\
     "${BUILD_DIR}list.o"\
@@ -70,6 +73,7 @@ else
     "${BUILD_DIR}number.o"\
     "${BUILD_DIR}string.o"\
     "${BUILD_DIR}boolean.o"\
+    "${BUILD_DIR}control.o"\
     "${BUILD_DIR}event-loop.o"\
     "${BUILD_DIR}process.o"\
     "${BUILD_DIR}file.o"\

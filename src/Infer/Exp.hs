@@ -193,8 +193,6 @@ inferAbs env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = d
   let t'        = apply s (tv `fn` t)
       paramType = apply s tv
 
-  -- es'' <- mapM (updatePlaceholders env' True s) es
-
   return (s, apply s ps, t', applyAbsSolve l (Slv.Typed (apply s ps :=> paramType) area param) es (apply s ps :=> t'))
 
 
@@ -234,17 +232,12 @@ updateBodyEnv s e =
 
 
 
-
 -- INFER APP
 
-inferApp' :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp, [(Substitution, [Pred], Type)])
-inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
-  tv                               <- newTVar Star
-  (s1, ps1, t1, eabs, skippedArgs) <- if isApp abs && not (isFinalApp abs)
-    then inferApp' env abs
-    else do
-      (s1, ps1, t1, eabs) <- infer env abs
-      return (s1, ps1, t1, eabs, [])
+inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferApp env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
+  tv                  <- newTVar Star
+  (s1, ps1, t1, eabs) <- infer env abs
   (s2, ps2, t2, earg) <- infer (apply s1 env) arg
 
   let expForContext =
@@ -253,44 +246,13 @@ inferApp' env app@(Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg
         else
           arg
 
-  s3                  <- contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)
-
-  let t          = apply s3 tv
-  let s          = s3 `compose` s2 `compose` s1
+  s3 <- contextualUnify env expForContext t1 (apply s1 t2 `fn` tv)
+  let t = apply s3 tv
+  let s = s3 `compose` s2 `compose` s1
 
   let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg $ apply s (ps1 ++ ps2) :=> apply s t2) final
 
-  let skippedArg = [ (s2, ps2, apply s t2) | isPlaceholder arg ]
-
-  return (s, ps1 ++ ps2, t, solved, skippedArg <> skippedArgs)
-
-inferApp :: Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp env app = do
-  (s, ps, t, e, skipped) <- inferApp' env app
-  let subst        = foldr compose s $ T.beg <$> skipped
-  let preds        = concat (T.mid <$> skipped) <> ps
-  let skippedTypes = T.lst <$> skipped
-  let realType     = apply subst $ foldr fn t skippedTypes
-
-
-  let appArea = Can.getArea app
-  let preds' = (\(IsIn c ts _) -> IsIn c ts (Just appArea)) <$> preds
-
-  return (subst, preds, realType, updateQualType e (preds :=> realType))
-
-
-isPlaceholder :: Can.Exp -> Bool
-isPlaceholder (Can.Canonical _ exp) = exp == Can.Var "$"
-
-isApp :: Can.Exp -> Bool
-isApp (Can.Canonical _ exp) = case exp of
-  Can.App{} -> True
-  _         -> False
-
-isFinalApp :: Can.Exp -> Bool
-isFinalApp (Can.Canonical _ exp) = case exp of
-  Can.App _ _ final -> final
-  _                 -> False
+  return (s, ps1 ++ ps2, t, solved)
 
 
 
