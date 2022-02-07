@@ -9,7 +9,7 @@ import qualified Data.Bifunctor                as Bifunctor
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
-import           AST.Solved
+import           AST.PostProcessed
 import Debug.Trace
 import Text.Show.Pretty
 
@@ -80,20 +80,20 @@ renameExp env what = case what of
     let (renamedExps, env') = renameExps env exps
     in  (Typed t area (TemplateString renamedExps), env')
 
-  Typed t area (App fn arg isFinal) ->
-    let (renamedFn, env')  = renameExp env fn
-        (renamedArg, env'') = renameExp env' arg
-    in  (Typed t area (App renamedFn renamedArg isFinal), env'')
+  Typed t area (Call fn args) ->
+    let (renamedFn, env')    = renameExp env fn
+        (renamedArgs, env'') = renameExps env' args
+    in  (Typed t area (Call renamedFn renamedArgs), env'')
 
   Typed t area (Access record field) ->
     let (renamedRecord, env') = renameExp env record
         (renamedField, env'')  = renameExp env' field
     in  (Typed t area (Access renamedRecord renamedField), env'')
 
-  Typed t area (Abs (Typed paramType paramArea paramName) body) ->
-    let env'             = extendScope paramName paramName env
+  Typed t area (Definition params body) ->
+    let env'                 = foldr (\param env -> extendScope param param env) env params
         (renamedBody, env'') = renameExps env' body
-    in  (Typed t area (Abs (Typed paramType paramArea paramName) renamedBody), env'')
+    in  (Typed t area (Definition params renamedBody), env'')
 
   Typed t area (Assignment name exp) ->
     -- here we deal with an assignment in a body or Do
@@ -126,9 +126,9 @@ renameExp env what = case what of
     let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
     in  (Typed t area (NameExport renamed), env)
 
-  Typed t area (TypedExp exp typing scheme) ->
+  Typed t area (TypedExp exp scheme) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area (TypedExp renamedExp typing scheme), env')
+    in  (Typed t area (TypedExp renamedExp scheme), env')
 
   Typed t area (ListConstructor items) ->
     let (renamedItems, env') = renameListItems env items
@@ -288,15 +288,15 @@ renameTopLevelExps env exps = case exps of
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (Typed t area (Export renamedExp) : nextExps, nextEnv)
 
-    Typed t area (TypedExp assignment@(Typed _ _ (Assignment _ _)) typing scheme) ->
+    Typed t area (TypedExp assignment@(Typed _ _ (Assignment _ _)) scheme) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (TypedExp renamedExp typing scheme) : nextExps, nextEnv)
+      in  (Typed t area (TypedExp renamedExp scheme) : nextExps, nextEnv)
 
-    Typed t area (TypedExp (Typed _ _ (Export assignment@(Typed _ _ (Assignment _ _)))) typing scheme) ->
+    Typed t area (TypedExp (Typed _ _ (Export assignment@(Typed _ _ (Assignment _ _)))) scheme) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (TypedExp (Typed t area (Export renamedExp)) typing scheme) : nextExps, nextEnv)
+      in  (Typed t area (TypedExp (Typed t area (Export renamedExp)) scheme) : nextExps, nextEnv)
 
     Typed t area (Extern qt name foreignName) ->
       let hashedName          = hashName env name
@@ -388,8 +388,8 @@ renameInstances env instances = case instances of
     ([], env)
 
 
-renameSolvedName :: Env -> String -> Typed String -> (Typed String, Env)
-renameSolvedName env hash solvedName = case solvedName of
+renamePostProcessedName :: Env -> String -> PostProcessed String -> (PostProcessed String, Env)
+renamePostProcessedName env hash solvedName = case solvedName of
   Untyped area name ->
     let hashedName = addHashToName hash name
         env'       = extendScope name hashedName env
@@ -399,11 +399,11 @@ renameSolvedName env hash solvedName = case solvedName of
     undefined
 
 
-renameSolvedNames :: Env -> String -> [Typed String] -> ([Typed String], Env)
-renameSolvedNames env hash solvedNames = case solvedNames of
+renamePostProcessedNames :: Env -> String -> [PostProcessed String] -> ([PostProcessed String], Env)
+renamePostProcessedNames env hash solvedNames = case solvedNames of
   (name : names) ->
-    let (renamed, env')        = renameSolvedName env hash name
-        (nextRenamed, nextEnv) = renameSolvedNames env' hash names
+    let (renamed, env')        = renamePostProcessedName env hash name
+        (nextRenamed, nextEnv) = renamePostProcessedNames env' hash names
     in  (renamed : nextRenamed, nextEnv)
 
   [] ->
@@ -414,7 +414,7 @@ renameImport :: Env -> Import -> (Import, Env)
 renameImport env imp = case imp of
   Untyped area (NamedImport names relPath absPath) ->
     let moduleHash           = generateHashFromPath absPath
-        (renamedNames, env') = renameSolvedNames env moduleHash names
+        (renamedNames, env') = renamePostProcessedNames env moduleHash names
     in  (Untyped area (NamedImport renamedNames relPath absPath), env')
 
   {-
@@ -451,7 +451,7 @@ populateInitialEnv exps env = case exps of
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ (TypedExp (Typed _ _ (Assignment name _)) _ _) ->
+    Typed _ _ (TypedExp (Typed _ _ (Assignment name _)) _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
@@ -461,7 +461,7 @@ populateInitialEnv exps env = case exps of
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _ _) ->
+    Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'

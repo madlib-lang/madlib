@@ -9,7 +9,7 @@ import           Explain.Location
 
 
 
-data Typed a
+data Solved a
   = Typed (Ty.Qual Ty.Type) Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
@@ -33,19 +33,19 @@ data AST =
     }
     deriving(Eq, Show, Ord)
 
-type Import = Typed Import_
+type Import = Solved Import_
 data Import_
-  = NamedImport [Typed Name] FilePath FilePath
-  | DefaultImport (Typed Name) FilePath FilePath
+  = NamedImport [Solved Name] FilePath FilePath
+  | DefaultImport (Solved Name) FilePath FilePath
   deriving(Eq, Show, Ord)
 
-type Interface = Typed Interface_
+type Interface = Solved Interface_
 data Interface_ = Interface Name [Ty.Pred] [Ty.TVar] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
-type Instance = Typed Instance_
+type Instance = Solved Instance_
 data Instance_ = Instance Name [Ty.Pred] Ty.Pred (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
 
-type TypeDecl = Typed TypeDecl_
+type TypeDecl = Solved TypeDecl_
 data TypeDecl_
   = ADT
       { adtname :: Name
@@ -62,14 +62,14 @@ data TypeDecl_
       }
     deriving(Eq, Show, Ord)
 
-type Constructor = Typed Constructor_
+type Constructor = Solved Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show, Ord)
 
 type Constraints = [Typing]
 
-type Typing = Typed Typing_
+type Typing = Solved Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -80,10 +80,10 @@ data Typing_
   deriving(Eq, Show, Ord)
 
 
-type Is = Typed Is_
+type Is = Solved Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
-type Pattern = Typed Pattern_
+type Pattern = Solved Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -97,13 +97,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show, Ord)
 
-type Field = Typed Field_
+type Field = Solved Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show, Ord)
 
-type ListItem = Typed ListItem_
+type ListItem = Solved ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
@@ -119,7 +119,7 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show, Ord)
 
-type Exp = Typed Exp_
+type Exp = Solved Exp_
 data Exp_ = LNum String
           | LFloat String
           | LStr String
@@ -129,7 +129,7 @@ data Exp_ = LNum String
           | JSExp String
           | App Exp Exp Bool
           | Access Exp Exp
-          | Abs (Typed Name) [Exp]
+          | Abs (Solved Name) [Exp]
           | Assignment Name Exp
           | Export Exp
           | NameExport Name
@@ -157,13 +157,13 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
-getType :: Typed a -> Ty.Type
+getType :: Solved a -> Ty.Type
 getType (Typed (_ Ty.:=> t) _ _) = t
 
-getQualType :: Typed a -> Ty.Qual Ty.Type
+getQualType :: Solved a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _) = t
 
-getArea :: Typed a -> Area
+getArea :: Solved a -> Area
 getArea (Typed _ a _) = a
 
 extractExp :: Exp -> Exp_
@@ -305,7 +305,7 @@ isExport a = case a of
 
   _ -> False
 
-getValue :: Typed a -> a
+getValue :: Solved a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a ) = a
 
@@ -330,7 +330,7 @@ getExpName (Typed _ _ exp) = case exp of
   Export (Typed _ _ (Extern _ name _)) ->
     return name
 
-  _                 ->
+  _ ->
     Nothing
 
 

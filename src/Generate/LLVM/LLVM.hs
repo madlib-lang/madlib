@@ -2212,7 +2212,7 @@ generateExternalForName symbolTable name = case Map.lookup name symbolTable of
     error $ "import not found\n\n" <> ppShow symbolTable <> "\nlooked for: "<>name
 
 
-generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Optimized String -> m ()
+generateExternForImportName :: (MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> ClosureConverted String -> m ()
 generateExternForImportName symbolTable optimizedName = case optimizedName of
   Untyped _ name ->
     generateExternalForName symbolTable name

@@ -34,6 +34,7 @@ import           Control.Monad.Except
 import qualified Distribution.System as DistributionSystem
 import qualified Explain.Format as Explain
 import qualified System.Exit as Exit
+import Optimize.PostProcess
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -115,7 +116,8 @@ runLLVMTests entrypoint coverage = do
             let fullError = List.intercalate "\n\n\n" formattedErrors
             putStrLn fullError >> Exit.exitFailure
           else do
-            let renamedTable     = Rename.renameTable solvedTable
+            let postProcessedTable     = postProcessTable False solvedTable
+            let renamedTable     = Rename.renameTable postProcessedTable
             let closureConverted = ClosureConvert.optimizeTable renamedTable
             LLVM.generateTable outputPath rootPath closureConverted mainTestPath
 

@@ -84,7 +84,7 @@ applyLitSolve (Can.Canonical area exp) qt = case exp of
   Can.LBool v  -> Slv.Typed qt area $ Slv.LBool v
   Can.LUnit    -> Slv.Typed qt area Slv.LUnit
 
-applyAbsSolve :: Can.Exp -> Slv.Typed Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
+applyAbsSolve :: Can.Exp -> Slv.Solved Slv.Name -> [Slv.Exp] -> Qual Type -> Slv.Exp
 applyAbsSolve (Can.Canonical loc _) param body qt = Slv.Typed qt loc $ Slv.Abs param body
 
 applyAssignmentSolve :: Can.Exp -> Slv.Name -> Slv.Exp -> Qual Type -> Slv.Exp

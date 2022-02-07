@@ -62,6 +62,7 @@ import           Paths_madlib                   ( version )
 import           Run.Utils
 import           Run.CommandLine
 import           Run.Target
+import Optimize.StripNonJSInterfaces
 
 
 
@@ -172,18 +173,21 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     runCoverageInitialization rootPath table
 
                   if target == TLLVM then do
-                    let renamedTable     = Rename.renameTable table
+                    let postProcessedTable = postProcessTable False table
+                    let renamedTable       = Rename.renameTable postProcessedTable
                     -- -- TODO: only do this in verbose mode?
+                    -- putStrLn (ppShow postProcessedTable)
                     -- putStrLn (ppShow renamedTable)
                     let closureConverted = ClosureConvert.optimizeTable renamedTable
                     -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
                     let postProcessedTable = postProcessTable optimized table
+                        strippedTable      = stripTable postProcessedTable
                         -- withTCE = TCE.resolve <$> optimizedTable
                     -- putStrLn (ppShow optimizedTable)
                     -- putStrLn (ppShow withTCE)
-                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath postProcessedTable sourcesToCompile
+                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath strippedTable sourcesToCompile
 
                   when bundle $ do
                     let entrypointOutputPath =

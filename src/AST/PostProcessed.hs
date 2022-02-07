@@ -6,10 +6,10 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data Optimized a
-  = Typed Ty.Type Area a
+data PostProcessed a
+  = Typed (Ty.Qual Ty.Type) Area a
   | Untyped Area a
-  deriving(Eq, Show)
+  deriving(Eq, Show, Ord)
 
 data AST =
   AST
@@ -22,19 +22,19 @@ data AST =
     }
     deriving(Eq, Show)
 
-type Import = Optimized Import_
+type Import = PostProcessed Import_
 data Import_
-  = NamedImport [Optimized Name] FilePath FilePath
-  | DefaultImport (Optimized Name) FilePath FilePath
+  = NamedImport [PostProcessed Name] FilePath FilePath
+  | DefaultImport (PostProcessed Name) FilePath FilePath
   deriving(Eq, Show)
 
-type Interface = Optimized Interface_
+type Interface = PostProcessed Interface_
 data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
 
-type Instance = Optimized Instance_
+type Instance = PostProcessed Instance_
 data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
-type TypeDecl = Optimized TypeDecl_
+type TypeDecl = PostProcessed TypeDecl_
 data TypeDecl_
   = ADT
       { adtname :: Name
@@ -50,14 +50,14 @@ data TypeDecl_
       }
     deriving(Eq, Show)
 
-type Constructor = Optimized Constructor_
+type Constructor = PostProcessed Constructor_
 data Constructor_
-  = Constructor Name [Typing]
+  = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show)
 
 type Constraints = [Typing]
 
-type Typing = Optimized Typing_
+type Typing = PostProcessed Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -68,10 +68,10 @@ data Typing_
   deriving(Eq, Show)
 
 
-type Is = Optimized Is_
+type Is = PostProcessed Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
-type Pattern = Optimized Pattern_
+type Pattern = PostProcessed Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -85,13 +85,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show)
 
-type Field = Optimized Field_
+type Field = PostProcessed Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
-type ListItem = Optimized ListItem_
+type ListItem = PostProcessed ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
@@ -107,16 +107,13 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show)
 
-data Literal
-  = LNum String
-  | LFloat String
-  | LStr String
-  | LBool String
-  | LUnit
-  deriving(Eq, Show)
 
-type Exp = Optimized Exp_
-data Exp_ = Literal Literal
+type Exp = PostProcessed Exp_
+data Exp_ = LNum String
+          | LFloat String
+          | LStr String
+          | LBool String
+          | LUnit
           | TemplateString [Exp]
           | JSExp String
           | Call Exp [Exp]
@@ -148,11 +145,44 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
+getType :: PostProcessed a -> Ty.Type
+getType (Typed (_ Ty.:=> t) _ _) = t
+
+
+getQualType :: PostProcessed a -> Ty.Qual Ty.Type
+getQualType (Typed t _ _) = t
+
+
+getExpName :: Exp -> Maybe String
+getExpName (Untyped _ _)    = Nothing
+getExpName (Typed _ _ exp) = case exp of
+  Assignment name _ ->
+    return name
+
+  TypedExp (Typed _ _ (Assignment name _)) _ ->
+    return name
+
+  TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _ ->
+    return name
+
+  Export (Typed _ _ (Assignment name _)) ->
+    return name
+
+  Extern _ name _ ->
+    return name
+
+  Export (Typed _ _ (Extern _ name _)) ->
+    return name
+
+  _ ->
+    Nothing
+
+
 getStartLine :: Exp -> Int
 getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
 getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
-getValue :: Optimized a -> a
+getValue :: PostProcessed a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a    ) = a
 

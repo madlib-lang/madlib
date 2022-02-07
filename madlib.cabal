@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5f7be05480f897caee0ff98eb0b9bec452fc6493c62bd87a5e6225b919f378a2
+-- hash: 4f5daa88b3b2d5217f6fdfae37a8010f258ae0123ddb0f7504e563306fb28de6
 
 name:           madlib
 version:        0.11.0
@@ -59,7 +59,6 @@ library
       Generate.JSInternals
       Generate.Json
       Generate.LLVM.ClosureConvert
-      Generate.LLVM.CPS
       Generate.LLVM.LLVM
       Generate.LLVM.Rename
       Generate.Utils
@@ -83,6 +82,7 @@ library
       MadlibDotJson.MadlibVersion
       Main
       Optimize.PostProcess
+      Optimize.StripNonJSInterfaces
       Optimize.TCE
       Parse.Comments.Lexer
       Parse.DocString.DocString
@@ -110,6 +110,7 @@ library
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
+      Utils.Types
       Utils.URL
       Utils.Version
       VersionLock.PublicAPI
@@ -184,7 +185,6 @@ executable madlib
       Generate.JSInternals
       Generate.Json
       Generate.LLVM.ClosureConvert
-      Generate.LLVM.CPS
       Generate.LLVM.LLVM
       Generate.LLVM.Rename
       Generate.Utils
@@ -207,6 +207,7 @@ executable madlib
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
       Optimize.PostProcess
+      Optimize.StripNonJSInterfaces
       Optimize.TCE
       Parse.Comments.Lexer
       Parse.DocString.DocString
@@ -234,6 +235,7 @@ executable madlib
       Utils.Path
       Utils.PathUtils
       Utils.Tuple
+      Utils.Types
       Utils.URL
       Utils.Version
       VersionLock.PublicAPI
