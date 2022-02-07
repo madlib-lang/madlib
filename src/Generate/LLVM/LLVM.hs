@@ -3585,8 +3585,8 @@ compileModule outputFolder rootPath astPath astModule = do
         mod'' <-
           withPassManager
           defaultCuratedPassSetSpec
-            { optLevel                = Just 2
-            , useInlinerWithThreshold = Just 150
+            { optLevel                = Just 3
+            -- , useInlinerWithThreshold = Just 150
             , dataLayout              = Just dataLayout
             , targetLibraryInfo       = Just libraryInfo
             }

@@ -181,6 +181,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   else do
                     let optimizedTable = optimizeTable optimized table
                         withTCE = TCE.resolve <$> optimizedTable
+                    -- putStrLn (ppShow optimizedTable)
                     -- putStrLn (ppShow withTCE)
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath optimizedTable sourcesToCompile
 
