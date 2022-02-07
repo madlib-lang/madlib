@@ -6,19 +6,12 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data Optimized a
+data ClosureConverted a
   = Typed (Ty.Qual Ty.Type) Area a
   -- = Typed Ty.Type Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
--- instance Show a => Show (Typed a) where
---   show solved = case solved of
---     Typed _ _ a ->
---       show a
-
---     Untyped _ a ->
---       show a
 
 data AST =
   AST
@@ -31,19 +24,19 @@ data AST =
     }
     deriving(Eq, Show)
 
-type Import = Optimized Import_
+type Import = ClosureConverted Import_
 data Import_
-  = NamedImport [Optimized Name] FilePath FilePath
-  | DefaultImport (Optimized Name) FilePath FilePath
+  = NamedImport [ClosureConverted Name] FilePath FilePath
+  | DefaultImport (ClosureConverted Name) FilePath FilePath
   deriving(Eq, Show, Ord)
 
-type Interface = Optimized Interface_
+type Interface = ClosureConverted Interface_
 data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show, Ord)
 
-type Instance = Optimized Instance_
+type Instance = ClosureConverted Instance_
 data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show, Ord)
 
-type TypeDecl = Optimized TypeDecl_
+type TypeDecl = ClosureConverted TypeDecl_
 data TypeDecl_
   = ADT
       { adtname :: Name
@@ -59,14 +52,14 @@ data TypeDecl_
       }
     deriving(Eq, Show, Ord)
 
-type Constructor = Optimized Constructor_
+type Constructor = ClosureConverted Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show, Ord)
 
 type Constraints = [Typing]
 
-type Typing = Optimized Typing_
+type Typing = ClosureConverted Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -77,10 +70,10 @@ data Typing_
   deriving(Eq, Show, Ord)
 
 
-type Is = Optimized Is_
+type Is = ClosureConverted Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show, Ord)
 
-type Pattern = Optimized Pattern_
+type Pattern = ClosureConverted Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -94,13 +87,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show, Ord)
 
-type Field = Optimized Field_
+type Field = ClosureConverted Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show, Ord)
 
-type ListItem = Optimized ListItem_
+type ListItem = ClosureConverted ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
@@ -116,7 +109,7 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show, Ord)
 
-type Exp = Optimized Exp_
+type Exp = ClosureConverted Exp_
 data Exp_ = LNum String
           | LFloat String
           | LStr String
@@ -160,15 +153,15 @@ getStartLine :: Exp -> Int
 getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
 getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
-getValue :: Optimized a -> a
+getValue :: ClosureConverted a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a    ) = a
 
 
-getType :: Optimized a -> Ty.Type
+getType :: ClosureConverted a -> Ty.Type
 getType (Typed (_ Ty.:=> t) _ _) = t
 
-getQualType :: Optimized a -> Ty.Qual Ty.Type
+getQualType :: ClosureConverted a -> Ty.Qual Ty.Type
 getQualType (Typed qt _ _) = qt
 
 

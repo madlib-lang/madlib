@@ -108,7 +108,7 @@ initialEnv = Env
                        , (">>>"          , Forall [] $ [] :=> (tInteger `fn` tInteger `fn` tInteger))
                        , ("|>"           , Forall [Star, Star] $ [] :=> (TGen 0 `fn` (TGen 0 `fn` TGen 1) `fn` TGen 1))
                        , ("$"            , Forall [Star] $ [] :=> TGen 0)
-                       , ("__dict_ctor__", Forall [Star, Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
+                       , ("__dict_ctor__", Forall [Star, Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (tListOf (TApp (TApp tTuple2 (TGen 0)) (TGen 1)) `fn` tDictionaryOf (TGen 0) (TGen 1)))
                        ]
   , envInterfaces = M.fromList
       [ ("Number", Interface [TV "a" Star] []

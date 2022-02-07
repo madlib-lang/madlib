@@ -65,32 +65,32 @@ class Compilable a where
 
 instance Compilable Exp where
   compile _ _ (Untyped _ _) = ""
-  compile env config e@(Typed expType area@(Area (Loc _ l _) _) exp) =
+  compile env config e@(Typed (_ :=> expType) area@(Area (Loc _ l _) _) exp) =
     let
       astPath   = ccastPath config
       coverage  = cccoverage config
       optimized = ccoptimize config
     in
       case exp of
-        Literal (LNum v) ->
+        LNum v ->
           hpWrapLine coverage astPath l v
 
-        Literal (LFloat v) ->
+        LFloat v ->
           hpWrapLine coverage astPath l v
 
-        Literal (LStr v) ->
+        LStr v ->
           hpWrapLine coverage astPath l v
 
-        Literal (LBool v) ->
+        LBool v ->
           hpWrapLine coverage astPath l v
 
-        Literal LUnit ->
+        LUnit ->
           hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
         TemplateString exps ->
           let parts = foldl'
                 (\full e -> case e of
-                  PP.Typed _ _ (Literal (LStr v)) ->
+                  PP.Typed _ _ (LStr v) ->
                     full <> escapeBackTicks v
 
                   _ ->
@@ -559,7 +559,7 @@ instance Compilable TypeDecl where
 
 
 instance Compilable Constructor where
-  compile _ config (Untyped _ (Constructor cname cparams)) =
+  compile _ config (Untyped _ (Constructor cname cparams _)) =
     let coverage  = cccoverage config
         optimized = ccoptimize config
     in  case cparams of
@@ -612,7 +612,7 @@ instance Compilable PP.Instance where
       (uncurry compileMethod <$> M.toList (M.map fst dict))
      where
       compileMethod :: Name -> Exp -> String
-      compileMethod n (PP.Typed t (Area (Loc _ line _) _) (PP.Assignment _ exp)) =
+      compileMethod n (PP.Typed (_ :=> t) (Area (Loc _ line _) _) (PP.Assignment _ exp)) =
         let
           (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
           content'                       = if cccoverage config && isFunctionType t
@@ -773,4 +773,4 @@ buildDefaultExport as es =
   
 
   getConstructorName :: Constructor -> String
-  getConstructorName (Untyped _ (Constructor cname _)) = cname
+  getConstructorName (Untyped _ (Constructor cname _ _)) = cname

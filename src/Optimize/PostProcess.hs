@@ -13,6 +13,7 @@ import qualified AST.Solved                    as Slv
 import qualified AST.PostProcessed             as PP
 import           Infer.Type
 import Explain.Location
+import qualified Utils.Types as Types
 
 
 data State
@@ -134,22 +135,22 @@ class Processable a b where
 
 instance Processable Slv.Exp PP.Exp where
   postProcess _ (Slv.Untyped area (Slv.TypeExport name)) = return $ PP.Untyped area (PP.TypeExport name)
-  postProcess enabled fullExp@(Slv.Typed qt@(_ :=> t) area e) = case e of
-    Slv.LNum  x           -> return $ PP.Typed t area (PP.Literal (PP.LNum x))
+  postProcess enabled fullExp@(Slv.Typed qt area e) = case e of
+    Slv.LNum  x           -> return $ PP.Typed qt area (PP.LNum x)
 
-    Slv.LFloat x          -> return $ PP.Typed t area (PP.Literal (PP.LFloat x))
+    Slv.LFloat x          -> return $ PP.Typed qt area (PP.LFloat x)
 
-    Slv.LStr  x           -> return $ PP.Typed t area (PP.Literal (PP.LStr x))
+    Slv.LStr  x           -> return $ PP.Typed qt area (PP.LStr x)
 
-    Slv.LBool x           -> return $ PP.Typed t area (PP.Literal (PP.LBool x))
+    Slv.LBool x           -> return $ PP.Typed qt area (PP.LBool x)
 
-    Slv.LUnit             -> return $ PP.Typed t area (PP.Literal PP.LUnit)
+    Slv.LUnit             -> return $ PP.Typed qt area PP.LUnit
 
     Slv.TemplateString es -> do
       es' <- mapM (postProcess enabled) es
-      return $ PP.Typed t area (PP.TemplateString es')
+      return $ PP.Typed qt area (PP.TemplateString es')
 
-    Slv.JSExp js         -> return $ PP.Typed t area (PP.JSExp js)
+    Slv.JSExp js         -> return $ PP.Typed qt area (PP.JSExp js)
 
     Slv.App fn arg close -> do
       let (fn', args)                       = collectAppArgs True fullExp
@@ -157,7 +158,7 @@ instance Processable Slv.Exp PP.Exp where
       if null wrapperPlaceholderParams then do
         fn''  <- postProcess enabled fn'
         args' <- mapM (postProcess enabled) args
-        return $ PP.Typed t area (PP.Call fn'' args')
+        return $ PP.Typed qt area (PP.Call fn'' args')
       else do
         -- if we found some Var "$" args we need to wrap it in an Abs
         -- params
@@ -168,77 +169,65 @@ instance Processable Slv.Exp PP.Exp where
     Slv.Access rec field -> do
       rec'   <- postProcess enabled rec
       field' <- postProcess enabled field
-      return $ PP.Typed t area (PP.Access rec' field')
+      return $ PP.Typed qt area (PP.Access rec' field')
 
     Slv.Abs (Slv.Typed _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
       body'' <- mapM (postProcess enabled) body'
-      return $ PP.Typed t area (PP.Definition params body'')
+      return $ PP.Typed qt area (PP.Definition params body'')
 
     Slv.Assignment name exp -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area (PP.Assignment name exp')
+      return $ PP.Typed qt area (PP.Assignment name exp')
 
     Slv.Export exp -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area (PP.Export exp')
+      return $ PP.Typed qt area (PP.Export exp')
 
-    Slv.NameExport name     -> return $ PP.Typed t area (PP.NameExport name)
+    Slv.NameExport name     -> return $ PP.Typed qt area (PP.NameExport name)
 
-    Slv.Var        name     -> return $ PP.Typed t area (PP.Var name)
+    Slv.Var        name     -> return $ PP.Typed qt area (PP.Var name)
 
     Slv.TypedExp exp _ scheme -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area (PP.TypedExp exp' scheme)
+      return $ PP.Typed qt area (PP.TypedExp exp' scheme)
 
     Slv.ListConstructor items -> do
       items' <- mapM (postProcess enabled) items
-      return $ PP.Typed t area (PP.ListConstructor items')
+      return $ PP.Typed qt area (PP.ListConstructor items')
 
     Slv.TupleConstructor exps -> do
       exps' <- mapM (postProcess enabled) exps
-      return $ PP.Typed t area (PP.TupleConstructor exps')
+      return $ PP.Typed qt area (PP.TupleConstructor exps')
 
     Slv.Record fields -> do
       fields' <- mapM (postProcess enabled) fields
-      return $ PP.Typed t area (PP.Record fields')
+      return $ PP.Typed qt area (PP.Record fields')
 
     Slv.If cond truthy falsy -> do
       cond'   <- postProcess enabled cond
       truthy' <- postProcess enabled truthy
       falsy'  <- postProcess enabled falsy
-      return $ PP.Typed t area (PP.If cond' truthy' falsy')
+      return $ PP.Typed qt area (PP.If cond' truthy' falsy')
 
     Slv.Do exps -> do
       exps' <- mapM (postProcess enabled) exps
-      return $ PP.Typed t area (PP.Do exps')
+      return $ PP.Typed qt area (PP.Do exps')
 
     Slv.Where exp iss -> do
       exp' <- postProcess enabled exp
       iss' <- mapM (postProcess enabled) iss
-      return $ PP.Typed t area (PP.Where exp' iss')
+      return $ PP.Typed qt area (PP.Where exp' iss')
 
     Slv.Extern qt name foreignName ->
-      return $ PP.Typed t area (PP.Extern qt name foreignName)
-
-    Slv.Placeholder (Slv.ClassRef "Number" _ _ _, ts) exp ->
-      postProcess enabled exp
-
-    Slv.Placeholder (Slv.MethodRef "Number" _ _, ts) exp ->
-      postProcess enabled exp
-
-    Slv.Placeholder (Slv.ClassRef "Eq" _ _ _, ts) exp ->
-      postProcess enabled exp
-
-    Slv.Placeholder (Slv.MethodRef "Eq" _ _, ts) exp ->
-      postProcess enabled exp
+      return $ PP.Typed qt area (PP.Extern qt name foreignName)
 
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- postProcess enabled exp
       placeholderRef' <- optimizePlaceholderRef placeholderRef
-      let tsStr = buildTypeStrForPlaceholder ts
+      let tsStr = Types.buildTypeStrForPlaceholder ts
       ts' <- getTypeShortname enabled tsStr
-      return $ PP.Typed t area (PP.Placeholder (placeholderRef', ts') exp')
+      return $ PP.Typed qt area (PP.Placeholder (placeholderRef', ts') exp')
 
      where
       optimizePlaceholderRef :: Slv.PlaceholderRef -> PostProcess PP.PlaceholderRef
@@ -256,7 +245,7 @@ instance Processable Slv.Exp PP.Exp where
       optimizeClassRefPred (Slv.CRPNode cls ts var ps) = do
         ps'  <- mapM optimizeClassRefPred ps
         cls' <- getClassShortname enabled cls
-        let tsStr = buildTypeStrForPlaceholder ts
+        let tsStr = Types.buildTypeStrForPlaceholder ts
         ts' <- getTypeShortname enabled tsStr
         return $ PP.CRPNode cls' ts' var ps'
 
@@ -290,62 +279,62 @@ instance Processable Slv.Typing PP.Typing where
       return $ PP.Untyped area $ PP.TRConstrained constraints' typing'
 
 instance Processable Slv.ListItem PP.ListItem where
-  postProcess enabled (Slv.Typed qt@(_ :=> t) area item) = case item of
+  postProcess enabled (Slv.Typed qt area item) = case item of
     Slv.ListItem exp -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area $ PP.ListItem exp'
+      return $ PP.Typed qt area $ PP.ListItem exp'
 
     Slv.ListSpread exp -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area $ PP.ListSpread exp'
+      return $ PP.Typed qt area $ PP.ListSpread exp'
 
 instance Processable Slv.Field PP.Field where
-  postProcess enabled (Slv.Typed qt@(_ :=> t) area item) = case item of
+  postProcess enabled (Slv.Typed qt area item) = case item of
     Slv.Field (name, exp) -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area $ PP.Field (name, exp')
+      return $ PP.Typed qt area $ PP.Field (name, exp')
 
     Slv.FieldSpread exp -> do
       exp' <- postProcess enabled exp
-      return $ PP.Typed t area $ PP.FieldSpread exp'
+      return $ PP.Typed qt area $ PP.FieldSpread exp'
 
 instance Processable Slv.Is PP.Is where
-  postProcess enabled (Slv.Typed qt@(_ :=> t) area (Slv.Is pat exp)) = do
+  postProcess enabled (Slv.Typed qt area (Slv.Is pat exp)) = do
     pat' <- postProcess enabled pat
     exp' <- postProcess enabled exp
-    return $ PP.Typed t area (PP.Is pat' exp')
+    return $ PP.Typed qt area (PP.Is pat' exp')
 
 instance Processable Slv.Pattern PP.Pattern where
-  postProcess enabled (Slv.Typed qt@(_ :=> t) area pat) = case pat of
-    Slv.PVar name       -> return $ PP.Typed t area $ PP.PVar name
+  postProcess enabled (Slv.Typed qt area pat) = case pat of
+    Slv.PVar name       -> return $ PP.Typed qt area $ PP.PVar name
 
-    Slv.PAny            -> return $ PP.Typed t area PP.PAny
+    Slv.PAny            -> return $ PP.Typed qt area PP.PAny
 
     Slv.PCon name pats -> do
       pats' <- mapM (postProcess enabled) pats
-      return $ PP.Typed t area $ PP.PCon name pats'
+      return $ PP.Typed qt area $ PP.PCon name pats'
 
-    Slv.PNum    num  -> return $ PP.Typed t area $ PP.PNum num
+    Slv.PNum    num  -> return $ PP.Typed qt area $ PP.PNum num
 
-    Slv.PStr    str  -> return $ PP.Typed t area $ PP.PStr str
+    Slv.PStr    str  -> return $ PP.Typed qt area $ PP.PStr str
 
-    Slv.PBool   boo  -> return $ PP.Typed t area $ PP.PBool boo
+    Slv.PBool   boo  -> return $ PP.Typed qt area $ PP.PBool boo
 
     Slv.PRecord pats -> do
       pats' <- mapM (postProcess enabled) pats
-      return $ PP.Typed t area $ PP.PRecord pats'
+      return $ PP.Typed qt area $ PP.PRecord pats'
 
     Slv.PList pats -> do
       pats' <- mapM (postProcess enabled) pats
-      return $ PP.Typed t area $ PP.PList pats'
+      return $ PP.Typed qt area $ PP.PList pats'
 
     Slv.PTuple pats -> do
       pats' <- mapM (postProcess enabled) pats
-      return $ PP.Typed t area $ PP.PTuple pats'
+      return $ PP.Typed qt area $ PP.PTuple pats'
 
     Slv.PSpread pat -> do
       pat' <- postProcess enabled pat
-      return $ PP.Typed t area $ PP.PSpread pat'
+      return $ PP.Typed qt area $ PP.PSpread pat'
 
 instance Processable Slv.TypeDecl PP.TypeDecl where
   postProcess enabled (Slv.Untyped area typeDecl) = case typeDecl of
@@ -366,9 +355,9 @@ instance Processable Slv.TypeDecl PP.TypeDecl where
                                             }
    where
     optimizeConstructors :: Slv.Constructor -> PostProcess PP.Constructor
-    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings _)) = do
+    optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings t)) = do
       typings' <- mapM (postProcess enabled) typings
-      return $ PP.Untyped area $ PP.Constructor name typings'
+      return $ PP.Untyped area $ PP.Constructor name typings' t
 
 
 instance Processable Slv.Interface PP.Interface where
@@ -380,7 +369,7 @@ instance Processable Slv.Interface PP.Interface where
 instance Processable Slv.Instance PP.Instance where
   postProcess enabled (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do
     interface' <- getClassShortname enabled interface
-    let typingStr = intercalate "_" (getTypeHeadName <$> predTypes pred)
+    let typingStr = intercalate "_" (Types.getTypeHeadName <$> predTypes pred)
     typings' <- getTypeShortname enabled typingStr
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> postProcess enabled exp) methods
     return $ PP.Untyped area $ PP.Instance interface' constraints typings' methods'
@@ -394,7 +383,7 @@ instance Processable Slv.Import PP.Import where
       return $ PP.Untyped area $ PP.DefaultImport (optimizeImportName namespace) relPath absPath
 
 
-optimizeImportName :: Slv.Typed Slv.Name -> PP.Optimized PP.Name
+optimizeImportName :: Slv.Solved Slv.Name -> PP.PostProcessed PP.Name
 optimizeImportName (Slv.Untyped area name) = PP.Untyped area name
 
 instance Processable Slv.AST PP.AST where
@@ -412,69 +401,6 @@ instance Processable Slv.AST PP.AST where
                      , PP.ainstances  = instances
                      , PP.apath       = Slv.apath ast
                      }
-
-
-typingToStr :: Slv.Typing -> String
-typingToStr (Slv.Untyped _ t) = case t of
-  Slv.TRSingle n -> n
-
-  Slv.TRComp n _ -> if "." `isInfixOf` n then tail $ dropWhile (/= '.') n else n
-
-  Slv.TRTuple ts -> "Tuple_" <> show (length ts)
-
-buildTypeStrForPlaceholder :: [Type] -> String
-buildTypeStrForPlaceholder ts = intercalate "_" $ getTypeHeadName <$> ts
-
-getTypeHeadName :: Type -> String
-getTypeHeadName t = case t of
-  TVar (TV n _)   ->
-    n
-
-  TCon (TC n _) _ ->
-    case n of
-      "{}" ->
-        "Unit"
-
-      "(,)" ->
-        "Tuple_2"
-
-      "(,,)" ->
-        "Tuple_3"
-
-      "(,,,)" ->
-        "Tuple_4"
-
-      "(,,,,)" ->
-        "Tuple_5"
-
-      "(,,,,,)" ->
-        "Tuple_6"
-
-      "(,,,,,,)" ->
-        "Tuple_7"
-
-      "(,,,,,,,)" ->
-        "Tuple_8"
-
-      "(,,,,,,,,)" ->
-        "Tuple_9"
-
-      "(,,,,,,,,,)" ->
-        "Tuple_10"
-
-      _ ->
-        n
-
-  TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
-    getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
-
-  TApp l _ ->
-    getTypeHeadName l
-
-  TRecord fields _ ->
-    let fields'   = M.map getTypeHeadName fields
-        fieldsStr = intercalate "_" $ uncurry (++) <$> M.toList fields'
-    in  "Record" <> "_" <> fieldsStr
 
 
 -- I think at some point we might want to follow imports in the optimization
