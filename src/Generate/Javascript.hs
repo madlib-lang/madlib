@@ -111,40 +111,40 @@ instance Compilable Exp where
               [] ->
                 []
 
-        Call (Typed _ _ (Var "++")) [left, right] ->
+        Call _ (Typed _ _ (Var "++")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " + "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "unary-minus")) [arg] ->
+        Call _ (Typed _ _ (Var "unary-minus")) [arg] ->
           "-" <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
 
-        Call (Typed _ _ (Var "+")) [left, right] ->
+        Call _ (Typed _ _ (Var "+")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " + "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "-")) [left, right] ->
+        Call _ (Typed _ _ (Var "-")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " - "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "*")) [left, right] ->
+        Call _ (Typed _ _ (Var "*")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " * "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "/")) [left, right] ->
+        Call _ (Typed _ _ (Var "/")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " / "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "%")) [left, right] ->
+        Call _ (Typed _ _ (Var "%")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " % "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "==")) [left, right] ->
+        Call _ (Typed _ _ (Var "==")) [left, right] ->
           eqFnName optimized
           <> "("
           <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
@@ -152,7 +152,7 @@ instance Compilable Exp where
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
           <> ")"
 
-        Call (Typed _ _ (Var "!=")) [left, right] ->
+        Call _ (Typed _ _ (Var "!=")) [left, right] ->
           "!"
           <> eqFnName optimized
           <> "("
@@ -161,83 +161,83 @@ instance Compilable Exp where
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
           <> ")"
 
-        Call (Typed _ _ (Var "!=")) [left, right] ->
+        Call _ (Typed _ _ (Var "!=")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " != "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "&&")) [left, right] ->
+        Call _ (Typed _ _ (Var "&&")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " && "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "||")) [left, right] ->
+        Call _ (Typed _ _ (Var "||")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " || "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "|")) [left, right] ->
+        Call _ (Typed _ _ (Var "|")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " | "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "&")) [left, right] ->
+        Call _ (Typed _ _ (Var "&")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " & "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "^")) [left, right] ->
+        Call _ (Typed _ _ (Var "^")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " ^ "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "~")) [left, right] ->
+        Call _ (Typed _ _ (Var "~")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " ~ "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "<<")) [left, right] ->
+        Call _ (Typed _ _ (Var "<<")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " << "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var ">>")) [left, right] ->
+        Call _ (Typed _ _ (Var ">>")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >> "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var ">>>")) [left, right] ->
+        Call _ (Typed _ _ (Var ">>>")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >>> "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var ">")) [left, right] ->
+        Call _ (Typed _ _ (Var ">")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " > "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "<")) [left, right] ->
+        Call _ (Typed _ _ (Var "<")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " < "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var ">=")) [left, right] ->
+        Call _ (Typed _ _ (Var ">=")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "<=")) [left, right] ->
+        Call _ (Typed _ _ (Var "<=")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " <= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ (Var "|>")) [left, right] ->
+        Call _ (Typed _ _ (Var "|>")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine right) (compile env config right)
             <> "("
             <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
             <> ")"
 
-        Call fn args ->
+        Call _ fn args ->
           let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
           in  compile env config fn <> concat compiledArgs
 
@@ -250,7 +250,7 @@ instance Compilable Exp where
             <> compile env config falsy
             <> ")"
 
-        Definition params body -> compileAbs Nothing params body
+        Definition _ params body -> compileAbs Nothing params body
          where
           compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String
           compileAbs parent params body =

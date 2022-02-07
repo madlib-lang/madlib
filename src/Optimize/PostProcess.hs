@@ -158,7 +158,7 @@ instance Processable Slv.Exp PP.Exp where
       if null wrapperPlaceholderParams then do
         fn''  <- postProcess enabled fn'
         args' <- mapM (postProcess enabled) args
-        return $ PP.Typed qt area (PP.Call fn'' args')
+        return $ PP.Typed qt area (PP.Call PP.SimpleCall fn'' args')
       else do
         -- if we found some Var "$" args we need to wrap it in an Abs
         -- params
@@ -174,7 +174,7 @@ instance Processable Slv.Exp PP.Exp where
     Slv.Abs (Slv.Typed _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
       body'' <- mapM (postProcess enabled) body'
-      return $ PP.Typed qt area (PP.Definition params body'')
+      return $ PP.Typed qt area (PP.Definition PP.BasicDefinition params body'')
 
     Slv.Assignment name exp -> do
       exp' <- postProcess enabled exp

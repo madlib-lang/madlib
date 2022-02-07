@@ -23,20 +23,14 @@ strip exp = case exp of
   Typed qt area (TemplateString exps) ->
     Typed qt area (TemplateString (strip <$> exps))
 
-  Typed qt area (Call fn args) ->
-    Typed qt area (Call (strip fn) (strip <$> args))
-
-  Typed qt area (TailCall fn args) ->
-    Typed qt area (TailCall (strip fn) (strip <$> args))
+  Typed qt area (Call callType fn args) ->
+    Typed qt area (Call callType (strip fn) (strip <$> args))
 
   Typed qt area (Access name field) ->
     Typed qt area (Access (strip name) (strip field))
 
-  Typed qt area (Definition params body) ->
-    Typed qt area (Definition params (strip <$> body))
-
-  Typed qt area (TCEDefinition params body) ->
-    Typed qt area (TCEDefinition params (strip <$> body))
+  Typed qt area (Definition defType params body) ->
+    Typed qt area (Definition defType params (strip <$> body))
 
   Typed qt area (Assignment name exp) ->
     Typed qt area (Assignment name (strip exp))
