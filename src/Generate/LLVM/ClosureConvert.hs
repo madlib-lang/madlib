@@ -304,40 +304,40 @@ class Convertable a b where
 
 
 -- At this point it's no longer top level and all functions encountered must be lifted
-optimizeBody :: [String] -> Env -> [PP.Exp] -> Convert [CC.Exp]
-optimizeBody exclusionVars env body = case body of
+convertBody :: [String] -> Env -> [PP.Exp] -> Convert [CC.Exp]
+convertBody exclusionVars env body = case body of
   [] ->
     return []
 
   (exp : es) -> case exp of
     PP.Typed _ _ (PP.TypedExp (PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) _) -> do
-      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
-      next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
+      exp' <- convertAbs (addVarExclusions exclusionVars env) name [] abs
+      next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body))) -> do
-      exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
-      next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
+      exp' <- convertAbs (addVarExclusions exclusionVars env) name [] abs
+      next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
     abs@(PP.Typed _ _ (PP.Definition _ params body)) -> do
       exp' <- convert (addVarExclusions exclusionVars env) abs
-      next <- optimizeBody exclusionVars env es
+      next <- convertBody exclusionVars env es
       return $ exp' : next
 
     PP.Typed _ _ (PP.TypedExp (PP.Typed _ _ (PP.Assignment name e)) _) -> do
       e'   <- convert env exp
-      next <- optimizeBody (name : exclusionVars) env es
+      next <- convertBody (name : exclusionVars) env es
       return $ e' : next
 
     PP.Typed _ _ (PP.Assignment name e) -> do
       e'   <- convert env exp
-      next <- optimizeBody (name : exclusionVars) env es
+      next <- convertBody (name : exclusionVars) env es
       return $ e' : next
 
     _ -> do
       exp' <- convert env exp
-      next <- optimizeBody exclusionVars env es
+      next <- convertBody exclusionVars env es
       return $ exp' : next
 
 
@@ -351,12 +351,29 @@ collectPlaceholderParams ph = case ph of
     ([], or)
 
 
-optimizeAbs :: Env -> String -> [String] -> PP.Exp -> Convert CC.Exp
-optimizeAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Definition _ params body)) = do
+convertDefType :: PP.DefinitionType -> CC.DefinitionType
+convertDefType defType = case defType of
+  PP.BasicDefinition ->
+    CC.BasicDefinition
+
+  PP.TCEOptimizableDefinition ->
+    CC.TCEOptimizableDefinition
+
+convertCallType :: PP.CallType -> CC.CallType
+convertCallType defType = case defType of
+  PP.SimpleCall ->
+    CC.SimpleCall
+
+  PP.RecursiveTailCall ->
+    CC.RecursiveTailCall
+
+
+convertAbs :: Env -> String -> [String] -> PP.Exp -> Convert CC.Exp
+convertAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Definition defType params body)) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let params' = placeholders ++ params
-    body'' <- optimizeBody [] env { stillTopLevel = False } body
+    body'' <- convertBody [] env { stillTopLevel = False } body
 
     -- Hacky for now
     let paramTypes = (tVar "dict" <$ placeholders) ++ getParamTypes t
@@ -366,18 +383,18 @@ optimizeAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Defi
           else
             foldr fn t $ tVar "dict" <$ placeholders
 
-    return $ CC.Typed (ps :=> t') area $ CC.TopLevelAbs functionName params' body''
+    return $ CC.Typed (ps :=> t') area $ CC.Definition (convertDefType defType) functionName params' body''
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
     fvs           <- findFreeVars (addGlobalFreeVar functionName env) abs
     functionName' <- generateLiftedName functionName
-    body''        <- optimizeBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body
+    body''        <- convertBody [] (addLiftedLambda functionName functionName' (snd <$> fvs) env) body
 
     let paramsWithFreeVars = (fst <$> fvs) ++ params
 
     let liftedType = foldr fn t (CC.getType . snd <$> fvs)
-    let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName' paramsWithFreeVars body'')
+    let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition (convertDefType defType) functionName' paramsWithFreeVars body'')
     addTopLevelExp lifted
 
     let functionNode = CC.Typed (ps :=> t) area (CC.Var functionName')
@@ -387,7 +404,7 @@ optimizeAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Defi
     else
       -- We need to carry types here
       let fvVarNodes = snd <$> fvs
-      in  return $ CC.Typed (ps :=> t) area (CC.Assignment functionName (CC.Typed (ps :=> t) area (CC.App functionNode fvVarNodes)) False)
+      in  return $ CC.Typed (ps :=> t) area (CC.Assignment functionName (CC.Typed (ps :=> t) area (CC.Call CC.SimpleCall functionNode fvVarNodes)) False)
 
 
 instance Convertable PP.Exp CC.Exp where
@@ -396,7 +413,8 @@ instance Convertable PP.Exp CC.Exp where
     PP.LNum x -> case t of
       TVar _ ->
         return $ CC.Typed qt area (
-          CC.App
+          CC.Call
+            CC.SimpleCall
             ( CC.Typed qt area (
                 CC.Placeholder
                   (CC.MethodRef "Number" "__coerceNumber__" True, Types.buildTypeStrForPlaceholder [t])
@@ -427,10 +445,10 @@ instance Convertable PP.Exp CC.Exp where
 
     PP.JSExp js         -> return $ CC.Typed qt area (CC.JSExp js)
 
-    PP.Call _ fn args -> do
+    PP.Call callType fn args -> do
         fn'   <- convert env { stillTopLevel = False } fn
         args' <- mapM (convert env { stillTopLevel = False }) args
-        return $ CC.Typed qt area (CC.App fn' args')
+        return $ CC.Typed qt area (CC.Call (convertCallType callType) fn' args')
 
     PP.Access rec field -> do
       rec'   <- convert env { stillTopLevel = False } rec
@@ -438,27 +456,27 @@ instance Convertable PP.Exp CC.Exp where
       return $ CC.Typed qt area (CC.Access rec' field')
 
     PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) -> do
-      optimizeAbs env name [] abs
+      convertAbs env name [] abs
 
     PP.TypedExp (PP.Typed _ _ (PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))))) _ -> do
-      optimizeAbs env name [] abs
+      convertAbs env name [] abs
 
     PP.TypedExp (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) _ -> do
-      optimizeAbs env name [] abs
+      convertAbs env name [] abs
 
     PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)) -> do
-      optimizeAbs env name [] abs
+      convertAbs env name [] abs
 
     -- unnamed abs, we need to generate a name here
-    PP.Definition _ params body -> do
-      body''       <- optimizeBody [] env body
+    PP.Definition defType params body -> do
+      body''       <- convertBody [] env body
       fvs          <- findFreeVars env fullExp
       functionName <- generateLiftedName "$lambda"
 
       let paramsWithFreeVars = (fst <$> fvs) ++ params
 
       let liftedType = foldr fn t (CC.getType . snd <$> fvs)
-      let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName paramsWithFreeVars body'')
+      let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition (convertDefType defType) functionName paramsWithFreeVars body'')
       addTopLevelExp lifted
 
       let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName)
@@ -467,7 +485,7 @@ instance Convertable PP.Exp CC.Exp where
         return functionNode
       else
         let fvVarNodes = snd <$> fvs
-        in  return $ CC.Typed qt area (CC.App functionNode fvVarNodes)
+        in  return $ CC.Typed qt area (CC.Call CC.SimpleCall functionNode fvVarNodes)
 
     PP.Assignment functionName ph@(PP.Typed _ _ (PP.Placeholder (placeholderRef@(PP.ClassRef interfaceName _ False _), ts) exp)) -> do
       let isTopLevel = stillTopLevel env
@@ -476,10 +494,10 @@ instance Convertable PP.Exp CC.Exp where
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
         case innerExp of
           PP.Typed _ _ (PP.Definition _ _ _) -> do
-            optimizeAbs env functionName params innerExp
+            convertAbs env functionName params innerExp
           _ -> do
             innerExp' <- convert env { stillTopLevel = False } innerExp
-            return $ CC.Typed (ps :=> typeWithPlaceholders) area $ CC.TopLevelAbs functionName params [innerExp']
+            return $ CC.Typed (ps :=> typeWithPlaceholders) area $ CC.Definition CC.BasicDefinition functionName params [innerExp']
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
             isFunction = isFunctionType (PP.getType exp)
@@ -498,7 +516,7 @@ instance Convertable PP.Exp CC.Exp where
         innerExp'     <- convert (addLiftedLambda functionName functionName' (CC.Typed ([] :=> tVar "dict") emptyArea . CC.Var <$> paramsWithFreeVars) env) innerExp
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (CC.getType . snd <$> fvs))
-        let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName' paramsWithFreeVars [innerExp'])
+        let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition CC.BasicDefinition functionName' paramsWithFreeVars [innerExp'])
         addTopLevelExp lifted
 
         let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName')
@@ -518,7 +536,7 @@ instance Convertable PP.Exp CC.Exp where
 
     PP.Var        name     -> case M.lookup name (lifted env) of
       Just (newName, capturedArgs) ->
-        return $ CC.Typed qt area (CC.App (CC.Typed qt area (CC.Var newName)) capturedArgs)
+        return $ CC.Typed qt area (CC.Call CC.SimpleCall (CC.Typed qt area (CC.Var newName)) capturedArgs)
 
       Nothing ->
         return $ CC.Typed qt area (CC.Var name)
@@ -546,7 +564,7 @@ instance Convertable PP.Exp CC.Exp where
       return $ CC.Typed qt area (CC.If cond' truthy' falsy')
 
     PP.Do exps -> do
-      exps' <- optimizeBody [] env { stillTopLevel = False } exps
+      exps' <- convertBody [] env { stillTopLevel = False } exps
       return $ CC.Typed qt area (CC.Do exps')
 
     PP.Where exp iss -> do
@@ -559,24 +577,24 @@ instance Convertable PP.Exp CC.Exp where
 
     PP.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- convert env exp
-      placeholderRef' <- optimizePlaceholderRef placeholderRef
+      placeholderRef' <- convertPlaceholderRef placeholderRef
       return $ CC.Typed qt area (CC.Placeholder (placeholderRef', ts) exp')
 
 
 
-optimizePlaceholderRef :: PP.PlaceholderRef -> Convert CC.PlaceholderRef
-optimizePlaceholderRef phr = case phr of
+convertPlaceholderRef :: PP.PlaceholderRef -> Convert CC.PlaceholderRef
+convertPlaceholderRef phr = case phr of
   PP.ClassRef cls ps call var -> do
-    ps'  <- mapM optimizeClassRefPred ps
+    ps'  <- mapM convertClassRefPred ps
     return $ CC.ClassRef cls ps' call var
 
   PP.MethodRef cls mtd call -> do
     return $ CC.MethodRef cls mtd call
 
 
-optimizeClassRefPred :: PP.ClassRefPred -> Convert CC.ClassRefPred
-optimizeClassRefPred (PP.CRPNode cls ts var ps) = do
-  ps'  <- mapM optimizeClassRefPred ps
+convertClassRefPred :: PP.ClassRefPred -> Convert CC.ClassRefPred
+convertClassRefPred (PP.CRPNode cls ts var ps) = do
+  ps'  <- mapM convertClassRefPred ps
   return $ CC.CRPNode cls ts var ps'
 
 
@@ -668,7 +686,7 @@ instance Convertable PP.Pattern CC.Pattern where
 instance Convertable PP.TypeDecl CC.TypeDecl where
   convert env (PP.Untyped area typeDecl) = case typeDecl of
     adt@PP.ADT{} -> do
-      ctors <- mapM optimizeConstructors $ PP.adtconstructors adt
+      ctors <- mapM convertConstructors $ PP.adtconstructors adt
       return $ CC.Untyped area $ CC.ADT { CC.adtname         = PP.adtname adt
                                           , CC.adtparams       = PP.adtparams adt
                                           , CC.adtconstructors = ctors
@@ -683,8 +701,8 @@ instance Convertable PP.TypeDecl CC.TypeDecl where
                                             , CC.aliasexported = PP.aliasexported alias
                                             }
    where
-    optimizeConstructors :: PP.Constructor -> Convert CC.Constructor
-    optimizeConstructors (PP.Untyped a (PP.Constructor name typings t)) = do
+    convertConstructors :: PP.Constructor -> Convert CC.Constructor
+    convertConstructors (PP.Untyped a (PP.Constructor name typings t)) = do
       typings' <- mapM (convert env) typings
       return $ CC.Untyped area $ CC.Constructor name typings' t
 
@@ -702,14 +720,14 @@ instance Convertable PP.Instance CC.Instance where
 instance Convertable PP.Import CC.Import where
   convert _ (PP.Untyped area imp) = case imp of
     PP.NamedImport names relPath absPath ->
-      return $ CC.Untyped area $ CC.NamedImport (optimizeImportName <$> names) relPath absPath
+      return $ CC.Untyped area $ CC.NamedImport (convertImportName <$> names) relPath absPath
 
     PP.DefaultImport namespace relPath absPath ->
-      return $ CC.Untyped area $ CC.DefaultImport (optimizeImportName namespace) relPath absPath
+      return $ CC.Untyped area $ CC.DefaultImport (convertImportName namespace) relPath absPath
 
 
-optimizeImportName :: PP.PostProcessed PP.Name -> CC.ClosureConverted CC.Name
-optimizeImportName (PP.Untyped area name) = CC.Untyped area name
+convertImportName :: PP.PostProcessed PP.Name -> CC.ClosureConverted CC.Name
+convertImportName (PP.Untyped area name) = CC.Untyped area name
 
 getMethodNames :: PP.Interface -> [String]
 getMethodNames interface = case interface of
@@ -774,8 +792,8 @@ instance Convertable PP.AST CC.AST where
 -- I think at some point we might want to follow imports in the optimization
 -- process in order to correctly reduce dictionaries in the right order and have
 -- an env for optimization to keep track of what dictionaries have been removed.
-optimizeTable :: PP.Table -> CC.Table
-optimizeTable table =
+convertTable :: PP.Table -> CC.Table
+convertTable table =
   let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
-      optimized = mapM (convert env) table
-  in  MonadState.evalState optimized initialOptimizationState
+      convertd = mapM (convert env) table
+  in  MonadState.evalState convertd initialOptimizationState

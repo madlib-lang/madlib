@@ -35,6 +35,7 @@ import qualified Distribution.System as DistributionSystem
 import qualified Explain.Format as Explain
 import qualified System.Exit as Exit
 import Optimize.PostProcess
+import qualified Optimize.TCE as TCE
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -116,9 +117,10 @@ runLLVMTests entrypoint coverage = do
             let fullError = List.intercalate "\n\n\n" formattedErrors
             putStrLn fullError >> Exit.exitFailure
           else do
-            let postProcessedTable     = postProcessTable False solvedTable
-            let renamedTable     = Rename.renameTable postProcessedTable
-            let closureConverted = ClosureConvert.optimizeTable renamedTable
+            let postProcessedTable = postProcessTable False solvedTable
+            let withTCE            = TCE.resolve <$> postProcessedTable
+            let renamedTable       = Rename.renameTable withTCE
+            let closureConverted   = ClosureConvert.convertTable renamedTable
             LLVM.generateTable outputPath rootPath closureConverted mainTestPath
 
             testOutput <- case DistributionSystem.buildOS of

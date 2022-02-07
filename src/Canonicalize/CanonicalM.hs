@@ -39,6 +39,7 @@ data CanonicalState
       -- so that it can work for all variations of that record, but also we should
       -- not redefine that instance later on if that record is present in another module.
       , derivedTypes :: Set.Set ToDerive
+      , placeholderIndex :: Int
       }
 
 type CanonicalM a = forall m . (MonadError CompilationError m, MonadState CanonicalState m) => m a
@@ -129,3 +130,10 @@ getDerivedTypes :: CanonicalM (Set.Set ToDerive)
 getDerivedTypes =
   gets derivedTypes
 
+
+generatePlaceholderIndex :: CanonicalM Int
+generatePlaceholderIndex = do
+  s <- get
+  let index = placeholderIndex s + 1
+  put s { placeholderIndex = index }
+  return index

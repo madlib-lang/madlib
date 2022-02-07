@@ -179,7 +179,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     -- -- TODO: only do this in verbose mode?
                     -- putStrLn (ppShow postProcessedTable)
                     -- putStrLn (ppShow renamedTable)
-                    let closureConverted = ClosureConvert.optimizeTable renamedTable
+                    let closureConverted = ClosureConvert.convertTable renamedTable
                     -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
