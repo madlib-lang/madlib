@@ -174,7 +174,8 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                   if target == TLLVM then do
                     let postProcessedTable = postProcessTable False table
-                    let renamedTable       = Rename.renameTable postProcessedTable
+                        withTCE            = TCE.resolve <$> postProcessedTable
+                    let renamedTable       = Rename.renameTable withTCE
                     -- -- TODO: only do this in verbose mode?
                     -- putStrLn (ppShow postProcessedTable)
                     -- putStrLn (ppShow renamedTable)
@@ -184,10 +185,10 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   else do
                     let postProcessedTable = postProcessTable optimized table
                         strippedTable      = stripTable postProcessedTable
-                        -- withTCE = TCE.resolve <$> optimizedTable
+                        withTCE = TCE.resolve <$> strippedTable
                     -- putStrLn (ppShow optimizedTable)
                     -- putStrLn (ppShow withTCE)
-                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath strippedTable sourcesToCompile
+                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
                   when bundle $ do
                     let entrypointOutputPath =

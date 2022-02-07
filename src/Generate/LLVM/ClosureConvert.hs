@@ -136,7 +136,7 @@ findFreeVars env exp = do
       var' <- convert env exp
       return [(n, var')]
 
-    PP.Typed _ _ (PP.Definition params body) -> do
+    PP.Typed _ _ (PP.Definition _ params body) -> do
       vars <- findFreeVarsInBody env body
       return $ filter (\(varName, _) -> varName `notElem` params) vars
       where
@@ -161,7 +161,7 @@ findFreeVars env exp = do
           [] ->
             return []
 
-    PP.Typed _ _ (PP.Call f args) -> do
+    PP.Typed _ _ (PP.Call _ f args) -> do
       fFreeVars   <- findFreeVars env f
       argFreeVars <- concat <$> mapM (findFreeVars env) args
       return $ fFreeVars ++ argFreeVars
@@ -310,17 +310,17 @@ optimizeBody exclusionVars env body = case body of
     return []
 
   (exp : es) -> case exp of
-    PP.Typed _ _ (PP.TypedExp (PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body)))) _) -> do
+    PP.Typed _ _ (PP.TypedExp (PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) _) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body))) -> do
+    PP.Typed qt@(_ :=> t) area (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body))) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    abs@(PP.Typed _ _ (PP.Definition params body)) -> do
+    abs@(PP.Typed _ _ (PP.Definition _ params body)) -> do
       exp' <- convert (addVarExclusions exclusionVars env) abs
       next <- optimizeBody exclusionVars env es
       return $ exp' : next
@@ -352,7 +352,7 @@ collectPlaceholderParams ph = case ph of
 
 
 optimizeAbs :: Env -> String -> [String] -> PP.Exp -> Convert CC.Exp
-optimizeAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Definition params body)) = do
+optimizeAbs env functionName placeholders abs@(PP.Typed (ps :=> t) area (PP.Definition _ params body)) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let params' = placeholders ++ params
@@ -427,7 +427,7 @@ instance Convertable PP.Exp CC.Exp where
 
     PP.JSExp js         -> return $ CC.Typed qt area (CC.JSExp js)
 
-    PP.Call fn args -> do
+    PP.Call _ fn args -> do
         fn'   <- convert env { stillTopLevel = False } fn
         args' <- mapM (convert env { stillTopLevel = False }) args
         return $ CC.Typed qt area (CC.App fn' args')
@@ -437,20 +437,20 @@ instance Convertable PP.Exp CC.Exp where
       field' <- convert env { stillTopLevel = False } field
       return $ CC.Typed qt area (CC.Access rec' field')
 
-    PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body)))) -> do
+    PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) -> do
       optimizeAbs env name [] abs
 
-    PP.TypedExp (PP.Typed _ _ (PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body)))))) _ -> do
+    PP.TypedExp (PP.Typed _ _ (PP.Export (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))))) _ -> do
       optimizeAbs env name [] abs
 
-    PP.TypedExp (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body)))) _ -> do
+    PP.TypedExp (PP.Typed _ _ (PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)))) _ -> do
       optimizeAbs env name [] abs
 
-    PP.Assignment name abs@(PP.Typed _ _ (PP.Definition params body)) -> do
+    PP.Assignment name abs@(PP.Typed _ _ (PP.Definition _ params body)) -> do
       optimizeAbs env name [] abs
 
     -- unnamed abs, we need to generate a name here
-    PP.Definition params body -> do
+    PP.Definition _ params body -> do
       body''       <- optimizeBody [] env body
       fvs          <- findFreeVars env fullExp
       functionName <- generateLiftedName "$lambda"
@@ -475,7 +475,7 @@ instance Convertable PP.Exp CC.Exp where
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
         case innerExp of
-          PP.Typed _ _ (PP.Definition _ _) -> do
+          PP.Typed _ _ (PP.Definition _ _ _) -> do
             optimizeAbs env functionName params innerExp
           _ -> do
             innerExp' <- convert env { stillTopLevel = False } innerExp

@@ -80,20 +80,20 @@ renameExp env what = case what of
     let (renamedExps, env') = renameExps env exps
     in  (Typed t area (TemplateString renamedExps), env')
 
-  Typed t area (Call fn args) ->
+  Typed t area (Call callType fn args) ->
     let (renamedFn, env')    = renameExp env fn
         (renamedArgs, env'') = renameExps env' args
-    in  (Typed t area (Call renamedFn renamedArgs), env'')
+    in  (Typed t area (Call callType renamedFn renamedArgs), env'')
 
   Typed t area (Access record field) ->
     let (renamedRecord, env') = renameExp env record
         (renamedField, env'')  = renameExp env' field
     in  (Typed t area (Access renamedRecord renamedField), env'')
 
-  Typed t area (Definition params body) ->
+  Typed t area (Definition defType params body) ->
     let env'                 = foldr (\param env -> extendScope param param env) env params
         (renamedBody, env'') = renameExps env' body
-    in  (Typed t area (Definition params renamedBody), env'')
+    in  (Typed t area (Definition defType params renamedBody), env'')
 
   Typed t area (Assignment name exp) ->
     -- here we deal with an assignment in a body or Do

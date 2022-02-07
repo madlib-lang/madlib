@@ -1,19 +1,23 @@
 module Optimize.TCE where
 
 import AST.PostProcessed
+import qualified Data.Maybe as Maybe
 
 newtype Env
-  = Env { envCurrentFunction :: Maybe String }
+  = Env { envCurrentName :: Maybe String }
 
 
 
 getAppName :: Exp -> Maybe String
 getAppName exp = case exp of
-  Typed _ _ (Call (Typed _ _ (Var n)) _) ->
+  Typed _ _ (Var n) ->
     Just n
 
-  Typed _ _ (Call fn _) ->
+  Typed _ _ (Call _ fn _) ->
     getAppName fn
+
+  Typed _ _ (Placeholder _ e) ->
+    getAppName e
 
   _ ->
     Nothing
@@ -28,23 +32,23 @@ resolve ast =
 
 markDefinition :: Env -> Exp -> Exp
 markDefinition env exp = case exp of
-  Typed assType assArea (Assignment fnName abs@(Typed absType absArea (Definition params body))) ->
-    if isCandidate fnName params body then
-      Typed assType assArea (Assignment fnName (Typed absType absArea (TCEDefinition params (markDefinition env <$> body))))
-    else
-      Typed assType assArea (Assignment fnName (Typed absType absArea (Definition params (markDefinition env <$> body))))
+  Typed qt area (Assignment fnName abs) ->
+    Typed qt area (Assignment fnName (markDefinition env { envCurrentName = Just fnName } abs))
+
+  Typed qt area (Definition defType params body) | Maybe.isJust (envCurrentName env) ->
+    let Just fnName = envCurrentName env
+    in
+        if isCandidate fnName params body then
+          Typed qt area (Definition TCEOptimizableDefinition params (markDefinition env <$> body))
+        else
+          Typed qt area (Definition defType params (markDefinition env <$> body))
+
+  Typed qt area (Placeholder ref exp) ->
+    Typed qt area (Placeholder ref (markDefinition env exp))
 
   _ ->
     exp
 
-
-getAbsBody :: [Exp] -> [Exp]
-getAbsBody exps = case exps of
-  [Typed _ _ (Definition _ bodyExps)] ->
-    getAbsBody bodyExps
-
-  _ ->
-    exps
 
 
 areIssCandidate :: String -> [String] -> [Is] -> Bool
@@ -105,7 +109,7 @@ containsRecursion direct fnName exp = case exp of
   Typed _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnName rec || containsRecursion direct fnName accessor)
 
-  Typed _ _ (Definition _ exps) ->
+  Typed _ _ (Definition _ _ exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
   Typed _ _ (Assignment _ exp) ->

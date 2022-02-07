@@ -108,6 +108,17 @@ data PlaceholderRef
   deriving(Eq, Show)
 
 
+data DefinitionType
+  = BasicDefinition
+  | TCEOptimizableDefinition
+  deriving(Eq, Show)
+
+data CallType
+  = SimpleCall
+  | RecursiveTailCall
+  deriving(Eq, Show)
+
+
 type Exp = PostProcessed Exp_
 data Exp_ = LNum String
           | LFloat String
@@ -116,11 +127,9 @@ data Exp_ = LNum String
           | LUnit
           | TemplateString [Exp]
           | JSExp String
-          | Call Exp [Exp]
-          | TailCall Exp [Exp]
+          | Definition DefinitionType [Name] [Exp]
+          | Call CallType Exp [Exp]
           | Access Exp Exp
-          | Definition [Name] [Exp]
-          | TCEDefinition [Name] [Exp]
           | Assignment Name Exp
           | Export Exp
           | NameExport Name
