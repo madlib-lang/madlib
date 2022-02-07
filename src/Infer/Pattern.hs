@@ -32,22 +32,22 @@ inferPatterns env pats = do
 inferPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
 inferPattern env (Can.Canonical area pat) = case pat of
   Can.PNum  n ->
-    return (Slv.Solved ([] :=> tNumber) area (Slv.PNum n), [], M.empty, tNumber)
+    return (Slv.Typed ([] :=> tNumber) area (Slv.PNum n), [], M.empty, tNumber)
 
   Can.PBool b ->
-    return (Slv.Solved ([] :=> tBool) area (Slv.PBool b), [], M.empty, tBool)
+    return (Slv.Typed ([] :=> tBool) area (Slv.PBool b), [], M.empty, tBool)
 
   Can.PStr  s ->
-    return (Slv.Solved ([] :=> tStr) area (Slv.PStr s), [], M.empty, tStr)
+    return (Slv.Typed ([] :=> tStr) area (Slv.PStr s), [], M.empty, tStr)
 
   Can.PVar  i -> do
     v    <- newTVar Star
     env' <- safeExtendVars env (i, toScheme v)
-    return (Slv.Solved ([] :=> v) area (Slv.PVar i), [], M.singleton i (toScheme v), v)
+    return (Slv.Typed ([] :=> v) area (Slv.PVar i), [], M.singleton i (toScheme v), v)
 
   Can.PAny -> do
     v <- newTVar Star
-    return (Slv.Solved ([] :=> v) area Slv.PAny, [], M.empty, v)
+    return (Slv.Typed ([] :=> v) area Slv.PAny, [], M.empty, v)
 
   Can.PTuple pats -> do
     ti <- mapM (inferPattern env) pats
@@ -59,7 +59,7 @@ inferPattern env (Can.Canonical area pat) = case pat of
     let tupleT = getTupleCtor (length ts)
     let t      = foldl' TApp tupleT ts
 
-    return (Slv.Solved ([] :=> t) area (Slv.PTuple pats'), ps, vars, t)
+    return (Slv.Typed ([] :=> t) area (Slv.PTuple pats'), ps, vars, t)
 
   Can.PList pats -> do
     tv            <- newTVar Star
@@ -73,18 +73,18 @@ inferPattern env (Can.Canonical area pat) = case pat of
       ([], [], mempty, tv)
       pats
 
-    return (Slv.Solved ([] :=> tListOf t) area (Slv.PList pats), ps, vars, tListOf t)
+    return (Slv.Typed ([] :=> tListOf t) area (Slv.PList pats), ps, vars, tListOf t)
 
    where
     inferPListItem :: Env -> Type -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
     inferPListItem env listType pat@(Can.Canonical spreadArea p) = case p of
       Can.PSpread (Can.Canonical varArea Can.PAny) -> do
         let t' = tListOf listType
-        return (Slv.Solved ([] :=> t') spreadArea (Slv.PSpread (Slv.Solved ([] :=> t') varArea Slv.PAny)), [], M.empty, listType)
+        return (Slv.Typed ([] :=> t') spreadArea (Slv.PSpread (Slv.Typed ([] :=> t') varArea Slv.PAny)), [], M.empty, listType)
 
       Can.PSpread (Can.Canonical varArea (Can.PVar i)) -> do
         let t' = tListOf listType
-        return (Slv.Solved ([] :=> t') spreadArea (Slv.PSpread (Slv.Solved ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
+        return (Slv.Typed ([] :=> t') spreadArea (Slv.PSpread (Slv.Typed ([] :=> t') varArea (Slv.PVar i))), [], M.singleton i (toScheme t'), listType)
 
       -- TODO: we might need to unify with a list type here?
       _ -> inferPattern env pat
@@ -99,18 +99,18 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
     let t = TRecord ts (Just tv)
 
-    return (Slv.Solved ([] :=> t) area (Slv.PRecord pats'), ps, vars, t)
+    return (Slv.Typed ([] :=> t) area (Slv.PRecord pats'), ps, vars, t)
 
    where
     inferFieldPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
     inferFieldPattern env pat@(Can.Canonical spreadArea p) = case p of
       Can.PSpread (Can.Canonical varArea Can.PAny) -> do
         tv <- newTVar Star
-        return (Slv.Solved ([] :=> tv) spreadArea (Slv.PSpread (Slv.Solved ([] :=> tv) varArea Slv.PAny)), [], M.empty, tv)
+        return (Slv.Typed ([] :=> tv) spreadArea (Slv.PSpread (Slv.Typed ([] :=> tv) varArea Slv.PAny)), [], M.empty, tv)
 
       Can.PSpread (Can.Canonical varArea (Can.PVar i)) -> do
         tv <- newTVar Star
-        return (Slv.Solved ([] :=> tv) spreadArea (Slv.PSpread (Slv.Solved ([] :=> tv) varArea (Slv.PVar i))), [], M.singleton i (toScheme tv), tv)
+        return (Slv.Typed ([] :=> tv) spreadArea (Slv.PSpread (Slv.Typed ([] :=> tv) varArea (Slv.PVar i))), [], M.singleton i (toScheme tv), tv)
 
       _ -> inferPattern env pat
 
@@ -126,6 +126,6 @@ inferPattern env (Can.Canonical area pat) = case pat of
 
     let t = apply s tv
 
-    return (Slv.Solved ([] :=> t) area (Slv.PCon n pats'), ps <> ps', M.map (apply s) vars, t)
+    return (Slv.Typed ([] :=> t) area (Slv.PCon n pats'), ps <> ps', M.map (apply s) vars, t)
 
   _ -> undefined

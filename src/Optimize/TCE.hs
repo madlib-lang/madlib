@@ -1,6 +1,6 @@
 module Optimize.TCE where
 
-import AST.Optimized
+import AST.PostProcessed
 
 newtype Env
   = Env { envCurrentFunction :: Maybe String }
@@ -9,10 +9,10 @@ newtype Env
 
 getAppName :: Exp -> Maybe String
 getAppName exp = case exp of
-  Optimized _ _ (Call (Optimized _ _ (Var n)) _) ->
+  Typed _ _ (Call (Typed _ _ (Var n)) _) ->
     Just n
 
-  Optimized _ _ (Call fn _) ->
+  Typed _ _ (Call fn _) ->
     getAppName fn
 
   _ ->
@@ -28,11 +28,11 @@ resolve ast =
 
 markDefinition :: Env -> Exp -> Exp
 markDefinition env exp = case exp of
-  Optimized assType assArea (Assignment fnName abs@(Optimized absType absArea (Definition params body))) ->
+  Typed assType assArea (Assignment fnName abs@(Typed absType absArea (Definition params body))) ->
     if isCandidate fnName params body then
-      Optimized assType assArea (Assignment fnName (Optimized absType absArea (TCEDefinition params (markDefinition env <$> body))))
+      Typed assType assArea (Assignment fnName (Typed absType absArea (TCEDefinition params (markDefinition env <$> body))))
     else
-      Optimized assType assArea (Assignment fnName (Optimized absType absArea (Definition params (markDefinition env <$> body))))
+      Typed assType assArea (Assignment fnName (Typed absType absArea (Definition params (markDefinition env <$> body))))
 
   _ ->
     exp
@@ -40,7 +40,7 @@ markDefinition env exp = case exp of
 
 getAbsBody :: [Exp] -> [Exp]
 getAbsBody exps = case exps of
-  [Optimized _ _ (Definition _ bodyExps)] ->
+  [Typed _ _ (Definition _ bodyExps)] ->
     getAbsBody bodyExps
 
   _ ->
@@ -52,10 +52,10 @@ areIssCandidate fnName params iss = case iss of
   [] ->
     True
 
-  [Optimized _ _ (Is _ isExp)] ->
+  [Typed _ _ (Is _ isExp)] ->
     containsRecursion True fnName isExp || isCandidate fnName params [isExp]
 
-  (Optimized _ _ (Is _ isExp) : next) ->
+  (Typed _ _ (Is _ isExp) : next) ->
     containsRecursion True fnName isExp
       || isCandidate fnName params [isExp]
       || areIssCandidate fnName params next
@@ -70,10 +70,10 @@ isCandidate fnName params exps = case exps of
     True
 
   [lastExp] -> case lastExp of
-    Optimized _ _ Call {} ->
+    Typed _ _ Call {} ->
       containsRecursion True fnName lastExp
 
-    Optimized _ _ (If cond truthy falsy) ->
+    Typed _ _ (If cond truthy falsy) ->
       not (containsRecursion False fnName cond)
       && (
            containsRecursion True fnName truthy
@@ -82,7 +82,7 @@ isCandidate fnName params exps = case exps of
            || isCandidate fnName params [falsy]
          )
 
-    Optimized _ _ (Where exp iss) ->
+    Typed _ _ (Where exp iss) ->
       let isExpValid = not (containsRecursion False fnName exp)
       in  isExpValid && areIssCandidate fnName params iss
 
@@ -96,34 +96,34 @@ isCandidate fnName params exps = case exps of
 
 containsRecursion :: Bool -> String  -> Exp -> Bool
 containsRecursion direct fnName exp = case exp of
-  Optimized _ _ Call {} ->
+  Typed _ _ Call {} ->
     Just fnName == getAppName exp
 
-  Optimized _ _ (TemplateString exps) ->
+  Typed _ _ (TemplateString exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
-  Optimized _ _ (Access rec accessor) ->
+  Typed _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnName rec || containsRecursion direct fnName accessor)
 
-  Optimized _ _ (Definition _ exps) ->
+  Typed _ _ (Definition _ exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
-  Optimized _ _ (Assignment _ exp) ->
+  Typed _ _ (Assignment _ exp) ->
     not direct && containsRecursion direct fnName exp
 
-  Optimized _ _ (TypedExp exp _) ->
+  Typed _ _ (TypedExp exp _) ->
     not direct && containsRecursion direct fnName exp
 
-  Optimized _ _ (ListConstructor exps) ->
+  Typed _ _ (ListConstructor exps) ->
     not direct && any (containsRecursion direct fnName) (getListItemExp <$> exps)
 
-  Optimized _ _ (TupleConstructor exps) ->
+  Typed _ _ (TupleConstructor exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
-  Optimized _ _ (Record fields) ->
+  Typed _ _ (Record fields) ->
     not direct && any (containsRecursion direct fnName) (getFieldExp <$> fields)
 
-  Optimized _ _ (If cond truthy falsy) ->
+  Typed _ _ (If cond truthy falsy) ->
     not direct &&
       (
         containsRecursion direct fnName cond
@@ -131,17 +131,17 @@ containsRecursion direct fnName exp = case exp of
         || containsRecursion direct fnName falsy
       )
 
-  Optimized _ _ (Do exps) ->
+  Typed _ _ (Do exps) ->
     not direct && any (containsRecursion direct fnName) exps
 
-  Optimized _ _ (Where exp iss) ->
+  Typed _ _ (Where exp iss) ->
     not direct &&
       (
         containsRecursion direct fnName exp
         || any (containsRecursion direct fnName) (getIsExpression <$> iss)
       )
 
-  Optimized _ _ (Placeholder _ exp) ->
+  Typed _ _ (Placeholder _ exp) ->
     not direct && containsRecursion direct fnName exp
 
   _ ->

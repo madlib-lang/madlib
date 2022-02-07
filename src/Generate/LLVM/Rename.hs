@@ -76,90 +76,90 @@ renameExps env exps = case exps of
 
 renameExp :: Env -> Exp -> (Exp, Env)
 renameExp env what = case what of
-  Solved t area (TemplateString exps) ->
+  Typed t area (TemplateString exps) ->
     let (renamedExps, env') = renameExps env exps
-    in  (Solved t area (TemplateString renamedExps), env')
+    in  (Typed t area (TemplateString renamedExps), env')
 
-  Solved t area (App fn arg isFinal) ->
+  Typed t area (App fn arg isFinal) ->
     let (renamedFn, env')  = renameExp env fn
         (renamedArg, env'') = renameExp env' arg
-    in  (Solved t area (App renamedFn renamedArg isFinal), env'')
+    in  (Typed t area (App renamedFn renamedArg isFinal), env'')
 
-  Solved t area (Access record field) ->
+  Typed t area (Access record field) ->
     let (renamedRecord, env') = renameExp env record
         (renamedField, env'')  = renameExp env' field
-    in  (Solved t area (Access renamedRecord renamedField), env'')
+    in  (Typed t area (Access renamedRecord renamedField), env'')
 
-  Solved t area (Abs (Solved paramType paramArea paramName) body) ->
+  Typed t area (Abs (Typed paramType paramArea paramName) body) ->
     let env'             = extendScope paramName paramName env
         (renamedBody, env'') = renameExps env' body
-    in  (Solved t area (Abs (Solved paramType paramArea paramName) renamedBody), env'')
+    in  (Typed t area (Abs (Typed paramType paramArea paramName) renamedBody), env'')
 
-  Solved t area (Assignment name exp) ->
+  Typed t area (Assignment name exp) ->
     -- here we deal with an assignment in a body or Do
     -- therefore we must not rename it as it only concerns top level names.
     let env'                = extendScope name name env
         (renamedExp, env'') = renameExp env' exp
-    in  (Solved t area (Assignment name renamedExp), env'')
+    in  (Typed t area (Assignment name renamedExp), env'')
 
-  Solved t area (Var name) -> case break (== '.') name of
+  Typed t area (Var name) -> case break (== '.') name of
     -- A normal name
     (n, []) ->
       let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-      in  (Solved t area (Var renamed), env)
+      in  (Typed t area (Var renamed), env)
 
     -- A field access name eg. Var ".field"
     ([], fieldAccessor) ->
-      (Solved t area (Var fieldAccessor), env)
+      (Typed t area (Var fieldAccessor), env)
 
     -- A namespace access eg. Var "List.filter"
     (namespace, '.' : n) ->
       let moduleHash = Maybe.fromMaybe namespace $ Map.lookup namespace (defaultImportHashes env)
           renamed    = addHashToName moduleHash n
           env'       = addDefaultImportNameUsage namespace n env
-      in  (Solved t area (Var renamed), env')
+      in  (Typed t area (Var renamed), env')
 
     _ ->
       undefined
 
-  Solved t area (NameExport name) ->
+  Typed t area (NameExport name) ->
     let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-    in  (Solved t area (NameExport renamed), env)
+    in  (Typed t area (NameExport renamed), env)
 
-  Solved t area (TypedExp exp typing scheme) ->
+  Typed t area (TypedExp exp typing scheme) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area (TypedExp renamedExp typing scheme), env')
+    in  (Typed t area (TypedExp renamedExp typing scheme), env')
 
-  Solved t area (ListConstructor items) ->
+  Typed t area (ListConstructor items) ->
     let (renamedItems, env') = renameListItems env items
-    in  (Solved t area (ListConstructor renamedItems), env')
+    in  (Typed t area (ListConstructor renamedItems), env')
 
-  Solved t area (TupleConstructor items) ->
+  Typed t area (TupleConstructor items) ->
     let (renamedItems, env') = renameExps env items
-    in  (Solved t area (TupleConstructor renamedItems), env')
+    in  (Typed t area (TupleConstructor renamedItems), env')
 
-  Solved t area (Record fields) ->
+  Typed t area (Record fields) ->
     let (renamedFields, env') = renameFields env fields
-    in  (Solved t area (Record renamedFields), env')
+    in  (Typed t area (Record renamedFields), env')
 
-  Solved t area (If cond truthy falsy) ->
+  Typed t area (If cond truthy falsy) ->
     let (renamedCond, env')     = renameExp env cond
         (renamedTruthy, env'')  = renameExp env' truthy
         (renamedFalsy, env''')  = renameExp env'' falsy
-    in  (Solved t area (If renamedCond renamedTruthy renamedFalsy), env''')
+    in  (Typed t area (If renamedCond renamedTruthy renamedFalsy), env''')
 
-  Solved t area (Do exps) ->
+  Typed t area (Do exps) ->
     let (renamedExps, env') = renameExps env exps
-    in  (Solved t area (Do renamedExps), env')
+    in  (Typed t area (Do renamedExps), env')
 
-  Solved t area (Where exp iss) ->
+  Typed t area (Where exp iss) ->
     let (renamedExp, env')  = renameExp env exp
         (renamedIss, env'') = renameBranches env' iss
-    in  (Solved t area (Where renamedExp renamedIss), env'')
+    in  (Typed t area (Where renamedExp renamedIss), env'')
 
-  Solved t area (Placeholder ph exp) ->
+  Typed t area (Placeholder ph exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area (Placeholder ph renamedExp), env')
+    in  (Typed t area (Placeholder ph renamedExp), env')
 
   _ ->
     (what, env)
@@ -178,10 +178,10 @@ renameBranches env branches = case branches of
 
 renameBranch :: Env -> Is -> (Is, Env)
 renameBranch env is = case is of
-  Solved t area (Is pat exp) ->
+  Typed t area (Is pat exp) ->
     let renamedPattern  = renamePattern env pat
         (renamedExp, env') = renameExp env exp
-    in  (Solved t area (Is renamedPattern renamedExp), env')
+    in  (Typed t area (Is renamedPattern renamedExp), env')
 
   _ ->
     undefined
@@ -189,26 +189,26 @@ renameBranch env is = case is of
 
 renamePattern :: Env -> Pattern -> Pattern
 renamePattern env pat = case pat of
-  Solved t area (PCon name args) ->
+  Typed t area (PCon name args) ->
     let renamed     = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
         renamedArgs = renamePattern env <$> args
-    in  Solved t area (PCon renamed renamedArgs)
+    in  Typed t area (PCon renamed renamedArgs)
 
-  Solved t area (PRecord fields) ->
+  Typed t area (PRecord fields) ->
     let renamedFields = Map.map (renamePattern env) fields
-    in  Solved t area (PRecord renamedFields)
+    in  Typed t area (PRecord renamedFields)
 
-  Solved t area (PList items) ->
+  Typed t area (PList items) ->
     let renamedItems = renamePattern env <$> items
-    in  Solved t area (PList renamedItems)
+    in  Typed t area (PList renamedItems)
 
-  Solved t area (PTuple items) ->
+  Typed t area (PTuple items) ->
     let renamedItems = renamePattern env <$> items
-    in  Solved t area (PTuple renamedItems)
+    in  Typed t area (PTuple renamedItems)
 
-  Solved t area (PSpread spread) ->
+  Typed t area (PSpread spread) ->
     let renamedSpread = renamePattern env spread
-    in  Solved t area (PSpread renamedSpread)
+    in  Typed t area (PSpread renamedSpread)
 
   other ->
     other
@@ -227,13 +227,13 @@ renameFields env fields = case fields of
 
 renameField :: Env -> Field -> (Field, Env)
 renameField env field = case field of
-  Solved t area (Field (name, exp)) ->
+  Typed t area (Field (name, exp)) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area $ Field (name, renamedExp), env')
+    in  (Typed t area $ Field (name, renamedExp), env')
 
-  Solved t area (FieldSpread exp) ->
+  Typed t area (FieldSpread exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area $ FieldSpread renamedExp, env')
+    in  (Typed t area $ FieldSpread renamedExp, env')
 
   _ ->
     undefined
@@ -251,13 +251,13 @@ renameListItems env lis = case lis of
 
 renameListItem :: Env -> ListItem -> (ListItem, Env)
 renameListItem env item = case item of
-  Solved t area (ListItem exp) ->
+  Typed t area (ListItem exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area $ ListItem renamedExp, env')
+    in  (Typed t area $ ListItem renamedExp, env')
 
-  Solved t area (ListSpread exp) ->
+  Typed t area (ListSpread exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Solved t area $ ListSpread renamedExp, env')
+    in  (Typed t area $ ListSpread renamedExp, env')
 
   _ ->
     undefined
@@ -265,11 +265,11 @@ renameListItem env item = case item of
 
 renameTopLevelAssignment :: Env -> Exp -> (Exp, Env)
 renameTopLevelAssignment env assignment = case assignment of
-  Solved t area (Assignment name exp) ->
+  Typed t area (Assignment name exp) ->
     let hashedName          = hashName env name
         env'                = extendScope name hashedName env
         (renamedExp, env'') = renameExp env' exp
-    in  (Solved t area (Assignment hashedName renamedExp), env'')
+    in  (Typed t area (Assignment hashedName renamedExp), env'')
 
   _ ->
     undefined
@@ -278,37 +278,37 @@ renameTopLevelAssignment env assignment = case assignment of
 renameTopLevelExps :: Env -> [Exp] -> ([Exp], Env)
 renameTopLevelExps env exps = case exps of
   (exp : es) -> case exp of
-    Solved t area (Assignment _ _) ->
+    Typed t area (Assignment _ _) ->
       let (renamedExp, env')  = renameTopLevelAssignment env exp
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (renamedExp : nextExps, nextEnv)
 
-    Solved t area (Export assignment@(Solved _ _ (Assignment _ _))) ->
+    Typed t area (Export assignment@(Typed _ _ (Assignment _ _))) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Solved t area (Export renamedExp) : nextExps, nextEnv)
+      in  (Typed t area (Export renamedExp) : nextExps, nextEnv)
 
-    Solved t area (TypedExp assignment@(Solved _ _ (Assignment _ _)) typing scheme) ->
+    Typed t area (TypedExp assignment@(Typed _ _ (Assignment _ _)) typing scheme) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Solved t area (TypedExp renamedExp typing scheme) : nextExps, nextEnv)
+      in  (Typed t area (TypedExp renamedExp typing scheme) : nextExps, nextEnv)
 
-    Solved t area (TypedExp (Solved _ _ (Export assignment@(Solved _ _ (Assignment _ _)))) typing scheme) ->
+    Typed t area (TypedExp (Typed _ _ (Export assignment@(Typed _ _ (Assignment _ _)))) typing scheme) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Solved t area (TypedExp (Solved t area (Export renamedExp)) typing scheme) : nextExps, nextEnv)
+      in  (Typed t area (TypedExp (Typed t area (Export renamedExp)) typing scheme) : nextExps, nextEnv)
 
-    Solved t area (Extern qt name foreignName) ->
+    Typed t area (Extern qt name foreignName) ->
       let hashedName          = hashName env name
           env'                = extendScope name hashedName env
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Solved t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
+      in  (Typed t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
 
-    Solved _ _ (Export (Solved t area (Extern qt name foreignName))) ->
+    Typed _ _ (Export (Typed t area (Extern qt name foreignName))) ->
       let hashedName          = hashName env name
           env'                = extendScope name hashedName env
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Solved t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
+      in  (Typed t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
 
     _ ->
       let (exp', env')        = renameExp env exp
@@ -388,7 +388,7 @@ renameInstances env instances = case instances of
     ([], env)
 
 
-renameSolvedName :: Env -> String -> Solved String -> (Solved String, Env)
+renameSolvedName :: Env -> String -> Typed String -> (Typed String, Env)
 renameSolvedName env hash solvedName = case solvedName of
   Untyped area name ->
     let hashedName = addHashToName hash name
@@ -399,7 +399,7 @@ renameSolvedName env hash solvedName = case solvedName of
     undefined
 
 
-renameSolvedNames :: Env -> String -> [Solved String] -> ([Solved String], Env)
+renameSolvedNames :: Env -> String -> [Typed String] -> ([Typed String], Env)
 renameSolvedNames env hash solvedNames = case solvedNames of
   (name : names) ->
     let (renamed, env')        = renameSolvedName env hash name
@@ -446,27 +446,27 @@ renameImports env imports = case imports of
 populateInitialEnv :: [Exp] -> Env -> Env
 populateInitialEnv exps env = case exps of
   (exp : next) -> case exp of
-    Solved _ _ (Assignment name _) ->
+    Typed _ _ (Assignment name _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Solved _ _ (TypedExp (Solved _ _ (Assignment name _)) _ _) ->
+    Typed _ _ (TypedExp (Typed _ _ (Assignment name _)) _ _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Solved _ _ (Export (Solved _ _ (Assignment name _))) ->
+    Typed _ _ (Export (Typed _ _ (Assignment name _))) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Solved _ _ (TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name _)))) _ _) ->
+    Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _ _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Solved _ _ (Extern qt name _) ->
+    Typed _ _ (Extern qt name _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'

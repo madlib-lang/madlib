@@ -1,4 +1,4 @@
-module Generate.LLVM.Optimized where
+module AST.ClosureConverted where
 
 
 import qualified Infer.Type                    as Ty
@@ -7,14 +7,14 @@ import qualified Data.Map                      as M
 
 
 data Optimized a
-  = Optimized (Ty.Qual Ty.Type) Area a
-  -- = Optimized Ty.Type Area a
+  = Typed (Ty.Qual Ty.Type) Area a
+  -- = Typed Ty.Type Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
 
--- instance Show a => Show (Optimized a) where
+-- instance Show a => Show (Typed a) where
 --   show solved = case solved of
---     Optimized _ _ a ->
+--     Typed _ _ a ->
 --       show a
 
 --     Untyped _ a ->
@@ -157,24 +157,24 @@ type Table = M.Map FilePath AST
 -- Functions
 
 getStartLine :: Exp -> Int
-getStartLine (Optimized _ (Area (Loc _ line _) _) _) = line
+getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
 getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
 getValue :: Optimized a -> a
-getValue (Optimized _ _ a) = a
+getValue (Typed _ _ a) = a
 getValue (Untyped _ a    ) = a
 
 
 getType :: Optimized a -> Ty.Type
-getType (Optimized (_ Ty.:=> t) _ _) = t
+getType (Typed (_ Ty.:=> t) _ _) = t
 
 getQualType :: Optimized a -> Ty.Qual Ty.Type
-getQualType (Optimized qt _ _) = qt
+getQualType (Typed qt _ _) = qt
 
 
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Optimized _ _ TopLevelAbs{} ->
+  Typed _ _ TopLevelAbs{} ->
     True
 
   _ ->
@@ -183,7 +183,7 @@ isTopLevelFunction exp = case exp of
 
 isSpreadField :: Field -> Bool
 isSpreadField field = case field of
-  Optimized _ _ (FieldSpread _) ->
+  Typed _ _ (FieldSpread _) ->
     True
 
   _ ->
@@ -192,10 +192,10 @@ isSpreadField field = case field of
 
 isExtern :: Exp -> Bool
 isExtern exp = case exp of
-  Optimized _ _ Extern{} ->
+  Typed _ _ Extern{} ->
     True
 
-  Optimized _ _ (Export (Optimized _ _ Extern{})) ->
+  Typed _ _ (Export (Typed _ _ Extern{})) ->
     True
 
   _ ->
@@ -228,7 +228,7 @@ getImportAbsolutePath imp = case imp of
 
 getConstructorName :: Constructor -> String
 getConstructorName constructor = case constructor of
-  Optimized _ _ (Constructor name _ _) ->
+  Typed _ _ (Constructor name _ _) ->
     name
 
   Untyped _ (Constructor name _ _) ->

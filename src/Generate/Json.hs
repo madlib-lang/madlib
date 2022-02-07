@@ -227,7 +227,7 @@ initialExpCompilationDepth = 4
 
 compileExp :: Int -> Slv.Exp -> String
 compileExp _ (Slv.Untyped _ _) = "{}"
-compileExp depth (Slv.Solved qt@(ps :=> t) area exp) =
+compileExp depth (Slv.Typed qt@(ps :=> t) area exp) =
   let compiledType      = if depth == initialExpCompilationDepth then prettyPrintQualType True qt else prettyPrintType True t
       compiledExpFields = compileExpFields (depth + 1) exp
   in  "{\n"
@@ -289,7 +289,7 @@ compileExpFields depth exp = case exp of
   
   Slv.TypeExport _ -> indent depth <> "\"nodeType\": \"TypeExport\"\n"
 
-  Slv.Abs (Slv.Solved pType@(_ :=> t) pArea pName) body ->
+  Slv.Abs (Slv.Typed pType@(_ :=> t) pArea pName) body ->
     indent depth
       <> "\"nodeType\": \"Abstraction\",\n"
       <> indent depth
@@ -461,7 +461,7 @@ compileExpFields depth exp = case exp of
     indent depth <> "\"nodeType\": \"Extern\"\n"
 
 compileIs :: Int -> Slv.Is -> String
-compileIs depth (Slv.Solved qt@(_ :=> t) area (Slv.Is pat exp)) =
+compileIs depth (Slv.Typed qt@(_ :=> t) area (Slv.Is pat exp)) =
   "{\n"
     <> indent (depth + 1)
     <> "\"nodeType\": \"Is\",\n"
@@ -485,7 +485,7 @@ compileIs depth (Slv.Solved qt@(_ :=> t) area (Slv.Is pat exp)) =
     <> "}"
 
 compilePattern :: Int -> Slv.Pattern -> String
-compilePattern depth (Slv.Solved qt@(_ :=> t) area pat) =
+compilePattern depth (Slv.Typed qt@(_ :=> t) area pat) =
   "{\n"
     <> indent (depth + 1)
     <> "\"nodeType\": \"Pattern\",\n"
@@ -503,7 +503,7 @@ compilePattern depth (Slv.Solved qt@(_ :=> t) area pat) =
 
 compileListItem :: Int -> Slv.ListItem -> String
 compileListItem depth li = case li of
-  Slv.Solved qt@(_ :=> t) area (Slv.ListSpread exp) ->
+  Slv.Typed qt@(_ :=> t) area (Slv.ListSpread exp) ->
     indent depth
       <> "{\n"
       <> indent (depth + 1)
@@ -523,7 +523,7 @@ compileListItem depth li = case li of
       <> indent depth
       <> "}"
 
-  Slv.Solved qt@(_ :=> t) area (Slv.ListItem exp) ->
+  Slv.Typed qt@(_ :=> t) area (Slv.ListItem exp) ->
     indent depth
       <> "{\n"
       <> indent (depth + 1)
@@ -544,7 +544,7 @@ compileListItem depth li = case li of
       <> "}"
 
 compileField :: Int -> Slv.Field -> String
-compileField depth (Slv.Solved qt@(_ :=> t) area field) = case field of
+compileField depth (Slv.Typed qt@(_ :=> t) area field) = case field of
   Slv.FieldSpread exp ->
     indent depth
       <> "{\n"

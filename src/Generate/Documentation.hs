@@ -376,7 +376,7 @@ emptySince :: Int -> String
 emptySince depth = indent depth <> "\"since\": \"\",\n"
 
 formatType :: Slv.Exp -> String
-formatType (Slv.Solved t _ exp) = case exp of
+formatType (Slv.Typed t _ exp) = case exp of
   Slv.TypedExp _ typing _ ->
     prettyPrintConstructorTyping' False typing
 

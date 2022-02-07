@@ -12,27 +12,24 @@ import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Data.List
 import qualified AST.Solved                    as Slv
-import qualified Generate.LLVM.Optimized       as Opt
+import qualified AST.ClosureConverted          as CC
 import           Infer.Type
 import Data.Maybe
 import Debug.Trace
 import Text.Show.Pretty
 import Explain.Location
-import Generate.LLVM.Optimized (Exp_(TopLevelAbs))
-import AST.Solved (getType)
-import AST.Optimized
 
 
 data OptimizationState
-  = OptimizationState { count :: Int, topLevel :: [Opt.Exp] }
+  = OptimizationState { count :: Int, topLevel :: [CC.Exp] }
 
 data Env
   = Env
-  { freeVars :: [Opt.Name]
-  , freeVarExclusion :: [Opt.Name]
+  { freeVars :: [CC.Name]
+  , freeVarExclusion :: [CC.Name]
   -- ^ Closured names that are reassigned. So if we find something in the higher scope, the inner function should not skip it but create a param for it
   , stillTopLevel :: Bool
-  , lifted :: M.Map String (String, [Opt.Exp])
+  , lifted :: M.Map String (String, [CC.Exp])
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
   }
 
@@ -58,17 +55,17 @@ resetTopLevelExps = do
   s@(OptimizationState _ topLevel) <- get
   put s { topLevel = [] }
 
-addTopLevelExp :: Opt.Exp -> Optimize ()
+addTopLevelExp :: CC.Exp -> Optimize ()
 addTopLevelExp exp = do
   s@(OptimizationState _ topLevel) <- get
   put s { topLevel = topLevel ++ [exp] }
 
-getTopLevelExps :: Optimize [Opt.Exp]
+getTopLevelExps :: Optimize [CC.Exp]
 getTopLevelExps = do
   OptimizationState _ topLevel <- get
   return topLevel
 
-addGlobalFreeVar :: Opt.Name -> Env -> Env
+addGlobalFreeVar :: CC.Name -> Env -> Env
 addGlobalFreeVar fv env =
   env { freeVars = fv : freeVars env }
 
@@ -80,77 +77,77 @@ addVarExclusions :: [String] -> Env -> Env
 addVarExclusions vars env =
   env { freeVarExclusion = vars ++ freeVarExclusion env }
 
-addLiftedLambda :: Opt.Name -> Opt.Name -> [Opt.Exp] -> Env -> Env
+addLiftedLambda :: CC.Name -> CC.Name -> [CC.Exp] -> Env -> Env
 addLiftedLambda originalName liftedName args env =
   env { lifted = M.insert originalName (liftedName, args) $ lifted env }
 
 
-findFreeVars :: Env -> Slv.Exp -> Optimize [(String, Opt.Exp)]
+findFreeVars :: Env -> Slv.Exp -> Optimize [(String, CC.Exp)]
 findFreeVars env exp = do
   fvs <- case exp of
-    Slv.Solved _ _ (Slv.Var "+") ->
+    Slv.Typed _ _ (Slv.Var "+") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "++") ->
+    Slv.Typed _ _ (Slv.Var "++") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "-") ->
+    Slv.Typed _ _ (Slv.Var "-") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "*") ->
+    Slv.Typed _ _ (Slv.Var "*") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "/") ->
+    Slv.Typed _ _ (Slv.Var "/") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "==") ->
+    Slv.Typed _ _ (Slv.Var "==") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "!=") ->
+    Slv.Typed _ _ (Slv.Var "!=") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "!") ->
+    Slv.Typed _ _ (Slv.Var "!") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var ">") ->
+    Slv.Typed _ _ (Slv.Var ">") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "<") ->
+    Slv.Typed _ _ (Slv.Var "<") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var ">=") ->
+    Slv.Typed _ _ (Slv.Var ">=") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "<=") ->
+    Slv.Typed _ _ (Slv.Var "<=") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "&&") ->
+    Slv.Typed _ _ (Slv.Var "&&") ->
       return []
 
-    Slv.Solved _ _ (Slv.Var "%") ->
+    Slv.Typed _ _ (Slv.Var "%") ->
       return []
 
     -- field access should not be registered as a free var
-    Slv.Solved _ _ (Slv.Var ('.' : _)) ->
+    Slv.Typed _ _ (Slv.Var ('.' : _)) ->
       return []
 
-    Slv.Solved _ _ (Slv.Var n) -> do
+    Slv.Typed _ _ (Slv.Var n) -> do
       var' <- optimize env exp
       return [(n, var')]
 
-    Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) -> do
+    Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body) -> do
       vars <- findFreeVarsInBody env body
       return $ filter (\(varName, _) -> varName /= param) vars
       where
-        findFreeVarsInBody :: Env -> [Slv.Exp] -> Optimize [(String, Opt.Exp)]
+        findFreeVarsInBody :: Env -> [Slv.Exp] -> Optimize [(String, CC.Exp)]
         findFreeVarsInBody env exps = case exps of
           (e : es) -> case e of
-            Slv.Solved _ _ (Slv.Assignment name exp) -> do
+            Slv.Typed _ _ (Slv.Assignment name exp) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
 
-            Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name exp)) _ _) -> do
+            Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name exp)) _ _) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
@@ -163,71 +160,71 @@ findFreeVars env exp = do
           [] ->
             return []
 
-    Slv.Solved _ _ (Slv.App f arg _) -> do
+    Slv.Typed _ _ (Slv.App f arg _) -> do
       fFreeVars   <- findFreeVars env f
       argFreeVars <- findFreeVars env arg
       return $ fFreeVars ++ argFreeVars
 
-    Slv.Solved _ _ (Slv.Do exps) -> do
+    Slv.Typed _ _ (Slv.Do exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
-    Slv.Solved _ _ (Slv.If cond truthy falsy) -> do
+    Slv.Typed _ _ (Slv.If cond truthy falsy) -> do
       condFreeVars   <- findFreeVars env cond
       truthyFreeVars <- findFreeVars env truthy
       falsyFreeVars  <- findFreeVars env falsy
       return $ condFreeVars ++ truthyFreeVars ++ falsyFreeVars
 
-    Slv.Solved _ _ (Slv.TupleConstructor exps) -> do
+    Slv.Typed _ _ (Slv.TupleConstructor exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
-    Slv.Solved _ _ (Slv.TemplateString exps) -> do
+    Slv.Typed _ _ (Slv.TemplateString exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
-    Slv.Solved _ _ (Slv.Access record field) -> do
+    Slv.Typed _ _ (Slv.Access record field) -> do
       recordVars <- findFreeVars env record
       fieldVars  <- findFreeVars env field
       return $ recordVars ++ fieldVars
 
-    Slv.Solved _ _ (Slv.ListConstructor exps) -> do
+    Slv.Typed _ _ (Slv.ListConstructor exps) -> do
       vars <- mapM (findFreeVars env . Slv.getListItemExp) exps
       return $ concat vars
 
-    Slv.Solved _ _ (Slv.Where whereExp iss) -> do
+    Slv.Typed _ _ (Slv.Where whereExp iss) -> do
       expVars     <- findFreeVars env whereExp
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
-    Slv.Solved _ _ (Slv.Assignment n exp) -> do
+    Slv.Typed _ _ (Slv.Assignment n exp) -> do
       findFreeVars env exp
 
-    Slv.Solved _ _ (Slv.TypedExp exp _ _) -> do
+    Slv.Typed _ _ (Slv.TypedExp exp _ _) -> do
       findFreeVars env exp
 
-    Slv.Solved (_ :=> t) area (Slv.LNum x) -> case t of
+    Slv.Typed (_ :=> t) area (Slv.LNum x) -> case t of
       TVar _ -> do
         let dictName = "$Number$" <> buildTypeStrForPlaceholder [t]
         if dictName `notElem` freeVars env then
-          return [(dictName, Opt.Optimized ([] :=> tVar "dict") area (Opt.Var dictName))]
+          return [(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))]
         else
           return []
 
       _ ->
         return []
 
-    Slv.Solved _ area (Slv.Placeholder ph exp) -> do
+    Slv.Typed _ area (Slv.Placeholder ph exp) -> do
       (placeholderVars, excludeVars) <- case ph of
         (Slv.ClassRef interface _ _ True, ts) ->
           let tsStr = buildTypeStrForPlaceholder ts
               dictName = "$" <> interface <> "$" <> tsStr
-          in  return ([(dictName, Opt.Optimized ([] :=> tVar "dict") area (Opt.Var dictName))], [])
+          in  return ([(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))], [])
 
         (Slv.MethodRef interface methodName True, ts) -> do
           let tsStr    = buildTypeStrForPlaceholder ts
               dictName = "$" <> interface <> "$" <> tsStr
-          return ([(dictName, Opt.Optimized ([] :=> tVar "dict") area (Opt.Var dictName))], [methodName])
+          return ([(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))], [methodName])
 
         _ ->
           return ([], [])
@@ -240,16 +237,16 @@ findFreeVars env exp = do
           findFreeVars env exp
       return $ filter (\(varName, _) -> varName `notElem` excludeVars) $ placeholderVars ++ expVars
 
-    Slv.Solved _ _ (Slv.Record fields) -> do
+    Slv.Typed _ _ (Slv.Record fields) -> do
       fvs <- mapM findFreeVarsInField fields
       return $ concat fvs
       where
-        findFreeVarsInField :: Slv.Field -> Optimize [(String, Opt.Exp)]
+        findFreeVarsInField :: Slv.Field -> Optimize [(String, CC.Exp)]
         findFreeVarsInField field = case field of
-          Slv.Solved _ _ (Slv.Field (_, exp)) ->
+          Slv.Typed _ _ (Slv.Field (_, exp)) ->
             findFreeVars env exp
 
-          Slv.Solved _ _ (Slv.FieldSpread exp) ->
+          Slv.Typed _ _ (Slv.FieldSpread exp) ->
             findFreeVars env exp
 
     -- TODO: need to add list constructor
@@ -262,7 +259,7 @@ findFreeVars env exp = do
 
   return $ filter (\(varName, _) -> varName `notElem` globalVars || varName `elem` freeVarExclusion env) fvs'
 
-findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, Opt.Exp)]
+findFreeVarsInBranches :: Env -> [Slv.Is] -> Optimize [(String, CC.Exp)]
 findFreeVarsInBranches env iss = case iss of
   (is : next) -> do
     branchVars <- findFreeVarsInBranch env is
@@ -272,16 +269,16 @@ findFreeVarsInBranches env iss = case iss of
   [] ->
     return []
 
-findFreeVarsInBranch :: Env -> Slv.Is -> Optimize [(String, Opt.Exp)]
+findFreeVarsInBranch :: Env -> Slv.Is -> Optimize [(String, CC.Exp)]
 findFreeVarsInBranch env is = case is of
-  Slv.Solved _ _ (Slv.Is pat exp) -> do
+  Slv.Typed _ _ (Slv.Is pat exp) -> do
     let patternVars = getPatternVars pat
     expVars <- findFreeVars env exp
     return $ filter (\(varName, _) -> varName `notElem` patternVars) expVars
 
 
 getPatternVars :: Slv.Pattern -> [String]
-getPatternVars (Slv.Solved _ _ pat) = case pat of
+getPatternVars (Slv.Typed _ _ pat) = case pat of
   Slv.PVar n ->
     [n]
 
@@ -310,33 +307,33 @@ class Optimizable a b where
 
 
 -- At this point it's no longer top level and all functions encountered must be lifted
-optimizeBody :: [String] -> Env -> [Slv.Exp] -> Optimize [Opt.Exp]
+optimizeBody :: [String] -> Env -> [Slv.Exp] -> Optimize [CC.Exp]
 optimizeBody exclusionVars env body = case body of
   [] ->
     return []
 
   (exp : es) -> case exp of
-    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _) -> do
+    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)))) _ _) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    Slv.Solved qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body))) -> do
+    Slv.Typed qt@(_ :=> t) area (Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body))) -> do
       exp' <- optimizeAbs (addVarExclusions exclusionVars env) name [] abs
       next <- optimizeBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
+    abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)) -> do
       exp' <- optimize (addVarExclusions exclusionVars env) abs
       next <- optimizeBody exclusionVars env es
       return $ exp' : next
 
-    Slv.Solved _ _ (Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name e)) _ _) -> do
+    Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name e)) _ _) -> do
       e'   <- optimize env exp
       next <- optimizeBody (name : exclusionVars) env es
       return $ e' : next
 
-    Slv.Solved _ _ (Slv.Assignment name e) -> do
+    Slv.Typed _ _ (Slv.Assignment name e) -> do
       e'   <- optimize env exp
       next <- optimizeBody (name : exclusionVars) env es
       return $ e' : next
@@ -350,11 +347,11 @@ optimizeBody exclusionVars env body = case body of
 
 collectAbsParams :: Slv.Exp -> ([String], [Slv.Exp])
 collectAbsParams abs = case abs of
-  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) ->
+  Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) [body]) ->
     let (nextParams, nextBody) = collectAbsParams body
     in  (param : nextParams, nextBody)
 
-  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
+  Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body) ->
     ([param], body)
 
   b ->
@@ -363,7 +360,7 @@ collectAbsParams abs = case abs of
 
 collectPlaceholderParams :: Slv.Exp -> ([String], Slv.Exp)
 collectPlaceholderParams ph = case ph of
-  Slv.Solved _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ False True, ts) next) ->
+  Slv.Typed _ _ (Slv.Placeholder (Slv.ClassRef interfaceName _ False True, ts) next) ->
     let (nextParams, nextBody) = collectPlaceholderParams next
         tsStr = buildTypeStrForPlaceholder ts
     in  ("$" <> interfaceName <> "$" <> tsStr : nextParams, nextBody)
@@ -374,7 +371,7 @@ collectPlaceholderParams ph = case ph of
 
 collectAppArgs :: Bool -> Slv.Exp -> (Slv.Exp, [Slv.Exp])
 collectAppArgs isFirst app = case app of
-  Slv.Solved _ _ (Slv.App next arg isFinal) | not isFinal || isFirst ->
+  Slv.Typed _ _ (Slv.App next arg isFinal) | not isFinal || isFirst ->
     let (nextFn, nextArgs) = collectAppArgs False next
     in  (nextFn, nextArgs <> [arg])
 
@@ -389,8 +386,8 @@ fillClosureParams paramCount t =
   in  foldr fn t $ replicate missingParams (tVar "filledParam")
 
 
-optimizeAbs :: Env -> String -> [String] -> Slv.Exp -> Optimize Opt.Exp
-optimizeAbs env functionName placeholders abs@(Slv.Solved (ps :=> t) area _) = do
+optimizeAbs :: Env -> String -> [String] -> Slv.Exp -> Optimize CC.Exp
+optimizeAbs env functionName placeholders abs@(Slv.Typed (ps :=> t) area _) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let (params, body') = collectAbsParams abs
@@ -405,7 +402,7 @@ optimizeAbs env functionName placeholders abs@(Slv.Solved (ps :=> t) area _) = d
           else
             foldr fn t $ tVar "dict" <$ placeholders
 
-    return $ Opt.Optimized (ps :=> t') area $ TopLevelAbs functionName params' body''
+    return $ CC.Typed (ps :=> t') area $ CC.TopLevelAbs functionName params' body''
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
@@ -417,29 +414,29 @@ optimizeAbs env functionName placeholders abs@(Slv.Solved (ps :=> t) area _) = d
 
     let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-    let liftedType = foldr fn t (Opt.getType . snd <$> fvs)
-    let lifted = Opt.Optimized (ps :=> liftedType) area (Opt.TopLevelAbs functionName' paramsWithFreeVars body'')
+    let liftedType = foldr fn t (CC.getType . snd <$> fvs)
+    let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName' paramsWithFreeVars body'')
     addTopLevelExp lifted
 
-    let functionNode = Opt.Optimized (ps :=> t) area (Opt.Var functionName')
+    let functionNode = CC.Typed (ps :=> t) area (CC.Var functionName')
 
     if null fvs then
-      return $ Opt.Optimized (ps :=> t) area (Opt.Assignment functionName functionNode False)
+      return $ CC.Typed (ps :=> t) area (CC.Assignment functionName functionNode False)
     else
       -- We need to carry types here
       let fvVarNodes = snd <$> fvs
-      in  return $ Opt.Optimized (ps :=> t) area (Opt.Assignment functionName (Opt.Optimized (ps :=> t) area (Opt.App functionNode fvVarNodes)) False)
+      in  return $ CC.Typed (ps :=> t) area (CC.Assignment functionName (CC.Typed (ps :=> t) area (CC.App functionNode fvVarNodes)) False)
 
 
 
 buildAbs :: [(String, Qual Type)] -> [Slv.Exp] -> Slv.Exp
 buildAbs [(param, ps :=> t)] body =
   let bodyType = Slv.getType (last body)
-  in  Slv.Solved (ps :=> (t `fn` bodyType)) emptyArea (Slv.Abs (Slv.Solved (ps :=> t) emptyArea param) body)
+  in  Slv.Typed (ps :=> (t `fn` bodyType)) emptyArea (Slv.Abs (Slv.Typed (ps :=> t) emptyArea param) body)
 buildAbs ((param, ps :=> t) : xs) body =
   let next     = buildAbs xs body
       nextType = Slv.getType next
-  in  Slv.Solved ([] :=> (t `fn` nextType)) emptyArea (Slv.Abs (Slv.Solved (ps :=> t) emptyArea param) [next])
+  in  Slv.Typed ([] :=> (t `fn` nextType)) emptyArea (Slv.Abs (Slv.Typed (ps :=> t) emptyArea param) [next])
 
 
 buildApp :: Slv.Exp -> [Slv.Exp] -> Slv.Exp
@@ -447,12 +444,12 @@ buildApp f args =
   buildApp' (length args) (length args) f args
 
 buildApp' :: Int -> Int -> Slv.Exp -> [Slv.Exp] -> Slv.Exp
-buildApp' total nth f@(Slv.Solved (ps :=> t) area f') [arg] =
-  Slv.Solved (ps :=> dropFirstParamType t) area (Slv.App f arg (total == nth))
-buildApp' total nth f@(Slv.Solved (ps :=> t) _ f') xs =
-  let arg@(Slv.Solved _ area _) = last xs
+buildApp' total nth f@(Slv.Typed (ps :=> t) area f') [arg] =
+  Slv.Typed (ps :=> dropFirstParamType t) area (Slv.App f arg (total == nth))
+buildApp' total nth f@(Slv.Typed (ps :=> t) _ f') xs =
+  let arg@(Slv.Typed _ area _) = last xs
       subApp                    = buildApp' total (nth - 1) f (init xs)
-  in  Slv.Solved (ps :=> dropNFirstParamTypes nth t) area (Slv.App subApp arg (total == nth))
+  in  Slv.Typed (ps :=> dropNFirstParamTypes nth t) area (Slv.App subApp arg (total == nth))
 
 
 -- Checks for Var "$" placeholders
@@ -460,10 +457,10 @@ buildApp' total nth f@(Slv.Solved (ps :=> t) _ f') xs =
 placeholderArgCheck :: Int -> [Slv.Exp] -> ([Slv.Exp], [(String, Qual Type)])
 placeholderArgCheck phIndex args = case args of
   (arg : next) -> case arg of
-    Slv.Solved t area (Slv.Var "$") ->
+    Slv.Typed t area (Slv.Var "$") ->
       let paramName          = "__$" ++ show phIndex ++ "__"
           (nextArgs, params) = placeholderArgCheck (phIndex + 1) next
-      in  (Slv.Solved t area (Slv.Var paramName) : nextArgs, (paramName, t) : params)
+      in  (Slv.Typed t area (Slv.Var paramName) : nextArgs, (paramName, t) : params)
 
     _ ->
       let (nextArgs, params) = placeholderArgCheck phIndex next
@@ -473,42 +470,42 @@ placeholderArgCheck phIndex args = case args of
     ([], [])
 
 
-instance Optimizable Slv.Exp Opt.Exp where
-  optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
-  optimize env fullExp@(Slv.Solved qt@(ps :=> t) area e) = case e of
+instance Optimizable Slv.Exp CC.Exp where
+  optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ CC.Untyped area (CC.TypeExport name)
+  optimize env fullExp@(Slv.Typed qt@(ps :=> t) area e) = case e of
     Slv.LNum x -> case t of
       TVar _ ->
-        return $ Opt.Optimized qt area (
-          Opt.App
-            ( Opt.Optimized qt area (
-                Opt.Placeholder
-                  (Opt.MethodRef "Number" "__coerceNumber__" True, buildTypeStrForPlaceholder [t])
-                  (Opt.Optimized qt area (Opt.Var "__coerceNumber__"))
+        return $ CC.Typed qt area (
+          CC.App
+            ( CC.Typed qt area (
+                CC.Placeholder
+                  (CC.MethodRef "Number" "__coerceNumber__" True, buildTypeStrForPlaceholder [t])
+                  (CC.Typed qt area (CC.Var "__coerceNumber__"))
               )
             )
-            [Opt.Optimized qt area (Opt.LNum x)]
+            [CC.Typed qt area (CC.LNum x)]
         )
 
       _ ->
-        return $ Opt.Optimized qt area (Opt.LNum x)
+        return $ CC.Typed qt area (CC.LNum x)
 
     Slv.LFloat x ->
-      return $ Opt.Optimized qt area (Opt.LFloat x)
+      return $ CC.Typed qt area (CC.LFloat x)
 
     Slv.LStr x ->
-      return $ Opt.Optimized qt area (Opt.LStr x)
+      return $ CC.Typed qt area (CC.LStr x)
 
     Slv.LBool x ->
-      return $ Opt.Optimized qt area (Opt.LBool x)
+      return $ CC.Typed qt area (CC.LBool x)
 
     Slv.LUnit ->
-      return $ Opt.Optimized qt area Opt.LUnit
+      return $ CC.Typed qt area CC.LUnit
 
     Slv.TemplateString es -> do
       es' <- mapM (optimize env { stillTopLevel = False }) es
-      return $ Opt.Optimized qt area (Opt.TemplateString es')
+      return $ CC.Typed qt area (CC.TemplateString es')
 
-    Slv.JSExp js         -> return $ Opt.Optimized qt area (Opt.JSExp js)
+    Slv.JSExp js         -> return $ CC.Typed qt area (CC.JSExp js)
 
     -- TODO: handle application placeholders $
     -- to do this we need to check the collected args, if some of them are Var "$"
@@ -518,9 +515,9 @@ instance Optimizable Slv.Exp Opt.Exp where
           (args', wrapperPlaceholderParams) = placeholderArgCheck 0 args
       if null wrapperPlaceholderParams then do
         let (fn'', extraArgs) = case fn' of
-              Slv.Solved t area (Slv.Var fnName) -> case M.lookup fnName (lifted env) of
+              Slv.Typed t area (Slv.Var fnName) -> case M.lookup fnName (lifted env) of
                 Just (newName, extraArgs) ->
-                  (Slv.Solved t area (Slv.Var newName), extraArgs)
+                  (Slv.Typed t area (Slv.Var newName), extraArgs)
 
                 Nothing ->
                   (fn', [])
@@ -529,7 +526,7 @@ instance Optimizable Slv.Exp Opt.Exp where
                 (fn', [])
         fn'''  <- optimize env { stillTopLevel = False } fn''
         args' <- mapM (optimize env { stillTopLevel = False }) args
-        return $ Opt.Optimized qt area (Opt.App fn''' (extraArgs ++ args'))
+        return $ CC.Typed qt area (CC.App fn''' (extraArgs ++ args'))
       else do
         -- if we found some Var "$" args we need to wrap it in an Abs
         -- params
@@ -540,22 +537,22 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.Access rec field -> do
       rec'   <- optimize env { stillTopLevel = False } rec
       field' <- optimize env { stillTopLevel = False } field
-      return $ Opt.Optimized qt area (Opt.Access rec' field')
+      return $ CC.Typed qt area (CC.Access rec' field')
 
-    Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) -> do
+    Slv.Export (Slv.Typed _ _ (Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)))) -> do
       optimizeAbs env name [] abs
 
-    Slv.TypedExp (Slv.Solved _ _ (Slv.Export (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))))) _ _ -> do
+    Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)))))) _ _ -> do
       optimizeAbs env name [] abs
 
-    Slv.TypedExp (Slv.Solved _ _ (Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)))) _ _ -> do
+    Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)))) _ _ -> do
       optimizeAbs env name [] abs
 
-    Slv.Assignment name abs@(Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body)) -> do
+    Slv.Assignment name abs@(Slv.Typed _ _ (Slv.Abs (Slv.Typed _ _ param) body)) -> do
       optimizeAbs env name [] abs
 
     -- unnamed abs, we need to generate a name here
-    Slv.Abs (Slv.Solved _ _ param) body -> do
+    Slv.Abs (Slv.Typed _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
       body''       <- optimizeBody [] env body'
       fvs          <- findFreeVars env fullExp
@@ -563,33 +560,33 @@ instance Optimizable Slv.Exp Opt.Exp where
 
       let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-      let liftedType = foldr fn t (Opt.getType . snd <$> fvs)
-      let lifted = Opt.Optimized (ps :=> liftedType) area (Opt.TopLevelAbs functionName paramsWithFreeVars body'')
+      let liftedType = foldr fn t (CC.getType . snd <$> fvs)
+      let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName paramsWithFreeVars body'')
       addTopLevelExp lifted
 
-      let functionNode = Opt.Optimized (ps :=> liftedType) area (Opt.Var functionName)
+      let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName)
 
       if null fvs then
         return functionNode
       else
         let fvVarNodes = snd <$> fvs
-        in  return $ Opt.Optimized qt area (Opt.App functionNode fvVarNodes)
+        in  return $ CC.Typed qt area (CC.App functionNode fvVarNodes)
 
-    Slv.Assignment functionName ph@(Slv.Solved _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ False _), ts) exp)) -> do
+    Slv.Assignment functionName ph@(Slv.Typed _ _ (Slv.Placeholder (placeholderRef@(Slv.ClassRef interfaceName _ False _), ts) exp)) -> do
       let tsStr = buildTypeStrForPlaceholder ts
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
         case innerExp of
-          Slv.Solved _ _ (Slv.Abs _ _) -> do
+          Slv.Typed _ _ (Slv.Abs _ _) -> do
             optimizeAbs env functionName params innerExp
           _ -> do
             innerExp' <- optimize env { stillTopLevel = False } innerExp
-            return $ Opt.Optimized (ps :=> typeWithPlaceholders) area $ TopLevelAbs functionName params [innerExp']
+            return $ CC.Typed (ps :=> typeWithPlaceholders) area $ CC.TopLevelAbs functionName params [innerExp']
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
-            isFunction = isFunctionType (getType exp)
+            isFunction = isFunctionType (Slv.getType exp)
         let env' =
               -- if the wrapped thing is not a function type, we just have a normal exp wrapped in a function that
               -- takes placeholders, we should then closure the variable as well if it's a reassignment
@@ -602,223 +599,223 @@ instance Optimizable Slv.Exp Opt.Exp where
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
         functionName' <- generateLiftedName functionName
-        innerExp'     <- optimize (addLiftedLambda functionName functionName' (Opt.Optimized ([] :=> tVar "dict") emptyArea . Opt.Var <$> paramsWithFreeVars) env) innerExp
+        innerExp'     <- optimize (addLiftedLambda functionName functionName' (CC.Typed ([] :=> tVar "dict") emptyArea . CC.Var <$> paramsWithFreeVars) env) innerExp
 
-        let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (Opt.getType . snd <$> fvs))
-        let lifted = Opt.Optimized (ps :=> liftedType) area (Opt.TopLevelAbs functionName' paramsWithFreeVars [innerExp'])
+        let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (CC.getType . snd <$> fvs))
+        let lifted = CC.Typed (ps :=> liftedType) area (CC.TopLevelAbs functionName' paramsWithFreeVars [innerExp'])
         addTopLevelExp lifted
 
-        let functionNode = Opt.Optimized (ps :=> liftedType) area (Opt.Var functionName')
+        let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName')
 
-        return $ Opt.Optimized qt area (Opt.Assignment functionName functionNode False)
+        return $ CC.Typed qt area (CC.Assignment functionName functionNode False)
 
     -- TODO: Add top level info so that we can generate or not the name for the global scope
     Slv.Assignment name exp -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area (Opt.Assignment name exp' (stillTopLevel env))
+      return $ CC.Typed qt area (CC.Assignment name exp' (stillTopLevel env))
 
     Slv.Export exp -> do
       optimize env exp
 
     Slv.NameExport name     ->
-      return $ Opt.Optimized qt area (Opt.NameExport name)
+      return $ CC.Typed qt area (CC.NameExport name)
 
     Slv.Var        name     -> case M.lookup name (lifted env) of
       Just (newName, capturedArgs) ->
-        return $ Opt.Optimized qt area (Opt.App (Opt.Optimized qt area (Opt.Var newName)) capturedArgs)
+        return $ CC.Typed qt area (CC.App (CC.Typed qt area (CC.Var newName)) capturedArgs)
 
       Nothing ->
-        return $ Opt.Optimized qt area (Opt.Var name)
+        return $ CC.Typed qt area (CC.Var name)
 
     Slv.TypedExp exp _ scheme -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area (Opt.TypedExp exp' scheme)
+      return $ CC.Typed qt area (CC.TypedExp exp' scheme)
 
     Slv.ListConstructor items -> do
       items' <- mapM (optimize env) items
-      return $ Opt.Optimized qt area (Opt.ListConstructor items')
+      return $ CC.Typed qt area (CC.ListConstructor items')
 
     Slv.TupleConstructor exps -> do
       exps' <- mapM (optimize env) exps
-      return $ Opt.Optimized qt area (Opt.TupleConstructor exps')
+      return $ CC.Typed qt area (CC.TupleConstructor exps')
 
     Slv.Record fields -> do
       fields' <- mapM (optimize env { stillTopLevel = False }) fields
-      return $ Opt.Optimized qt area (Opt.Record fields')
+      return $ CC.Typed qt area (CC.Record fields')
 
     Slv.If cond truthy falsy -> do
       cond'   <- optimize env { stillTopLevel = False } cond
       truthy' <- optimize env { stillTopLevel = False } truthy
       falsy'  <- optimize env { stillTopLevel = False } falsy
-      return $ Opt.Optimized qt area (Opt.If cond' truthy' falsy')
+      return $ CC.Typed qt area (CC.If cond' truthy' falsy')
 
     Slv.Do exps -> do
       exps' <- optimizeBody [] env { stillTopLevel = False } exps
-      return $ Opt.Optimized qt area (Opt.Do exps')
+      return $ CC.Typed qt area (CC.Do exps')
 
     Slv.Where exp iss -> do
       exp' <- optimize env { stillTopLevel = False } exp
       iss' <- mapM (optimize env { stillTopLevel = False }) iss
-      return $ Opt.Optimized qt area (Opt.Where exp' iss')
+      return $ CC.Typed qt area (CC.Where exp' iss')
 
     Slv.Extern qt name originalName -> do
-      return $ Opt.Optimized qt area (Opt.Extern qt name originalName)
+      return $ CC.Typed qt area (CC.Extern qt name originalName)
 
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- optimize env exp
       placeholderRef' <- optimizePlaceholderRef placeholderRef
       let tsStr = buildTypeStrForPlaceholder ts
-      return $ Opt.Optimized qt area (Opt.Placeholder (placeholderRef', tsStr) exp')
+      return $ CC.Typed qt area (CC.Placeholder (placeholderRef', tsStr) exp')
 
 
 
-optimizePlaceholderRef :: Slv.PlaceholderRef -> Optimize Opt.PlaceholderRef
+optimizePlaceholderRef :: Slv.PlaceholderRef -> Optimize CC.PlaceholderRef
 optimizePlaceholderRef phr = case phr of
   Slv.ClassRef cls ps call var -> do
     ps'  <- mapM optimizeClassRefPred ps
-    return $ Opt.ClassRef cls ps' call var
+    return $ CC.ClassRef cls ps' call var
 
   Slv.MethodRef cls mtd call -> do
-    return $ Opt.MethodRef cls mtd call
+    return $ CC.MethodRef cls mtd call
 
-optimizeClassRefPred :: Slv.ClassRefPred -> Optimize Opt.ClassRefPred
+optimizeClassRefPred :: Slv.ClassRefPred -> Optimize CC.ClassRefPred
 optimizeClassRefPred (Slv.CRPNode cls ts var ps) = do
   ps'  <- mapM optimizeClassRefPred ps
   let tsStr = buildTypeStrForPlaceholder ts
-  return $ Opt.CRPNode cls tsStr var ps'
+  return $ CC.CRPNode cls tsStr var ps'
 
 
-instance Optimizable Slv.Typing Opt.Typing where
+instance Optimizable Slv.Typing CC.Typing where
   optimize env (Slv.Untyped area typing) = case typing of
-    Slv.TRSingle name       -> return $ Opt.Untyped area $ Opt.TRSingle name
+    Slv.TRSingle name       -> return $ CC.Untyped area $ CC.TRSingle name
 
     Slv.TRComp name typings -> do
       typings' <- mapM (optimize env) typings
-      return $ Opt.Untyped area $ Opt.TRComp name typings'
+      return $ CC.Untyped area $ CC.TRComp name typings'
 
     Slv.TRArr left right -> do
       left'  <- optimize env left
       right' <- optimize env right
-      return $ Opt.Untyped area $ Opt.TRArr left' right'
+      return $ CC.Untyped area $ CC.TRArr left' right'
 
     Slv.TRRecord fields base -> do
       fields' <- mapM (optimize env) fields
       base'   <- mapM (optimize env) base
-      return $ Opt.Untyped area $ Opt.TRRecord fields' base'
+      return $ CC.Untyped area $ CC.TRRecord fields' base'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (optimize env) typings
-      return $ Opt.Untyped area $ Opt.TRTuple typings'
+      return $ CC.Untyped area $ CC.TRTuple typings'
 
     Slv.TRConstrained constraints typing -> do
       constraints' <- mapM (optimize env) constraints
       typing'      <- optimize env typing
-      return $ Opt.Untyped area $ Opt.TRConstrained constraints' typing'
+      return $ CC.Untyped area $ CC.TRConstrained constraints' typing'
 
-instance Optimizable Slv.ListItem Opt.ListItem where
-  optimize env (Slv.Solved qt@(_ :=> t) area item) = case item of
+instance Optimizable Slv.ListItem CC.ListItem where
+  optimize env (Slv.Typed qt@(_ :=> t) area item) = case item of
     Slv.ListItem exp -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area $ Opt.ListItem exp'
+      return $ CC.Typed qt area $ CC.ListItem exp'
 
     Slv.ListSpread exp -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area $ Opt.ListSpread exp'
+      return $ CC.Typed qt area $ CC.ListSpread exp'
 
-instance Optimizable Slv.Field Opt.Field where
-  optimize env (Slv.Solved qt@(_ :=> t) area item) = case item of
+instance Optimizable Slv.Field CC.Field where
+  optimize env (Slv.Typed qt@(_ :=> t) area item) = case item of
     Slv.Field (name, exp) -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area $ Opt.Field (name, exp')
+      return $ CC.Typed qt area $ CC.Field (name, exp')
 
     Slv.FieldSpread exp -> do
       exp' <- optimize env exp
-      return $ Opt.Optimized qt area $ Opt.FieldSpread exp'
+      return $ CC.Typed qt area $ CC.FieldSpread exp'
 
-instance Optimizable Slv.Is Opt.Is where
-  optimize env (Slv.Solved qt@(_ :=> t) area (Slv.Is pat exp)) = do
+instance Optimizable Slv.Is CC.Is where
+  optimize env (Slv.Typed qt@(_ :=> t) area (Slv.Is pat exp)) = do
     pat' <- optimize env pat
     exp' <- optimize env exp
-    return $ Opt.Optimized qt area (Opt.Is pat' exp')
+    return $ CC.Typed qt area (CC.Is pat' exp')
 
-instance Optimizable Slv.Pattern Opt.Pattern where
-  optimize env (Slv.Solved qt@(_ :=> t) area pat) = case pat of
-    Slv.PVar name       -> return $ Opt.Optimized qt area $ Opt.PVar name
+instance Optimizable Slv.Pattern CC.Pattern where
+  optimize env (Slv.Typed qt@(_ :=> t) area pat) = case pat of
+    Slv.PVar name       -> return $ CC.Typed qt area $ CC.PVar name
 
-    Slv.PAny            -> return $ Opt.Optimized qt area Opt.PAny
+    Slv.PAny            -> return $ CC.Typed qt area CC.PAny
 
     Slv.PCon name pats -> do
       pats' <- mapM (optimize env) pats
-      return $ Opt.Optimized qt area $ Opt.PCon name pats'
+      return $ CC.Typed qt area $ CC.PCon name pats'
 
-    Slv.PNum    num  -> return $ Opt.Optimized qt area $ Opt.PNum num
+    Slv.PNum    num  -> return $ CC.Typed qt area $ CC.PNum num
 
-    Slv.PStr    str  -> return $ Opt.Optimized qt area $ Opt.PStr str
+    Slv.PStr    str  -> return $ CC.Typed qt area $ CC.PStr str
 
-    Slv.PBool   boo  -> return $ Opt.Optimized qt area $ Opt.PBool boo
+    Slv.PBool   boo  -> return $ CC.Typed qt area $ CC.PBool boo
 
     Slv.PRecord pats -> do
       pats' <- mapM (optimize env) pats
-      return $ Opt.Optimized qt area $ Opt.PRecord pats'
+      return $ CC.Typed qt area $ CC.PRecord pats'
 
     Slv.PList pats -> do
       pats' <- mapM (optimize env) pats
-      return $ Opt.Optimized qt area $ Opt.PList pats'
+      return $ CC.Typed qt area $ CC.PList pats'
 
     Slv.PTuple pats -> do
       pats' <- mapM (optimize env) pats
-      return $ Opt.Optimized qt area $ Opt.PTuple pats'
+      return $ CC.Typed qt area $ CC.PTuple pats'
 
     Slv.PSpread pat -> do
       pat' <- optimize env pat
-      return $ Opt.Optimized qt area $ Opt.PSpread pat'
+      return $ CC.Typed qt area $ CC.PSpread pat'
 
-instance Optimizable Slv.TypeDecl Opt.TypeDecl where
+instance Optimizable Slv.TypeDecl CC.TypeDecl where
   optimize env (Slv.Untyped area typeDecl) = case typeDecl of
     adt@Slv.ADT{} -> do
       ctors <- mapM optimizeConstructors $ Slv.adtconstructors adt
-      return $ Opt.Untyped area $ Opt.ADT { Opt.adtname         = Slv.adtname adt
-                                          , Opt.adtparams       = Slv.adtparams adt
-                                          , Opt.adtconstructors = ctors
-                                          , Opt.adtexported     = Slv.adtexported adt
+      return $ CC.Untyped area $ CC.ADT { CC.adtname         = Slv.adtname adt
+                                          , CC.adtparams       = Slv.adtparams adt
+                                          , CC.adtconstructors = ctors
+                                          , CC.adtexported     = Slv.adtexported adt
                                           }
 
     alias@Slv.Alias{} -> do
       aliastype <- optimize env $ Slv.aliastype alias
-      return $ Opt.Untyped area $ Opt.Alias { Opt.aliasname     = Slv.aliasname alias
-                                            , Opt.aliasparams   = Slv.aliasparams alias
-                                            , Opt.aliastype     = aliastype
-                                            , Opt.aliasexported = Slv.aliasexported alias
+      return $ CC.Untyped area $ CC.Alias { CC.aliasname     = Slv.aliasname alias
+                                            , CC.aliasparams   = Slv.aliasparams alias
+                                            , CC.aliastype     = aliastype
+                                            , CC.aliasexported = Slv.aliasexported alias
                                             }
    where
-    optimizeConstructors :: Slv.Constructor -> Optimize Opt.Constructor
+    optimizeConstructors :: Slv.Constructor -> Optimize CC.Constructor
     optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings t)) = do
       typings' <- mapM (optimize env) typings
-      return $ Opt.Untyped area $ Opt.Constructor name typings' t
+      return $ CC.Untyped area $ CC.Constructor name typings' t
 
 
-instance Optimizable Slv.Interface Opt.Interface where
+instance Optimizable Slv.Interface CC.Interface where
   optimize env (Slv.Untyped area (Slv.Interface name constraints vars methods methodTypings)) = do
     methodTypings' <- mapM (optimize env) methodTypings
-    return $ Opt.Untyped area $ Opt.Interface name constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
+    return $ CC.Untyped area $ CC.Interface name constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
 
-instance Optimizable Slv.Instance Opt.Instance where
+instance Optimizable Slv.Instance CC.Instance where
   optimize env (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do
     let typingStr = intercalate "_" (getTypeHeadName <$> predTypes pred)
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> optimize env exp) methods
-    return $ Opt.Untyped area $ Opt.Instance interface constraints typingStr methods'
+    return $ CC.Untyped area $ CC.Instance interface constraints typingStr methods'
 
-instance Optimizable Slv.Import Opt.Import where
+instance Optimizable Slv.Import CC.Import where
   optimize _ (Slv.Untyped area imp) = case imp of
     Slv.NamedImport names relPath absPath ->
-      return $ Opt.Untyped area $ Opt.NamedImport (optimizeImportName <$> names) relPath absPath
+      return $ CC.Untyped area $ CC.NamedImport (optimizeImportName <$> names) relPath absPath
 
     Slv.DefaultImport namespace relPath absPath ->
-      return $ Opt.Untyped area $ Opt.DefaultImport (optimizeImportName namespace) relPath absPath
+      return $ CC.Untyped area $ CC.DefaultImport (optimizeImportName namespace) relPath absPath
 
 
-optimizeImportName :: Slv.Solved Slv.Name -> Opt.Optimized Opt.Name
-optimizeImportName (Slv.Untyped area name) = Opt.Untyped area name
+optimizeImportName :: Slv.Typed Slv.Name -> CC.Optimized CC.Name
+optimizeImportName (Slv.Untyped area name) = CC.Untyped area name
 
 getMethodNames :: Slv.Interface -> [String]
 getMethodNames interface = case interface of
@@ -852,7 +849,7 @@ getGlobalsFromImports imports = case imports of
     []
 
 
-instance Optimizable Slv.AST Opt.AST where
+instance Optimizable Slv.AST CC.AST where
   optimize env ast = do
     let globalVars         = mapMaybe Slv.getExpName $ Slv.aexps ast
         globalMethods      = concatMap getMethodNames $ Slv.ainterfaces ast
@@ -870,12 +867,12 @@ instance Optimizable Slv.AST Opt.AST where
     defs <- getTopLevelExps
     resetTopLevelExps
 
-    return $ Opt.AST { Opt.aimports    = imports
-                     , Opt.aexps       = defs ++ exps
-                     , Opt.atypedecls  = typeDecls
-                     , Opt.ainterfaces = interfaces
-                     , Opt.ainstances  = instances
-                     , Opt.apath       = Slv.apath ast
+    return $ CC.AST { CC.aimports    = imports
+                     , CC.aexps       = defs ++ exps
+                     , CC.atypedecls  = typeDecls
+                     , CC.ainterfaces = interfaces
+                     , CC.ainstances  = instances
+                     , CC.apath       = Slv.apath ast
                      }
 
 
@@ -896,43 +893,43 @@ getTypeHeadName t = case t of
     n
 
   TCon (TC n _) _ -> case n of
-    "{}"          ->
+    "{}" ->
       "Unit"
 
-    "(,)"         ->
+    "(,)" ->
       "Tuple_2"
 
-    "(,,)"        ->
+    "(,,)" ->
       "Tuple_3"
 
-    "(,,,)"       ->
+    "(,,,)" ->
       "Tuple_4"
 
-    "(,,,,)"      ->
+    "(,,,,)" ->
       "Tuple_5"
 
-    "(,,,,,)"     ->
+    "(,,,,,)" ->
       "Tuple_6"
 
-    "(,,,,,,)"    ->
+    "(,,,,,,)" ->
       "Tuple_7"
 
-    "(,,,,,,,)"   ->
+    "(,,,,,,,)" ->
       "Tuple_8"
 
-    "(,,,,,,,,)"  ->
+    "(,,,,,,,,)" ->
       "Tuple_9"
 
     "(,,,,,,,,,)" ->
       "Tuple_10"
 
-    _             ->
+    _ ->
       n
 
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
     getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr
 
-  TApp l _  ->
+  TApp l _ ->
     getTypeHeadName l
 
   TRecord fields _ ->
@@ -944,7 +941,7 @@ getTypeHeadName t = case t of
 -- I think at some point we might want to follow imports in the optimization
 -- process in order to correctly reduce dictionaries in the right order and have
 -- an env for optimization to keep track of what dictionaries have been removed.
-optimizeTable :: Slv.Table -> Opt.Table
+optimizeTable :: Slv.Table -> CC.Table
 optimizeTable table =
   let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
       optimized = mapM (optimize env) table

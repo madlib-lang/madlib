@@ -24,29 +24,29 @@ class Collectable a where
 
 instance Collectable Exp where
   collect (Untyped _ _) = []
-  collect (Solved (ps :=> t) (Area (Loc _ l _) _) exp) = case exp of
-    Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)) ->
+  collect (Typed (ps :=> t) (Area (Loc _ l _) _) exp) = case exp of
+    Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) ->
+    Export (Typed _ _ (Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)))) ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    TypedExp (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))) _ _ ->
+    TypedExp (Typed _ _ (Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)))) _ _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    TypedExp (Solved _ _ (Export (Solved _ _ (Assignment name (Solved _ (Area (Loc _ line _) _) (Abs _ body)))))) _ _ ->
+    TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)))))) _ _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
     Assignment name e -> if isFunctionType t
       then [Function { line = l, name = name }, Line { line = l }] <> collect e
       else [] <> collect e
-    Export (Solved _ _ (Assignment name e)) -> if isFunctionType t
+    Export (Typed _ _ (Assignment name e)) -> if isFunctionType t
       then [Function { line = l, name = name }, Line { line = l }] <> collect e
       else [] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Assignment name e)) _ _ -> if isFunctionType t
+    TypedExp (Typed _ (Area (Loc _ l' _) _) (Assignment name e)) _ _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [] <> collect e
-    TypedExp (Solved _ (Area (Loc _ l' _) _) (Export (Solved _ _ (Assignment name e)))) _ _ -> if isFunctionType t
+    TypedExp (Typed _ (Area (Loc _ l' _) _) (Export (Typed _ _ (Assignment name e)))) _ _ -> if isFunctionType t
       then [Function { line = l', name = name }, Line { line = l' }] <> collect e
       else [] <> collect e
 
@@ -69,17 +69,17 @@ isOperator :: String -> Bool
 isOperator n = "|>" == n || "==" == n || ">=" == n || "<=" == n || "&&" == n || "||" == n || "!=" == n
 
 instance Collectable Is where
-  collect (Solved _ (Area (Loc _ l _) _) (Is _ e)) = [Line { line = l }] <> collect e
+  collect (Typed _ (Area (Loc _ l _) _) (Is _ e)) = [Line { line = l }] <> collect e
   collect _ = []
 
 instance Collectable Field where
-  collect (Solved _ _ (Field (name, exp))) = collect exp
-  collect (Solved _ _ (FieldSpread exp))   = collect exp
+  collect (Typed _ _ (Field (name, exp))) = collect exp
+  collect (Typed _ _ (FieldSpread exp))   = collect exp
   collect _                                = []
 
 instance Collectable ListItem where
-  collect (Solved _ _ (ListItem exp))   = collect exp
-  collect (Solved _ _ (ListSpread exp)) = collect exp
+  collect (Typed _ _ (ListItem exp))   = collect exp
+  collect (Typed _ _ (ListSpread exp)) = collect exp
   collect _                             = []
 
 isFunction :: Coverable -> Bool
