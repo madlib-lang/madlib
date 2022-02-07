@@ -66,11 +66,12 @@ char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *ins
 
   madlib__list__Node_t *unboxedList = *list;
   int currentIndex = 0;
-  char *inspectedItems[length];
+  char **inspectedItems = (char **)GC_malloc_uncollectable(sizeof(char*)*length);
   size_t sizeOfItems = 0;
+  void *inspect = &inspectDict->inspect;
 
   for (int i = 0; i < length; i++) {
-    inspectedItems[i] = *(char **)__applyPAP__((void *)&inspectDict->inspect, 1, unboxedList->value);
+    inspectedItems[i] = *(char **)__applyPAP__(inspect, 1, unboxedList->value);
     sizeOfItems += strlen(inspectedItems[i]);
     unboxedList = unboxedList->next;
   }
@@ -95,9 +96,10 @@ char **madlib__list__internal__inspect(madlib__inspect__inspectDictionary_t *ins
   strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
   strncpy(result + currentPosition + lengthOfItem, "]\0", sizeof(char) * 2);
 
+  GC_free(inspectedItems);
+
   char **boxed = (char **)GC_malloc(sizeof(char*));
   *boxed = result;
-
 
   return boxed;
 }
