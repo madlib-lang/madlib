@@ -12,6 +12,7 @@ import           Data.List
 import qualified AST.Solved                    as Slv
 import qualified AST.Optimized                 as Opt
 import           Infer.Type
+import Explain.Location
 
 
 data OptimizationState
@@ -63,22 +64,86 @@ getTypeShortname enabled n
       Nothing -> generateTypeShortname n
 
 
+collectAppArgs :: Bool -> Slv.Exp -> (Slv.Exp, [Slv.Exp])
+collectAppArgs isFirst app = case app of
+  Slv.Solved _ _ (Slv.App next arg isFinal) | not isFinal || isFirst ->
+    let (nextFn, nextArgs) = collectAppArgs False next
+    in  (nextFn, nextArgs <> [arg])
+
+  b ->
+    (b, [])
+
+
+collectAbsParams :: Slv.Exp -> ([String], [Slv.Exp])
+collectAbsParams abs = case abs of
+  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) [body]) ->
+    let (nextParams, nextBody) = collectAbsParams body
+    in  (param : nextParams, nextBody)
+
+  Slv.Solved _ _ (Slv.Abs (Slv.Solved _ _ param) body) ->
+    ([param], body)
+
+  b ->
+    ([], [b])
+
+
+buildAbs :: [(String, Qual Type)] -> [Slv.Exp] -> Slv.Exp
+buildAbs [(param, ps :=> t)] body =
+  let bodyType = Slv.getType (last body)
+  in  Slv.Solved (ps :=> (t `fn` bodyType)) emptyArea (Slv.Abs (Slv.Solved (ps :=> t) emptyArea param) body)
+buildAbs ((param, ps :=> t) : xs) body =
+  let next     = buildAbs xs body
+      nextType = Slv.getType next
+  in  Slv.Solved ([] :=> (t `fn` nextType)) emptyArea (Slv.Abs (Slv.Solved (ps :=> t) emptyArea param) [next])
+
+
+buildApp :: Slv.Exp -> [Slv.Exp] -> Slv.Exp
+buildApp f args =
+  buildApp' (length args) (length args) f args
+
+buildApp' :: Int -> Int -> Slv.Exp -> [Slv.Exp] -> Slv.Exp
+buildApp' total nth f@(Slv.Solved (ps :=> t) area f') [arg] =
+  Slv.Solved (ps :=> dropFirstParamType t) area (Slv.App f arg (total == nth))
+buildApp' total nth f@(Slv.Solved (ps :=> t) _ f') xs =
+  let arg@(Slv.Solved _ area _) = last xs
+      subApp                    = buildApp' total (nth - 1) f (init xs)
+  in  Slv.Solved (ps :=> dropNFirstParamTypes nth t) area (Slv.App subApp arg (total == nth))
+
+
+-- Checks for Var "$" placeholders
+-- Returns all the args to be applied, as well as the name of params to wrap it
+placeholderArgCheck :: Int -> [Slv.Exp] -> ([Slv.Exp], [(String, Qual Type)])
+placeholderArgCheck phIndex args = case args of
+  (arg : next) -> case arg of
+    Slv.Solved t area (Slv.Var "$") ->
+      let paramName          = "__$" ++ show phIndex ++ "__"
+          (nextArgs, params) = placeholderArgCheck (phIndex + 1) next
+      in  (Slv.Solved t area (Slv.Var paramName) : nextArgs, (paramName, t) : params)
+
+    _ ->
+      let (nextArgs, params) = placeholderArgCheck phIndex next
+      in  (arg : nextArgs, params)
+
+  [] ->
+    ([], [])
+
+
 class Optimizable a b where
   -- Bool is True when --optimize is used
   optimize :: Bool -> a -> Optimize b
 
 instance Optimizable Slv.Exp Opt.Exp where
   optimize _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Opt.Untyped area (Opt.TypeExport name)
-  optimize enabled (Slv.Solved qt@(_ :=> t) area e) = case e of
-    Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.LNum x)
+  optimize enabled fullExp@(Slv.Solved qt@(_ :=> t) area e) = case e of
+    Slv.LNum  x           -> return $ Opt.Optimized t area (Opt.Literal (Opt.LNum x))
 
-    Slv.LFloat x          -> return $ Opt.Optimized t area (Opt.LNum x)
+    Slv.LFloat x          -> return $ Opt.Optimized t area (Opt.Literal (Opt.LFloat x))
 
-    Slv.LStr  x           -> return $ Opt.Optimized t area (Opt.LStr x)
+    Slv.LStr  x           -> return $ Opt.Optimized t area (Opt.Literal (Opt.LStr x))
 
-    Slv.LBool x           -> return $ Opt.Optimized t area (Opt.LBool x)
+    Slv.LBool x           -> return $ Opt.Optimized t area (Opt.Literal (Opt.LBool x))
 
-    Slv.LUnit             -> return $ Opt.Optimized t area Opt.LUnit
+    Slv.LUnit             -> return $ Opt.Optimized t area (Opt.Literal Opt.LUnit)
 
     Slv.TemplateString es -> do
       es' <- mapM (optimize enabled) es
@@ -87,9 +152,18 @@ instance Optimizable Slv.Exp Opt.Exp where
     Slv.JSExp js         -> return $ Opt.Optimized t area (Opt.JSExp js)
 
     Slv.App fn arg close -> do
-      fn'  <- optimize enabled fn
-      arg' <- optimize enabled arg
-      return $ Opt.Optimized t area (Opt.App fn' arg' close)
+      let (fn', args)                       = collectAppArgs True fullExp
+          (args', wrapperPlaceholderParams) = placeholderArgCheck 0 args
+      if null wrapperPlaceholderParams then do
+        fn''  <- optimize enabled fn'
+        args' <- mapM (optimize enabled) args
+        return $ Opt.Optimized t area (Opt.Call fn'' args')
+      else do
+        -- if we found some Var "$" args we need to wrap it in an Abs
+        -- params
+        let appWithRenamedArgs = buildApp fn' args'
+            wrapperAbs         = buildAbs wrapperPlaceholderParams [appWithRenamedArgs]
+        optimize enabled wrapperAbs
 
     Slv.Access rec field -> do
       rec'   <- optimize enabled rec
@@ -97,8 +171,9 @@ instance Optimizable Slv.Exp Opt.Exp where
       return $ Opt.Optimized t area (Opt.Access rec' field')
 
     Slv.Abs (Slv.Solved _ _ param) body -> do
-      body' <- mapM (optimize enabled) body
-      return $ Opt.Optimized t area (Opt.Abs param body')
+      let (params, body') = collectAbsParams fullExp
+      body'' <- mapM (optimize enabled) body'
+      return $ Opt.Optimized t area (Opt.Definition params body'')
 
     Slv.Assignment name exp -> do
       exp' <- optimize enabled exp
