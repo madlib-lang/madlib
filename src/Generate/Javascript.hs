@@ -72,19 +72,19 @@ instance Compilable Exp where
       optimized = ccoptimize config
     in
       case exp of
-        LNum v ->
+        Literal (LNum v) ->
           hpWrapLine coverage astPath l v
 
-        LFloat v ->
+        Literal (LFloat v) ->
           hpWrapLine coverage astPath l v
 
-        LStr v ->
+        Literal (LStr v) ->
           hpWrapLine coverage astPath l v
 
-        LBool v ->
+        Literal (LBool v) ->
           hpWrapLine coverage astPath l v
 
-        LUnit ->
+        Literal LUnit ->
           hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
         Call _ (Typed _ _ (Var "++")) [left, right] ->
