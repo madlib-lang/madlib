@@ -136,11 +136,7 @@ data Exp_
   | Assignment Name Exp
   | Export Exp
   | NameExport Name
-  -- TODO: TypeExport -> gone
-  | TypeExport Name
   | Var Name
-  -- TODO: TypedExp -> remove
-  | TypedExp Exp Ty.Scheme
   | ListConstructor [ListItem]
   | TupleConstructor [Exp]
   | Record [Field]
@@ -171,12 +167,6 @@ getExpName :: Exp -> Maybe String
 getExpName (Untyped _ _)    = Nothing
 getExpName (Typed _ _ exp) = case exp of
   Assignment name _ ->
-    return name
-
-  TypedExp (Typed _ _ (Assignment name _)) _ ->
-    return name
-
-  TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _ ->
     return name
 
   Export (Typed _ _ (Assignment name _)) ->
@@ -229,13 +219,7 @@ isTopLevelFunction exp = case exp of
   Typed _ _ (Assignment _ (Typed _ _ Definition{})) ->
     True
 
-  Typed _ _ (TypedExp (Typed _ _ (Assignment _ (Typed _ _ Definition{}))) _) ->
-    True
-
   Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ Definition{})))) ->
-    True
-
-  Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ Definition{}))))) _) ->
     True
 
   _ ->

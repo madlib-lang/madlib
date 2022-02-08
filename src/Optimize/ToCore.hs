@@ -149,7 +149,6 @@ class Processable a b where
 
 
 instance Processable Slv.Exp Core.Exp where
-  toCore _ (Slv.Untyped area (Slv.TypeExport name)) = return $ Core.Untyped area (Core.TypeExport name)
   toCore enabled fullExp@(Slv.Typed qt area e) = case e of
     Slv.LNum  x           -> return $ Core.Typed qt area (Core.LNum x)
 
@@ -195,9 +194,8 @@ instance Processable Slv.Exp Core.Exp where
 
     Slv.Var        name     -> return $ Core.Typed qt area (Core.Var name)
 
-    Slv.TypedExp exp _ scheme -> do
-      exp' <- toCore enabled exp
-      return $ Core.Typed qt area (Core.TypedExp exp' scheme)
+    Slv.TypedExp exp _ _ -> do
+      toCore enabled exp
 
     Slv.ListConstructor items -> do
       items' <- mapM (toCore enabled) items

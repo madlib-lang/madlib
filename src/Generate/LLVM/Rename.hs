@@ -122,10 +122,6 @@ renameExp env what = case what of
     let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
     in  (Typed t area (NameExport renamed), env)
 
-  Typed t area (TypedExp exp scheme) ->
-    let (renamedExp, env') = renameExp env exp
-    in  (Typed t area (TypedExp renamedExp scheme), env')
-
   Typed t area (ListConstructor items) ->
     let (renamedItems, env') = renameListItems env items
     in  (Typed t area (ListConstructor renamedItems), env')
@@ -284,16 +280,6 @@ renameTopLevelExps env exps = case exps of
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (Typed t area (Export renamedExp) : nextExps, nextEnv)
 
-    Typed t area (TypedExp assignment@(Typed _ _ (Assignment _ _)) scheme) ->
-      let (renamedExp, env')  = renameTopLevelAssignment env assignment
-          (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (TypedExp renamedExp scheme) : nextExps, nextEnv)
-
-    Typed t area (TypedExp (Typed _ _ (Export assignment@(Typed _ _ (Assignment _ _)))) scheme) ->
-      let (renamedExp, env')  = renameTopLevelAssignment env assignment
-          (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (TypedExp (Typed t area (Export renamedExp)) scheme) : nextExps, nextEnv)
-
     Typed t area (Extern qt name foreignName) ->
       let hashedName          = hashName env name
           env'                = extendScope name hashedName env
@@ -447,17 +433,7 @@ populateInitialEnv exps env = case exps of
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ (TypedExp (Typed _ _ (Assignment name _)) _) ->
-      let hashedName = hashName env name
-          env'       = extendScope name hashedName env
-      in  populateInitialEnv next env'
-
     Typed _ _ (Export (Typed _ _ (Assignment name _))) ->
-      let hashedName = hashName env name
-          env'       = extendScope name hashedName env
-      in  populateInitialEnv next env'
-
-    Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name _)))) _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'

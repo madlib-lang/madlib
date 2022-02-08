@@ -343,8 +343,6 @@ instance Compilable Exp where
                   -- <> ")"
                 else (if needsModifier then "let " else "") <> safeName <> " = " <> content'
 
-        TypedExp exp _    -> compile env config exp
-
         Export     ass    -> "export " <> compile env config ass
 
         NameExport name   -> "export { " <> generateSafeName name <> " }"
@@ -737,15 +735,13 @@ buildDefaultExport as es =
 
   isExport :: Exp -> Bool
   isExport a = case a of
-    (Typed _ _ (Export _)) -> True
-    (Typed _ _ (TypedExp (Typed _ _ (Export _)) _)) -> True
+    Typed _ _ (Export _) -> True
 
     _ -> False
 
   getExportName :: Exp -> String
-  getExportName (Typed _ _ (Export (Typed _ _ (Assignment n _))                             )) = n
-  getExportName (Typed _ _ (TypedExp (Typed _ _ (Export (Typed _ _ (Assignment n _)))) _)) = n
-  getExportName (Typed _ _ (Export (Typed _ _ (Extern _ n _))                             )) = n
+  getExportName (Typed _ _ (Export (Typed _ _ (Assignment n _)))) = n
+  getExportName (Typed _ _ (Export (Typed _ _ (Extern _ n _))))   = n
   
 
   getConstructorName :: Constructor -> String

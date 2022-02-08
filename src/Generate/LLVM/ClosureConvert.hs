@@ -148,7 +148,7 @@ findFreeVars env exp = do
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
 
-            Core.Typed _ _ (Core.TypedExp (Core.Typed _ _ (Core.Assignment name exp)) _) -> do
+            Core.Typed _ _ (Core.Assignment name exp) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
@@ -195,9 +195,6 @@ findFreeVars env exp = do
       return $ expVars ++ issFreeVars
 
     Core.Typed _ _ (Core.Assignment n exp) -> do
-      findFreeVars env exp
-
-    Core.Typed _ _ (Core.TypedExp exp _) -> do
       findFreeVars env exp
 
     -- TODO: Check that we still need this
@@ -306,11 +303,6 @@ convertBody exclusionVars env body = case body of
     return []
 
   (exp : es) -> case exp of
-    Core.Typed _ _ (Core.TypedExp (Core.Typed qt@(_ :=> t) area (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)))) _) -> do
-      exp' <- convertAbs (addVarExclusions exclusionVars env) name [] abs
-      next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
-      return $ exp' : next
-
     Core.Typed qt@(_ :=> t) area (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body))) -> do
       exp' <- convertAbs (addVarExclusions exclusionVars env) name [] abs
       next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
@@ -320,11 +312,6 @@ convertBody exclusionVars env body = case body of
       exp' <- convert (addVarExclusions exclusionVars env) abs
       next <- convertBody exclusionVars env es
       return $ exp' : next
-
-    Core.Typed _ _ (Core.TypedExp (Core.Typed _ _ (Core.Assignment name e)) _) -> do
-      e'   <- convert env exp
-      next <- convertBody (name : exclusionVars) env es
-      return $ e' : next
 
     Core.Typed _ _ (Core.Assignment name e) -> do
       e'   <- convert env exp
@@ -421,7 +408,6 @@ dedupeCallFn exp = case exp of
 
 
 instance Convertable Core.Exp CC.Exp where
-  convert _ (Core.Untyped area (Core.TypeExport name)) = return $ CC.Untyped area (CC.TypeExport name)
   convert env fullExp@(Core.Typed qt@(ps :=> t) area e) = case e of
     Core.LNum x -> case t of
       TVar _ ->
@@ -469,12 +455,6 @@ instance Convertable Core.Exp CC.Exp where
       return $ CC.Typed qt area (CC.Access rec' field')
 
     Core.Export (Core.Typed _ _ (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)))) -> do
-      convertAbs env name [] abs
-
-    Core.TypedExp (Core.Typed _ _ (Core.Export (Core.Typed _ _ (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)))))) _ -> do
-      convertAbs env name [] abs
-
-    Core.TypedExp (Core.Typed _ _ (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)))) _ -> do
       convertAbs env name [] abs
 
     Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)) -> do
@@ -553,10 +533,6 @@ instance Convertable Core.Exp CC.Exp where
 
       Nothing ->
         return $ CC.Typed qt area (CC.Var name)
-
-    Core.TypedExp exp scheme -> do
-      exp' <- convert env exp
-      return $ CC.Typed qt area (CC.TypedExp exp' scheme)
 
     Core.ListConstructor items -> do
       items' <- mapM (convert env) items
