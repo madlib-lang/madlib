@@ -35,9 +35,6 @@ strip exp = case exp of
   Typed qt area (Export exp) ->
     Typed qt area (Export (strip exp))
 
-  Typed qt area (TypedExp exp sc) ->
-    Typed qt area (TypedExp (strip exp) sc)
-
   Typed qt area (ListConstructor items) ->
     Typed qt area (ListConstructor (stripListItem <$> items))
 
