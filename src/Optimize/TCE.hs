@@ -112,9 +112,6 @@ containsRecursion direct fnName exp = case exp of
   Typed _ _ (Assignment _ exp) ->
     not direct && containsRecursion direct fnName exp
 
-  Typed _ _ (TypedExp exp _) ->
-    not direct && containsRecursion direct fnName exp
-
   Typed _ _ (ListConstructor exps) ->
     not direct && any (containsRecursion direct fnName) (getListItemExp <$> exps)
 
