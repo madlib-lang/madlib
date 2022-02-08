@@ -1,4 +1,4 @@
-module AST.PostProcessed where
+module AST.Core where
 
 
 import qualified Infer.Type                    as Ty
@@ -6,7 +6,7 @@ import           Explain.Location
 import qualified Data.Map                      as M
 
 
-data PostProcessed a
+data Core a
   = Typed (Ty.Qual Ty.Type) Area a
   | Untyped Area a
   deriving(Eq, Show, Ord)
@@ -22,19 +22,19 @@ data AST =
     }
     deriving(Eq, Show)
 
-type Import = PostProcessed Import_
+type Import = Core Import_
 data Import_
-  = NamedImport [PostProcessed Name] FilePath FilePath
-  | DefaultImport (PostProcessed Name) FilePath FilePath
+  = NamedImport [Core Name] FilePath FilePath
+  | DefaultImport (Core Name) FilePath FilePath
   deriving(Eq, Show)
 
-type Interface = PostProcessed Interface_
+type Interface = Core Interface_
 data Interface_ = Interface Name [Ty.Pred] [String] (M.Map Name Ty.Scheme) (M.Map Name Typing) deriving(Eq, Show)
 
-type Instance = PostProcessed Instance_
+type Instance = Core Instance_
 data Instance_ = Instance Name [Ty.Pred] String (M.Map Name (Exp, Ty.Scheme)) deriving(Eq, Show)
 
-type TypeDecl = PostProcessed TypeDecl_
+type TypeDecl = Core TypeDecl_
 data TypeDecl_
   = ADT
       { adtname :: Name
@@ -50,14 +50,14 @@ data TypeDecl_
       }
     deriving(Eq, Show)
 
-type Constructor = PostProcessed Constructor_
+type Constructor = Core Constructor_
 data Constructor_
   = Constructor Name [Typing] Ty.Type
   deriving(Eq, Show)
 
 type Constraints = [Typing]
 
-type Typing = PostProcessed Typing_
+type Typing = Core Typing_
 data Typing_
   = TRSingle Name
   | TRComp Name [Typing]
@@ -68,10 +68,10 @@ data Typing_
   deriving(Eq, Show)
 
 
-type Is = PostProcessed Is_
+type Is = Core Is_
 data Is_ = Is Pattern Exp deriving(Eq, Show)
 
-type Pattern = PostProcessed Pattern_
+type Pattern = Core Pattern_
 data Pattern_
   = PVar Name
   | PAny
@@ -85,13 +85,13 @@ data Pattern_
   | PSpread Pattern
   deriving(Eq, Show)
 
-type Field = PostProcessed Field_
+type Field = Core Field_
 data Field_
   = Field (Name, Exp)
   | FieldSpread Exp
   deriving(Eq, Show)
 
-type ListItem = PostProcessed ListItem_
+type ListItem = Core ListItem_
 data ListItem_
   = ListItem Exp
   | ListSpread Exp
@@ -119,32 +119,37 @@ data CallType
   deriving(Eq, Show)
 
 
-type Exp = PostProcessed Exp_
-data Exp_ = LNum String
-          | LFloat String
-          | LStr String
-          | LBool String
-          | LUnit
-          | TemplateString [Exp]
-          | JSExp String
-          | Definition DefinitionType [Name] [Exp]
-          | Call CallType Exp [Exp]
-          | Access Exp Exp
-          | Assignment Name Exp
-          | Export Exp
-          | NameExport Name
-          | TypeExport Name
-          | Var Name
-          | TypedExp Exp Ty.Scheme
-          | ListConstructor [ListItem]
-          | TupleConstructor [Exp]
-          | Record [Field]
-          | If Exp Exp Exp
-          | Do [Exp]
-          | Where Exp [Is]
-          | Placeholder (PlaceholderRef, String) Exp
-          | Extern (Ty.Qual Ty.Type) Name Name
-          deriving(Eq, Show)
+type Exp = Core Exp_
+data Exp_
+  -- TODO: put literals under a single Literal constructor with a LiteralType param to distinguish
+  = LNum String
+  | LFloat String
+  | LStr String
+  | LBool String
+  | LUnit
+  | JSExp String
+  -- TODO: figure something out for Definition name. Maybe Definition DefinitionName DefinitionType [Name] [Exp]
+  -- with DefinitionName = Anonymous | Named String
+  | Definition DefinitionType [Name] [Exp]
+  | Call CallType Exp [Exp]
+  | Access Exp Exp
+  | Assignment Name Exp
+  | Export Exp
+  | NameExport Name
+  -- TODO: TypeExport -> gone
+  | TypeExport Name
+  | Var Name
+  -- TODO: TypedExp -> remove
+  | TypedExp Exp Ty.Scheme
+  | ListConstructor [ListItem]
+  | TupleConstructor [Exp]
+  | Record [Field]
+  | If Exp Exp Exp
+  | Do [Exp]
+  | Where Exp [Is]
+  | Placeholder (PlaceholderRef, String) Exp
+  | Extern (Ty.Qual Ty.Type) Name Name
+  deriving(Eq, Show)
 
 type Name = String
 
@@ -154,11 +159,11 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
-getType :: PostProcessed a -> Ty.Type
+getType :: Core a -> Ty.Type
 getType (Typed (_ Ty.:=> t) _ _) = t
 
 
-getQualType :: PostProcessed a -> Ty.Qual Ty.Type
+getQualType :: Core a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _) = t
 
 
@@ -191,7 +196,7 @@ getStartLine :: Exp -> Int
 getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
 getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
 
-getValue :: PostProcessed a -> a
+getValue :: Core a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a    ) = a
 

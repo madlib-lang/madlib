@@ -24,7 +24,6 @@ madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDic
 madlib__list__Node_t *madlib__dictionary__toList(madlib__dictionary__Dictionary_t *boxedItems);
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__insert(madlib__comparable__comparableDictionary_t* comparableDict, void *key, void *value, madlib__dictionary__Dictionary_t *dictionary);
-madlib__dictionary__Dictionary_t *madlib__dictionary__empty(bool unit);
 
 /**
  * Used for the syntax sugar constructor {{ key1: value1, key2: value2 }}

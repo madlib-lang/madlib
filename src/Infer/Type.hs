@@ -225,6 +225,12 @@ nullSubst :: Substitution
 nullSubst = M.empty
 
 
+preds :: Qual a -> [Pred]
+preds qual = case qual of
+  preds :=> _ ->
+    preds
+
+
 class HasKind t where
   kind :: t -> Kind
 instance HasKind TVar where

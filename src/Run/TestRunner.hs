@@ -34,7 +34,7 @@ import           Control.Monad.Except
 import qualified Distribution.System as DistributionSystem
 import qualified Explain.Format as Explain
 import qualified System.Exit as Exit
-import Optimize.PostProcess
+import           Optimize.ToCore
 import qualified Optimize.TCE as TCE
 
 
@@ -117,7 +117,7 @@ runLLVMTests entrypoint coverage = do
             let fullError = List.intercalate "\n\n\n" formattedErrors
             putStrLn fullError >> Exit.exitFailure
           else do
-            let postProcessedTable = postProcessTable False solvedTable
+            let postProcessedTable = tableToCore False solvedTable
             let withTCE            = TCE.resolve <$> postProcessedTable
             let renamedTable       = Rename.renameTable withTCE
             let closureConverted   = ClosureConvert.convertTable renamedTable

@@ -1,7 +1,7 @@
 module Optimize.TCE where
 
-import AST.PostProcessed
-import qualified Data.Maybe as Maybe
+import           AST.Core
+import qualified Data.Maybe          as Maybe
 
 newtype Env
   = Env { envCurrentName :: Maybe String }
@@ -102,9 +102,6 @@ containsRecursion :: Bool -> String  -> Exp -> Bool
 containsRecursion direct fnName exp = case exp of
   Typed _ _ Call {} ->
     Just fnName == getAppName exp
-
-  Typed _ _ (TemplateString exps) ->
-    not direct && any (containsRecursion direct fnName) exps
 
   Typed _ _ (Access rec accessor) ->
     not direct && (containsRecursion direct fnName rec || containsRecursion direct fnName accessor)
