@@ -198,7 +198,7 @@ findFreeVars env exp = do
       findFreeVars env exp
 
     -- TODO: Check that we still need this
-    Core.Typed (_ :=> t) area (Core.LNum x) -> case t of
+    Core.Typed (_ :=> t) area (Core.Literal (Core.LNum x)) -> case t of
       TVar _ -> do
         let dictName = "$Number$" <> Types.buildTypeStrForPlaceholder [t]
         if dictName `notElem` freeVars env then
@@ -409,7 +409,7 @@ dedupeCallFn exp = case exp of
 
 instance Convertable Core.Exp CC.Exp where
   convert env fullExp@(Core.Typed qt@(ps :=> t) area e) = case e of
-    Core.LNum x -> case t of
+    Core.Literal (Core.LNum x) -> case t of
       TVar _ ->
         return $ CC.Typed qt area (
           CC.Call
@@ -426,16 +426,16 @@ instance Convertable Core.Exp CC.Exp where
       _ ->
         return $ CC.Typed qt area (CC.LNum x)
 
-    Core.LFloat x ->
+    Core.Literal (Core.LFloat x) ->
       return $ CC.Typed qt area (CC.LFloat x)
 
-    Core.LStr x ->
+    Core.Literal (Core.LStr x) ->
       return $ CC.Typed qt area (CC.LStr x)
 
-    Core.LBool x ->
+    Core.Literal (Core.LBool x) ->
       return $ CC.Typed qt area (CC.LBool x)
 
-    Core.LUnit ->
+    Core.Literal Core.LUnit ->
       return $ CC.Typed qt area CC.LUnit
 
     -- Core.TemplateString es -> do

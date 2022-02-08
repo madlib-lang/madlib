@@ -150,15 +150,15 @@ class Processable a b where
 
 instance Processable Slv.Exp Core.Exp where
   toCore enabled fullExp@(Slv.Typed qt area e) = case e of
-    Slv.LNum  x           -> return $ Core.Typed qt area (Core.LNum x)
+    Slv.LNum  x           -> return $ Core.Typed qt area (Core.Literal $ Core.LNum x)
 
-    Slv.LFloat x          -> return $ Core.Typed qt area (Core.LFloat x)
+    Slv.LFloat x          -> return $ Core.Typed qt area (Core.Literal $ Core.LFloat x)
 
-    Slv.LStr  x           -> return $ Core.Typed qt area (Core.LStr x)
+    Slv.LStr  x           -> return $ Core.Typed qt area (Core.Literal $ Core.LStr x)
 
-    Slv.LBool x           -> return $ Core.Typed qt area (Core.LBool x)
+    Slv.LBool x           -> return $ Core.Typed qt area (Core.Literal $ Core.LBool x)
 
-    Slv.LUnit             -> return $ Core.Typed qt area Core.LUnit
+    Slv.LUnit             -> return $ Core.Typed qt area (Core.Literal Core.LUnit)
 
     Slv.TemplateString es -> do
       es' <- mapM (toCore enabled) es

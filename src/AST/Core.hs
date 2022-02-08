@@ -119,14 +119,18 @@ data CallType
   deriving(Eq, Show)
 
 
-type Exp = Core Exp_
-data Exp_
-  -- TODO: put literals under a single Literal constructor with a LiteralType param to distinguish
+data Literal
   = LNum String
   | LFloat String
   | LStr String
   | LBool String
   | LUnit
+  deriving(Eq, Show)
+
+
+type Exp = Core Exp_
+data Exp_
+  = Literal Literal
   | JSExp String
   -- TODO: figure something out for Definition name. Maybe Definition DefinitionName DefinitionType [Name] [Exp]
   -- with DefinitionName = Anonymous | Named String
