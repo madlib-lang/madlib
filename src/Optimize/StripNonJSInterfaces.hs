@@ -1,6 +1,6 @@
 module Optimize.StripNonJSInterfaces where
 
-import AST.PostProcessed
+import           AST.Core
 import qualified Data.Bifunctor as Bifunctor
 
 
@@ -20,9 +20,6 @@ stripAST ast =
 
 strip :: Exp -> Exp
 strip exp = case exp of
-  Typed qt area (TemplateString exps) ->
-    Typed qt area (TemplateString (strip <$> exps))
-
   Typed qt area (Call callType fn args) ->
     Typed qt area (Call callType (strip fn) (strip <$> args))
 

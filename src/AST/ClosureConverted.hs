@@ -131,7 +131,6 @@ data Exp_ = LNum String
           | LStr String
           | LBool String
           | LUnit
-          | TemplateString [Exp]
           | JSExp String
           | Call CallType Exp [Exp]
           | Access Exp Exp

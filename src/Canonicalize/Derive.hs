@@ -172,8 +172,8 @@ inspectFields fieldNames =
                 inspectedFieldValue = ec $ App (ec $ Var "inspect") fieldValue True
             in  ec $ App (ec $ App (ec $ Var "++") fieldNameStr False) inspectedFieldValue True
         ) <$> fieldNames
-      commaSeparated = List.intersperse (ec $ LStr ", ") fields
-  in  ec $ TemplateString ([ec $ LStr "{ "] ++ commaSeparated ++ [ec $ LStr " }"])
+      commaSeparated = List.intersperse (ec $ LStr "\", \"") fields
+  in  ec $ TemplateString ([ec $ LStr "\"{ \""] ++ commaSeparated ++ [ec $ LStr "\" }\""])
 
 
 buildConstructorIsForInspect :: Constructor -> Is
@@ -184,10 +184,10 @@ buildConstructorIsForInspect ctor = case ctor of
           if null typings then
             ec $ LStr ("\"" <> name <> "\"")
           else
-            let constructorNameLStr = ec $ LStr ("" <> name <> "(")
-                closingParenthesis  = ec $ LStr ")"
+            let constructorNameLStr = ec $ LStr ("\"" <> name <> "(\"")
+                closingParenthesis  = ec $ LStr "\")\""
                 inspectedValues     = (\var -> ec $ App (ec $ Var "inspect") (ec $ Var var) True) <$> vars
-                commaSeparated      = List.intersperse (ec $ LStr ", ") inspectedValues
+                commaSeparated      = List.intersperse (ec $ LStr "\", \"") inspectedValues
             in  ec $ TemplateString ([constructorNameLStr] ++ commaSeparated ++ [closingParenthesis])
     in
       ec $ Is (ec $ PCon name (ec . PVar <$> vars)) inspected

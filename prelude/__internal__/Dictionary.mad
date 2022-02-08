@@ -44,8 +44,6 @@ export fromList = pipe(
 
 #endif
 
-#iftarget js // empty
-
 /**
  * The empty Dictionary
  *
@@ -53,17 +51,6 @@ export fromList = pipe(
  */
 empty :: Dictionary k v
 export empty = Dictionary([])
-
-#elseif llvm
-
-emptyFFI :: {} -> Dictionary k v
-emptyFFI = extern "madlib__dictionary__empty"
-
-
-empty :: Dictionary k v
-export empty = emptyFFI({})
-
-#endif
 
 #iftarget js // insert
 

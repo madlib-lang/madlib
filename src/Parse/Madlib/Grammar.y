@@ -643,10 +643,6 @@ buildAbsOrParenthesizedName parenLeftArea parenRightArea sourceTarget n@(Src.Sou
     Src.Source (mergeAreas parenLeftArea (Src.getArea $ last exps)) sourceTarget (Src.AbsWithMultilineBody [n] exps)
 
 
-mergeAreas :: Area -> Area -> Area
-mergeAreas (Area l _) (Area _ r) = Area l r
-
-
 nameToPattern :: Area -> Src.SourceTarget -> String -> Src.Pattern
 nameToPattern area sourceTarget n
   | n == "_"           = Src.Source area sourceTarget Src.PAny

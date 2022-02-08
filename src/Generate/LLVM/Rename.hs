@@ -9,7 +9,7 @@ import qualified Data.Bifunctor                as Bifunctor
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 
 import qualified Utils.Hash                    as Hash
-import           AST.PostProcessed
+import           AST.Core
 import Debug.Trace
 import Text.Show.Pretty
 
@@ -76,10 +76,6 @@ renameExps env exps = case exps of
 
 renameExp :: Env -> Exp -> (Exp, Env)
 renameExp env what = case what of
-  Typed t area (TemplateString exps) ->
-    let (renamedExps, env') = renameExps env exps
-    in  (Typed t area (TemplateString renamedExps), env')
-
   Typed t area (Call callType fn args) ->
     let (renamedFn, env')    = renameExp env fn
         (renamedArgs, env'') = renameExps env' args
@@ -388,7 +384,7 @@ renameInstances env instances = case instances of
     ([], env)
 
 
-renamePostProcessedName :: Env -> String -> PostProcessed String -> (PostProcessed String, Env)
+renamePostProcessedName :: Env -> String -> Core String -> (Core String, Env)
 renamePostProcessedName env hash solvedName = case solvedName of
   Untyped area name ->
     let hashedName = addHashToName hash name
@@ -399,7 +395,7 @@ renamePostProcessedName env hash solvedName = case solvedName of
     undefined
 
 
-renamePostProcessedNames :: Env -> String -> [PostProcessed String] -> ([PostProcessed String], Env)
+renamePostProcessedNames :: Env -> String -> [Core String] -> ([Core String], Env)
 renamePostProcessedNames env hash solvedNames = case solvedNames of
   (name : names) ->
     let (renamed, env')        = renamePostProcessedName env hash name
