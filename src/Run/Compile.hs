@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Run.Compile where
 
 import           GHC.IO                         ( )
@@ -44,9 +45,9 @@ import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.Rename          as Rename
 import qualified AST.Solved                    as Slv
-import qualified AST.PostProcessed             as PP
+import qualified AST.Core                      as Core
 import qualified Optimize.TCE                  as TCE
-import           Optimize.PostProcess
+import           Optimize.ToCore
 import qualified Explain.Format                as Explain
 import           Error.Warning
 import           Coverage.Coverable             ( collectFromAST
@@ -63,6 +64,7 @@ import           Run.Utils
 import           Run.CommandLine
 import           Run.Target
 import Optimize.StripNonJSInterfaces
+import Optimize.ToCore
 
 
 
@@ -173,20 +175,20 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     runCoverageInitialization rootPath table
 
                   if target == TLLVM then do
-                    let postProcessedTable = postProcessTable False table
-                        withTCE            = TCE.resolve <$> postProcessedTable
-                    let renamedTable       = Rename.renameTable withTCE
+                    let coreTable    = tableToCore False table
+                        withTCE      = TCE.resolve <$> coreTable
+                    let renamedTable = Rename.renameTable withTCE
                     -- -- TODO: only do this in verbose mode?
-                    -- putStrLn (ppShow postProcessedTable)
+                    -- putStrLn (ppShow coreTable)
                     -- putStrLn (ppShow renamedTable)
                     let closureConverted = ClosureConvert.convertTable renamedTable
                     -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
-                    let postProcessedTable = postProcessTable optimized table
-                        strippedTable      = stripTable postProcessedTable
-                        withTCE = TCE.resolve <$> strippedTable
-                    -- putStrLn (ppShow optimizedTable)
+                    let coreTable     = tableToCore optimized table
+                        strippedTable = stripTable coreTable
+                        withTCE       = TCE.resolve <$> strippedTable
+                    -- putStrLn (ppShow coreTable)
                     -- putStrLn (ppShow withTCE)
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
@@ -260,7 +262,7 @@ runBundle entrypointCompiledPath = do
     Left e -> return $ Left e
 
 
-generate :: Command -> Bool -> FilePath -> PP.Table -> [FilePath] -> IO ()
+generate :: Command -> Bool -> FilePath -> Core.Table -> [FilePath] -> IO ()
 generate options@Compile { compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath table sourcesToCompile
   = do
     mapM_ (generateAST options coverage rootPath sourcesToCompile) $ M.elems table
@@ -280,8 +282,8 @@ computeInternalsPath rootPath astPath = case stripPrefix rootPath astPath of
     in  joinPath $ ["./"] <> replicate dirLength ".." <> ["__internals__.mjs"]
   Nothing -> "./__internals__.mjs"
 
-generateAST :: Command -> Bool -> FilePath -> [FilePath] -> PP.AST -> IO ()
-generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@PP.AST { PP.apath = Just path }
+generateAST :: Command -> Bool -> FilePath -> [FilePath] -> Core.AST -> IO ()
+generateAST Compile { compileInput, compileOutput, compileBundle, compileOptimize, compileTarget } coverage rootPath sourcesToCompile ast@Core.AST { Core.apath = Just path }
   = do
     let internalsPath      = convertWindowsSeparators $ computeInternalsPath rootPath path
         entrypointPath     = if path `elem` sourcesToCompile then path else compileInput

@@ -15,7 +15,7 @@ import           Data.List                      ( sort
                                                 )
 import           Data.List.GroupBy              ( groupBy )
 
-import           AST.PostProcessed              as PP
+import           AST.Core                      as Core
 import           Utils.Path                     ( cleanRelativePath
                                                 , computeTargetPath
                                                 , makeRelativeEx
@@ -86,30 +86,6 @@ instance Compilable Exp where
 
         LUnit ->
           hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
-
-        TemplateString exps ->
-          let parts = foldl'
-                (\full e -> case e of
-                  PP.Typed _ _ (LStr v) ->
-                    full <> escapeBackTicks v
-
-                  _ ->
-                    full <> "${" <> compile env config e <> "}"
-                )
-                ""
-                exps
-          in  "`" <> parts <> "`"
-          where
-            escapeBackTicks :: String -> String
-            escapeBackTicks s = case s of
-              '`' : more ->
-                "\\`" <> escapeBackTicks more
-
-              c : more ->
-                c : escapeBackTicks more
-
-              [] ->
-                []
 
         Call _ (Typed _ _ (Var "++")) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
@@ -270,7 +246,7 @@ instance Compilable Exp where
             (Typed _ _ (JSExp _)) -> compile env config exp
             _                         -> "    return " <> compile env config exp <> ";\n"
           compileBody' e (exp : es) = case exp of
-            PP.Typed _ _ (PP.Assignment name _) ->
+            Core.Typed _ _ (Core.Assignment name _) ->
               let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
               in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
 
@@ -288,7 +264,7 @@ instance Compilable Exp where
          where
           insertPlaceholderArgs :: String -> Exp -> String
           insertPlaceholderArgs prev exp'' = case exp'' of
-            PP.Typed _ _ (Placeholder (ClassRef cls ps call var, ts) exp''') ->
+            Core.Typed _ _ (Placeholder (ClassRef cls ps call var, ts) exp''') ->
               let dict  = generateRecordName optimized cls ts var
                   dict' = partiallyApplySubDicts dict ps
               in  insertPlaceholderArgs (prev <> "(" <> dict' <> ")") exp'''
@@ -321,7 +297,7 @@ instance Compilable Exp where
             _ -> ppShow t
 
 
-        Placeholder (MethodRef cls method var, ts) (PP.Typed _ _ (Var name)) ->
+        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ (Var name)) ->
           let compiled = generateRecordName optimized cls ts var <> "." <> method <> "()"
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
@@ -580,11 +556,11 @@ compileImport :: CompilationConfig -> Import -> String
 compileImport config (Untyped _ imp) = case imp of
   NamedImport names _ absPath ->
     let importPath = buildImportPath config absPath
-    in  "import { " <> compileNames (generateSafeName . PP.getValue <$> names) <> " } from \"" <> importPath <> "\""
+    in  "import { " <> compileNames (generateSafeName . Core.getValue <$> names) <> " } from \"" <> importPath <> "\""
     where compileNames names = if null names then "" else (init . init . concat) $ (++ ", ") <$> names
   DefaultImport alias _ absPath ->
     let importPath = buildImportPath config absPath
-    in  "import " <> PP.getValue alias <> " from \"" <> importPath <> "\""
+    in  "import " <> Core.getValue alias <> " from \"" <> importPath <> "\""
 
 
 buildImportPath :: CompilationConfig -> FilePath -> FilePath
@@ -600,19 +576,19 @@ buildImportPath config absPath =
 updateASTPath :: FilePath -> CompilationConfig -> CompilationConfig
 updateASTPath astPath config = config { ccastPath = astPath }
 
-instance Compilable PP.Interface where
+instance Compilable Core.Interface where
   compile _ config (Untyped _ interface) = case interface of
-    PP.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
+    Core.Interface name _ _ _ _ -> getGlobalForTarget (cctarget config) <> "." <> name <> " = {};\n"
 
-instance Compilable PP.Instance where
+instance Compilable Core.Instance where
   compile env config (Untyped _ inst) = case inst of
-    PP.Instance "Eq" _ _ _ -> ""
+    Core.Instance "Eq" _ _ _ -> ""
 
-    PP.Instance interface _ typings dict -> interface <> "['" <> typings <> "'] = {};\n" <> concat
+    Core.Instance interface _ typings dict -> interface <> "['" <> typings <> "'] = {};\n" <> concat
       (uncurry compileMethod <$> M.toList (M.map fst dict))
      where
       compileMethod :: Name -> Exp -> String
-      compileMethod n (PP.Typed (_ :=> t) (Area (Loc _ line _) _) (PP.Assignment _ exp)) =
+      compileMethod n (Core.Typed (_ :=> t) (Area (Loc _ line _) _) (Core.Assignment _ exp)) =
         let
           (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
           content'                       = if cccoverage config && isFunctionType t
@@ -632,7 +608,7 @@ instance Compilable PP.Instance where
             then compiledMethod
             else instRoot <> "['" <> n <> "'] = () => " <> content' <> ";\n"
       -- compileMethod :: Name -> Exp -> String
-      -- compileMethod n (PP.Typed t (Area (Loc _ line _) _) (PP.Assignment _ exp)) =
+      -- compileMethod n (Core.Typed t (Area (Loc _ line _) _) (Core.Assignment _ exp)) =
       --   let
       --     (placeholders, dicts, content) = compileAssignmentWithPlaceholder env config exp
       --     content'                       = if cccoverage config && isFunctionType t
@@ -671,7 +647,7 @@ instance Compilable PP.Instance where
 
 
 compileAssignmentWithPlaceholder :: Env -> CompilationConfig -> Exp -> (String, [String], String)
-compileAssignmentWithPlaceholder env config fullExp@(PP.Typed _ _ exp) = case exp of
+compileAssignmentWithPlaceholder env config fullExp@(Core.Typed _ _ exp) = case exp of
   Placeholder (ClassRef cls _ call var, ts) e -> if not call
     then
       let dict                      = generateRecordName (ccoptimize config) cls ts var
@@ -738,7 +714,7 @@ instance Compilable AST where
 compileExps :: Env -> CompilationConfig -> [Exp] -> String
 compileExps env config [exp     ] = compile env config exp <> ";\n"
 compileExps env config (exp : es) = case exp of
-  PP.Typed _ _ (PP.Assignment name _) ->
+  Core.Typed _ _ (Core.Assignment name _) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
     in  compile env config exp <> ";\n" <> compileExps nextEnv config es
 

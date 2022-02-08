@@ -109,16 +109,6 @@ madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__li
   return dictionary;
 }
 
-madlib__dictionary__Dictionary_t *madlib__dictionary__empty(bool unit) {
-  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*)GC_malloc(sizeof(madlib__dictionary__Dictionary_t));
-  madlib__list__Node_t **boxedList = (madlib__list__Node_t**)GC_malloc(sizeof(madlib__list__Node_t*));
-  *boxedList = madlib__list__empty();
-
-  dictionary->constructorIndex = 0;
-  dictionary->items = boxedList;
-
-  return dictionary;
-}
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__fromList(madlib__eq__eqDictionary_t* eqDict, madlib__list__Node_t *items) {
   madlib__list__Node_t *head = items;

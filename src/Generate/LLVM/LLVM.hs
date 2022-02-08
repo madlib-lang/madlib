@@ -1240,24 +1240,6 @@ generateExp env symbolTable exp = case exp of
     addr <- buildStr s
     return (symbolTable, addr, Nothing)
 
-  CC.Typed _ _ (CC.TemplateString parts) -> do
-    parts' <-
-      mapM
-        (\part -> case part of
-          CC.Typed _ _ (CC.LStr s) -> do
-            strOperand <- buildStr s
-            return (symbolTable, strOperand, Nothing)
-          _ ->
-            generateExp env { isLast = False } symbolTable part
-        )
-        parts
-    let parts'' = (\(_, a, _) -> a) <$> parts'
-    asOne  <- Monad.foldM
-      (\prev next -> call strConcat [(prev, []), (next, [])])
-      (List.head parts'')
-      (List.tail parts'')
-    return (symbolTable, asOne, Nothing)
-
   CC.Typed _ _ (CC.Do exps) -> do
     (ret, boxed) <- generateDoExps env { isLast = False } symbolTable exps
     return (symbolTable, ret, boxed)
@@ -2383,6 +2365,37 @@ buildTupleNEqInstance n =
         )
       )
 
+
+-- TODO: remove this once codegen is based on Core!!
+stringConcat :: CC.Exp
+stringConcat =
+  CC.Typed ([] IT.:=> (IT.tStr `IT.fn` IT.tStr `IT.fn` IT.tStr)) emptyArea (CC.Var "++")
+
+
+templateStringToCalls :: [CC.Exp] -> CC.Exp
+templateStringToCalls exps = case exps of
+  [e@(CC.Typed qt area _), e'@(CC.Typed qt' area' _)] ->
+    CC.Typed
+      ((IT.preds qt ++ IT.preds qt') IT.:=> IT.tStr)
+      (mergeAreas area area')
+      (CC.Call CC.SimpleCall stringConcat [e, e'])
+
+  (e@(CC.Typed qt area _) : e'@(CC.Typed qt' area' _) : next) ->
+    let concatenated =
+          CC.Typed
+            ((IT.preds qt ++ IT.preds qt') IT.:=> IT.tStr)
+            (mergeAreas area area')
+            (CC.Call CC.SimpleCall stringConcat [e, e'])
+        nextStr@(CC.Typed qt'' area'' _) = templateStringToCalls next
+    in  CC.Typed
+          ((IT.preds qt ++ IT.preds qt' ++ IT.preds qt'') IT.:=> IT.tStr)
+          (mergeAreas area area'')
+          (CC.Call CC.SimpleCall stringConcat [concatenated, nextStr])
+
+  [last] ->
+    last
+
+
 -- generates AST for a tupleN instance. n must be >= 2
 buildTupleNInspectInstance :: Int -> CC.Instance
 buildTupleNInspectInstance n =
@@ -2425,7 +2438,7 @@ buildTupleNInspectInstance n =
       inspectedItems = (\(method, var) -> CC.Typed ([] IT.:=> IT.tStr) emptyArea (CC.Call SimpleCall method [var])) <$> List.zip inspectMethods vars
       commaSeparatedItems = List.intersperse (CC.Typed ([] IT.:=> IT.tStr) emptyArea (LStr ", ")) inspectedItems
       wrappedItems = [CC.Typed ([] IT.:=> IT.tStr) emptyArea (LStr "#[")] ++ commaSeparatedItems ++ [CC.Typed ([] IT.:=> IT.tStr) emptyArea (LStr "]")]
-      inspectedTuple = CC.Typed ([] IT.:=> IT.tStr) emptyArea (TemplateString wrappedItems)
+      inspectedTuple = templateStringToCalls wrappedItems
 
   in  CC.Untyped emptyArea (CC.Instance
         "Inspect"

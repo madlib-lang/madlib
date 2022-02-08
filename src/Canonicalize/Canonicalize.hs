@@ -15,14 +15,13 @@ import qualified Canonicalize.Env              as Env
 import           Canonicalize.Typing
 import qualified Data.Map                      as Map
 import qualified Data.List                     as List
-import           Parse.Madlib.Grammar           ( mergeAreas )
-import           AST.Canonical                  ( getArea )
+import           AST.Canonical
 import           Explain.Location
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
 import qualified Data.Maybe as Maybe
-import Text.Show.Pretty
+import           Text.Show.Pretty
 
 
 
@@ -43,8 +42,19 @@ instance Canonicalizable Src.Exp Can.Exp where
     Src.LUnit             -> return $ Can.Canonical area Can.LUnit
 
     Src.TemplateString es -> do
-      es' <- mapM (canonicalize env target) es
+      es' <- mapM (canonicalize env target) (Maybe.mapMaybe cleanUp es)
       return $ Can.Canonical area (Can.TemplateString es')
+        where
+          cleanUp :: Src.Exp -> Maybe Src.Exp
+          cleanUp exp = case exp of
+            Src.Source _ _ (Src.LStr "") ->
+              Nothing
+
+            Src.Source area srcTarget (Src.LStr s) ->
+              Just $ Src.Source area srcTarget (Src.LStr ("\"" <> s <> "\""))
+
+            _ ->
+              Just exp
 
     Src.JSExp js -> do
       pushJS js
