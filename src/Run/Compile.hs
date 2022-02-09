@@ -63,8 +63,9 @@ import           Paths_madlib                   ( version )
 import           Run.Utils
 import           Run.CommandLine
 import           Run.Target
-import Optimize.StripNonJSInterfaces
-import Optimize.ToCore
+import           Optimize.StripNonJSInterfaces
+import           Optimize.ToCore
+import qualified Optimize.Recursion            as Recursion
 
 
 
@@ -175,13 +176,14 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     runCoverageInitialization rootPath table
 
                   if target == TLLVM then do
-                    let coreTable    = tableToCore False table
-                        withTCE      = TCE.resolve <$> coreTable
-                    let renamedTable = Rename.renameTable withTCE
+                    let coreTable     = tableToCore False table
+                        withTCE       = TCE.resolve <$> coreTable
+                        renamedTable  = Rename.renameTable withTCE
+                        withRecursion = Recursion.convertTable renamedTable
                     -- -- TODO: only do this in verbose mode?
-                    -- putStrLn (ppShow coreTable)
+                    -- putStrLn (ppShow withRecursion)
                     -- putStrLn (ppShow renamedTable)
-                    let closureConverted = ClosureConvert.convertTable renamedTable
+                    let closureConverted = ClosureConvert.convertTable withRecursion
                     -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
