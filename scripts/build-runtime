@@ -16,6 +16,7 @@ then
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
+  g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}array.o" "${SRC_DIR}array.cpp"
@@ -43,6 +44,7 @@ then
     "${BUILD_DIR}directory.o"\
     "${BUILD_DIR}stdio.o"\
     "${BUILD_DIR}http.o"\
+    "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"
 else
@@ -53,6 +55,7 @@ else
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}directory.o" "${SRC_DIR}directory.cpp"
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}stdio.o" "${SRC_DIR}stdio.cpp"
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}http.o" "${SRC_DIR}http.cpp"
+  clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}recursion.o" "${SRC_DIR}recursion.cpp"
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}apply-pap.o" "${SRC_DIR}apply-pap.cpp"
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}list.o" "${SRC_DIR}list.cpp"
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}bytearray.o" "${SRC_DIR}bytearray.cpp"
@@ -80,6 +83,7 @@ else
     "${BUILD_DIR}directory.o"\
     "${BUILD_DIR}stdio.o"\
     "${BUILD_DIR}http.o"\
+    "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
     "${BUILD_DIR}gc.o"
 fi

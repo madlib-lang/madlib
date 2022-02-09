@@ -19,7 +19,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   int32_t ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
   int32_t ARITY = unwrappedPAP->arity;
 
-  // printf("fn ptr: %d, arity: %d, argc: %d, args left: %d\n", unwrappedPAP->fn, ARITY, argc, ARITY - ENV_SIZE);
+  printf("fn ptr: %d, arity: %d, argc: %d, args left: %d\n", unwrappedPAP->fn, ARITY, argc, ARITY - ENV_SIZE);
 
   if (argc >= unwrappedPAP->missingArgCount) {
     switch (ARITY) {

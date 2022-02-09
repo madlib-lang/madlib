@@ -218,6 +218,7 @@ getIsExpression is = case is of
     exp
 
 
+-- Should be called on top level [Exp] nodes
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
   Typed _ _ (Assignment _ (Typed _ _ Definition{})) ->
@@ -228,3 +229,67 @@ isTopLevelFunction exp = case exp of
 
   _ ->
     False
+
+
+-- Should be called on top level [Exp] nodes
+isTopLevelAssignment :: Exp -> Bool
+isTopLevelAssignment exp = case exp of
+  Typed _ _ (Assignment _ _) ->
+    True
+
+  Typed _ _ (Export (Typed _ _ (Assignment _ _))) ->
+    True
+
+  _ ->
+    False
+
+
+isADT :: TypeDecl -> Bool
+isADT td = case td of
+  Untyped _ ADT {} ->
+    True
+
+  _                ->
+    False
+
+
+isExtern :: Exp -> Bool
+isExtern exp = case exp of
+  Typed _ _ Extern{} ->
+    True
+
+  Typed _ _ (Export (Typed _ _ Extern{})) ->
+    True
+
+  _ ->
+    False
+
+
+isSpreadField :: Field -> Bool
+isSpreadField field = case field of
+  Typed _ _ (FieldSpread _) ->
+    True
+
+  _ ->
+    False
+
+
+getConstructorName :: Constructor -> String
+getConstructorName constructor = case constructor of
+  Typed _ _ (Constructor name _ _) ->
+    name
+
+  Untyped _ (Constructor name _ _) ->
+    name
+
+
+getImportAbsolutePath :: Import -> FilePath
+getImportAbsolutePath imp = case imp of
+  Untyped _ (NamedImport   _ _ n) ->
+    n
+
+  Untyped _ (DefaultImport _ _ n) ->
+    n
+
+  _ ->
+    undefined

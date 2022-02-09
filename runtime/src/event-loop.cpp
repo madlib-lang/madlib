@@ -426,7 +426,6 @@ int libuvErrorToMadlibIOError(int libuvError) {
 }
 
 void __initEventLoop__() {
-
   GC_INIT();
   curl_global_init(CURL_GLOBAL_ALL);
   loop = (uv_loop_t *)GC_malloc_uncollectable(sizeof(uv_loop_t));
