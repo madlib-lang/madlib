@@ -231,6 +231,10 @@ preds qual = case qual of
     preds
 
 
+getQualified :: Qual a -> a
+getQualified (_ :=> a) = a
+
+
 class HasKind t where
   kind :: t -> Kind
 instance HasKind TVar where

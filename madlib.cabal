@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0e32360e4a646c7bc4cf0f0cb05a5c1e325af4eff75e8a901daa11ccc49d65c0
+-- hash: 2e238a95ff09b74c7d002d6f4ade158b9d29aa22bdb295438ea448dc41b5de79
 
 name:           madlib
 version:        0.11.0
@@ -33,7 +33,6 @@ flag static
 library
   exposed-modules:
       AST.Canonical
-      AST.ClosureConverted
       AST.Core
       AST.Solved
       AST.Source
@@ -81,6 +80,7 @@ library
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
       Main
+      Optimize.Recursion
       Optimize.StripNonJSInterfaces
       Optimize.TCE
       Optimize.ToCore
@@ -159,7 +159,6 @@ executable madlib
   main-is: Main.hs
   other-modules:
       AST.Canonical
-      AST.ClosureConverted
       AST.Core
       AST.Solved
       AST.Source
@@ -206,6 +205,7 @@ executable madlib
       Infer.Unify
       MadlibDotJson.MadlibDotJson
       MadlibDotJson.MadlibVersion
+      Optimize.Recursion
       Optimize.StripNonJSInterfaces
       Optimize.TCE
       Optimize.ToCore

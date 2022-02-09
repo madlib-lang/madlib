@@ -11,8 +11,7 @@ import qualified Control.Monad.State           as MonadState
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Data.List
-import qualified AST.Core                      as Core
-import qualified AST.ClosureConverted          as CC
+import           AST.Core
 import           Infer.Type
 import Data.Maybe
 import Debug.Trace
@@ -22,15 +21,15 @@ import qualified Utils.Types as Types
 
 
 data State
-  = State { count :: Int, topLevel :: [CC.Exp] }
+  = State { count :: Int, topLevel :: [Exp] }
 
 data Env
   = Env
-  { freeVars :: [CC.Name]
-  , freeVarExclusion :: [CC.Name]
+  { freeVars :: [String]
+  , freeVarExclusion :: [String]
   -- ^ Closured names that are reassigned. So if we find something in the higher scope, the inner function should not skip it but create a param for it
   , stillTopLevel :: Bool
-  , lifted :: M.Map String (String, [CC.Exp])
+  , lifted :: M.Map String (String, [Exp])
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
   }
 
@@ -56,17 +55,17 @@ resetTopLevelExps = do
   s@(State _ topLevel) <- MonadState.get
   MonadState.put s { topLevel = [] }
 
-addTopLevelExp :: CC.Exp -> Convert ()
+addTopLevelExp :: Exp -> Convert ()
 addTopLevelExp exp = do
   s@(State _ topLevel) <- MonadState.get
   MonadState.put s { topLevel = topLevel ++ [exp] }
 
-getTopLevelExps :: Convert [CC.Exp]
+getTopLevelExps :: Convert [Exp]
 getTopLevelExps = do
   State _ topLevel <- MonadState.get
   return topLevel
 
-addGlobalFreeVar :: CC.Name -> Env -> Env
+addGlobalFreeVar :: String -> Env -> Env
 addGlobalFreeVar fv env =
   env { freeVars = fv : freeVars env }
 
@@ -78,77 +77,77 @@ addVarExclusions :: [String] -> Env -> Env
 addVarExclusions vars env =
   env { freeVarExclusion = vars ++ freeVarExclusion env }
 
-addLiftedLambda :: CC.Name -> CC.Name -> [CC.Exp] -> Env -> Env
+addLiftedLambda :: String -> String -> [Exp] -> Env -> Env
 addLiftedLambda originalName liftedName args env =
   env { lifted = M.insert originalName (liftedName, args) $ lifted env }
 
 
-findFreeVars :: Env -> Core.Exp -> Convert [(String, CC.Exp)]
+findFreeVars :: Env -> Exp -> Convert [(String, Exp)]
 findFreeVars env exp = do
   fvs <- case exp of
-    Core.Typed _ _ (Core.Var "+") ->
+    Typed _ _ (Var "+") ->
       return []
 
-    Core.Typed _ _ (Core.Var "++") ->
+    Typed _ _ (Var "++") ->
       return []
 
-    Core.Typed _ _ (Core.Var "-") ->
+    Typed _ _ (Var "-") ->
       return []
 
-    Core.Typed _ _ (Core.Var "*") ->
+    Typed _ _ (Var "*") ->
       return []
 
-    Core.Typed _ _ (Core.Var "/") ->
+    Typed _ _ (Var "/") ->
       return []
 
-    Core.Typed _ _ (Core.Var "==") ->
+    Typed _ _ (Var "==") ->
       return []
 
-    Core.Typed _ _ (Core.Var "!=") ->
+    Typed _ _ (Var "!=") ->
       return []
 
-    Core.Typed _ _ (Core.Var "!") ->
+    Typed _ _ (Var "!") ->
       return []
 
-    Core.Typed _ _ (Core.Var ">") ->
+    Typed _ _ (Var ">") ->
       return []
 
-    Core.Typed _ _ (Core.Var "<") ->
+    Typed _ _ (Var "<") ->
       return []
 
-    Core.Typed _ _ (Core.Var ">=") ->
+    Typed _ _ (Var ">=") ->
       return []
 
-    Core.Typed _ _ (Core.Var "<=") ->
+    Typed _ _ (Var "<=") ->
       return []
 
-    Core.Typed _ _ (Core.Var "&&") ->
+    Typed _ _ (Var "&&") ->
       return []
 
-    Core.Typed _ _ (Core.Var "%") ->
+    Typed _ _ (Var "%") ->
       return []
 
     -- field access should not be registered as a free var
-    Core.Typed _ _ (Core.Var ('.' : _)) ->
+    Typed _ _ (Var ('.' : _)) ->
       return []
 
-    Core.Typed _ _ (Core.Var n) -> do
+    Typed _ _ (Var n) -> do
       var' <- convert env exp
       return [(n, var')]
 
-    Core.Typed _ _ (Core.Definition _ params body) -> do
+    Typed _ _ (Definition _ params body) -> do
       vars <- findFreeVarsInBody env body
       return $ filter (\(varName, _) -> varName `notElem` params) vars
       where
-        findFreeVarsInBody :: Env -> [Core.Exp] -> Convert [(String, CC.Exp)]
+        findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
         findFreeVarsInBody env exps = case exps of
           (e : es) -> case e of
-            Core.Typed _ _ (Core.Assignment name exp) -> do
+            Typed _ _ (Assignment name exp) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
 
-            Core.Typed _ _ (Core.Assignment name exp) -> do
+            Typed _ _ (Assignment name exp) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
               return $ fvs ++ nextFVs
@@ -161,85 +160,85 @@ findFreeVars env exp = do
           [] ->
             return []
 
-    Core.Typed _ _ (Core.Call _ f args) -> do
+    Typed _ _ (Call _ f args) -> do
       fFreeVars   <- findFreeVars env f
       argFreeVars <- concat <$> mapM (findFreeVars env) args
       return $ fFreeVars ++ argFreeVars
 
-    Core.Typed _ _ (Core.Do exps) -> do
+    Typed _ _ (Do exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
-    Core.Typed _ _ (Core.If cond truthy falsy) -> do
+    Typed _ _ (If cond truthy falsy) -> do
       condFreeVars   <- findFreeVars env cond
       truthyFreeVars <- findFreeVars env truthy
       falsyFreeVars  <- findFreeVars env falsy
       return $ condFreeVars ++ truthyFreeVars ++ falsyFreeVars
 
-    Core.Typed _ _ (Core.TupleConstructor exps) -> do
+    Typed _ _ (TupleConstructor exps) -> do
       vars <- mapM (findFreeVars env) exps
       return $ concat vars
 
-    Core.Typed _ _ (Core.Access record field) -> do
+    Typed _ _ (Access record field) -> do
       recordVars <- findFreeVars env record
       fieldVars  <- findFreeVars env field
       return $ recordVars ++ fieldVars
 
-    Core.Typed _ _ (Core.ListConstructor exps) -> do
-      vars <- mapM (findFreeVars env . Core.getListItemExp) exps
+    Typed _ _ (ListConstructor exps) -> do
+      vars <- mapM (findFreeVars env . getListItemExp) exps
       return $ concat vars
 
-    Core.Typed _ _ (Core.Where whereExp iss) -> do
+    Typed _ _ (Where whereExp iss) -> do
       expVars     <- findFreeVars env whereExp
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
-    Core.Typed _ _ (Core.Assignment n exp) -> do
+    Typed _ _ (Assignment n exp) -> do
       findFreeVars env exp
 
     -- TODO: Check that we still need this
-    Core.Typed (_ :=> t) area (Core.Literal (Core.LNum x)) -> case t of
+    Typed (_ :=> t) area (Literal (LNum x)) -> case t of
       TVar _ -> do
         let dictName = "$Number$" <> Types.buildTypeStrForPlaceholder [t]
         if dictName `notElem` freeVars env then
-          return [(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))]
+          return [(dictName, Typed ([] :=> tVar "dict") area (Var dictName))]
         else
           return []
 
       _ ->
         return []
 
-    Core.Typed _ area (Core.Placeholder ph exp) -> do
+    Typed _ area (Placeholder ph exp) -> do
       (placeholderVars, excludeVars) <- case ph of
-        (Core.ClassRef interface _ _ True, ts) ->
+        (ClassRef interface _ _ True, ts) ->
           let dictName = "$" <> interface <> "$" <> ts
-          in  return ([(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))], [])
+          in  return ([(dictName, Typed ([] :=> tVar "dict") area (Var dictName))], [])
 
-        (Core.MethodRef interface methodName True, ts) -> do
+        (MethodRef interface methodName True, ts) -> do
           let dictName = "$" <> interface <> "$" <> ts
-          return ([(dictName, CC.Typed ([] :=> tVar "dict") area (CC.Var dictName))], [methodName])
+          return ([(dictName, Typed ([] :=> tVar "dict") area (Var dictName))], [methodName])
 
         _ ->
           return ([], [])
       expVars <- case ph of
         -- If it's a resolved method, it is accessed from the global scope
-        (Core.MethodRef _ _ False, _) ->
+        (MethodRef _ _ False, _) ->
           return []
 
         _ ->
           findFreeVars env exp
       return $ filter (\(varName, _) -> varName `notElem` excludeVars) $ placeholderVars ++ expVars
 
-    Core.Typed _ _ (Core.Record fields) -> do
+    Typed _ _ (Record fields) -> do
       fvs <- mapM findFreeVarsInField fields
       return $ concat fvs
       where
-        findFreeVarsInField :: Core.Field -> Convert [(String, CC.Exp)]
+        findFreeVarsInField :: Field -> Convert [(String, Exp)]
         findFreeVarsInField field = case field of
-          Core.Typed _ _ (Core.Field (_, exp)) ->
+          Typed _ _ (Field (_, exp)) ->
             findFreeVars env exp
 
-          Core.Typed _ _ (Core.FieldSpread exp) ->
+          Typed _ _ (FieldSpread exp) ->
             findFreeVars env exp
 
     _ ->
@@ -250,7 +249,7 @@ findFreeVars env exp = do
 
   return $ filter (\(varName, _) -> varName `notElem` globalVars || varName `elem` freeVarExclusion env) fvs'
 
-findFreeVarsInBranches :: Env -> [Core.Is] -> Convert [(String, CC.Exp)]
+findFreeVarsInBranches :: Env -> [Is] -> Convert [(String, Exp)]
 findFreeVarsInBranches env iss = case iss of
   (is : next) -> do
     branchVars <- findFreeVarsInBranch env is
@@ -260,32 +259,32 @@ findFreeVarsInBranches env iss = case iss of
   [] ->
     return []
 
-findFreeVarsInBranch :: Env -> Core.Is -> Convert [(String, CC.Exp)]
+findFreeVarsInBranch :: Env -> Is -> Convert [(String, Exp)]
 findFreeVarsInBranch env is = case is of
-  Core.Typed _ _ (Core.Is pat exp) -> do
+  Typed _ _ (Is pat exp) -> do
     let patternVars = getPatternVars pat
     expVars <- findFreeVars env exp
     return $ filter (\(varName, _) -> varName `notElem` patternVars) expVars
 
 
-getPatternVars :: Core.Pattern -> [String]
-getPatternVars (Core.Typed _ _ pat) = case pat of
-  Core.PVar n ->
+getPatternVars :: Pattern -> [String]
+getPatternVars (Typed _ _ pat) = case pat of
+  PVar n ->
     [n]
 
-  Core.PCon _ pats ->
+  PCon _ pats ->
     concatMap getPatternVars pats
 
-  Core.PRecord fields ->
+  PRecord fields ->
     concatMap getPatternVars $ M.elems fields
 
-  Core.PList pats ->
+  PList pats ->
     concatMap getPatternVars pats
 
-  Core.PTuple pats ->
+  PTuple pats ->
     concatMap getPatternVars pats
 
-  Core.PSpread pat' ->
+  PSpread pat' ->
     getPatternVars pat'
 
   _ ->
@@ -297,23 +296,23 @@ class Convertable a b where
 
 
 -- At this point it's no longer top level and all functions encountered must be lifted
-convertBody :: [String] -> Env -> [Core.Exp] -> Convert [CC.Exp]
+convertBody :: [String] -> Env -> [Exp] -> Convert [Exp]
 convertBody exclusionVars env body = case body of
   [] ->
     return []
 
   (exp : es) -> case exp of
-    Core.Typed qt@(_ :=> t) area (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body))) -> do
+    Typed qt@(_ :=> t) area (Assignment name abs@(Typed _ _ (Definition _ params body))) -> do
       exp' <- convertAbs (addVarExclusions exclusionVars env) name [] abs
       next <- convertBody (name : exclusionVars) (addGlobalFreeVar name env) es
       return $ exp' : next
 
-    abs@(Core.Typed _ _ (Core.Definition _ params body)) -> do
+    abs@(Typed _ _ (Definition _ params body)) -> do
       exp' <- convert (addVarExclusions exclusionVars env) abs
       next <- convertBody exclusionVars env es
       return $ exp' : next
 
-    Core.Typed _ _ (Core.Assignment name e) -> do
+    Typed _ _ (Assignment name e) -> do
       e'   <- convert env exp
       next <- convertBody (name : exclusionVars) env es
       return $ e' : next
@@ -324,9 +323,9 @@ convertBody exclusionVars env body = case body of
       return $ exp' : next
 
 
-collectPlaceholderParams :: Core.Exp -> ([String], Core.Exp)
+collectPlaceholderParams :: Exp -> ([String], Exp)
 collectPlaceholderParams ph = case ph of
-  Core.Typed _ _ (Core.Placeholder (Core.ClassRef interfaceName _ False True, ts) next) ->
+  Typed _ _ (Placeholder (ClassRef interfaceName _ False True, ts) next) ->
     let (nextParams, nextBody) = collectPlaceholderParams next
     in  ("$" <> interfaceName <> "$" <> ts : nextParams, nextBody)
 
@@ -334,25 +333,25 @@ collectPlaceholderParams ph = case ph of
     ([], or)
 
 
-convertDefType :: Core.DefinitionType -> CC.DefinitionType
+convertDefType :: DefinitionType -> DefinitionType
 convertDefType defType = case defType of
-  Core.BasicDefinition ->
-    CC.BasicDefinition
+  BasicDefinition ->
+    BasicDefinition
 
-  Core.TCEOptimizableDefinition ->
-    CC.TCEOptimizableDefinition
+  TCEOptimizableDefinition ->
+    TCEOptimizableDefinition
 
-convertCallType :: Core.CallType -> CC.CallType
+convertCallType :: CallType -> CallType
 convertCallType defType = case defType of
-  Core.SimpleCall ->
-    CC.SimpleCall
+  SimpleCall ->
+    SimpleCall
 
-  Core.RecursiveTailCall ->
-    CC.RecursiveTailCall
+  RecursiveTailCall ->
+    RecursiveTailCall
 
 
-convertAbs :: Env -> String -> [String] -> Core.Exp -> Convert CC.Exp
-convertAbs env functionName placeholders abs@(Core.Typed (ps :=> t) area (Core.Definition defType params body)) = do
+convertAbs :: Env -> String -> [String] -> Exp -> Convert Exp
+convertAbs env functionName placeholders abs@(Typed (ps :=> t) area (Definition defType params body)) = do
   let isTopLevel = stillTopLevel env
   if isTopLevel then do
     let params' = placeholders ++ params
@@ -366,7 +365,7 @@ convertAbs env functionName placeholders abs@(Core.Typed (ps :=> t) area (Core.D
           else
             foldr fn t $ tVar "dict" <$ placeholders
 
-    return $ CC.Typed (ps :=> t') area $ CC.Definition (convertDefType defType) functionName params' body''
+    return $ Typed (ps :=> t') area (Assignment functionName (Typed (ps :=> t') area (Definition (convertDefType defType) params' body'')))
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
@@ -376,29 +375,29 @@ convertAbs env functionName placeholders abs@(Core.Typed (ps :=> t) area (Core.D
 
     let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-    let liftedType = foldr fn t (CC.getType . snd <$> fvs)
-    let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition (convertDefType defType) functionName' paramsWithFreeVars body'')
+    let liftedType = foldr fn t (getType . snd <$> fvs)
+    let lifted = Typed (ps :=> liftedType) area (Assignment functionName' (Typed (ps :=> liftedType) area (Definition (convertDefType defType) paramsWithFreeVars body'')))
     addTopLevelExp lifted
 
-    let functionNode = CC.Typed (ps :=> t) area (CC.Var functionName')
+    let functionNode = Typed (ps :=> t) area (Var functionName')
 
     if null fvs then
-      return $ CC.Typed (ps :=> t) area (CC.Assignment functionName functionNode False)
+      return $ Typed (ps :=> t) area (Assignment functionName functionNode)
     else
       -- We need to carry types here
       let fvVarNodes = snd <$> fvs
-      in  return $ CC.Typed (ps :=> t) area (CC.Assignment functionName (CC.Typed (ps :=> t) area (CC.Call CC.SimpleCall functionNode fvVarNodes)) False)
+      in  return $ Typed (ps :=> t) area (Assignment functionName (Typed (ps :=> t) area (Call SimpleCall functionNode fvVarNodes)))
 
 
 -- When a lifted lambda is fetched from the env via Var, we apply the captured args to it
 -- which results in codegen generating a PAP for it and then doing the real call with the
 -- explicit args from the source language. With this we contract it back to one single call.
-dedupeCallFn :: CC.Exp -> CC.Exp
+dedupeCallFn :: Exp -> Exp
 dedupeCallFn exp = case exp of
-  CC.Typed qt area (CC.Call ct fn args) ->
+  Typed qt area (Call ct fn args) ->
     case fn of
-      CC.Typed qt' area' (CC.Call ct' fn' args') ->
-        dedupeCallFn $ CC.Typed qt area (CC.Call ct' fn' (args' ++ args))
+      Typed qt' area' (Call ct' fn' args') ->
+        dedupeCallFn $ Typed qt area (Call ct' fn' (args' ++ args))
 
       _ ->
         exp
@@ -407,93 +406,77 @@ dedupeCallFn exp = case exp of
     exp
 
 
-instance Convertable Core.Exp CC.Exp where
-  convert env fullExp@(Core.Typed qt@(ps :=> t) area e) = case e of
-    Core.Literal (Core.LNum x) -> case t of
+instance Convertable Exp Exp where
+  convert env fullExp@(Typed qt@(ps :=> t) area e) = case e of
+    Literal (LNum x) -> case t of
       TVar _ ->
-        return $ CC.Typed qt area (
-          CC.Call
-            CC.SimpleCall
-            ( CC.Typed qt area (
-                CC.Placeholder
-                  (CC.MethodRef "Number" "__coerceNumber__" True, Types.buildTypeStrForPlaceholder [t])
-                  (CC.Typed qt area (CC.Var "__coerceNumber__"))
+        return $ Typed qt area (
+          Call
+            SimpleCall
+            ( Typed qt area (
+                Placeholder
+                  (MethodRef "Number" "__coerceNumber__" True, Types.buildTypeStrForPlaceholder [t])
+                  (Typed qt area (Var "__coerceNumber__"))
               )
             )
-            [CC.Typed qt area (CC.LNum x)]
+            [Typed qt area (Literal $ LNum x)]
         )
 
       _ ->
-        return $ CC.Typed qt area (CC.LNum x)
+        return $ Typed qt area (Literal $ LNum x)
 
-    Core.Literal (Core.LFloat x) ->
-      return $ CC.Typed qt area (CC.LFloat x)
+    JSExp js         -> return $ Typed qt area (JSExp js)
 
-    Core.Literal (Core.LStr x) ->
-      return $ CC.Typed qt area (CC.LStr x)
-
-    Core.Literal (Core.LBool x) ->
-      return $ CC.Typed qt area (CC.LBool x)
-
-    Core.Literal Core.LUnit ->
-      return $ CC.Typed qt area CC.LUnit
-
-    -- Core.TemplateString es -> do
-    --   es' <- mapM (convert env { stillTopLevel = False }) es
-    --   return $ CC.Typed qt area (CC.TemplateString es')
-
-    Core.JSExp js         -> return $ CC.Typed qt area (CC.JSExp js)
-
-    Core.Call callType fn args -> do
+    Call callType fn args -> do
         fn'   <- convert env { stillTopLevel = False } fn
         args' <- mapM (convert env { stillTopLevel = False }) args
-        return $ dedupeCallFn $ CC.Typed qt area (CC.Call (convertCallType callType) fn' args')
+        return $ dedupeCallFn $ Typed qt area (Call (convertCallType callType) fn' args')
 
-    Core.Access rec field -> do
+    Access rec field -> do
       rec'   <- convert env { stillTopLevel = False } rec
       field' <- convert env { stillTopLevel = False } field
-      return $ CC.Typed qt area (CC.Access rec' field')
+      return $ Typed qt area (Access rec' field')
 
-    Core.Export (Core.Typed _ _ (Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)))) -> do
+    Export (Typed _ _ (Assignment name abs@(Typed _ _ (Definition _ params body)))) -> do
       convertAbs env name [] abs
 
-    Core.Assignment name abs@(Core.Typed _ _ (Core.Definition _ params body)) -> do
+    Assignment name abs@(Typed _ _ (Definition _ params body)) -> do
       convertAbs env name [] abs
 
     -- unnamed abs, we need to generate a name here
-    Core.Definition defType params body -> do
+    Definition defType params body -> do
       body''       <- convertBody [] env body
       fvs          <- findFreeVars env fullExp
       functionName <- generateLiftedName "$lambda"
 
       let paramsWithFreeVars = (fst <$> fvs) ++ params
 
-      let liftedType = foldr fn t (CC.getType . snd <$> fvs)
-      let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition (convertDefType defType) functionName paramsWithFreeVars body'')
+      let liftedType = foldr fn t (getType . snd <$> fvs)
+      let lifted = Typed (ps :=> liftedType) area (Assignment functionName (Typed (ps :=> liftedType) area (Definition (convertDefType defType) paramsWithFreeVars body'')))
       addTopLevelExp lifted
 
-      let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName)
+      let functionNode = Typed (ps :=> liftedType) area (Var functionName)
 
       if null fvs then
         return functionNode
       else
         let fvVarNodes = snd <$> fvs
-        in  return $ CC.Typed qt area (CC.Call CC.SimpleCall functionNode fvVarNodes)
+        in  return $ Typed qt area (Call SimpleCall functionNode fvVarNodes)
 
-    Core.Assignment functionName ph@(Core.Typed _ _ (Core.Placeholder (placeholderRef@(Core.ClassRef interfaceName _ False _), ts) exp)) -> do
+    Assignment functionName ph@(Typed _ _ (Placeholder (placeholderRef@(ClassRef interfaceName _ False _), ts) exp)) -> do
       let isTopLevel = stillTopLevel env
       if isTopLevel then do
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
         case innerExp of
-          Core.Typed _ _ (Core.Definition _ _ _) -> do
+          Typed _ _ (Definition _ _ _) -> do
             convertAbs env functionName params innerExp
           _ -> do
             innerExp' <- convert env { stillTopLevel = False } innerExp
-            return $ CC.Typed (ps :=> typeWithPlaceholders) area $ CC.Definition CC.BasicDefinition functionName params [innerExp']
+            return $ Typed (ps :=> typeWithPlaceholders) area (Assignment functionName (Typed (ps :=> typeWithPlaceholders) area (Definition BasicDefinition params [innerExp'])))
       else do
         let (dictParams, innerExp) = collectPlaceholderParams ph
-            isFunction = isFunctionType (Core.getType exp)
+            isFunction = isFunctionType (getType exp)
         let env' =
               -- if the wrapped thing is not a function type, we just have a normal exp wrapped in a function that
               -- takes placeholders, we should then closure the variable as well if it's a reassignment
@@ -506,228 +489,230 @@ instance Convertable Core.Exp CC.Exp where
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
         functionName' <- generateLiftedName functionName
-        innerExp'     <- convert (addLiftedLambda functionName functionName' (CC.Typed ([] :=> tVar "dict") emptyArea . CC.Var <$> paramsWithFreeVars) env) innerExp
+        innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea . Var <$> paramsWithFreeVars) env) innerExp
 
-        let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (CC.getType . snd <$> fvs))
-        let lifted = CC.Typed (ps :=> liftedType) area (CC.Definition CC.BasicDefinition functionName' paramsWithFreeVars [innerExp'])
+        let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (getType . snd <$> fvs))
+        let lifted = Typed (ps :=> liftedType) area (Assignment functionName' (Typed (ps :=> liftedType) area (Definition BasicDefinition paramsWithFreeVars [innerExp'])))
         addTopLevelExp lifted
 
-        let functionNode = CC.Typed (ps :=> liftedType) area (CC.Var functionName')
+        let functionNode = Typed (ps :=> liftedType) area (Var functionName')
 
-        return $ CC.Typed qt area (CC.Assignment functionName functionNode False)
+        return $ Typed qt area (Assignment functionName functionNode)
 
-    -- TODO: Add top level info so that we can generate or not the name for the global scope
-    Core.Assignment name exp -> do
+    Assignment name exp -> do
       exp' <- convert env exp
-      return $ CC.Typed qt area (CC.Assignment name exp' (stillTopLevel env))
+      return $ Typed qt area (Assignment name exp')
 
-    Core.Export exp -> do
+    Export exp -> do
       convert env exp
 
-    Core.NameExport name     ->
-      return $ CC.Typed qt area (CC.NameExport name)
+    NameExport name     ->
+      return $ Typed qt area (NameExport name)
 
-    Core.Var        name     -> case M.lookup name (lifted env) of
+    Var        name     -> case M.lookup name (lifted env) of
       Just (newName, capturedArgs) ->
-        return $ CC.Typed qt area (CC.Call CC.SimpleCall (CC.Typed qt area (CC.Var newName)) capturedArgs)
+        return $ Typed qt area (Call SimpleCall (Typed qt area (Var newName)) capturedArgs)
 
       Nothing ->
-        return $ CC.Typed qt area (CC.Var name)
+        return $ Typed qt area (Var name)
 
-    Core.ListConstructor items -> do
+    ListConstructor items -> do
       items' <- mapM (convert env) items
-      return $ CC.Typed qt area (CC.ListConstructor items')
+      return $ Typed qt area (ListConstructor items')
 
-    Core.TupleConstructor exps -> do
+    TupleConstructor exps -> do
       exps' <- mapM (convert env) exps
-      return $ CC.Typed qt area (CC.TupleConstructor exps')
+      return $ Typed qt area (TupleConstructor exps')
 
-    Core.Record fields -> do
+    Record fields -> do
       fields' <- mapM (convert env { stillTopLevel = False }) fields
-      return $ CC.Typed qt area (CC.Record fields')
+      return $ Typed qt area (Record fields')
 
-    Core.If cond truthy falsy -> do
+    If cond truthy falsy -> do
       cond'   <- convert env { stillTopLevel = False } cond
       truthy' <- convert env { stillTopLevel = False } truthy
       falsy'  <- convert env { stillTopLevel = False } falsy
-      return $ CC.Typed qt area (CC.If cond' truthy' falsy')
+      return $ Typed qt area (If cond' truthy' falsy')
 
-    Core.Do exps -> do
+    Do exps -> do
       exps' <- convertBody [] env { stillTopLevel = False } exps
-      return $ CC.Typed qt area (CC.Do exps')
+      return $ Typed qt area (Do exps')
 
-    Core.Where exp iss -> do
+    Where exp iss -> do
       exp' <- convert env { stillTopLevel = False } exp
       iss' <- mapM (convert env { stillTopLevel = False }) iss
-      return $ CC.Typed qt area (CC.Where exp' iss')
+      return $ Typed qt area (Where exp' iss')
 
-    Core.Extern qt name originalName -> do
-      return $ CC.Typed qt area (CC.Extern qt name originalName)
+    Extern qt name originalName -> do
+      return $ Typed qt area (Extern qt name originalName)
 
-    Core.Placeholder (placeholderRef, ts) exp -> do
+    Placeholder (placeholderRef, ts) exp -> do
       exp'            <- convert env exp
       placeholderRef' <- convertPlaceholderRef placeholderRef
-      return $ CC.Typed qt area (CC.Placeholder (placeholderRef', ts) exp')
+      return $ Typed qt area (Placeholder (placeholderRef', ts) exp')
+
+    _ ->
+      return fullExp
 
 
 
-convertPlaceholderRef :: Core.PlaceholderRef -> Convert CC.PlaceholderRef
+convertPlaceholderRef :: PlaceholderRef -> Convert PlaceholderRef
 convertPlaceholderRef phr = case phr of
-  Core.ClassRef cls ps call var -> do
+  ClassRef cls ps call var -> do
     ps'  <- mapM convertClassRefPred ps
-    return $ CC.ClassRef cls ps' call var
+    return $ ClassRef cls ps' call var
 
-  Core.MethodRef cls mtd call -> do
-    return $ CC.MethodRef cls mtd call
+  MethodRef cls mtd call -> do
+    return $ MethodRef cls mtd call
 
 
-convertClassRefPred :: Core.ClassRefPred -> Convert CC.ClassRefPred
-convertClassRefPred (Core.CRPNode cls ts var ps) = do
+convertClassRefPred :: ClassRefPred -> Convert ClassRefPred
+convertClassRefPred (CRPNode cls ts var ps) = do
   ps'  <- mapM convertClassRefPred ps
-  return $ CC.CRPNode cls ts var ps'
+  return $ CRPNode cls ts var ps'
 
 
-instance Convertable Core.Typing CC.Typing where
-  convert env (Core.Untyped area typing) = case typing of
-    Core.TRSingle name       -> return $ CC.Untyped area $ CC.TRSingle name
+instance Convertable Typing Typing where
+  convert env (Untyped area typing) = case typing of
+    TRSingle name       -> return $ Untyped area $ TRSingle name
 
-    Core.TRComp name typings -> do
+    TRComp name typings -> do
       typings' <- mapM (convert env) typings
-      return $ CC.Untyped area $ CC.TRComp name typings'
+      return $ Untyped area $ TRComp name typings'
 
-    Core.TRArr left right -> do
+    TRArr left right -> do
       left'  <- convert env left
       right' <- convert env right
-      return $ CC.Untyped area $ CC.TRArr left' right'
+      return $ Untyped area $ TRArr left' right'
 
-    Core.TRRecord fields base -> do
+    TRRecord fields base -> do
       fields' <- mapM (convert env) fields
       base'   <- mapM (convert env) base
-      return $ CC.Untyped area $ CC.TRRecord fields' base'
+      return $ Untyped area $ TRRecord fields' base'
 
-    Core.TRTuple typings -> do
+    TRTuple typings -> do
       typings' <- mapM (convert env) typings
-      return $ CC.Untyped area $ CC.TRTuple typings'
+      return $ Untyped area $ TRTuple typings'
 
-    Core.TRConstrained constraints typing -> do
+    TRConstrained constraints typing -> do
       constraints' <- mapM (convert env) constraints
       typing'      <- convert env typing
-      return $ CC.Untyped area $ CC.TRConstrained constraints' typing'
+      return $ Untyped area $ TRConstrained constraints' typing'
 
-instance Convertable Core.ListItem CC.ListItem where
-  convert env (Core.Typed qt@(_ :=> t) area item) = case item of
-    Core.ListItem exp -> do
+instance Convertable ListItem ListItem where
+  convert env (Typed qt@(_ :=> t) area item) = case item of
+    ListItem exp -> do
       exp' <- convert env exp
-      return $ CC.Typed qt area $ CC.ListItem exp'
+      return $ Typed qt area $ ListItem exp'
 
-    Core.ListSpread exp -> do
+    ListSpread exp -> do
       exp' <- convert env exp
-      return $ CC.Typed qt area $ CC.ListSpread exp'
+      return $ Typed qt area $ ListSpread exp'
 
-instance Convertable Core.Field CC.Field where
-  convert env (Core.Typed qt@(_ :=> t) area item) = case item of
-    Core.Field (name, exp) -> do
+instance Convertable Field Field where
+  convert env (Typed qt@(_ :=> t) area item) = case item of
+    Field (name, exp) -> do
       exp' <- convert env exp
-      return $ CC.Typed qt area $ CC.Field (name, exp')
+      return $ Typed qt area $ Field (name, exp')
 
-    Core.FieldSpread exp -> do
+    FieldSpread exp -> do
       exp' <- convert env exp
-      return $ CC.Typed qt area $ CC.FieldSpread exp'
+      return $ Typed qt area $ FieldSpread exp'
 
-instance Convertable Core.Is CC.Is where
-  convert env (Core.Typed qt@(_ :=> t) area (Core.Is pat exp)) = do
+instance Convertable Is Is where
+  convert env (Typed qt@(_ :=> t) area (Is pat exp)) = do
     pat' <- convert env pat
     exp' <- convert env exp
-    return $ CC.Typed qt area (CC.Is pat' exp')
+    return $ Typed qt area (Is pat' exp')
 
-instance Convertable Core.Pattern CC.Pattern where
-  convert env (Core.Typed qt@(_ :=> t) area pat) = case pat of
-    Core.PVar name       -> return $ CC.Typed qt area $ CC.PVar name
+instance Convertable Pattern Pattern where
+  convert env (Typed qt@(_ :=> t) area pat) = case pat of
+    PVar name       -> return $ Typed qt area $ PVar name
 
-    Core.PAny            -> return $ CC.Typed qt area CC.PAny
+    PAny            -> return $ Typed qt area PAny
 
-    Core.PCon name pats -> do
+    PCon name pats -> do
       pats' <- mapM (convert env) pats
-      return $ CC.Typed qt area $ CC.PCon name pats'
+      return $ Typed qt area $ PCon name pats'
 
-    Core.PNum    num  -> return $ CC.Typed qt area $ CC.PNum num
+    PNum    num  -> return $ Typed qt area $ PNum num
 
-    Core.PStr    str  -> return $ CC.Typed qt area $ CC.PStr str
+    PStr    str  -> return $ Typed qt area $ PStr str
 
-    Core.PBool   boo  -> return $ CC.Typed qt area $ CC.PBool boo
+    PBool   boo  -> return $ Typed qt area $ PBool boo
 
-    Core.PRecord pats -> do
+    PRecord pats -> do
       pats' <- mapM (convert env) pats
-      return $ CC.Typed qt area $ CC.PRecord pats'
+      return $ Typed qt area $ PRecord pats'
 
-    Core.PList pats -> do
+    PList pats -> do
       pats' <- mapM (convert env) pats
-      return $ CC.Typed qt area $ CC.PList pats'
+      return $ Typed qt area $ PList pats'
 
-    Core.PTuple pats -> do
+    PTuple pats -> do
       pats' <- mapM (convert env) pats
-      return $ CC.Typed qt area $ CC.PTuple pats'
+      return $ Typed qt area $ PTuple pats'
 
-    Core.PSpread pat -> do
+    PSpread pat -> do
       pat' <- convert env pat
-      return $ CC.Typed qt area $ CC.PSpread pat'
+      return $ Typed qt area $ PSpread pat'
 
-instance Convertable Core.TypeDecl CC.TypeDecl where
-  convert env (Core.Untyped area typeDecl) = case typeDecl of
-    adt@Core.ADT{} -> do
-      ctors <- mapM convertConstructors $ Core.adtconstructors adt
-      return $ CC.Untyped area $ CC.ADT { CC.adtname         = Core.adtname adt
-                                          , CC.adtparams       = Core.adtparams adt
-                                          , CC.adtconstructors = ctors
-                                          , CC.adtexported     = Core.adtexported adt
+instance Convertable TypeDecl TypeDecl where
+  convert env (Untyped area typeDecl) = case typeDecl of
+    adt@ADT{} -> do
+      ctors <- mapM convertConstructors $ adtconstructors adt
+      return $ Untyped area $ ADT { adtname         = adtname adt
+                                          , adtparams       = adtparams adt
+                                          , adtconstructors = ctors
+                                          , adtexported     = adtexported adt
                                           }
 
-    alias@Core.Alias{} -> do
-      aliastype <- convert env $ Core.aliastype alias
-      return $ CC.Untyped area $ CC.Alias { CC.aliasname     = Core.aliasname alias
-                                            , CC.aliasparams   = Core.aliasparams alias
-                                            , CC.aliastype     = aliastype
-                                            , CC.aliasexported = Core.aliasexported alias
+    alias@Alias{} -> do
+      aliastype <- convert env $ aliastype alias
+      return $ Untyped area $ Alias { aliasname     = aliasname alias
+                                            , aliasparams   = aliasparams alias
+                                            , aliastype     = aliastype
+                                            , aliasexported = aliasexported alias
                                             }
    where
-    convertConstructors :: Core.Constructor -> Convert CC.Constructor
-    convertConstructors (Core.Untyped a (Core.Constructor name typings t)) = do
+    convertConstructors :: Constructor -> Convert Constructor
+    convertConstructors (Untyped a (Constructor name typings t)) = do
       typings' <- mapM (convert env) typings
-      return $ CC.Untyped area $ CC.Constructor name typings' t
+      return $ Untyped area $ Constructor name typings' t
 
 
-instance Convertable Core.Interface CC.Interface where
-  convert env (Core.Untyped area (Core.Interface name constraints vars methods methodTypings)) = do
+instance Convertable Interface Interface where
+  convert env (Untyped area (Interface name constraints vars methods methodTypings)) = do
     methodTypings' <- mapM (convert env) methodTypings
-    return $ CC.Untyped area $ CC.Interface name constraints vars methods methodTypings'
+    return $ Untyped area $ Interface name constraints vars methods methodTypings'
 
-instance Convertable Core.Instance CC.Instance where
-  convert env (Core.Untyped area (Core.Instance interface constraints pred methods)) = do
+instance Convertable Instance Instance where
+  convert env (Untyped area (Instance interface constraints pred methods)) = do
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> convert env exp) methods
-    return $ CC.Untyped area $ CC.Instance interface constraints pred methods'
+    return $ Untyped area $ Instance interface constraints pred methods'
 
-instance Convertable Core.Import CC.Import where
-  convert _ (Core.Untyped area imp) = case imp of
-    Core.NamedImport names relPath absPath ->
-      return $ CC.Untyped area $ CC.NamedImport (convertImportName <$> names) relPath absPath
+instance Convertable Import Import where
+  convert _ (Untyped area imp) = case imp of
+    NamedImport names relPath absPath ->
+      return $ Untyped area $ NamedImport (convertImportName <$> names) relPath absPath
 
-    Core.DefaultImport namespace relPath absPath ->
-      return $ CC.Untyped area $ CC.DefaultImport (convertImportName namespace) relPath absPath
+    DefaultImport namespace relPath absPath ->
+      return $ Untyped area $ DefaultImport (convertImportName namespace) relPath absPath
 
 
-convertImportName :: Core.Core Core.Name -> CC.ClosureConverted CC.Name
-convertImportName (Core.Untyped area name) = CC.Untyped area name
+convertImportName :: Core String -> Core String
+convertImportName (Untyped area name) = Untyped area name
 
-getMethodNames :: Core.Interface -> [String]
+getMethodNames :: Interface -> [String]
 getMethodNames interface = case interface of
-  Core.Untyped _ (Core.Interface _ _ _ methods _) ->
+  Untyped _ (Interface _ _ _ methods _) ->
     M.keys methods
 
-getConstructorNames :: [Core.TypeDecl] -> [String]
+getConstructorNames :: [TypeDecl] -> [String]
 getConstructorNames typeDeclarations = case typeDeclarations of
   (td : tds) -> case td of
-    Core.Untyped _ Core.ADT{ Core.adtconstructors } ->
-      let constructorNames = (\(Core.Untyped _ (Core.Constructor name _ _)) -> name) <$> adtconstructors
+    Untyped _ ADT{ adtconstructors } ->
+      let constructorNames = (\(Untyped _ (Constructor name _ _)) -> name) <$> adtconstructors
           nextNames = getConstructorNames tds
       in  constructorNames ++ nextNames
 
@@ -738,11 +723,11 @@ getConstructorNames typeDeclarations = case typeDeclarations of
     []
 
 
-getGlobalsFromImports :: [Core.Import] -> [String]
+getGlobalsFromImports :: [Import] -> [String]
 getGlobalsFromImports imports = case imports of
   (imp : nextImports) -> case imp of
-    Core.Untyped _ (Core.NamedImport names _ _) ->
-      (Core.getValue <$> names) ++ getGlobalsFromImports nextImports
+    Untyped _ (NamedImport names _ _) ->
+      (getValue <$> names) ++ getGlobalsFromImports nextImports
 
     _ ->
       getGlobalsFromImports nextImports
@@ -751,37 +736,37 @@ getGlobalsFromImports imports = case imports of
     []
 
 
-instance Convertable Core.AST CC.AST where
+instance Convertable AST AST where
   convert env ast = do
-    let globalVars         = mapMaybe Core.getExpName $ Core.aexps ast
-        globalMethods      = concatMap getMethodNames $ Core.ainterfaces ast
-        globalConstructors = getConstructorNames $ Core.atypedecls ast
-        globalsFromImports = getGlobalsFromImports $ Core.aimports ast
+    let globalVars         = mapMaybe getExpName $ aexps ast
+        globalMethods      = concatMap getMethodNames $ ainterfaces ast
+        globalConstructors = getConstructorNames $ atypedecls ast
+        globalsFromImports = getGlobalsFromImports $ aimports ast
         -- TODO: also generate freevars for imports and rename freeVars env in globalVars
         env' = env { freeVars = globalVars ++ globalMethods ++ globalConstructors ++ globalsFromImports ++ ["$"] }
 
-    imports    <- mapM (convert env') $ Core.aimports ast
-    exps       <- mapM (convert env') $ Core.aexps ast
-    typeDecls  <- mapM (convert env') $ Core.atypedecls ast
-    interfaces <- mapM (convert env') $ Core.ainterfaces ast
-    instances  <- mapM (convert env') $ Core.ainstances ast
+    imports    <- mapM (convert env') $ aimports ast
+    exps       <- mapM (convert env') $ aexps ast
+    typeDecls  <- mapM (convert env') $ atypedecls ast
+    interfaces <- mapM (convert env') $ ainterfaces ast
+    instances  <- mapM (convert env') $ ainstances ast
 
     defs <- getTopLevelExps
     resetTopLevelExps
 
-    return $ CC.AST { CC.aimports    = imports
-                     , CC.aexps       = defs ++ exps
-                     , CC.atypedecls  = typeDecls
-                     , CC.ainterfaces = interfaces
-                     , CC.ainstances  = instances
-                     , CC.apath       = Core.apath ast
+    return $ AST { aimports    = imports
+                     , aexps       = defs ++ exps
+                     , atypedecls  = typeDecls
+                     , ainterfaces = interfaces
+                     , ainstances  = instances
+                     , apath       = apath ast
                      }
 
 
 -- I think at some point we might want to follow imports in the optimization
 -- process in order to correctly reduce dictionaries in the right order and have
 -- an env for optimization to keep track of what dictionaries have been removed.
-convertTable :: Core.Table -> CC.Table
+convertTable :: Table -> Table
 convertTable table =
   let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
       convertd = mapM (convert env) table
