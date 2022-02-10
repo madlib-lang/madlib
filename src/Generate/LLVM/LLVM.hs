@@ -193,6 +193,14 @@ nextFn :: Operand
 nextFn =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Next"))
 
+thunkFn :: Operand
+thunkFn =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Thunk"))
+
+doneFn :: Operand
+doneFn =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Done"))
+
 dictCtor :: Operand
 dictCtor =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType, boxType] False) (AST.mkName "__dict_ctor__"))
@@ -1386,8 +1394,8 @@ generateExp env symbolTable exp = case exp of
       return (symbolTable', ret, Just ret)
     else mdo
       (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
-      test  <- icmp IntegerPredicate.EQ cond' true
-      condBr test ifThen ifElse
+      -- test  <- icmp IntegerPredicate.EQ cond' true
+      condBr cond' ifThen ifElse
 
       ifThen <- block `named` "if.then"
       (symbolTable'', truthy', _) <- generateExp env symbolTable' truthy
@@ -3513,7 +3521,9 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
       symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
       symbolTableWithDefaults' = Map.insert "madlib__recursion__internal__trampoline__1" (fnSymbol 2 trampoline1)
-                                 $ Map.insert "madlib__recursion__internal__Next" (fnSymbol 1 nextFn) symbolTableWithDefaults
+                                 $ Map.insert "madlib__recursion__internal__Next" (fnSymbol 1 nextFn)
+                                 $ Map.insert "madlib__recursion__internal__Done" (fnSymbol 1 doneFn)
+                                 $ Map.insert "madlib__recursion__internal__Thunk" (fnSymbol 1 thunkFn) symbolTableWithDefaults
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
@@ -3526,6 +3536,8 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   extern (AST.mkName "madlib__recursion__internal__trampoline__1") [Type.ptr Type.i8, Type.ptr Type.i8] (Type.ptr Type.i8)
   extern (AST.mkName "madlib__recursion__internal__Next")          [Type.ptr Type.i8] (Type.ptr Type.i8)
+  extern (AST.mkName "madlib__recursion__internal__Thunk")         [Type.ptr Type.i8] (Type.ptr Type.i8)
+  extern (AST.mkName "madlib__recursion__internal__Done")          [Type.ptr Type.i8] (Type.ptr Type.i8)
 
   extern (AST.mkName "__dict_ctor__")                                [boxType, boxType] boxType
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
@@ -3677,7 +3689,7 @@ compileModule outputFolder rootPath astPath astModule = do
         mod'' <-
           withPassManager
           defaultCuratedPassSetSpec
-            { optLevel                = Just 2
+            { optLevel                = Just 3
             , useInlinerWithThreshold = Just 150
             , dataLayout              = Just dataLayout
             , targetLibraryInfo       = Just libraryInfo

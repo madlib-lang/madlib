@@ -176,23 +176,23 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                     runCoverageInitialization rootPath table
 
                   if target == TLLVM then do
-                    let coreTable     = tableToCore False table
-                        withTCE       = TCE.resolve <$> coreTable
-                        renamedTable  = Rename.renameTable withTCE
-                        withRecursion = Recursion.convertTable renamedTable
-                    -- -- TODO: only do this in verbose mode?
-                    -- putStrLn (ppShow withRecursion)
-                    -- putStrLn (ppShow renamedTable)
-                    let closureConverted = ClosureConvert.convertTable withRecursion
+                    let coreTable        = tableToCore False table
+                        withTCE          = TCE.resolve <$> coreTable
+                        renamedTable     = Rename.renameTable withTCE
+                        withRecursion    = Recursion.convertTable renamedTable
+                        closureConverted = ClosureConvert.convertTable withRecursion
                     -- putStrLn (ppShow closureConverted)
+                    -- putStrLn (ppShow renamedTable)
+                    -- putStrLn (ppShow withRecursion)
                     LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
                         withTCE       = TCE.resolve <$> strippedTable
+                        withRecursion = Recursion.convertTable withTCE
                     -- putStrLn (ppShow coreTable)
                     -- putStrLn (ppShow withTCE)
-                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
+                    generate opts { compileInput = canonicalEntrypoint } coverage rootPath withRecursion sourcesToCompile
 
                   when bundle $ do
                     let entrypointOutputPath =
