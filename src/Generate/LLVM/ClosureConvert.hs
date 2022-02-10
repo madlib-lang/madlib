@@ -736,9 +736,18 @@ getGlobalsFromImports imports = case imports of
     []
 
 
+defaultGlobals :: [String]
+defaultGlobals =
+  [ "madlib__recursion__internal__Thunk"
+  , "madlib__recursion__internal__Done"
+  , "madlib__recursion__internal__Next"
+  , "madlib__recursion__internal__trampoline__1"
+  ]
+
+
 instance Convertable AST AST where
   convert env ast = do
-    let globalVars         = mapMaybe getExpName $ aexps ast
+    let globalVars         = mapMaybe getExpName (aexps ast) ++ defaultGlobals
         globalMethods      = concatMap getMethodNames $ ainterfaces ast
         globalConstructors = getConstructorNames $ atypedecls ast
         globalsFromImports = getGlobalsFromImports $ aimports ast
