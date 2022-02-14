@@ -1,3 +1,4 @@
+#include <sys/mman.h>
 #include <cstring>
 #include <gc.h>
 #include "process.hpp"
@@ -11,14 +12,36 @@ extern "C" {
 
 extern char **environ;
 
+extern void __main__start__();
+extern void madlib__stack__init(void*, void(*)());
+
 static madlib__list__Node_t *args;
 
-void madlib__process__internal__registerArgs(int argc, char **argv) {
+static int ARGC = 0;
+static char **ARGV = NULL;
+
+
+void __main__init__(int argc, char **argv) {
+  GC_set_dont_precollect(1);
+
+  ARGC = argc;
+  ARGV = argv;
+
+  size_t size = 1l * 1024 * 1024 * 1024 * 1024; // 1TB
+  char *newStack = (char*)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+  char *stackBottom = newStack + size;
+  GC_stackbottom = stackBottom;
+
+  madlib__stack__init(stackBottom, __main__start__);
+}
+
+
+void madlib__process__internal__registerArgs() {
   args = madlib__list__empty();
 
-  for (int i = 0; i < argc; i++) {
+  for (int i = 0; i < ARGC; i++) {
     char **boxed = (char**)GC_malloc(sizeof(char*));
-    *boxed = argv[i];
+    *boxed = ARGV[i];
     args = madlib__list__append(boxed, args);
   }
 }
