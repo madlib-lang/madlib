@@ -165,13 +165,18 @@ stringToShortByteString = ShortByteString.toShort . Char8.pack
 true :: Operand
 true = Operand.ConstantOperand (Constant.Int 1 1)
 
+mainInit :: Operand
+mainInit =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "__main__init__"))
+
+initArgs :: Operand
+initArgs =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "madlib__process__internal__registerArgs"))
+
 initEventLoop :: Operand
 initEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__initEventLoop__"))
 
-registerArgs :: Operand
-registerArgs =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "madlib__process__internal__registerArgs"))
 
 startEventLoop :: Operand
 startEventLoop =
@@ -3560,8 +3565,9 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
 
   Monad.when isMain $ do
     extern (AST.mkName "madlib__process__internal__registerArgs") [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
-    extern (AST.mkName "__initEventLoop__")                      [] Type.void
-    extern (AST.mkName "__startEventLoop__")                     [] Type.void
+    extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
+    extern (AST.mkName "__initEventLoop__")                       [] Type.void
+    extern (AST.mkName "__startEventLoop__")                      [] Type.void
     generateModuleFunctionExternals symbolTable (removeDuplicates currentModuleHashes)
 
   let moduleFunctionName =
@@ -3570,18 +3576,23 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         else
           "__" <> hashModulePath ast <> "__moduleFunction"
 
-
   moduleFunction <-
     if isMain then do
-      let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
-          argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
-      function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+      -- this function starts the runtime with a fresh stack etc
+      function (AST.mkName "__main__start__") [] Type.void $ \_ -> do
         entry <- block `named` "entry"
-        call registerArgs [(argc, []), (argv, [])]
+        call initArgs []
         call initEventLoop []
         callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
         generateExps env symbolTable'' (expsForMain $ aexps ast)
         call startEventLoop []
+        return ()
+
+      let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
+          argv = (Type.ptr (Type.ptr Type.i8), ParameterName $ stringToShortByteString "argv")
+      function (AST.mkName moduleFunctionName) [argc, argv] Type.i32 $ \[argc, argv] -> do
+        entry <- block `named` "entry"
+        call mainInit [(argc, []), (argv, [])]
         ret $ i32ConstOp 0
     else do
       function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
@@ -3748,7 +3759,7 @@ generateTable outputPath rootPath astTable entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       callCommand $
-        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ "
+        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ -Wl,-stack_size,0x20000000 "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

@@ -7,6 +7,11 @@ mkdir -p "$BUILD_DIR"
 rm -f "$LIB_TARGET"
 
 
+if [ "$TARGET" = "MACOS_ARM" ]
+then
+  as "${SRC_DIR}stack/stack-arm64-apple-darwin.s" -o "${BUILD_DIR}stack.o"
+fi
+
 if [ "$CXX" = "g++" ]
 then
   g++ -fPIC -O2 -std=c++14 -I"$INCLUDE_DIR" -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
@@ -46,6 +51,7 @@ then
     "${BUILD_DIR}http.o"\
     "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
+    "${BUILD_DIR}stack.o"\
     "${BUILD_DIR}gc.o"
 else
   clang++ -O2 -fPIC -std=c++14 -I"$INCLUDE_DIR" -stdlib=libc++ -c -o "${BUILD_DIR}control.o" "${SRC_DIR}control.cpp"
@@ -85,6 +91,7 @@ else
     "${BUILD_DIR}http.o"\
     "${BUILD_DIR}recursion.o"\
     "${BUILD_DIR}apply-pap.o"\
+    "${BUILD_DIR}stack.o"\
     "${BUILD_DIR}gc.o"
 fi
 

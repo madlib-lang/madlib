@@ -8,7 +8,9 @@
 extern "C" {
 #endif
 
-void madlib__process__internal__registerArgs(int argc, char **argv);
+void __main__init__(int argc, char **argv);
+
+void madlib__process__internal__registerArgs();
 
 madlib__list__Node_t *madlib__process__internal__getArgs();
 
