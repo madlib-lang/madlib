@@ -78,8 +78,14 @@ instance Compilable Exp where
         Literal (LFloat v) ->
           hpWrapLine coverage astPath l v
 
+        Literal (LStr (leading : v)) | leading == '"' || leading == '\'' ->
+          if null v then
+            hpWrapLine coverage astPath l "``"
+          else
+            hpWrapLine coverage astPath l ("`" <> init v <> "`")
+
         Literal (LStr v) ->
-          hpWrapLine coverage astPath l v
+          hpWrapLine coverage astPath l ("`" <> v <> "`")
 
         Literal (LBool v) ->
           hpWrapLine coverage astPath l v
