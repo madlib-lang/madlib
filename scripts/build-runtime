@@ -10,6 +10,9 @@ rm -f "$LIB_TARGET"
 if [ "$TARGET" = "MACOS_ARM" ]
 then
   as "${SRC_DIR}stack/stack-arm64-apple-darwin.s" -o "${BUILD_DIR}stack.o"
+elif [ "$TARGET" = "MACOS_X86" ]
+then
+  nasm -f macho64 "${SRC_DIR}stack/stack-x64-apple-darwin.s" -o "${BUILD_DIR}stack.o"
 fi
 
 if [ "$CXX" = "g++" ]

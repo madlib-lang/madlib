@@ -180,7 +180,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         withTCE          = TCE.resolve <$> coreTable
                         renamedTable     = Rename.renameTable withTCE
                         withRecursion    = Recursion.convertTable renamedTable
-                        closureConverted = ClosureConvert.convertTable withRecursion
+                        closureConverted = ClosureConvert.convertTable renamedTable
                     -- putStrLn (ppShow closureConverted)
                     -- putStrLn (ppShow renamedTable)
                     -- putStrLn (ppShow withRecursion)

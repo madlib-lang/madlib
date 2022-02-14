@@ -171,7 +171,7 @@ mainInit =
 
 initArgs :: Operand
 initArgs =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i32, Type.ptr (Type.ptr Type.i8)] False) (AST.mkName "madlib__process__internal__registerArgs"))
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "madlib__process__internal__registerArgs"))
 
 initEventLoop :: Operand
 initEventLoop =
@@ -3564,7 +3564,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do
-    extern (AST.mkName "madlib__process__internal__registerArgs") [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
+    extern (AST.mkName "madlib__process__internal__registerArgs") [] Type.void
     extern (AST.mkName "__main__init__")                          [Type.i32, Type.ptr (Type.ptr Type.i8)] Type.void
     extern (AST.mkName "__initEventLoop__")                       [] Type.void
     extern (AST.mkName "__startEventLoop__")                      [] Type.void
@@ -3586,6 +3586,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
         generateExps env symbolTable'' (expsForMain $ aexps ast)
         call startEventLoop []
+        retVoid
         return ()
 
       let argc = (Type.i32, ParameterName $ stringToShortByteString "argc")
