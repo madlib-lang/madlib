@@ -143,7 +143,6 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
     sc         <- catchError (lookupVar env n) (enhanceVarError env exp area)
     (ps :=> t) <- instantiate sc
 
-    -- let ps' = ps
     let ps' = dedupePreds ps
 
     let e = Slv.Typed (ps' :=> t) area $ Slv.Var n
@@ -747,12 +746,13 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
       return (env, tv)
 
   (s1, ps1, t1, _) <- infer env' exp
+  ps1' <- concat <$> mapM (gatherInstPreds env') ps1
 
   -- We need to update the env again in case the inference of the function resulted in overloading so that
   -- we can have the predicates to generate the correct placeholders when fetching the var from the env
   env'' <- case Can.getExpName exp of
     Just n ->
-      return $ extendVars env' (n, Forall [] $ ps1 :=> t1)
+      return $ extendVars env' (n, Forall [] $ ps1' :=> t1)
 
     Nothing ->
       return env'
@@ -761,6 +761,8 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   -- to handle recursion errors. We probably need to improve that solution at
   -- some point!
   (s, ps, t, e) <- infer (apply s1 env'') exp
+
+
 
   s'            <- contextualUnify env'' exp (apply s tv) t
   let s'' = s `compose` s1 `compose` s'
@@ -822,6 +824,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
         Nothing -> env
 
   (s, ps, t, e) <- infer env' exp
+  psFull        <- concat <$> mapM (gatherInstPreds env') ps
   s''           <- catchError (contextualUnify env canExp t' (apply (s `compose` s) t)) (flipUnificationError . limitContextArea 2)
   -- s''           <- catchError (contextualUnify env canExp (apply (s `compose` s) t) t') (flipUnificationError . limitContextArea 2)
   let s' = s `compose` s'' `compose` s''
@@ -831,7 +834,7 @@ inferExplicitlyTyped env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)
       t''' = mergeRecords (apply s' t') t''
       fs   = ftv (apply s'' env)
       gs   = ftv (apply s'' t') \\ fs
-  ps'      <- filterM ((not <$>) . entail env' qs') (apply s' ps)
+  ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
   (ds, rs, substDefaultResolution) <- catchError
     (split True env' fs gs ps')
     (\case
