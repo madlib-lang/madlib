@@ -65,6 +65,7 @@ import           System.Directory
 import qualified Distribution.System           as DistributionSystem
 import qualified Data.Text.Lazy.IO as Text
 import Debug.Trace
+import qualified Data.Functor.Constant as Operand
 
 
 
@@ -79,14 +80,20 @@ addrspacecast :: MonadIRBuilder m => Operand -> Type -> m Operand
 addrspacecast op t =
   emitInstr t $ AddrSpaceCast op t []
 
-data DefinitionInfo
-  = DefinitionInfo
-  { entryBlockName :: AST.Name
-  , continueRef :: Operand.Operand
-  , boxedParams :: [Operand.Operand]
-  , accumulator :: Operand.Operand
-  -- ^ Used for TRMC
-  }
+data RecursionData
+  = PlainRecursionData
+      { entryBlockName :: AST.Name
+      , continueRef :: Operand.Operand
+      , boxedParams :: [Operand.Operand]
+      , accumulator :: Operand.Operand
+      }
+  | RightListRecursionData
+      { entryBlockName :: AST.Name
+      , continueRef :: Operand.Operand
+      , boxedParams :: [Operand.Operand]
+      , start :: Operand.Operand
+      , end :: Operand.Operand
+      }
   deriving(Eq, Show)
 
 data Env
@@ -95,7 +102,7 @@ data Env
     -- ^ Map InterfaceName (Map MethodName (index, arity))
   , isLast :: Bool
   , isTopLevel :: Bool
-  , definitionInfo :: Maybe DefinitionInfo
+  , recursionData :: Maybe RecursionData
   }
   deriving(Eq, Show)
 
@@ -110,7 +117,6 @@ data SymbolType
   -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
-  -- ^ contains the uncurried version of a function to be called if all args are provided and the param count
   | TopLevelAssignment
   -- ^ amount of items in the env
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
@@ -724,7 +730,7 @@ generateExp env symbolTable exp = case exp of
         env
         symbolTable
         False
-        False
+        []
         wrapperType
         (Char8.unpack (ShortByteString.fromShort fnName'))
         dictNameParams
@@ -1148,9 +1154,9 @@ generateExp env symbolTable exp = case exp of
           _ ->
             error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
-    _ | Core.isBasicRecursionCall metadata -> do
-        let Just continue = continueRef <$> definitionInfo env
-        let Just params   = boxedParams <$> definitionInfo env
+    _ | Core.isPlainRecursiveCall metadata -> do
+        let Just continue = continueRef <$> recursionData env
+        let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
         
         args'  <- mapM (generateExp env { isLast = False } symbolTable) args
@@ -1317,35 +1323,52 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, tuplePtr', Nothing)
 
+  Core.Typed _ _ metadata _ | Core.isRightListRecursionEnd metadata -> do
+    let Just startOperand = start <$> recursionData env
+    return (symbolTable, startOperand, Nothing)
+
   Core.Typed _ _ _ (Core.ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
     emptyList' <- emptyList
     return (symbolTable, emptyList', Nothing)
 
-  -- Core.Typed _ _ _ (Core.ListConstructor [
-  --     Core.Typed _ _ _ (Core.ListItem li),
-  --     Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call (Core.TailRecursiveCall_ Core.ListRecursion) _ args)))
-  --   ]) -> do
-  --     let Just continue = continueRef <$> definitionInfo env
-  --     let Just params   = boxedParams <$> definitionInfo env
-  --     let Just result   = accumulator <$> definitionInfo env
-  --     store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+  Core.Typed _ _ metadata (Core.ListConstructor [
+      Core.Typed _ _ _ (Core.ListItem li),
+      Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
+    ]) | Core.isRightListRecursiveCall metadata -> do
+      let Just continue = continueRef <$> recursionData env
+      let Just params   = boxedParams <$> recursionData env
+      let Just endPtr   = end <$> recursionData env
+      endValue <- load endPtr 0
+
+      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
       
-  --     args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-  --     let unboxedArgs = (\(_, x, _) -> x) <$> args'
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-  --     let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
-  --     mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
+      let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+      mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
 
-  --     let listQualType = [] IT.:=> IT.tListOf (IT.tVar "a")
-  --     (_, item, _) <- generateExp env symbolTable li
+      let listQualType = [] IT.:=> IT.tListOf (IT.tVar "a")
+      (_, item, maybeBoxedItem) <- generateExp env symbolTable li
+      item' <- case maybeBoxedItem of
+        Just boxed ->
+          return boxed
 
-  --     unboxedResult <- unbox listQualType result
-  --     pushed <- call madlistPush [(item, []), (unboxedResult, [])]
+        Nothing ->
+          box item
 
-  --     updateTCOArg symbolTable listQualType result pushed
+      newNode <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+      newNode' <- bitcast newNode listType
+      storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 0)
+      storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
+      storeItem endValue () (item', 0)
+      storeItem endValue () (newNode', 1)
 
-  --     return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
+      -- end = end.next
+      store endPtr 0 newNode'
+
+      return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
 
   
 
@@ -1851,19 +1874,45 @@ generateInitialResult qt@(_ IT.:=> t) = case t of
     return $ Operand.ConstantOperand (Constant.Undef Type.i8 )
 
 
-generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> Bool -> IT.Qual IT.Type -> String -> [String] -> [Core.Exp] -> m SymbolTable
-generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName paramNames body = do
+generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> [Core.Metadata] -> IT.Qual IT.Type -> String -> [String] -> [Core.Exp] -> m SymbolTable
+generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName paramNames body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
       params'       = (boxType,) . makeParamName <$> paramNames
       functionName' = AST.mkName functionName
       dictCount     = List.length $ List.filter ("$" `List.isPrefixOf`) paramNames
 
   function <- function functionName' params' boxType $ \params ->
-    if doTCO then mdo
+    if Core.isTCODefinition metadata then mdo
       entry          <- block `named` "entry"
       continue       <- alloca Type.i1 Nothing 0
-      resultAcc      <- generateInitialResult (IT.selectPredsForType ps t IT.:=> IT.getReturnType t)
-      boxedResultAcc <- box resultAcc
+      recData <-
+            if Core.isPlainRecursiveDefinition metadata then do
+              resultAcc      <- generateInitialResult (IT.selectPredsForType ps t IT.:=> IT.getReturnType t)
+              boxedResultAcc <- box resultAcc
+              return $
+                PlainRecursionData
+                  { entryBlockName = entry
+                  , continueRef = continue
+                  , boxedParams = List.drop dictCount params
+                  , accumulator = boxedResultAcc
+                  }
+            else if Core.isRightListRecursiveDefinition metadata then do
+              start       <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+              start'      <- bitcast start listType
+              terminator  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+              terminator' <- bitcast terminator listType
+              end         <- alloca listType Nothing 0
+              store end 0 start'
+              return $
+                RightListRecursionData
+                  { entryBlockName = entry
+                  , continueRef = continue
+                  , boxedParams = List.drop dictCount params
+                  , start = start'
+                  , end = end
+                  }
+            else
+              undefined
       br loop
 
       loop <- block `named` "loop"
@@ -1874,10 +1923,9 @@ generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName param
       let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
-      let defInfo = DefinitionInfo { entryBlockName = entry, continueRef = continue, boxedParams = List.drop dictCount params, accumulator = boxedResultAcc }
 
       -- Generate body
-      (generatedBody, maybeBoxed) <- generateBody env { definitionInfo = Just defInfo } symbolTableWithParams body
+      (generatedBody, maybeBoxed) <- generateBody env { recursionData = Just recData } symbolTableWithParams body
 
       shouldLoop <- load continue 0
       condBr shouldLoop loop afterLoop
@@ -1925,7 +1973,7 @@ generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName param
 generateTopLevelFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m SymbolTable
 generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed qt _ metadata (Core.Definition params body))) -> do
-    generateFunction env symbolTable False (Core.isTCODefinition metadata) qt functionName params body
+    generateFunction env symbolTable False metadata qt functionName params body
 
   Core.Typed _ _ _ (Core.Extern (ps IT.:=> t) name originalName) -> do
     let paramTypes  = IT.getParamTypes t
@@ -2131,7 +2179,7 @@ generateMethod :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadM
 generateMethod env symbolTable methodName exp = case exp of
   -- TODO: handle overloaded methods that should be passed a dictionary
   Core.Typed _ _ _ (Core.Assignment _ (Core.Typed qt _ metadata (Core.Definition params body))) ->
-    generateFunction env symbolTable True (Core.isTCODefinition metadata) qt methodName params body
+    generateFunction env symbolTable True metadata qt methodName params body
 
   -- TODO: reconsider this
   Core.Typed (_ IT.:=> t) _ _ (Core.Assignment _ exp) -> do
@@ -3615,7 +3663,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       tupleEqInstances = buildTupleNEqInstance <$> [2..10]
 
-  generateFunction env symbolTableWithCBindings False False overloadedEqQualType "!=" ["$Eq$eqVar", "a", "b"] [
+  generateFunction env symbolTableWithCBindings False [] overloadedEqQualType "!=" ["$Eq$eqVar", "a", "b"] [
       Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Var "!")) [
         Core.Typed ([] IT.:=> IT.tBool) emptyArea [] (Core.Call (Core.Typed overloadedEqQualType emptyArea [] (Core.Placeholder (Core.MethodRef "Eq" "==" True, "eqVar") (Core.Typed eqOperationQualType emptyArea [] (Core.Var "==")))) [
           Core.Typed eqVarQualType emptyArea [] (Core.Var "a"),
@@ -3763,7 +3811,7 @@ generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes,
   ast : more ->
     let (moduleTable', symbolTable', processedHashes', initialEnv') = generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) more
         (moduleTable'', symbolTable'', processedHashes'', initialEnv'') = generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast
-    in  (moduleTable' <> moduleTable'', symbolTable' <> symbolTable'', processedHashes' ++ processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv' <> dictionaryIndices initialEnv'', isLast = False, isTopLevel = False, definitionInfo = Nothing })
+    in  (moduleTable' <> moduleTable'', symbolTable' <> symbolTable'', processedHashes' ++ processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv' <> dictionaryIndices initialEnv'', isLast = False, isTopLevel = False, recursionData = Nothing })
 
   [] ->
     (moduleTable, symbolTable, processedHashes, initialEnv)
@@ -3783,7 +3831,7 @@ generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialE
           generateImportedASTs False astTable (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
 
         computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
-        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False, isTopLevel = False, definitionInfo = Nothing }
+        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False, isTopLevel = False, recursionData = Nothing }
         (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (importHashes ++ processedHashes) symbolTableWithImports ast
 
         updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
@@ -3809,13 +3857,13 @@ generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> Modul
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
     let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]), ("Inspect", Map.fromList [("inspect", (0, 1))]) ]
-        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, definitionInfo = Nothing } [] symbolTable)
+        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing } [] symbolTable)
         defaultInstancesModulePath =
           if takeExtension entrypoint == "" then
             joinPath [entrypoint, "__default__instances__.mad"]
           else
             joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
-        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, definitionInfo = Nothing }) ast
+        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing }) ast
     in  Map.insert defaultInstancesModulePath defaultInstancesModule moduleTable
 
   _ ->
@@ -3844,7 +3892,7 @@ compileModule outputFolder rootPath astPath astModule = do
         mod'' <-
           withPassManager
           defaultCuratedPassSetSpec
-            { optLevel                = Just 2
+            { optLevel                = Just 0
             , useInlinerWithThreshold = Just 150
             , dataLayout              = Just dataLayout
             , targetLibraryInfo       = Just libraryInfo
