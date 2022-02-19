@@ -679,6 +679,21 @@ buildReferencePAP symbolTable arity fn = do
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
 generateExp :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
 generateExp env symbolTable exp = case exp of
+  Core.Typed qt area metadata e | Core.isRightListRecursionEnd metadata -> do
+    -- TODO: generate exp without the metadata and append its result to the end
+    (_, endList, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
+    endValue        <- gep endList [i32ConstOp 0, i32ConstOp 0]
+    endValue'       <- load endValue 0
+    endNext         <- gep endList [i32ConstOp 0, i32ConstOp 1]
+    endNext'        <- load endNext 0
+
+    let Just startOperand = start <$> recursionData env
+    let Just endPtr       = end <$> recursionData env
+    end' <- load endPtr 0
+    storeItem end' () (endValue', 0)
+    storeItem end' () (endNext', 1)
+    return (symbolTable, startOperand, Nothing)
+
   Core.Typed qt@(ps IT.:=> t) _ _ (Core.Var n) ->
     case Map.lookup n symbolTable of
       Just (Symbol (FunctionSymbol 0) fnPtr) -> do
@@ -1322,10 +1337,6 @@ generateExp env symbolTable exp = case exp of
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
     return (symbolTable, tuplePtr', Nothing)
-
-  Core.Typed _ _ metadata _ | Core.isRightListRecursionEnd metadata -> do
-    let Just startOperand = start <$> recursionData env
-    return (symbolTable, startOperand, Nothing)
 
   Core.Typed _ _ _ (Core.ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
