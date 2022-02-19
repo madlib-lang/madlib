@@ -5,15 +5,22 @@ import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Map                      as M
 
+data RecursionDirection
+  = LeftRecursion
+  | RightRecursion
+  | BothRecursion
+  deriving(Eq, Show, Ord)
+
 data RecursionKind
-  = BasicRecursion
-  | ListRecursion
+  = PlainRecursion
+  | ListRecursion RecursionDirection
+  | NotOptimizable
   deriving(Eq, Show, Ord)
 
 data Metadata
-  = LeafNode
-  | TCODefinition
-  | TailRecursiveCall RecursionKind
+  = RecursionEnd RecursionKind
+  | RecursiveDefinition RecursionKind
+  | RecursiveCall RecursionKind
   deriving(Eq, Show, Ord)
 
 data Core a
@@ -292,7 +299,30 @@ getImportAbsolutePath imp = case imp of
 
 
 isTCODefinition :: [Metadata] -> Bool
-isTCODefinition = elem TCODefinition
+isTCODefinition = any isTCODefinitionMetada
 
-isBasicRecursionCall :: [Metadata] -> Bool
-isBasicRecursionCall = elem (TailRecursiveCall BasicRecursion)
+isTCODefinitionMetada :: Metadata -> Bool
+isTCODefinitionMetada meta = case meta of
+  RecursiveDefinition NotOptimizable ->
+    False
+
+  RecursiveDefinition _ ->
+    True
+
+  _ ->
+    False
+
+isPlainRecursiveCall :: [Metadata] -> Bool
+isPlainRecursiveCall = elem (RecursiveCall PlainRecursion)
+
+isPlainRecursiveDefinition :: [Metadata] -> Bool
+isPlainRecursiveDefinition = elem (RecursiveDefinition PlainRecursion)
+
+isRightListRecursiveCall :: [Metadata] -> Bool
+isRightListRecursiveCall = elem (RecursiveCall (ListRecursion RightRecursion))
+
+isRightListRecursiveDefinition :: [Metadata] -> Bool
+isRightListRecursiveDefinition = elem (RecursiveDefinition (ListRecursion RightRecursion))
+
+isRightListRecursionEnd :: [Metadata] -> Bool
+isRightListRecursionEnd = elem (RecursionEnd (ListRecursion RightRecursion))
