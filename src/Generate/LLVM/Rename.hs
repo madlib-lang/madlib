@@ -76,82 +76,82 @@ renameExps env exps = case exps of
 
 renameExp :: Env -> Exp -> (Exp, Env)
 renameExp env what = case what of
-  Typed t area (Call callType fn args) ->
+  Typed t area metadata (Call fn args) ->
     let (renamedFn, env')    = renameExp env fn
         (renamedArgs, env'') = renameExps env' args
-    in  (Typed t area (Call callType renamedFn renamedArgs), env'')
+    in  (Typed t area metadata (Call renamedFn renamedArgs), env'')
 
-  Typed t area (Access record field) ->
+  Typed t area metadata (Access record field) ->
     let (renamedRecord, env') = renameExp env record
         (renamedField, env'')  = renameExp env' field
-    in  (Typed t area (Access renamedRecord renamedField), env'')
+    in  (Typed t area metadata (Access renamedRecord renamedField), env'')
 
-  Typed t area (Definition defType params body) ->
+  Typed t area metadata (Definition params body) ->
     let env'                 = foldr (\param env -> extendScope param param env) env params
         (renamedBody, env'') = renameExps env' body
-    in  (Typed t area (Definition defType params renamedBody), env'')
+    in  (Typed t area metadata (Definition params renamedBody), env'')
 
-  Typed t area (Assignment name exp) ->
+  Typed t area metadata (Assignment name exp) ->
     -- here we deal with an assignment in a body or Do
     -- therefore we must not rename it as it only concerns top level names.
     let env'                = extendScope name name env
         (renamedExp, env'') = renameExp env' exp
-    in  (Typed t area (Assignment name renamedExp), env'')
+    in  (Typed t area metadata (Assignment name renamedExp), env'')
 
-  Typed t area (Var name) -> case break (== '.') name of
+  Typed t area metadata (Var name) -> case break (== '.') name of
     -- A normal name
     (n, []) ->
       let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-      in  (Typed t area (Var renamed), env)
+      in  (Typed t area metadata (Var renamed), env)
 
     -- A field access name eg. Var ".field"
     ([], fieldAccessor) ->
-      (Typed t area (Var fieldAccessor), env)
+      (Typed t area metadata (Var fieldAccessor), env)
 
     -- A namespace access eg. Var "List.filter"
     (namespace, '.' : n) ->
       let moduleHash = Maybe.fromMaybe namespace $ Map.lookup namespace (defaultImportHashes env)
           renamed    = addHashToName moduleHash n
           env'       = addDefaultImportNameUsage namespace n env
-      in  (Typed t area (Var renamed), env')
+      in  (Typed t area metadata (Var renamed), env')
 
     _ ->
       undefined
 
-  Typed t area (NameExport name) ->
+  Typed t area metadata (NameExport name) ->
     let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-    in  (Typed t area (NameExport renamed), env)
+    in  (Typed t area metadata (NameExport renamed), env)
 
-  Typed t area (ListConstructor items) ->
+  Typed t area metadata (ListConstructor items) ->
     let (renamedItems, env') = renameListItems env items
-    in  (Typed t area (ListConstructor renamedItems), env')
+    in  (Typed t area metadata (ListConstructor renamedItems), env')
 
-  Typed t area (TupleConstructor items) ->
+  Typed t area metadata (TupleConstructor items) ->
     let (renamedItems, env') = renameExps env items
-    in  (Typed t area (TupleConstructor renamedItems), env')
+    in  (Typed t area metadata (TupleConstructor renamedItems), env')
 
-  Typed t area (Record fields) ->
+  Typed t area metadata (Record fields) ->
     let (renamedFields, env') = renameFields env fields
-    in  (Typed t area (Record renamedFields), env')
+    in  (Typed t area metadata (Record renamedFields), env')
 
-  Typed t area (If cond truthy falsy) ->
+  Typed t area metadata (If cond truthy falsy) ->
     let (renamedCond, env')     = renameExp env cond
         (renamedTruthy, env'')  = renameExp env' truthy
         (renamedFalsy, env''')  = renameExp env'' falsy
-    in  (Typed t area (If renamedCond renamedTruthy renamedFalsy), env''')
+    in  (Typed t area metadata (If renamedCond renamedTruthy renamedFalsy), env''')
 
-  Typed t area (Do exps) ->
+  Typed t area metadata (Do exps) ->
     let (renamedExps, env') = renameExps env exps
-    in  (Typed t area (Do renamedExps), env')
+    in  (Typed t area metadata (Do renamedExps), env')
 
-  Typed t area (Where exp iss) ->
+  Typed t area metadata (Where exp iss) ->
     let (renamedExp, env')  = renameExp env exp
         (renamedIss, env'') = renameBranches env' iss
-    in  (Typed t area (Where renamedExp renamedIss), env'')
+    in  (Typed t area metadata (Where renamedExp renamedIss), env'')
 
-  Typed t area (Placeholder ph exp) ->
+  Typed t area metadata (Placeholder ph exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area (Placeholder ph renamedExp), env')
+    in  (Typed t area metadata (Placeholder ph renamedExp), env')
 
   _ ->
     (what, env)
@@ -170,10 +170,10 @@ renameBranches env branches = case branches of
 
 renameBranch :: Env -> Is -> (Is, Env)
 renameBranch env is = case is of
-  Typed t area (Is pat exp) ->
+  Typed t area metadata (Is pat exp) ->
     let renamedPattern  = renamePattern env pat
         (renamedExp, env') = renameExp env exp
-    in  (Typed t area (Is renamedPattern renamedExp), env')
+    in  (Typed t area metadata (Is renamedPattern renamedExp), env')
 
   _ ->
     undefined
@@ -181,26 +181,26 @@ renameBranch env is = case is of
 
 renamePattern :: Env -> Pattern -> Pattern
 renamePattern env pat = case pat of
-  Typed t area (PCon name args) ->
+  Typed t area metadata (PCon name args) ->
     let renamed     = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
         renamedArgs = renamePattern env <$> args
-    in  Typed t area (PCon renamed renamedArgs)
+    in  Typed t area metadata (PCon renamed renamedArgs)
 
-  Typed t area (PRecord fields) ->
+  Typed t area metadata (PRecord fields) ->
     let renamedFields = Map.map (renamePattern env) fields
-    in  Typed t area (PRecord renamedFields)
+    in  Typed t area metadata (PRecord renamedFields)
 
-  Typed t area (PList items) ->
+  Typed t area metadata (PList items) ->
     let renamedItems = renamePattern env <$> items
-    in  Typed t area (PList renamedItems)
+    in  Typed t area metadata (PList renamedItems)
 
-  Typed t area (PTuple items) ->
+  Typed t area metadata (PTuple items) ->
     let renamedItems = renamePattern env <$> items
-    in  Typed t area (PTuple renamedItems)
+    in  Typed t area metadata (PTuple renamedItems)
 
-  Typed t area (PSpread spread) ->
+  Typed t area metadata (PSpread spread) ->
     let renamedSpread = renamePattern env spread
-    in  Typed t area (PSpread renamedSpread)
+    in  Typed t area metadata (PSpread renamedSpread)
 
   other ->
     other
@@ -219,13 +219,13 @@ renameFields env fields = case fields of
 
 renameField :: Env -> Field -> (Field, Env)
 renameField env field = case field of
-  Typed t area (Field (name, exp)) ->
+  Typed t area metadata (Field (name, exp)) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area $ Field (name, renamedExp), env')
+    in  (Typed t area metadata $ Field (name, renamedExp), env')
 
-  Typed t area (FieldSpread exp) ->
+  Typed t area metadata (FieldSpread exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area $ FieldSpread renamedExp, env')
+    in  (Typed t area metadata $ FieldSpread renamedExp, env')
 
   _ ->
     undefined
@@ -243,13 +243,13 @@ renameListItems env lis = case lis of
 
 renameListItem :: Env -> ListItem -> (ListItem, Env)
 renameListItem env item = case item of
-  Typed t area (ListItem exp) ->
+  Typed t area metadata (ListItem exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area $ ListItem renamedExp, env')
+    in  (Typed t area metadata $ ListItem renamedExp, env')
 
-  Typed t area (ListSpread exp) ->
+  Typed t area metadata (ListSpread exp) ->
     let (renamedExp, env') = renameExp env exp
-    in  (Typed t area $ ListSpread renamedExp, env')
+    in  (Typed t area metadata $ ListSpread renamedExp, env')
 
   _ ->
     undefined
@@ -257,11 +257,11 @@ renameListItem env item = case item of
 
 renameTopLevelAssignment :: Env -> Exp -> (Exp, Env)
 renameTopLevelAssignment env assignment = case assignment of
-  Typed t area (Assignment name exp) ->
+  Typed t area metadata (Assignment name exp) ->
     let hashedName          = hashName env name
         env'                = extendScope name hashedName env
         (renamedExp, env'') = renameExp env' exp
-    in  (Typed t area (Assignment hashedName renamedExp), env'')
+    in  (Typed t area metadata (Assignment hashedName renamedExp), env'')
 
   _ ->
     undefined
@@ -270,27 +270,27 @@ renameTopLevelAssignment env assignment = case assignment of
 renameTopLevelExps :: Env -> [Exp] -> ([Exp], Env)
 renameTopLevelExps env exps = case exps of
   (exp : es) -> case exp of
-    Typed t area (Assignment _ _) ->
+    Typed t area metadata (Assignment _ _) ->
       let (renamedExp, env')  = renameTopLevelAssignment env exp
           (nextExps, nextEnv) = renameTopLevelExps env' es
       in  (renamedExp : nextExps, nextEnv)
 
-    Typed t area (Export assignment@(Typed _ _ (Assignment _ _))) ->
+    Typed t area metadata (Export assignment@(Typed _ _ _ (Assignment _ _))) ->
       let (renamedExp, env')  = renameTopLevelAssignment env assignment
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (Export renamedExp) : nextExps, nextEnv)
+      in  (Typed t area metadata (Export renamedExp) : nextExps, nextEnv)
 
-    Typed t area (Extern qt name foreignName) ->
+    Typed t area metadata (Extern qt name foreignName) ->
       let hashedName          = hashName env name
           env'                = extendScope name hashedName env
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
+      in  (Typed t area metadata (Extern qt hashedName foreignName) : nextExps, nextEnv)
 
-    Typed _ _ (Export (Typed t area (Extern qt name foreignName))) ->
+    Typed _ _ _ (Export (Typed t area metadata (Extern qt name foreignName))) ->
       let hashedName          = hashName env name
           env'                = extendScope name hashedName env
           (nextExps, nextEnv) = renameTopLevelExps env' es
-      in  (Typed t area (Extern qt hashedName foreignName) : nextExps, nextEnv)
+      in  (Typed t area metadata (Extern qt hashedName foreignName) : nextExps, nextEnv)
 
     _ ->
       let (exp', env')        = renameExp env exp
@@ -304,10 +304,10 @@ renameTopLevelExps env exps = case exps of
 
 renameConstructor :: Env -> Constructor -> (Constructor, Env)
 renameConstructor env constructor = case constructor of
-  Untyped area (Constructor name typings t) ->
+  Untyped area metadata (Constructor name typings t) ->
     let hashedName = hashName env name
         env'       = extendScope name hashedName env
-    in  (Untyped area (Constructor hashedName typings t), env')
+    in  (Untyped area metadata (Constructor hashedName typings t), env')
 
   _ ->
     undefined
@@ -327,10 +327,10 @@ renameConstructors env constructors = case constructors of
 renameTypeDecls :: Env -> [TypeDecl] -> ([TypeDecl], Env)
 renameTypeDecls env typeDecls = case typeDecls of
   (td : tds) -> case td of
-    Untyped area adt@ADT{ adtconstructors } ->
+    Untyped area metadata adt@ADT{ adtconstructors } ->
       let (renamedConstructors, env') = renameConstructors env adtconstructors
           (nextTds, nextEnv)          = renameTypeDecls env' tds
-      in  (Untyped area adt { adtconstructors = renamedConstructors } : nextTds, nextEnv)
+      in  (Untyped area metadata adt { adtconstructors = renamedConstructors } : nextTds, nextEnv)
 
     _ ->
       let (nextTds, nextEnv) = renameTypeDecls env tds
@@ -342,7 +342,7 @@ renameTypeDecls env typeDecls = case typeDecls of
 
 renameInstance :: Env -> Instance -> (Instance, Env)
 renameInstance env inst = case inst of
-  Untyped area (Instance name ps p methods) ->
+  Untyped area metadata (Instance name ps p methods) ->
     -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
     let (renamedMethods, env') =
           Map.foldrWithKey
@@ -354,7 +354,7 @@ renameInstance env inst = case inst of
             methods
         renamedMethods' = Map.fromList renamedMethods
     -- let renamedMethods = Map.map (Bifunctor.first (fst . renameExp env)) methods
-    in  (Untyped area (Instance name ps p renamedMethods'), env')
+    in  (Untyped area metadata (Instance name ps p renamedMethods'), env')
 
   _ ->
     undefined
@@ -372,10 +372,10 @@ renameInstances env instances = case instances of
 
 renamePostProcessedName :: Env -> String -> Core String -> (Core String, Env)
 renamePostProcessedName env hash solvedName = case solvedName of
-  Untyped area name ->
+  Untyped area metadata name ->
     let hashedName = addHashToName hash name
         env'       = extendScope name hashedName env
-    in  (Untyped area hashedName, env')
+    in  (Untyped area metadata hashedName, env')
 
   _ ->
     undefined
@@ -394,10 +394,10 @@ renamePostProcessedNames env hash solvedNames = case solvedNames of
 
 renameImport :: Env -> Import -> (Import, Env)
 renameImport env imp = case imp of
-  Untyped area (NamedImport names relPath absPath) ->
+  Untyped area metadata (NamedImport names relPath absPath) ->
     let moduleHash           = generateHashFromPath absPath
         (renamedNames, env') = renamePostProcessedNames env moduleHash names
-    in  (Untyped area (NamedImport renamedNames relPath absPath), env')
+    in  (Untyped area metadata (NamedImport renamedNames relPath absPath), env')
 
   {-
     Here we just push the import hash to the env so that we can pull that information to rewrite say:
@@ -405,10 +405,10 @@ renameImport env imp = case imp of
     import { __hash_of_List__filter } from "List". Essentially we rewrite all default imports into
     named imports.
   -}
-  Untyped area (DefaultImport n@(Untyped _ name) relPath absPath) ->
+  Untyped area metadata (DefaultImport n@(Untyped _ _ name) relPath absPath) ->
     let moduleHash = generateHashFromPath absPath
         env'       = addDefaultImportHash name moduleHash env
-    in  (Untyped area (DefaultImport n relPath absPath), env')
+    in  (Untyped area metadata (DefaultImport n relPath absPath), env')
 
   _ ->
     undefined
@@ -428,17 +428,17 @@ renameImports env imports = case imports of
 populateInitialEnv :: [Exp] -> Env -> Env
 populateInitialEnv exps env = case exps of
   (exp : next) -> case exp of
-    Typed _ _ (Assignment name _) ->
+    Typed _ _ _ (Assignment name _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ (Export (Typed _ _ (Assignment name _))) ->
+    Typed _ _ _ (Export (Typed _ _ _ (Assignment name _))) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
 
-    Typed _ _ (Extern qt name _) ->
+    Typed _ _ _ (Extern qt name _) ->
       let hashedName = hashName env name
           env'       = extendScope name hashedName env
       in  populateInitialEnv next env'
@@ -452,12 +452,12 @@ populateInitialEnv exps env = case exps of
 
 rewriteDefaultImports :: Env -> [Import] -> [Import]
 rewriteDefaultImports env imports = case imports of
-  (Untyped area (DefaultImport (Untyped area' namespace) absPath relPath) : next) ->
+  (Untyped area metadata (DefaultImport (Untyped area' metadata' namespace) absPath relPath) : next) ->
     let usedNames      = Maybe.fromMaybe Set.empty $ Map.lookup namespace (usedDefaultImportNames env)
         hashFromModule = Maybe.fromMaybe "" $ Map.lookup namespace (defaultImportHashes env)
-        hashedNames    = Set.toList $ Set.map (Untyped area' . addHashToName hashFromModule) usedNames
+        hashedNames    = Set.toList $ Set.map (Untyped area' metadata' . addHashToName hashFromModule) usedNames
         next'          = rewriteDefaultImports env next
-    in  Untyped area (NamedImport hashedNames absPath relPath) : next'
+    in  Untyped area metadata (NamedImport hashedNames absPath relPath) : next'
 
   (imp : next) ->
     imp : rewriteDefaultImports env next

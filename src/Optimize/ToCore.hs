@@ -115,28 +115,31 @@ buildApp' total nth f@(Slv.Typed (ps :=> t) _ f') xs =
 -- TemplateString -------------------------------------------------------------
 stringConcat :: Core.Exp
 stringConcat =
-  Core.Typed ([] :=> (tStr `fn` tStr `fn` tStr)) emptyArea (Core.Var "++")
+  Core.Typed ([] :=> (tStr `fn` tStr `fn` tStr)) emptyArea [] (Core.Var "++")
 
 
 templateStringToCalls :: [Core.Exp] -> Core.Exp
 templateStringToCalls exps = case exps of
-  [e@(Core.Typed qt area _), e'@(Core.Typed qt' area' _)] ->
+  [e@(Core.Typed qt area _ _), e'@(Core.Typed qt' area' _ _)] ->
     Core.Typed
       ((preds qt ++ preds qt') :=> tStr)
       (mergeAreas area area')
-      (Core.Call Core.SimpleCall stringConcat [e, e'])
+      []
+      (Core.Call stringConcat [e, e'])
 
-  (e@(Core.Typed qt area _) : e'@(Core.Typed qt' area' _) : next) ->
+  (e@(Core.Typed qt area _ _) : e'@(Core.Typed qt' area' _ _) : next) ->
     let concatenated =
           Core.Typed
             ((preds qt ++ preds qt') :=> tStr)
             (mergeAreas area area')
-            (Core.Call Core.SimpleCall stringConcat [e, e'])
-        nextStr@(Core.Typed qt'' area'' _) = templateStringToCalls next
+            []
+            (Core.Call stringConcat [e, e'])
+        nextStr@(Core.Typed qt'' area'' _ _) = templateStringToCalls next
     in  Core.Typed
           ((preds qt ++ preds qt' ++ preds qt'') :=> tStr)
           (mergeAreas area area'')
-          (Core.Call Core.SimpleCall stringConcat [concatenated, nextStr])
+          []
+          (Core.Call stringConcat [concatenated, nextStr])
 
   [last] ->
     last
@@ -150,89 +153,89 @@ class Processable a b where
 
 instance Processable Slv.Exp Core.Exp where
   toCore enabled fullExp@(Slv.Typed qt area e) = case e of
-    Slv.LNum  x           -> return $ Core.Typed qt area (Core.Literal $ Core.LNum x)
+    Slv.LNum  x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LNum x)
 
-    Slv.LFloat x          -> return $ Core.Typed qt area (Core.Literal $ Core.LFloat x)
+    Slv.LFloat x          -> return $ Core.Typed qt area [] (Core.Literal $ Core.LFloat x)
 
-    Slv.LStr  x           -> return $ Core.Typed qt area (Core.Literal $ Core.LStr x)
+    Slv.LStr  x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LStr x)
 
-    Slv.LBool x           -> return $ Core.Typed qt area (Core.Literal $ Core.LBool x)
+    Slv.LBool x           -> return $ Core.Typed qt area [] (Core.Literal $ Core.LBool x)
 
-    Slv.LUnit             -> return $ Core.Typed qt area (Core.Literal Core.LUnit)
+    Slv.LUnit             -> return $ Core.Typed qt area [] (Core.Literal Core.LUnit)
 
     Slv.TemplateString es -> do
       es' <- mapM (toCore enabled) es
       return $ templateStringToCalls es'
 
-    Slv.JSExp js         -> return $ Core.Typed qt area (Core.JSExp js)
+    Slv.JSExp js         -> return $ Core.Typed qt area [] (Core.JSExp js)
 
     Slv.App fn arg close -> do
       let (fn', args) = collectAppArgs True fullExp
       fn''  <- toCore enabled fn'
       args' <- mapM (toCore enabled) args
-      return $ Core.Typed qt area (Core.Call Core.SimpleCall fn'' args')
+      return $ Core.Typed qt area [] (Core.Call fn'' args')
 
     Slv.Access rec field -> do
       rec'   <- toCore enabled rec
       field' <- toCore enabled field
-      return $ Core.Typed qt area (Core.Access rec' field')
+      return $ Core.Typed qt area [] (Core.Access rec' field')
 
     Slv.Abs (Slv.Typed _ _ param) body -> do
       let (params, body') = collectAbsParams fullExp
       body'' <- mapM (toCore enabled) body'
-      return $ Core.Typed qt area (Core.Definition Core.BasicDefinition params body'')
+      return $ Core.Typed qt area [] (Core.Definition params body'')
 
     Slv.Assignment name exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area (Core.Assignment name exp')
+      return $ Core.Typed qt area [] (Core.Assignment name exp')
 
     Slv.Export exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area (Core.Export exp')
+      return $ Core.Typed qt area [] (Core.Export exp')
 
-    Slv.NameExport name     -> return $ Core.Typed qt area (Core.NameExport name)
+    Slv.NameExport name     -> return $ Core.Typed qt area [] (Core.NameExport name)
 
-    Slv.Var        name     -> return $ Core.Typed qt area (Core.Var name)
+    Slv.Var        name     -> return $ Core.Typed qt area [] (Core.Var name)
 
     Slv.TypedExp exp _ _ -> do
       toCore enabled exp
 
     Slv.ListConstructor items -> do
       items' <- mapM (toCore enabled) items
-      return $ Core.Typed qt area (Core.ListConstructor items')
+      return $ Core.Typed qt area [] (Core.ListConstructor items')
 
     Slv.TupleConstructor exps -> do
       exps' <- mapM (toCore enabled) exps
-      return $ Core.Typed qt area (Core.TupleConstructor exps')
+      return $ Core.Typed qt area [] (Core.TupleConstructor exps')
 
     Slv.Record fields -> do
       fields' <- mapM (toCore enabled) fields
-      return $ Core.Typed qt area (Core.Record fields')
+      return $ Core.Typed qt area [] (Core.Record fields')
 
     Slv.If cond truthy falsy -> do
       cond'   <- toCore enabled cond
       truthy' <- toCore enabled truthy
       falsy'  <- toCore enabled falsy
-      return $ Core.Typed qt area (Core.If cond' truthy' falsy')
+      return $ Core.Typed qt area [] (Core.If cond' truthy' falsy')
 
     Slv.Do exps -> do
       exps' <- mapM (toCore enabled) exps
-      return $ Core.Typed qt area (Core.Do exps')
+      return $ Core.Typed qt area [] (Core.Do exps')
 
     Slv.Where exp iss -> do
       exp' <- toCore enabled exp
       iss' <- mapM (toCore enabled) iss
-      return $ Core.Typed qt area (Core.Where exp' iss')
+      return $ Core.Typed qt area [] (Core.Where exp' iss')
 
     Slv.Extern qt name foreignName ->
-      return $ Core.Typed qt area (Core.Extern qt name foreignName)
+      return $ Core.Typed qt area [] (Core.Extern qt name foreignName)
 
     Slv.Placeholder (placeholderRef, ts) exp -> do
       exp'            <- toCore enabled exp
       placeholderRef' <- optimizePlaceholderRef placeholderRef
       let tsStr = Types.buildTypeStrForPlaceholder ts
       ts' <- getTypeShortname enabled tsStr
-      return $ Core.Typed qt area (Core.Placeholder (placeholderRef', ts') exp')
+      return $ Core.Typed qt area [] (Core.Placeholder (placeholderRef', ts') exp')
 
      where
       optimizePlaceholderRef :: Slv.PlaceholderRef -> PostProcess Core.PlaceholderRef
@@ -258,94 +261,94 @@ instance Processable Slv.Exp Core.Exp where
 
 instance Processable Slv.Typing Core.Typing where
   toCore enabled (Slv.Untyped area typing) = case typing of
-    Slv.TRSingle name       -> return $ Core.Untyped area $ Core.TRSingle name
+    Slv.TRSingle name       -> return $ Core.Untyped area [] $ Core.TRSingle name
 
     Slv.TRComp name typings -> do
       typings' <- mapM (toCore enabled) typings
-      return $ Core.Untyped area $ Core.TRComp name typings'
+      return $ Core.Untyped area [] $ Core.TRComp name typings'
 
     Slv.TRArr left right -> do
       left'  <- toCore enabled left
       right' <- toCore enabled right
-      return $ Core.Untyped area $ Core.TRArr left' right'
+      return $ Core.Untyped area [] $ Core.TRArr left' right'
 
     Slv.TRRecord fields base -> do
       fields' <- mapM (toCore enabled) fields
       base'   <- mapM (toCore enabled) base
-      return $ Core.Untyped area $ Core.TRRecord fields' base'
+      return $ Core.Untyped area [] $ Core.TRRecord fields' base'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (toCore enabled) typings
-      return $ Core.Untyped area $ Core.TRTuple typings'
+      return $ Core.Untyped area [] $ Core.TRTuple typings'
 
     Slv.TRConstrained constraints typing -> do
       constraints' <- mapM (toCore enabled) constraints
       typing'      <- toCore enabled typing
-      return $ Core.Untyped area $ Core.TRConstrained constraints' typing'
+      return $ Core.Untyped area [] $ Core.TRConstrained constraints' typing'
 
 instance Processable Slv.ListItem Core.ListItem where
   toCore enabled (Slv.Typed qt area item) = case item of
     Slv.ListItem exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area $ Core.ListItem exp'
+      return $ Core.Typed qt area [] $ Core.ListItem exp'
 
     Slv.ListSpread exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area $ Core.ListSpread exp'
+      return $ Core.Typed qt area [] $ Core.ListSpread exp'
 
 instance Processable Slv.Field Core.Field where
   toCore enabled (Slv.Typed qt area item) = case item of
     Slv.Field (name, exp) -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area $ Core.Field (name, exp')
+      return $ Core.Typed qt area [] $ Core.Field (name, exp')
 
     Slv.FieldSpread exp -> do
       exp' <- toCore enabled exp
-      return $ Core.Typed qt area $ Core.FieldSpread exp'
+      return $ Core.Typed qt area [] $ Core.FieldSpread exp'
 
 instance Processable Slv.Is Core.Is where
   toCore enabled (Slv.Typed qt area (Slv.Is pat exp)) = do
     pat' <- toCore enabled pat
     exp' <- toCore enabled exp
-    return $ Core.Typed qt area (Core.Is pat' exp')
+    return $ Core.Typed qt area [] (Core.Is pat' exp')
 
 instance Processable Slv.Pattern Core.Pattern where
   toCore enabled (Slv.Typed qt area pat) = case pat of
-    Slv.PVar name       -> return $ Core.Typed qt area $ Core.PVar name
+    Slv.PVar name       -> return $ Core.Typed qt area [] $ Core.PVar name
 
-    Slv.PAny            -> return $ Core.Typed qt area Core.PAny
+    Slv.PAny            -> return $ Core.Typed qt area [] Core.PAny
 
     Slv.PCon name pats -> do
       pats' <- mapM (toCore enabled) pats
-      return $ Core.Typed qt area $ Core.PCon name pats'
+      return $ Core.Typed qt area [] $ Core.PCon name pats'
 
-    Slv.PNum    num  -> return $ Core.Typed qt area $ Core.PNum num
+    Slv.PNum    num  -> return $ Core.Typed qt area [] $ Core.PNum num
 
-    Slv.PStr    str  -> return $ Core.Typed qt area $ Core.PStr str
+    Slv.PStr    str  -> return $ Core.Typed qt area [] $ Core.PStr str
 
-    Slv.PBool   boo  -> return $ Core.Typed qt area $ Core.PBool boo
+    Slv.PBool   boo  -> return $ Core.Typed qt area [] $ Core.PBool boo
 
     Slv.PRecord pats -> do
       pats' <- mapM (toCore enabled) pats
-      return $ Core.Typed qt area $ Core.PRecord pats'
+      return $ Core.Typed qt area [] $ Core.PRecord pats'
 
     Slv.PList pats -> do
       pats' <- mapM (toCore enabled) pats
-      return $ Core.Typed qt area $ Core.PList pats'
+      return $ Core.Typed qt area [] $ Core.PList pats'
 
     Slv.PTuple pats -> do
       pats' <- mapM (toCore enabled) pats
-      return $ Core.Typed qt area $ Core.PTuple pats'
+      return $ Core.Typed qt area [] $ Core.PTuple pats'
 
     Slv.PSpread pat -> do
       pat' <- toCore enabled pat
-      return $ Core.Typed qt area $ Core.PSpread pat'
+      return $ Core.Typed qt area [] $ Core.PSpread pat'
 
 instance Processable Slv.TypeDecl Core.TypeDecl where
   toCore enabled (Slv.Untyped area typeDecl) = case typeDecl of
     adt@Slv.ADT{} -> do
       ctors <- mapM optimizeConstructors $ Slv.adtconstructors adt
-      return $ Core.Untyped area $ Core.ADT { Core.adtname         = Slv.adtname adt
+      return $ Core.Untyped area [] $ Core.ADT { Core.adtname         = Slv.adtname adt
                                           , Core.adtparams       = Slv.adtparams adt
                                           , Core.adtconstructors = ctors
                                           , Core.adtexported     = Slv.adtexported adt
@@ -353,23 +356,23 @@ instance Processable Slv.TypeDecl Core.TypeDecl where
 
     alias@Slv.Alias{} -> do
       aliastype <- toCore enabled $ Slv.aliastype alias
-      return $ Core.Untyped area $ Core.Alias { Core.aliasname     = Slv.aliasname alias
-                                            , Core.aliasparams   = Slv.aliasparams alias
-                                            , Core.aliastype     = aliastype
-                                            , Core.aliasexported = Slv.aliasexported alias
-                                            }
+      return $ Core.Untyped area [] $ Core.Alias { Core.aliasname     = Slv.aliasname alias
+                                                 , Core.aliasparams   = Slv.aliasparams alias
+                                                 , Core.aliastype     = aliastype
+                                                 , Core.aliasexported = Slv.aliasexported alias
+                                                 }
    where
     optimizeConstructors :: Slv.Constructor -> PostProcess Core.Constructor
     optimizeConstructors (Slv.Untyped a (Slv.Constructor name typings t)) = do
       typings' <- mapM (toCore enabled) typings
-      return $ Core.Untyped area $ Core.Constructor name typings' t
+      return $ Core.Untyped area [] $ Core.Constructor name typings' t
 
 
 instance Processable Slv.Interface Core.Interface where
   toCore enabled (Slv.Untyped area (Slv.Interface name constraints vars methods methodTypings)) = do
     name'          <- getClassShortname enabled name
     methodTypings' <- mapM (toCore enabled) methodTypings
-    return $ Core.Untyped area $ Core.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
+    return $ Core.Untyped area [] $ Core.Interface name' constraints ((\(TV n _) -> n) <$> vars) methods methodTypings'
 
 instance Processable Slv.Instance Core.Instance where
   toCore enabled (Slv.Untyped area (Slv.Instance interface constraints pred methods)) = do
@@ -377,19 +380,19 @@ instance Processable Slv.Instance Core.Instance where
     let typingStr = intercalate "_" (Types.getTypeHeadName <$> predTypes pred)
     typings' <- getTypeShortname enabled typingStr
     methods' <- mapM (\(exp, scheme) -> (, scheme) <$> toCore enabled exp) methods
-    return $ Core.Untyped area $ Core.Instance interface' constraints typings' methods'
+    return $ Core.Untyped area [] $ Core.Instance interface' constraints typings' methods'
 
 instance Processable Slv.Import Core.Import where
   toCore _ (Slv.Untyped area imp) = case imp of
     Slv.NamedImport names relPath absPath ->
-      return $ Core.Untyped area $ Core.NamedImport (optimizeImportName <$> names) relPath absPath
+      return $ Core.Untyped area [] $ Core.NamedImport (optimizeImportName <$> names) relPath absPath
 
     Slv.DefaultImport namespace relPath absPath ->
-      return $ Core.Untyped area $ Core.DefaultImport (optimizeImportName namespace) relPath absPath
+      return $ Core.Untyped area [] $ Core.DefaultImport (optimizeImportName namespace) relPath absPath
 
 
 optimizeImportName :: Slv.Solved Slv.Name -> Core.Core Core.Name
-optimizeImportName (Slv.Untyped area name) = Core.Untyped area name
+optimizeImportName (Slv.Untyped area name) = Core.Untyped area [] name
 
 instance Processable Slv.AST Core.AST where
   toCore enabled ast = do
