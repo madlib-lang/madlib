@@ -420,3 +420,15 @@ hasNumberPred ps = case ps of
 
   [] ->
     False
+
+-- TODO: still incomplete
+selectPredsForType :: [Pred] -> Type -> [Pred]
+selectPredsForType ps t = case ps of
+  (p@(IsIn _ ts _) : more) ->
+    if head ts == t then
+      p : selectPredsForType more t
+    else
+      selectPredsForType more t
+
+  [] ->
+    []

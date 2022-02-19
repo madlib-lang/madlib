@@ -115,7 +115,7 @@ data DefinitionType
 
 data CallType
   = SimpleCall
-  | RecursiveTailCall
+  | TailRecursiveCall
   deriving(Eq, Show)
 
 
