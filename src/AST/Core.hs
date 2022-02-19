@@ -5,10 +5,20 @@ import qualified Infer.Type                    as Ty
 import           Explain.Location
 import qualified Data.Map                      as M
 
+data RecursionKind
+  = BasicRecursion
+  | ListRecursion
+  deriving(Eq, Show, Ord)
+
+data Metadata
+  = LeafNode
+  | TCODefinition
+  | TailRecursiveCall RecursionKind
+  deriving(Eq, Show, Ord)
 
 data Core a
-  = Typed (Ty.Qual Ty.Type) Area a
-  | Untyped Area a
+  = Typed (Ty.Qual Ty.Type) Area [Metadata] a
+  | Untyped Area [Metadata] a
   deriving(Eq, Show, Ord)
 
 data AST =
@@ -107,23 +117,6 @@ data PlaceholderRef
   | MethodRef String String Bool
   deriving(Eq, Show)
 
-
-data DefinitionType
-  = BasicDefinition
-  | TCEOptimizableDefinition
-  deriving(Eq, Show)
-
-data RecursionKind
-  = BasicRecursion
-  | ListRecursion
-  deriving(Eq, Show)
-
-data CallType
-  = SimpleCall
-  | TailRecursiveCall RecursionKind
-  deriving(Eq, Show)
-
-
 data Literal
   = LNum String
   | LFloat String
@@ -137,10 +130,8 @@ type Exp = Core Exp_
 data Exp_
   = Literal Literal
   | JSExp String
-  -- TODO: figure something out for Definition name. Maybe Definition DefinitionName DefinitionType [Name] [Exp]
-  -- with DefinitionName = Anonymous | Named String
-  | Definition DefinitionType [Name] [Exp]
-  | Call CallType Exp [Exp]
+  | Definition [Name] [Exp]
+  | Call Exp [Exp]
   | Access Exp Exp
   | Assignment Name Exp
   | Export Exp
@@ -165,26 +156,26 @@ type Table = M.Map FilePath AST
 -- Functions
 
 getType :: Core a -> Ty.Type
-getType (Typed (_ Ty.:=> t) _ _) = t
+getType (Typed (_ Ty.:=> t) _ _ _) = t
 
 
 getQualType :: Core a -> Ty.Qual Ty.Type
-getQualType (Typed t _ _) = t
+getQualType (Typed t _ _ _) = t
 
 
 getExpName :: Exp -> Maybe String
-getExpName (Untyped _ _)    = Nothing
-getExpName (Typed _ _ exp) = case exp of
+getExpName Untyped{}         = Nothing
+getExpName (Typed _ _ _ exp) = case exp of
   Assignment name _ ->
     return name
 
-  Export (Typed _ _ (Assignment name _)) ->
+  Export (Typed _ _ _ (Assignment name _)) ->
     return name
 
   Extern _ name _ ->
     return name
 
-  Export (Typed _ _ (Extern _ name _)) ->
+  Export (Typed _ _ _ (Extern _ name _)) ->
     return name
 
   _ ->
@@ -192,44 +183,44 @@ getExpName (Typed _ _ exp) = case exp of
 
 
 getStartLine :: Exp -> Int
-getStartLine (Typed _ (Area (Loc _ line _) _) _) = line
-getStartLine (Untyped (Area (Loc _ line _) _) _    ) = line
+getStartLine (Typed _ (Area (Loc _ line _) _) _ _) = line
+getStartLine (Untyped (Area (Loc _ line _) _) _ _    ) = line
 
 getValue :: Core a -> a
-getValue (Typed _ _ a) = a
-getValue (Untyped _ a    ) = a
+getValue (Typed _ _ _ a) = a
+getValue (Untyped _ _ a    ) = a
 
 
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
-  Typed _ _ (ListItem e) ->
+  Typed _ _ _ (ListItem e) ->
     e
 
-  Typed _ _ (ListSpread e) ->
+  Typed _ _ _ (ListSpread e) ->
     e
 
 getFieldExp :: Field -> Exp
 getFieldExp li = case li of
-  Typed _ _ (Field (_, e)) ->
+  Typed _ _ _ (Field (_, e)) ->
     e
 
-  Typed _ _ (FieldSpread e) ->
+  Typed _ _ _ (FieldSpread e) ->
     e
 
 
 getIsExpression :: Is -> Exp
 getIsExpression is = case is of
-  Typed _ _ (Is _ exp) ->
+  Typed _ _ _ (Is _ exp) ->
     exp
 
 
 -- Should be called on top level [Exp] nodes
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
-  Typed _ _ (Assignment _ (Typed _ _ Definition{})) ->
+  Typed _ _ _ (Assignment _ (Typed _ _ _ Definition{})) ->
     True
 
-  Typed _ _ (Export (Typed _ _ (Assignment _ (Typed _ _ Definition{})))) ->
+  Typed _ _ _ (Export (Typed _ _ _ (Assignment _ (Typed _ _ _ Definition{})))) ->
     True
 
   _ ->
@@ -239,10 +230,10 @@ isTopLevelFunction exp = case exp of
 -- Should be called on top level [Exp] nodes
 isTopLevelAssignment :: Exp -> Bool
 isTopLevelAssignment exp = case exp of
-  Typed _ _ (Assignment _ _) ->
+  Typed _ _ _ (Assignment _ _) ->
     True
 
-  Typed _ _ (Export (Typed _ _ (Assignment _ _))) ->
+  Typed _ _ _ (Export (Typed _ _ _ (Assignment _ _))) ->
     True
 
   _ ->
@@ -251,7 +242,7 @@ isTopLevelAssignment exp = case exp of
 
 isADT :: TypeDecl -> Bool
 isADT td = case td of
-  Untyped _ ADT {} ->
+  Untyped _ _ ADT {} ->
     True
 
   _                ->
@@ -260,10 +251,10 @@ isADT td = case td of
 
 isExtern :: Exp -> Bool
 isExtern exp = case exp of
-  Typed _ _ Extern{} ->
+  Typed _ _ _ Extern{} ->
     True
 
-  Typed _ _ (Export (Typed _ _ Extern{})) ->
+  Typed _ _ _ (Export (Typed _ _ _ Extern{})) ->
     True
 
   _ ->
@@ -272,7 +263,7 @@ isExtern exp = case exp of
 
 isSpreadField :: Field -> Bool
 isSpreadField field = case field of
-  Typed _ _ (FieldSpread _) ->
+  Typed _ _ _ (FieldSpread _) ->
     True
 
   _ ->
@@ -281,20 +272,27 @@ isSpreadField field = case field of
 
 getConstructorName :: Constructor -> String
 getConstructorName constructor = case constructor of
-  Typed _ _ (Constructor name _ _) ->
+  Typed _ _ _ (Constructor name _ _) ->
     name
 
-  Untyped _ (Constructor name _ _) ->
+  Untyped _ _ (Constructor name _ _) ->
     name
 
 
 getImportAbsolutePath :: Import -> FilePath
 getImportAbsolutePath imp = case imp of
-  Untyped _ (NamedImport   _ _ n) ->
+  Untyped _ _ (NamedImport   _ _ n) ->
     n
 
-  Untyped _ (DefaultImport _ _ n) ->
+  Untyped _ _ (DefaultImport _ _ n) ->
     n
 
   _ ->
     undefined
+
+
+isTCODefinition :: [Metadata] -> Bool
+isTCODefinition = elem TCODefinition
+
+isBasicRecursionCall :: [Metadata] -> Bool
+isBasicRecursionCall = elem (TailRecursiveCall BasicRecursion)

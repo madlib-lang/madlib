@@ -177,28 +177,16 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
 
                   if target == TLLVM then do
                     let coreTable        = tableToCore False table
-                        -- withTCE          = TCE.resolve <$> coreTable
                         renamedTable     = Rename.renameTable coreTable
-                        withRecursion    = Recursion.convertTable renamedTable
                         closureConverted = ClosureConvert.convertTable renamedTable
                         withTCE          = TCE.resolve <$> closureConverted
 
                     putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
-                  -- if target == TLLVM then do
-                  --   let coreTable        = tableToCore False table
-                  --       withTCE          = TCE.resolve <$> coreTable
-                  --       renamedTable     = Rename.renameTable withTCE
-                  --       withRecursion    = Recursion.convertTable renamedTable
-                  --       closureConverted = ClosureConvert.convertTable renamedTable
-
-                  --   putStrLn (ppShow withTCE)
-                  --   LLVM.generateTable outputPath rootPath closureConverted canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
                         withTCE       = TCE.resolve <$> strippedTable
-                        -- withRecursion = Recursion.convertTable withTCE
                     -- putStrLn (ppShow coreTable)
                     -- putStrLn (ppShow withTCE)
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
