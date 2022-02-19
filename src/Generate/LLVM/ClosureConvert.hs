@@ -333,23 +333,6 @@ collectPlaceholderParams ph = case ph of
     ([], or)
 
 
-convertDefType :: DefinitionType -> DefinitionType
-convertDefType defType = case defType of
-  BasicDefinition ->
-    BasicDefinition
-
-  TCEOptimizableDefinition ->
-    TCEOptimizableDefinition
-
-convertCallType :: CallType -> CallType
-convertCallType defType = case defType of
-  SimpleCall ->
-    SimpleCall
-
-  RecursiveTailCall ->
-    RecursiveTailCall
-
-
 convertAbs :: Env -> String -> [String] -> Exp -> Convert Exp
 convertAbs env functionName placeholders abs@(Typed (ps :=> t) area (Definition defType params body)) = do
   let isTopLevel = stillTopLevel env
@@ -365,7 +348,7 @@ convertAbs env functionName placeholders abs@(Typed (ps :=> t) area (Definition 
           else
             foldr fn t $ tVar "dict" <$ placeholders
 
-    return $ Typed (ps :=> t') area (Assignment functionName (Typed (ps :=> t') area (Definition (convertDefType defType) params' body'')))
+    return $ Typed (ps :=> t') area (Assignment functionName (Typed (ps :=> t') area (Definition defType params' body'')))
   else do
     -- here we need to add free var parameters, lift it, and if there is any free var, replace the abs with a
     -- PAP that applies the free vars from the current scope.
@@ -376,7 +359,7 @@ convertAbs env functionName placeholders abs@(Typed (ps :=> t) area (Definition 
     let paramsWithFreeVars = (fst <$> fvs) ++ params
 
     let liftedType = foldr fn t (getType . snd <$> fvs)
-    let lifted = Typed (ps :=> liftedType) area (Assignment functionName' (Typed (ps :=> liftedType) area (Definition (convertDefType defType) paramsWithFreeVars body'')))
+    let lifted = Typed (ps :=> liftedType) area (Assignment functionName' (Typed (ps :=> liftedType) area (Definition defType paramsWithFreeVars body'')))
     addTopLevelExp lifted
 
     let functionNode = Typed (ps :=> t) area (Var functionName')
@@ -430,7 +413,7 @@ instance Convertable Exp Exp where
     Call callType fn args -> do
         fn'   <- convert env { stillTopLevel = False } fn
         args' <- mapM (convert env { stillTopLevel = False }) args
-        return $ dedupeCallFn $ Typed qt area (Call (convertCallType callType) fn' args')
+        return $ dedupeCallFn $ Typed qt area (Call callType fn' args')
 
     Access rec field -> do
       rec'   <- convert env { stillTopLevel = False } rec
@@ -452,7 +435,7 @@ instance Convertable Exp Exp where
       let paramsWithFreeVars = (fst <$> fvs) ++ params
 
       let liftedType = foldr fn t (getType . snd <$> fvs)
-      let lifted = Typed (ps :=> liftedType) area (Assignment functionName (Typed (ps :=> liftedType) area (Definition (convertDefType defType) paramsWithFreeVars body'')))
+      let lifted = Typed (ps :=> liftedType) area (Assignment functionName (Typed (ps :=> liftedType) area (Definition defType paramsWithFreeVars body'')))
       addTopLevelExp lifted
 
       let functionNode = Typed (ps :=> liftedType) area (Var functionName)
@@ -469,7 +452,7 @@ instance Convertable Exp Exp where
         let (params, innerExp)   = collectPlaceholderParams ph
         let typeWithPlaceholders = foldr fn t (tVar "dict" <$ params)
         case innerExp of
-          Typed _ _ (Definition _ _ _) -> do
+          Typed _ _ Definition{} -> do
             convertAbs env functionName params innerExp
           _ -> do
             innerExp' <- convert env { stillTopLevel = False } innerExp

@@ -83,6 +83,10 @@ findInst env p@(IsIn interface t _) = do
           throwError $ CompilationError (NoInstanceFound interface t) NoContext
   tryInsts (inst : is) = catchError (tryInst inst) (\e -> tryInsts is)
 
+gatherInstPreds :: Env -> Pred -> Infer [Pred]
+gatherInstPreds env p =
+  catchError (byInst env p) (\_ -> return [p])
+
 
 removeInstanceVars :: Pred -> Pred -> (Pred, Pred)
 removeInstanceVars ip@(IsIn cls ts maybeArea) p@(IsIn cls' ts' maybeArea') =
