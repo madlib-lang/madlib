@@ -113,9 +113,14 @@ data DefinitionType
   | TCEOptimizableDefinition
   deriving(Eq, Show)
 
+data RecursionKind
+  = BasicRecursion
+  | ListRecursion
+  deriving(Eq, Show)
+
 data CallType
   = SimpleCall
-  | TailRecursiveCall
+  | TailRecursiveCall RecursionKind
   deriving(Eq, Show)
 
 

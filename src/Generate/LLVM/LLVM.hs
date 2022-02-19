@@ -84,6 +84,8 @@ data DefinitionInfo
   { entryBlockName :: AST.Name
   , continueRef :: Operand.Operand
   , boxedParams :: [Operand.Operand]
+  , accumulator :: Operand.Operand
+  -- ^ Used for TRMC
   }
   deriving(Eq, Show)
 
@@ -468,6 +470,14 @@ box what = case typeOf what of
   _ ->
     bitcast what boxType
 
+
+emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => m Operand
+emptyList = do
+  emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
+  emptyList' <- addrspacecast emptyList listType
+  store emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
+
+  return emptyList'
 
 
 buildStr :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => String -> m Operand
@@ -1138,48 +1148,22 @@ generateExp env symbolTable exp = case exp of
           _ ->
             error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
-    _ | callType == Core.TailRecursiveCall -> do
-      let Just continue = continueRef <$> definitionInfo env
-      let Just params   = boxedParams <$> definitionInfo env
-      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
-      
-      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
-      let unboxedArgs = (\(_, x, _) -> x) <$> args'
+    _ | callType == Core.TailRecursiveCall BasicRecursion ->
+      case callType of
+        Core.TailRecursiveCall BasicRecursion -> do
+          let Just continue = continueRef <$> definitionInfo env
+          let Just params   = boxedParams <$> definitionInfo env
+          store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+          
+          args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+          let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-      let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
-      mapM_ (\(qt, ptr, exp) -> updateArg qt ptr exp) d
+          let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+          mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
 
-      return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
-      where
-        updateArg :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> Operand -> Operand -> m (SymbolTable, Operand, Maybe Operand)
-        updateArg (ps IT.:=> ty) ptr exp' =
-          case typeOf exp' of
-            Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-              ptr' <- bitcast ptr $ Type.ptr stringType
-              store ptr' 0 exp'
-              return (symbolTable, exp', Nothing)
-
-            Type.PointerType _ _ | IT.isListType ty -> do
-              ptr' <- bitcast ptr $ Type.ptr listType
-              store ptr' 0 exp'
-              return (symbolTable, exp', Nothing)
-
-            Type.PointerType t _  -> do
-              ptr'   <- bitcast ptr $ typeOf exp'
-              loaded <- load exp' 0
-              store ptr' 0 loaded
-              return (symbolTable, exp', Nothing)
-
-            _ | IT.hasNumberPred ps -> do
-              ptr'   <- bitcast ptr $ Type.ptr Type.i64
-              exp''  <- bitcast exp' Type.i64
-              store ptr' 0 exp''
-              return (symbolTable, exp', Nothing)
-
-            _ -> do
-              ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
-              store ptr' 0 exp'
-              return (symbolTable, exp', Nothing)
+          return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
+        _ ->
+          undefined
 
     Core.Typed _ _ (Core.Var functionName) -> case Map.lookup functionName symbolTable of
       Just (Symbol (ConstructorSymbol _ arity) fnOperand) ->
@@ -1339,11 +1323,35 @@ generateExp env symbolTable exp = case exp of
 
   Core.Typed _ _ (Core.ListConstructor []) -> do
     -- an empty list is { value: null, next: null }
-    emptyList  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
-    emptyList' <- addrspacecast emptyList listType
-    store emptyList' 0 (Operand.ConstantOperand $ Constant.Struct Nothing False [Constant.Null boxType, Constant.Null boxType])
-
+    emptyList' <- emptyList
     return (symbolTable, emptyList', Nothing)
+
+  Core.Typed _ _ (Core.ListConstructor [
+      Core.Typed _ _ (Core.ListItem li),
+      Core.Typed _ _ (Core.ListSpread (Core.Typed _ _ (Core.Call (Core.TailRecursiveCall Core.ListRecursion) _ args)))
+    ]) -> do
+      let Just continue = continueRef <$> definitionInfo env
+      let Just params   = boxedParams <$> definitionInfo env
+      let Just result   = accumulator <$> definitionInfo env
+      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+      
+      args'  <- mapM (generateExp env { isLast = False } symbolTable) args
+      let unboxedArgs = (\(_, x, _) -> x) <$> args'
+
+      let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+      mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
+
+      let listQualType = [] IT.:=> IT.tListOf (IT.tVar "a")
+      (_, item, _) <- generateExp env symbolTable li
+
+      unboxedResult <- unbox listQualType result
+      pushed <- call madlistPush [(item, []), (unboxedResult, [])]
+
+      updateTCOArg symbolTable listQualType result pushed
+
+      return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
+
+  
 
   Core.Typed _ _ (Core.ListConstructor listItems) -> do
     tail <- case List.last listItems of
@@ -1498,6 +1506,36 @@ generateExp env symbolTable exp = case exp of
   _ ->
     error $ "not implemented\n\n" ++ ppShow exp
 
+
+updateTCOArg :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> IT.Qual IT.Type -> Operand -> Operand -> m (SymbolTable, Operand, Maybe Operand)
+updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
+  case typeOf exp' of
+    Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
+      ptr' <- bitcast ptr $ Type.ptr stringType
+      store ptr' 0 exp'
+      return (symbolTable, exp', Nothing)
+
+    Type.PointerType _ _ | IT.isListType ty -> do
+      ptr' <- bitcast ptr $ Type.ptr listType
+      store ptr' 0 exp'
+      return (symbolTable, exp', Nothing)
+
+    Type.PointerType t _  -> do
+      ptr'   <- bitcast ptr $ typeOf exp'
+      loaded <- load exp' 0
+      store ptr' 0 loaded
+      return (symbolTable, exp', Nothing)
+
+    _ | IT.hasNumberPred ps -> do
+      ptr'   <- bitcast ptr $ Type.ptr Type.i64
+      exp''  <- bitcast exp' Type.i64
+      store ptr' 0 exp''
+      return (symbolTable, exp', Nothing)
+
+    _ -> do
+      ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
+      store ptr' 0 exp'
+      return (symbolTable, exp', Nothing)
 
 
 
@@ -1808,6 +1846,15 @@ makeParamName :: String -> ParameterName
 makeParamName = ParameterName . stringToShortByteString
 
 
+generateInitialResult :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> m Operand
+generateInitialResult qt@(_ IT.:=> t) = case t of
+  IT.TApp (IT.TCon (IT.TC "List" _) "prelude") _ ->
+    emptyList >>= box
+
+  _ ->
+    return $ Operand.ConstantOperand (Constant.Undef Type.i8 )
+
+
 generateFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Bool -> Bool -> IT.Qual IT.Type -> String -> [String] -> [Core.Exp] -> m SymbolTable
 generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName paramNames body = do
   let paramTypes    = (\t' -> IT.selectPredsForType ps t' IT.:=> t') <$> IT.getParamTypes t
@@ -1817,8 +1864,10 @@ generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName param
 
   function <- function functionName' params' boxType $ \params ->
     if doTCO then mdo
-      entry <- block `named` "entry"
-      continue <- alloca Type.i1 Nothing 0
+      entry          <- block `named` "entry"
+      continue       <- alloca Type.i1 Nothing 0
+      resultAcc      <- generateInitialResult (IT.selectPredsForType ps t IT.:=> IT.getReturnType t)
+      boxedResultAcc <- box resultAcc
       br loop
 
       loop <- block `named` "loop"
@@ -1829,7 +1878,7 @@ generateFunction env symbolTable isMethod doTCO (ps IT.:=> t) functionName param
       let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
-      let defInfo = DefinitionInfo { entryBlockName = entry, continueRef = continue, boxedParams = List.drop dictCount params }
+      let defInfo = DefinitionInfo { entryBlockName = entry, continueRef = continue, boxedParams = List.drop dictCount params, accumulator = boxedResultAcc }
 
       -- Generate body
       (generatedBody, maybeBoxed) <- generateBody env { definitionInfo = Just defInfo } symbolTableWithParams body

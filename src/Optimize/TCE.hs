@@ -41,7 +41,7 @@ markDefinition env exp = case exp of
   Typed qt area (Definition defType params body) | Maybe.isJust (envCurrentName env) ->
     let Just fnName = envCurrentName env
     in  if isCandidate fnName params body then
-          Typed qt area (Definition TCEOptimizableDefinition params (markTRCCalls fnName . markDefinition env <$> body))
+          Typed qt area (Definition TCEOptimizableDefinition params (markTRCCalls BasicRecursion fnName . markDefinition env <$> body))
         else
           Typed qt area (Definition defType params (markDefinition env <$> body))
 
@@ -52,35 +52,37 @@ markDefinition env exp = case exp of
     exp
 
 
-
-markIs :: String -> Is -> Is
-markIs fnName is = case is of
+markIs :: RecursionKind -> String -> Is -> Is
+markIs recKind fnName is = case is of
   Typed qt area (Is pat exp) ->
-    Typed qt area (Is pat (markTRCCalls fnName exp))
+    Typed qt area (Is pat (markTRCCalls recKind fnName exp))
 
   _ ->
     is
 
 -- looks for tail recursive calls and marks them
-markTRCCalls :: String -> Exp -> Exp
-markTRCCalls fnName exp = case exp of
+markTRCCalls :: RecursionKind -> String -> Exp -> Exp
+markTRCCalls recKind fnName exp = case exp of
   Typed qt area (Call callType fn args) ->
     if Just fnName == getAppName exp then
-      Typed qt area (Call TailRecursiveCall fn args)
+      Typed qt area (Call (TailRecursiveCall recKind) fn args)
     else
       exp
 
   Typed qt area (If cond truthy falsy) ->
-    Typed qt area (If (markTRCCalls fnName cond) (markTRCCalls fnName truthy) (markTRCCalls fnName falsy))
+    Typed qt area (If (markTRCCalls recKind fnName cond) (markTRCCalls recKind fnName truthy) (markTRCCalls recKind fnName falsy))
 
   Typed qt area (Where exp iss) ->
-    Typed qt area (Where exp (markIs fnName <$> iss))
+    Typed qt area (Where exp (markIs recKind fnName <$> iss))
 
   Typed qt area (Do exps) ->
-    Typed qt area (Do (markTRCCalls fnName <$> exps))
+    Typed qt area (Do (markTRCCalls recKind fnName <$> exps))
 
   Typed qt area (Placeholder info exp) ->
-    Typed qt area (Placeholder info (markTRCCalls fnName exp))
+    Typed qt area (Placeholder info (markTRCCalls recKind fnName exp))
+
+  Typed qt area (ListConstructor [Typed qtLi areaLi (ListItem li), Typed qtSpread areaSpread (ListSpread spread)]) ->
+    Typed qt area (ListConstructor [Typed qtLi areaLi (ListItem li), Typed qtSpread areaSpread (ListSpread (markTRCCalls ListRecursion fnName spread))])
 
   _ ->
     exp
@@ -124,6 +126,9 @@ isCandidate fnName params exps = case exps of
     Typed _ _ (Where exp iss) ->
       let isExpValid = not (containsRecursion False fnName exp)
       in  isExpValid && areIssCandidate fnName params iss
+
+    Typed _ _ (ListConstructor [Typed _ _ (ListItem li), Typed _ _ (ListSpread spread)]) ->
+      not (containsRecursion False fnName li) && containsRecursion True fnName spread
 
     _ ->
       False
