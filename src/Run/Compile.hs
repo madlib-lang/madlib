@@ -183,7 +183,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         closureConverted = ClosureConvert.convertTable renamedTable
                         withTCE          = TCE.resolve <$> closureConverted
 
-                    -- putStrLn (ppShow withTCE)
+                    putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   -- if target == TLLVM then do
                   --   let coreTable        = tableToCore False table
