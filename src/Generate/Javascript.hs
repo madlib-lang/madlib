@@ -34,10 +34,15 @@ import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
 
 
-newtype Env = Env { varsInScope :: S.Set String } deriving(Eq, Show)
+data RecursionData
+  = PlainRecursionData { prdParams :: [String] }
+  | RightListRecursionData { rlrdParam :: [String] }
+  deriving(Eq, Show)
+
+data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData } deriving(Eq, Show)
 
 initialEnv :: Env
-initialEnv = Env { varsInScope = S.empty }
+initialEnv = Env { varsInScope = S.empty, recursionData = Nothing }
 
 allowedJSNames :: [String]
 allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default"]
@@ -66,13 +71,21 @@ class Compilable a where
 
 instance Compilable Exp where
   compile _ _ Untyped{} = ""
-  compile env config e@(Typed (_ :=> expType) area@(Area (Loc _ l _) _) _ exp) =
+  compile env config e@(Typed qt@(_ :=> expType) area@(Area (Loc _ l _) _) metadata exp) =
     let
       astPath   = ccastPath config
       coverage  = cccoverage config
       optimized = ccoptimize config
     in
       case exp of
+        _ | isPlainRecursionEnd metadata ->
+          let compiledExp = compile env config (Typed qt area [] exp)
+          in  "($result = " <> compiledExp <> ")"
+
+        _ | Core.isRightListRecursionEnd metadata ->
+          let compiledExp = compile env config (Typed qt area [] exp)
+          in  "($end.push(..."<>compiledExp<>"), $result = $start)"
+
         Literal (LNum v) ->
           hpWrapLine coverage astPath l v
 
@@ -220,6 +233,12 @@ instance Compilable Exp where
             <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
             <> ")"
 
+        Call fn args | isPlainRecursiveCall metadata ->
+          let Just params  = prdParams <$> recursionData env
+              compiledArgs = compile env config <$> args
+              updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
+          in  "(" <> intercalate ", " updateParams <> ", $continue = true)"
+
         Call fn args ->
           let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
           in  compile env config fn <> concat compiledArgs
@@ -245,8 +264,46 @@ instance Compilable Exp where
                 <> ")"
 
           compileBody :: Env -> [Exp] -> String
-          compileBody env [exp] = compile env config exp
-          compileBody env exps  = "{\n" <> compileBody' env exps <> "}"
+          compileBody env body = case body of
+            [exp] | isPlainRecursiveDefinition metadata ->
+              "{\n"
+              <> "    let $result;\n"
+              <> "    let $continue = true;\n"
+              <> "    while($continue) {\n"
+              <> "        $continue = false;\n"
+              <> "        "<> compile env { recursionData = Just PlainRecursionData { prdParams = params } } config exp
+              <> "\n    }\n"
+              <> "    return $result;\n"
+              <> "}"
+
+            [exp] | isRightListRecursiveDefinition metadata ->
+              "{\n"
+              <> "    let $result;\n"
+              <> "    let $continue = true;\n"
+              <> "    let $start = [];\n"
+              <> "    let $end = $start;\n"
+              <> "    while($continue) {\n"
+              <> "        $continue = false;\n"
+              <> "        "<> compile env { recursionData = Just RightListRecursionData { rlrdParam = params } } config exp
+              <> "\n    }\n"
+              <> "    return $result;\n"
+              <> "}"
+
+            [exp] ->
+              compile env config exp
+
+            exps ->
+              "{\n"
+              <> compileBody' env exps
+              <> "}"
+              -- if isPlainRecursiveDefinition metadata then
+              --   "{\n"
+              --   <> compileBody' env exps
+              --   <> "}"
+              -- else
+              --   "{\n"
+              --   <> compileBody' env exps
+              --   <> "}"
 
           compileBody' :: Env -> [Exp] -> String
           compileBody' env [exp] = case exp of
@@ -366,6 +423,16 @@ instance Compilable Exp where
           hpWrapLine coverage astPath (getStartLine record) $ compile env config record <> name
 
         JSExp           content -> content
+
+        Core.ListConstructor [
+            Core.Typed _ _ _ (Core.ListItem li),
+            Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
+          ] | Core.isRightListRecursiveCall metadata ->
+          let compiledLi    = compile env config li
+              Just params   = rlrdParam <$> recursionData env
+              compiledArgs  = compile env config <$> args
+              updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
+          in  "(" <> intercalate ", " updateParams <> ", $end.push("<> compiledLi <>"), $continue = true)"
 
         ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
          where

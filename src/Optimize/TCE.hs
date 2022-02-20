@@ -68,10 +68,10 @@ markTRCCalls recursionKind fnName exp = case exp of
     if Just fnName == getAppName exp then
       Typed qt area (RecursiveCall PlainRecursion : metadata) (Call fn args)
     else
-      exp
+      Typed qt area (RecursionEnd recursionKind : metadata) (Call fn args)
 
   Typed qt area metadata (If cond truthy falsy) ->
-    Typed qt area metadata (If (markTRCCalls recursionKind fnName cond) (markTRCCalls recursionKind fnName truthy) (markTRCCalls recursionKind fnName falsy))
+    Typed qt area metadata (If cond (markTRCCalls recursionKind fnName truthy) (markTRCCalls recursionKind fnName falsy))
 
   Typed qt area metadata (Where exp iss) ->
     Typed qt area metadata (Where exp (markIs recursionKind fnName <$> iss))
@@ -97,10 +97,11 @@ markTRCCalls recursionKind fnName exp = case exp of
       ])
 
   Typed qt area metadata e ->
-    if recursionKind /= PlainRecursion && recursionKind /= NotOptimizable then
-      Typed qt area (RecursionEnd recursionKind : metadata) e
-    else
-      Typed qt area metadata e
+    Typed qt area (RecursionEnd recursionKind : metadata) e
+    -- if recursionKind /= PlainRecursion && recursionKind /= NotOptimizable then
+      -- Typed qt area (RecursionEnd recursionKind : metadata) e
+    -- else
+      -- Typed qt area metadata e
 
   _ ->
     exp

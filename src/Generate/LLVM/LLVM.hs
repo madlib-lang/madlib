@@ -85,7 +85,6 @@ data RecursionData
       { entryBlockName :: AST.Name
       , continueRef :: Operand.Operand
       , boxedParams :: [Operand.Operand]
-      , accumulator :: Operand.Operand
       }
   | RightListRecursionData
       { entryBlockName :: AST.Name
@@ -1177,8 +1176,8 @@ generateExp env symbolTable exp = case exp of
         args'  <- mapM (generateExp env { isLast = False } symbolTable) args
         let unboxedArgs = (\(_, x, _) -> x) <$> args'
 
-        let d = List.zip3 (Core.getQualType <$> args) params unboxedArgs
-        mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) d
+        let paramUpdatesData = List.zip3 (Core.getQualType <$> args) params unboxedArgs
+        mapM_ (\(qt, ptr, exp) -> updateTCOArg symbolTable qt ptr exp) paramUpdatesData
 
         return (symbolTable, Operand.ConstantOperand (Constant.Undef Type.i8), Nothing)
 
@@ -1459,40 +1458,40 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, value', Just value)
 
 
-  Core.Typed _ _ _ (Core.If cond truthy falsy) ->
-    if isLast env then mdo
-      (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
-      -- test  <- icmp IntegerPredicate.EQ cond' true
-      condBr cond' ifThen ifElse
+  Core.Typed _ _ _ (Core.If cond truthy falsy) -> mdo
+    -- if isLast env then mdo
+    --   (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
+    --   -- test  <- icmp IntegerPredicate.EQ cond' true
+    --   condBr cond' ifThen ifElse
 
-      ifThen <- block `named` "if.then"
-      (symbolTable'', truthy', maybeBoxedTruthy) <- generateExp env symbolTable' truthy
-      truthyValue <- case maybeBoxedTruthy of
-        Just boxed ->
-          return boxed
+    --   ifThen <- block `named` "if.then"
+    --   (symbolTable'', truthy', maybeBoxedTruthy) <- generateExp env symbolTable' truthy
+    --   truthyValue <- case maybeBoxedTruthy of
+    --     Just boxed ->
+    --       return boxed
 
-        Nothing ->
-          box truthy'
-      ifThen' <- currentBlock
-      br ifExit
+    --     Nothing ->
+    --       box truthy'
+    --   ifThen' <- currentBlock
+    --   br ifExit
 
-      ifElse <- block `named` "if.else"
-      (symbolTable''', falsy', maybeBoxedFalsy) <- generateExp env symbolTable' falsy
-      falsyValue <- case maybeBoxedFalsy of
-        Just boxed ->
-          return boxed
+    --   ifElse <- block `named` "if.else"
+    --   (symbolTable''', falsy', maybeBoxedFalsy) <- generateExp env symbolTable' falsy
+    --   falsyValue <- case maybeBoxedFalsy of
+    --     Just boxed ->
+    --       return boxed
 
-        Nothing ->
-          box falsy'
-      ifElse' <- currentBlock
-      br ifExit
+    --     Nothing ->
+    --       box falsy'
+    --   ifElse' <- currentBlock
+    --   br ifExit
 
-      ifExit <- block `named` "if.exit"
-      ret <- phi [(truthyValue, ifThen'), (falsyValue, ifElse')]
+    --   ifExit <- block `named` "if.exit"
+    --   ret <- phi [(truthyValue, ifThen'), (falsyValue, ifElse')]
 
-      -- this value comes boxed as that will directly be returned
-      return (symbolTable', ret, Just ret)
-    else mdo
+    --   -- this value comes boxed as that will directly be returned
+    --   return (symbolTable', ret, Just ret)
+    -- else mdo
       (symbolTable', cond', _) <- generateExp env { isLast = False } symbolTable cond
       -- test  <- icmp IntegerPredicate.EQ cond' true
       condBr cond' ifThen ifElse
@@ -1898,14 +1897,11 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       continue       <- alloca Type.i1 Nothing 0
       recData <-
             if Core.isPlainRecursiveDefinition metadata then do
-              resultAcc      <- generateInitialResult (IT.selectPredsForType ps t IT.:=> IT.getReturnType t)
-              boxedResultAcc <- box resultAcc
               return $
                 PlainRecursionData
                   { entryBlockName = entry
                   , continueRef = continue
                   , boxedParams = List.drop dictCount params
-                  , accumulator = boxedResultAcc
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
               start       <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [boxType, boxType]), [])]
@@ -3888,8 +3884,8 @@ compileModule outputFolder rootPath astPath astModule = do
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-  --   Text.putStrLn (ppllvm astModule)
+  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+    Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
@@ -3903,7 +3899,7 @@ compileModule outputFolder rootPath astPath astModule = do
         mod'' <-
           withPassManager
           defaultCuratedPassSetSpec
-            { optLevel                = Just 0
+            { optLevel                = Just 2
             , useInlinerWithThreshold = Just 150
             , dataLayout              = Just dataLayout
             , targetLibraryInfo       = Just libraryInfo
@@ -3962,7 +3958,7 @@ generateTable outputPath rootPath astTable entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       callCommand $
-        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ -Wl,-stack_size,0x20000000 "
+        "clang++ -dead_strip -foptimize-sibling-calls -stdlib=libc++ -O2 "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
