@@ -318,6 +318,9 @@ isPlainRecursiveCall = elem (RecursiveCall PlainRecursion)
 isPlainRecursiveDefinition :: [Metadata] -> Bool
 isPlainRecursiveDefinition = elem (RecursiveDefinition PlainRecursion)
 
+isPlainRecursionEnd :: [Metadata] -> Bool
+isPlainRecursionEnd = elem (RecursionEnd PlainRecursion)
+
 isRightListRecursiveCall :: [Metadata] -> Bool
 isRightListRecursiveCall = elem (RecursiveCall (ListRecursion RightRecursion))
 
