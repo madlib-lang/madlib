@@ -355,6 +355,30 @@ isListType t = case t of
   _ ->
     False
 
+isDictionaryType :: Type -> Bool
+isDictionaryType t = case t of
+  TApp (TApp (TCon (TC "Dictionary" _) "prelude") _) _ ->
+    True
+
+  _ ->
+    False
+
+isArrayType :: Type -> Bool
+isArrayType t = case t of
+  TApp (TCon (TC "Array" _) "prelude") _ ->
+    True
+
+  _ ->
+    False
+
+isByteArrayType :: Type -> Bool
+isByteArrayType t = case t of
+  TCon (TC "ByteArray" _) "prelude" ->
+    True
+
+  _ ->
+    False
+
 isTCon :: Type -> Bool
 isTCon t = case t of
   TCon _ _ ->
