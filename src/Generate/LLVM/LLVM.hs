@@ -285,8 +285,8 @@ storeItem basePtr _ (item, index) = do
 
 
 -- Mostly used for boxing/unboxing and therefore does just one Level
-buildLLVMType :: IT.Type -> Type.Type
-buildLLVMType t = case t of
+buildLLVMType :: IT.Qual IT.Type -> Type.Type
+buildLLVMType qt@(ps IT.:=> t) = case t of
   IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
     Type.double
 
@@ -305,13 +305,14 @@ buildLLVMType t = case t of
   IT.TCon (IT.TC "{}" IT.Star) "prelude" ->
     Type.ptr Type.i1
 
+  IT.TVar _ | IT.hasNumberPred ps -> do
+    Type.i64
+
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
 
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") left) right ->
-    let tLeft  = buildLLVMType left
-        tRight = buildLLVMType right
-    in  Type.ptr $ Type.FunctionType boxType [boxType] False
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
+    Type.ptr $ Type.FunctionType boxType [boxType] False
 
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(,)" _) "prelude") _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType]
@@ -345,11 +346,11 @@ buildLLVMType t = case t of
 
 buildLLVMParamType :: IT.Type -> Type.Type
 buildLLVMParamType t = case t of
-  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") left) right ->
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
     papType
 
   _ ->
-    buildLLVMType t
+    buildLLVMType ([] IT.:=> t)
 
 
 boxType :: Type.Type
@@ -374,7 +375,7 @@ recordType =
 
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> Operand -> m Operand
-unbox (ps IT.:=> t) what = case t of
+unbox qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
     ptr <- bitcast what $ Type.ptr Type.double
     load ptr 0
@@ -417,7 +418,7 @@ unbox (ps IT.:=> t) what = case t of
 
   -- That handles tuple types
   _ ->
-    bitcast what (buildLLVMType t)
+    bitcast what (buildLLVMType qt)
 
 box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
@@ -1168,8 +1169,7 @@ generateExp env symbolTable exp = case exp of
             error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
     _ | Core.isPlainRecursiveCall metadata -> do
-        let qt            = getQualType exp
-        let llvmType      = buildLLVMType (IT.getQualified qt)
+        let llvmType      = buildLLVMType (getQualType exp)
         let Just continue = continueRef <$> recursionData env
         let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
@@ -1487,8 +1487,8 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, ret, Nothing)
 
-  Core.Typed (_ IT.:=> t) _ _ (Core.NameExport n) -> do
-    let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType t) (AST.mkName n)
+  Core.Typed qt@(_ IT.:=> t) _ _ (Core.NameExport n) -> do
+    let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType qt) (AST.mkName n)
     if IT.isFunctionType t then do
       let arity = List.length $ IT.getParamTypes t
       Writer.tell $ Map.singleton n (fnSymbol arity ref)
@@ -1971,23 +1971,23 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
     in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
 
-  Core.Typed (_ IT.:=> t) _ _ (Core.Assignment name exp) ->
+  Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name exp) ->
     if IT.isFunctionType t then
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
     else
-      let expType   = buildLLVMType t
+      let expType   = buildLLVMType qt
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
-  Core.Typed _ _ _ (Core.Export (Core.Typed (_ IT.:=> t) _ _ (Core.Assignment name exp))) ->
+  Core.Typed _ _ _ (Core.Export (Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment name exp))) ->
     if IT.isFunctionType t then
       let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
     else
-      let expType   = buildLLVMType t
+      let expType   = buildLLVMType qt
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 

@@ -70,21 +70,66 @@ updatePlaceholderWrappedExp update ph = case ph of
     update ph
 
 
+expandIs :: Is -> Is
+expandIs is = case is of
+  Typed qt area metadata (Is pat exp) ->
+    Typed qt area metadata (Is pat (expand exp))
+
+  _ ->
+    is
+
+
 expand :: Exp -> Exp
 expand exp = case exp of
   Typed qt area metadata (Assignment name e) ->
     if isDefinition e || not (isFunctionType (getQualified qt)) then
-      exp
+      Typed qt area metadata (Assignment name (expand e))
     else
       let paramTypes     = getParamTypes . getQualified $ qt
           paramQualTypes = (\t -> selectPredsForType (preds qt) t :=> t) <$> paramTypes
           paramNames     = makeParamNames (length paramTypes)
-        --   definition     = Typed qt area [] (Definition paramNames [buildExpandedBody (zip paramNames paramQualTypes) e])
           definition     = updatePlaceholderWrappedExp (\e' -> Typed qt area [] (Definition paramNames [buildExpandedBody (zip paramNames paramQualTypes) e'])) e
       in  Typed qt area metadata (Assignment name definition)
 
   Typed qt area metadata (Export e) ->
     Typed qt area metadata (Export (expand e))
+
+  Typed qt area metadata (Var name isConstructor) ->
+    if not (isFunctionType (getQualified qt)) then
+      exp
+    else
+      let paramTypes     = getParamTypes . getQualified $ qt
+          paramQualTypes = (\t -> selectPredsForType (preds qt) t :=> t) <$> paramTypes
+          paramNames     = makeParamNames (length paramTypes)
+          definition     = updatePlaceholderWrappedExp (\e' -> Typed qt area [] (Definition paramNames [buildExpandedBody (zip paramNames paramQualTypes) e'])) exp
+      in  definition
+
+  Typed qt area metadata (Call fn args) ->
+    Typed qt area metadata (Call fn (expand <$> args))
+
+  Typed qt area metadata (Definition params body) ->
+    Typed qt area metadata (Definition params (expand <$> body))
+
+  Typed qt area metadata (ListConstructor items) ->
+    Typed qt area metadata (ListConstructor (mapListItem expand <$> items))
+
+  Typed qt area metadata (TupleConstructor items) ->
+    Typed qt area metadata (TupleConstructor (expand <$> items))
+
+  Typed qt area metadata (Record fields) ->
+    Typed qt area metadata (Record (mapRecordField expand <$> fields))
+
+  Typed qt area metadata (If cond truthy falsy) ->
+    Typed qt area metadata (If (expand cond) (expand truthy) (expand falsy))
+
+  Typed qt area metadata (Do exps) ->
+    Typed qt area metadata (Do (expand <$> exps))
+
+  Typed qt area metadata (Where exp iss) ->
+    Typed qt area metadata (Where (expand exp) (expandIs <$> iss))
+
+  Typed qt area metadata (Placeholder ref exp) ->
+    Typed qt area metadata (Placeholder ref (expand exp))
 
   _ ->
     exp
