@@ -67,6 +67,7 @@ import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
 import qualified Optimize.Recursion            as Recursion
 import qualified Optimize.EtaExpansion as EtaExpansion
+import qualified Optimize.EtaReduction as EtaReduction
 
 
 
@@ -179,11 +180,11 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   if target == TLLVM then do
                     let coreTable        = tableToCore False table
                         renamedTable     = Rename.renameTable coreTable
-                        expanded         = EtaExpansion.expandTable renamedTable
-                        closureConverted = ClosureConvert.convertTable expanded
+                        reduced          = EtaReduction.reduceTable renamedTable
+                        closureConverted = ClosureConvert.convertTable reduced
                         withTCE          = TCE.resolve <$> closureConverted
 
-                    -- putStrLn (ppShow expanded)
+                    putStrLn (ppShow withTCE)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table

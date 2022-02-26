@@ -36,6 +36,7 @@ import qualified Explain.Format as Explain
 import qualified System.Exit as Exit
 import           Optimize.ToCore
 import qualified Optimize.TCE as TCE
+import qualified Optimize.EtaReduction as EtaReduction
 
 
 runTests :: String -> Bool -> Target -> IO ()
@@ -119,7 +120,8 @@ runLLVMTests entrypoint coverage = do
           else do
             let postProcessedTable = tableToCore False solvedTable
             let renamedTable       = Rename.renameTable postProcessedTable
-            let closureConverted   = ClosureConvert.convertTable renamedTable
+            let reduced            = EtaReduction.reduceTable renamedTable
+            let closureConverted   = ClosureConvert.convertTable reduced
             let withTCE            = TCE.resolve <$> closureConverted
             LLVM.generateTable outputPath rootPath withTCE mainTestPath
 
@@ -186,14 +188,21 @@ generateRunTestSuitesExp testSuites =
 
 generateTestMainAST :: (FilePath, FilePath, FilePath) -> [FilePath] -> AST
 generateTestMainAST preludeModulePaths suitePaths =
-  let indexedSuitePaths = zip [0..] suitePaths --(take 7 suitePaths)
+  let indexedSuitePaths = zip [0..] suitePaths
       imports           = generateTestSuiteImport <$> indexedSuitePaths
       preludeImports    = generateStaticTestMainImports preludeModulePaths
       runTestSuiteExps  = uncurry generateRunTestSuiteExp <$> indexedSuitePaths
       testSuiteItems    = uncurry generateTestSuiteItemExp <$> indexedSuitePaths
       testSuiteList     = generateTestSuiteListExp testSuiteItems
       runAllTestSuites  = generateRunTestSuitesExp testSuiteList
-  in  AST { aimports = preludeImports ++ imports, aexps = [runAllTestSuites], atypedecls = [], ainterfaces = [], ainstances = [], apath = Nothing }
+  in  AST
+        { aimports    = preludeImports ++ imports
+        , aexps       = [runAllTestSuites]
+        , atypedecls  = []
+        , ainterfaces = []
+        , ainstances  = []
+        , apath       = Nothing
+        }
 
 
 generateTestAssignment :: Int -> Exp -> (Exp, Maybe String)
