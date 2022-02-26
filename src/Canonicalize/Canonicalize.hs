@@ -60,14 +60,18 @@ instance Canonicalizable Src.Exp Can.Exp where
       pushJS js
       return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
 
-    Src.App fn args -> do
+    Src.App fn args ->
       buildApp env target area fn args
 
-    Src.UnOp op arg -> do
+    Src.UnOp op arg ->
       buildApp env target area op [arg]
 
-    Src.BinOp argL op argR -> do
-      buildApp env target area op [argL, argR]
+    Src.BinOp argL op argR -> case op of
+      Src.Source _ _ (Src.Var "|>") ->
+        buildApp env target area argR [argL]
+
+      _ ->
+        buildApp env target area op [argL, argR]
 
     Src.Access rec field -> do
       rec'   <- canonicalize env target rec
@@ -258,7 +262,7 @@ buildApp env target area f args = do
 
                 _ ->
                   False
-             ) $ reverse args'
+            ) $ reverse args'
   let canDrop = length droppable
 
   let args'' = (reverse . drop canDrop . reverse) args'

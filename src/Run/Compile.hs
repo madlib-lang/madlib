@@ -189,7 +189,6 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
-                        expanded      = EtaExpansion.expandTable strippedTable
                         withTCE       = TCE.resolve <$> strippedTable
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 

@@ -4,7 +4,7 @@ Right
        , AST
            { aimports = []
            , aexps =
-               [ Solved
+               [ Typed
                    ([] :=>
                       TApp
                         (TApp
@@ -15,7 +15,7 @@ Right
                            (TVar (TV "j9" Star))))
                    (Area (Loc 0 1 1) (Loc 31 1 32))
                    (Export
-                      (Solved
+                      (Typed
                          ([] :=>
                             TApp
                               (TApp
@@ -27,7 +27,7 @@ Right
                          (Area (Loc 0 1 1) (Loc 31 1 32))
                          (Assignment
                             "singleton"
-                            (Solved
+                            (Typed
                                ([] :=>
                                   TApp
                                     (TApp
@@ -38,25 +38,25 @@ Right
                                        (TVar (TV "j9" Star))))
                                (Area (Loc 19 1 20) (Loc 31 1 32))
                                (Abs
-                                  (Solved
+                                  (Typed
                                      ([] :=> TVar (TV "j9" Star))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      "a")
-                                  [ Solved
+                                  [ Typed
                                       ([] :=>
                                          TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
                                            (TVar (TV "j9" Star)))
                                       (Area (Loc 27 1 28) (Loc 30 1 31))
                                       (ListConstructor
-                                         [ Solved
+                                         [ Typed
                                              ([] :=> TVar (TV "j9" Star))
                                              (Area (Loc 28 1 29) (Loc 29 1 30))
                                              (ListItem
-                                                (Solved
+                                                (Typed
                                                    ([] :=> TVar (TV "j9" Star))
                                                    (Area (Loc 28 1 29) (Loc 29 1 30))
-                                                   (Var "a")))
+                                                   (Var "a" False)))
                                          ])
                                   ])))))
                ]
@@ -77,14 +77,14 @@ Right
                       "./ModuleA")
                ]
            , aexps =
-               [ Solved
+               [ Typed
                    ([] :=>
                       TApp
                         (TCon (TC "List" (Kfun Star Star)) "prelude")
                         (TCon (TC "Integer" Star) "prelude"))
                    (Area (Loc 26 2 1) (Loc 40 2 15))
                    (App
-                      (Solved
+                      (Typed
                          ([] :=>
                             TApp
                               (TApp
@@ -94,8 +94,8 @@ Right
                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
                                  (TCon (TC "Integer" Star) "prelude")))
                          (Area (Loc 26 2 1) (Loc 37 2 12))
-                         (Var "L.singleton"))
-                      (Solved
+                         (Var "L.singleton" False))
+                      (Typed
                          ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                           ] :=>
                             TCon (TC "Integer" Star) "prelude")

@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -39,7 +39,7 @@ Right
             (Area (Loc 0 1 1) (Loc 24 1 25))
             (Assignment
                "f"
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -76,7 +76,7 @@ Right
                        (TVar (TV "k62" Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
-                     (Solved
+                     (Typed
                         ([] :=>
                            TRecord
                              (fromList
@@ -109,18 +109,18 @@ Right
                              (Just (TVar (TV "y76" Star))))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
-                     [ Solved
+                     [ Typed
                          ([] :=> TVar (TV "k62" Star))
                          (Area (Loc 12 1 13) (Loc 23 1 24))
                          (Access
-                            (Solved
+                            (Typed
                                ([] :=>
                                   TRecord
                                     (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
                                     (Just (TVar (TV "m64" Star))))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
-                                  (Solved
+                                  (Typed
                                      ([] :=>
                                         TRecord
                                           (fromList
@@ -133,7 +133,7 @@ Right
                                           (Just (TVar (TV "p67" Star))))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
-                                        (Solved
+                                        (Typed
                                            ([] :=>
                                               TRecord
                                                 (fromList
@@ -156,7 +156,7 @@ Right
                                                 (Just (TVar (TV "s70" Star))))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
-                                              (Solved
+                                              (Typed
                                                  ([] :=>
                                                     TRecord
                                                       (fromList
@@ -193,7 +193,7 @@ Right
                                                       (Just (TVar (TV "v73" Star))))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
-                                                    (Solved
+                                                    (Typed
                                                        ([] :=>
                                                           TRecord
                                                             (fromList
@@ -241,8 +241,8 @@ Right
                                                                ])
                                                             (Just (TVar (TV "y76" Star))))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
-                                                       (Var "x"))
-                                                    (Solved
+                                                       (Var "x" False))
+                                                    (Typed
                                                        ([] :=>
                                                           TApp
                                                             (TApp
@@ -337,8 +337,8 @@ Right
                                                                   ])
                                                                (Just (TVar (TV "v73" Star)))))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
-                                                       (Var ".a"))))
-                                              (Solved
+                                                       (Var ".a" False))))
+                                              (Typed
                                                  ([] :=>
                                                     TApp
                                                       (TApp
@@ -403,8 +403,8 @@ Right
                                                             ])
                                                          (Just (TVar (TV "s70" Star)))))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
-                                                 (Var ".b"))))
-                                        (Solved
+                                                 (Var ".b" False))))
+                                        (Typed
                                            ([] :=>
                                               TApp
                                                 (TApp
@@ -442,8 +442,8 @@ Right
                                                       ])
                                                    (Just (TVar (TV "p67" Star)))))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
-                                           (Var ".c"))))
-                                  (Solved
+                                           (Var ".c" False))))
+                                  (Typed
                                      ([] :=>
                                         TApp
                                           (TApp
@@ -463,8 +463,8 @@ Right
                                              (fromList [ ( "e" , TVar (TV "k62" Star) ) ])
                                              (Just (TVar (TV "m64" Star)))))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
-                                     (Var ".d"))))
-                            (Solved
+                                     (Var ".d" False))))
+                            (Typed
                                ([] :=>
                                   TApp
                                     (TApp
@@ -474,7 +474,7 @@ Right
                                           (Just (TVar (TV "m64" Star)))))
                                     (TVar (TV "k62" Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))
-                               (Var ".e")))
+                               (Var ".e" False)))
                      ])))
         ]
     , atypedecls = []

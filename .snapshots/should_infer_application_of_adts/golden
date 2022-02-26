@@ -2,16 +2,16 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "Result" Star) "path")
             (Area (Loc 38 2 1) (Loc 67 2 30))
             (Assignment
                "result1"
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Result" Star) "path")
                   (Area (Loc 48 2 11) (Loc 67 2 30))
                   (App
-                     (Solved
+                     (Typed
                         ([] :=>
                            TApp
                              (TApp
@@ -19,26 +19,26 @@ Right
                                 (TCon (TC "String" Star) "prelude"))
                              (TCon (TC "Result" Star) "path"))
                         (Area (Loc 48 2 11) (Loc 55 2 18))
-                        (Var "Success"))
-                     (Solved
+                        (Var "Success" True))
+                     (Typed
                         ([] :=> TCon (TC "String" Star) "prelude")
                         (Area (Loc 56 2 19) (Loc 66 2 29))
                         (LStr "\"response\""))
                      True)))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Result" Star) "path")
             (Area (Loc 68 3 1) (Loc 83 3 16))
             (Assignment
                "result2"
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Result" Star) "path")
                   (Area (Loc 78 3 11) (Loc 83 3 16))
-                  (Var "Error")))
-        , Solved
+                  (Var "Error" True)))
+        , Typed
             ([] :=> TCon (TC "Boolean" Star) "prelude")
             (Area (Loc 84 4 1) (Loc 121 4 38))
             (App
-               (Solved
+               (Typed
                   ([ IsIn
                        "Eq"
                        [ TCon (TC "Result" Star) "path" ]
@@ -51,7 +51,7 @@ Right
                        (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 84 4 1) (Loc 122 4 39))
                   (App
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Eq"
                              [ TCon (TC "Result" Star) "path" ]
@@ -68,7 +68,7 @@ Right
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 85 4 2) (Loc 103 4 20))
                         (Abs
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Eq"
                                    [ TCon (TC "Result" Star) "path" ]
@@ -77,7 +77,7 @@ Right
                                  TCon (TC "Result" Star) "path")
                               (Area (Loc 86 4 3) (Loc 87 4 4))
                               "a")
-                           [ Solved
+                           [ Typed
                                ([ IsIn
                                     "Eq"
                                     [ TCon (TC "Result" Star) "path" ]
@@ -90,7 +90,7 @@ Right
                                     (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 85 4 2) (Loc 103 4 20))
                                (Abs
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Eq"
                                           [ TCon (TC "Result" Star) "path" ]
@@ -99,7 +99,7 @@ Right
                                         TCon (TC "Result" Star) "path")
                                      (Area (Loc 89 4 6) (Loc 90 4 7))
                                      "b")
-                                  [ Solved
+                                  [ Typed
                                       ([ IsIn
                                            "Eq"
                                            [ TCon (TC "Result" Star) "path" ]
@@ -108,7 +108,7 @@ Right
                                          TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 96 4 13) (Loc 102 4 19))
                                       (App
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Result" Star) "path" ]
@@ -123,7 +123,7 @@ Right
                                                  (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 96 4 13) (Loc 102 4 19))
                                             (App
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Result" Star) "path" ]
@@ -150,7 +150,7 @@ Right
                                                      ( MethodRef "Eq" "==" False
                                                      , [ TCon (TC "Result" Star) "path" ]
                                                      )
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Eq"
                                                              [ TCon (TC "Result" Star) "path" ]
@@ -176,8 +176,8 @@ Right
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 98 4 15) (Loc 100 4 17))
-                                                        (Var "=="))))
-                                               (Solved
+                                                        (Var "==" False))))
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Result" Star) "path" ]
@@ -185,9 +185,9 @@ Right
                                                    ] :=>
                                                      TCon (TC "Result" Star) "path")
                                                   (Area (Loc 96 4 13) (Loc 97 4 14))
-                                                  (Var "a"))
+                                                  (Var "a" False))
                                                False))
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Result" Star) "path" ]
@@ -195,11 +195,11 @@ Right
                                              ] :=>
                                                TCon (TC "Result" Star) "path")
                                             (Area (Loc 101 4 18) (Loc 102 4 19))
-                                            (Var "b"))
+                                            (Var "b" False))
                                          True)
                                   ])
                            ]))
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Eq"
                              [ TCon (TC "Result" Star) "path" ]
@@ -207,9 +207,9 @@ Right
                          ] :=>
                            TCon (TC "Result" Star) "path")
                         (Area (Loc 105 4 22) (Loc 112 4 29))
-                        (Var "result1"))
+                        (Var "result1" False))
                      False))
-               (Solved
+               (Typed
                   ([ IsIn
                        "Eq"
                        [ TCon (TC "Result" Star) "path" ]
@@ -217,7 +217,7 @@ Right
                    ] :=>
                      TCon (TC "Result" Star) "path")
                   (Area (Loc 114 4 31) (Loc 121 4 38))
-                  (Var "result2"))
+                  (Var "result2" False))
                True)
         ]
     , atypedecls =
@@ -255,7 +255,7 @@ Right
                (IsIn "Inspect" [ TCon (TC "Result" Star) "path" ] Nothing)
                (fromList
                   [ ( "inspect"
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -265,7 +265,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "inspect"
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -274,7 +274,7 @@ Right
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
-                                   (Solved
+                                   (Typed
                                       ([ IsIn
                                            "Inspect"
                                            [ TCon (TC "String" Star) "prelude" ]
@@ -283,7 +283,7 @@ Right
                                          TCon (TC "Result" Star) "path")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
-                                   [ Solved
+                                   [ Typed
                                        ([ IsIn
                                             "Inspect"
                                             [ TCon (TC "String" Star) "prelude" ]
@@ -292,11 +292,11 @@ Right
                                           TCon (TC "String" Star) "prelude")
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Where
-                                          (Solved
+                                          (Typed
                                              ([] :=> TCon (TC "Result" Star) "path")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                             (Var "__$a__"))
-                                          [ Solved
+                                             (Var "__$a__" False))
+                                          [ Typed
                                               ([ IsIn
                                                    "Inspect"
                                                    [ TCon (TC "String" Star) "prelude" ]
@@ -311,18 +311,24 @@ Right
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "Result" Star) "path")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon
                                                        "Success"
-                                                       [ Solved
-                                                           ([] :=>
+                                                       [ Typed
+                                                           ([ IsIn
+                                                                "Inspect"
+                                                                [ TCon (TC "String" Star) "prelude"
+                                                                ]
+                                                                (Just
+                                                                   (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                            ] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
                                                        ]))
-                                                 (Solved
+                                                 (Typed
                                                     ([ IsIn
                                                          "Inspect"
                                                          [ TCon (TC "String" Star) "prelude" ]
@@ -331,12 +337,12 @@ Right
                                                        TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TemplateString
-                                                       [ Solved
+                                                       [ Typed
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr "Success(")
-                                                       , Solved
+                                                           (LStr "\"Success(\"")
+                                                       , Typed
                                                            ([ IsIn
                                                                 "Inspect"
                                                                 [ TCon (TC "String" Star) "prelude"
@@ -347,7 +353,7 @@ Right
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (App
-                                                              (Solved
+                                                              (Typed
                                                                  ([ IsIn
                                                                       "Inspect"
                                                                       [ TCon
@@ -380,7 +386,7 @@ Right
                                                                           "prelude"
                                                                       ]
                                                                     )
-                                                                    (Solved
+                                                                    (Typed
                                                                        ([ IsIn
                                                                             "Inspect"
                                                                             [ TCon
@@ -408,8 +414,8 @@ Right
                                                                                "prelude"))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "inspect"))))
-                                                              (Solved
+                                                                       (Var "inspect" False))))
+                                                              (Typed
                                                                  ([ IsIn
                                                                       "Inspect"
                                                                       [ TCon
@@ -424,15 +430,15 @@ Right
                                                                     TCon
                                                                       (TC "String" Star) "prelude")
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                 (Var "a0"))
+                                                                 (Var "a0" False))
                                                               True)
-                                                       , Solved
+                                                       , Typed
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (LStr ")")
+                                                           (LStr "\")\"")
                                                        ])))
-                                          , Solved
+                                          , Typed
                                               ([] :=>
                                                  TApp
                                                    (TApp
@@ -443,15 +449,15 @@ Right
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "Result" Star) "path")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon "Error" []))
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (LStr "\"Error\"")))
-                                          , Solved
+                                          , Typed
                                               ([] :=>
                                                  TApp
                                                    (TApp
@@ -462,11 +468,11 @@ Right
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
-                                                 (Solved
-                                                    ([] :=> TVar (TV "d3" Star))
+                                                 (Typed
+                                                    ([] :=> TCon (TC "Result" Star) "path")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (LStr "\"Unknown\"")))
@@ -491,7 +497,7 @@ Right
                (IsIn "Eq" [ TCon (TC "Result" Star) "path" ] Nothing)
                (fromList
                   [ ( "=="
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -505,7 +511,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -518,7 +524,7 @@ Right
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
-                                   (Solved
+                                   (Typed
                                       ([ IsIn
                                            "Eq"
                                            [ TCon (TC "String" Star) "prelude" ]
@@ -527,7 +533,7 @@ Right
                                          TCon (TC "Result" Star) "path")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
-                                   [ Solved
+                                   [ Typed
                                        ([ IsIn
                                             "Eq"
                                             [ TCon (TC "String" Star) "prelude" ]
@@ -542,7 +548,7 @@ Right
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
-                                          (Solved
+                                          (Typed
                                              ([ IsIn
                                                   "Eq"
                                                   [ TCon (TC "String" Star) "prelude" ]
@@ -551,7 +557,7 @@ Right
                                                 TCon (TC "Result" Star) "path")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
-                                          [ Solved
+                                          [ Typed
                                               ([ IsIn
                                                    "Eq"
                                                    [ TCon (TC "String" Star) "prelude" ]
@@ -560,7 +566,7 @@ Right
                                                  TCon (TC "Boolean" Star) "prelude")
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Where
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=>
                                                        TApp
                                                          (TApp
@@ -573,16 +579,16 @@ Right
                                                          (TCon (TC "Result" Star) "path"))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TupleConstructor
-                                                       [ Solved
+                                                       [ Typed
                                                            ([] :=> TCon (TC "Result" Star) "path")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (Var "__$a__")
-                                                       , Solved
+                                                           (Var "__$a__" False)
+                                                       , Typed
                                                            ([] :=> TCon (TC "Result" Star) "path")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (Var "__$b__")
+                                                           (Var "__$b__" False)
                                                        ]))
-                                                 [ Solved
+                                                 [ Typed
                                                      ([ IsIn
                                                           "Eq"
                                                           [ TCon (TC "String" Star) "prelude" ]
@@ -608,7 +614,7 @@ Right
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -622,14 +628,24 @@ Right
                                                                 (TCon (TC "Result" Star) "path"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
-                                                              [ Solved
+                                                              [ Typed
                                                                   ([] :=>
                                                                      TCon (TC "Result" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Success"
-                                                                     [ Solved
-                                                                         ([] :=>
+                                                                     [ Typed
+                                                                         ([ IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          ] :=>
                                                                             TCon
                                                                               (TC "String" Star)
                                                                               "prelude")
@@ -637,14 +653,24 @@ Right
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PVar "a0")
                                                                      ])
-                                                              , Solved
+                                                              , Typed
                                                                   ([] :=>
                                                                      TCon (TC "Result" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon
                                                                      "Success"
-                                                                     [ Solved
-                                                                         ([] :=>
+                                                                     [ Typed
+                                                                         ([ IsIn
+                                                                              "Eq"
+                                                                              [ TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude"
+                                                                              ]
+                                                                              (Just
+                                                                                 (Area
+                                                                                    (Loc 0 0 0)
+                                                                                    (Loc 0 0 0)))
+                                                                          ] :=>
                                                                             TCon
                                                                               (TC "String" Star)
                                                                               "prelude")
@@ -653,7 +679,7 @@ Right
                                                                          (PVar "b0")
                                                                      ])
                                                               ]))
-                                                        (Solved
+                                                        (Typed
                                                            ([ IsIn
                                                                 "Eq"
                                                                 [ TCon (TC "String" Star) "prelude"
@@ -664,7 +690,7 @@ Right
                                                               TCon (TC "Boolean" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (App
-                                                              (Solved
+                                                              (Typed
                                                                  ([ IsIn
                                                                       "Eq"
                                                                       [ TCon
@@ -693,7 +719,7 @@ Right
                                                                          "prelude"))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (App
-                                                                    (Solved
+                                                                    (Typed
                                                                        ([] :=>
                                                                           TApp
                                                                             (TApp
@@ -732,8 +758,8 @@ Right
                                                                                   "prelude")))
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
-                                                                       (Var "&&"))
-                                                                    (Solved
+                                                                       (Var "&&" False))
+                                                                    (Typed
                                                                        ([ IsIn
                                                                             "Eq"
                                                                             [ TCon
@@ -751,7 +777,7 @@ Right
                                                                        (Area
                                                                           (Loc 0 0 0) (Loc 0 0 0))
                                                                        (App
-                                                                          (Solved
+                                                                          (Typed
                                                                              ([ IsIn
                                                                                   "Eq"
                                                                                   [ TCon
@@ -791,7 +817,7 @@ Right
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
                                                                              (App
-                                                                                (Solved
+                                                                                (Typed
                                                                                    ([ IsIn
                                                                                         "Eq"
                                                                                         [ TCon
@@ -854,7 +880,7 @@ Right
                                                                                             "prelude"
                                                                                         ]
                                                                                       )
-                                                                                      (Solved
+                                                                                      (Typed
                                                                                          ([ IsIn
                                                                                               "Eq"
                                                                                               [ TCon
@@ -912,8 +938,9 @@ Right
                                                                                                0
                                                                                                0))
                                                                                          (Var
-                                                                                            "=="))))
-                                                                                (Solved
+                                                                                            "=="
+                                                                                            False))))
+                                                                                (Typed
                                                                                    ([ IsIn
                                                                                         "Eq"
                                                                                         [ TCon
@@ -941,9 +968,9 @@ Right
                                                                                    (Area
                                                                                       (Loc 0 0 0)
                                                                                       (Loc 0 0 0))
-                                                                                   (Var "a0"))
+                                                                                   (Var "a0" False))
                                                                                 False))
-                                                                          (Solved
+                                                                          (Typed
                                                                              ([ IsIn
                                                                                   "Eq"
                                                                                   [ TCon
@@ -964,10 +991,10 @@ Right
                                                                              (Area
                                                                                 (Loc 0 0 0)
                                                                                 (Loc 0 0 0))
-                                                                             (Var "b0"))
+                                                                             (Var "b0" False))
                                                                           True))
                                                                     False))
-                                                              (Solved
+                                                              (Typed
                                                                  ([ IsIn
                                                                       "Eq"
                                                                       [ TCon
@@ -984,7 +1011,7 @@ Right
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (LBool "true"))
                                                               True)))
-                                                 , Solved
+                                                 , Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -1006,7 +1033,7 @@ Right
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -1020,23 +1047,23 @@ Right
                                                                 (TCon (TC "Result" Star) "path"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
-                                                              [ Solved
+                                                              [ Typed
                                                                   ([] :=>
                                                                      TCon (TC "Result" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Error" [])
-                                                              , Solved
+                                                              , Typed
                                                                   ([] :=>
                                                                      TCon (TC "Result" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "Error" [])
                                                               ]))
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "Boolean" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (LBool "true")))
-                                                 , Solved
+                                                 , Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -1058,7 +1085,7 @@ Right
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -1068,11 +1095,11 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "m12" Star)))
-                                                                (TVar (TV "n13" Star)))
+                                                                   (TCon (TC "Result" Star) "path"))
+                                                                (TCon (TC "Result" Star) "path"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "Boolean" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))

@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -11,7 +11,7 @@ Right
                  (TCon (TC "Integer" Star) "prelude"))
             (Area (Loc 0 1 1) (Loc 53 2 28))
             (TypedExp
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -20,7 +20,7 @@ Right
                        (TCon (TC "Integer" Star) "prelude"))
                   (Area (Loc 26 2 1) (Loc 53 2 28))
                   (Export
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Number"
                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -35,7 +35,7 @@ Right
                         (Area (Loc 33 2 8) (Loc 53 2 28))
                         (Assignment
                            "inc"
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Number"
                                    [ TCon (TC "Integer" Star) "prelude" ]
@@ -49,7 +49,7 @@ Right
                                    (TCon (TC "Integer" Star) "prelude"))
                               (Area (Loc 39 2 14) (Loc 53 2 28))
                               (Abs
-                                 (Solved
+                                 (Typed
                                     ([ IsIn
                                          "Number"
                                          [ TCon (TC "Integer" Star) "prelude" ]
@@ -59,7 +59,7 @@ Right
                                        TCon (TC "Integer" Star) "prelude")
                                     (Area (Loc 40 2 15) (Loc 41 2 16))
                                     "a")
-                                 [ Solved
+                                 [ Typed
                                      ([ IsIn
                                           "Number"
                                           [ TCon (TC "Integer" Star) "prelude" ]
@@ -69,7 +69,7 @@ Right
                                         TCon (TC "Integer" Star) "prelude")
                                      (Area (Loc 47 2 22) (Loc 52 2 27))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
@@ -84,7 +84,7 @@ Right
                                                 (TCon (TC "Integer" Star) "prelude"))
                                            (Area (Loc 47 2 22) (Loc 52 2 27))
                                            (App
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TCon (TC "Integer" Star) "prelude" ]
@@ -110,7 +110,7 @@ Right
                                                     ( MethodRef "Number" "+" False
                                                     , [ TCon (TC "Integer" Star) "prelude" ]
                                                     )
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TCon (TC "Integer" Star) "prelude" ]
@@ -137,8 +137,8 @@ Right
                                                                (TCon
                                                                   (TC "Integer" Star) "prelude")))
                                                        (Area (Loc 49 2 24) (Loc 50 2 25))
-                                                       (Var "+"))))
-                                              (Solved
+                                                       (Var "+" False))))
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TCon (TC "Integer" Star) "prelude" ]
@@ -146,9 +146,9 @@ Right
                                                   ] :=>
                                                     TCon (TC "Integer" Star) "prelude")
                                                  (Area (Loc 47 2 22) (Loc 48 2 23))
-                                                 (Var "a"))
+                                                 (Var "a" False))
                                               False))
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
@@ -176,11 +176,11 @@ Right
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                           (TCon (TC "Integer" Star) "prelude"))
                        (TCon (TC "Integer" Star) "prelude"))))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Integer" Star) "prelude")
             (Area (Loc 54 3 1) (Loc 60 3 7))
             (App
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -188,8 +188,8 @@ Right
                           (TCon (TC "Integer" Star) "prelude"))
                        (TCon (TC "Integer" Star) "prelude"))
                   (Area (Loc 54 3 1) (Loc 57 3 4))
-                  (Var "inc"))
-               (Solved
+                  (Var "inc" False))
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TCon (TC "Integer" Star) "prelude")

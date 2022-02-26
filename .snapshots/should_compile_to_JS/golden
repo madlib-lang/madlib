@@ -5,24 +5,24 @@ Inspect['Maybe'] = {};
 Inspect['Maybe']['inspect'] = () => (Inspect_n13) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(${Inspect_n13.inspect()(a0)})`;
+    return `Just(` + Inspect_n13.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
-    return "Nothing";
+    return `Nothing`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Inspect['Record_carsa'] = {};
-Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => (__$a__ => `{ ${"cars: " + Inspect_c28.inspect()(__$a__.cars)} }`)
+Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => (__$a__ => `{ ` + `cars: ` + Inspect_c28.inspect()(__$a__.cars) + ` }`);
 Inspect['Record_nameb_xa'] = {};
-Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => (__$a__ => `{ ${"x: " + Inspect_m38.inspect()(__$a__.x)}, ${"name: " + Inspect_t45.inspect()(__$a__.name)} }`)
+Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => (__$a__ => `{ ` + `x: ` + Inspect_m38.inspect()(__$a__.x) + `, ` + `name: ` + Inspect_t45.inspect()(__$a__.name) + ` }`);
 export let fn = (b => c => b + c);
 let inc = (x => x + 1);
 let dec = (x => x - 1);
@@ -64,7 +64,7 @@ let carResponse = ({ cars: ([]) });
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})("3");
+})(`3`);
 ((__x__) => {
   if (__x__ === true) {
     return 3;
@@ -76,7 +76,7 @@ let carResponse = ({ cars: ([]) });
   }
 })(true);
 let log = (a =>  { console.log(a); return a; } );
-(true ? "OK" : "NOT OK");
+(true ? `OK` : `NOT OK`);
 let mapMaybe = (f => m => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
@@ -148,32 +148,45 @@ let all = ([ ...arr, 4, 5, 6]);
     throw 'non exhaustive patterns!';
   }
 })(([1, 2, 3, 5, 8]));
-export let map = (f => xs => ((__x__) => {
+export let map = (f => xs => {
+    let $result;
+    let $continue = true;
+    let $start = [];
+    let $end = $start;
+    let $f = f;
+    let $xs = xs;
+
+    while($continue) {
+        $continue = false;
+        ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return ([f(a),  ...map(f)(([b, c]))]);
+    return ($end.push($f(a)), $f = $f, $xs = ([b, c]), $continue = true);
   }
   else if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return ([f(a),  ...map(f)(([b]))]);
+    return ($end.push($f(a)), $f = $f, $xs = ([b]), $continue = true);
   }
   else if (__x__.length === 1 && true) {
     let [a] = __x__;
-    return ([f(a)]);
+    return ($end.push(...([$f(a)])), $result = $start);
   }
   else if (__x__.length === 0) {
     let [] = __x__;
-    return ([]);
+    return ($end.push(...([])), $result = $start);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(xs));
-(true ? "ok" : "not ok");
-(x => x)((x => (__eq__(x, "ok") ? 1 : 10))((x => x)((__eq__(1, 2) ? "ok" : "not ok"))));
-(__eq__(1, 2) ? "ok" : "not ok");
+})($xs)
+    }
+    return $result;
+});
+(true ? `ok` : `not ok`);
+(x => x)((x => (__eq__(x, `ok`) ? 1 : 10))((x => x)((__eq__(1, 2) ? `ok` : `not ok`))));
+(__eq__(1, 2) ? `ok` : `not ok`);
 ((__x__) => {
   if (__x__ === 3) {
     return 48;
@@ -201,7 +214,7 @@ export let map = (f => xs => ((__x__) => {
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})("3"));
+})(`3`));
 (x => x)(((__x__) => {
   if (__x__.length >= 1 && __x__[0] === 2 && true) {
     let [,...rest] = __x__;
@@ -220,14 +233,14 @@ export let map = (f => xs => ((__x__) => {
 ((__x__) => {
   if (__x__.name === "Bob") {
     let {  } = __x__;
-    return "Bob";
+    return `Bob`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ x: 4, name: "John" }));
+})(({ x: 4, name: `John` }));
 let addXAndY = (r => ((__x__) => {
   if (true && true) {
     let { y: y, x: x1 } = __x__;

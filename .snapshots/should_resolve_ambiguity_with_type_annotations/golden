@@ -2,15 +2,15 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "Integer" Star) "prelude")
             (Area (Loc 114 9 2) (Loc 134 9 22))
             (TypedExp
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Integer" Star) "prelude")
                   (Area (Loc 114 9 2) (Loc 123 9 11))
                   (App
-                     (Solved
+                     (Typed
                         ([ IsIn "Read" [ TCon (TC "Integer" Star) "prelude" ] Nothing ] :=>
                            TApp
                              (TApp
@@ -22,7 +22,7 @@ Right
                            ( MethodRef "Read" "read" False
                            , [ TCon (TC "Integer" Star) "prelude" ]
                            )
-                           (Solved
+                           (Typed
                               ([ IsIn "Read" [ TCon (TC "Integer" Star) "prelude" ] Nothing ] :=>
                                  TApp
                                    (TApp
@@ -30,8 +30,8 @@ Right
                                       (TCon (TC "String" Star) "prelude"))
                                    (TCon (TC "Integer" Star) "prelude"))
                               (Area (Loc 114 9 2) (Loc 118 9 6))
-                              (Var "read"))))
-                     (Solved
+                              (Var "read" False))))
+                     (Typed
                         ([ IsIn
                              "Read"
                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -83,7 +83,7 @@ Right
                (IsIn "Read" [ TCon (TC "Integer" Star) "prelude" ] Nothing)
                (fromList
                   [ ( "read"
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -93,7 +93,7 @@ Right
                           (Area (Loc 70 6 3) (Loc 109 6 42))
                           (Assignment
                              "read"
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -102,11 +102,11 @@ Right
                                      (TCon (TC "Integer" Star) "prelude"))
                                 (Area (Loc 77 6 10) (Loc 109 6 42))
                                 (Abs
-                                   (Solved
+                                   (Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
                                       (Area (Loc 78 6 11) (Loc 79 6 12))
                                       "s")
-                                   [ Solved
+                                   [ Typed
                                        ([] :=> TCon (TC "Integer" Star) "prelude")
                                        (Area (Loc 85 6 18) (Loc 108 6 41))
                                        (JSExp " parseFloat(s, 10) ")

@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -15,7 +15,7 @@ Right
                     (TCon (TC "Boolean" Star) "prelude")))
             (Area (Loc 0 1 1) (Loc 161 7 2))
             (TypedExp
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -29,7 +29,7 @@ Right
                   (Area (Loc 32 2 1) (Loc 161 7 2))
                   (Assignment
                      "fn"
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Number"
                              [ TCon (TC "Float" Star) "prelude" ]
@@ -53,7 +53,7 @@ Right
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 37 2 6) (Loc 161 7 2))
                         (Abs
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Number"
                                    [ TCon (TC "Float" Star) "prelude" ]
@@ -69,7 +69,7 @@ Right
                                  TCon (TC "Float" Star) "prelude")
                               (Area (Loc 38 2 7) (Loc 39 2 8))
                               "a")
-                           [ Solved
+                           [ Typed
                                ([ IsIn
                                     "Number"
                                     [ TCon (TC "Float" Star) "prelude" ]
@@ -89,7 +89,7 @@ Right
                                     (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 37 2 6) (Loc 161 7 2))
                                (Abs
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Number"
                                           [ TCon (TC "Float" Star) "prelude" ]
@@ -105,7 +105,7 @@ Right
                                         TCon (TC "Float" Star) "prelude")
                                      (Area (Loc 41 2 10) (Loc 42 2 11))
                                      "b")
-                                  [ Solved
+                                  [ Typed
                                       ([ IsIn
                                            "Number"
                                            [ TCon (TC "Float" Star) "prelude" ]
@@ -115,7 +115,7 @@ Right
                                       (Area (Loc 51 3 3) (Loc 62 3 14))
                                       (Assignment
                                          "sum"
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TCon (TC "Float" Star) "prelude" ]
@@ -124,7 +124,7 @@ Right
                                                TCon (TC "Float" Star) "prelude")
                                             (Area (Loc 57 3 9) (Loc 62 3 14))
                                             (App
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -140,7 +140,7 @@ Right
                                                        (TCon (TC "Float" Star) "prelude"))
                                                   (Area (Loc 57 3 9) (Loc 62 3 14))
                                                   (App
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -170,7 +170,7 @@ Right
                                                            ( MethodRef "Number" "+" False
                                                            , [ TCon (TC "Float" Star) "prelude" ]
                                                            )
-                                                           (Solved
+                                                           (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
@@ -206,8 +206,8 @@ Right
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 59 3 11) (Loc 60 3 12))
-                                                              (Var "+"))))
-                                                     (Solved
+                                                              (Var "+" False))))
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -216,9 +216,9 @@ Right
                                                          ] :=>
                                                            TCon (TC "Float" Star) "prelude")
                                                         (Area (Loc 57 3 9) (Loc 58 3 10))
-                                                        (Var "a"))
+                                                        (Var "a" False))
                                                      False))
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -226,16 +226,16 @@ Right
                                                    ] :=>
                                                      TCon (TC "Float" Star) "prelude")
                                                   (Area (Loc 61 3 13) (Loc 62 3 14))
-                                                  (Var "b"))
+                                                  (Var "b" False))
                                                True)))
-                                  , Solved
+                                  , Typed
                                       ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
                                        ] :=>
                                          TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 65 4 3) (Loc 87 4 25))
                                       (Assignment
                                          "moreThanTen"
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TCon (TC "Float" Star) "prelude" ]
@@ -252,7 +252,7 @@ Right
                                                TCon (TC "Boolean" Star) "prelude")
                                             (Area (Loc 79 4 17) (Loc 87 4 25))
                                             (App
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -272,7 +272,7 @@ Right
                                                        (TCon (TC "Boolean" Star) "prelude"))
                                                   (Area (Loc 79 4 17) (Loc 87 4 25))
                                                   (App
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -303,7 +303,7 @@ Right
                                                            ( MethodRef "Number" ">" False
                                                            , [ TCon (TC "Float" Star) "prelude" ]
                                                            )
-                                                           (Solved
+                                                           (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
@@ -339,8 +339,8 @@ Right
                                                                          (TC "Boolean" Star)
                                                                          "prelude")))
                                                               (Area (Loc 83 4 21) (Loc 84 4 22))
-                                                              (Var ">"))))
-                                                     (Solved
+                                                              (Var ">" False))))
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -349,9 +349,9 @@ Right
                                                          ] :=>
                                                            TCon (TC "Float" Star) "prelude")
                                                         (Area (Loc 79 4 17) (Loc 82 4 20))
-                                                        (Var "sum"))
+                                                        (Var "sum" False))
                                                      False))
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -369,12 +369,12 @@ Right
                                                   (Area (Loc 85 4 23) (Loc 87 4 25))
                                                   (LNum "10"))
                                                True)))
-                                  , Solved
+                                  , Typed
                                       ([] :=> TCon (TC "Float" Star) "prelude")
                                       (Area (Loc 90 5 3) (Loc 132 5 45))
                                       (Assignment
                                          "computed"
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TCon (TC "Float" Star) "prelude" ]
@@ -403,7 +403,7 @@ Right
                                                TCon (TC "Float" Star) "prelude")
                                             (Area (Loc 101 5 14) (Loc 132 5 45))
                                             (If
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -411,8 +411,8 @@ Right
                                                    ] :=>
                                                      TCon (TC "Boolean" Star) "prelude")
                                                   (Area (Loc 101 5 14) (Loc 112 5 25))
-                                                  (Var "moreThanTen"))
-                                               (Solved
+                                                  (Var "moreThanTen" False))
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -429,7 +429,7 @@ Right
                                                      TCon (TC "Float" Star) "prelude")
                                                   (Area (Loc 115 5 28) (Loc 122 5 35))
                                                   (App
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -454,7 +454,7 @@ Right
                                                              (TCon (TC "Float" Star) "prelude"))
                                                         (Area (Loc 115 5 28) (Loc 122 5 35))
                                                         (App
-                                                           (Solved
+                                                           (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
@@ -496,7 +496,7 @@ Right
                                                                        (TC "Float" Star) "prelude"
                                                                    ]
                                                                  )
-                                                                 (Solved
+                                                                 (Typed
                                                                     ([ IsIn
                                                                          "Number"
                                                                          [ TCon
@@ -538,8 +538,8 @@ Right
                                                                     (Area
                                                                        (Loc 119 5 32)
                                                                        (Loc 120 5 33))
-                                                                    (Var "*"))))
-                                                           (Solved
+                                                                    (Var "*" False))))
+                                                           (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
@@ -561,9 +561,9 @@ Right
                                                                ] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 115 5 28) (Loc 118 5 31))
-                                                              (Var "sum"))
+                                                              (Var "sum" False))
                                                            False))
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -585,7 +585,7 @@ Right
                                                         (Area (Loc 121 5 34) (Loc 122 5 35))
                                                         (LNum "2"))
                                                      True))
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -598,7 +598,7 @@ Right
                                                      TCon (TC "Float" Star) "prelude")
                                                   (Area (Loc 125 5 38) (Loc 132 5 45))
                                                   (App
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -617,7 +617,7 @@ Right
                                                              (TCon (TC "Float" Star) "prelude"))
                                                         (Area (Loc 125 5 38) (Loc 132 5 45))
                                                         (App
-                                                           (Solved
+                                                           (Typed
                                                               ([] :=>
                                                                  TApp
                                                                    (TApp
@@ -647,8 +647,8 @@ Right
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 129 5 42) (Loc 130 5 43))
-                                                              (Var "/"))
-                                                           (Solved
+                                                              (Var "/" False))
+                                                           (Typed
                                                               ([ IsIn
                                                                    "Number"
                                                                    [ TCon
@@ -661,9 +661,9 @@ Right
                                                                ] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 125 5 38) (Loc 128 5 41))
-                                                              (Var "sum"))
+                                                              (Var "sum" False))
                                                            False))
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -679,7 +679,7 @@ Right
                                                         (Area (Loc 131 5 44) (Loc 132 5 45))
                                                         (LNum "2"))
                                                      True)))))
-                                  , Solved
+                                  , Typed
                                       ([ IsIn
                                            "Eq"
                                            [ TCon (TC "Float" Star) "prelude" ]
@@ -690,7 +690,7 @@ Right
                                          TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 142 6 10) (Loc 159 6 27))
                                       (App
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Float" Star) "prelude" ]
@@ -709,7 +709,7 @@ Right
                                                  (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 142 6 10) (Loc 159 6 27))
                                             (App
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -736,7 +736,7 @@ Right
                                                      ( MethodRef "Eq" "==" False
                                                      , [ TCon (TC "Float" Star) "prelude" ]
                                                      )
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Eq"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -763,8 +763,8 @@ Right
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 155 6 23) (Loc 157 6 25))
-                                                        (Var "=="))))
-                                               (Solved
+                                                        (Var "==" False))))
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Float" Star) "prelude" ]
@@ -777,7 +777,7 @@ Right
                                                      TCon (TC "Float" Star) "prelude")
                                                   (Area (Loc 142 6 10) (Loc 154 6 22))
                                                   (App
-                                                     (Solved
+                                                     (Typed
                                                         ([] :=>
                                                            TApp
                                                              (TApp
@@ -790,7 +790,7 @@ Right
                                                              (TCon (TC "Float" Star) "prelude"))
                                                         (Area (Loc 142 6 10) (Loc 154 6 22))
                                                         (App
-                                                           (Solved
+                                                           (Typed
                                                               ([] :=>
                                                                  TApp
                                                                    (TApp
@@ -820,14 +820,14 @@ Right
                                                                          (TC "Float" Star)
                                                                          "prelude")))
                                                               (Area (Loc 151 6 19) (Loc 152 6 20))
-                                                              (Var "/"))
-                                                           (Solved
+                                                              (Var "/" False))
+                                                           (Typed
                                                               ([] :=>
                                                                  TCon (TC "Float" Star) "prelude")
                                                               (Area (Loc 142 6 10) (Loc 150 6 18))
-                                                              (Var "computed"))
+                                                              (Var "computed" False))
                                                            False))
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
@@ -838,7 +838,7 @@ Right
                                                         (LNum "2"))
                                                      True))
                                                False))
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Float" Star) "prelude" ]
@@ -880,11 +880,11 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TCon (TC "Float" Star) "prelude"))
                           (TCon (TC "Boolean" Star) "prelude")))))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Boolean" Star) "prelude")
             (Area (Loc 162 8 1) (Loc 169 8 8))
             (App
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
                      TApp
                        (TApp
@@ -893,7 +893,7 @@ Right
                        (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 162 8 1) (Loc 170 8 9))
                   (App
-                     (Solved
+                     (Typed
                         ([] :=>
                            TApp
                              (TApp
@@ -905,14 +905,14 @@ Right
                                    (TCon (TC "Float" Star) "prelude"))
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 162 8 1) (Loc 164 8 3))
-                        (Var "fn"))
-                     (Solved
+                        (Var "fn" False))
+                     (Typed
                         ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing ] :=>
                            TCon (TC "Float" Star) "prelude")
                         (Area (Loc 165 8 4) (Loc 166 8 5))
                         (LNum "3"))
                      False))
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
                    ] :=>
