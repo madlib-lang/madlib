@@ -37,33 +37,72 @@ instance Collectable Exp where
     TypedExp (Typed _ _ (Export (Typed _ _ (Assignment name (Typed _ (Area (Loc _ line _) _) (Abs _ body)))))) _ _ ->
       [Function { line = line, name = name }, Line { line = line }] <> concat (collect <$> body)
 
-    Assignment name e -> if isFunctionType t
-      then [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else [] <> collect e
-    Export (Typed _ _ (Assignment name e)) -> if isFunctionType t
-      then [Function { line = l, name = name }, Line { line = l }] <> collect e
-      else [] <> collect e
-    TypedExp (Typed _ (Area (Loc _ l' _) _) (Assignment name e)) _ _ -> if isFunctionType t
-      then [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else [] <> collect e
-    TypedExp (Typed _ (Area (Loc _ l' _) _) (Export (Typed _ _ (Assignment name e)))) _ _ -> if isFunctionType t
-      then [Function { line = l', name = name }, Line { line = l' }] <> collect e
-      else [] <> collect e
+    Assignment name e ->
+      if isFunctionType t then
+        [Function { line = l, name = name }, Line { line = l }] <> collect e
+      else
+        [] <> collect e
 
-    App fn arg _          -> collect fn <> collect arg
-    Abs    _   body       -> concat (collect <$> body)
-    Access rec field      -> collect rec <> collect field
-    Export e              -> collect e
-    TypedExp e _ _        -> collect e
-    TupleConstructor es   -> concat $ collect <$> es
-    If cond good bad      -> collect cond <> collect good <> collect bad
-    Where       e iss     -> [Line { line = l }] <> collect e <> concat (collect <$> iss)
-    Placeholder _ e       -> collect e
-    JSExp _               -> []
-    Var   n               -> [Line { line = l }]
-    Record fields         -> concat $ collect <$> fields
-    ListConstructor items -> concat $ collect <$> items
-    _                     -> []
+    Export (Typed _ _ (Assignment name e)) ->
+      if isFunctionType t then
+        [Function { line = l, name = name }, Line { line = l }] <> collect e
+      else
+        [] <> collect e
+
+    TypedExp (Typed _ (Area (Loc _ l' _) _) (Assignment name e)) _ _ ->
+      if isFunctionType t then
+        [Function { line = l', name = name }, Line { line = l' }] <> collect e
+      else
+        [] <> collect e
+
+    TypedExp (Typed _ (Area (Loc _ l' _) _) (Export (Typed _ _ (Assignment name e)))) _ _ ->
+      if isFunctionType t then
+        [Function { line = l', name = name }, Line { line = l' }] <> collect e
+      else
+        [] <> collect e
+
+    App fn arg _ ->
+      collect fn <> collect arg
+
+    Abs _ body ->
+      concat (collect <$> body)
+
+    Access rec field ->
+      collect rec <> collect field
+
+    Export e ->
+      collect e
+
+    TypedExp e _ _ ->
+      collect e
+
+    TupleConstructor es ->
+      concat $ collect <$> es
+
+    If cond good bad ->
+      collect cond <> collect good <> collect bad
+
+    Where e iss ->
+      [Line { line = l }] <> collect e <> concat (collect <$> iss)
+
+    Placeholder _ e ->
+      collect e
+
+    JSExp _ ->
+      []
+
+    Var n _ ->
+      [Line { line = l }]
+
+    Record fields ->
+      concat $ collect <$> fields
+
+    ListConstructor items ->
+      concat $ collect <$> items
+
+    _ ->
+      []
+
 
 isOperator :: String -> Bool
 isOperator n = "|>" == n || "==" == n || ">=" == n || "<=" == n || "&&" == n || "||" == n || "!=" == n

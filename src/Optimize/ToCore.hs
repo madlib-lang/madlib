@@ -115,7 +115,7 @@ buildApp' total nth f@(Slv.Typed (ps :=> t) _ f') xs =
 -- TemplateString -------------------------------------------------------------
 stringConcat :: Core.Exp
 stringConcat =
-  Core.Typed ([] :=> (tStr `fn` tStr `fn` tStr)) emptyArea [] (Core.Var "++")
+  Core.Typed ([] :=> (tStr `fn` tStr `fn` tStr)) emptyArea [] (Core.Var "++" False)
 
 
 templateStringToCalls :: [Core.Exp] -> Core.Exp
@@ -193,9 +193,11 @@ instance Processable Slv.Exp Core.Exp where
       exp' <- toCore enabled exp
       return $ Core.Typed qt area [] (Core.Export exp')
 
-    Slv.NameExport name     -> return $ Core.Typed qt area [] (Core.NameExport name)
+    Slv.NameExport name ->
+      return $ Core.Typed qt area [] (Core.NameExport name)
 
-    Slv.Var        name     -> return $ Core.Typed qt area [] (Core.Var name)
+    Slv.Var name isConstructor ->
+      return $ Core.Typed qt area [] (Core.Var name isConstructor)
 
     Slv.TypedExp exp _ _ -> do
       toCore enabled exp

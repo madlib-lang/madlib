@@ -134,7 +134,8 @@ data Exp_ = LNum String
           | Export Exp
           | NameExport Name
           | TypeExport Name
-          | Var Name
+          | Var Name Bool
+          -- ^ Bool isConstructor
           | TypedExp Exp Typing Ty.Scheme
           | ListConstructor [ListItem]
           | TupleConstructor [Exp]

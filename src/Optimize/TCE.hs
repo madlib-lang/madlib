@@ -10,7 +10,7 @@ newtype Env
 
 getAppName :: Exp -> Maybe String
 getAppName exp = case exp of
-  Typed _ _ _ (Var n) ->
+  Typed _ _ _ (Var n _) ->
     Just n
 
   Typed _ _ _ (Call fn _) ->
@@ -44,7 +44,7 @@ markDefinition env exp = case exp of
           Just kind ->
             Typed qt area (RecursiveDefinition kind : metadata) (Definition params (markTRCCalls kind fnName . markDefinition env <$> body))
           Nothing ->
-            Typed qt area metadata (Definition params (markDefinition env <$> body))
+            Typed qt area metadata (Definition params (markDefinition env { envCurrentName = Nothing } <$> body))
 
   Typed qt area metadata (Placeholder ref exp) ->
     Typed qt area metadata (Placeholder ref (markDefinition env exp))
@@ -181,7 +181,8 @@ findRecursionKind fnName params exps = case exps of
       Nothing
 
   (exp : next) ->
-    findRecursionKind fnName params next
+    Nothing
+    -- findRecursionKind fnName params next
 
 
 containsRecursion :: Bool -> String  -> Exp -> Bool

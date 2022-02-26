@@ -85,53 +85,53 @@ addLiftedLambda originalName liftedName args env =
 findFreeVars :: Env -> Exp -> Convert [(String, Exp)]
 findFreeVars env exp = do
   fvs <- case exp of
-    Typed _ _ _ (Var "+") ->
+    Typed _ _ _ (Var "+" _) ->
       return []
 
-    Typed _ _ _ (Var "++") ->
+    Typed _ _ _ (Var "++" _) ->
       return []
 
-    Typed _ _ _ (Var "-") ->
+    Typed _ _ _ (Var "-" _) ->
       return []
 
-    Typed _ _ _ (Var "*") ->
+    Typed _ _ _ (Var "*" _) ->
       return []
 
-    Typed _ _ _ (Var "/") ->
+    Typed _ _ _ (Var "/" _) ->
       return []
 
-    Typed _ _ _ (Var "==") ->
+    Typed _ _ _ (Var "==" _) ->
       return []
 
-    Typed _ _ _ (Var "!=") ->
+    Typed _ _ _ (Var "!=" _) ->
       return []
 
-    Typed _ _ _ (Var "!") ->
+    Typed _ _ _ (Var "!" _) ->
       return []
 
-    Typed _ _ _ (Var ">") ->
+    Typed _ _ _ (Var ">" _) ->
       return []
 
-    Typed _ _ _ (Var "<") ->
+    Typed _ _ _ (Var "<" _) ->
       return []
 
-    Typed _ _ _ (Var ">=") ->
+    Typed _ _ _ (Var ">=" _) ->
       return []
 
-    Typed _ _ _ (Var "<=") ->
+    Typed _ _ _ (Var "<=" _) ->
       return []
 
-    Typed _ _ _ (Var "&&") ->
+    Typed _ _ _ (Var "&&" _) ->
       return []
 
-    Typed _ _ _ (Var "%") ->
+    Typed _ _ _ (Var "%" _) ->
       return []
 
     -- field access should not be registered as a free var
-    Typed _ _ _ (Var ('.' : _)) ->
+    Typed _ _ _ (Var ('.' : _) _) ->
       return []
 
-    Typed _ _ _ (Var n) -> do
+    Typed _ _ _ (Var n _) -> do
       var' <- convert env exp
       return [(n, var')]
 
@@ -201,7 +201,7 @@ findFreeVars env exp = do
       TVar _ -> do
         let dictName = "$Number$" <> Types.buildTypeStrForPlaceholder [t]
         if dictName `notElem` freeVars env then
-          return [(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName))]
+          return [(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))]
         else
           return []
 
@@ -212,11 +212,11 @@ findFreeVars env exp = do
       (placeholderVars, excludeVars) <- case ph of
         (ClassRef interface _ _ True, ts) ->
           let dictName = "$" <> interface <> "$" <> ts
-          in  return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName))], [])
+          in  return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))], [])
 
         (MethodRef interface methodName True, ts) -> do
           let dictName = "$" <> interface <> "$" <> ts
-          return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName))], [methodName])
+          return ([(dictName, Typed ([] :=> tVar "dict") area [] (Var dictName False))], [methodName])
 
         _ ->
           return ([], [])
@@ -362,7 +362,7 @@ convertDefinition env functionName placeholders abs@(Typed (ps :=> t) area metad
     let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
     addTopLevelExp lifted
 
-    let functionNode = Typed (ps :=> t) area [] (Var functionName')
+    let functionNode = Typed (ps :=> t) area [] (Var functionName' False)
 
     if null fvs then
       return $ Typed (ps :=> t) area [] (Assignment functionName functionNode)
@@ -398,7 +398,7 @@ instance Convertable Exp Exp where
             ( Typed qt area [] (
                 Placeholder
                   (MethodRef "Number" "__coerceNumber__" True, Types.buildTypeStrForPlaceholder [t])
-                  (Typed qt area [] (Var "__coerceNumber__"))
+                  (Typed qt area [] (Var "__coerceNumber__" False))
               )
             )
             [Typed qt area metadata (Literal $ LNum x)]
@@ -437,7 +437,7 @@ instance Convertable Exp Exp where
       let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName (Typed (ps :=> liftedType) area metadata (Definition paramsWithFreeVars body'')))
       addTopLevelExp lifted
 
-      let functionNode = Typed (ps :=> liftedType) area [] (Var functionName)
+      let functionNode = Typed (ps :=> liftedType) area [] (Var functionName False)
 
       if null fvs then
         return functionNode
@@ -471,13 +471,13 @@ instance Convertable Exp Exp where
         let paramsWithFreeVars   = dictParams ++ (fst <$> fvsWithoutDictionary)
 
         functionName' <- generateLiftedName functionName
-        innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea [] . Var <$> paramsWithFreeVars) env) innerExp
+        innerExp'     <- convert (addLiftedLambda functionName functionName' (Typed ([] :=> tVar "dict") emptyArea [] . (`Var` False) <$> paramsWithFreeVars) env) innerExp
 
         let liftedType = foldr fn t ((tVar "dict" <$ dictParams) ++ (getType . snd <$> fvs))
         let lifted = Typed (ps :=> liftedType) area [] (Assignment functionName' (Typed (ps :=> liftedType) area [] (Definition paramsWithFreeVars [innerExp'])))
         addTopLevelExp lifted
 
-        let functionNode = Typed (ps :=> liftedType) area [] (Var functionName')
+        let functionNode = Typed (ps :=> liftedType) area [] (Var functionName' False)
 
         return $ Typed qt area metadata (Assignment functionName functionNode)
 
@@ -491,12 +491,12 @@ instance Convertable Exp Exp where
     NameExport name ->
       return $ Typed qt area metadata (NameExport name)
 
-    Var name -> case M.lookup name (lifted env) of
+    Var name isConstructor -> case M.lookup name (lifted env) of
       Just (newName, capturedArgs) ->
-        return $ Typed qt area metadata (Call (Typed qt area [] (Var newName)) capturedArgs)
+        return $ Typed qt area metadata (Call (Typed qt area [] (Var newName isConstructor)) capturedArgs)
 
       Nothing ->
-        return $ Typed qt area metadata (Var name)
+        return $ Typed qt area metadata (Var name isConstructor)
 
     ListConstructor items -> do
       items' <- mapM (convert env) items
