@@ -342,7 +342,7 @@ buildLLVMType qt@(ps IT.:=> t) = case t of
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
   _ | IT.isTCon t ->
-    if IT.getTConName t `List.notElem` ["Array", "Dictionary", "ByteArray"] && IT.getTConName t /= "" then
+    if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then
       constructedType
     else
       Type.ptr Type.i8
@@ -384,7 +384,7 @@ constructedType =
   Type.PointerType Type.i8 (AddrSpace 2)
 
 tConExclude :: [String]
-tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)"]
+tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,,)"]
 
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> Operand -> m Operand
@@ -877,7 +877,68 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, loaded, Nothing)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
-        return (symbolTable, value, Just ptr)
+        -- case typeOf value of
+        --   Type.PointerType _ _ | t == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
+        --     ptr' <- safeBitcast ptr $ Type.ptr stringType
+        --     loaded <- load ptr' 0
+        --     return (symbolTable, loaded, Just ptr)
+
+        --   _ | t == IT.tInteger -> do
+        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.i64
+        --     loaded  <- load ptr' 0
+        --     return (symbolTable, loaded, Just ptr)
+
+        --   _ | t == IT.tFloat -> do
+        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.double
+        --     loaded  <- load ptr' 0
+        --     return (symbolTable, loaded, Just ptr)
+
+        --   _ | IT.hasNumberPred ps -> do
+        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.i64
+        --     loaded  <- load ptr' 0
+        --     return (symbolTable, loaded, Just ptr)
+
+        --   _ ->
+            return (symbolTable, value, Just ptr)
+
+          -- Type.PointerType _ _ | IT.isListType ty -> do
+          --   ptr' <- safeBitcast ptr $ Type.ptr listType
+          --   store ptr' 0 exp'
+          --   return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
+
+          -- Type.PointerType _ _ | IT.isByteArrayType ty || IT.isArrayType ty || IT.isDictionaryType ty -> do
+          --   let byteArrayBaseType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
+          --   ptr' <- safeBitcast ptr (Type.ptr byteArrayBaseType)
+          --   exp'' <- safeBitcast exp' (Type.ptr byteArrayBaseType)
+          --   loaded <- load exp'' 0
+          --   store ptr' 0 loaded
+          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
+
+          -- -- Constructed value
+          -- Type.PointerType t (AddrSpace 2)  -> do
+          --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
+          --   store ptr' 0 exp'
+          --   return (symbolTable, exp', Nothing)
+
+          -- Type.PointerType t _  -> do
+          --   ptr'   <- safeBitcast ptr $ typeOf exp'
+          --   loaded <- load exp' 0
+          --   store ptr' 0 loaded
+          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
+
+          -- _ | IT.hasNumberPred ps -> do
+          --   ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
+          --   exp''  <- safeBitcast exp' Type.i64
+          --   store ptr' 0 exp''
+          --   return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
+
+          -- _ -> do
+          --   ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+          --   store ptr' 0 exp'
+          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
+        -- value' <- unbox qt ptr
+        -- value'' <- safeBitcast value' (typeOf value)
+        -- return (symbolTable, value'', Just ptr)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
@@ -993,6 +1054,20 @@ generateExp env symbolTable exp = case exp of
               store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
+            Type.PointerType _ _ | IT.isByteArrayType ty || IT.isArrayType ty || IT.isDictionaryType ty -> do
+              let byteArrayBaseType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
+              ptr' <- safeBitcast ptr (Type.ptr byteArrayBaseType)
+              exp'' <- safeBitcast exp' (Type.ptr byteArrayBaseType)
+              loaded <- load exp'' 0
+              store ptr' 0 loaded
+              return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
+
+            _ | ty == IT.tInteger -> do
+              ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
+              exp''  <- safeBitcast exp' Type.i64
+              store ptr' 0 exp''
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Just ptr)
+
             -- Constructed value
             Type.PointerType t (AddrSpace 2)  -> do
               ptr' <- safeBitcast ptr (Type.ptr constructedType)
@@ -1009,7 +1084,7 @@ generateExp env symbolTable exp = case exp of
               ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
               exp''  <- safeBitcast exp' Type.i64
               store ptr' 0 exp''
-              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
+              return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Just ptr)
 
             _ -> do
               ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
@@ -1495,8 +1570,9 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, ret, boxed)
 
   Core.Typed _ _ _ (Core.TupleConstructor exps) -> do
-    exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
-    boxedExps <- mapM box exps'
+    -- exps'     <- mapM (((\(_, a, _) -> a) <$>). generateExp env { isLast = False } symbolTable) exps
+    exps'     <- mapM (generateExp env { isLast = False } symbolTable) exps
+    boxedExps <- retrieveArgs exps'
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
     tuplePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
@@ -1553,13 +1629,14 @@ generateExp env symbolTable exp = case exp of
   Core.Typed _ _ _ (Core.ListConstructor listItems) -> do
     tail <- case List.last listItems of
       Core.Typed _ _ _ (Core.ListItem lastItem) -> do
-        (symbolTable', lastItem', _) <- generateExp env { isLast = False } symbolTable lastItem
-        lastItem''                   <- box lastItem'
-        call madlistSingleton [(lastItem'', [])]
+        item <- generateExp env { isLast = False } symbolTable lastItem
+        items <- retrieveArgs [item]
+        call madlistSingleton [(List.head items, [])]
 
       Core.Typed _ _ _ (Core.ListSpread spread) -> do
-        (_, spread', _) <- generateExp env { isLast = False } symbolTable spread
-        return spread'
+        spread  <- generateExp env { isLast = False } symbolTable spread
+        spreads <- retrieveArgs [spread]
+        return (List.head spreads)
 
       cannotHappen ->
         undefined
@@ -1567,13 +1644,14 @@ generateExp env symbolTable exp = case exp of
     list <- Monad.foldM
       (\list' i -> case i of
         Core.Typed _ _ _ (Core.ListItem item) -> do
-          (_, item', _) <- generateExp env { isLast = False } symbolTable item
-          item''     <- box item'
-          call madlistPush [(item'', []), (list', [])]
+          item <- generateExp env { isLast = False } symbolTable item
+          items <- retrieveArgs [item]
+          call madlistPush [(List.head items, []), (list', [])]
 
         Core.Typed _ _ _ (Core.ListSpread spread) -> do
-          (_, spread', _) <- generateExp env { isLast = False } symbolTable spread
-          call madlistConcat [(spread', []), (list', [])]
+          spread  <- generateExp env { isLast = False } symbolTable spread
+          spreads <- retrieveArgs [spread]
+          call madlistConcat [(List.head spreads, []), (list', [])]
 
         cannotHappen ->
           undefined
@@ -1589,8 +1667,9 @@ generateExp env symbolTable exp = case exp of
 
     base' <- case base of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
-        (_, exp', _) <- generateExp env { isLast = False } symbolTable exp
-        return exp'
+        field  <- generateExp env { isLast = False } symbolTable exp
+        fields <- retrieveArgs [field]
+        return (List.head fields)
 
       _ ->
         return $ Operand.ConstantOperand (Constant.Null boxType)
@@ -1605,13 +1684,13 @@ generateExp env symbolTable exp = case exp of
         Core.Typed _ _ _ (Core.Field (name, value)) -> do
           let fieldType = Type.StructureType False [stringType, boxType]
           nameOperand <- buildStr name -- workaround for now, we need to remove the wrapping "
-          (_, value', _) <- generateExp env { isLast = False } symbolTable value
-          value''     <- box value'
+          field  <- generateExp env { isLast = False } symbolTable value
+          fields <- retrieveArgs [field]
 
           fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
           fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
 
-          Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (value'', 1)]
+          Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (List.head fields, 1)]
           return fieldPtr'
 
         _ ->

@@ -142,15 +142,10 @@ findFreeVars env exp = do
         findFreeVarsInBody :: Env -> [Exp] -> Convert [(String, Exp)]
         findFreeVarsInBody env exps = case exps of
           (e : es) -> case e of
-            Typed _ _ _ (Assignment name exp) -> do
+            Typed qt area _ (Assignment name exp) -> do
               fvs     <- findFreeVars (addGlobalFreeVar name env) exp
               nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
-              return $ fvs ++ nextFVs
-
-            Typed _ _ _ (Assignment name exp) -> do
-              fvs     <- findFreeVars (addGlobalFreeVar name env) exp
-              nextFVs <- findFreeVarsInBody (addGlobalFreeVar name env) es
-              return $ fvs ++ nextFVs
+              return $ fvs ++ nextFVs ++ [(name, Typed qt area [] (Var name False))]
 
             _ -> do
               fvs     <- findFreeVars env e
@@ -193,8 +188,9 @@ findFreeVars env exp = do
       issFreeVars <- findFreeVarsInBranches env iss
       return $ expVars ++ issFreeVars
 
-    Typed _ _ _ (Assignment n exp) -> do
-      findFreeVars env exp
+    Typed qt area _ (Assignment n exp) -> do
+      expVars <- findFreeVars env exp
+      return $ expVars ++ [(n, Typed qt area [] (Var n False))]
 
     -- TODO: Check that we still need this
     Typed (_ :=> t) area metadata (Literal (LNum x)) -> case t of
