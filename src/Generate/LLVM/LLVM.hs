@@ -119,6 +119,7 @@ data Env
   , isLast :: Bool
   , isTopLevel :: Bool
   , recursionData :: Maybe RecursionData
+  , envASTPath :: String
   }
   deriving(Eq, Show)
 
@@ -133,6 +134,10 @@ data SymbolType
   -- ^ arity
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
+  | ADTSymbol Int
+  -- ^ maximum amount of params that a constructor of that type needs
+  -- this will be used to allocate or dereference structs for any
+  -- constructor of that type
   | TopLevelAssignment
   -- ^ amount of items in the env
   | DictionarySymbol (Map.Map String Int) -- <- index of the method for each name in the dict
@@ -171,6 +176,10 @@ topLevelSymbol =
 constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =
   Symbol (ConstructorSymbol id arity) ctor
+
+adtSymbol :: Int -> Symbol
+adtSymbol maxArity =
+  Symbol (ADTSymbol maxArity) (Operand.ConstantOperand (Constant.Null boxType))
 
 isMethodSymbol :: Symbol -> Bool
 isMethodSymbol symbol = case symbol of
@@ -285,8 +294,8 @@ storeItem basePtr _ (item, index) = do
 
 
 -- Mostly used for boxing/unboxing and therefore does just one Level
-buildLLVMType :: IT.Qual IT.Type -> Type.Type
-buildLLVMType qt@(ps IT.:=> t) = case t of
+buildLLVMType :: Env -> SymbolTable -> IT.Qual IT.Type -> Type.Type
+buildLLVMType env symbolTable qt@(ps IT.:=> t) = case t of
   IT.TCon (IT.TC "Float" IT.Star) "prelude" ->
     Type.double
 
@@ -343,20 +352,20 @@ buildLLVMType qt@(ps IT.:=> t) = case t of
 
   _ | IT.isTCon t ->
     if IT.getTConName t `List.notElem` tConExclude && IT.getTConName t /= "" then
-      constructedType
+      retrieveConstructorStructType env symbolTable t
     else
       Type.ptr Type.i8
 
   _ ->
     Type.ptr Type.i8
 
-buildLLVMParamType :: IT.Type -> Type.Type
-buildLLVMParamType t = case t of
+buildLLVMParamType :: Env -> SymbolTable -> IT.Type -> Type.Type
+buildLLVMParamType env symbolTable t = case t of
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
     papType
 
   _ ->
-    buildLLVMType ([] IT.:=> t)
+    buildLLVMType env symbolTable ([] IT.:=> t)
 
 
 boxType :: Type.Type
@@ -379,16 +388,29 @@ recordType :: Type.Type
 recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
-constructedType :: Type.Type
-constructedType =
-  Type.PointerType Type.i8 (AddrSpace 2)
+buildConstructedType :: Int -> Type.Type
+buildConstructedType arity =
+  Type.ptr $ Type.StructureType False (Type.i64 : List.replicate arity boxType)
 
 tConExclude :: [String]
 tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)", "(,,,,,)", "(,,,,,,)", "(,,,,,,,)", "(,,,,,,,,)", "(,,,,,,,,,,)"]
 
 
-unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> Operand -> m Operand
-unbox qt@(ps IT.:=> t) what = case t of
+retrieveConstructorStructType :: Env -> SymbolTable -> IT.Type -> Type.Type
+retrieveConstructorStructType env symbolTable t =
+  let astPath = IT.getTConPath t
+      tName   = IT.getTConName t
+      key     = astPath <> "__" <> tName
+  in  case Map.lookup key symbolTable of
+        Just (Symbol (ADTSymbol maxArity) _) ->
+          Type.ptr $ Type.StructureType False (Type.i64 : List.replicate maxArity boxType)
+
+        e ->
+          error $ "type not found: "<>ppShow key<>"\nfound: "<>ppShow e<>"\nST: "<>ppShow symbolTable<>"\ncurrent module: "<>ppShow (envASTPath env)
+
+
+unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> Operand -> m Operand
+unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
     ptr <- safeBitcast what $ Type.ptr Type.double
     load ptr 0
@@ -431,13 +453,13 @@ unbox qt@(ps IT.:=> t) what = case t of
 
   -- That handles tuple types
   _ -> do
-    let llvmType = buildLLVMType qt
-    if (llvmType == boxType || llvmType == constructedType) && IT.isTCon t && IT.getTConName t `List.notElem` tConExclude then do
-      ptr <- safeBitcast what (Type.ptr constructedType)
-      load ptr 0
-    else
+    let llvmType = buildLLVMType env symbolTable qt
+    -- if (llvmType == boxType || llvmType == constructedType) && IT.isTCon t && IT.getTConName t `List.notElem` tConExclude then do
+    --   ptr <- safeBitcast what (Type.ptr constructedType)
+    --   load ptr 0
+    -- else
       -- That handles tuple types
-      safeBitcast what llvmType
+    safeBitcast what llvmType
 
 
 box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
@@ -478,11 +500,11 @@ box what = case typeOf what of
     safeBitcast ptr' boxType
 
   -- Constructed value
-  Type.PointerType (Type.IntegerType 8) (AddrSpace 2) -> do
-    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof constructedType, [])]
-    ptr' <- safeBitcast ptr (Type.ptr constructedType)
-    store ptr' 0 what
-    safeBitcast ptr' boxType
+  -- Type.PointerType (Type.IntegerType 8) (AddrSpace 2) -> do
+  --   ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof constructedType, [])]
+  --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
+  --   store ptr' 0 what
+  --   safeBitcast ptr' boxType
 
   -- List
   Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
@@ -652,7 +674,7 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       let args''' = (, []) <$> args''
 
       ret <- call fnOperand args'''
-      unboxed <- unbox returnQualType ret
+      unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
   | List.length args > arity = do
@@ -670,7 +692,7 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       let remainingArgs''' = (, []) <$> remainingArgs''
 
       ret <- call applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
-      unboxed <- unbox returnQualType ret
+      unboxed <- unbox env symbolTable returnQualType ret
 
       return (symbolTable, unboxed, Just ret)
   | otherwise = do
@@ -732,8 +754,6 @@ generateExp env symbolTable exp = case exp of
     -- TODO: generate exp without the metadata and append its result to the end
     (_, endValue, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
 
-    -- boxedEndValue <- box endValue
-
     let Just startOperand = start <$> recursionData env
     let Just endPtr       = end <$> recursionData env
     let Just holePtr'     = holePtr <$> recursionData env
@@ -746,13 +766,16 @@ generateExp env symbolTable exp = case exp of
 
     return (symbolTable, finalValue', Nothing)
 
-  Core.Typed _ _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
+  Core.Typed (_ IT.:=> t) _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
+    let constructedType = retrieveConstructorStructType env symbolTable t
     case getConstructorRecursionInfo metadata of
       Just (ConstructorRecursionInfo _ position) -> do
         -- holePtr' :: i8***
         let Just holePtr'      = holePtr <$> recursionData env
         -- holePtr'' :: i8**
         holePtr'' <- load holePtr' 0
+
+
 
         args' <- mapM (\(index, arg) ->
                           if index == position then do
@@ -764,30 +787,25 @@ generateExp env symbolTable exp = case exp of
                             return arg'
                       ) (List.zip [0..] args)
 
-        let constructedType' = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
         (_, constructorFn, _) <- generateExp env symbolTable fn
         constructorFn'        <- safeBitcast constructorFn boxType
         args''                <- mapM box args'
         let args''' = (, []) <$> args''
 
         -- constructed :: i8**
-        constructed          <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
-        constructedWithArgs  <- safeBitcast constructed (Type.ptr constructedType')
-        constructedWithArgs' <- load constructedWithArgs 0
-        constructedOpaque    <- safeBitcast constructed (Type.ptr constructedType)
-        constructedOpaque'   <- load constructedOpaque 0
+        constructed   <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
+        constructed'  <- safeBitcast constructed constructedType
 
-        store holePtr'' 0 constructedOpaque'
+        store holePtr'' 0 constructed'
 
         -- newHole :: i8**
-        newHole  <- gep constructedWithArgs' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
-        newHole'  <- load newHole 0
-        newHole'' <- bitcast newHole' (Type.ptr constructedType)
+        newHole   <- gep constructed' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
+        newHole'' <- bitcast newHole (Type.ptr constructedType)
         store holePtr' 0 newHole''
 
         case args!!position of
           Core.Typed _ _ _ (Core.Call _ recArgs) -> do
-            let llvmType      = buildLLVMType (getQualType exp)
+            let llvmType      = buildLLVMType env symbolTable (getQualType exp)
             let Just continue = continueRef <$> recursionData env
             let Just params   = boxedParams <$> recursionData env
             store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
@@ -805,54 +823,6 @@ generateExp env symbolTable exp = case exp of
 
       Nothing ->
         undefined
-  -- Core.Typed _ _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
-  --   case getConstructorRecursionInfo metadata of
-  --     Just (ConstructorRecursionInfo _ position) -> do
-  --       let Just holePtr'      = holePtr <$> recursionData env
-  --       holePtr'' <- load holePtr' 0
-
-  --       args' <- mapM (\(index, arg) ->
-  --                         if index == position then do
-  --                           call gcMalloc [(Operand.ConstantOperand (sizeof Type.i8), [])]
-  --                         else do
-  --                           (_, arg', _) <- generateExp env symbolTable arg
-  --                           return arg'
-  --                     ) (List.zip [0..] args)
-
-  --       (_, constructorFn, _) <- generateExp env symbolTable fn
-  --       constructorFn'        <- safeBitcast constructorFn boxType
-  --       args''                <- mapM box args'
-  --       let args''' = (, []) <$> args''
-  --       constructed <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
-  --       let constructedType = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
-  --       constructed'   <- safeBitcast constructed constructedType
-  --       holePtr'''     <- safeBitcast holePtr'' constructedType
-  --       constructed''  <- load constructed' 0
-  --       store holePtr''' 0 constructed''
-
-  --       -- newHole <- safeBitcast (args'!!position) (Type.ptr boxType)
-  --       store holePtr' 0 (args'!!position)
-
-  --       case args!!position of
-  --         Core.Typed _ _ _ (Core.Call _ args') -> do
-  --           let llvmType      = buildLLVMType (getQualType exp)
-  --           let Just continue = continueRef <$> recursionData env
-  --           let Just params   = boxedParams <$> recursionData env
-  --           store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
-            
-  --           args''  <- mapM (generateExp env { isLast = False } symbolTable) args'
-  --           let unboxedArgs = (\(_, x, _) -> x) <$> args''
-
-  --           let paramUpdatesData = List.zip3 (Core.getQualType <$> args') params unboxedArgs
-  --           mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
-
-  --           return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
-
-  --         _ ->
-  --           undefined
-
-  --     Nothing ->
-  --       undefined
 
   Core.Typed qt@(ps IT.:=> t) _ _ (Core.Var n _) ->
     case Map.lookup n symbolTable of
@@ -866,7 +836,7 @@ generateExp env symbolTable exp = case exp of
       Just (Symbol (MethodSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods or mempty
         pap     <- call fnPtr []
-        unboxed <- unbox qt pap
+        unboxed <- unbox env symbolTable qt pap
         return (symbolTable, unboxed, Just pap)
 
       Just (Symbol (MethodSymbol arity) fnPtr) -> do
@@ -877,75 +847,14 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, loaded, Nothing)
 
       Just (Symbol (LocalVariableSymbol ptr) value) -> do
-        -- case typeOf value of
-        --   Type.PointerType _ _ | t == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-        --     ptr' <- safeBitcast ptr $ Type.ptr stringType
-        --     loaded <- load ptr' 0
-        --     return (symbolTable, loaded, Just ptr)
-
-        --   _ | t == IT.tInteger -> do
-        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.i64
-        --     loaded  <- load ptr' 0
-        --     return (symbolTable, loaded, Just ptr)
-
-        --   _ | t == IT.tFloat -> do
-        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.double
-        --     loaded  <- load ptr' 0
-        --     return (symbolTable, loaded, Just ptr)
-
-        --   _ | IT.hasNumberPred ps -> do
-        --     ptr'    <- safeBitcast ptr $ Type.ptr Type.i64
-        --     loaded  <- load ptr' 0
-        --     return (symbolTable, loaded, Just ptr)
-
-        --   _ ->
-            return (symbolTable, value, Just ptr)
-
-          -- Type.PointerType _ _ | IT.isListType ty -> do
-          --   ptr' <- safeBitcast ptr $ Type.ptr listType
-          --   store ptr' 0 exp'
-          --   return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
-
-          -- Type.PointerType _ _ | IT.isByteArrayType ty || IT.isArrayType ty || IT.isDictionaryType ty -> do
-          --   let byteArrayBaseType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
-          --   ptr' <- safeBitcast ptr (Type.ptr byteArrayBaseType)
-          --   exp'' <- safeBitcast exp' (Type.ptr byteArrayBaseType)
-          --   loaded <- load exp'' 0
-          --   store ptr' 0 loaded
-          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-          -- -- Constructed value
-          -- Type.PointerType t (AddrSpace 2)  -> do
-          --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
-          --   store ptr' 0 exp'
-          --   return (symbolTable, exp', Nothing)
-
-          -- Type.PointerType t _  -> do
-          --   ptr'   <- safeBitcast ptr $ typeOf exp'
-          --   loaded <- load exp' 0
-          --   store ptr' 0 loaded
-          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-
-          -- _ | IT.hasNumberPred ps -> do
-          --   ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
-          --   exp''  <- safeBitcast exp' Type.i64
-          --   store ptr' 0 exp''
-          --   return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
-
-          -- _ -> do
-          --   ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
-          --   store ptr' 0 exp'
-          --   return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
-        -- value' <- unbox qt ptr
-        -- value'' <- safeBitcast value' (typeOf value)
-        -- return (symbolTable, value'', Just ptr)
+        return (symbolTable, value, Just ptr)
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
+        let constructedType = retrieveConstructorStructType env symbolTable t
         -- Nullary constructors need to be called directly to retrieve the value
         constructed   <- call fnPtr []
-        constructed'  <- safeBitcast constructed (Type.ptr constructedType)
-        constructed'' <- load constructed' 0
-        return (symbolTable, constructed'', Nothing)
+        constructed'  <- safeBitcast constructed constructedType
+        return (symbolTable, constructed', Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -954,7 +863,7 @@ generateExp env symbolTable exp = case exp of
         return (symbolTable, var, Nothing)
 
       Nothing ->
-        error $ "Core.Var not found " <> n <> "\nExp: "<>ppShow exp
+        error $ "Var not found " <> n <> "\nExp: "<>ppShow exp
 
   -- (Core.Placeholder (ClassRef "Functor" [] False True , "b183")
   Core.Typed _ _ _ (Core.Placeholder (Core.ClassRef interface _ False True, typingStr) _) -> do
@@ -1018,7 +927,7 @@ generateExp env symbolTable exp = case exp of
       Just (Symbol (MethodSymbol 0) fnPtr) -> do
         -- Handle special nullary cases like assignment methods or mempty
         pap     <- call fnPtr []
-        unboxed <- unbox qt pap
+        unboxed <- unbox env symbolTable qt pap
         return (symbolTable, unboxed, Just pap)
 
       Just (Symbol (MethodSymbol arity) fnOperand) -> do
@@ -1055,9 +964,9 @@ generateExp env symbolTable exp = case exp of
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
             Type.PointerType _ _ | IT.isByteArrayType ty || IT.isArrayType ty || IT.isDictionaryType ty -> do
-              let byteArrayBaseType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
-              ptr' <- safeBitcast ptr (Type.ptr byteArrayBaseType)
-              exp'' <- safeBitcast exp' (Type.ptr byteArrayBaseType)
+              let structType = Type.StructureType False [Type.i64, Type.ptr Type.i8]
+              ptr' <- safeBitcast ptr (Type.ptr structType)
+              exp'' <- safeBitcast exp' (Type.ptr structType)
               loaded <- load exp'' 0
               store ptr' 0 loaded
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
@@ -1067,12 +976,6 @@ generateExp env symbolTable exp = case exp of
               exp''  <- safeBitcast exp' Type.i64
               store ptr' 0 exp''
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Just ptr)
-
-            -- Constructed value
-            Type.PointerType t (AddrSpace 2)  -> do
-              ptr' <- safeBitcast ptr (Type.ptr constructedType)
-              store ptr' 0 exp'
-              return (symbolTable, exp', Nothing)
 
             Type.PointerType t _  -> do
               ptr'   <- safeBitcast ptr $ typeOf exp'
@@ -1411,7 +1314,7 @@ generateExp env symbolTable exp = case exp of
             error $ "method not found\n\n" <> ppShow symbolTable <> "\nwanted: " <> methodName'
 
     _ | Core.isPlainRecursiveCall metadata -> do
-        let llvmType      = buildLLVMType (getQualType exp)
+        let llvmType      = buildLLVMType env symbolTable (getQualType exp)
         let Just continue = continueRef <$> recursionData env
         let Just params   = boxedParams <$> recursionData env
         store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
@@ -1448,7 +1351,7 @@ generateExp env symbolTable exp = case exp of
         boxedArgs <- retrieveArgs args'
 
         ret       <- call applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        unboxed   <- unbox qt ret
+        unboxed   <- unbox env symbolTable qt ret
         return (symbolTable, unboxed, Just ret)
 
       _ ->
@@ -1469,7 +1372,7 @@ generateExp env symbolTable exp = case exp of
           Core.Typed _ _ _ (Core.Var functionName _) -> case Map.lookup functionName symbolTable of
             Just (Symbol (FunctionSymbol arity) fnOperand) | arity == List.length allArgs -> do
               ret <- call fnOperand ((,[]) <$> allArgs)
-              unboxed <- unbox qt ret
+              unboxed <- unbox env symbolTable qt ret
               return (symbolTable, unboxed, Just ret)
 
             _ -> do
@@ -1479,7 +1382,7 @@ generateExp env symbolTable exp = case exp of
 
               let argc = i32ConstOp (fromIntegral $ List.length allArgs)
               ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
-              unboxed <- unbox qt ret
+              unboxed <- unbox env symbolTable qt ret
               return (symbolTable, unboxed, Just ret)
 
           _ -> do
@@ -1489,7 +1392,7 @@ generateExp env symbolTable exp = case exp of
 
             let argc = i32ConstOp (fromIntegral $ List.length allArgs)
             ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
-            unboxed <- unbox qt ret
+            unboxed <- unbox env symbolTable qt ret
             return (symbolTable, unboxed, Just ret)
 
       Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef "Number" _ True, _) _) -> do
@@ -1502,7 +1405,7 @@ generateExp env symbolTable exp = case exp of
         boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        unboxed <- unbox qt ret
+        unboxed <- unbox env symbolTable qt ret
         return (symbolTable, unboxed, Just ret)
 
       _ -> do
@@ -1515,7 +1418,7 @@ generateExp env symbolTable exp = case exp of
         boxedArgs <- retrieveArgs args'
 
         ret <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
-        unboxed <- unbox qt ret
+        unboxed <- unbox env symbolTable qt ret
         return (symbolTable, unboxed, Just ret)
 
   -- (Core.Placeholder ( ClassRef "Functor" [] True False , "List" )
@@ -1527,7 +1430,7 @@ generateExp env symbolTable exp = case exp of
     dictArgs' <- mapM box dictArgs
     let dictArgs'' = (,[]) <$> dictArgs'
     ret <- call applyPAP $ [(pap', []), (argc, [])] ++ dictArgs''
-    unboxed <- unbox qt ret
+    unboxed <- unbox env symbolTable qt ret
     return (symbolTable, unboxed, Just ret)
 
   Core.Typed (_ IT.:=> t) _ _ (Core.Literal (Core.LNum n)) -> case t of
@@ -1634,9 +1537,8 @@ generateExp env symbolTable exp = case exp of
         call madlistSingleton [(List.head items, [])]
 
       Core.Typed _ _ _ (Core.ListSpread spread) -> do
-        spread  <- generateExp env { isLast = False } symbolTable spread
-        spreads <- retrieveArgs [spread]
-        return (List.head spreads)
+        (_, e, _) <- generateExp env { isLast = False } symbolTable spread
+        return e
 
       cannotHappen ->
         undefined
@@ -1649,9 +1551,8 @@ generateExp env symbolTable exp = case exp of
           call madlistPush [(List.head items, []), (list', [])]
 
         Core.Typed _ _ _ (Core.ListSpread spread) -> do
-          spread  <- generateExp env { isLast = False } symbolTable spread
-          spreads <- retrieveArgs [spread]
-          call madlistConcat [(List.head spreads, []), (list', [])]
+          (_, spread, _)  <- generateExp env { isLast = False } symbolTable spread
+          call madlistConcat [(spread, []), (list', [])]
 
         cannotHappen ->
           undefined
@@ -1701,7 +1602,7 @@ generateExp env symbolTable exp = case exp of
     (_, recordOperand, _) <- generateExp env { isLast = False } symbolTable record
     value <- call selectField [(nameOperand, []), (recordOperand, [])]
 
-    value' <- unbox qt value
+    value' <- unbox env symbolTable qt value
     return (symbolTable, value', Just value)
 
 
@@ -1734,7 +1635,7 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, ret, Nothing)
 
   Core.Typed qt@(_ IT.:=> t) _ _ (Core.NameExport n) -> do
-    let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType qt) (AST.mkName n)
+    let ref = Operand.ConstantOperand $ Constant.GlobalReference (buildLLVMType env symbolTable qt) (AST.mkName n)
     if IT.isFunctionType t then do
       let arity = List.length $ IT.getParamTypes t
       Writer.tell $ Map.singleton n (fnSymbol arity ref)
@@ -1760,10 +1661,10 @@ updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
       return (symbolTable, exp', Nothing)
 
     -- Constructed value
-    Type.PointerType t (AddrSpace 2)  -> do
-      ptr' <- safeBitcast ptr (Type.ptr constructedType)
-      store ptr' 0 exp'
-      return (symbolTable, exp', Nothing)
+    -- Type.PointerType t (AddrSpace 2)  -> do
+    --   ptr' <- safeBitcast ptr (Type.ptr constructedType)
+    --   store ptr' 0 exp'
+    --   return (symbolTable, exp', Nothing)
 
     Type.PointerType t _  -> do
       ptr'   <- safeBitcast ptr $ typeOf exp'
@@ -1799,11 +1700,11 @@ generateBranch :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadI
 generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
   Core.Typed _ _ _ (Core.Is pat exp) -> mdo
     currBlock <- currentBlock
-    test      <- generateBranchTest symbolTable pat whereExp
+    test      <- generateBranchTest env symbolTable pat whereExp
     condBr test branchExpBlock nextBlock
 
     branchExpBlock <- block `named` "branchExpBlock"
-    symbolTable' <- generateSymbolTableForPattern symbolTable whereExp pat
+    symbolTable' <- generateSymbolTableForPattern env symbolTable whereExp pat
     (_, branchResult, maybeBoxedBranchResult) <- generateExp env symbolTable' exp
     branchResult' <- return branchResult
     -- the exp might contain a where or if expression generating new blocks in between.
@@ -1826,39 +1727,39 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
     undefined
 
 
-generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Core.Pattern, Integer) -> m SymbolTable
-generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
+generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> Operand -> SymbolTable -> (Core.Pattern, Integer) -> m SymbolTable
+generateSymbolTableForIndexedData env basePtr symbolTable (pat, index) = do
   ptr   <- gep basePtr [i32ConstOp 0, i32ConstOp index]
   ptr'  <- load ptr 0
-  ptr'' <- unbox (getQualType pat) ptr'
-  generateSymbolTableForPattern symbolTable ptr'' pat
+  ptr'' <- unbox env symbolTable (getQualType pat) ptr'
+  generateSymbolTableForPattern env symbolTable ptr'' pat
 
 
-generateSymbolTableForList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Core.Pattern] -> m SymbolTable
-generateSymbolTableForList symbolTable basePtr pats = case pats of
+generateSymbolTableForList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> [Core.Pattern] -> m SymbolTable
+generateSymbolTableForList env symbolTable basePtr pats = case pats of
   (pat : next) -> case pat of
     Core.Typed _ _ _ (Core.PSpread spread) ->
-      generateSymbolTableForPattern symbolTable basePtr spread
+      generateSymbolTableForPattern env symbolTable basePtr spread
 
     _ -> do
       valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
       valuePtr'     <- load valuePtr 0
-      valuePtr''    <- unbox (getQualType pat) valuePtr'
-      symbolTable'  <- generateSymbolTableForPattern symbolTable valuePtr'' pat
+      valuePtr''    <- unbox env symbolTable (getQualType pat) valuePtr'
+      symbolTable'  <- generateSymbolTableForPattern env symbolTable valuePtr'' pat
       nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
       -- i8*
       nextNodePtr'  <- load nextNodePtr 0
       -- { i8*, i8* }*
       nextNodePtr'' <- addrspacecast nextNodePtr' listType
-      generateSymbolTableForList symbolTable' nextNodePtr'' next
+      generateSymbolTableForList env symbolTable' nextNodePtr'' next
 
   [] ->
     return symbolTable
 
 
 
-generateSymbolTableForPattern :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> Core.Pattern -> m SymbolTable
-generateSymbolTableForPattern symbolTable baseExp pat = case pat of
+generateSymbolTableForPattern :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> Core.Pattern -> m SymbolTable
+generateSymbolTableForPattern env symbolTable baseExp pat = case pat of
   Core.Typed _ _ _ (Core.PVar n) -> do
     return $ Map.insert n (varSymbol baseExp) symbolTable
 
@@ -1876,35 +1777,35 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
 
   Core.Typed _ _ _ (Core.PTuple pats) -> do
     let patsWithIds = List.zip pats [0..]
-    Monad.foldM (generateSymbolTableForIndexedData baseExp) symbolTable patsWithIds
+    Monad.foldM (generateSymbolTableForIndexedData env baseExp) symbolTable patsWithIds
 
   Core.Typed _ _ _ (Core.PList pats) ->
-    generateSymbolTableForList symbolTable baseExp pats
+    generateSymbolTableForList env symbolTable baseExp pats
 
   Core.Typed _ _ _ (Core.PCon name pats) -> do
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
     constructor' <- safeBitcast baseExp constructorType
     let patsWithIds = List.zip pats [1..]
-    Monad.foldM (generateSymbolTableForIndexedData constructor') symbolTable patsWithIds
+    Monad.foldM (generateSymbolTableForIndexedData env constructor') symbolTable patsWithIds
 
   Core.Typed _ _ _ (Core.PRecord fieldPatterns) -> do
-    subPatterns <- mapM (getFieldPattern baseExp) $ Map.toList fieldPatterns
-    Monad.foldM (\previousTable (field, pat) -> generateSymbolTableForPattern previousTable field pat) symbolTable subPatterns
+    subPatterns <- mapM (getFieldPattern env symbolTable baseExp) $ Map.toList fieldPatterns
+    Monad.foldM (\previousTable (field, pat) -> generateSymbolTableForPattern env previousTable field pat) symbolTable subPatterns
 
   _ ->
     undefined
 
 
-generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> (Core.Pattern, Operand) -> m Operand
-generateSubPatternTest symbolTable prev (pat', ptr) = do
+generateSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> (Core.Pattern, Operand) -> m Operand
+generateSubPatternTest env symbolTable prev (pat', ptr) = do
   v <- load ptr 0
-  v' <- unbox (getQualType pat') v
-  curr <- generateBranchTest symbolTable pat' v'
+  v' <- unbox env symbolTable (getQualType pat') v
+  curr <- generateBranchTest env symbolTable pat' v'
   prev `Instruction.and` curr
 
 
-generateListSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Operand -> [Core.Pattern] -> m Operand
-generateListSubPatternTest symbolTable basePtr pats = case pats of
+generateListSubPatternTest :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> [Core.Pattern] -> m Operand
+generateListSubPatternTest env symbolTable basePtr pats = case pats of
   (pat : next) -> case pat of
     Core.Typed _ _ _ (Core.PSpread spread) ->
       return true
@@ -1912,22 +1813,22 @@ generateListSubPatternTest symbolTable basePtr pats = case pats of
     _ -> do
       valuePtr      <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 0)]
       valuePtr'     <- load valuePtr 0
-      valuePtr''    <- unbox (getQualType pat) valuePtr'
-      test          <- generateBranchTest symbolTable pat valuePtr''
+      valuePtr''    <- unbox env symbolTable (getQualType pat) valuePtr'
+      test          <- generateBranchTest env symbolTable pat valuePtr''
       nextNodePtr   <- gep basePtr [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
       -- i8*
       nextNodePtr'  <- load nextNodePtr 0
       -- { i8*, i8* }*
       nextNodePtr'' <- addrspacecast nextNodePtr' listType
-      nextTest      <- generateListSubPatternTest symbolTable nextNodePtr'' next
+      nextTest      <- generateListSubPatternTest env symbolTable nextNodePtr'' next
       test `Instruction.and` nextTest
 
   [] ->
     return true
 
 
-generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Core.Pattern -> Operand -> m Operand
-generateBranchTest symbolTable pat value = case pat of
+generateBranchTest :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.Pattern -> Operand -> m Operand
+generateBranchTest env symbolTable pat value = case pat of
   Core.Typed (_ IT.:=> t) _ _ (Core.PNum n) -> case t of
     IT.TCon (IT.TC "Byte" IT.Star) "prelude" ->
       icmp IntegerPredicate.EQ (C.int8 (read n)) value
@@ -1961,7 +1862,7 @@ generateBranchTest symbolTable pat value = case pat of
     let indices = List.take (List.length pats) [0..]
     itemPtrs <- getStructPointers indices value
     let patsWithPtrs = List.zip pats itemPtrs
-    Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
+    Monad.foldM (generateSubPatternTest env symbolTable) true patsWithPtrs
 
   Core.Typed _ _ _ (Core.PList pats) -> do
     let hasSpread = List.any isSpread pats
@@ -1973,7 +1874,7 @@ generateBranchTest symbolTable pat value = case pat of
       else
         call madlistHasLength [(C.int64 (fromIntegral $ List.length pats), []), (value, [])]
 
-    subPatternsTest <- generateListSubPatternTest symbolTable value pats
+    subPatternsTest <- generateListSubPatternTest env symbolTable value pats
     lengthTest `Instruction.and` subPatternsTest
     where
       isSpread :: Core.Pattern -> Bool
@@ -1985,8 +1886,8 @@ generateBranchTest symbolTable pat value = case pat of
           False
 
   Core.Typed _ _ _ (Core.PRecord fieldPatterns) -> do
-    subPatterns <- mapM (getFieldPattern value) $ Map.toList fieldPatterns
-    subTests    <- mapM (uncurry (generateBranchTest symbolTable) . Tuple.swap) subPatterns
+    subPatterns <- mapM (getFieldPattern env symbolTable value) $ Map.toList fieldPatterns
+    subTests    <- mapM (uncurry (generateBranchTest env symbolTable) . Tuple.swap) subPatterns
     Monad.foldM Instruction.and (List.head subTests) (List.tail subTests)
 
   Core.Typed _ _ _ (Core.PCon name pats) -> do
@@ -2011,7 +1912,7 @@ generateBranchTest symbolTable pat value = case pat of
     id'             <- load id 0
     testIds         <- icmp IntegerPredicate.EQ constructorId id'
 
-    testSubPatterns <- Monad.foldM (generateSubPatternTest symbolTable) true patsWithPtrs
+    testSubPatterns <- Monad.foldM (generateSubPatternTest env symbolTable) true patsWithPtrs
 
     testIds `Instruction.and` testSubPatterns
 
@@ -2019,11 +1920,11 @@ generateBranchTest symbolTable pat value = case pat of
     undefined
 
 
-getFieldPattern :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
-getFieldPattern record (fieldName, fieldPattern) = do
+getFieldPattern :: (MonadIRBuilder m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
+getFieldPattern env symbolTable record (fieldName, fieldPattern) = do
   nameOperand <- buildStr fieldName
   field       <- call selectField [(nameOperand, []), (record, [])]
-  field'      <- unbox (getQualType fieldPattern) field
+  field'      <- unbox env symbolTable (getQualType fieldPattern) field
   return (field', fieldPattern)
 
 
@@ -2053,8 +1954,8 @@ generateExps env symbolTable exps = case exps of
 
 
 -- TODO: get the predicates and generate dict params for them
-generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
-generateExternFunction symbolTable (ps IT.:=> t) functionName arity foreignFn = do
+generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
+generateExternFunction env symbolTable (ps IT.:=> t) functionName arity foreignFn = do
   let paramTypes    = ([] IT.:=>) <$> IT.getParamTypes t
       dictTypes     = boxType <$ ps
       amountOfDicts = List.length ps
@@ -2065,7 +1966,7 @@ generateExternFunction symbolTable (ps IT.:=> t) functionName arity foreignFn = 
     entry <- block `named` "entry"
     let typesWithParams = List.zip paramTypes (List.drop amountOfDicts params)
     let dictParams      = List.take amountOfDicts params
-    unboxedParams <- mapM (uncurry unbox) typesWithParams
+    unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
 
     -- Generate body
     result <- call foreignFn ((, []) <$> (dictParams ++ unboxedParams))
@@ -2127,16 +2028,18 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
                   , end = end
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
+              let returnType = IT.getReturnType t
+                  constructedType = retrieveConstructorStructType env symbolTable returnType
               -- contains an unused index and the value that will be returned at the end of recursion
-              start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [Type.i64, boxType]), [])]
+              start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [Type.i64, constructedType]), [])]
               start' <- safeBitcast start (Type.ptr (Type.StructureType False [Type.i64, constructedType]))
-              end    <- alloca boxType Nothing 0
+              end    <- alloca constructedType Nothing 0
               -- hole :: i8**
               hole   <- gep start' [i32ConstOp 0, i32ConstOp 1]
+
               -- holePtr: i8***
               holePtr <- alloca (Type.ptr constructedType) Nothing 0
               store holePtr 0 hole
-              store end 0 start
 
               return $
                 ConstructorRecursionData
@@ -2155,7 +2058,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
       let typesWithParams = List.zip paramTypes params
-      unboxedParams <- mapM (uncurry unbox) typesWithParams
+      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
       let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
@@ -2180,7 +2083,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
       entry <- block `named` "entry"
 
       let typesWithParams = List.zip paramTypes params
-      unboxedParams <- mapM (uncurry unbox) typesWithParams
+      unboxedParams <- mapM (uncurry (unbox env symbolTable)) typesWithParams
       let paramsWithNames       = Map.fromList $ List.zip paramNames (uncurry localVarSymbol <$> List.zip params unboxedParams)
           symbolTableWithParams = symbolTable <> paramsWithNames
 
@@ -2213,20 +2116,20 @@ generateTopLevelFunction env symbolTable topLevelFunction = case topLevelFunctio
 
   Core.Typed _ _ _ (Core.Extern (ps IT.:=> t) name originalName) -> do
     let paramTypes  = IT.getParamTypes t
-        paramTypes' = buildLLVMParamType <$> paramTypes
+        paramTypes' = buildLLVMParamType env symbolTable <$> paramTypes
         dictTypes   = boxType <$ ps
         returnType  = IT.getReturnType t
-        returnType' = buildLLVMParamType returnType
+        returnType' = buildLLVMParamType env symbolTable returnType
 
     ext <- extern (AST.mkName originalName) (dictTypes ++ paramTypes') returnType'
-    generateExternFunction symbolTable (ps IT.:=> t) name (List.length paramTypes) ext
+    generateExternFunction env symbolTable (ps IT.:=> t) name (List.length paramTypes) ext
 
   _ ->
     return symbolTable
 
 
-addTopLevelFnToSymbolTable :: SymbolTable -> Core.Exp -> SymbolTable
-addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction of
+addTopLevelFnToSymbolTable :: Env -> SymbolTable -> Core.Exp -> SymbolTable
+addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ _ _ (Core.Assignment functionName (Core.Typed _ _ _ (Core.Definition params _))) ->
     let arity  = List.length params
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
@@ -2251,7 +2154,7 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
     else
-      let expType   = buildLLVMType qt
+      let expType   = buildLLVMType env symbolTable qt
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
@@ -2261,7 +2164,7 @@ addTopLevelFnToSymbolTable symbolTable topLevelFunction = case topLevelFunction 
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
     else
-      let expType   = buildLLVMType qt
+      let expType   = buildLLVMType env symbolTable qt
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
 
@@ -2341,25 +2244,24 @@ the i64 is the type of constructor ( simply the index )
 the two i8* are the content of the created type
 -}
 -- TODO: still need to generate closured constructors
-generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
-generateConstructor symbolTable (constructor, index) = case constructor of
+generateConstructor :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Int -> SymbolTable -> (Core.Constructor, Int) -> m SymbolTable
+generateConstructor maxArity symbolTable (constructor, index) = case constructor of
   Core.Untyped _ _ (Core.Constructor constructorName _ t) -> do
     let paramTypes     = IT.getParamTypes t
     let arity          = List.length paramTypes
-    let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate arity boxType
+    let structType     = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
     let paramLLVMTypes = (,NoParameterName) <$> List.replicate arity boxType
 
     constructor' <- function (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
       entry <- block `named` "entry"
-    -- allocate memory for the structure
+      -- allocate memory for the structure
       structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
       structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
       -- store the constructor data in the struct
       Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
 
-      structPtr'' <- addrspacecast structPtr' constructedType
-      boxed <- box structPtr''
+      boxed <- box structPtr'
       ret boxed
 
     Writer.tell $ Map.singleton constructorName (constructorSymbol constructor' index arity)
@@ -2369,21 +2271,29 @@ generateConstructor symbolTable (constructor, index) = case constructor of
     undefined
 
 
-generateConstructorsForADT :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> Core.TypeDecl -> m SymbolTable
-generateConstructorsForADT symbolTable adt = case adt of
-  Core.Untyped _ _ Core.ADT { Core.adtconstructors } ->
+findMaximumConstructorArity :: [Constructor] -> Int
+findMaximumConstructorArity constructors =
+  List.foldr max 0 (Core.getConstructorArity <$> constructors)
+
+
+generateConstructorsForADT :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> Core.TypeDecl -> m SymbolTable
+generateConstructorsForADT env symbolTable adt = case adt of
+  Core.Untyped _ _ Core.ADT { Core.adtconstructors, Core.adtname } -> do
     let sortedConstructors  = List.sortBy (\a b -> compare (getConstructorName a) (getConstructorName b)) adtconstructors
         indexedConstructors = List.zip sortedConstructors [0..]
-    in  Monad.foldM generateConstructor symbolTable indexedConstructors
+        maxArity            = findMaximumConstructorArity adtconstructors
+        symbolTable'        = Map.insert (envASTPath env <> "__" <> adtname) (adtSymbol maxArity) symbolTable
+    Writer.tell $ Map.singleton (envASTPath env <> "__" <> adtname) (adtSymbol maxArity)
+    Monad.foldM (generateConstructor maxArity) symbolTable' indexedConstructors
 
   _ ->
     return symbolTable
 
 
-generateConstructors :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => SymbolTable -> [Core.TypeDecl] -> m SymbolTable
-generateConstructors symbolTable tds =
+generateConstructors :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> [Core.TypeDecl] -> m SymbolTable
+generateConstructors env symbolTable tds =
   let adts = List.filter isADT tds
-  in  Monad.foldM generateConstructorsForADT symbolTable tds
+  in  Monad.foldM (generateConstructorsForADT env) symbolTable tds
 
 
 buildDictValues :: SymbolTable -> [String] -> [Constant.Constant]
@@ -3945,16 +3855,16 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
 buildModule' :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
-  let symbolTableWithTopLevel  = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
+  symbolTableWithConstructors <- generateConstructors env initialSymbolTable (atypedecls ast)
+  let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env)) symbolTableWithConstructors (aexps ast)
       symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
-  symbolTable   <- generateConstructors symbolTableWithDefaults (atypedecls ast)
-  symbolTable'  <- generateInstances env symbolTable (ainstances ast)
-  symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
+  symbolTable  <- generateInstances env symbolTableWithDefaults (ainstances ast)
+  symbolTable' <- generateTopLevelFunctions env symbolTable (topLevelFunctions $ aexps ast)
 
   externVarArgs (AST.mkName "__applyPAP__")    [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
 
@@ -4003,7 +3913,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
         call initArgs []
         call initEventLoop []
         callModuleFunctions symbolTable (removeDuplicates currentModuleHashes)
-        generateExps env symbolTable'' (expsForMain $ aexps ast)
+        generateExps env symbolTable' (expsForMain $ aexps ast)
         call startEventLoop []
         retVoid
         return ()
@@ -4017,7 +3927,7 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
     else do
       function (AST.mkName moduleFunctionName) [] Type.void $ \_ -> do
         entry <- block `named` "entry"
-        generateExps env symbolTable'' (expsForMain $ aexps ast)
+        generateExps env symbolTable' (expsForMain $ aexps ast)
         retVoid
 
   Writer.tell $ Map.singleton moduleFunctionName (fnSymbol 0 moduleFunction)
@@ -4039,7 +3949,7 @@ generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes,
   ast : more ->
     let (moduleTable', symbolTable', processedHashes', initialEnv') = generateImportedASTs isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) more
         (moduleTable'', symbolTable'', processedHashes'', initialEnv'') = generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialEnv) ast
-    in  (moduleTable' <> moduleTable'', symbolTable' <> symbolTable'', processedHashes' ++ processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv' <> dictionaryIndices initialEnv'', isLast = False, isTopLevel = False, recursionData = Nothing })
+    in  (moduleTable' <> moduleTable'', symbolTable' <> symbolTable'', processedHashes' ++ processedHashes'', Env { dictionaryIndices = dictionaryIndices initialEnv' <> dictionaryIndices initialEnv'', isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" })
 
   [] ->
     (moduleTable, symbolTable, processedHashes, initialEnv)
@@ -4059,7 +3969,7 @@ generateAST isMain astTable (moduleTable, symbolTable, processedHashes, initialE
           generateImportedASTs False astTable (moduleTable, symbolTable, processedHashes, initialEnv) astsForImports
 
         computedDictionaryIndices        = buildDictionaryIndices $ ainterfaces ast
-        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False, isTopLevel = False, recursionData = Nothing }
+        envForAST                        = Env { dictionaryIndices = computedDictionaryIndices <> dictionaryIndices envFromImports, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = apath }
         (newModule, newSymbolTableTable) = toLLVMModule envForAST isMain (importHashes ++ processedHashes) symbolTableWithImports ast
 
         updatedModuleTable               = Map.insert apath newModule moduleTableWithImports
@@ -4085,13 +3995,13 @@ generateTableModules :: ModuleTable -> SymbolTable -> Table -> FilePath -> Modul
 generateTableModules generatedTable symbolTable astTable entrypoint = case Map.lookup entrypoint astTable of
   Just ast ->
     let dictionaryIndices = Map.fromList [ ("Number", Map.fromList [("*", (0, 2)), ("+", (1, 2)), ("-", (2, 2)), ("<", (3, 2)), ("<=", (4, 2)), (">", (5, 2)), (">=", (6, 2)), ("__coerceNumber__", (7, 1))]), ("Eq", Map.fromList [("==", (0, 2))]), ("Inspect", Map.fromList [("inspect", (0, 1))]) ]
-        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing } [] symbolTable)
+        (defaultInstancesModule, symbolTable') = Writer.runWriter $ buildModuleT (stringToShortByteString "number") (buildDefaultInstancesModule Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" } [] symbolTable)
         defaultInstancesModulePath =
           if takeExtension entrypoint == "" then
             joinPath [entrypoint, "__default__instances__.mad"]
           else
             joinPath [takeDirectory entrypoint, "__default__instances__.mad"]
-        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing }) ast
+        (moduleTable, _, _, _) = generateAST True astTable (generatedTable, symbolTable', [], Env { dictionaryIndices = dictionaryIndices, isLast = False, isTopLevel = False, recursionData = Nothing, envASTPath = "" }) ast
     in  Map.insert defaultInstancesModulePath defaultInstancesModule moduleTable
 
   _ ->
@@ -4105,8 +4015,8 @@ compileModule outputFolder rootPath astPath astModule = do
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-    Text.putStrLn (ppllvm astModule)
+  -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+  --   Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
