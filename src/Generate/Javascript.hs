@@ -37,6 +37,7 @@ import Distribution.Types.Lens (_Impl)
 data RecursionData
   = PlainRecursionData { rdParams :: [String] }
   | RightListRecursionData { rdParams :: [String] }
+  | ConstructorRecursionData { rdParams :: [String] }
   deriving(Eq, Show)
 
 data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData, varsRewritten :: M.Map String String } deriving(Eq, Show)
@@ -82,9 +83,37 @@ instance Compilable Exp where
           let compiledExp = compile env config (Typed qt area [] exp)
           in  "($result = " <> compiledExp <> ")"
 
-        _ | Core.isRightListRecursionEnd metadata ->
+        _ | isRightListRecursionEnd metadata ->
           let compiledExp = compile env config (Typed qt area [] exp)
           in  "($end.push(..."<>compiledExp<>"), $result = $start)"
+
+        _ | isConstructorRecursionEnd metadata ->
+          let compiledExp = compile env config (Typed qt area [] exp)
+          in  "($args[$index] = "<>compiledExp<>", $result = $start.__args[0])"
+
+        Call fn@(Typed _ _ _ (Var constructorName True)) args | isConstructorRecursiveCall metadata ->
+          case getConstructorRecursionInfo metadata of
+            Just (ConstructorRecursionInfo _ position) ->
+              let Just params   = rdParams <$> recursionData env
+                  newValue = "$newValue = { __constructor: \""<>constructorName<>"\", __args: [] }"
+                  compiledArgs =
+                    (\(index, arg) ->
+                      if index == position then
+                        "$newValue.__args.push(null)"
+                      else
+                        "$newValue.__args.push(" <> compile env config arg <> ")"
+                    ) <$> zip [0..] args
+                  updateParams  = case args!!position of
+                    Core.Typed _ _ _ (Core.Call _ recArgs) ->
+                      let compiledRecArgs  = compile env config <$> recArgs
+                      in  (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledRecArgs
+
+                    _ ->
+                      undefined
+              in  "("<>newValue<>", " <> intercalate ", " compiledArgs <> ", $args[$index] = $newValue, $args = $newValue.__args, $index = "<>show position<>", "<>intercalate ", " updateParams<>", $continue = true)"
+
+            _ ->
+              undefined
 
         Literal (LNum v) ->
           hpWrapLine coverage astPath l v
@@ -297,6 +326,25 @@ instance Compilable Exp where
                   <> "    while($continue) {\n"
                   <> "        $continue = false;\n"
                   <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "\n    }\n"
+                  <> "    return $result;\n"
+                  <> "}"
+
+            [exp] | isConstructorRecursiveDefinition metadata ->
+              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
+              in  "{\n"
+                  <> "    let $result;\n"
+                  <> "    let $continue = true;\n"
+                  <> "    let $start = { __args: [] };\n"
+                  <> "    let $args = $start.__args;\n"
+                  <> "    let $index = 0;\n"
+                  <> "    let $newValue;\n"
+                  <> unlines paramCopies
+                  <> "\n"
+                  <> "    while($continue) {\n"
+                  <> "        $continue = false;\n"
+                  <> "        "<> compile env { recursionData = Just ConstructorRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
                   <> "\n    }\n"
                   <> "    return $result;\n"
                   <> "}"

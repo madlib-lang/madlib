@@ -30,7 +30,6 @@ data Env
   -- ^ Closured names that are reassigned. So if we find something in the higher scope, the inner function should not skip it but create a param for it
   , stillTopLevel :: Bool
   , lifted :: M.Map String (String, [Exp])
-  , inScope :: S.Set String
   -- ^ the key is the initial name, and then we have (lifted name, args to partially apply)
   }
 
@@ -765,6 +764,6 @@ instance Convertable AST AST where
 -- an env for optimization to keep track of what dictionaries have been removed.
 convertTable :: Table -> Table
 convertTable table =
-  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty, inScope = S.empty }
+  let env       = Env { freeVars = [], freeVarExclusion = [], stillTopLevel = True, lifted = M.empty }
       convertd = mapM (convert env) table
   in  MonadState.evalState convertd initialOptimizationState
