@@ -28,6 +28,7 @@ import           LLVM.Pretty
 import           LLVM.Target
 import           LLVM.Module
 import           LLVM.AST                        as AST hiding (function)
+import           LLVM.Analysis
 import           LLVM.AST.Type                   as Type
 import           LLVM.AST.AddrSpace              as AddrSpace
 import           LLVM.AST.ParameterAttribute     as ParameterAttribute
@@ -79,6 +80,14 @@ sizeof t = Constant.PtrToInt szPtr (Type.IntegerType 64)
 addrspacecast :: MonadIRBuilder m => Operand -> Type -> m Operand
 addrspacecast op t =
   emitInstr t $ AddrSpaceCast op t []
+
+safeBitcast :: MonadIRBuilder m => Operand -> Type -> m Operand
+safeBitcast op t = case (typeOf op, t) of
+  (Type.PointerType _ (AddrSpace l), Type.PointerType _ (AddrSpace r)) | r /= l ->
+    addrspacecast op t
+
+  _ ->
+    bitcast op t
 
 data RecursionData
   = PlainRecursionData
@@ -201,7 +210,6 @@ initEventLoop :: Operand
 initEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__initEventLoop__"))
 
-
 startEventLoop :: Operand
 startEventLoop =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (AST.mkName "__startEventLoop__"))
@@ -213,22 +221,6 @@ gcMalloc =
 applyPAP :: Operand
 applyPAP =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.i32] True) (AST.mkName "__applyPAP__"))
-
-trampoline1 :: Operand
-trampoline1 =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8, Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__trampoline__1"))
-
-nextFn :: Operand
-nextFn =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Next"))
-
-thunkFn :: Operand
-thunkFn =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Thunk"))
-
-doneFn :: Operand
-doneFn =
-  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.ptr Type.i8] False) (AST.mkName "madlib__recursion__internal__Done"))
 
 dictCtor :: Operand
 dictCtor =
@@ -349,6 +341,12 @@ buildLLVMType qt@(ps IT.:=> t) = case t of
   IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TApp (IT.TCon (IT.TC "(,,,,,,,,,)" _) "prelude") _) _) _) _) _) _) _) _) _) _ ->
     Type.ptr $ Type.StructureType False [boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType, boxType]
 
+  _ | IT.isTCon t ->
+    if IT.getTConName t `List.notElem` ["Array", "Dictionary", "ByteArray"] && IT.getTConName t /= "" then
+      constructedType
+    else
+      Type.ptr Type.i8
+
   _ ->
     Type.ptr Type.i8
 
@@ -381,96 +379,117 @@ recordType :: Type.Type
 recordType =
   Type.ptr $ Type.StructureType False [Type.i32, boxType]
 
+constructedType :: Type.Type
+constructedType =
+  Type.PointerType Type.i8 (AddrSpace 2)
+
+tConExclude :: [String]
+tConExclude = ["Array", "Dictionary", "ByteArray", "(,)", "(,,)", "(,,,)", "(,,,,)"]
+
 
 unbox :: (MonadIRBuilder m, MonadModuleBuilder m) => IT.Qual IT.Type -> Operand -> m Operand
 unbox qt@(ps IT.:=> t) what = case t of
   IT.TCon (IT.TC "Float" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.double
+    ptr <- safeBitcast what $ Type.ptr Type.double
     load ptr 0
 
   IT.TCon (IT.TC "Byte" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.i8
+    ptr <- safeBitcast what $ Type.ptr Type.i8
     load ptr 0
 
   IT.TCon (IT.TC "Integer" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.i64
+    ptr <- safeBitcast what $ Type.ptr Type.i64
     load ptr 0
 
   IT.TCon (IT.TC "Boolean" _) _ -> do
-    ptr <- bitcast what $ Type.ptr Type.i1
+    ptr <- safeBitcast what $ Type.ptr Type.i1
     load ptr 0
 
   -- boxed strings are char**
   IT.TCon (IT.TC "String" _) _ -> do
-    ptr <- bitcast what $ Type.ptr stringType
+    ptr <- safeBitcast what $ Type.ptr stringType
     load ptr 0
 
   IT.TCon (IT.TC "Unit" _) _ -> do
-    bitcast what $ Type.ptr Type.i1
+    safeBitcast what $ Type.ptr Type.i1
 
   -- boxed lists are { i8*, i8* }**
   IT.TApp (IT.TCon (IT.TC "List" _) _) _ -> do
-    ptr <- bitcast what (Type.ptr listType)
+    ptr <- safeBitcast what (Type.ptr listType)
     load ptr 0
 
   IT.TRecord fields _ -> do
-    bitcast what recordType
+    safeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _) p) b ->
-    bitcast what papType
+    safeBitcast what papType
 
   IT.TVar _ | IT.hasNumberPred ps -> do
-    ptr <- bitcast what $ Type.ptr Type.i64
+    ptr <- safeBitcast what $ Type.ptr Type.i64
     load ptr 0
 
   -- That handles tuple types
-  _ ->
-    bitcast what (buildLLVMType qt)
+  _ -> do
+    let llvmType = buildLLVMType qt
+    if (llvmType == boxType || llvmType == constructedType) && IT.isTCon t && IT.getTConName t `List.notElem` tConExclude then do
+      ptr <- safeBitcast what (Type.ptr constructedType)
+      load ptr 0
+    else
+      -- That handles tuple types
+      safeBitcast what llvmType
+
 
 box :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m Operand
 box what = case typeOf what of
   -- Float 
   Type.FloatingPointType _ -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.double, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.double)
+    ptr' <- safeBitcast ptr (Type.ptr Type.double)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
 
   -- Integer
   Type.IntegerType 64 -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i64, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.i64)
+    ptr' <- safeBitcast ptr (Type.ptr Type.i64)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
 
   -- Byte
   Type.IntegerType 8 -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i8, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.i8)
+    ptr' <- safeBitcast ptr (Type.ptr Type.i8)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
 
   -- Boolean
   Type.IntegerType 1 -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof Type.i1, [])]
-    ptr' <- bitcast ptr (Type.ptr Type.i1)
+    ptr' <- safeBitcast ptr (Type.ptr Type.i1)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
 
   -- String
   Type.PointerType (Type.IntegerType 8) (AddrSpace 1) -> do
     ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof stringType, [])]
-    ptr' <- bitcast ptr (Type.ptr stringType)
+    ptr' <- safeBitcast ptr (Type.ptr stringType)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
+
+  -- Constructed value
+  Type.PointerType (Type.IntegerType 8) (AddrSpace 2) -> do
+    ptr <- call gcMalloc [(Operand.ConstantOperand $ sizeof constructedType, [])]
+    ptr' <- safeBitcast ptr (Type.ptr constructedType)
+    store ptr' 0 what
+    safeBitcast ptr' boxType
 
   -- List
   Type.PointerType (Type.StructureType False [Type.PointerType (Type.IntegerType 8) _, Type.PointerType (Type.IntegerType 8) _]) (AddrSpace 1) -> do
     ptr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof listType, [])]
-    ptr' <- bitcast ptr (Type.ptr listType)
+    ptr' <- safeBitcast ptr (Type.ptr listType)
     store ptr' 0 what
-    bitcast ptr' boxType
+    safeBitcast ptr' boxType
 
   -- Pointless?
   Type.PointerType (Type.IntegerType 8) _ ->
@@ -482,7 +501,7 @@ box what = case typeOf what of
 
   -- Any pointer type
   _ ->
-    bitcast what boxType
+    safeBitcast what boxType
 
 
 emptyList :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => m Operand
@@ -545,8 +564,15 @@ collectCRPDicts symbolTable crpNodes = case crpNodes of
               nextNodes    <- collectCRPDicts symbolTable next
               return $ dict' : nextNodes
 
+          -- this case may happen when the dict is coming from a parameter
+          -- at this point we have no info about it and it's already applied
+          -- but it might be necessary to apply it to another dict
+          Just (Symbol _ dict) -> do
+            nextNodes <- collectCRPDicts symbolTable next
+            return $ dict : nextNodes
+
           _ ->
-            error $ "dict not found: "<>dictName
+            error $ "dict not found: "<>dictName<>"\n"<>ppShow (Map.lookup "$Inspect$e368" symbolTable)
 
   [] ->
     return []
@@ -575,12 +601,12 @@ applyClassRefPreds symbolTable methodCount dict classRefPreds = case classRefPre
     classRefPreds'  <- mapM box preds
     appliedMethods  <- mapM (\m -> call applyPAP ([(m, []), (i32ConstOp (fromIntegral $ List.length classRefPreds'), [])] ++ ((,[]) <$> classRefPreds'))) methods
     let papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-    appliedMethods' <- mapM (`bitcast` papType) appliedMethods
+    appliedMethods' <- mapM (`safeBitcast` papType) appliedMethods
     appliedMethods'' <- mapM (`load` 0) appliedMethods'
 
     let appliedDictType = Type.StructureType False (typeOf <$> appliedMethods'')
     appliedDict  <- call gcMalloc [(Operand.ConstantOperand $ sizeof appliedDictType, [])]
-    appliedDict' <- bitcast appliedDict (Type.ptr appliedDictType)
+    appliedDict' <- safeBitcast appliedDict (Type.ptr appliedDictType)
     Monad.foldM_ (storeItem appliedDict') () $ List.zip appliedMethods'' [0..]
 
     return appliedDict'
@@ -661,11 +687,11 @@ generateApplicationForKnownFunction env symbolTable returnQualType arity fnOpera
       boxedArgs <- retrieveArgs args'
 
       envPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof envType, [])]
-      envPtr' <- bitcast envPtr (Type.ptr envType)
+      envPtr' <- safeBitcast envPtr (Type.ptr envType)
       Monad.foldM_ (storeItem envPtr') () $ List.zip boxedArgs [0..]
 
       papPtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
-      papPtr' <- bitcast papPtr (Type.ptr papType)
+      papPtr' <- safeBitcast papPtr (Type.ptr papType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
 
       return (symbolTable, papPtr', Just papPtr)
@@ -679,7 +705,7 @@ buildReferencePAP symbolTable arity fn = do
   boxedFn  <- box fn
 
   papPtr   <- call gcMalloc [(Operand.ConstantOperand $ sizeof papType, [])]
-  papPtr'  <- bitcast papPtr (Type.ptr papType)
+  papPtr'  <- safeBitcast papPtr (Type.ptr papType)
   Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
 
   return (symbolTable, papPtr', Just papPtr)
@@ -706,14 +732,14 @@ generateExp env symbolTable exp = case exp of
     -- TODO: generate exp without the metadata and append its result to the end
     (_, endValue, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
 
-    boxedEndValue <- box endValue
+    -- boxedEndValue <- box endValue
 
     let Just startOperand = start <$> recursionData env
     let Just endPtr       = end <$> recursionData env
     let Just holePtr'     = holePtr <$> recursionData env
 
     holePtr'' <- load holePtr' 0
-    store holePtr'' 0 boxedEndValue
+    store holePtr'' 0 endValue
 
     finalValue  <- gep startOperand [i32ConstOp 0, i32ConstOp 1]
     finalValue' <- load finalValue 0
@@ -730,27 +756,34 @@ generateExp env symbolTable exp = case exp of
 
         args' <- mapM (\(index, arg) ->
                           if index == position then do
-                            call gcMalloc [(Operand.ConstantOperand (sizeof Type.i8), [])]
+                            return $ Operand.ConstantOperand (Constant.Null constructedType)
+                            -- hole <- call gcMalloc [(Operand.ConstantOperand (sizeof Type.i8), [])]
+                            -- safeBitcast hole constructedType
                           else do
                             (_, arg', _) <- generateExp env symbolTable arg
                             return arg'
                       ) (List.zip [0..] args)
 
-        let constructedType = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
+        let constructedType' = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
         (_, constructorFn, _) <- generateExp env symbolTable fn
-        constructorFn'        <- bitcast constructorFn boxType
+        constructorFn'        <- safeBitcast constructorFn boxType
         args''                <- mapM box args'
         let args''' = (, []) <$> args''
 
-        -- constructed :: i8*
-        constructed  <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
-        constructed' <- bitcast constructed constructedType
+        -- constructed :: i8**
+        constructed          <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
+        constructedWithArgs  <- safeBitcast constructed (Type.ptr constructedType')
+        constructedWithArgs' <- load constructedWithArgs 0
+        constructedOpaque    <- safeBitcast constructed (Type.ptr constructedType)
+        constructedOpaque'   <- load constructedOpaque 0
 
-        store holePtr'' 0 constructed
+        store holePtr'' 0 constructedOpaque'
 
         -- newHole :: i8**
-        newHole <- gep constructed' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
-        store holePtr' 0 newHole
+        newHole  <- gep constructedWithArgs' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
+        newHole'  <- load newHole 0
+        newHole'' <- bitcast newHole' (Type.ptr constructedType)
+        store holePtr' 0 newHole''
 
         case args!!position of
           Core.Typed _ _ _ (Core.Call _ recArgs) -> do
@@ -787,17 +820,17 @@ generateExp env symbolTable exp = case exp of
   --                     ) (List.zip [0..] args)
 
   --       (_, constructorFn, _) <- generateExp env symbolTable fn
-  --       constructorFn'        <- bitcast constructorFn boxType
+  --       constructorFn'        <- safeBitcast constructorFn boxType
   --       args''                <- mapM box args'
   --       let args''' = (, []) <$> args''
   --       constructed <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
   --       let constructedType = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
-  --       constructed'   <- bitcast constructed constructedType
-  --       holePtr'''     <- bitcast holePtr'' constructedType
+  --       constructed'   <- safeBitcast constructed constructedType
+  --       holePtr'''     <- safeBitcast holePtr'' constructedType
   --       constructed''  <- load constructed' 0
   --       store holePtr''' 0 constructed''
 
-  --       -- newHole <- bitcast (args'!!position) (Type.ptr boxType)
+  --       -- newHole <- safeBitcast (args'!!position) (Type.ptr boxType)
   --       store holePtr' 0 (args'!!position)
 
   --       case args!!position of
@@ -848,8 +881,10 @@ generateExp env symbolTable exp = case exp of
 
       Just (Symbol (ConstructorSymbol _ 0) fnPtr) -> do
         -- Nullary constructors need to be called directly to retrieve the value
-        constructed <- call fnPtr []
-        return (symbolTable, constructed, Nothing)
+        constructed   <- call fnPtr []
+        constructed'  <- safeBitcast constructed (Type.ptr constructedType)
+        constructed'' <- load constructed' 0
+        return (symbolTable, constructed'', Nothing)
 
       Just (Symbol (ConstructorSymbol _ arity) fnPtr) -> do
         buildReferencePAP symbolTable arity fnPtr
@@ -897,7 +932,7 @@ generateExp env symbolTable exp = case exp of
         let interfaceMap   = Maybe.fromMaybe Map.empty $ Map.lookup interface (dictionaryIndices env)
         let (index, arity) = Maybe.fromMaybe (0, 0) $ Map.lookup methodName interfaceMap
         let papType        = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
-        dict'      <- bitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
+        dict'      <- safeBitcast dict (Type.ptr $ Type.StructureType False (List.replicate (Map.size interfaceMap) papType))
         methodPAP  <- gep dict' [i32ConstOp 0, i32ConstOp (fromIntegral index)]
 
         -- If arity is 0 ( ex: mempty ), we need to call the function and get the value as there will be
@@ -905,7 +940,7 @@ generateExp env symbolTable exp = case exp of
         -- expected
         if arity == 0 then do
           methodFn   <- gep methodPAP [i32ConstOp 0, i32ConstOp 0]
-          methodFn'  <- bitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
+          methodFn'  <- safeBitcast methodFn (Type.ptr $ Type.ptr $ Type.FunctionType boxType [] False)
           methodFn'' <- load methodFn' 0
           value      <- call methodFn'' []
           return (symbolTable, value, Nothing)
@@ -949,30 +984,35 @@ generateExp env symbolTable exp = case exp of
           -- TODO: handle strings properly here
           case typeOf exp' of
             Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-              ptr' <- bitcast ptr $ Type.ptr stringType
+              ptr' <- safeBitcast ptr $ Type.ptr stringType
               store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             Type.PointerType _ _ | IT.isListType ty -> do
-              ptr' <- bitcast ptr $ Type.ptr listType
+              ptr' <- safeBitcast ptr $ Type.ptr listType
               store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
+            -- Constructed value
+            Type.PointerType t (AddrSpace 2)  -> do
+              ptr' <- safeBitcast ptr (Type.ptr constructedType)
+              store ptr' 0 exp'
+              return (symbolTable, exp', Nothing)
 
             Type.PointerType t _  -> do
-              ptr'   <- bitcast ptr $ typeOf exp'
+              ptr'   <- safeBitcast ptr $ typeOf exp'
               loaded <- load exp' 0
               store ptr' 0 loaded
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
             _ | IT.hasNumberPred ps -> do
-              ptr'   <- bitcast ptr $ Type.ptr Type.i64
-              exp''  <- bitcast exp' Type.i64
+              ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
+              exp''  <- safeBitcast exp' Type.i64
               store ptr' 0 exp''
               return (Map.insert name (localVarSymbol ptr' exp') symbolTable, exp', Nothing)
 
             _ -> do
-              ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
+              ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
               store ptr' 0 exp'
               return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Nothing)
 
@@ -1327,7 +1367,7 @@ generateExp env symbolTable exp = case exp of
           else
             return pap
 
-        pap'' <- bitcast pap' boxType
+        pap'' <- safeBitcast pap' boxType
 
         args'     <- mapM (generateExp env { isLast = False } symbolTable) args
         boxedArgs <- retrieveArgs args'
@@ -1360,7 +1400,7 @@ generateExp env symbolTable exp = case exp of
             _ -> do
               (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
 
-              pap' <- bitcast pap boxType
+              pap' <- safeBitcast pap boxType
 
               let argc = i32ConstOp (fromIntegral $ List.length allArgs)
               ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
@@ -1370,7 +1410,7 @@ generateExp env symbolTable exp = case exp of
           _ -> do
             (_, pap, _) <- generateExp env { isLast = False } symbolTable fn'
 
-            pap' <- bitcast pap boxType
+            pap' <- safeBitcast pap boxType
 
             let argc = i32ConstOp (fromIntegral $ List.length allArgs)
             ret     <- call applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> allArgs)
@@ -1379,7 +1419,7 @@ generateExp env symbolTable exp = case exp of
 
       Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef "Number" _ True, _) _) -> do
         (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-        pap' <- bitcast pap boxType
+        pap' <- safeBitcast pap boxType
 
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
@@ -1392,7 +1432,7 @@ generateExp env symbolTable exp = case exp of
 
       _ -> do
         (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-        pap' <- bitcast pap boxType
+        pap' <- safeBitcast pap boxType
 
         let argc = i32ConstOp (fromIntegral $ List.length args)
 
@@ -1407,7 +1447,7 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt _ _ (Core.Placeholder (Core.ClassRef interface _ True _, typingStr) _) -> do
     (dictArgs, fn) <- collectDictArgs symbolTable exp
     (_, pap, _) <- generateExp env { isLast = False } symbolTable fn
-    pap' <- bitcast pap boxType
+    pap' <- safeBitcast pap boxType
     let argc = i32ConstOp $ fromIntegral (List.length dictArgs)
     dictArgs' <- mapM box dictArgs
     let dictArgs'' = (,[]) <$> dictArgs'
@@ -1460,7 +1500,7 @@ generateExp env symbolTable exp = case exp of
     let expsWithIds = List.zip boxedExps [0..]
         tupleType   = Type.StructureType False (typeOf <$> boxedExps)
     tuplePtr  <- call gcMalloc [(Operand.ConstantOperand $ sizeof tupleType, [])]
-    tuplePtr' <- bitcast tuplePtr (Type.ptr tupleType)
+    tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
 
     return (symbolTable, tuplePtr', Nothing)
@@ -1569,7 +1609,7 @@ generateExp env symbolTable exp = case exp of
           value''     <- box value'
 
           fieldPtr    <- call gcMalloc [(Operand.ConstantOperand $ sizeof fieldType, [])]
-          fieldPtr'   <- bitcast fieldPtr (Type.ptr fieldType)
+          fieldPtr'   <- safeBitcast fieldPtr (Type.ptr fieldType)
 
           Monad.foldM_ (storeItem fieldPtr') () [(nameOperand, 0), (value'', 1)]
           return fieldPtr'
@@ -1631,29 +1671,35 @@ updateTCOArg :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadIRBui
 updateTCOArg symbolTable (ps IT.:=> ty) ptr exp' =
   case typeOf exp' of
     Type.PointerType t _ | ty == IT.TCon (IT.TC "String" IT.Star) "prelude" -> do
-      ptr' <- bitcast ptr $ Type.ptr stringType
+      ptr' <- safeBitcast ptr $ Type.ptr stringType
       store ptr' 0 exp'
       return (symbolTable, exp', Nothing)
 
     Type.PointerType _ _ | IT.isListType ty -> do
-      ptr' <- bitcast ptr $ Type.ptr listType
+      ptr' <- safeBitcast ptr $ Type.ptr listType
+      store ptr' 0 exp'
+      return (symbolTable, exp', Nothing)
+
+    -- Constructed value
+    Type.PointerType t (AddrSpace 2)  -> do
+      ptr' <- safeBitcast ptr (Type.ptr constructedType)
       store ptr' 0 exp'
       return (symbolTable, exp', Nothing)
 
     Type.PointerType t _  -> do
-      ptr'   <- bitcast ptr $ typeOf exp'
+      ptr'   <- safeBitcast ptr $ typeOf exp'
       loaded <- load exp' 0
       store ptr' 0 loaded
       return (symbolTable, exp', Nothing)
 
     _ | IT.hasNumberPred ps -> do
-      ptr'   <- bitcast ptr $ Type.ptr Type.i64
-      exp''  <- bitcast exp' Type.i64
+      ptr'   <- safeBitcast ptr $ Type.ptr Type.i64
+      exp''  <- safeBitcast exp' Type.i64
       store ptr' 0 exp''
       return (symbolTable, exp', Nothing)
 
     _ -> do
-      ptr' <- bitcast ptr (Type.ptr $ typeOf exp')
+      ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
       store ptr' 0 exp'
       return (symbolTable, exp', Nothing)
 
@@ -1703,8 +1749,8 @@ generateBranch env symbolTable hasMore exitBlock whereExp is = case is of
 
 generateSymbolTableForIndexedData :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> SymbolTable -> (Core.Pattern, Integer) -> m SymbolTable
 generateSymbolTableForIndexedData basePtr symbolTable (pat, index) = do
-  ptr  <- gep basePtr [i32ConstOp 0, i32ConstOp index]
-  ptr' <- load ptr 0
+  ptr   <- gep basePtr [i32ConstOp 0, i32ConstOp index]
+  ptr'  <- load ptr 0
   ptr'' <- unbox (getQualType pat) ptr'
   generateSymbolTableForPattern symbolTable ptr'' pat
 
@@ -1758,7 +1804,7 @@ generateSymbolTableForPattern symbolTable baseExp pat = case pat of
 
   Core.Typed _ _ _ (Core.PCon name pats) -> do
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
-    constructor' <- bitcast baseExp constructorType
+    constructor' <- safeBitcast baseExp constructorType
     let patsWithIds = List.zip pats [1..]
     Monad.foldM (generateSymbolTableForIndexedData constructor') symbolTable patsWithIds
 
@@ -1877,7 +1923,7 @@ generateBranchTest symbolTable pat value = case pat of
               error $ "Core.Constructor '" <> name <> "' not found!"
 
     let constructorType = Type.ptr $ Type.StructureType False (Type.IntegerType 64 : (boxType <$ List.take (List.length pats) [0..]))
-    constructor' <- bitcast value constructorType
+    constructor' <- safeBitcast value constructorType
     let argIds = fromIntegral <$> List.take (List.length pats) [1..]
     constructorArgPtrs <- getStructPointers argIds constructor'
     let patsWithPtrs = List.zip pats constructorArgPtrs
@@ -2004,12 +2050,12 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
             else if Core.isConstructorRecursiveDefinition metadata then do
               -- contains an unused index and the value that will be returned at the end of recursion
               start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [Type.i64, boxType]), [])]
-              start' <- bitcast start (Type.ptr (Type.StructureType False [Type.i64, boxType]))
+              start' <- safeBitcast start (Type.ptr (Type.StructureType False [Type.i64, constructedType]))
               end    <- alloca boxType Nothing 0
               -- hole :: i8**
               hole   <- gep start' [i32ConstOp 0, i32ConstOp 1]
               -- holePtr: i8***
-              holePtr <- alloca (Type.ptr boxType) Nothing 0
+              holePtr <- alloca (Type.ptr constructedType) Nothing 0
               store holePtr 0 hole
               store end 0 start
 
@@ -2228,12 +2274,13 @@ generateConstructor symbolTable (constructor, index) = case constructor of
       entry <- block `named` "entry"
     -- allocate memory for the structure
       structPtr     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
-      structPtr'    <- bitcast structPtr $ Type.ptr structType
+      structPtr'    <- safeBitcast structPtr $ Type.ptr structType
 
       -- store the constructor data in the struct
       Monad.foldM_ (storeItem structPtr') () $ List.zip params [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
 
-      boxed <- box structPtr'
+      structPtr'' <- addrspacecast structPtr' constructedType
+      boxed <- box structPtr''
       ret boxed
 
     Writer.tell $ Map.singleton constructorName (constructorSymbol constructor' index arity)
@@ -2299,7 +2346,7 @@ generateMethod env symbolTable methodName exp = case exp of
 
       retVal <-
         if arity > 0 then do
-          pap <- bitcast exp' boxType
+          pap <- safeBitcast exp' boxType
           call applyPAP $ [(pap, []), (i32ConstOp (fromIntegral arity), [])] ++ ((,[]) <$> params)
         else do
           box exp'
@@ -3822,15 +3869,11 @@ buildModule' env isMain currentModuleHashes initialSymbolTable ast = do
   let symbolTableWithTopLevel  = List.foldr (flip addTopLevelFnToSymbolTable) initialSymbolTable (aexps ast)
       symbolTableWithMethods   = List.foldr (flip addInstanceToSymbolTable) symbolTableWithTopLevel (ainstances ast)
       symbolTableWithDefaults  = Map.insert "__dict_ctor__" (fnSymbol 2 dictCtor) symbolTableWithMethods
-      symbolTableWithDefaults' = Map.insert "madlib__recursion__internal__trampoline__1" (fnSymbol 2 trampoline1)
-                                 $ Map.insert "madlib__recursion__internal__Next" (fnSymbol 1 nextFn)
-                                 $ Map.insert "madlib__recursion__internal__Done" (fnSymbol 1 doneFn)
-                                 $ Map.insert "madlib__recursion__internal__Thunk" (fnSymbol 1 thunkFn) symbolTableWithDefaults
 
   mapM_ (generateImport initialSymbolTable) $ aimports ast
   generateExternsForImportedInstances initialSymbolTable
 
-  symbolTable   <- generateConstructors symbolTableWithDefaults' (atypedecls ast)
+  symbolTable   <- generateConstructors symbolTableWithDefaults (atypedecls ast)
   symbolTable'  <- generateInstances env symbolTable (ainstances ast)
   symbolTable'' <- generateTopLevelFunctions env symbolTable' (topLevelFunctions $ aexps ast)
 
@@ -3983,8 +4026,8 @@ compileModule outputFolder rootPath astPath astModule = do
   Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
     Prelude.putStrLn $ "Compiling module '" <> astPath <> "'"
 
-  -- Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
-  --   Text.putStrLn (ppllvm astModule)
+  Monad.unless ("__default__instances__.mad" `List.isSuffixOf` astPath) $
+    Text.putStrLn (ppllvm astModule)
 
   -- TODO: only do this on verbose mode
   -- Prelude.putStrLn outputPath
@@ -4018,6 +4061,8 @@ compileModule outputFolder rootPath astPath astModule = do
         --     $ \pm -> do
         --       runPassManager pm mod'
         --       return mod'
+
+        verify mod''
 
         createDirectoryIfMissing True $ takeDirectory outputPath
         writeObjectToFile target (File outputPath) mod''

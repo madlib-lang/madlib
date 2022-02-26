@@ -355,6 +355,28 @@ isListType t = case t of
   _ ->
     False
 
+isTCon :: Type -> Bool
+isTCon t = case t of
+  TCon _ _ ->
+    True
+
+  TApp l r ->
+    isTCon l
+
+  _ ->
+    False
+
+getTConName :: Type -> String
+getTConName t = case t of
+  TCon (TC n _) _ ->
+    n
+
+  TApp l r ->
+    getTConName l
+
+  _ ->
+    ""
+
 getReturnType :: Type -> Type
 getReturnType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) _) r ->
