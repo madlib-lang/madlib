@@ -430,10 +430,36 @@ updatePlaceholders env cleanUpEnv push s fullExp@(Slv.Typed qt a e) = case e of
   _ -> return $ Slv.Typed (apply s qt) a e
  where
   updateIs :: Substitution -> Slv.Is -> Infer Slv.Is
-  updateIs s (Slv.Typed t a is) = case is of
+  updateIs s (Slv.Typed qt@(ps :=> _) a is) = case is of
     Slv.Is pat exp -> do
       exp' <- updatePlaceholders env cleanUpEnv push s exp
-      return $ Slv.Typed t a $ Slv.Is pat exp'
+      return $ Slv.Typed (apply s qt) a $ Slv.Is (updatePattern s ps pat) exp'
+
+  updatePattern :: Substitution -> [Pred] -> Slv.Pattern -> Slv.Pattern
+  updatePattern s preds pat@(Slv.Typed (_ :=> t) _ _) =
+    let ps = selectPredsForType preds t
+    in  case pat of
+      Slv.Typed (ps' :=> t') area (Slv.PCon n pats) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PCon n (updatePattern s preds <$> pats))
+
+      Slv.Typed (ps' :=> t') area (Slv.PRecord fields) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PRecord (updatePattern s preds <$> fields))
+
+      Slv.Typed (ps' :=> t') area (Slv.PList items) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PList (updatePattern s preds <$> items))
+
+      Slv.Typed (ps' :=> t') area (Slv.PTuple items) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PTuple (updatePattern s preds <$> items))
+
+      Slv.Typed (ps' :=> t') area (Slv.PSpread pat) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PSpread (updatePattern s preds pat))
+
+      Slv.Typed (ps' :=> t') area (Slv.PVar n) ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area (Slv.PVar n)
+
+      Slv.Typed (ps' :=> t') area p ->
+        Slv.Typed (apply s ((ps ++ ps') :=> t')) area p
+
 
   updateListItem :: Substitution -> Slv.ListItem -> Infer Slv.ListItem
   updateListItem s (Slv.Typed t area li) = case li of
