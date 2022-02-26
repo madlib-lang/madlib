@@ -2,15 +2,15 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "String" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 50 4 2))
             (Where
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Boolean" Star) "prelude")
                   (Area (Loc 6 1 7) (Loc 10 1 11))
                   (LBool "true"))
-               [ Solved
+               [ Typed
                    ([] :=>
                       TApp
                         (TApp
@@ -19,15 +19,15 @@ Right
                         (TCon (TC "String" Star) "prelude"))
                    (Area (Loc 16 2 3) (Loc 28 2 15))
                    (Is
-                      (Solved
+                      (Typed
                          ([] :=> TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 16 2 3) (Loc 20 2 7))
                          (PBool "true"))
-                      (Solved
+                      (Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 24 2 11) (Loc 28 2 15))
                          (LStr "\"OK\"")))
-               , Solved
+               , Typed
                    ([] :=>
                       TApp
                         (TApp
@@ -36,11 +36,11 @@ Right
                         (TCon (TC "String" Star) "prelude"))
                    (Area (Loc 31 3 3) (Loc 48 3 20))
                    (Is
-                      (Solved
+                      (Typed
                          ([] :=> TCon (TC "Boolean" Star) "prelude")
                          (Area (Loc 31 3 3) (Loc 36 3 8))
                          (PBool "false"))
-                      (Solved
+                      (Typed
                          ([] :=> TCon (TC "String" Star) "prelude")
                          (Area (Loc 40 3 12) (Loc 48 3 20))
                          (LStr "\"NOT OK\"")))

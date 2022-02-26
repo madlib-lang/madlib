@@ -9,39 +9,39 @@ Inspect['Maybe'] = {};
 Inspect['Maybe']['inspect'] = () => (Inspect_g6) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(${Inspect_g6.inspect()(a0)})`;
+    return `Just(` + Inspect_g6.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
-    return "Nothing";
+    return `Nothing`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Inspect['Either'] = {};
 Inspect['Either']['inspect'] = () => (Inspect_v21) => (Inspect_s18) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(${Inspect_s18.inspect()(a0)})`;
+    return `Right(` + Inspect_s18.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(${Inspect_v21.inspect()(a0)})`;
+    return `Left(` + Inspect_v21.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Functor['Maybe'] = {};
 Functor['Maybe']['map'] = () => (f => __x__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
@@ -113,10 +113,10 @@ Monad['Either']['of'] = () => (x => Right(x));
 let inc = (a => a + 1);
 Functor.List.map()(inc)(([1, 2, 3]));
 Monad.Maybe.chain()((x => Just(x + 1)))(Just(3));
-let doIt = (Functor_w308) => (x => Functor_w308.map()((k => k + 1))(x));
+let doIt = (Functor_b313) => (x => Functor_b313.map()((k => k + 1))(x));
 doIt(Functor.Maybe)(Just(3));
 let p = 1;
-let fn = (Functor_j347) => Functor_j347.map()(inc);
+let fn = (Functor_m350) => Functor_m350.map()(inc);
 fn(Functor.Maybe)(Just(3));
 fn(Functor.List)(([4, 5, 6]));
 let hideCall = (x => ((__x__) => {

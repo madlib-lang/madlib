@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -15,7 +15,7 @@ Right
                     (TCon (TC "Boolean" Star) "prelude")))
             (Area (Loc 0 1 1) (Loc 59 2 24))
             (TypedExp
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -29,7 +29,7 @@ Right
                   (Area (Loc 36 2 1) (Loc 59 2 24))
                   (Assignment
                      "fn"
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Eq"
                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -46,7 +46,7 @@ Right
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 41 2 6) (Loc 59 2 24))
                         (Abs
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Eq"
                                    [ TCon (TC "Integer" Star) "prelude" ]
@@ -55,7 +55,7 @@ Right
                                  TCon (TC "Integer" Star) "prelude")
                               (Area (Loc 42 2 7) (Loc 43 2 8))
                               "a")
-                           [ Solved
+                           [ Typed
                                ([ IsIn
                                     "Eq"
                                     [ TCon (TC "Integer" Star) "prelude" ]
@@ -68,7 +68,7 @@ Right
                                     (TCon (TC "Boolean" Star) "prelude"))
                                (Area (Loc 41 2 6) (Loc 59 2 24))
                                (Abs
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Eq"
                                           [ TCon (TC "Integer" Star) "prelude" ]
@@ -77,7 +77,7 @@ Right
                                         TCon (TC "Integer" Star) "prelude")
                                      (Area (Loc 45 2 10) (Loc 46 2 11))
                                      "b")
-                                  [ Solved
+                                  [ Typed
                                       ([ IsIn
                                            "Eq"
                                            [ TCon (TC "Integer" Star) "prelude" ]
@@ -86,7 +86,7 @@ Right
                                          TCon (TC "Boolean" Star) "prelude")
                                       (Area (Loc 52 2 17) (Loc 58 2 23))
                                       (App
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
@@ -101,7 +101,7 @@ Right
                                                  (TCon (TC "Boolean" Star) "prelude"))
                                             (Area (Loc 52 2 17) (Loc 58 2 23))
                                             (App
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
@@ -128,7 +128,7 @@ Right
                                                      ( MethodRef "Eq" "==" False
                                                      , [ TCon (TC "Integer" Star) "prelude" ]
                                                      )
-                                                     (Solved
+                                                     (Typed
                                                         ([ IsIn
                                                              "Eq"
                                                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -157,8 +157,8 @@ Right
                                                                 (TCon
                                                                    (TC "Boolean" Star) "prelude")))
                                                         (Area (Loc 54 2 19) (Loc 56 2 21))
-                                                        (Var "=="))))
-                                               (Solved
+                                                        (Var "==" False))))
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
@@ -166,9 +166,9 @@ Right
                                                    ] :=>
                                                      TCon (TC "Integer" Star) "prelude")
                                                   (Area (Loc 52 2 17) (Loc 53 2 18))
-                                                  (Var "a"))
+                                                  (Var "a" False))
                                                False))
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Eq"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
@@ -176,7 +176,7 @@ Right
                                              ] :=>
                                                TCon (TC "Integer" Star) "prelude")
                                             (Area (Loc 57 2 22) (Loc 58 2 23))
-                                            (Var "b"))
+                                            (Var "b" False))
                                          True)
                                   ])
                            ]))))
@@ -202,11 +202,11 @@ Right
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TCon (TC "Integer" Star) "prelude"))
                           (TCon (TC "Boolean" Star) "prelude")))))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Boolean" Star) "prelude")
             (Area (Loc 60 3 1) (Loc 67 3 8))
             (App
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TApp
@@ -216,7 +216,7 @@ Right
                        (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 60 3 1) (Loc 68 3 9))
                   (App
-                     (Solved
+                     (Typed
                         ([] :=>
                            TApp
                              (TApp
@@ -228,15 +228,15 @@ Right
                                    (TCon (TC "Integer" Star) "prelude"))
                                 (TCon (TC "Boolean" Star) "prelude")))
                         (Area (Loc 60 3 1) (Loc 62 3 3))
-                        (Var "fn"))
-                     (Solved
+                        (Var "fn" False))
+                     (Typed
                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
                            TCon (TC "Integer" Star) "prelude")
                         (Area (Loc 63 3 4) (Loc 64 3 5))
                         (LNum "3"))
                      False))
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>

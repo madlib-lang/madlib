@@ -30,7 +30,7 @@ Right
                       (IsIn "Inspect" [ TCon (TC "Something" Star) "./ModuleA" ] Nothing)
                       (fromList
                          [ ( "inspect"
-                           , ( Solved
+                           , ( Typed
                                  ([] :=>
                                     TApp
                                       (TApp
@@ -40,7 +40,7 @@ Right
                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                  (Assignment
                                     "inspect"
-                                    (Solved
+                                    (Typed
                                        ([] :=>
                                           TApp
                                             (TApp
@@ -51,19 +51,19 @@ Right
                                             (TCon (TC "String" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
-                                          (Solved
+                                          (Typed
                                              ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$a__")
-                                          [ Solved
+                                          [ Typed
                                               ([] :=> TCon (TC "String" Star) "prelude")
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Where
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                    (Var "__$a__"))
-                                                 [ Solved
+                                                    (Var "__$a__" False))
+                                                 [ Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -77,18 +77,18 @@ Right
                                                           (TCon (TC "String" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon
                                                                 (TC "Something" Star) "./ModuleA")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PCon "Something" []))
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (LStr "\"Something\"")))
-                                                 , Solved
+                                                 , Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -102,11 +102,13 @@ Right
                                                           (TCon (TC "String" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
-                                                           ([] :=> TVar (TV "b1" Star))
+                                                        (Typed
+                                                           ([] :=>
+                                                              TCon
+                                                                (TC "Something" Star) "./ModuleA")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "String" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -132,7 +134,7 @@ Right
                       (IsIn "Eq" [ TCon (TC "Something" Star) "./ModuleA" ] Nothing)
                       (fromList
                          [ ( "=="
-                           , ( Solved
+                           , ( Typed
                                  ([] :=>
                                     TApp
                                       (TApp
@@ -147,7 +149,7 @@ Right
                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                  (Assignment
                                     "=="
-                                    (Solved
+                                    (Typed
                                        ([] :=>
                                           TApp
                                             (TApp
@@ -164,11 +166,11 @@ Right
                                                (TCon (TC "Boolean" Star) "prelude")))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
-                                          (Solved
+                                          (Typed
                                              ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$a__")
-                                          [ Solved
+                                          [ Typed
                                               ([] :=>
                                                  TApp
                                                    (TApp
@@ -179,15 +181,15 @@ Right
                                                    (TCon (TC "Boolean" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Abs
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     "__$b__")
-                                                 [ Solved
+                                                 [ Typed
                                                      ([] :=> TCon (TC "Boolean" Star) "prelude")
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Where
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -205,22 +207,22 @@ Right
                                                                    "./ModuleA"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (TupleConstructor
-                                                              [ Solved
+                                                              [ Typed
                                                                   ([] :=>
                                                                      TCon
                                                                        (TC "Something" Star)
                                                                        "./ModuleA")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                  (Var "__$a__")
-                                                              , Solved
+                                                                  (Var "__$a__" False)
+                                                              , Typed
                                                                   ([] :=>
                                                                      TCon
                                                                        (TC "Something" Star)
                                                                        "./ModuleA")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                  (Var "__$b__")
+                                                                  (Var "__$b__" False)
                                                               ]))
-                                                        [ Solved
+                                                        [ Typed
                                                             ([] :=>
                                                                TApp
                                                                  (TApp
@@ -250,7 +252,7 @@ Right
                                                                     (TC "Boolean" Star) "prelude"))
                                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                                             (Is
-                                                               (Solved
+                                                               (Typed
                                                                   ([] :=>
                                                                      TApp
                                                                        (TApp
@@ -270,7 +272,7 @@ Right
                                                                           "./ModuleA"))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PTuple
-                                                                     [ Solved
+                                                                     [ Typed
                                                                          ([] :=>
                                                                             TCon
                                                                               (TC "Something" Star)
@@ -278,7 +280,7 @@ Right
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PCon "Something" [])
-                                                                     , Solved
+                                                                     , Typed
                                                                          ([] :=>
                                                                             TCon
                                                                               (TC "Something" Star)
@@ -287,14 +289,14 @@ Right
                                                                             (Loc 0 0 0) (Loc 0 0 0))
                                                                          (PCon "Something" [])
                                                                      ]))
-                                                               (Solved
+                                                               (Typed
                                                                   ([] :=>
                                                                      TCon
                                                                        (TC "Boolean" Star)
                                                                        "prelude")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (LBool "true")))
-                                                        , Solved
+                                                        , Typed
                                                             ([] :=>
                                                                TApp
                                                                  (TApp
@@ -324,7 +326,7 @@ Right
                                                                     (TC "Boolean" Star) "prelude"))
                                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                                             (Is
-                                                               (Solved
+                                                               (Typed
                                                                   ([] :=>
                                                                      TApp
                                                                        (TApp
@@ -336,11 +338,15 @@ Right
                                                                                    (Kfun
                                                                                       Star Star)))
                                                                              "prelude")
-                                                                          (TVar (TV "g6" Star)))
-                                                                       (TVar (TV "h7" Star)))
+                                                                          (TCon
+                                                                             (TC "Something" Star)
+                                                                             "./ModuleA"))
+                                                                       (TCon
+                                                                          (TC "Something" Star)
+                                                                          "./ModuleA"))
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   PAny)
-                                                               (Solved
+                                                               (Typed
                                                                   ([] :=>
                                                                      TCon
                                                                        (TC "Boolean" Star)
@@ -381,7 +387,7 @@ Right
                       "./ModuleA")
                ]
            , aexps =
-               [ Solved
+               [ Typed
                    ([] :=>
                       TApp
                         (TApp
@@ -390,7 +396,7 @@ Right
                         (TCon (TC "Something" Star) "./ModuleA"))
                    (Area (Loc 26 2 1) (Loc 79 3 21))
                    (TypedExp
-                      (Solved
+                      (Typed
                          ([] :=>
                             TApp
                               (TApp
@@ -399,7 +405,7 @@ Right
                               (TCon (TC "Something" Star) "./ModuleA"))
                          (Area (Loc 59 3 1) (Loc 79 3 21))
                          (Export
-                            (Solved
+                            (Typed
                                ([] :=>
                                   TApp
                                     (TApp
@@ -409,7 +415,7 @@ Right
                                (Area (Loc 66 3 8) (Loc 79 3 21))
                                (Assignment
                                   "fn"
-                                  (Solved
+                                  (Typed
                                      ([] :=>
                                         TApp
                                           (TApp
@@ -419,14 +425,14 @@ Right
                                           (TCon (TC "Something" Star) "./ModuleA"))
                                      (Area (Loc 71 3 13) (Loc 79 3 21))
                                      (Abs
-                                        (Solved
+                                        (Typed
                                            ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                            (Area (Loc 72 3 14) (Loc 73 3 15))
                                            "x")
-                                        [ Solved
+                                        [ Typed
                                             ([] :=> TCon (TC "Something" Star) "./ModuleA")
                                             (Area (Loc 78 3 20) (Loc 79 3 21))
-                                            (Var "x")
+                                            (Var "x" False)
                                         ]))))))
                       (Untyped
                          (Area (Loc 32 2 7) (Loc 58 2 33))

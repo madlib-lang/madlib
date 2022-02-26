@@ -6,68 +6,68 @@ Inspect['Either'] = {};
 Inspect['Either']['inspect'] = () => (Inspect_g6) => (Inspect_d3) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
-    return `Right(${Inspect_d3.inspect()(a0)})`;
+    return `Right(` + Inspect_d3.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Left" && true) {
     let a0 = __x__.__args[0];
-    return `Left(${Inspect_g6.inspect()(a0)})`;
+    return `Left(` + Inspect_g6.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Show['Boolean'] = {};
-Show['Boolean']['show'] = () => (b => (b ? 'True' : 'False'));
+Show['Boolean']['show'] = () => (b => (b ? `True` : `False`));
 Show['Integer'] = {};
 Show['Integer']['show'] = () => (n =>  new Integer(n).toString() );
 Show['Tuple_2'] = {};
 Show['Tuple_2']['show'] = () => (Show_i60) => (Show_h59) => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return '#[' + Show_h59.show()(a) + ', ' + Show_i60.show()(b) + ']';
+    return `#[` + Show_h59.show()(a) + `, ` + Show_i60.show()(b) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__))
+})(__x__));
 Show['Tuple_3'] = {};
 Show['Tuple_3']['show'] = () => (Show_c80) => (Show_b79) => (Show_a78) => (__x__ => ((__x__) => {
   if (__x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return '#[' + Show_a78.show()(a) + ', ' + Show_b79.show()(b) + ', ' + Show_c80.show()(c) + ']';
+    return `#[` + Show_a78.show()(a) + `, ` + Show_b79.show()(b) + `, ` + Show_c80.show()(c) + `]`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__))
+})(__x__));
 Show['Either'] = {};
 Show['Either']['show'] = () => (Show_b105) => (Show_e108) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
-    return 'Right ' + Show_b105.show()(a);
+    return `Right ` + Show_b105.show()(a);
   }
   else if (__x__.__constructor === "Left" && true) {
     let e = __x__.__args[0];
-    return 'Left ' + Show_e108.show()(e);
+    return `Left ` + Show_e108.show()(e);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__))
+})(__x__));
 Show.Tuple_2.show()(Show.Boolean)(Show.Integer)(([1, false]));
 Show.Either.show()(Show.Integer)(Show.Integer)(Right(3));
-let fnWithConstraint = (Show_l167) => Show_l167.show();
+let fnWithConstraint = (Show_n169) => Show_n169.show();
 Show.Tuple_2.show()(Show.Integer)(Show.Integer)(([1, 1]));
 Show.Tuple_3.show()(Show.Boolean)(Show.Integer)(Show.Boolean)(([false, 42, true]));
 export default {};

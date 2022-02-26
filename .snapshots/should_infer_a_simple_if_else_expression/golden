@@ -2,19 +2,19 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "String" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 40 6 2))
             (If
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Boolean" Star) "prelude")
                   (Area (Loc 4 1 5) (Loc 8 1 9))
                   (LBool "true"))
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "String" Star) "prelude")
                   (Area (Loc 14 2 3) (Loc 18 2 7))
                   (LStr "\"OK\""))
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "String" Star) "prelude")
                   (Area (Loc 30 5 3) (Loc 38 5 11))
                   (LStr "\"NOT OK\"")))

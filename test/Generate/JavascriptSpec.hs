@@ -17,11 +17,13 @@ import           Control.Monad.Except           ( runExcept )
 import           Control.Monad.State
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
-import qualified AST.Optimized                 as Opt
+import qualified AST.Core                      as Core
 import           Infer.Exp
 import           Infer.Env                     as Infer
 import           Infer.Infer
-import           Optimize.Optimize
+import           Optimize.ToCore
+import           Optimize.StripNonJSInterfaces
+import qualified Optimize.TCE                  as TCE
 import           Error.Error
 import           Parse.Madlib.AST              as Parse
 import           Generate.Javascript
@@ -57,10 +59,14 @@ tester optimized code =
       Right canAST           = Can.findAST table' "path"
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile
-          Generate.Javascript.initialEnv
-          (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
-          (evalState (optimize optimized x) initialOptimizationState :: Opt.AST)
+        Right x ->
+          let coreAST = evalState (toCore optimized x) initialOptimizationState
+              strippedAST = stripAST coreAST
+              withTCE = TCE.resolve strippedAST
+          in  compile
+                Generate.Javascript.initialEnv
+                (CompilationConfig "/" "/module.mad" "/module.mad" "./build" False optimized TNode "./__internals__.mjs")
+                withTCE
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
@@ -73,10 +79,14 @@ coverageTester code =
       Right canAST           = Can.findAST table' "path"
       inferred               = runEnv canAST >>= (`runInfer` canAST)
   in  case inferred of
-        Right x -> compile
-          Generate.Javascript.initialEnv
-          (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
-          (evalState (optimize False x) initialOptimizationState :: Opt.AST)
+        Right x ->
+          let coreAST = evalState (toCore False x) initialOptimizationState
+              strippedAST = stripAST coreAST
+              withTCE = TCE.resolve strippedAST
+          in  compile
+                Generate.Javascript.initialEnv
+                (CompilationConfig "/" "/module.mad" "/module.mad" "./build" True False TNode "./__internals__.mjs")
+                withTCE
         Left e -> ppShow e
  where
   runEnv x = fst <$> runExcept (runStateT (buildInitialEnv Infer.initialEnv x) InferState { count = 0, errors = [] })
@@ -94,7 +104,11 @@ tableTester rootPath table ast@Src.AST { Src.apath = Just path } =
           concat
             $   compile Generate.Javascript.initialEnv
                         (CompilationConfig rootPath path path "./build" False False TNode "./__internals__.mjs")
-            .   (\a -> (evalState (optimize False a) initialOptimizationState :: Opt.AST))
+            .   (\a ->
+                    let coreAST = evalState (toCore False a) initialOptimizationState
+                        strippedAST = stripAST coreAST
+                    in  TCE.resolve strippedAST
+                )
             <$> M.elems x
         Left e -> ppShow e
 

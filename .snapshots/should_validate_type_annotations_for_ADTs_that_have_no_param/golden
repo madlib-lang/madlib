@@ -2,19 +2,19 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "X" Star) "path")
             (Area (Loc 11 2 1) (Loc 22 2 12))
             (Assignment
                "x"
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "X" Star) "path")
                   (Area (Loc 16 2 6) (Loc 22 2 12))
                   (TypedExp
-                     (Solved
+                     (Typed
                         ([] :=> TCon (TC "X" Star) "path")
                         (Area (Loc 16 2 6) (Loc 17 2 7))
-                        (Var "X"))
+                        (Var "X" True))
                      (Untyped (Area (Loc 21 2 11) (Loc 22 2 12)) (TRSingle "X"))
                      (Forall [] ([] :=> TCon (TC "X" Star) "path")))))
         ]
@@ -43,7 +43,7 @@ Right
                (IsIn "Inspect" [ TCon (TC "X" Star) "path" ] Nothing)
                (fromList
                   [ ( "inspect"
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -53,7 +53,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "inspect"
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -62,19 +62,19 @@ Right
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
-                                   (Solved
+                                   (Typed
                                       ([] :=> TCon (TC "X" Star) "path")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
-                                   [ Solved
+                                   [ Typed
                                        ([] :=> TCon (TC "String" Star) "prelude")
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Where
-                                          (Solved
+                                          (Typed
                                              ([] :=> TCon (TC "X" Star) "path")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
-                                             (Var "__$a__"))
-                                          [ Solved
+                                             (Var "__$a__" False))
+                                          [ Typed
                                               ([] :=>
                                                  TApp
                                                    (TApp
@@ -85,15 +85,15 @@ Right
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "X" Star) "path")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (PCon "X" []))
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (LStr "\"X\"")))
-                                          , Solved
+                                          , Typed
                                               ([] :=>
                                                  TApp
                                                    (TApp
@@ -104,11 +104,11 @@ Right
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Is
-                                                 (Solved
-                                                    ([] :=> TVar (TV "c2" Star))
+                                                 (Typed
+                                                    ([] :=> TCon (TC "X" Star) "path")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     PAny)
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=> TCon (TC "String" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (LStr "\"Unknown\"")))
@@ -133,7 +133,7 @@ Right
                (IsIn "Eq" [ TCon (TC "X" Star) "path" ] Nothing)
                (fromList
                   [ ( "=="
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -147,7 +147,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -160,11 +160,11 @@ Right
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
-                                   (Solved
+                                   (Typed
                                       ([] :=> TCon (TC "X" Star) "path")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
-                                   [ Solved
+                                   [ Typed
                                        ([] :=>
                                           TApp
                                             (TApp
@@ -175,15 +175,15 @@ Right
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
-                                          (Solved
+                                          (Typed
                                              ([] :=> TCon (TC "X" Star) "path")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
-                                          [ Solved
+                                          [ Typed
                                               ([] :=> TCon (TC "Boolean" Star) "prelude")
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Where
-                                                 (Solved
+                                                 (Typed
                                                     ([] :=>
                                                        TApp
                                                          (TApp
@@ -196,16 +196,16 @@ Right
                                                          (TCon (TC "X" Star) "path"))
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (TupleConstructor
-                                                       [ Solved
+                                                       [ Typed
                                                            ([] :=> TCon (TC "X" Star) "path")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (Var "__$a__")
-                                                       , Solved
+                                                           (Var "__$a__" False)
+                                                       , Typed
                                                            ([] :=> TCon (TC "X" Star) "path")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                           (Var "__$b__")
+                                                           (Var "__$b__" False)
                                                        ]))
-                                                 [ Solved
+                                                 [ Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -227,7 +227,7 @@ Right
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -241,21 +241,21 @@ Right
                                                                 (TCon (TC "X" Star) "path"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PTuple
-                                                              [ Solved
+                                                              [ Typed
                                                                   ([] :=> TCon (TC "X" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "X" [])
-                                                              , Solved
+                                                              , Typed
                                                                   ([] :=> TCon (TC "X" Star) "path")
                                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                   (PCon "X" [])
                                                               ]))
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "Boolean" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (LBool "true")))
-                                                 , Solved
+                                                 , Typed
                                                      ([] :=>
                                                         TApp
                                                           (TApp
@@ -277,7 +277,7 @@ Right
                                                           (TCon (TC "Boolean" Star) "prelude"))
                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
                                                      (Is
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TApp
                                                                 (TApp
@@ -287,11 +287,11 @@ Right
                                                                          (Kfun
                                                                             Star (Kfun Star Star)))
                                                                       "prelude")
-                                                                   (TVar (TV "h7" Star)))
-                                                                (TVar (TV "i8" Star)))
+                                                                   (TCon (TC "X" Star) "path"))
+                                                                (TCon (TC "X" Star) "path"))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            PAny)
-                                                        (Solved
+                                                        (Typed
                                                            ([] :=>
                                                               TCon (TC "Boolean" Star) "prelude")
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))

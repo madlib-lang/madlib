@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing ] :=>
                TApp
                  (TApp
@@ -11,7 +11,7 @@ Right
                  (TVar (TV "t19" Star)))
             (Area (Loc 0 1 1) (Loc 25 1 26))
             (Export
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                    , IsIn
                        "Number"
@@ -32,7 +32,7 @@ Right
                   (Area (Loc 0 1 1) (Loc 25 1 26))
                   (Assignment
                      "inc"
-                     (Solved
+                     (Typed
                         ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing ] :=>
                            TApp
                              (TApp
@@ -42,7 +42,7 @@ Right
                         (Area (Loc 0 1 1) (Loc 25 1 26))
                         (Placeholder
                            ( ClassRef "Number" [] False True , [ TVar (TV "t19" Star) ] )
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Number"
                                    [ TVar (TV "t19" Star) ]
@@ -56,7 +56,7 @@ Right
                                    (TVar (TV "t19" Star)))
                               (Area (Loc 13 1 14) (Loc 25 1 26))
                               (Abs
-                                 (Solved
+                                 (Typed
                                     ([ IsIn
                                          "Number"
                                          [ TVar (TV "t19" Star) ]
@@ -66,7 +66,7 @@ Right
                                        TVar (TV "t19" Star))
                                     (Area (Loc 14 1 15) (Loc 15 1 16))
                                     "a")
-                                 [ Solved
+                                 [ Typed
                                      ([ IsIn
                                           "Number"
                                           [ TVar (TV "t19" Star) ]
@@ -76,7 +76,7 @@ Right
                                         TVar (TV "t19" Star))
                                      (Area (Loc 20 1 21) (Loc 25 1 26))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "t19" Star) ]
@@ -91,7 +91,7 @@ Right
                                                 (TVar (TV "t19" Star)))
                                            (Area (Loc 20 1 21) (Loc 25 1 26))
                                            (App
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn "Number" [ TVar (TV "t19" Star) ] Nothing
                                                   ] :=>
                                                     TApp
@@ -114,7 +114,7 @@ Right
                                                     ( MethodRef "Number" "+" True
                                                     , [ TVar (TV "t19" Star) ]
                                                     )
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "t19" Star) ]
@@ -139,8 +139,8 @@ Right
                                                                   (TVar (TV "t19" Star)))
                                                                (TVar (TV "t19" Star))))
                                                        (Area (Loc 22 1 23) (Loc 23 1 24))
-                                                       (Var "+"))))
-                                              (Solved
+                                                       (Var "+" False))))
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TVar (TV "t19" Star) ]
@@ -148,9 +148,9 @@ Right
                                                   ] :=>
                                                     TVar (TV "t19" Star))
                                                  (Area (Loc 20 1 21) (Loc 21 1 22))
-                                                 (Var "a"))
+                                                 (Var "a" False))
                                               False))
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "t19" Star) ]
@@ -162,11 +162,11 @@ Right
                                            (LNum "1"))
                                         True)
                                  ])))))))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Integer" Star) "prelude")
             (Area (Loc 26 2 1) (Loc 32 2 7))
             (App
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TApp
@@ -179,7 +179,7 @@ Right
                      ( ClassRef "Number" [] True False
                      , [ TCon (TC "Integer" Star) "prelude" ]
                      )
-                     (Solved
+                     (Typed
                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
                            TApp
@@ -188,8 +188,8 @@ Right
                                 (TCon (TC "Integer" Star) "prelude"))
                              (TCon (TC "Integer" Star) "prelude"))
                         (Area (Loc 26 2 1) (Loc 29 2 4))
-                        (Var "inc"))))
-               (Solved
+                        (Var "inc" False))))
+               (Typed
                   ([ IsIn
                        "Number"
                        [ TCon (TC "Integer" Star) "prelude" ]

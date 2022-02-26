@@ -7,18 +7,18 @@ Inspect['ByteWord'] = {};
 Inspect['ByteWord']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Int8Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int8Bit(${Inspect.Integer.inspect()(a0)})`;
+    return `Int8Bit(` + Inspect.Integer.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Int16Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int16Bit(${Inspect.Integer.inspect()(a0)})`;
+    return `Int16Bit(` + Inspect.Integer.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Int32Bit" && true) {
     let a0 = __x__.__args[0];
-    return `Int32Bit(${Inspect.Integer.inspect()(a0)})`;
+    return `Int32Bit(` + Inspect.Integer.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -30,10 +30,10 @@ Inspect['Bytes'] = {};
 Inspect['Bytes']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Bytes" && true) {
     let a0 = __x__.__args[0];
-    return `Bytes(${Inspect.List.inspect()(Inspect.ByteWord)(a0)})`;
+    return `Bytes(` + Inspect.List.inspect()(Inspect.ByteWord)(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -52,14 +52,14 @@ Inspect['Data'] = {};
 Inspect['Data']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "TextData" && true) {
     let a0 = __x__.__args[0];
-    return `TextData(${Inspect.String.inspect()(a0)})`;
+    return `TextData(` + Inspect.String.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "BinaryData" && true) {
     let a0 = __x__.__args[0];
-    return `BinaryData(${Inspect.Bytes.inspect()(a0)})`;
+    return `BinaryData(` + Inspect.Bytes.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -80,14 +80,14 @@ Inspect['Body'] = {};
 Inspect['Body']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "TextBody" && true) {
     let a0 = __x__.__args[0];
-    return `TextBody(${Inspect.String.inspect()(a0)})`;
+    return `TextBody(` + Inspect.String.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "BinaryBody" && true) {
     let a0 = __x__.__args[0];
-    return `BinaryBody(${Inspect.Bytes.inspect()(a0)})`;
+    return `BinaryBody(` + Inspect.Bytes.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -96,15 +96,15 @@ Inspect['Body']['inspect'] = () => (__$a__ => ((__x__) => {
   }
 })(__$a__));
 Inspect['Record_bodya'] = {};
-Inspect['Record_bodya']['inspect'] = () => (Inspect_f265) => (__$a__ => `{ ${"body: " + Inspect_f265.inspect()(__$a__.body)} }`)
+Inspect['Record_bodya']['inspect'] = () => (Inspect_f265) => (__$a__ => `{ ` + `body: ` + Inspect_f265.inspect()(__$a__.body) + ` }`);
 Inspect['Response'] = {};
 Inspect['Response']['inspect'] = () => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Response" && true) {
     let a0 = __x__.__args[0];
-    return `Response(${Inspect.Record_bodya.inspect()(Inspect.Body)(a0)})`;
+    return `Response(` + Inspect.Record_bodya.inspect()(Inspect.Body)(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -125,7 +125,7 @@ import FS from "./FileSystem.mjs";
 import Http from "./Http.mjs";
 import IO from "./IO.mjs";
 
-W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(W.map((response => __x__ => ((__x__) => {
+W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile(`./f.zip`))(W.map(FS.BinaryData)(W.map((response => __x__ => ((__x__) => {
   if (__x__.__constructor === "Response" && __x__.__args[0].body.__constructor === "BinaryBody" && true) {
     let { body: { __args: [d] } } = __x__.__args[0];
     return d;
@@ -135,7 +135,7 @@ W.fulfill(IO.log)(IO.log)(W.chain(FS.writeFile("./f.zip"))(W.map(FS.BinaryData)(
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__x__)))(Http.get("https://github.com/open-sorcerers/madlib/archive/master.zip")))));
+})(__x__)))(Http.get(`https://github.com/open-sorcerers/madlib/archive/master.zip`)))));
 export default {};
 // file: /root/project/src/Wish.mad
 export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
@@ -143,17 +143,17 @@ Inspect['Wish'] = {};
 Inspect['Wish']['inspect'] = () => (Inspect_f5) => (Inspect_h7) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
-    return `Wish(${Inspect.a_arr_b.inspect()(a0)})`;
+    return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 export let of = (a => Wish((bad => good => good(a))));
 export let map = (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
