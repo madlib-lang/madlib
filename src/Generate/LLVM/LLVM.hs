@@ -767,15 +767,13 @@ generateExp env symbolTable exp = case exp of
     return (symbolTable, finalValue', Nothing)
 
   Core.Typed (_ IT.:=> t) _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
-    let constructedType = retrieveConstructorStructType env symbolTable t
+    let constructedType@(Type.PointerType structType _) = retrieveConstructorStructType env symbolTable t
     case getConstructorRecursionInfo metadata of
       Just (ConstructorRecursionInfo _ position) -> do
         -- holePtr' :: i8***
         let Just holePtr'      = holePtr <$> recursionData env
         -- holePtr'' :: i8**
         holePtr'' <- load holePtr' 0
-
-
 
         args' <- mapM (\(index, arg) ->
                           if index == position then do
@@ -786,15 +784,20 @@ generateExp env symbolTable exp = case exp of
                             (_, arg', _) <- generateExp env symbolTable arg
                             return arg'
                       ) (List.zip [0..] args)
+        args'' <- mapM box args'
 
-        (_, constructorFn, _) <- generateExp env symbolTable fn
-        constructorFn'        <- safeBitcast constructorFn boxType
-        args''                <- mapM box args'
-        let args''' = (, []) <$> args''
+        let index = case Map.lookup constructorName symbolTable of
+                    Just (Symbol (ConstructorSymbol id _) _) ->
+                      id
 
-        -- constructed :: i8**
-        constructed   <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
-        constructed'  <- safeBitcast constructed constructedType
+                    _ ->
+                      undefined
+
+        constructed     <- call gcMalloc [(Operand.ConstantOperand $ sizeof structType, [])]
+        constructed'    <- safeBitcast constructed constructedType
+
+        -- store the constructor data in the struct
+        Monad.foldM_ (storeItem constructed') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
 
         store holePtr'' 0 constructed'
 
