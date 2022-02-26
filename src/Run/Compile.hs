@@ -66,6 +66,7 @@ import           Run.Target
 import           Optimize.StripNonJSInterfaces
 import           Optimize.ToCore
 import qualified Optimize.Recursion            as Recursion
+import qualified Optimize.EtaExpansion as EtaExpansion
 
 
 
@@ -178,17 +179,17 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                   if target == TLLVM then do
                     let coreTable        = tableToCore False table
                         renamedTable     = Rename.renameTable coreTable
-                        closureConverted = ClosureConvert.convertTable renamedTable
+                        expanded         = EtaExpansion.expandTable renamedTable
+                        closureConverted = ClosureConvert.convertTable expanded
                         withTCE          = TCE.resolve <$> closureConverted
 
-                    putStrLn (ppShow withTCE)
+                    -- putStrLn (ppShow expanded)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table
                         strippedTable = stripTable coreTable
-                        withTCE       = TCE.resolve <$> strippedTable
-                    -- putStrLn (ppShow coreTable)
-                    -- putStrLn (ppShow withTCE)
+                        expanded      = EtaExpansion.expandTable strippedTable
+                        withTCE       = TCE.resolve <$> expanded
                     generate opts { compileInput = canonicalEntrypoint } coverage rootPath withTCE sourcesToCompile
 
                   when bundle $ do

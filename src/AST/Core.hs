@@ -143,7 +143,8 @@ data Exp_
   | Assignment Name Exp
   | Export Exp
   | NameExport Name
-  | Var Name
+  | Var Name Bool
+  -- ^ Bool isConstructor
   | ListConstructor [ListItem]
   | TupleConstructor [Exp]
   | Record [Field]

@@ -169,9 +169,14 @@ extendDependencies globalAccesses dependencies exp = case getExpName exp of
 isMethod :: Env -> Exp -> Bool
 isMethod env (Untyped _ _)  = False
 isMethod env (Typed _ _ e) = case e of
-  Var n          -> Just True == (M.lookup n (envMethods env) >> return True)
-  Assignment n _ -> Just True == (M.lookup n (envMethods env) >> return True)
-  _              -> False
+  Var n _ ->
+    Just True == (M.lookup n (envMethods env) >> return True)
+
+  Assignment n _ ->
+    Just True == (M.lookup n (envMethods env) >> return True)
+
+  _ ->
+    False
 
 
 
@@ -203,10 +208,10 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
         exps
       return $ foldr S.union S.empty globalNamesAccessed
 
-    (Typed tipe area (Var ('.' : _))) ->
+    (Typed tipe area (Var ('.' : _) _)) ->
       return S.empty
 
-    (Typed tipe area (Var name))      -> do
+    (Typed tipe area (Var name _))      -> do
       case nameToFind of
         Just n -> when
           (n == name && notElem n foundNames && not (isMethod env solvedExp))

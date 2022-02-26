@@ -36,7 +36,7 @@ import Distribution.Types.Lens (_Impl)
 
 data RecursionData
   = PlainRecursionData { prdParams :: [String] }
-  | RightListRecursionData { rlrdParam :: [String] }
+  | RightListRecursionData { rlrdParams :: [String] }
   deriving(Eq, Show)
 
 data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData } deriving(Eq, Show)
@@ -107,40 +107,40 @@ instance Compilable Exp where
         Literal LUnit ->
           hpWrapLine coverage astPath l "({ __constructor: \"Unit\", __args: [] })"
 
-        Call (Typed _ _ _ (Var "++")) [left, right] ->
+        Call (Typed _ _ _ (Var "++" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " + "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "unary-minus")) [arg] ->
+        Call (Typed _ _ _ (Var "unary-minus" _)) [arg] ->
           "-" <> hpWrapLine coverage astPath (getStartLine arg) (compile env config arg)
 
-        Call (Typed _ _ _ (Var "+")) [left, right] ->
+        Call (Typed _ _ _ (Var "+" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " + "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "-")) [left, right] ->
+        Call (Typed _ _ _ (Var "-" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " - "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "*")) [left, right] ->
+        Call (Typed _ _ _ (Var "*" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " * "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "/")) [left, right] ->
+        Call (Typed _ _ _ (Var "/" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " / "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "%")) [left, right] ->
+        Call (Typed _ _ _ (Var "%" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " % "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "==")) [left, right] ->
+        Call (Typed _ _ _ (Var "==" _)) [left, right] ->
           eqFnName optimized
           <> "("
           <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
@@ -148,7 +148,7 @@ instance Compilable Exp where
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
           <> ")"
 
-        Call (Typed _ _ _ (Var "!=")) [left, right] ->
+        Call (Typed _ _ _ (Var "!=" _)) [left, right] ->
           "!"
           <> eqFnName optimized
           <> "("
@@ -157,84 +157,88 @@ instance Compilable Exp where
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
           <> ")"
 
-        Call (Typed _ _ _ (Var "!=")) [left, right] ->
-          hpWrapLine coverage astPath (getStartLine left) (compile env config left)
-          <> " != "
-          <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
-
-        Call (Typed _ _ _ (Var "&&")) [left, right] ->
+        Call (Typed _ _ _ (Var "&&" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " && "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "||")) [left, right] ->
+        Call (Typed _ _ _ (Var "||" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " || "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "|")) [left, right] ->
+        Call (Typed _ _ _ (Var "|" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " | "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "&")) [left, right] ->
+        Call (Typed _ _ _ (Var "&" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " & "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "^")) [left, right] ->
+        Call (Typed _ _ _ (Var "^" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " ^ "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "~")) [left, right] ->
+        Call (Typed _ _ _ (Var "~" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " ~ "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "<<")) [left, right] ->
+        Call (Typed _ _ _ (Var "<<" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " << "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var ">>")) [left, right] ->
+        Call (Typed _ _ _ (Var ">>" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >> "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var ">>>")) [left, right] ->
+        Call (Typed _ _ _ (Var ">>>" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >>> "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var ">")) [left, right] ->
+        Call (Typed _ _ _ (Var ">" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " > "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "<")) [left, right] ->
+        Call (Typed _ _ _ (Var "<" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " < "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var ">=")) [left, right] ->
+        Call (Typed _ _ _ (Var ">=" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " >= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "<=")) [left, right] ->
+        Call (Typed _ _ _ (Var "<=" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine left) (compile env config left)
           <> " <= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "|>")) [left, right] ->
+        Call (Typed _ _ _ (Var "|>" _)) [left, right] ->
           hpWrapLine coverage astPath (getStartLine right) (compile env config right)
             <> "("
             <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
             <> ")"
 
         Call fn args | isPlainRecursiveCall metadata ->
-          let Just params  = prdParams <$> recursionData env
+          let params  = case recursionData env of
+                Just PlainRecursionData { prdParams } ->
+                  prdParams
+
+                Just RightListRecursionData { rlrdParams } ->
+                  rlrdParams
+
+                _ ->
+                  []
+
               compiledArgs = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
           in  "(" <> intercalate ", " updateParams <> ", $continue = true)"
@@ -284,7 +288,7 @@ instance Compilable Exp where
               <> "    let $end = $start;\n"
               <> "    while($continue) {\n"
               <> "        $continue = false;\n"
-              <> "        "<> compile env { recursionData = Just RightListRecursionData { rlrdParam = params } } config exp
+              <> "        "<> compile env { recursionData = Just RightListRecursionData { rlrdParams = params } } config exp
               <> "\n    }\n"
               <> "    return $result;\n"
               <> "}"
@@ -316,10 +320,11 @@ instance Compilable Exp where
 
             _ -> "    " <> compile e config exp <> ";\n" <> compileBody' e es
 
-        Var ('.' : name) -> "(__R__ => __R__." <> name <> ")"
+        Var ('.' : name) _ ->
+          "(__R__ => __R__." <> name <> ")"
 
 
-        Var name ->
+        Var name _ ->
           let safeName = generateSafeName name
           in  if safeName == "!" || not coverage then safeName else hpWrapLine coverage astPath l safeName
 
@@ -361,7 +366,7 @@ instance Compilable Exp where
             _ -> ppShow t
 
 
-        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var name)) ->
+        Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var name _)) ->
           let compiled = generateRecordName optimized cls ts var <> "." <> method <> "()"
           in  if not coverage then compiled else hpWrapLine coverage astPath l compiled
 
@@ -419,7 +424,7 @@ instance Compilable Exp where
               " " <> name <> ": " <> hpWrapLine coverage astPath (getStartLine exp) (compile env config exp)
             FieldSpread exp -> " ..." <> hpWrapLine coverage astPath (getStartLine exp) (compile env config exp)
 
-        Access record (Typed _ _ _ (Var name)) ->
+        Access record (Typed _ _ _ (Var name _)) ->
           hpWrapLine coverage astPath (getStartLine record) $ compile env config record <> name
 
         JSExp           content -> content
@@ -429,10 +434,10 @@ instance Compilable Exp where
             Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
           ] | Core.isRightListRecursiveCall metadata ->
           let compiledLi    = compile env config li
-              Just params   = rlrdParam <$> recursionData env
+              Just params   = rlrdParams <$> recursionData env
               compiledArgs  = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
-          in  "(" <> intercalate ", " updateParams <> ", $end.push("<> compiledLi <>"), $continue = true)"
+          in  "($end.push("<> compiledLi <>"), " <> intercalate ", " updateParams <> ", $continue = true)"
 
         ListConstructor elems   -> "([" <> intercalate ", " (compileListItem <$> elems) <> "])"
          where

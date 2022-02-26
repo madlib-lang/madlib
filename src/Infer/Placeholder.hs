@@ -56,7 +56,7 @@ insertVarPlaceholders env exp@(Slv.Typed t a e) (p : ps) = do
   ts <- getCanonicalPlaceholderTypes env p
   if isMethod env exp (p:ps)
     then case e of
-      Slv.Var n -> do
+      Slv.Var n _ -> do
         var <- shouldInsert env $ IsIn (predClass p) (predTypes p) Nothing
         return $ Slv.Typed t a $ Slv.Placeholder (Slv.MethodRef (predClass p) n var, ts) exp
       _ -> return exp
@@ -249,7 +249,7 @@ updateClassPlaceholder env cleanUpEnv maybeWrapperAssignmentName push s ph = cas
 
     let maybeName =
           case wrappedExp of
-            Slv.Typed _ _ (Slv.Var n) ->
+            Slv.Typed _ _ (Slv.Var n _) ->
               Just n
 
             _ ->
@@ -458,7 +458,7 @@ getPredClassNames ps =
 isMethod :: Env -> Slv.Exp -> [Pred] -> Bool
 isMethod env (Slv.Untyped _ _) _  = False
 isMethod env (Slv.Typed _ _ e) ps = case e of
-  Slv.Var n -> --Just True == (M.lookup n (envMethods env) >> return True)
+  Slv.Var n _ ->
     case M.lookup n (envMethods env) of
       Nothing ->
         False
@@ -466,5 +466,5 @@ isMethod env (Slv.Typed _ _ e) ps = case e of
       Just (Forall _ (ps' :=> _)) ->
         getPredClassNames ps' == getPredClassNames ps
 
-  _         ->
+  _ ->
     False

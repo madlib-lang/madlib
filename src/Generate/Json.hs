@@ -245,7 +245,8 @@ compileExp depth (Slv.Typed qt@(ps :=> t) area exp) =
 
 compileExpFields :: Int -> Slv.Exp_ -> String
 compileExpFields depth exp = case exp of
-  Slv.Var n -> indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
+  Slv.Var n _ ->
+    indent depth <> "\"nodeType\": \"Variable\",\n" <> indent depth <> "\"name\": \"" <> n <> "\"\n"
 
   Slv.LNum val ->
     let compiledVal =

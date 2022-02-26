@@ -118,10 +118,10 @@ runLLVMTests entrypoint coverage = do
             putStrLn fullError >> Exit.exitFailure
           else do
             let postProcessedTable = tableToCore False solvedTable
-            let withTCE            = TCE.resolve <$> postProcessedTable
-            let renamedTable       = Rename.renameTable withTCE
+            let renamedTable       = Rename.renameTable postProcessedTable
             let closureConverted   = ClosureConvert.convertTable renamedTable
-            LLVM.generateTable outputPath rootPath closureConverted mainTestPath
+            let withTCE            = TCE.resolve <$> closureConverted
+            LLVM.generateTable outputPath rootPath withTCE mainTestPath
 
             testOutput <- case DistributionSystem.buildOS of
               DistributionSystem.Windows -> do
