@@ -18,7 +18,7 @@ toSolved (Can.Canonical area exp) = case exp of
   Can.LBool v          -> Slv.Typed ([] :=> tBool) area (Slv.LBool v)
   Can.LUnit            -> Slv.Typed ([] :=> tUnit) area Slv.LUnit
 
-  Can.Var v            -> Slv.Typed ([] :=> tSubst) area (Slv.Var v)
+  Can.Var v            -> Slv.Typed ([] :=> tSubst) area (Slv.Var v False)
 
   Can.App f arg closed -> Slv.Typed ([] :=> tSubst) area (Slv.App (toSolved f) (toSolved arg) closed)
 

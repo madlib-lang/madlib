@@ -29,12 +29,18 @@ data Env
   = Env
     { envVars         :: Vars
     , envInterfaces   :: Interfaces
+    , envConstructors :: Set.Set String
     , envMethods      :: Methods
     , envCurrentPath  :: FilePath
     , envBacktrace    :: Backtrace
     , envNamespacesInScope :: Set.Set String
     }
     deriving(Eq, Show)
+
+
+isConstructor :: Env -> String -> Bool
+isConstructor env name =
+  Set.member name (envConstructors env)
 
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env x = case M.lookup x (envVars env <> envMethods env) of
@@ -78,11 +84,12 @@ setNamespacesInScope env ns = env { envNamespacesInScope = ns }
 
 
 mergeEnv :: Env -> Env -> Env
-mergeEnv initial env = Env { envVars        = envVars initial <> envVars env
-                           , envMethods     = envMethods initial <> envMethods env
-                           , envInterfaces  = envInterfaces initial <> envInterfaces env
-                           , envBacktrace   = mempty
-                           , envCurrentPath = envCurrentPath env
+mergeEnv initial env = Env { envVars              = envVars initial <> envVars env
+                           , envMethods           = envMethods initial <> envMethods env
+                           , envInterfaces        = envInterfaces initial <> envInterfaces env
+                           , envConstructors      = envConstructors initial <> envConstructors env
+                           , envBacktrace         = mempty
+                           , envCurrentPath       = envCurrentPath env
                            , envNamespacesInScope = envNamespacesInScope initial <> envNamespacesInScope env
                            }
 
@@ -350,6 +357,7 @@ initialEnv = Env
                 ]
         )
       ]
+  , envConstructors = Set.empty
   , envMethods = M.fromList
       [ ("+"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
       , ("-"            , Forall [Star] $ [IsIn "Number" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))

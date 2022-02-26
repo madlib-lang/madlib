@@ -98,22 +98,22 @@ renameExp env what = case what of
         (renamedExp, env'') = renameExp env' exp
     in  (Typed t area metadata (Assignment name renamedExp), env'')
 
-  Typed t area metadata (Var name) -> case break (== '.') name of
+  Typed t area metadata (Var name isConstructor) -> case break (== '.') name of
     -- A normal name
     (n, []) ->
       let renamed = Maybe.fromMaybe name $ Map.lookup name (namesInScope env)
-      in  (Typed t area metadata (Var renamed), env)
+      in  (Typed t area metadata (Var renamed isConstructor), env)
 
     -- A field access name eg. Var ".field"
     ([], fieldAccessor) ->
-      (Typed t area metadata (Var fieldAccessor), env)
+      (Typed t area metadata (Var fieldAccessor False), env)
 
     -- A namespace access eg. Var "List.filter"
     (namespace, '.' : n) ->
       let moduleHash = Maybe.fromMaybe namespace $ Map.lookup namespace (defaultImportHashes env)
           renamed    = addHashToName moduleHash n
           env'       = addDefaultImportNameUsage namespace n env
-      in  (Typed t area metadata (Var renamed), env')
+      in  (Typed t area metadata (Var renamed False), env')
 
     _ ->
       undefined

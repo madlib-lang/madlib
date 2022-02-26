@@ -137,7 +137,7 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
     let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) `fn` TGen 0)
     (ps :=> t) <- instantiate s
-    return (M.empty, ps, t, Slv.Typed (ps :=> t) area $ Slv.Var n)
+    return (M.empty, ps, t, Slv.Typed (ps :=> t) area $ Slv.Var n False)
 
   _ -> do
     sc         <- catchError (lookupVar env n) (enhanceVarError env exp area)
@@ -145,7 +145,7 @@ inferVar env exp@(Can.Canonical area (Can.Var n)) = case n of
 
     let ps' = dedupePreds ps
 
-    let e = Slv.Typed (ps' :=> t) area $ Slv.Var n
+    let e = Slv.Typed (ps' :=> t) area $ Slv.Var n (isConstructor env n)
     e' <- insertVarPlaceholders env e ps'
 
     let ps'' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps'
@@ -487,7 +487,7 @@ inferNamespaceAccess env e@(Can.Canonical area (Can.Access (Can.Canonical _ (Can
         (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
     (ps :=> t) <- instantiate sc
 
-    let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field)
+    let e = Slv.Typed (ps :=> t) area $ Slv.Var (ns <> field) (isConstructor env (ns <> field))
     e' <- insertVarPlaceholders env e ps
 
     return (M.empty, ps, t, e')
@@ -762,8 +762,6 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
   -- some point!
   (s, ps, t, e) <- infer (apply s1 env'') exp
 
-
-
   s'            <- contextualUnify env'' exp (apply s tv) t
   let s'' = s `compose` s1 `compose` s'
       ps' = apply s'' ps
@@ -782,7 +780,7 @@ inferImplicitlyTyped isLet env exp@(Can.Canonical area _) = do
     )
 
   (ds', sDefaults) <-
-    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) then do
+    if not isLet && not (Slv.isExtern e) && not (null (ds ++ rs)) && not (Can.isNamedAbs exp) && not (isFunctionType t) then do
       (sDef, rs')   <- tryDefaults env'' (ds ++ rs)
           -- TODO: tryDefaults should handle such a case so that we only call it once.
           -- What happens is that defaulting may solve some types ( like Number a -> Integer )

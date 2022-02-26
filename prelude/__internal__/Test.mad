@@ -404,7 +404,7 @@ generateReportSuiteEndMessage = pipe(
 )
 
 
-runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish e TestReport
+runTestSuite :: String -> List (Wish.Wish String String) -> Wish.Wish {} TestReport
 runTestSuite = (suitePath, testsInSuite) => pipe(
   map(Wish.bichain(pipe(failureReport, of), pipe(successReport, of))),
   Wish.parallel,

@@ -109,14 +109,17 @@ addConstructors :: Env -> [Can.Constructor] -> Infer Env
 addConstructors env ctors = do
   foldM
     (\env'' ctor@(Can.Canonical area (Can.Constructor name _ sc _)) -> do
-      catchError
+      env''' <- catchError
         (safeExtendVars env'' (name, sc))
         (\(CompilationError e _) ->
           throwError $ CompilationError e (Context (envCurrentPath env'') area [BTConstructor ctor])
         )
+
+      return env''' { envConstructors = Set.insert name (envConstructors env''') }
     )
     env
     ctors
+
 
 
 findASTM :: Slv.Table -> FilePath -> Infer Slv.AST
@@ -161,7 +164,7 @@ solveImports
   :: M.Map FilePath (Slv.AST, Env)
   -> Can.Table
   -> [Can.Import]
-  -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods)
+  -> Infer (M.Map FilePath (Slv.AST, Env), Vars, Interfaces, Methods, S.Set String)
 solveImports previousSolved table (imp : is) = do
   let modulePath = Can.getImportAbsolutePath imp
 
@@ -183,16 +186,17 @@ solveImports previousSolved table (imp : is) = do
 
 
   let solved' = M.insert modulePath (solvedAST, solvedEnv) (previousSolved <> allSolved)
-  (nextTable, nextVars, nextInterfaces, nextMethods) <- solveImports solved' table is
+  (nextTable, nextVars, nextInterfaces, nextMethods, nextConstructorNames) <- solveImports solved' table is
 
   return
     ( M.insert modulePath (solvedAST, solvedEnv) (solved' <> nextTable)
     , solvedVars <> nextVars
     , mergeInterfaces solvedInterfaces nextInterfaces
     , M.union solvedMethods nextMethods
+    , M.keysSet constructorImports <> nextConstructorNames
     )
 
-solveImports _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv)
+solveImports _ _ [] = return (M.empty, envVars initialEnv, envInterfaces initialEnv, envMethods initialEnv, envConstructors initialEnv)
 
 mergeInterfaces :: Interfaces -> Interfaces -> Interfaces
 mergeInterfaces = M.foldrWithKey mergeInterface
@@ -302,7 +306,7 @@ solveTable table ast = do
 solveTable' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (M.Map FilePath (Slv.AST, Env))
 solveTable' solved table ast@Can.AST { Can.aimports } = do
   -- First we resolve imports to update the env
-  (inferredASTs, vars, interfaces, methods) <- solveImports solved table aimports
+  (inferredASTs, vars, interfaces, methods, constructors) <- solveImports solved table aimports
 
   let importEnv = Env { envVars        = vars
                       , envCurrentPath = fromMaybe "" (Can.apath ast)
@@ -310,6 +314,7 @@ solveTable' solved table ast@Can.AST { Can.aimports } = do
                       , envMethods     = methods
                       , envBacktrace   = mempty
                       , envNamespacesInScope = mempty
+                      , envConstructors = constructors
                       }
 
   -- Then we infer the ast
