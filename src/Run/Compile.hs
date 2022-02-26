@@ -184,7 +184,7 @@ runCompilation opts@(Compile entrypoint outputPath config verbose debug bundle o
                         closureConverted = ClosureConvert.convertTable reduced
                         withTCE          = TCE.resolve <$> closureConverted
 
-                    -- putStrLn (ppShow withTCE)
+                    -- putStrLn (ppShow closureConverted)
                     LLVM.generateTable outputPath rootPath withTCE canonicalEntrypoint
                   else do
                     let coreTable     = tableToCore optimized table

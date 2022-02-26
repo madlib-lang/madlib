@@ -401,6 +401,17 @@ getTConName t = case t of
   _ ->
     ""
 
+getTConPath :: Type -> String
+getTConPath t = case t of
+  TCon (TC _ _) path ->
+    path
+
+  TApp l r ->
+    getTConPath l
+
+  _ ->
+    ""
+
 getReturnType :: Type -> Type
 getReturnType t = case t of
   TApp (TApp (TCon (TC "(->)" _) _) _) r ->

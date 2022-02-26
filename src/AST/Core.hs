@@ -259,6 +259,15 @@ getIsExpression is = case is of
     exp
 
 
+getConstructorArity :: Constructor -> Int
+getConstructorArity constructor = case constructor of
+  Typed _ _ _ (Constructor _ params _) ->
+    length params
+
+  Untyped _ _ (Constructor _ params _) ->
+    length params
+
+
 -- Should be called on top level [Exp] nodes
 isTopLevelFunction :: Exp -> Bool
 isTopLevelFunction exp = case exp of
