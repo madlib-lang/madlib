@@ -561,7 +561,7 @@ inferWhere env (Can.Canonical area (Can.Where exp iss)) = do
 
   let s''  = s' `compose` issSubstitution
 
-  let iss = (\(Slv.Typed t a is) -> Slv.Typed (apply s'' t) a is) . T.lst <$> pss
+  let iss = (\(Slv.Typed t a (Slv.Is pat exp)) -> Slv.Typed (apply s'' t) a (Slv.Is (updatePatternTypes s'' mempty pat) exp)) . T.lst <$> pss
   let wher = Slv.Typed (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss
   return (s'', ps ++ ps', apply s'' tv, wher)
 
@@ -571,16 +571,17 @@ inferBranch env tv t (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
   s                    <- contextualUnify env exp t' t
   (s', ps', t'', e')   <- infer (apply s $ mergeVars env vars) exp
-  -- s''                  <- contextualUnify env exp tv  t''
   s''                  <- contextualUnify env exp tv (apply (s `compose` s') t'')
 
   let subst = s `compose` s' `compose` s''
+  let allPreds = ps ++ ps'
 
   return
     ( subst
-    , ps ++ ps'
-    , Slv.Typed ((ps ++ ps') :=> apply subst (t' `fn` tv)) area
-      $ Slv.Is (updatePatternTypes subst vars pat') (updateQualType e' (ps' :=> apply subst t''))
+    , allPreds
+    , Slv.Typed (allPreds :=> apply subst (t' `fn` tv)) area
+      -- $ Slv.Is pat' (updateQualType e' (ps' :=> apply subst t''))
+      $ Slv.Is (updatePatternTypes subst (apply s <$> vars) pat') (updateQualType e' (ps' :=> apply subst t''))
     )
 
 updatePatternTypes :: Substitution -> Vars -> Slv.Pattern -> Slv.Pattern
