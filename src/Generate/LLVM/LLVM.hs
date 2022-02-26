@@ -93,6 +93,14 @@ data RecursionData
       , start :: Operand.Operand
       , end :: Operand.Operand
       }
+  | ConstructorRecursionData
+      { entryBlockName :: AST.Name
+      , continueRef :: Operand.Operand
+      , boxedParams :: [Operand.Operand]
+      , start :: Operand.Operand
+      , end :: Operand.Operand
+      , holePtr :: Operand.Operand
+      }
   deriving(Eq, Show)
 
 data Env
@@ -693,6 +701,125 @@ generateExp env symbolTable exp = case exp of
     storeItem end' () (endValue', 0)
     storeItem end' () (endNext', 1)
     return (symbolTable, startOperand, Nothing)
+
+  Core.Typed qt area metadata e | Core.isConstructorRecursionEnd metadata -> do
+    -- TODO: generate exp without the metadata and append its result to the end
+    (_, endValue, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
+
+    boxedEndValue <- box endValue
+
+    let Just startOperand = start <$> recursionData env
+    let Just endPtr       = end <$> recursionData env
+    let Just holePtr'     = holePtr <$> recursionData env
+
+    holePtr'' <- load holePtr' 0
+    store holePtr'' 0 boxedEndValue
+
+    finalValue  <- gep startOperand [i32ConstOp 0, i32ConstOp 1]
+    finalValue' <- load finalValue 0
+
+    return (symbolTable, finalValue', Nothing)
+
+  Core.Typed _ _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
+    case getConstructorRecursionInfo metadata of
+      Just (ConstructorRecursionInfo _ position) -> do
+        -- holePtr' :: i8***
+        let Just holePtr'      = holePtr <$> recursionData env
+        -- holePtr'' :: i8**
+        holePtr'' <- load holePtr' 0
+
+        args' <- mapM (\(index, arg) ->
+                          if index == position then do
+                            call gcMalloc [(Operand.ConstantOperand (sizeof Type.i8), [])]
+                          else do
+                            (_, arg', _) <- generateExp env symbolTable arg
+                            return arg'
+                      ) (List.zip [0..] args)
+
+        let constructedType = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
+        (_, constructorFn, _) <- generateExp env symbolTable fn
+        constructorFn'        <- bitcast constructorFn boxType
+        args''                <- mapM box args'
+        let args''' = (, []) <$> args''
+
+        -- constructed :: i8*
+        constructed  <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
+        constructed' <- bitcast constructed constructedType
+
+        store holePtr'' 0 constructed
+
+        -- newHole :: i8**
+        newHole <- gep constructed' [i32ConstOp 0, i32ConstOp (fromIntegral $ position + 1)]
+        store holePtr' 0 newHole
+
+        case args!!position of
+          Core.Typed _ _ _ (Core.Call _ recArgs) -> do
+            let llvmType      = buildLLVMType (getQualType exp)
+            let Just continue = continueRef <$> recursionData env
+            let Just params   = boxedParams <$> recursionData env
+            store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+            
+            recArgs'  <- mapM (generateExp env { isLast = False } symbolTable) recArgs
+            let unboxedArgs = (\(_, x, _) -> x) <$> recArgs'
+
+            let paramUpdatesData = List.zip3 (Core.getQualType <$> recArgs) params unboxedArgs
+            mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
+
+            return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
+
+          _ ->
+            undefined
+
+      Nothing ->
+        undefined
+  -- Core.Typed _ _ metadata (Core.Call fn@(Core.Typed _ _ _ (Core.Var constructorName True)) args) | Core.isConstructorRecursiveCall metadata -> do
+  --   case getConstructorRecursionInfo metadata of
+  --     Just (ConstructorRecursionInfo _ position) -> do
+  --       let Just holePtr'      = holePtr <$> recursionData env
+  --       holePtr'' <- load holePtr' 0
+
+  --       args' <- mapM (\(index, arg) ->
+  --                         if index == position then do
+  --                           call gcMalloc [(Operand.ConstantOperand (sizeof Type.i8), [])]
+  --                         else do
+  --                           (_, arg', _) <- generateExp env symbolTable arg
+  --                           return arg'
+  --                     ) (List.zip [0..] args)
+
+  --       (_, constructorFn, _) <- generateExp env symbolTable fn
+  --       constructorFn'        <- bitcast constructorFn boxType
+  --       args''                <- mapM box args'
+  --       let args''' = (, []) <$> args''
+  --       constructed <- call applyPAP ([(constructorFn', []), (i32ConstOp (fromIntegral $ List.length args), [])] <> args''')
+  --       let constructedType = Type.ptr $ Type.StructureType False (Type.i64 : List.replicate (List.length args) boxType)
+  --       constructed'   <- bitcast constructed constructedType
+  --       holePtr'''     <- bitcast holePtr'' constructedType
+  --       constructed''  <- load constructed' 0
+  --       store holePtr''' 0 constructed''
+
+  --       -- newHole <- bitcast (args'!!position) (Type.ptr boxType)
+  --       store holePtr' 0 (args'!!position)
+
+  --       case args!!position of
+  --         Core.Typed _ _ _ (Core.Call _ args') -> do
+  --           let llvmType      = buildLLVMType (getQualType exp)
+  --           let Just continue = continueRef <$> recursionData env
+  --           let Just params   = boxedParams <$> recursionData env
+  --           store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+            
+  --           args''  <- mapM (generateExp env { isLast = False } symbolTable) args'
+  --           let unboxedArgs = (\(_, x, _) -> x) <$> args''
+
+  --           let paramUpdatesData = List.zip3 (Core.getQualType <$> args') params unboxedArgs
+  --           mapM_ (\(qt', ptr, exp) -> updateTCOArg symbolTable qt' ptr exp) paramUpdatesData
+
+  --           return (symbolTable, Operand.ConstantOperand (Constant.Undef llvmType), Nothing)
+
+  --         _ ->
+  --           undefined
+
+  --     Nothing ->
+  --       undefined
 
   Core.Typed qt@(ps IT.:=> t) _ _ (Core.Var n _) ->
     case Map.lookup n symbolTable of
@@ -1865,6 +1992,7 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
               terminator' <- addrspacecast terminator listType
               end         <- alloca listType Nothing 0
               store end 0 start'
+
               return $
                 RightListRecursionData
                   { entryBlockName = entry
@@ -1872,6 +2000,27 @@ generateFunction env symbolTable isMethod metadata (ps IT.:=> t) functionName pa
                   , boxedParams = List.drop dictCount params
                   , start = start'
                   , end = end
+                  }
+            else if Core.isConstructorRecursiveDefinition metadata then do
+              -- contains an unused index and the value that will be returned at the end of recursion
+              start  <- call gcMalloc [(Operand.ConstantOperand $ sizeof (Type.StructureType False [Type.i64, boxType]), [])]
+              start' <- bitcast start (Type.ptr (Type.StructureType False [Type.i64, boxType]))
+              end    <- alloca boxType Nothing 0
+              -- hole :: i8**
+              hole   <- gep start' [i32ConstOp 0, i32ConstOp 1]
+              -- holePtr: i8***
+              holePtr <- alloca (Type.ptr boxType) Nothing 0
+              store holePtr 0 hole
+              store end 0 start
+
+              return $
+                ConstructorRecursionData
+                  { entryBlockName = entry
+                  , continueRef = continue
+                  , boxedParams = List.drop dictCount params
+                  , start = start'
+                  , end = end
+                  , holePtr = holePtr
                   }
             else
               undefined
