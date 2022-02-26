@@ -61,9 +61,33 @@ markIs recursionKind fnName is = case is of
   _ ->
     is
 
+
+findRecursiveConstructorArgIndex :: Int -> String -> [Exp] -> Maybe Int
+findRecursiveConstructorArgIndex index fnName args = case args of
+  (Typed _ _ _(Call (Typed _ _ _ (Var n _)) _) : more) ->
+    if n == fnName then
+      Just index
+    else
+      findRecursiveConstructorArgIndex (index + 1) fnName more
+
+  (_ : more) ->
+    findRecursiveConstructorArgIndex (index + 1) fnName more
+
+  _ ->
+    Nothing
+
+
 -- looks for tail recursive calls and marks them
 markTRCCalls :: RecursionKind -> String -> Exp -> Exp
 markTRCCalls recursionKind fnName exp = case exp of
+  Typed qt area metadata (Call fn@(Typed _ _ _ (Var constructorName True)) args) ->
+    case findRecursiveConstructorArgIndex 0 fnName args of
+      Just index ->
+        Typed qt area (RecursiveCall (ConstructorRecursion (Just (ConstructorRecursionInfo constructorName index))) : metadata) (Call fn args)
+
+      Nothing ->
+        Typed qt area metadata (Call fn args)
+
   Typed qt area metadata (Call fn args) ->
     if Just fnName == getAppName exp then
       Typed qt area (RecursiveCall PlainRecursion : metadata) (Call fn args)
@@ -112,6 +136,9 @@ combineRecursionKinds kinds = case kinds of
   (Just (ListRecursion side) : more) ->
     Just (ListRecursion side)
 
+  (Just (ConstructorRecursion _) : more) ->
+    Just (ConstructorRecursion Nothing)
+
   (Just PlainRecursion : more) ->
     case combineRecursionKinds more of
       Nothing ->
@@ -159,6 +186,12 @@ findRecursionKind fnName params exps = case exps of
     Nothing
 
   [lastExp] -> case lastExp of
+    Typed _ _ _ (Call (Typed _ _ _ (Var constructorName True)) args) ->
+      if any (containsRecursion True fnName) args then
+        Just (ConstructorRecursion Nothing)
+      else
+        Nothing
+
     Typed _ _ _ Call {} | containsRecursion True fnName lastExp ->
       Just PlainRecursion
 

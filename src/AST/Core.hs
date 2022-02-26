@@ -11,9 +11,15 @@ data RecursionDirection
   | BothRecursion
   deriving(Eq, Show, Ord)
 
+data ConstructorRecursionInfo
+  = ConstructorRecursionInfo String Int
+  -- ^ String: constructor name, Int: arg position
+  deriving(Eq, Show, Ord)
+
 data RecursionKind
   = PlainRecursion
   | ListRecursion RecursionDirection
+  | ConstructorRecursion (Maybe ConstructorRecursionInfo)
   | NotOptimizable
   deriving(Eq, Show, Ord)
 
@@ -361,3 +367,31 @@ isRightListRecursiveDefinition = elem (RecursiveDefinition (ListRecursion RightR
 
 isRightListRecursionEnd :: [Metadata] -> Bool
 isRightListRecursionEnd = elem (RecursionEnd (ListRecursion RightRecursion))
+
+isConstructorRecursiveDefinition :: [Metadata] -> Bool
+isConstructorRecursiveDefinition = elem (RecursiveDefinition (ConstructorRecursion Nothing))
+
+isConstructorRecursionEnd :: [Metadata] -> Bool
+isConstructorRecursionEnd = elem (RecursionEnd (ConstructorRecursion Nothing))
+
+isConstructorRecursiveCall :: [Metadata] -> Bool
+isConstructorRecursiveCall metadata = case metadata of
+  (RecursiveCall (ConstructorRecursion _) : _) ->
+    True
+
+  (_ : next) ->
+    isConstructorRecursiveCall next
+
+  _ ->
+    False
+
+getConstructorRecursionInfo :: [Metadata] -> Maybe ConstructorRecursionInfo
+getConstructorRecursionInfo metadata = case metadata of
+  (RecursiveCall (ConstructorRecursion info) : _) ->
+    info
+
+  (_ : next) ->
+    getConstructorRecursionInfo next
+
+  _ ->
+    Nothing
