@@ -7,38 +7,38 @@ Inspect['Maybe'] = {};
 Inspect['Maybe']['inspect'] = () => (Inspect_d3) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(${Inspect_d3.inspect()(a0)})`;
+    return `Just(` + Inspect_d3.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "Nothing") {
-    return "Nothing";
+    return `Nothing`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Inspect['NotExportedADT'] = {};
 Inspect['NotExportedADT']['inspect'] = () => (Inspect_p15) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "NotExportedADT" && true) {
     let a0 = __x__.__args[0];
-    return `NotExportedADT(${Inspect_p15.inspect()(a0)})`;
+    return `NotExportedADT(` + Inspect_p15.inspect()(a0) + `)`;
   }
   else if (__x__.__constructor === "StillNotExported") {
-    return "StillNotExported";
+    return `StillNotExported`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 export default { Just, Nothing };
 // file: ./Module
 import {} from "./__internals__.mjs"

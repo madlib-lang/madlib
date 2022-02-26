@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([ IsIn "Number" [ TVar (TV "l63" Star) ] Nothing ] :=>
                TApp
                  (TApp
@@ -12,7 +12,7 @@ Right
             (Area (Loc 0 1 1) (Loc 64 1 65))
             (Assignment
                "fib"
-               (Solved
+               (Typed
                   ([ IsIn "Number" [ TVar (TV "l63" Star) ] Nothing ] :=>
                      TApp
                        (TApp
@@ -22,7 +22,7 @@ Right
                   (Area (Loc 0 1 1) (Loc 64 1 65))
                   (Placeholder
                      ( ClassRef "Number" [] False True , [ TVar (TV "l63" Star) ] )
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Number"
                              [ TVar (TV "l63" Star) ]
@@ -58,7 +58,7 @@ Right
                              (TVar (TV "l63" Star)))
                         (Area (Loc 6 1 7) (Loc 64 1 65))
                         (Abs
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Number"
                                    [ TVar (TV "l63" Star) ]
@@ -90,7 +90,7 @@ Right
                                  TVar (TV "l63" Star))
                               (Area (Loc 7 1 8) (Loc 8 1 9))
                               "n")
-                           [ Solved
+                           [ Typed
                                ([ IsIn
                                     "Number"
                                     [ TVar (TV "l63" Star) ]
@@ -122,7 +122,7 @@ Right
                                   TVar (TV "l63" Star))
                                (Area (Loc 14 1 15) (Loc 63 1 64))
                                (If
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Number"
                                           [ TVar (TV "l63" Star) ]
@@ -132,7 +132,7 @@ Right
                                         TCon (TC "Boolean" Star) "prelude")
                                      (Area (Loc 18 1 19) (Loc 23 1 24))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "l63" Star) ]
@@ -147,7 +147,7 @@ Right
                                                 (TCon (TC "Boolean" Star) "prelude"))
                                            (Area (Loc 18 1 19) (Loc 23 1 24))
                                            (App
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn "Number" [ TVar (TV "l63" Star) ] Nothing
                                                   ] :=>
                                                     TApp
@@ -170,7 +170,7 @@ Right
                                                     ( MethodRef "Number" "<" True
                                                     , [ TVar (TV "l63" Star) ]
                                                     )
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -196,8 +196,8 @@ Right
                                                                (TCon
                                                                   (TC "Boolean" Star) "prelude")))
                                                        (Area (Loc 20 1 21) (Loc 21 1 22))
-                                                       (Var "<"))))
-                                              (Solved
+                                                       (Var "<" False))))
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TVar (TV "l63" Star) ]
@@ -205,9 +205,9 @@ Right
                                                   ] :=>
                                                     TVar (TV "l63" Star))
                                                  (Area (Loc 18 1 19) (Loc 19 1 20))
-                                                 (Var "n"))
+                                                 (Var "n" False))
                                               False))
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "l63" Star) ]
@@ -218,11 +218,11 @@ Right
                                            (Area (Loc 22 1 23) (Loc 23 1 24))
                                            (LNum "2"))
                                         True))
-                                  (Solved
+                                  (Typed
                                      ([] :=> TVar (TV "l63" Star))
                                      (Area (Loc 27 1 28) (Loc 28 1 29))
-                                     (Var "n"))
-                                  (Solved
+                                     (Var "n" False))
+                                  (Typed
                                      ([ IsIn
                                           "Number"
                                           [ TVar (TV "l63" Star) ]
@@ -249,7 +249,7 @@ Right
                                         TVar (TV "l63" Star))
                                      (Area (Loc 38 1 39) (Loc 61 1 62))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "l63" Star) ]
@@ -273,7 +273,7 @@ Right
                                                 (TVar (TV "l63" Star)))
                                            (Area (Loc 38 1 39) (Loc 61 1 62))
                                            (App
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn "Number" [ TVar (TV "l63" Star) ] Nothing
                                                   ] :=>
                                                     TApp
@@ -296,7 +296,7 @@ Right
                                                     ( MethodRef "Number" "+" True
                                                     , [ TVar (TV "l63" Star) ]
                                                     )
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -321,8 +321,8 @@ Right
                                                                   (TVar (TV "l63" Star)))
                                                                (TVar (TV "l63" Star))))
                                                        (Area (Loc 49 1 50) (Loc 50 1 51))
-                                                       (Var "+"))))
-                                              (Solved
+                                                       (Var "+" False))))
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TVar (TV "l63" Star) ]
@@ -340,7 +340,7 @@ Right
                                                     TVar (TV "l63" Star))
                                                  (Area (Loc 38 1 39) (Loc 48 1 49))
                                                  (App
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -360,7 +360,7 @@ Right
                                                           ( ClassRef "Number" [] True True
                                                           , [ TVar (TV "l63" Star) ]
                                                           )
-                                                          (Solved
+                                                          (Typed
                                                              ([ IsIn
                                                                   "Number"
                                                                   [ TVar (TV "l63" Star) ]
@@ -378,8 +378,8 @@ Right
                                                                      (TVar (TV "l63" Star)))
                                                                   (TVar (TV "l63" Star)))
                                                              (Area (Loc 38 1 39) (Loc 41 1 42))
-                                                             (Var "fib"))))
-                                                    (Solved
+                                                             (Var "fib" False))))
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -398,7 +398,7 @@ Right
                                                           TVar (TV "l63" Star))
                                                        (Area (Loc 42 1 43) (Loc 47 1 48))
                                                        (App
-                                                          (Solved
+                                                          (Typed
                                                              ([ IsIn
                                                                   "Number"
                                                                   [ TVar (TV "l63" Star) ]
@@ -420,7 +420,7 @@ Right
                                                                   (TVar (TV "l63" Star)))
                                                              (Area (Loc 42 1 43) (Loc 47 1 48))
                                                              (App
-                                                                (Solved
+                                                                (Typed
                                                                    ([ IsIn
                                                                         "Number"
                                                                         [ TVar (TV "l63" Star) ]
@@ -457,7 +457,7 @@ Right
                                                                       ( MethodRef "Number" "-" True
                                                                       , [ TVar (TV "l63" Star) ]
                                                                       )
-                                                                      (Solved
+                                                                      (Typed
                                                                          ([ IsIn
                                                                               "Number"
                                                                               [ TVar (TV "l63" Star)
@@ -500,8 +500,8 @@ Right
                                                                          (Area
                                                                             (Loc 44 1 45)
                                                                             (Loc 46 1 47))
-                                                                         (Var "-"))))
-                                                                (Solved
+                                                                         (Var "-" False))))
+                                                                (Typed
                                                                    ([ IsIn
                                                                         "Number"
                                                                         [ TVar (TV "l63" Star) ]
@@ -513,9 +513,9 @@ Right
                                                                       TVar (TV "l63" Star))
                                                                    (Area
                                                                       (Loc 42 1 43) (Loc 43 1 44))
-                                                                   (Var "n"))
+                                                                   (Var "n" False))
                                                                 False))
-                                                          (Solved
+                                                          (Typed
                                                              ([ IsIn
                                                                   "Number"
                                                                   [ TVar (TV "l63" Star) ]
@@ -534,7 +534,7 @@ Right
                                                           True))
                                                     True))
                                               False))
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "l63" Star) ]
@@ -561,7 +561,7 @@ Right
                                               TVar (TV "l63" Star))
                                            (Area (Loc 51 1 52) (Loc 61 1 62))
                                            (App
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn "Number" [ TVar (TV "l63" Star) ] Nothing
                                                   ] :=>
                                                     TApp
@@ -576,7 +576,7 @@ Right
                                                     ( ClassRef "Number" [] True True
                                                     , [ TVar (TV "l63" Star) ]
                                                     )
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -592,8 +592,8 @@ Right
                                                                (TVar (TV "l63" Star)))
                                                             (TVar (TV "l63" Star)))
                                                        (Area (Loc 51 1 52) (Loc 54 1 55))
-                                                       (Var "fib"))))
-                                              (Solved
+                                                       (Var "fib" False))))
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TVar (TV "l63" Star) ]
@@ -607,7 +607,7 @@ Right
                                                     TVar (TV "l63" Star))
                                                  (Area (Loc 55 1 56) (Loc 60 1 61))
                                                  (App
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]
@@ -625,7 +625,7 @@ Right
                                                             (TVar (TV "l63" Star)))
                                                        (Area (Loc 55 1 56) (Loc 60 1 61))
                                                        (App
-                                                          (Solved
+                                                          (Typed
                                                              ([ IsIn
                                                                   "Number"
                                                                   [ TVar (TV "l63" Star) ]
@@ -657,7 +657,7 @@ Right
                                                                 ( MethodRef "Number" "-" True
                                                                 , [ TVar (TV "l63" Star) ]
                                                                 )
-                                                                (Solved
+                                                                (Typed
                                                                    ([ IsIn
                                                                         "Number"
                                                                         [ TVar (TV "l63" Star) ]
@@ -690,8 +690,8 @@ Right
                                                                            (TVar (TV "l63" Star))))
                                                                    (Area
                                                                       (Loc 57 1 58) (Loc 59 1 60))
-                                                                   (Var "-"))))
-                                                          (Solved
+                                                                   (Var "-" False))))
+                                                          (Typed
                                                              ([ IsIn
                                                                   "Number"
                                                                   [ TVar (TV "l63" Star) ]
@@ -702,9 +702,9 @@ Right
                                                               ] :=>
                                                                 TVar (TV "l63" Star))
                                                              (Area (Loc 55 1 56) (Loc 56 1 57))
-                                                             (Var "n"))
+                                                             (Var "n" False))
                                                           False))
-                                                    (Solved
+                                                    (Typed
                                                        ([ IsIn
                                                             "Number"
                                                             [ TVar (TV "l63" Star) ]

@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([ IsIn
                  "Number"
                  [ TVar (TV "u20" Star) ]
@@ -16,7 +16,7 @@ Right
             (Area (Loc 0 1 1) (Loc 23 1 24))
             (Assignment
                "fn"
-               (Solved
+               (Typed
                   ([ IsIn
                        "Number"
                        [ TVar (TV "u20" Star) ]
@@ -30,7 +30,7 @@ Right
                   (Area (Loc 0 1 1) (Loc 23 1 24))
                   (Placeholder
                      ( ClassRef "Number" [] False True , [ TVar (TV "u20" Star) ] )
-                     (Solved
+                     (Typed
                         ([ IsIn
                              "Number"
                              [ TVar (TV "u20" Star) ]
@@ -47,7 +47,7 @@ Right
                              (TVar (TV "u20" Star)))
                         (Area (Loc 5 1 6) (Loc 23 1 24))
                         (Abs
-                           (Solved
+                           (Typed
                               ([ IsIn
                                    "Number"
                                    [ TVar (TV "u20" Star) ]
@@ -60,7 +60,7 @@ Right
                                  TVar (TV "u20" Star))
                               (Area (Loc 6 1 7) (Loc 7 1 8))
                               "x")
-                           [ Solved
+                           [ Typed
                                ([ IsIn
                                     "Number"
                                     [ TVar (TV "u20" Star) ]
@@ -73,7 +73,7 @@ Right
                                   TVar (TV "u20" Star))
                                (Area (Loc 13 1 14) (Loc 22 1 23))
                                (App
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Number"
                                           [ TVar (TV "u20" Star) ]
@@ -87,7 +87,7 @@ Right
                                           (TVar (TV "u20" Star)))
                                      (Area (Loc 13 1 14) (Loc 22 1 23))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn "Number" [ TVar (TV "u20" Star) ] Nothing ] :=>
                                               TApp
                                                 (TApp
@@ -107,7 +107,7 @@ Right
                                               ( MethodRef "Number" "+" True
                                               , [ TVar (TV "u20" Star) ]
                                               )
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn "Number" [ TVar (TV "u20" Star) ] Nothing
                                                   ] :=>
                                                     TApp
@@ -126,8 +126,8 @@ Right
                                                             (TVar (TV "u20" Star)))
                                                          (TVar (TV "u20" Star))))
                                                  (Area (Loc 15 1 16) (Loc 16 1 17))
-                                                 (Var "+"))))
-                                        (Solved
+                                                 (Var "+" False))))
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "u20" Star) ]
@@ -135,9 +135,9 @@ Right
                                             ] :=>
                                               TVar (TV "u20" Star))
                                            (Area (Loc 13 1 14) (Loc 14 1 15))
-                                           (Var "x"))
+                                           (Var "x" False))
                                         False))
-                                  (Solved
+                                  (Typed
                                      ([ IsIn
                                           "Number"
                                           [ TVar (TV "u20" Star) ]
@@ -150,7 +150,7 @@ Right
                                         TVar (TV "u20" Star))
                                      (Area (Loc 17 1 18) (Loc 22 1 23))
                                      (App
-                                        (Solved
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "u20" Star) ]
@@ -168,7 +168,7 @@ Right
                                               ( ClassRef "Number" [] True True
                                               , [ TVar (TV "u20" Star) ]
                                               )
-                                              (Solved
+                                              (Typed
                                                  ([ IsIn
                                                       "Number"
                                                       [ TVar (TV "u20" Star) ]
@@ -182,8 +182,8 @@ Right
                                                          (TVar (TV "u20" Star)))
                                                       (TVar (TV "u20" Star)))
                                                  (Area (Loc 17 1 18) (Loc 19 1 20))
-                                                 (Var "fn"))))
-                                        (Solved
+                                                 (Var "fn" False))))
+                                        (Typed
                                            ([ IsIn
                                                 "Number"
                                                 [ TVar (TV "u20" Star) ]
@@ -191,7 +191,7 @@ Right
                                             ] :=>
                                               TVar (TV "u20" Star))
                                            (Area (Loc 20 1 21) (Loc 21 1 22))
-                                           (Var "x"))
+                                           (Var "x" False))
                                         True))
                                   True)
                            ])))))

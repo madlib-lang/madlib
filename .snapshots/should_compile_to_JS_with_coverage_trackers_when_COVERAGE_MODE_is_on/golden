@@ -5,30 +5,30 @@ Inspect['Maybe'] = {};
 Inspect['Maybe']['inspect'] = () => (Inspect_n13) => __hpFnWrap('path', 0, 'inspect')((__$a__ => ((__x__) => {
   if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Just" && true) {
     let a0 = __x__.__args[0];
-    return `Just(${__hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_n13.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, a0))))})`;
+    return __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `Just(`)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_n13.inspect())(__hpLineWrap('path', 0, a0)))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, `)`));
   }
   else if (__hp('path', 'line', 0, 0) || __x__.__constructor === "Nothing") {
-    return __hpLineWrap('path', 0, "Nothing");
+    return __hpLineWrap('path', 0, `Nothing`);
   }
   else if (__hp('path', 'line', 0, 0) || true) {
-    return __hpLineWrap('path', 0, "Unknown");
+    return __hpLineWrap('path', 0, `Unknown`);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 0, __$a__))))
+})(__hpLineWrap('path', 0, __$a__))));
 Inspect['Record_carsa'] = {};
-Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => __hpFnWrap('path', 0, 'inspect')((__$a__ => `{ ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "cars: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_c28.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).cars)))))} }`))
+Inspect['Record_carsa']['inspect'] = () => (Inspect_c28) => __hpFnWrap('path', 0, 'inspect')((__$a__ => __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `{ `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `cars: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_c28.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).cars))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, ` }`))));
 Inspect['Record_nameb_xa'] = {};
-Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => __hpFnWrap('path', 0, 'inspect')((__$a__ => `{ ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "x: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_m38.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).x)))))}, ${__hpLineWrap('path', 0, __hpLineWrap('path', 0, "name: ")) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_t45.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).name)))))} }`))
+Inspect['Record_nameb_xa']['inspect'] = () => (Inspect_m38) => (Inspect_t45) => __hpFnWrap('path', 0, 'inspect')((__$a__ => __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `{ `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `x: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_m38.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).x))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `, `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, __hpLineWrap('path', 0, `name: `)) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, Inspect_t45.inspect())(__hpLineWrap('path', 0, __hpLineWrap('path', 0, __$a__).name))))) + __hpLineWrap('path', 0, __hpLineWrap('path', 0, ` }`)))));
 export let fn = __hpFnWrap('path', 1, 'fn')((b => c => __hpLineWrap('path', 1, __hpLineWrap('path', 1, b)) + __hpLineWrap('path', 1, __hpLineWrap('path', 1, c))));
 let inc = __hpFnWrap('path', 3, 'inc')((x => __hpLineWrap('path', 3, __hpLineWrap('path', 3, x)) + __hpLineWrap('path', 3, __hpLineWrap('path', 3, 1))));
 let dec = __hpFnWrap('path', 5, 'dec')((x => __hpLineWrap('path', 5, __hpLineWrap('path', 5, x)) - __hpLineWrap('path', 5, __hpLineWrap('path', 5, 1))));
 let double = __hpFnWrap('path', 6, 'double')((x => __hpLineWrap('path', 7, __hpLineWrap('path', 7, x)) * __hpLineWrap('path', 7, __hpLineWrap('path', 7, 2))));
 let half = __hpFnWrap('path', 9, 'half')((x => __hpLineWrap('path', 9, __hpLineWrap('path', 9, x)) / __hpLineWrap('path', 9, __hpLineWrap('path', 9, 2))));
-__hpLineWrap('path', 10, __hpLineWrap('path', 10, double))(__hpLineWrap('path', 10, __hpLineWrap('path', 10, __hpLineWrap('path', 10, half))(__hpLineWrap('path', 10, __hpLineWrap('path', 10, 3)))));
+__hpLineWrap('path', 10, double)(__hpLineWrap('path', 10, half)(__hpLineWrap('path', 10, 3)));
 __eq__(__hpLineWrap('path', 11, __hpLineWrap('path', 11, 3)), __hpLineWrap('path', 11, __hpLineWrap('path', 11, 5)));
 let carResponse = ({ cars: __hpLineWrap('path', 12, ([])) });
 ((__x__) => {
@@ -64,7 +64,7 @@ let carResponse = ({ cars: __hpLineWrap('path', 12, ([])) });
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 20, "3"));
+})(__hpLineWrap('path', 20, `3`));
 ((__x__) => {
   if (__hp('path', 'line', 24, 24) || __x__ === true) {
     return __hpLineWrap('path', 24, 3);
@@ -76,11 +76,11 @@ let carResponse = ({ cars: __hpLineWrap('path', 12, ([])) });
   }
 })(__hpLineWrap('path', 23, true));
 let log = __hpFnWrap('path', 27, 'log')((a =>  { console.log(a); return a; } ));
-(__hpLineWrap('path', 28, true) ? __hpLineWrap('path', 28, "OK") : __hpLineWrap('path', 28, "NOT OK"));
+(__hpLineWrap('path', 28, true) ? __hpLineWrap('path', 28, `OK`) : __hpLineWrap('path', 28, `NOT OK`));
 let mapMaybe = __hpFnWrap('path', 31, 'mapMaybe')((f => m => ((__x__) => {
   if (__hp('path', 'line', 32, 32) || __x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
-    return __hpLineWrap('path', 32, __hpLineWrap('path', 32, Just)(__hpLineWrap('path', 32, __hpLineWrap('path', 32, __hpLineWrap('path', 32, f)(__hpLineWrap('path', 32, __hpLineWrap('path', 32, a)))))));
+    return __hpLineWrap('path', 32, Just)(__hpLineWrap('path', 32, f)(__hpLineWrap('path', 32, a)));
   }
   else if (__hp('path', 'line', 33, 33) || __x__.__constructor === "Nothing") {
     return __hpLineWrap('path', 33, Nothing);
@@ -91,7 +91,7 @@ let mapMaybe = __hpFnWrap('path', 31, 'mapMaybe')((f => m => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(__hpLineWrap('path', 31, m))));
-let might = __hpLineWrap('path', 35, __hpLineWrap('path', 35, Just)(__hpLineWrap('path', 35, __hpLineWrap('path', 35, 3))));
+let might = __hpLineWrap('path', 35, Just)(__hpLineWrap('path', 35, 3));
 let q = ((__x__) => {
   if (__hp('path', 'line', 37, 37) || __x__.__constructor === "Just" && true) {
     let a = __x__.__args[0];
@@ -115,10 +115,10 @@ __hpLineWrap('path', 45, __hpLineWrap('path', 45, __hpLineWrap('path', 45, __hpL
 __hpLineWrap('path', 46, __hpLineWrap('path', 46, 1)) >= __hpLineWrap('path', 46, __hpLineWrap('path', 46, 3));
 __hpLineWrap('path', 47, __hpLineWrap('path', 47, 1)) <= __hpLineWrap('path', 47, __hpLineWrap('path', 47, 3));
 __hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, 1)) >= __hpLineWrap('path', 48, __hpLineWrap('path', 48, 3))) && __hpLineWrap('path', 48, __hpLineWrap('path', 48, __hpLineWrap('path', 48, 3)) <= __hpLineWrap('path', 48, __hpLineWrap('path', 48, 1)))) || __hpLineWrap('path', 48, __hpLineWrap('path', 48, true));
-__hpLineWrap('path', 49, !(__hpLineWrap('path', 49, __hpLineWrap('path', 49, false))));
-__hpLineWrap('path', 50, !(__hpLineWrap('path', 50, __hpLineWrap('path', 50, true))));
-__hpLineWrap('path', 51, __hpLineWrap('path', 51, !(__hpLineWrap('path', 51, __hpLineWrap('path', 51, false))))) && __hpLineWrap('path', 51, __hpLineWrap('path', 51, !(__hpLineWrap('path', 51, __hpLineWrap('path', 51, true)))));
-__hpLineWrap('path', 52, __hpLineWrap('path', 52, !(__hpLineWrap('path', 52, __hpLineWrap('path', 52, false))))) || __hpLineWrap('path', 52, __hpLineWrap('path', 52, !(__hpLineWrap('path', 52, __hpLineWrap('path', 52, true)))));
+!(__hpLineWrap('path', 49, false));
+!(__hpLineWrap('path', 50, true));
+__hpLineWrap('path', 51, !(__hpLineWrap('path', 51, false))) && __hpLineWrap('path', 51, !(__hpLineWrap('path', 51, true)));
+__hpLineWrap('path', 52, !(__hpLineWrap('path', 52, false))) || __hpLineWrap('path', 52, !(__hpLineWrap('path', 52, true)));
 let arr = ([__hpLineWrap('path', 53, 1), __hpLineWrap('path', 53, 2), __hpLineWrap('path', 53, 3)]);
 let all = ([ ...__hpLineWrap('path', 54, arr), __hpLineWrap('path', 54, 4), __hpLineWrap('path', 54, 5), __hpLineWrap('path', 54, 6)]);
 ((__x__) => {
@@ -148,39 +148,52 @@ let all = ([ ...__hpLineWrap('path', 54, arr), __hpLineWrap('path', 54, 4), __hp
     throw 'non exhaustive patterns!';
   }
 })(([__hpLineWrap('path', 55, 1), __hpLineWrap('path', 55, 2), __hpLineWrap('path', 55, 3), __hpLineWrap('path', 55, 5), __hpLineWrap('path', 55, 8)]));
-export let map = __hpFnWrap('path', 63, 'map')((f => xs => ((__x__) => {
+export let map = __hpFnWrap('path', 63, 'map')((f => xs => {
+    let $result;
+    let $continue = true;
+    let $start = [];
+    let $end = $start;
+    let $f = f;
+    let $xs = xs;
+
+    while($continue) {
+        $continue = false;
+        ((__x__) => {
   if (__hp('path', 'line', 64, 64) || __x__.length === 3 && true && true && true) {
     let [a,b,c] = __x__;
-    return ([__hpLineWrap('path', 64, __hpLineWrap('path', 64, f)(__hpLineWrap('path', 64, __hpLineWrap('path', 64, a)))),  ...__hpLineWrap('path', 64, __hpLineWrap('path', 64, __hpLineWrap('path', 64, map)(__hpLineWrap('path', 64, __hpLineWrap('path', 64, f)))(__hpLineWrap('path', 64, ([__hpLineWrap('path', 64, b), __hpLineWrap('path', 64, c)])))))]);
+    return ($end.push(__hpLineWrap('path', 64, $f)(__hpLineWrap('path', 64, a))), $f = __hpLineWrap('path', 64, $f), $xs = ([__hpLineWrap('path', 64, b), __hpLineWrap('path', 64, c)]), $continue = true);
   }
   else if (__hp('path', 'line', 65, 65) || __x__.length === 2 && true && true) {
     let [a,b] = __x__;
-    return ([__hpLineWrap('path', 65, __hpLineWrap('path', 65, f)(__hpLineWrap('path', 65, __hpLineWrap('path', 65, a)))),  ...__hpLineWrap('path', 65, __hpLineWrap('path', 65, __hpLineWrap('path', 65, map)(__hpLineWrap('path', 65, __hpLineWrap('path', 65, f)))(__hpLineWrap('path', 65, ([__hpLineWrap('path', 65, b)])))))]);
+    return ($end.push(__hpLineWrap('path', 65, $f)(__hpLineWrap('path', 65, a))), $f = __hpLineWrap('path', 65, $f), $xs = ([__hpLineWrap('path', 65, b)]), $continue = true);
   }
   else if (__hp('path', 'line', 66, 66) || __x__.length === 1 && true) {
     let [a] = __x__;
-    return ([__hpLineWrap('path', 66, __hpLineWrap('path', 66, f)(__hpLineWrap('path', 66, __hpLineWrap('path', 66, a))))]);
+    return ($end.push(...([__hpLineWrap('path', 66, $f)(__hpLineWrap('path', 66, a))])), $result = $start);
   }
   else if (__hp('path', 'line', 67, 67) || __x__.length === 0) {
     let [] = __x__;
-    return ([]);
+    return ($end.push(...([])), $result = $start);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 63, xs))));
-(__hpLineWrap('path', 69, true) ? __hpLineWrap('path', 70, "ok") : __hpLineWrap('path', 71, "not ok"));
-__hpLineWrap('path', 72, (x => __hpLineWrap('path', 75, x)))(__hpLineWrap('path', 75, __hpLineWrap('path', 72, (x => (__eq__(__hpLineWrap('path', 74, __hpLineWrap('path', 74, x)), __hpLineWrap('path', 74, __hpLineWrap('path', 74, "ok"))) ? __hpLineWrap('path', 74, 1) : __hpLineWrap('path', 74, 10))))(__hpLineWrap('path', 74, __hpLineWrap('path', 72, (x => __hpLineWrap('path', 73, x)))(__hpLineWrap('path', 73, (__eq__(__hpLineWrap('path', 72, __hpLineWrap('path', 72, 1)), __hpLineWrap('path', 72, __hpLineWrap('path', 72, 2))) ? __hpLineWrap('path', 72, "ok") : __hpLineWrap('path', 72, "not ok"))))))));
-(__eq__(__hpLineWrap('path', 76, __hpLineWrap('path', 76, 1)), __hpLineWrap('path', 76, __hpLineWrap('path', 76, 2))) ? __hpLineWrap('path', 76, "ok") : __hpLineWrap('path', 76, "not ok"));
+})(__hpLineWrap('path', 63, $xs))
+    }
+    return $result;
+}));
+(__hpLineWrap('path', 69, true) ? __hpLineWrap('path', 70, `ok`) : __hpLineWrap('path', 71, `not ok`));
+(x => __hpLineWrap('path', 75, x))((x => (__eq__(__hpLineWrap('path', 74, __hpLineWrap('path', 74, x)), __hpLineWrap('path', 74, __hpLineWrap('path', 74, `ok`))) ? __hpLineWrap('path', 74, 1) : __hpLineWrap('path', 74, 10)))((x => __hpLineWrap('path', 73, x))((__eq__(__hpLineWrap('path', 72, __hpLineWrap('path', 72, 1)), __hpLineWrap('path', 72, __hpLineWrap('path', 72, 2))) ? __hpLineWrap('path', 72, `ok`) : __hpLineWrap('path', 72, `not ok`)))));
+(__eq__(__hpLineWrap('path', 76, __hpLineWrap('path', 76, 1)), __hpLineWrap('path', 76, __hpLineWrap('path', 76, 2))) ? __hpLineWrap('path', 76, `ok`) : __hpLineWrap('path', 76, `not ok`));
 ((__x__) => {
   if (__hp('path', 'line', 78, 78) || __x__ === 3) {
     return __hpLineWrap('path', 78, 48);
   }
   else if (__hp('path', 'line', 79, 79) || true) {
     let n = __x__;
-    return __hpLineWrap('path', 79, (x => __hpLineWrap('path', 79, __hpLineWrap('path', 79, x)) + __hpLineWrap('path', 79, __hpLineWrap('path', 79, 1))))(__hpLineWrap('path', 79, __hpLineWrap('path', 79, 1)));
+    return (x => __hpLineWrap('path', 79, __hpLineWrap('path', 79, x)) + __hpLineWrap('path', 79, __hpLineWrap('path', 79, 1)))(__hpLineWrap('path', 79, 1));
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
@@ -188,7 +201,7 @@ __hpLineWrap('path', 72, (x => __hpLineWrap('path', 75, x)))(__hpLineWrap('path'
     throw 'non exhaustive patterns!';
   }
 })(__hpLineWrap('path', 77, 3));
-__hpLineWrap('path', 81, (x => __hpLineWrap('path', 84, __hpLineWrap('path', 84, x)) + __hpLineWrap('path', 84, __hpLineWrap('path', 84, 1))))(__hpLineWrap('path', 84, ((__x__) => {
+(x => __hpLineWrap('path', 84, __hpLineWrap('path', 84, x)) + __hpLineWrap('path', 84, __hpLineWrap('path', 84, 1)))(((__x__) => {
   if (__hp('path', 'line', 82, 82) || __x__ === "3") {
     return __hpLineWrap('path', 82, 48);
   }
@@ -201,8 +214,8 @@ __hpLineWrap('path', 81, (x => __hpLineWrap('path', 84, __hpLineWrap('path', 84,
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__hpLineWrap('path', 81, "3"))));
-__hpLineWrap('path', 85, (x => __hpLineWrap('path', 88, x)))(__hpLineWrap('path', 88, ((__x__) => {
+})(__hpLineWrap('path', 81, `3`)));
+(x => __hpLineWrap('path', 88, x))(((__x__) => {
   if (__hp('path', 'line', 86, 86) || __x__.length >= 1 && __x__[0] === 2 && true) {
     let [,...rest] = __x__;
     return __hpLineWrap('path', 86, rest);
@@ -216,18 +229,18 @@ __hpLineWrap('path', 85, (x => __hpLineWrap('path', 88, x)))(__hpLineWrap('path'
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(([__hpLineWrap('path', 85, 1), __hpLineWrap('path', 85, 2), __hpLineWrap('path', 85, 3), __hpLineWrap('path', 85, 4), __hpLineWrap('path', 85, 5)]))));
+})(([__hpLineWrap('path', 85, 1), __hpLineWrap('path', 85, 2), __hpLineWrap('path', 85, 3), __hpLineWrap('path', 85, 4), __hpLineWrap('path', 85, 5)])));
 ((__x__) => {
   if (__hp('path', 'line', 90, 90) || __x__.name === "Bob") {
     let {  } = __x__;
-    return __hpLineWrap('path', 90, "Bob");
+    return __hpLineWrap('path', 90, `Bob`);
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(({ x: __hpLineWrap('path', 89, __hpLineWrap('path', 89, 4)), name: __hpLineWrap('path', 89, __hpLineWrap('path', 89, "John")) }));
+})(({ x: __hpLineWrap('path', 89, __hpLineWrap('path', 89, 4)), name: __hpLineWrap('path', 89, __hpLineWrap('path', 89, `John`)) }));
 let addXAndY = __hpFnWrap('path', 92, 'addXAndY')((r => ((__x__) => {
   if (__hp('path', 'line', 94, 94) || true && true) {
     let { y: y, x: x1 } = __x__;
@@ -279,8 +292,8 @@ let snd = __hpFnWrap('path', 115, 'snd')((tuple => {
 })(__hpLineWrap('path', 116, tuple));
     return __hpLineWrap('path', 119, b);
 }));
-__hpLineWrap('path', 122, __hpLineWrap('path', 122, fst)(__hpLineWrap('path', 122, ([__hpLineWrap('path', 122, 1), __hpLineWrap('path', 122, 2)]))));
-__hpLineWrap('path', 123, __hpLineWrap('path', 123, snd)(__hpLineWrap('path', 123, ([__hpLineWrap('path', 123, 1), __hpLineWrap('path', 123, 2)]))));
+__hpLineWrap('path', 122, fst)(([__hpLineWrap('path', 122, 1), __hpLineWrap('path', 122, 2)]));
+__hpLineWrap('path', 123, snd)(([__hpLineWrap('path', 123, 1), __hpLineWrap('path', 123, 2)]));
 ((__x__) => {
   if (__hp('path', 'line', 125, 125) || __x__.length === 2 && __x__[0].__constructor === "Just" && true && __x__[1].__constructor === "Just" && true) {
     let [{ __args: [n]},{ __args: [m]}] = __x__;
@@ -291,5 +304,5 @@ __hpLineWrap('path', 123, __hpLineWrap('path', 123, snd)(__hpLineWrap('path', 12
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(([__hpLineWrap('path', 125, __hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, __hpLineWrap('path', 125, 3)))), __hpLineWrap('path', 125, __hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, __hpLineWrap('path', 125, 4))))]));
+})(([__hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, 3)), __hpLineWrap('path', 125, Just)(__hpLineWrap('path', 125, 4))]));
 export default { fn, map };

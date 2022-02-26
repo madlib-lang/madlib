@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TRecord
                  (fromList
@@ -13,7 +13,7 @@ Right
             (Area (Loc 0 1 1) (Loc 26 1 27))
             (Assignment
                "a"
-               (Solved
+               (Typed
                   ([ IsIn
                        "Number"
                        [ TCon (TC "Integer" Star) "prelude" ]
@@ -28,17 +28,17 @@ Right
                        Nothing)
                   (Area (Loc 4 1 5) (Loc 26 1 27))
                   (Record
-                     [ Solved
+                     [ Typed
                          ([] :=> TCon (TC "Float" Star) "prelude")
                          (Area (Loc 6 1 7) (Loc 15 1 16))
                          (Field
                             ( "x"
-                            , Solved
+                            , Typed
                                 ([] :=> TCon (TC "Float" Star) "prelude")
                                 (Area (Loc 9 1 10) (Loc 15 1 16))
                                 (LFloat "3.1415")
                             ))
-                     , Solved
+                     , Typed
                          ([ IsIn
                               "Number"
                               [ TVar (TV "e56" Star) ]
@@ -49,7 +49,7 @@ Right
                          (Area (Loc 17 1 18) (Loc 24 1 25))
                          (Field
                             ( "y"
-                            , Solved
+                            , Typed
                                 ([ IsIn
                                      "Number"
                                      [ TCon (TC "Integer" Star) "prelude" ]
@@ -59,7 +59,7 @@ Right
                                    TCon (TC "Integer" Star) "prelude")
                                 (Area (Loc 20 1 21) (Loc 24 1 25))
                                 (App
-                                   (Solved
+                                   (Typed
                                       ([ IsIn
                                            "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                        ] :=>
@@ -74,7 +74,7 @@ Right
                                          ( MethodRef "Number" "unary-minus" False
                                          , [ TCon (TC "Integer" Star) "prelude" ]
                                          )
-                                         (Solved
+                                         (Typed
                                             ([ IsIn
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
@@ -88,8 +88,8 @@ Right
                                                     (TCon (TC "Integer" Star) "prelude"))
                                                  (TCon (TC "Integer" Star) "prelude"))
                                             (Area (Loc 20 1 21) (Loc 21 1 22))
-                                            (Var "unary-minus"))))
-                                   (Solved
+                                            (Var "unary-minus" False))))
+                                   (Typed
                                       ([ IsIn
                                            "Number"
                                            [ TCon (TC "Integer" Star) "prelude" ]
@@ -103,11 +103,11 @@ Right
                                    True)
                             ))
                      ])))
-        , Solved
+        , Typed
             ([] :=> TCon (TC "Float" Star) "prelude")
             (Area (Loc 27 2 1) (Loc 30 2 4))
             (Access
-               (Solved
+               (Typed
                   ([] :=>
                      TRecord
                        (fromList
@@ -116,8 +116,8 @@ Right
                           ])
                        Nothing)
                   (Area (Loc 27 2 1) (Loc 28 2 2))
-                  (Var "a"))
-               (Solved
+                  (Var "a" False))
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -130,7 +130,7 @@ Right
                              (Just (TVar (TV "t71" Star)))))
                        (TCon (TC "Float" Star) "prelude"))
                   (Area (Loc 29 2 3) (Loc 30 2 4))
-                  (Var ".x")))
+                  (Var ".x" False)))
         ]
     , atypedecls = []
     , ainterfaces = []
@@ -152,7 +152,7 @@ Right
                   Nothing)
                (fromList
                   [ ( "inspect"
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -167,7 +167,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "inspect"
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -182,7 +182,7 @@ Right
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
                                    ( ClassRef "Inspect" [] False True , [ TVar (TV "o14" Star) ] )
-                                   (Solved
+                                   (Typed
                                       ([] :=>
                                          TApp
                                            (TApp
@@ -200,7 +200,7 @@ Right
                                          ( ClassRef "Inspect" [] False True
                                          , [ TVar (TV "h7" Star) ]
                                          )
-                                         (Solved
+                                         (Typed
                                             ([ IsIn "Inspect" [ TVar (TV "h7" Star) ] Nothing
                                              , IsIn "Inspect" [ TVar (TV "o14" Star) ] Nothing
                                              ] :=>
@@ -218,7 +218,7 @@ Right
                                                  (TCon (TC "String" Star) "prelude"))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Inspect"
                                                        [ TVar (TV "h7" Star) ]
@@ -236,15 +236,15 @@ Right
                                                        (Just (TVar (TV "q16" Star))))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
-                                               [ Solved
+                                               [ Typed
                                                    ([] :=> TCon (TC "String" Star) "prelude")
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    (TemplateString
-                                                      [ Solved
+                                                      [ Typed
                                                           ([] :=> TCon (TC "String" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (LStr "{ ")
-                                                      , Solved
+                                                          (LStr "\"{ \"")
+                                                      , Typed
                                                           ([ IsIn
                                                                "Inspect"
                                                                [ TVar (TV "h7" Star) ]
@@ -253,7 +253,7 @@ Right
                                                              TCon (TC "String" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (App
-                                                             (Solved
+                                                             (Typed
                                                                 ([] :=>
                                                                    TApp
                                                                      (TApp
@@ -272,7 +272,7 @@ Right
                                                                         "prelude"))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([] :=>
                                                                          TApp
                                                                            (TApp
@@ -308,8 +308,8 @@ Right
                                                                                  (TC "String" Star)
                                                                                  "prelude")))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                      (Var "++"))
-                                                                   (Solved
+                                                                      (Var "++" False))
+                                                                   (Typed
                                                                       ([] :=>
                                                                          TCon
                                                                            (TC "String" Star)
@@ -317,7 +317,7 @@ Right
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (LStr "\"x: \""))
                                                                    False))
-                                                             (Solved
+                                                             (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
                                                                      [ TVar (TV "h7" Star) ]
@@ -329,7 +329,7 @@ Right
                                                                      (TC "String" Star) "prelude")
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
                                                                            [ TVar (TV "h7" Star) ]
@@ -358,7 +358,7 @@ Right
                                                                              True
                                                                          , [ TVar (TV "h7" Star) ]
                                                                          )
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
@@ -389,8 +389,8 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var "inspect"))))
-                                                                   (Solved
+                                                                            (Var "inspect" False))))
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
                                                                            [ TVar (TV "h7" Star) ]
@@ -402,7 +402,7 @@ Right
                                                                          TVar (TV "h7" Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([] :=>
                                                                                TRecord
                                                                                  (fromList
@@ -427,8 +427,8 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var "__$a__"))
-                                                                         (Solved
+                                                                            (Var "__$a__" False))
+                                                                         (Typed
                                                                             ([] :=>
                                                                                TApp
                                                                                  (TApp
@@ -460,14 +460,14 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var ".x"))))
+                                                                            (Var ".x" False))))
                                                                    True))
                                                              True)
-                                                      , Solved
+                                                      , Typed
                                                           ([] :=> TCon (TC "String" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (LStr ", ")
-                                                      , Solved
+                                                          (LStr "\", \"")
+                                                      , Typed
                                                           ([ IsIn
                                                                "Inspect"
                                                                [ TVar (TV "o14" Star) ]
@@ -476,7 +476,7 @@ Right
                                                              TCon (TC "String" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (App
-                                                             (Solved
+                                                             (Typed
                                                                 ([] :=>
                                                                    TApp
                                                                      (TApp
@@ -495,7 +495,7 @@ Right
                                                                         "prelude"))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([] :=>
                                                                          TApp
                                                                            (TApp
@@ -531,8 +531,8 @@ Right
                                                                                  (TC "String" Star)
                                                                                  "prelude")))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                      (Var "++"))
-                                                                   (Solved
+                                                                      (Var "++" False))
+                                                                   (Typed
                                                                       ([] :=>
                                                                          TCon
                                                                            (TC "String" Star)
@@ -540,7 +540,7 @@ Right
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (LStr "\"y: \""))
                                                                    False))
-                                                             (Solved
+                                                             (Typed
                                                                 ([ IsIn
                                                                      "Inspect"
                                                                      [ TVar (TV "o14" Star) ]
@@ -552,7 +552,7 @@ Right
                                                                      (TC "String" Star) "prelude")
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
                                                                            [ TVar (TV "o14" Star) ]
@@ -582,7 +582,7 @@ Right
                                                                              True
                                                                          , [ TVar (TV "o14" Star) ]
                                                                          )
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
                                                                                  [ TVar
@@ -613,8 +613,8 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var "inspect"))))
-                                                                   (Solved
+                                                                            (Var "inspect" False))))
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Inspect"
                                                                            [ TVar (TV "o14" Star) ]
@@ -626,7 +626,7 @@ Right
                                                                          TVar (TV "o14" Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([] :=>
                                                                                TRecord
                                                                                  (fromList
@@ -651,8 +651,8 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var "__$a__"))
-                                                                         (Solved
+                                                                            (Var "__$a__" False))
+                                                                         (Typed
                                                                             ([] :=>
                                                                                TApp
                                                                                  (TApp
@@ -691,13 +691,13 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var ".y"))))
+                                                                            (Var ".y" False))))
                                                                    True))
                                                              True)
-                                                      , Solved
+                                                      , Typed
                                                           ([] :=> TCon (TC "String" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                          (LStr " }")
+                                                          (LStr "\" }\"")
                                                       ])
                                                ])))))))
                       , Forall
@@ -731,7 +731,7 @@ Right
                   Nothing)
                (fromList
                   [ ( "=="
-                    , ( Solved
+                    , ( Typed
                           ([] :=>
                              TApp
                                (TApp
@@ -755,7 +755,7 @@ Right
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -779,7 +779,7 @@ Right
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Placeholder
                                    ( ClassRef "Eq" [] False True , [ TVar (TV "p41" Star) ] )
-                                   (Solved
+                                   (Typed
                                       ([] :=>
                                          TApp
                                            (TApp
@@ -806,7 +806,7 @@ Right
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Placeholder
                                          ( ClassRef "Eq" [] False True , [ TVar (TV "e30" Star) ] )
-                                         (Solved
+                                         (Typed
                                             ([ IsIn "Eq" [ TVar (TV "e30" Star) ] Nothing
                                              , IsIn "Eq" [ TVar (TV "p41" Star) ] Nothing
                                              ] :=>
@@ -835,7 +835,7 @@ Right
                                                     (TCon (TC "Boolean" Star) "prelude")))
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             (Abs
-                                               (Solved
+                                               (Typed
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TVar (TV "e30" Star) ]
@@ -853,7 +853,7 @@ Right
                                                        (Just (TVar (TV "d29" Star))))
                                                   (Area (Loc 0 0 0) (Loc 0 0 0))
                                                   "__$a__")
-                                               [ Solved
+                                               [ Typed
                                                    ([ IsIn
                                                         "Eq"
                                                         [ TVar (TV "e30" Star) ]
@@ -879,7 +879,7 @@ Right
                                                         (TCon (TC "Boolean" Star) "prelude"))
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    (Abs
-                                                      (Solved
+                                                      (Typed
                                                          ([ IsIn
                                                               "Eq"
                                                               [ TVar (TV "e30" Star) ]
@@ -897,7 +897,7 @@ Right
                                                               (Just (TVar (TV "g32" Star))))
                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
                                                          "__$b__")
-                                                      [ Solved
+                                                      [ Typed
                                                           ([ IsIn
                                                                "Eq"
                                                                [ TVar (TV "e30" Star) ]
@@ -910,7 +910,7 @@ Right
                                                              TCon (TC "Boolean" Star) "prelude")
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (App
-                                                             (Solved
+                                                             (Typed
                                                                 ([ IsIn
                                                                      "Eq"
                                                                      [ TVar (TV "e30" Star) ]
@@ -935,7 +935,7 @@ Right
                                                                         "prelude"))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([] :=>
                                                                          TApp
                                                                            (TApp
@@ -971,8 +971,8 @@ Right
                                                                                  (TC "Boolean" Star)
                                                                                  "prelude")))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
-                                                                      (Var "&&"))
-                                                                   (Solved
+                                                                      (Var "&&" False))
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Eq"
                                                                            [ TVar (TV "e30" Star) ]
@@ -986,7 +986,7 @@ Right
                                                                            "prelude")
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (App
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
@@ -1021,7 +1021,7 @@ Right
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
                                                                             (App
-                                                                               (Solved
+                                                                               (Typed
                                                                                   ([ IsIn
                                                                                        "Eq"
                                                                                        [ TVar
@@ -1080,7 +1080,7 @@ Right
                                                                                               Star)
                                                                                        ]
                                                                                      )
-                                                                                     (Solved
+                                                                                     (Typed
                                                                                         ([ IsIn
                                                                                              "Eq"
                                                                                              [ TVar
@@ -1133,8 +1133,9 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Var
-                                                                                           "=="))))
-                                                                               (Solved
+                                                                                           "=="
+                                                                                           False))))
+                                                                               (Typed
                                                                                   ([ IsIn
                                                                                        "Eq"
                                                                                        [ TVar
@@ -1161,7 +1162,7 @@ Right
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
                                                                                   (Access
-                                                                                     (Solved
+                                                                                     (Typed
                                                                                         ([] :=>
                                                                                            TRecord
                                                                                              (fromList
@@ -1191,8 +1192,9 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Var
-                                                                                           "__$a__"))
-                                                                                     (Solved
+                                                                                           "__$a__"
+                                                                                           False))
+                                                                                     (Typed
                                                                                         ([] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1237,9 +1239,10 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Var
-                                                                                           ".x"))))
+                                                                                           ".x"
+                                                                                           False))))
                                                                                False))
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
@@ -1255,7 +1258,7 @@ Right
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
                                                                             (Access
-                                                                               (Solved
+                                                                               (Typed
                                                                                   ([] :=>
                                                                                      TRecord
                                                                                        (fromList
@@ -1280,8 +1283,10 @@ Right
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
-                                                                                  (Var "__$b__"))
-                                                                               (Solved
+                                                                                  (Var
+                                                                                     "__$b__"
+                                                                                     False))
+                                                                               (Typed
                                                                                   ([] :=>
                                                                                      TApp
                                                                                        (TApp
@@ -1321,10 +1326,11 @@ Right
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
-                                                                                  (Var ".x"))))
+                                                                                  (Var
+                                                                                     ".x" False))))
                                                                          True))
                                                                    False))
-                                                             (Solved
+                                                             (Typed
                                                                 ([ IsIn
                                                                      "Eq"
                                                                      [ TVar (TV "e30" Star) ]
@@ -1342,7 +1348,7 @@ Right
                                                                      (TC "Boolean" Star) "prelude")
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (App
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Eq"
                                                                            [ TVar (TV "p41" Star) ]
@@ -1370,7 +1376,7 @@ Right
                                                                               "prelude"))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (App
-                                                                         (Solved
+                                                                         (Typed
                                                                             ([] :=>
                                                                                TApp
                                                                                  (TApp
@@ -1412,8 +1418,8 @@ Right
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
-                                                                            (Var "&&"))
-                                                                         (Solved
+                                                                            (Var "&&" False))
+                                                                         (Typed
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
@@ -1431,7 +1437,7 @@ Right
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
                                                                             (App
-                                                                               (Solved
+                                                                               (Typed
                                                                                   ([ IsIn
                                                                                        "Eq"
                                                                                        [ TVar
@@ -1474,7 +1480,7 @@ Right
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
                                                                                   (App
-                                                                                     (Solved
+                                                                                     (Typed
                                                                                         ([ IsIn
                                                                                              "Eq"
                                                                                              [ TVar
@@ -1537,7 +1543,7 @@ Right
                                                                                                     Star)
                                                                                              ]
                                                                                            )
-                                                                                           (Solved
+                                                                                           (Typed
                                                                                               ([ IsIn
                                                                                                    "Eq"
                                                                                                    [ TVar
@@ -1592,8 +1598,9 @@ Right
                                                                                                     0
                                                                                                     0))
                                                                                               (Var
-                                                                                                 "=="))))
-                                                                                     (Solved
+                                                                                                 "=="
+                                                                                                 False))))
+                                                                                     (Typed
                                                                                         ([ IsIn
                                                                                              "Eq"
                                                                                              [ TVar
@@ -1624,7 +1631,7 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Access
-                                                                                           (Solved
+                                                                                           (Typed
                                                                                               ([] :=>
                                                                                                  TRecord
                                                                                                    (fromList
@@ -1656,8 +1663,9 @@ Right
                                                                                                     0
                                                                                                     0))
                                                                                               (Var
-                                                                                                 "__$a__"))
-                                                                                           (Solved
+                                                                                                 "__$a__"
+                                                                                                 False))
+                                                                                           (Typed
                                                                                               ([] :=>
                                                                                                  TApp
                                                                                                    (TApp
@@ -1704,9 +1712,10 @@ Right
                                                                                                     0
                                                                                                     0))
                                                                                               (Var
-                                                                                                 ".y"))))
+                                                                                                 ".y"
+                                                                                                 False))))
                                                                                      False))
-                                                                               (Solved
+                                                                               (Typed
                                                                                   ([ IsIn
                                                                                        "Eq"
                                                                                        [ TVar
@@ -1733,7 +1742,7 @@ Right
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
                                                                                   (Access
-                                                                                     (Solved
+                                                                                     (Typed
                                                                                         ([] :=>
                                                                                            TRecord
                                                                                              (fromList
@@ -1763,8 +1772,9 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Var
-                                                                                           "__$b__"))
-                                                                                     (Solved
+                                                                                           "__$b__"
+                                                                                           False))
+                                                                                     (Typed
                                                                                         ([] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1809,10 +1819,11 @@ Right
                                                                                               0
                                                                                               0))
                                                                                         (Var
-                                                                                           ".y"))))
+                                                                                           ".y"
+                                                                                           False))))
                                                                                True))
                                                                          False))
-                                                                   (Solved
+                                                                   (Typed
                                                                       ([ IsIn
                                                                            "Eq"
                                                                            [ TVar (TV "p41" Star) ]

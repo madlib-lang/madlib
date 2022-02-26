@@ -7,17 +7,17 @@ Inspect['Wish'] = {};
 Inspect['Wish']['inspect'] = () => (Inspect_g6) => (Inspect_i8) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
-    return `Wish(${Inspect.a_arr_b.inspect()(a0)})`;
+    return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
   }
   else if (true) {
-    return "Unknown";
+    return `Unknown`;
   }
   else {
     console.log('non exhaustive patterns for value: ', __x__.toString()); 
     console.trace(); 
     throw 'non exhaustive patterns!';
   }
-})(__$a__))
+})(__$a__));
 Functor['Wish'] = {};
 Functor['Wish']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
@@ -142,5 +142,5 @@ export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 import {} from "./__internals__.mjs"
 import W from "./.prelude/Wish.mjs";
 
-W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map()((x => x + '!'))(Monad.Wish.chain()((x => Monad.Wish.of()(`finally a string`)))(Monad.Wish.chain()((x => Monad.Wish.of()(x * 3)))(Functor.Wish.map()((x => x % 2))(Monad.Wish.of()(3))))));
+W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map()((x => x + `!`))(Monad.Wish.chain()((x => Monad.Wish.of()(`finally a string`)))(Monad.Wish.chain()((x => Monad.Wish.of()(x * 3)))(Functor.Wish.map()((x => x % 2))(Monad.Wish.of()(3))))));
 export default {};

@@ -251,12 +251,6 @@ instance Compilable Exp where
           <> " <= "
           <> hpWrapLine coverage astPath (getStartLine right) (compile env config right)
 
-        Call (Typed _ _ _ (Var "|>" _)) [left, right] ->
-          hpWrapLine coverage astPath (getStartLine right) (compile env config right)
-            <> "("
-            <> hpWrapLine coverage astPath (getStartLine left) (compile env config left)
-            <> ")"
-
         Call fn args | isPlainRecursiveCall metadata ->
           let params  = case recursionData env of
                 Just PlainRecursionData { rdParams } ->
@@ -747,7 +741,7 @@ instance Compilable Core.Instance where
               <> "'] = () => "
               <> placeholders
               <> content'
-              <> "\n"
+              <> ";\n"
         in
           if not (null dicts)
             then compiledMethod

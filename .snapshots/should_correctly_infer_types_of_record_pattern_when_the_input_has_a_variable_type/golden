@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -17,7 +17,7 @@ Right
             (Area (Loc 0 1 1) (Loc 59 4 3))
             (Assignment
                "fn2"
-               (Solved
+               (Typed
                   ([] :=>
                      TApp
                        (TApp
@@ -31,7 +31,7 @@ Right
                        (TVar (TV "b27" Star)))
                   (Area (Loc 6 1 7) (Loc 59 4 3))
                   (Abs
-                     (Solved
+                     (Typed
                         ([] :=>
                            TRecord
                              (fromList
@@ -41,11 +41,11 @@ Right
                              (Just (TVar (TV "a26" Star))))
                         (Area (Loc 7 1 8) (Loc 8 1 9))
                         "a")
-                     [ Solved
+                     [ Typed
                          ([] :=> TVar (TV "b27" Star))
                          (Area (Loc 14 1 15) (Loc 58 4 2))
                          (Where
-                            (Solved
+                            (Typed
                                ([] :=>
                                   TRecord
                                     (fromList
@@ -54,8 +54,8 @@ Right
                                        ])
                                     (Just (TVar (TV "a26" Star))))
                                (Area (Loc 20 1 21) (Loc 21 1 22))
-                               (Var "a"))
-                            [ Solved
+                               (Var "a" False))
+                            [ Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -69,26 +69,29 @@ Right
                                      (TVar (TV "b27" Star)))
                                 (Area (Loc 27 2 3) (Loc 40 2 16))
                                 (Is
-                                   (Solved
+                                   (Typed
                                       ([] :=>
                                          TRecord
-                                           (fromList [ ( "z" , TVar (TV "z25" Star) ) ])
+                                           (fromList
+                                              [ ( "x" , TVar (TV "b27" Star) )
+                                              , ( "z" , TVar (TV "b27" Star) )
+                                              ])
                                            (Just (TVar (TV "a26" Star))))
                                       (Area (Loc 27 2 3) (Loc 35 2 11))
                                       (PRecord
                                          (fromList
                                             [ ( "z"
-                                              , Solved
-                                                  ([] :=> TVar (TV "z25" Star))
+                                              , Typed
+                                                  ([] :=> TVar (TV "b27" Star))
                                                   (Area (Loc 32 2 8) (Loc 33 2 9))
                                                   (PVar "z")
                                               )
                                             ])))
-                                   (Solved
+                                   (Typed
                                       ([] :=> TVar (TV "b27" Star))
                                       (Area (Loc 39 2 15) (Loc 40 2 16))
-                                      (Var "z")))
-                            , Solved
+                                      (Var "z" False)))
+                            , Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -102,25 +105,28 @@ Right
                                      (TVar (TV "b27" Star)))
                                 (Area (Loc 43 3 3) (Loc 56 3 16))
                                 (Is
-                                   (Solved
+                                   (Typed
                                       ([] :=>
                                          TRecord
-                                           (fromList [ ( "x" , TVar (TV "b27" Star) ) ])
-                                           (Just (TVar (TV "c28" Star))))
+                                           (fromList
+                                              [ ( "x" , TVar (TV "b27" Star) )
+                                              , ( "z" , TVar (TV "b27" Star) )
+                                              ])
+                                           (Just (TVar (TV "a26" Star))))
                                       (Area (Loc 43 3 3) (Loc 51 3 11))
                                       (PRecord
                                          (fromList
                                             [ ( "x"
-                                              , Solved
+                                              , Typed
                                                   ([] :=> TVar (TV "b27" Star))
                                                   (Area (Loc 48 3 8) (Loc 49 3 9))
                                                   (PVar "x")
                                               )
                                             ])))
-                                   (Solved
+                                   (Typed
                                       ([] :=> TVar (TV "b27" Star))
                                       (Area (Loc 55 3 15) (Loc 56 3 16))
-                                      (Var "x")))
+                                      (Var "x" False)))
                             ])
                      ])))
         ]

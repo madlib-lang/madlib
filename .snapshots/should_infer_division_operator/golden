@@ -2,7 +2,7 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=>
                TApp
                  (TApp
@@ -15,11 +15,11 @@ Right
                     (TCon (TC "Float" Star) "prelude")))
             (Area (Loc 0 1 1) (Loc 17 1 18))
             (Abs
-               (Solved
+               (Typed
                   ([] :=> TCon (TC "Float" Star) "prelude")
                   (Area (Loc 1 1 2) (Loc 2 1 3))
                   "b")
-               [ Solved
+               [ Typed
                    ([] :=>
                       TApp
                         (TApp
@@ -28,15 +28,15 @@ Right
                         (TCon (TC "Float" Star) "prelude"))
                    (Area (Loc 0 1 1) (Loc 17 1 18))
                    (Abs
-                      (Solved
+                      (Typed
                          ([] :=> TCon (TC "Float" Star) "prelude")
                          (Area (Loc 4 1 5) (Loc 5 1 6))
                          "c")
-                      [ Solved
+                      [ Typed
                           ([] :=> TCon (TC "Float" Star) "prelude")
                           (Area (Loc 11 1 12) (Loc 16 1 17))
                           (App
-                             (Solved
+                             (Typed
                                 ([] :=>
                                    TApp
                                      (TApp
@@ -45,7 +45,7 @@ Right
                                      (TCon (TC "Float" Star) "prelude"))
                                 (Area (Loc 11 1 12) (Loc 16 1 17))
                                 (App
-                                   (Solved
+                                   (Typed
                                       ([] :=>
                                          TApp
                                            (TApp
@@ -60,16 +60,16 @@ Right
                                                  (TCon (TC "Float" Star) "prelude"))
                                               (TCon (TC "Float" Star) "prelude")))
                                       (Area (Loc 13 1 14) (Loc 14 1 15))
-                                      (Var "/"))
-                                   (Solved
+                                      (Var "/" False))
+                                   (Typed
                                       ([] :=> TCon (TC "Float" Star) "prelude")
                                       (Area (Loc 11 1 12) (Loc 12 1 13))
-                                      (Var "b"))
+                                      (Var "b" False))
                                    False))
-                             (Solved
+                             (Typed
                                 ([] :=> TCon (TC "Float" Star) "prelude")
                                 (Area (Loc 15 1 16) (Loc 16 1 17))
-                                (Var "c"))
+                                (Var "c" False))
                              True)
                       ])
                ])

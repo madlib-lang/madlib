@@ -2,11 +2,11 @@ Right
   AST
     { aimports = []
     , aexps =
-        [ Solved
+        [ Typed
             ([] :=> TCon (TC "Boolean" Star) "prelude")
             (Area (Loc 0 1 1) (Loc 6 1 7))
             (App
-               (Solved
+               (Typed
                   ([ IsIn
                        "Eq"
                        [ TCon (TC "Integer" Star) "prelude" ]
@@ -20,7 +20,7 @@ Right
                        (TCon (TC "Boolean" Star) "prelude"))
                   (Area (Loc 0 1 1) (Loc 6 1 7))
                   (App
-                     (Solved
+                     (Typed
                         ([ IsIn "Eq" [ TCon (TC "Integer" Star) "prelude" ] Nothing ] :=>
                            TApp
                              (TApp
@@ -36,7 +36,7 @@ Right
                            ( MethodRef "Eq" "==" False
                            , [ TCon (TC "Integer" Star) "prelude" ]
                            )
-                           (Solved
+                           (Typed
                               ([ IsIn "Eq" [ TCon (TC "Integer" Star) "prelude" ] Nothing ] :=>
                                  TApp
                                    (TApp
@@ -48,8 +48,8 @@ Right
                                          (TCon (TC "Integer" Star) "prelude"))
                                       (TCon (TC "Boolean" Star) "prelude")))
                               (Area (Loc 2 1 3) (Loc 4 1 5))
-                              (Var "=="))))
-                     (Solved
+                              (Var "==" False))))
+                     (Typed
                         ([ IsIn
                              "Eq"
                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -60,7 +60,7 @@ Right
                         (Area (Loc 0 1 1) (Loc 1 1 2))
                         (LNum "1"))
                      False))
-               (Solved
+               (Typed
                   ([ IsIn
                        "Eq"
                        [ TCon (TC "Integer" Star) "prelude" ]
