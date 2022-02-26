@@ -35,14 +35,14 @@ import Distribution.Types.Lens (_Impl)
 
 
 data RecursionData
-  = PlainRecursionData { prdParams :: [String] }
-  | RightListRecursionData { rlrdParams :: [String] }
+  = PlainRecursionData { rdParams :: [String] }
+  | RightListRecursionData { rdParams :: [String] }
   deriving(Eq, Show)
 
-data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData } deriving(Eq, Show)
+data Env = Env { varsInScope :: S.Set String, recursionData :: Maybe RecursionData, varsRewritten :: M.Map String String } deriving(Eq, Show)
 
 initialEnv :: Env
-initialEnv = Env { varsInScope = S.empty, recursionData = Nothing }
+initialEnv = Env { varsInScope = S.empty, recursionData = Nothing, varsRewritten = M.empty }
 
 allowedJSNames :: [String]
 allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default"]
@@ -230,11 +230,11 @@ instance Compilable Exp where
 
         Call fn args | isPlainRecursiveCall metadata ->
           let params  = case recursionData env of
-                Just PlainRecursionData { prdParams } ->
-                  prdParams
+                Just PlainRecursionData { rdParams } ->
+                  rdParams
 
-                Just RightListRecursionData { rlrdParams } ->
-                  rlrdParams
+                Just RightListRecursionData { rdParams } ->
+                  rdParams
 
                 _ ->
                   []
@@ -270,28 +270,36 @@ instance Compilable Exp where
           compileBody :: Env -> [Exp] -> String
           compileBody env body = case body of
             [exp] | isPlainRecursiveDefinition metadata ->
-              "{\n"
-              <> "    let $result;\n"
-              <> "    let $continue = true;\n"
-              <> "    while($continue) {\n"
-              <> "        $continue = false;\n"
-              <> "        "<> compile env { recursionData = Just PlainRecursionData { prdParams = params } } config exp
-              <> "\n    }\n"
-              <> "    return $result;\n"
-              <> "}"
+              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
+              in  "{\n"
+                  <> "    let $result;\n"
+                  <> "    let $continue = true;\n"
+                  <> unlines paramCopies
+                  <> "\n"
+                  <> "    while($continue) {\n"
+                  <> "        $continue = false;\n"
+                  <> "        "<> compile env { recursionData = Just PlainRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "\n    }\n"
+                  <> "    return $result;\n"
+                  <> "}"
 
             [exp] | isRightListRecursiveDefinition metadata ->
-              "{\n"
-              <> "    let $result;\n"
-              <> "    let $continue = true;\n"
-              <> "    let $start = [];\n"
-              <> "    let $end = $start;\n"
-              <> "    while($continue) {\n"
-              <> "        $continue = false;\n"
-              <> "        "<> compile env { recursionData = Just RightListRecursionData { rlrdParams = params } } config exp
-              <> "\n    }\n"
-              <> "    return $result;\n"
-              <> "}"
+              let paramCopies = (\param -> "    let $" <> param <> " = " <> param <> ";") <$> params
+                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> params)
+              in  "{\n"
+                  <> "    let $result;\n"
+                  <> "    let $continue = true;\n"
+                  <> "    let $start = [];\n"
+                  <> "    let $end = $start;\n"
+                  <> unlines paramCopies
+                  <> "\n"
+                  <> "    while($continue) {\n"
+                  <> "        $continue = false;\n"
+                  <> "        "<> compile env { recursionData = Just RightListRecursionData { rdParams = ("$"<>) <$> params }, varsRewritten = varsRewritten env <> rewrite } config exp
+                  <> "\n    }\n"
+                  <> "    return $result;\n"
+                  <> "}"
 
             [exp] ->
               compile env config exp
@@ -325,8 +333,20 @@ instance Compilable Exp where
 
 
         Var name _ ->
-          let safeName = generateSafeName name
-          in  if safeName == "!" || not coverage then safeName else hpWrapLine coverage astPath l safeName
+          let safeName  = generateSafeName name
+              rewritten = varsRewritten env
+          in  case M.lookup safeName rewritten of
+                Just safeName' ->
+                  if safeName' == "!" || not coverage then
+                    safeName'
+                  else
+                    hpWrapLine coverage astPath l safeName'
+
+                Nothing ->
+                  if safeName == "!" || not coverage then
+                    safeName
+                  else
+                    hpWrapLine coverage astPath l safeName
 
         Placeholder (ClassRef cls _ call var, ts) exp' -> insertPlaceholderArgs "" e
 
@@ -434,7 +454,7 @@ instance Compilable Exp where
             Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
           ] | Core.isRightListRecursiveCall metadata ->
           let compiledLi    = compile env config li
-              Just params   = rlrdParams <$> recursionData env
+              Just params   = rdParams <$> recursionData env
               compiledArgs  = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
           in  "($end.push("<> compiledLi <>"), " <> intercalate ", " updateParams <> ", $continue = true)"
