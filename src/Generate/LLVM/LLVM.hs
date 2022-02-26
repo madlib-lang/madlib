@@ -320,6 +320,9 @@ buildLLVMType env symbolTable qt@(ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude") _ ->
     listType
 
+  IT.TRecord _ _ -> do
+    recordType
+
   IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" (IT.Kfun IT.Star (IT.Kfun IT.Star IT.Star))) "prelude") _) _ ->
     Type.ptr $ Type.FunctionType boxType [boxType] False
 
@@ -440,7 +443,7 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
     ptr <- safeBitcast what (Type.ptr listType)
     load ptr 0
 
-  IT.TRecord fields _ -> do
+  IT.TRecord _ _ -> do
     safeBitcast what recordType
 
   -- This should be called for parameters that are closures or returned closures
@@ -1956,7 +1959,6 @@ generateExps env symbolTable exps = case exps of
     return ()
 
 
--- TODO: get the predicates and generate dict params for them
 generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
 generateExternFunction env symbolTable (ps IT.:=> t) functionName arity foreignFn = do
   let paramTypes    = ([] IT.:=>) <$> IT.getParamTypes t

@@ -400,8 +400,8 @@ char **boxedUrl = (char **)madlib__record__internal__selectField((char *)"url", 
       (madlib__list__Node_t **)madlib__record__internal__selectField((char *)"headers", request);
   curl_slist *lcurlHeaders = buildLibCurlHeaders(*boxedHeaders);
 
-  madlib__maybe__Maybe_Just_t *boxedBody =
-      (madlib__maybe__Maybe_Just_t *)madlib__record__internal__selectField((char *)"body", request);
+  madlib__maybe__Maybe_t *boxedBody =
+      (madlib__maybe__Maybe_t *)madlib__record__internal__selectField((char *)"body", request);
 
   CURLM *multiHandle = curl_multi_init();
 

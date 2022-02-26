@@ -553,3 +553,8 @@ export deleteBytesWithHeaders = (url, body, headers) => requestBytes({
   body: Just(body),
   headers
 })
+
+
+// %0 = bitcast i8* %config_0 to { i32, i8* }*
+// i8*  %3 = tail call i1* @madlib__http__request({ i32, i8* }* %0, { i8*, i32, i32, i8* }* %1, { i8*, i32, i32, i8* }* %2)
+// %0 = bitcast i8* %config_0 to { i32, i8* }*\n i8*  %3 = tail call i1* @madlib__http__requestBytes({ i32, i8* }* %0, { i8*, i32, i32, i8* }* %1, { i8*, i32, i32, i8* }* %2)
