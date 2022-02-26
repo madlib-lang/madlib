@@ -171,6 +171,15 @@ getQualType :: Core a -> Ty.Qual Ty.Type
 getQualType (Typed t _ _ _) = t
 
 
+updateQualType :: Ty.Qual Ty.Type -> Core a -> Core a
+updateQualType qt core = case core of
+  Typed _ area metadata e ->
+    Typed qt area metadata e
+
+  _ ->
+    core
+
+
 getExpName :: Exp -> Maybe String
 getExpName Untyped{}         = Nothing
 getExpName (Typed _ _ _ exp) = case exp of
@@ -198,6 +207,28 @@ getValue :: Core a -> a
 getValue (Typed _ _ _ a) = a
 getValue (Untyped _ _ a    ) = a
 
+
+mapListItem :: (Exp -> Exp) -> ListItem -> ListItem
+mapListItem f item = case item of
+  Typed qt area metadata (ListItem e) ->
+    Typed qt area metadata (ListItem (f e))
+
+  Typed qt area metadata (ListSpread e) ->
+    Typed qt area metadata (ListSpread (f e))
+
+  _ ->
+    item
+
+mapRecordField :: (Exp -> Exp) -> Field -> Field
+mapRecordField f field = case field of
+  Typed qt area metadata (Field (n, e)) ->
+    Typed qt area metadata (Field (n, f e))
+
+  Typed qt area metadata (FieldSpread e) ->
+    Typed qt area metadata (FieldSpread (f e))
+
+  _ ->
+    field
 
 getListItemExp :: ListItem -> Exp
 getListItemExp li = case li of
