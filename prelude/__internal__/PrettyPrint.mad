@@ -1,0 +1,255 @@
+import Math from "Math"
+import String from "String"
+import List from "List"
+import {} from "Char"
+
+import IO from "IO"
+
+
+export type Doc
+  = EmptyDoc
+  | CharDoc(Char)
+  | TextDoc(Integer, String)
+  | LineDoc(Boolean)
+  | CatDoc(Doc, Doc)
+  | NestDoc(Integer, Doc)
+  | UnionDoc(Doc, Doc)
+  | ColumnDoc(Integer -> Doc)
+  | NestingDoc(Integer -> Doc)
+
+
+export type SimpleDoc
+  = SEmpty
+  | SChar(Char, SimpleDoc)
+  | SText(Integer, String, SimpleDoc)
+  | SLine(Integer, SimpleDoc)
+
+
+
+empty :: Doc
+export empty = EmptyDoc
+
+
+char :: Char -> Doc
+export char = (c) => where(c) {
+  '\n' =>
+    line
+
+  or =>
+    CharDoc(or)
+}
+
+
+text :: String -> Doc
+export text = (s) => where(s) {
+  "" =>
+    EmptyDoc
+
+  or =>
+    TextDoc(String.length(or), or)
+}
+
+
+group :: Doc -> Doc
+export group = (x) => UnionDoc(flatten(x), x)
+
+
+flatten :: Doc -> Doc
+export flatten = (doc) => where(doc) {
+  CatDoc(x, y) =>
+    CatDoc(flatten(x), flatten(y))
+
+  NestDoc(i, x) =>
+    NestDoc(i, flatten(x))
+
+  LineDoc(break) =>
+    break
+      ? EmptyDoc
+      : TextDoc(1, " ")
+
+  UnionDoc(x, y) =>
+    flatten(x)
+
+  ColumnDoc(f) =>
+    ColumnDoc(pipe(f, flatten))
+
+  NestingDoc(f) =>
+    NestingDoc(pipe(f, flatten))
+
+  or =>
+    or
+}
+
+
+line :: Doc
+export line = LineDoc(false)
+
+
+linebreak :: Doc
+export linebreak = LineDoc(true)
+
+
+softline :: Doc
+export softline = group(line)
+
+
+softbreak :: Doc
+export softbreak = group(linebreak)
+
+
+enclose :: Doc -> Doc -> Doc -> Doc
+export enclose = (l, r, x) => pipe(
+  beside(l),
+  beside($, r)
+)(x)
+
+
+beside :: Doc -> Doc -> Doc
+export beside = (x, y) => CatDoc(x, y)
+
+
+hcat :: List Doc -> Doc
+hcat = List.reduceRight(beside, empty)
+
+
+nest :: Integer -> Doc -> Doc
+export nest = (i, x) => NestDoc(i, x)
+
+
+column :: (Integer -> Doc) -> Doc
+export column = (f) => ColumnDoc(f)
+
+
+nesting :: (Integer -> Doc) -> Doc
+export nesting = (f) => NestingDoc(f)
+
+
+renderPretty :: Float -> Integer -> Doc -> SimpleDoc
+export renderPretty = (rfrac, w, doc) => {
+//   r = Math.max(0, min(w, round(fromIntegral(w) * rfrac)))
+  r = w
+
+  nicest :: Integer -> Integer -> SimpleDoc -> SimpleDoc -> SimpleDoc
+  nicest = (n, k, x, y) => {
+    width = Math.min(w - k, r - k + n)
+
+    return fits(width, x)
+      ? x
+      : y
+  }
+
+  best :: Integer -> Integer -> List #[Integer, Doc] -> SimpleDoc
+  best = (n, k, docs) => where(docs) {
+    [] =>
+      SEmpty
+
+    [#[i, d], ...ds] =>
+      where(d) {
+        EmptyDoc =>
+          best(n, k, ds)
+
+        CharDoc(c) =>
+          SChar(c, best(n, k + 1, ds))
+
+        TextDoc(l, s) =>
+          SText(l, s, best(n, k + l, ds))
+
+        LineDoc(_) =>
+          SLine(i, best(i, i, ds))
+
+        CatDoc(x, y) =>
+          best(n, k, [#[i, x], #[i, y], ...ds])
+
+        NestDoc(j, x) =>
+          best(n, k, [#[i + j, x], ...ds])
+
+        UnionDoc(x, y) =>
+          nicest(n, k, best(n, k, [#[i, x], ...ds]), best(n, k, [#[i, y], ...ds]))
+
+        ColumnDoc(f) =>
+          best(n, k, [#[i, f(k)], ...ds])
+
+        NestingDoc(f) =>
+          best(n, k, [#[i, f(i)], ...ds])
+      }
+  }
+
+
+  return best(0, 0, [#[0, doc]])
+}
+
+fits :: Integer -> SimpleDoc -> Boolean
+fits = (w, simpleDoc) =>
+  if (w < 0) {
+    false
+  } else {
+    where(simpleDoc) {
+      SEmpty =>
+        true
+
+      SChar(_, x) =>
+        fits(w - 1, x)
+
+      SText(l, _, x) =>
+        fits(w - l, x)
+
+      SLine(_, _) =>
+        true
+    }
+  }
+
+
+indentation :: Integer -> String
+indentation = (n) =>
+  String.repeat(' ', n)
+
+
+prettyPrint :: Doc -> String
+export prettyPrint = (doc) => {
+  helper :: String -> SimpleDoc -> String
+  helper = (pretty, d) => where(d) {
+    SEmpty =>
+      pretty
+
+    SChar(c, next) =>
+      helper(pretty ++ show(c), next)
+
+    SText(_, s, next) =>
+      helper(pretty ++ s, next)
+
+    SLine(i, next) =>
+      helper(pretty ++ "\n" ++ indentation(i), next)
+  }
+
+  return helper("", renderPretty(0, 80, doc))
+}
+
+
+myDoc = pipe(
+  hcat,
+  nest(2)
+)([
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+  softline,
+  text("some text!"),
+])
+
+pipe(
+  prettyPrint,
+  IO.log
+)(myDoc)

@@ -1,8 +1,14 @@
 import type { Maybe } from "Maybe"
 import {} from "Monoid"
-import { MORE, LESS, EQUAL } from "Compare"
-import { Just, Nothing } from "Maybe"
 import List from "List"
+
+#iftarget js
+
+import { Just, Nothing } from "Maybe"
+import { MORE, LESS, EQUAL } from "Compare"
+
+#endif
+
 
 
 instance Semigroup String {

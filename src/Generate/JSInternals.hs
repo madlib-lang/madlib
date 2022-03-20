@@ -2,6 +2,19 @@ module Generate.JSInternals where
 
 import           Run.Target
 import           Generate.Utils
+import qualified Utils.Hash                    as Hash
+import qualified Data.ByteString.Lazy.Char8    as BLChar8
+
+
+
+generateHashFromPath :: FilePath -> String
+generateHashFromPath =
+  Hash.hash . BLChar8.pack
+
+
+preludeHash :: String
+preludeHash = generateHashFromPath "prelude"
+
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
@@ -17,27 +30,29 @@ generateInternalsModuleContent target optimized coverage =
     <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
+
 aliasStringGlobal :: Target -> String
 aliasStringGlobal target =
   let global = getGlobalForTarget target
   in global <> ".__String = "<> global <> ".String;\n\n"
 
+
 inspectStaticInstances :: Target -> Bool -> String
 inspectStaticInstances target optimized = unlines
   [ getGlobalForTarget target <> ".Inspect = {};"
   , ""
-  , "Inspect['Integer'] = {};"
-  , "Inspect['Integer']['inspect'] = () => x => '' + x;"
+  , "Inspect['Integer_"<>preludeHash<>"'] = {};"
+  , "Inspect['Integer_"<>preludeHash<>"']['inspect'] = () => x => '' + x;"
   , ""
-  , "Inspect['Byte'] = {};"
-  , "Inspect['Byte']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };"
+  , "Inspect['Byte_"<>preludeHash<>"'] = {};"
+  , "Inspect['Byte_"<>preludeHash<>"']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };"
   , ""
-  , "Inspect['Float'] = {};"
-  , "Inspect['Float']['inspect'] = () => x => x;"
+  , "Inspect['Float_"<>preludeHash<>"'] = {};"
+  , "Inspect['Float_"<>preludeHash<>"']['inspect'] = () => x => x;"
   , ""
-  , "Inspect['String'] = {};"
+  , "Inspect['String_"<>preludeHash<>"'] = {};"
   -- , "Inspect['String']['inspect'] = () => x => `\"${x.split('').map(Inspect.Char.inspect()).join('')}\"`;"
-  , "Inspect['String']['inspect'] = () => x => {"
+  , "Inspect['String_"<>preludeHash<>"']['inspect'] = () => x => {"
   , "  const escapeChar = (c) => {"
   , "    if (c === '\\n') {"
   , "      return `\\\\n`;"
@@ -52,8 +67,8 @@ inspectStaticInstances target optimized = unlines
   , "  return `\"${x.split('').map(escapeChar).join('')}\"`"
   , "}"
   , ""
-  , "Inspect['Char'] = {};"
-  , "Inspect['Char']['inspect'] = () => x => {"
+  , "Inspect['Char_"<>preludeHash<>"'] = {};"
+  , "Inspect['Char_"<>preludeHash<>"']['inspect'] = () => x => {"
   , "  if (x === '\\n') {"
   , "    return `'\\\\n'`;"
   , "  } else if (x === '\\t') {"
@@ -67,17 +82,17 @@ inspectStaticInstances target optimized = unlines
   , "  }"
   , "};"
   , ""
-  , "Inspect['Unit'] = {};"
-  , "Inspect['Unit']['inspect'] = () => () => `{}`;"
+  , "Inspect['Unit_"<>preludeHash<>"'] = {};"
+  , "Inspect['Unit_"<>preludeHash<>"']['inspect'] = () => () => `{}`;"
   , ""
-  , "Inspect['Boolean'] = {};"
-  , "Inspect['Boolean']['inspect'] = () => x => x ? `true` : `false`;"
+  , "Inspect['Boolean_"<>preludeHash<>"'] = {};"
+  , "Inspect['Boolean_"<>preludeHash<>"']['inspect'] = () => x => x ? `true` : `false`;"
   , ""
   , "Inspect['a_arr_b'] = {};"
   , "Inspect['a_arr_b']['inspect'] = () => x => `[Function]`;"
   , ""
-  , "Inspect['ByteArray'] = {};"
-  , "Inspect['ByteArray']['inspect'] = () => bytearray => {"
+  , "Inspect['ByteArray_"<>preludeHash<>"'] = {};"
+  , "Inspect['ByteArray_"<>preludeHash<>"']['inspect'] = () => bytearray => {"
   , "  let s = '', h = '0123456789ABCDEF'"
   , "  bytearray.forEach((v, index) => {"
   , "    if ((index + 1) % 8 === 0) { s += ' ' }"
@@ -86,8 +101,8 @@ inspectStaticInstances target optimized = unlines
   , "  return `ByteArray(${s})`;"
   , "};"
   , ""
-  , "Inspect['List'] = {};"
-  , "Inspect['List']['inspect'] = () => Inspect_a => list => {\n"
+  , "Inspect['List_"<>preludeHash<>"'] = {};"
+  , "Inspect['List_"<>preludeHash<>"']['inspect'] = () => Inspect_a => list => {\n"
   , "  let items = [];\n"
   , "  while (list !== null) {"
   , "    items.push(Inspect_a.inspect()(list.v));"
@@ -96,11 +111,11 @@ inspectStaticInstances target optimized = unlines
   , "  return \"[\" + items.join(\", \") + \"]\""
   , "};"
   , ""
-  , "Inspect['Array'] = {};"
-  , "Inspect['Array']['inspect'] = () => Inspect_a => array => `Array([${array.map(Inspect_a.inspect()).join(\", \")}])`;"
+  , "Inspect['Array_"<>preludeHash<>"'] = {};"
+  , "Inspect['Array_"<>preludeHash<>"']['inspect'] = () => Inspect_a => array => `Array([${array.map(Inspect_a.inspect()).join(\", \")}])`;"
   , ""
-  , "Inspect['Dictionary'] = {};"
-  , "Inspect['Dictionary']['inspect'] = () => Inspect_value => Inspect_key => dict => {"
+  , "Inspect['Dictionary_"<>preludeHash<>"'] = {};"
+  , "Inspect['Dictionary_"<>preludeHash<>"']['inspect'] = () => Inspect_value => Inspect_key => dict => {"
   , "  let list = dict.__args[0]"
   , "  let items = [];\n"
   , "  while (list !== null) {"

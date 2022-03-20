@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use guards" #-}
 module Infer.Scope where
 
 import           Infer.Env
@@ -17,6 +19,8 @@ import           Control.Monad.Except
 import           Explain.Location
 import           Debug.Trace
 import           Text.Show.Pretty               ( ppShow )
+import qualified Data.List as List
+import Infer.Unify
 
 
 type InScope = S.Set String
@@ -48,20 +52,41 @@ checkAST env ast = do
   if not (null errs) then
     return ()
   else do
-    let initialNamesInScope  = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env)
+    let defaultImportNames   = getDefaultImportNames ast
+        initialNamesInScope  = S.fromList (M.keys $ envVars env) <> S.fromList (M.keys $ envMethods env) <> S.fromList defaultImportNames
         exps                 = aexps ast
         methods              = concat $ getInstanceMethods <$> ainstances ast
         topLevelAssignements = getAllTopLevelAssignments ast
-    checkExps env ast topLevelAssignements initialNamesInScope M.empty (methods ++ exps)
+        expsFromGlobalScope  = getAllExpsFromGlobalScope ast
+    checkExps env ast expsFromGlobalScope topLevelAssignements initialNamesInScope M.empty (methods ++ exps)
+    checkConstructors env (S.fromList defaultImportNames) (atypedecls ast)
 
-checkExps :: Env -> AST -> S.Set String -> InScope -> Dependencies -> [Exp] -> Infer ()
-checkExps _   _   _                   _           _            []       = return ()
-checkExps env ast topLevelAssignments globalScope dependencies (e : es) = do
+
+-- We need this extra check for constructors as the type checking is only
+-- verifying what is in the env, but namespaced names are always of the form
+-- Namespace.name and will thus always get through.
+checkConstructors :: Env -> InScope -> [TypeDecl] -> Infer ()
+checkConstructors env scope tds = do
+  let adts             = filter isADT tds
+      constructors     = concat $ mapMaybe getADTConstructors adts
+      constructorNames = (\(Untyped area (Constructor name _ _)) -> (name, area)) <$> constructors
+  mapM_
+    (\(constructorName, area) ->
+      when
+        (constructorName `S.member` scope)
+        (pushError $ CompilationError (NameAlreadyDefined constructorName) (Context (envCurrentPath env) area (envBacktrace env)))
+    )
+    constructorNames
+
+
+checkExps :: Env -> AST -> [(String, Exp)] -> S.Set String -> InScope -> Dependencies -> [Exp] -> Infer ()
+checkExps _   _   _    _               _           _            []       = return ()
+checkExps env ast globals topLevelAssignments globalScope dependencies (e : es) = do
   let globalScope' = extendScope globalScope e
 
   collectedAccesses <- collect env topLevelAssignments (getExpName e) [] Nothing globalScope' S.empty e
 
-  catchError (verifyScope env collectedAccesses globalScope' dependencies e) pushError
+  catchError (verifyScope env globals collectedAccesses globalScope' dependencies e) pushError
 
   let shouldBeTypedOrAbove =
         if isMethod env e then
@@ -77,7 +102,7 @@ checkExps env ast topLevelAssignments globalScope dependencies (e : es) = do
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
   let dependencies' = extendDependencies collectedAccesses dependencies e
-  checkExps env ast topLevelAssignments globalScope' dependencies' es
+  checkExps env ast globals topLevelAssignments globalScope' dependencies' es
 
 
 generateShouldBeTypedOrAboveErrors :: Env -> S.Set (String, Exp) -> Infer ()
@@ -115,26 +140,33 @@ hasAbs e = case e of
   Typed _ _ (Abs         _ _  ) -> True
   _                              -> False
 
-verifyScope :: Env -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
-verifyScope env globalAccesses globalScope dependencies exp =
+
+verifyScope :: Env -> [(String, Exp)] -> Accesses -> InScope -> Dependencies -> Exp -> Infer ()
+verifyScope env globals globalAccesses globalScope dependencies exp =
   if shouldSkip env exp then
     return ()
   else
-    foldM (verifyScope' env S.empty globalScope dependencies exp) () globalAccesses
+    foldM (verifyScope' env globals S.empty globalScope dependencies exp) () globalAccesses
 
-verifyScope' :: Env -> S.Set String -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
-verifyScope' _ _ _ _ (Untyped _ _) _ _ =
-  return ()
-
-verifyScope' env verified globalScope dependencies originExp@(Typed _ originArea _) _ access@(nameToVerify, Typed _ area@(Area loc _) _)
+verifyScope' :: Env -> [(String, Exp)] -> S.Set String -> InScope -> Dependencies -> Exp -> () -> (String, Exp) -> Infer ()
+verifyScope' env globals verified globalScope dependencies originExp@(Typed originQt originArea _) _ access@(nameToVerify, Typed qt area@(Area loc _) _)
   = if nameToVerify `S.member` verified then
       return ()
     else if nameToVerify `S.member` globalScope then
       case M.lookup nameToVerify dependencies of
         Just names ->
-          foldM_ (verifyScope' env (verified <> S.singleton nameToVerify) globalScope dependencies originExp) () names
+          case List.find (\(n, e) -> n == nameToVerify) globals of
+            Just (_, Typed foreignQt _ _) -> do
+              sameType <- catchError (unify (getQualified foreignQt) (getQualified qt) >> return True) (\_ -> return False)
+              when
+                sameType
+                $ foldM_ (verifyScope' env globals (verified <> S.singleton nameToVerify) globalScope dependencies originExp) () names
 
-        Nothing    -> return ()
+            _ ->
+              return ()
+
+        Nothing ->
+          return ()
     else do
       currentErrors <- getErrors
       let isErrorReported = any
@@ -143,12 +175,15 @@ verifyScope' env verified globalScope dependencies originExp@(Typed _ originArea
               _ -> False
             )
             currentErrors
-      if isErrorReported
-        then return ()
-        else throwError $ CompilationError (NotInScope nameToVerify loc)
-                                           (Context (envCurrentPath env) originArea (envBacktrace env))
+      if isErrorReported then
+        return ()
+      else
+        throwError $
+          CompilationError
+            (NotInScope nameToVerify loc)
+            (Context (envCurrentPath env) originArea (envBacktrace env))
 
-verifyScope' _ _ _ _ _ _ _ =
+verifyScope' _ _ _ _ _ _ _ _ =
   return ()
 
 removeAccessFromDeps :: (String, Exp) -> Dependencies -> Dependencies
@@ -271,7 +306,8 @@ collect env topLevelAssignments currentTopLevelAssignment foundNames nameToFind 
               Just n  -> n : foundNames
               Nothing -> foundNames
         next <- collectFromBody nextFound ntf globalScope localScope' es
-        return $ access <> next
+        return S.empty
+        -- return $ access <> next
 
     (Typed tipe area (If cond truthy falsy)) -> do
       condAccesses <- collect env

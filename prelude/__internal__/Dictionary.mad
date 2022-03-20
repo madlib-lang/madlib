@@ -160,6 +160,19 @@ instance Functor (Dictionary k) {
 }
 
 
+mapM :: Applicative m => (a -> m b) -> Dictionary k a -> m (Dictionary k b)
+export mapM = (f, dict) => where(dict) {
+  Dictionary(items) =>
+    pipe(
+      List.mapM(where {
+        #[k, v] =>
+          map((mapped) => #[k, mapped], f(v))
+      }),
+      map(Dictionary)
+    )(items)
+}
+
+
 /**
  * Map over a Dictionary with a function that takes the key and value and returns the new value. 
  *

@@ -4,6 +4,7 @@ import type { Maybe } from "Maybe"
 
 import W from "Wish"
 import { Nothing, Just } from "Maybe"
+import {} from "String"
 
 #endif
 
@@ -70,15 +71,23 @@ export getEnv = (name) => (#- {
 } -#)
 
 
-Env :: Dictionary String String
-export Env = #- (() => {
+
+#-
+const buildEnvImpl = (dict) => {
   let list = {}
   let start = list
   Object.keys(process.env).forEach((key) => {
     list = list.n = { v: [key, process.env[key]], n: null }
   }, {})
-  return Dictionary.fromList(Comparable.String)(start.n)
-})() -#
+  return Dictionary.fromList(dict)(start.n)
+}
+-#
+
+buildEnv :: Comparable a => Dictionary a String
+buildEnv = extern "buildEnvImpl"
+
+Env :: Dictionary String String
+Env = buildEnv
 
 
 getCurrentPath :: W.Wish String String

@@ -1,11 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 module AST.Solved where
 
 import qualified Data.Map                      as M
 
 import qualified Infer.Type                    as Ty
 import           Explain.Location
+import qualified Data.Maybe as Maybe
 
 
 
@@ -160,6 +162,29 @@ type Table = M.Map FilePath AST
 
 -- Functions
 
+getAllExpsFromGlobalScope :: AST -> [(String, Exp)]
+getAllExpsFromGlobalScope ast =
+  let exps = Maybe.mapMaybe
+        (\e -> case getExpName e of
+                  Just n ->
+                    Just (n, e)
+
+                  _ ->
+                    Nothing
+        )
+        (aexps ast)
+      methods = Maybe.mapMaybe
+        (\e -> case getExpName e of
+                  Just n ->
+                    Just (n, e)
+
+                  _ ->
+                    Nothing
+        )
+        (concat $ getInstanceMethods <$> ainstances ast)
+  in  methods ++ exps
+
+
 getType :: Solved a -> Ty.Type
 getType (Typed (_ Ty.:=> t) _ _) = t
 
@@ -182,6 +207,27 @@ getListItemExp li = case li of
 
   _ ->
     undefined
+
+getDefaultImportNames :: AST -> [String]
+getDefaultImportNames ast =
+  let imports = aimports ast
+  in  Maybe.mapMaybe
+        (\case
+          Untyped _ (DefaultImport (Untyped _ n) _ _) ->
+            Just n
+
+          _ ->
+            Nothing
+        )
+        imports
+
+getADTConstructors :: TypeDecl -> Maybe [Constructor]
+getADTConstructors td = case td of
+  Untyped _ ADT { adtconstructors } ->
+    Just adtconstructors
+
+  _ ->
+    Nothing
 
 getConstructorName :: Constructor -> String
 getConstructorName (Untyped _ (Constructor name _ _)) = name
@@ -308,9 +354,11 @@ isExport a = case a of
 
   _ -> False
 
+
 getValue :: Solved a -> a
 getValue (Typed _ _ a) = a
 getValue (Untyped _ a ) = a
+
 
 getExpName :: Exp -> Maybe String
 getExpName (Untyped _ _)    = Nothing
