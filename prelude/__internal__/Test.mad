@@ -133,14 +133,14 @@ allRow = (lcov) => pipe(
     },
     { lf: 0, lh: 0, fnf: 0, fnh: 0 }
   ),
-  (total) => #[100 * N.intToFloat(total.lh) / N.intToFloat(total.lf), 100 * N.intToFloat(total.fnh) / N.intToFloat(total.fnf)],
+  (total) => #[100 * N.integerToFloat(total.lh) / N.integerToFloat(total.lf), 100 * N.integerToFloat(total.fnh) / N.integerToFloat(total.fnf)],
   (total) => buildRow("All", T.fst(total), T.snd(total))
 )(lcov)
 
 computePercents :: Integer -> Integer -> Float
 computePercents = (hit, found) => found == 0
   ? 100
-  : 100 * N.intToFloat(hit) / N.intToFloat(found)
+  : 100 * N.integerToFloat(hit) / N.integerToFloat(found)
 
 generateTable :: Lcov.LcovInfo -> List IO.Row
 generateTable = (lcov) =>

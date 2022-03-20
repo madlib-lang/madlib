@@ -40,6 +40,9 @@ mod :: Integer -> Integer -> Integer
 export mod = (a, b) => (a % b)
 
 
+// TODO: implement for llvm backend
+#iftarget js
+
 /**
  * Find the number which, when multiplied by itself equals the given number. 
  *
@@ -47,6 +50,8 @@ export mod = (a, b) => (a % b)
  */
 sqrt :: Float -> Float
 sqrt = (n) => (#- Math.sqrt(n) -#)
+
+#endif
 
 
 /**
@@ -56,3 +61,17 @@ sqrt = (n) => (#- Math.sqrt(n) -#)
  */
 square :: Number a => a -> a
 square = (n) => n * n
+
+
+min :: Number a => a -> a -> a
+export min = (a, b) =>
+  a > b
+    ? b
+    : a
+
+
+max :: Number a => a -> a -> a
+export max = (a, b) =>
+  a > b
+    ? a
+    : b

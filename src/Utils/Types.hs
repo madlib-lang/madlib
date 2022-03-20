@@ -1,19 +1,29 @@
 module Utils.Types where
-import Infer.Type
-import qualified Data.Map as Map
-import qualified Data.List as List
+
+import           Infer.Type
+import qualified Data.Map         as Map
+import qualified Data.List        as List
+import qualified Utils.Hash       as Hash
+import qualified Data.ByteString.Lazy.Char8    as BLChar8
+
+
+generateHashFromPath :: FilePath -> String
+generateHashFromPath =
+  Hash.hash . BLChar8.pack
+
 
 buildTypeStrForPlaceholder :: [Type] -> String
 buildTypeStrForPlaceholder ts = List.intercalate "_" $ getTypeHeadName <$> ts
+
 
 getTypeHeadName :: Type -> String
 getTypeHeadName t = case t of
   TVar (TV n _)   ->
     n
 
-  TCon (TC n _) _ -> case n of
+  TCon (TC n _) path -> case n of
     "{}" ->
-      "Unit"
+      "Unit_" <> generateHashFromPath path
 
     "(,)" ->
       "Tuple_2"
@@ -43,7 +53,7 @@ getTypeHeadName t = case t of
       "Tuple_10"
 
     _ ->
-      n
+      n <> "_" <> generateHashFromPath path
 
   TApp (TApp (TCon (TC "(->)" _) _) tl) tr ->
     getTypeHeadName tl <> "_arr_" <> getTypeHeadName tr

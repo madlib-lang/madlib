@@ -380,6 +380,10 @@ buildLLVMParamType env symbolTable t = case t of
     buildLLVMType env symbolTable ([] IT.:=> t)
 
 
+typingStrWithoutHash :: String -> String
+typingStrWithoutHash = List.takeWhile (/= '_')
+
+
 boxType :: Type.Type
 boxType =
   Type.ptr Type.i8
@@ -1153,8 +1157,8 @@ generateExp env symbolTable exp = case exp of
   Core.Typed qt@(_ IT.:=> t) _ metadata (Core.Call fn args) -> case fn of
     -- Calling a known method
     Core.Typed _ _ _ (Core.Placeholder (Core.MethodRef interface methodName False, typingStr) _) -> case methodName of
-      "==" | typingStr `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"] ->
-        case typingStr of
+      "==" | typingStrWithoutHash typingStr `List.elem` ["Integer", "Byte", "Float", "String", "Boolean", "Unit", "Char"] ->
+        case typingStrWithoutHash typingStr of
           "Integer" -> do
             (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
             (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1197,7 +1201,7 @@ generateExp env symbolTable exp = case exp of
           _ ->
             undefined
 
-      "<<" -> case typingStr of
+      "<<" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1213,7 +1217,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      ">>" -> case typingStr of
+      ">>" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1229,7 +1233,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      ">>>" -> case typingStr of
+      ">>>" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1245,7 +1249,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "|" -> case typingStr of
+      "|" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1261,7 +1265,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "&" -> case typingStr of
+      "&" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1277,7 +1281,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "^" -> case typingStr of
+      "^" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1293,7 +1297,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "~" -> case typingStr of
+      "~" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, operand', _) <- generateExp env { isLast = False } symbolTable (List.head args)
           result           <- Instruction.xor operand' (i64ConstOp (-1))
@@ -1307,7 +1311,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "+" -> case typingStr of
+      "+" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1329,7 +1333,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "-" -> case typingStr of
+      "-" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1351,7 +1355,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "*" -> case typingStr of
+      "*" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1373,7 +1377,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "unary-minus" -> case typingStr of
+      "unary-minus" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           result                <- mul leftOperand' (i64ConstOp (-1))
@@ -1392,7 +1396,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      ">" -> case typingStr of
+      ">" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1414,7 +1418,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "<" -> case typingStr of
+      "<" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1436,7 +1440,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      ">=" -> case typingStr of
+      ">=" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -1458,7 +1462,7 @@ generateExp env symbolTable exp = case exp of
         _ ->
           undefined
 
-      "<=" -> case typingStr of
+      "<=" -> case typingStrWithoutHash typingStr of
         "Integer" -> do
           (_, leftOperand', _)  <- generateExp env { isLast = False } symbolTable (List.head args)
           (_, rightOperand', _) <- generateExp env { isLast = False } symbolTable (args !! 1)
@@ -3015,6 +3019,7 @@ buildTupleNInspectInstance n =
 
 buildDefaultInstancesModule :: (Writer.MonadWriter SymbolTable m, Writer.MonadFix m, MonadModuleBuilder m) => Env -> [String] -> SymbolTable -> m ()
 buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
+  let preludeHash = generateHashFromPath "prelude"
   externVarArgs (AST.mkName "__applyPAP__")               [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc")                         [Type.i64] (Type.ptr Type.i8)
 
@@ -3304,7 +3309,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   -- TODO: Add "unary-minus" method for number instances
   let integerNumberInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] "Integer"
+          ( Core.Instance "Number" [] ("Integer_" <> preludeHash)
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "+" (
@@ -3418,7 +3423,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
   let integerBitsInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Bits" [] "Integer"
+          ( Core.Instance "Bits" [] ("Integer_" <> preludeHash)
               (Map.fromList
                 [ ( "&"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
@@ -3509,7 +3514,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
   let byteNumberInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] "Byte"
+          ( Core.Instance "Number" [] ("Byte_" <> preludeHash)
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
@@ -3624,7 +3629,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
   let byteBitsInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Bits" [] "Byte"
+          ( Core.Instance "Bits" [] ("Byte_" <> preludeHash)
               (Map.fromList
                 [ ( "&"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "&" (
@@ -3715,7 +3720,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
   let floatNumberInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Number" [] "Float"
+          ( Core.Instance "Number" [] ("Float_" <> preludeHash)
               (Map.fromList
                 [ ( "+"
                   , ( Core.Typed numberComparisonQualType emptyArea [] (Core.Assignment "" (
@@ -3852,7 +3857,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       stringInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "String"
+          ( Core.Instance "Inspect" [] ("String_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed stringInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3871,7 +3876,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       integerInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Integer"
+          ( Core.Instance "Inspect" [] ("Integer_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed integerInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3890,7 +3895,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       byteInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Byte"
+          ( Core.Instance "Inspect" [] ("Byte_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed byteInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3909,7 +3914,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       charInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Char"
+          ( Core.Instance "Inspect" [] ("Char_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed charInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3928,7 +3933,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       floatInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Float"
+          ( Core.Instance "Inspect" [] ("Float_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed floatInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3947,7 +3952,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       boolInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Boolean"
+          ( Core.Instance "Inspect" [] ("Boolean_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed boolInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -3966,7 +3971,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       unitInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "Unit"
+          ( Core.Instance "Inspect" [] ("Unit_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed unitInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -4000,7 +4005,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       byteArrayInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [] "ByteArray"
+          ( Core.Instance "Inspect" [] ("ByteArray_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed byteArrayInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -4019,7 +4024,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       listInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "List"
+          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("List_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -4039,7 +4044,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       arrayInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "Array"
+          ( Core.Instance "Inspect" [IT.IsIn "Inspect" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("Array_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   , ( Core.Typed overloadedInspectQualType emptyArea [] (Core.Assignment "inspect" (
@@ -4059,7 +4064,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       dictionaryInspectInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Inspect" dictionaryInspectPreds "Dictionary"
+          ( Core.Instance "Inspect" dictionaryInspectPreds ("Dictionary_" <> preludeHash)
               (Map.fromList
                 [ ( "inspect"
                   -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
@@ -4087,7 +4092,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       integerEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Integer"
+          ( Core.Instance "Eq" [] ("Integer_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4107,7 +4112,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       byteEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Byte"
+          ( Core.Instance "Eq" [] ("Byte_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4127,7 +4132,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       charEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Char"
+          ( Core.Instance "Eq" [] ("Char_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4147,7 +4152,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       floatEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Float"
+          ( Core.Instance "Eq" [] ("Float_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4167,7 +4172,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       stringEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "String"
+          ( Core.Instance "Eq" [] ("String_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4187,7 +4192,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       booleanEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Boolean"
+          ( Core.Instance "Eq" [] ("Boolean_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4207,7 +4212,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       unitEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "Unit"
+          ( Core.Instance "Eq" [] ("Unit_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4245,7 +4250,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       listEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "List"
+          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("List_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
@@ -4266,7 +4271,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       arrayEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] "Array"
+          ( Core.Instance "Eq" [IT.IsIn "Eq" [IT.TVar (IT.TV "a" IT.Star)] Nothing] ("Array_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed overloadedEqQualType emptyArea [] (Core.Assignment "==" (
@@ -4287,7 +4292,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       byteArrayEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" [] "ByteArray"
+          ( Core.Instance "Eq" [] ("ByteArray_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   , ( Core.Typed eqOperationQualType emptyArea [] (Core.Assignment "==" (
@@ -4311,7 +4316,7 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
 
       dictionaryEqInstance =
         Core.Untyped emptyArea []
-          ( Core.Instance "Eq" dictionaryEqPreds "Dictionary"
+          ( Core.Instance "Eq" dictionaryEqPreds ("Dictionary_" <> preludeHash)
               (Map.fromList
                 [ ( "=="
                   -- Note, the dicts need to be inverted as this happens during dict resolution after type checking
