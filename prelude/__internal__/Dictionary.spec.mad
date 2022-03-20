@@ -5,13 +5,14 @@ import {
   get,
   insert,
   keys,
-  len,
+  length,
   mapWithKey,
   merge,
   values
 } from "./Dictionary"
 import { Just, Nothing } from "Maybe"
 import {} from "Boolean"
+import {} from "String"
 
 
 test("fromList", (_) =>
@@ -55,8 +56,8 @@ test("values", (_) =>
   assertEquals(values({{ true: "Go for it", false: "NOGO" }}), ["NOGO", "Go for it"])
 )
 
-test("len", (_) =>
-  assertEquals(len(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])), 3)
+test("length", (_) =>
+  assertEquals(length(fromList([#["Sidney", 3], #["New York", 18], #["London", 2]])), 3)
 )
 
 test("map", (_) =>

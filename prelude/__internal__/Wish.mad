@@ -1,6 +1,6 @@
 import {} from "Monad"
 import {} from "Bifunctor"
-import { len, sortBy } from "List"
+import { length, sortBy } from "List"
 import Tuple from "Tuple"
 import {} from "Number"
 
@@ -117,7 +117,7 @@ export bad = (e) => Wish((badCB, _) => badCB(e))
 
 parallel :: List (Wish e a) -> Wish e (List a)
 export parallel = (wishes) => Wish((badCB, goodCB) => {
-  amountOfWishesToProcess = len(wishes)
+  amountOfWishesToProcess = length(wishes)
   ko = false
   ok = 0
 

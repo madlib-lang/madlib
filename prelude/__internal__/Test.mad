@@ -395,7 +395,7 @@ export test = (description, testImpl) => pipe(
 
 generateReportSuiteEndMessage :: List (Wish.Wish String String) -> String
 generateReportSuiteEndMessage = pipe(
-  List.len,
+  List.length,
   ifElse(
     equals(0),
     always("No test found\n\n"),
@@ -426,7 +426,7 @@ export runAllTestSuites = (testSuites) => pipe(
     (_) => ({}),
     (report) => {
       IO.putLine(getMessage(report))
-      return IO.putLine(`Test suites: ${inspect(List.len(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
+      return IO.putLine(`Test suites: ${inspect(List.length(testSuites))}  tests: ${inspect(getTotal(report))}  passed: ${inspect(getSuccessCount(report))}  failed: ${inspect(getFailureCount(report))}`)
     }
   )
 )(testSuites)
