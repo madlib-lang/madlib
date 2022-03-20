@@ -3004,6 +3004,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
   extern (AST.mkName "madlib__number__internal__inspectByte")      [boxType] boxType
   -- Inspect Char
   extern (AST.mkName "madlib__char__internal__inspect")            [boxType] boxType
+  -- Inspect String
+  extern (AST.mkName "madlib__string__internal__inspect")          [boxType] boxType
   -- Inspect Float
   extern (AST.mkName "madlib__number__internal__inspectFloat")     [boxType] boxType
   -- Inspect Boolean
@@ -3166,6 +3168,9 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
       -- Inspect Char
       inspectChar       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__char__internal__inspect")
 
+      -- Inspect String
+      inspectString       = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__string__internal__inspect")
+
       -- Inspect Float
       inspectFloat      = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType boxType [boxType] False) "madlib__number__internal__inspectFloat")
 
@@ -3192,6 +3197,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
         $ Map.insert "madlib__number__internal__inspectByte" (fnSymbol 1 inspectByte)
         -- Inspect Char
         $ Map.insert "madlib__char__internal__inspect" (fnSymbol 1 inspectChar)
+        -- Inspect Char
+        $ Map.insert "madlib__string__internal__inspect" (fnSymbol 1 inspectString)
         -- Inspect Float
         $ Map.insert "madlib__number__internal__inspectFloat" (fnSymbol 1 inspectFloat)
         -- Inspect Boolean
@@ -3828,12 +3835,8 @@ buildDefaultInstancesModule env currentModuleHashes initialSymbolTable = do
                 [ ( "inspect"
                   , ( Core.Typed stringInspectQualType emptyArea [] (Core.Assignment "inspect" (
                         Core.Typed stringInspectQualType emptyArea [] (Core.Definition ["a"] [
-                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed strConcatQualType emptyArea [] (Core.Var "++" False)) [
-                            Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Literal $ LStr "\"\\\"\""),
-                            Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed strConcatQualType emptyArea [] (Core.Var "++" False)) [
-                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False),
-                              Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Literal $ LStr "\"\\\"\"")
-                            ])
+                          Core.Typed ([] IT.:=> IT.tStr) emptyArea [] (Core.Call (Core.Typed stringInspectQualType emptyArea [] (Core.Var "madlib__string__internal__inspect" False)) [
+                              Core.Typed inspectVarQualType emptyArea [] (Core.Var "a" False)
                           ])
                         ])
                       ))
