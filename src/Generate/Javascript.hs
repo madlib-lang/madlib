@@ -394,10 +394,6 @@ instance Compilable Exp where
 
             _ -> "    " <> compile e config exp <> ";\n" <> compileBody' e es
 
-        Var ('.' : name) _ ->
-          "(__R__ => __R__." <> name <> ")"
-
-
         Var name _ ->
           let safeName  = generateSafeName name
               rewritten = varsRewritten env
