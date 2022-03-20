@@ -7,6 +7,8 @@ extern "C" {
 
 bool *madlib__string__internal__eq(char **s1, char **s2);
 
+int64_t madlib__string__compare(char *s1, char *s2);
+
 bool madlib__string__internal__areStringsEqual(char *s1, char *s2);
 bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2);
 

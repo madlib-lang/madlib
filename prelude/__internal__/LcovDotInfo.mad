@@ -73,7 +73,7 @@ parseLcovSection = (content) =>
   S.lines(content)
     |> L.reject((s) => (s == ""))
     |> L.reduceR(
-      (section, line) =>
+      (line, section) =>
         S.split(":", line)
           |> (namedLine) => where(namedLine) {
               ["TN", arg] => { ...section, tn: TN(arg) }
@@ -120,11 +120,11 @@ stringifySection :: LcovSection -> String
 stringifySection = (section) =>
   stringifyLine(section.tn)
   ++ stringifyLine(section.sf)
-  ++ L.reduceR((fns, line) => fns ++ stringifyLine(line), "", section.fns)
-  ++ L.reduceR((fndas, line) => fndas ++ stringifyLine(line), "", section.fndas)
+  ++ L.reduceR((line, fns) => fns ++ stringifyLine(line), "", section.fns)
+  ++ L.reduceR((line, fndas) => fndas ++ stringifyLine(line), "", section.fndas)
   ++ stringifyLine(section.fnf)
   ++ stringifyLine(section.fnh)
-  ++ L.reduceR((das, line) => das ++ stringifyLine(line), "", section.das)
+  ++ L.reduceR((line, das) => das ++ stringifyLine(line), "", section.das)
   ++ stringifyLine(section.lf)
   ++ stringifyLine(section.lh)
   ++ "end_of_record\n"

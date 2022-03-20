@@ -40,6 +40,15 @@ instance Comparable String {
   compare = (a, b) => #- a > b ? MORE : a == b ? EQUAL : LESS -#
 }
 
+#elseif llvm
+
+stringCompare :: String -> String -> ComparisonResult
+stringCompare = extern "madlib__string__compare"
+
+instance Comparable String {
+  compare = stringCompare
+}
+
 #endif
 
 instance Comparable Boolean {
