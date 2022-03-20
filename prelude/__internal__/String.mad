@@ -46,6 +46,10 @@ export replace = (regex, replacing, input) => (#-
   input.replace(new RegExp(regex), replacing)
 -#)
 
+#endif
+
+#iftarget js
+
 split :: String -> String -> List String
 export split = (separator, str) => #- {
   const items = str.split(separator)
@@ -64,6 +68,13 @@ export split = (separator, str) => #- {
 
   return output.n
 } -#
+
+#elseif llvm
+
+split :: String -> String -> List String
+export split = extern "madlib__string__split"
+
+#endif
 
 lines :: String -> List String
 export lines = split("\n")
