@@ -80,12 +80,28 @@ test("dropLast", (_) =>
   assertEquals(String.dropLast(3, "abcde"), "ab")
 )
 
+test("dropWhile", (_) =>
+  assertEquals(String.dropWhile((c) => c != '.', "Namespace.name"), ".name")
+)
+
+test("dropWhile - no match", (_) =>
+  assertEquals(String.dropWhile((c) => c != ':', "Namespace.name"), "")
+)
+
 test("take", (_) =>
   assertEquals(String.take(3, "abcde"), "abc")
 )
 
 test("takeLast", (_) =>
   assertEquals(String.takeLast(3, "abcde"), "cde")
+)
+
+test("takeWhile", (_) =>
+  assertEquals(String.takeWhile((c) => c != '.', "Namespace.name"), "Namespace")
+)
+
+test("takeWhile - no match", (_) =>
+  assertEquals(String.takeWhile((c) => c != ':', "Namespace.name"), "Namespace.name")
 )
 
 test("filterChars", (_) =>
@@ -119,3 +135,7 @@ test("toLower", (_) => assertEquals(String.toLower("ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"
 
 test("pushChar", (_) => assertEquals(String.pushChar('a', "bc"), "abc"))
 test("appendChar", (_) => assertEquals(String.appendChar('c', "ab"), "abc"))
+
+test("reverse", (_) =>
+  assertEquals(String.reverse("abc"), "cba")
+)
