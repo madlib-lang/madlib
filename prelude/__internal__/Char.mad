@@ -17,3 +17,34 @@ instance Comparable Char {
 }
 
 #endif
+
+/**
+ * Returns true if the character is a digit, false otherwise.
+ */
+isDigit :: Char -> Boolean
+export isDigit = (s) =>
+  s == '0' ||
+  s == '1' ||
+  s == '2' ||
+  s == '3' ||
+  s == '4' ||
+  s == '5' ||
+  s == '6' ||
+  s == '7' ||
+  s == '8' ||
+  s == '9'
+
+
+// TODO: reconsider this and how we want to implement it
+/**
+ * Returns true if the character is a letter, false otherwise. Note that if the
+ * input contains more than one character, false is returned.
+ */
+// isLetter :: String -> Boolean
+// export isLetter = (s) => #-{
+//   if (s.length !== 1) {
+//     return false
+//   }
+
+//   return RegExp(/^\p{L}/,'u').test(s)
+// }-#

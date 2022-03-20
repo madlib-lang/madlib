@@ -16,6 +16,7 @@ import {
   mapWithIndex,
   nth,
   reject,
+  reverse,
   reduce,
   singleton,
   sort,
@@ -180,3 +181,5 @@ test("takeLast", (_) => assertEquals(takeLast(2, [1, 2, 3, 4, 5, 6]), [5, 6]))
 test("dropWhile", (_) => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
 
 test("takeWhile", (_) => assertEquals(takeWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
+
+test("reverse", (_) => assertEquals(reverse([1, 2, 3]), [3, 2, 1]))

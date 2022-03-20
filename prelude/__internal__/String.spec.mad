@@ -9,14 +9,11 @@ test("compare String - MORE", (_) => assertEquals(compare("John", "James"), MORE
 test("compare String - LESS", (_) => assertEquals(compare("John", "Paul"), LESS))
 test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUAL))
 
-#iftarget js
 
 test(
   "replace should replace parts of a string given some regex and replacement string",
   (_) => assertEquals(String.replace("a", "b", "abc"), "bbc")
 )
-
-#endif
 
 test("mapChars should map the characters of a String", (_) => {
   mapper = (char) => char == 'o' ? 'a' : char
@@ -85,3 +82,8 @@ test("reduceChars", (_) =>
     10
   )
 )
+
+test("repeat", (_) => assertEquals(String.repeat('a', 10), "aaaaaaaaaa"))
+
+test("toUpper", (_) => assertEquals(String.toUpper("atwzö2êéè‡‹©Ïƒ¬"), "ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"))
+test("toLower", (_) => assertEquals(String.toLower("ATWZÖ2ÊÉÈ‡‹©ÏƑ¬"), "atwzö2êéè‡‹©ïƒ¬"))
