@@ -4504,4 +4504,4 @@ generateTable outputPath rootPath astTable entrypoint = do
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
-        <> " -lruntime -lgc -luv -pthread -ldl -o " <> executablePath
+        <> " -lruntime -lgc -luv -lcurl -pthread -ldl -o " <> executablePath
