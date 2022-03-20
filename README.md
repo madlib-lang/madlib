@@ -172,14 +172,14 @@ Because of *madlib*'s type inference, in the majority of cases you do not need t
 *madlib* allows for algebraic data types in the form of:
 
 ```madlib
-data Maybe a
+type Maybe a
   = Just(a)
   | Nothing
 ```
 
 Here `Maybe a` is the type. This type has a variable, that means that a `Maybe` can have different shapes and contain any other type.
 
-`Just(a)` and `Nothing` are constructors of the type `Maybe`. They allow us to create values with that type. `data Maybe a = Just a | Nothing` generates these constructor functions for us.
+`Just(a)` and `Nothing` are constructors of the type `Maybe`. They allow us to create values with that type. `type Maybe a = Just a | Nothing` generates these constructor functions for us.
 
 Here is the type above in use:
 ```madlib
@@ -193,7 +193,7 @@ Pattern matching is a powerful tool for specifying what to do in a given functio
 
 For functions:
 ```madlib
-data User
+type User
   = LoggedIn(String)
   | Anonymous
 
@@ -239,7 +239,7 @@ language = { name: "Madlib", howIsIt: "cool" }
 
 It can be used as constructor arguments by using Record types:
 ```
-data User = LoggedIn({ name :: String, age :: Integer, address :: String })
+type User = LoggedIn({ name :: String, age :: Integer, address :: String })
 ```
 
 It can be used in patterns:

@@ -1,0 +1,224 @@
+import type { JsonValue } from "JsonValue"
+
+import String from "String"
+import Tuple from "Tuple"
+import {} from "Number"
+import Dictionary from "Dictionary"
+import PP from "PrettyPrint"
+import {
+  JsonString,
+  JsonInteger,
+  JsonFloat,
+  JsonBoolean,
+  JsonNull,
+  JsonArray,
+  JsonObject
+} from "JsonValue"
+
+
+
+// type JsonValue
+//   = JsonString(String)
+//   | JsonInteger(Integer)
+//   | JsonFloat(Float)
+//   | JsonBoolean(Boolean)
+//   | JsonNull
+//   | JsonObject(Dictionary String JsonValue)
+//   | JsonArray(List JsonValue)
+
+
+import IO from "IO"
+
+// Pretty Printer
+// --------------
+
+jsonToDoc :: JsonValue -> PP.Doc
+jsonToDoc = (value) => where(value) {
+  JsonString(s) =>
+    pipe(
+      escapeString,
+      PP.text,
+      PP.quotes
+    )(s)
+
+  JsonBoolean(b) =>
+    PP.text(inspect(b))
+
+  JsonInteger(i) =>
+    PP.text(inspect(i))
+
+  JsonFloat(f) =>
+    PP.text(inspect(f))
+
+  JsonNull =>
+    PP.text("null")
+
+  JsonArray(items) =>
+    PP.group(
+      PP.hcat([
+        PP.lbracket,
+        PP.nest(
+          2,
+          PP.hcat([
+            PP.linebreak,
+            PP.sepBy(
+              PP.hcat([PP.comma, PP.line]),
+              map(jsonToDoc, items)
+            ),
+          ])
+        ),
+        PP.linebreak,
+        PP.rbracket,
+      ])
+    )
+
+  JsonObject(fields) =>
+    PP.group(
+      PP.hcat([
+        PP.lbrace,
+        PP.nest(
+          2,
+          PP.hcat([
+            PP.linebreak,
+            PP.sepBy(
+              PP.hcat([PP.comma, PP.line]),
+              map(
+                (f) => PP.hcat([
+                  PP.text(`"${Tuple.fst(f)}"`),
+                  PP.colon,
+                  PP.space,
+                  jsonToDoc(Tuple.snd(f))
+                ]),
+                Dictionary.toList(fields)
+              )
+            ),
+          ])
+        ),
+        PP.linebreak,
+        PP.rbrace,
+      ])
+    )
+}
+
+
+escapeString :: String -> String
+escapeString = (s) => pipe(
+  String.toList,
+  chain(where {
+    '"' =>
+      ['\\', '"']
+
+    '\n' =>
+      ['\\', 'n']
+
+    '\t' =>
+      ['\\', 't']
+
+    '\r' =>
+      ['\\', 'r']
+
+    or =>
+      [or]
+  }),
+  String.fromList
+)(s)
+
+
+string :: String -> JsonValue
+export string = (s) =>
+  JsonString(s)
+
+
+integer :: Integer -> JsonValue
+export integer = (i) =>
+  JsonInteger(i)
+
+
+float :: Float -> JsonValue
+export float = (f) =>
+  JsonFloat(f)
+
+
+boolean :: Boolean -> JsonValue
+export boolean = (b) =>
+  JsonBoolean(b)
+
+
+null :: JsonValue
+export null = JsonNull
+
+
+list :: (a -> JsonValue) -> List a -> JsonValue
+export list = (transformer, items) =>
+  JsonArray(map(transformer, items))
+
+
+dict :: (a -> JsonValue) -> Dictionary String a -> JsonValue
+export dict = (transformer, items) =>
+  JsonObject(map(transformer, items))
+
+
+object :: List #[String, JsonValue] -> JsonValue
+export object = (items) =>
+  JsonObject(Dictionary.fromList(items))
+
+
+printJson :: Integer -> JsonValue -> String
+export printJson = (width, value) => pipe(
+  jsonToDoc,
+  PP.prettyPrint(width)
+)(value)
+
+
+IO.putLine(
+  printJson(
+    100,
+    list(string, ["hello", "str2", "str3"])
+  )
+)
+
+
+// IO.putLine(
+//   PP.prettyPrint(
+//     10, 
+//     jsonToDoc(
+//       JsonArray([
+//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
+//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
+//         JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
+//       ])
+//     )
+//   )
+// )
+
+// IO.putLine(
+//   PP.prettyPrint(
+//     10, 
+//     jsonToDoc(
+//       JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
+//     )
+//   )
+// )
+
+
+// IO.putLine(
+//   PP.prettyPrint(
+//     10, 
+//     jsonToDoc(
+//       JsonObject({{
+//         "fieldName": JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
+//         "fieldName2": JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)]),
+//         "fieldName3": JsonArray([JsonString("str\"1"), JsonString("str2\n"), JsonString("str3\t"), JsonString("str4\r\n")])
+//       }})
+//     )
+//   )
+// )
+
+// IO.putLine(
+//   PP.prettyPrint(
+//     100, 
+//     jsonToDoc(
+//       JsonArray([JsonInteger(2000000000), JsonInteger(3000000000), JsonInteger(4000000000)])
+//     )
+//   )
+// )

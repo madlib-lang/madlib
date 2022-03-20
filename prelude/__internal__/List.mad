@@ -112,6 +112,9 @@ singleton :: a -> List a
 export singleton = pure
 
 
+// TODO: implement
+// intercalate :: List a -> List a -> List a
+
 
 /**
  * Inserts a value between all elements of a list.
@@ -120,8 +123,8 @@ export singleton = pure
  * @example
  * intercalate("and", ["cats", "dogs"]) // ["cats", "and", "dogs"]
  */
-intercalate :: a -> List a -> List a
-export intercalate = (a, xs) => where(xs) {
+intersperse :: a -> List a -> List a
+export intersperse = (a, xs) => where(xs) {
   [] =>
     []
 
@@ -132,7 +135,7 @@ export intercalate = (a, xs) => where(xs) {
     [one, a, two]
 
   [one, ...rest] =>
-    [one, a, ...intercalate(a, rest)]
+    [one, a, ...intersperse(a, rest)]
 }
 
 

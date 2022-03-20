@@ -69,10 +69,28 @@ instance Scan Float {
 }
 
 
+// conversions
 #iftarget js
 
 integerToFloat :: Integer -> Float
 export integerToFloat = (a) => #- a -#
+
+byteToFloat :: Byte -> Float
+export byteToFloat = (a) => #- a -#
+
+byteToInteger :: Byte -> Integer
+export byteToInteger = (a) => #- a -#
+
+#elseif llvm
+
+integerToFloat :: Integer -> Float
+export integerToFloat = extern "madlib__number__intToFloat"
+
+byteToFloat :: Byte -> Float
+export byteToFloat = extern "madlib__number__byteToFloat"
+
+byteToInteger :: Byte -> Integer
+export byteToInteger = extern "madlib__number__byteToInt"
 
 #endif
 
