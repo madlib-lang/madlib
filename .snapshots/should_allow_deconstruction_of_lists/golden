@@ -98,11 +98,15 @@ Right
                          (Area (Loc 27 2 3) (Loc 42 2 18))
                          (PList
                             [ Typed
-                                ([] :=> TCon (TC "Integer" Star) "prelude")
+                                ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                 ] :=>
+                                   TCon (TC "Integer" Star) "prelude")
                                 (Area (Loc 28 2 4) (Loc 29 2 5))
                                 (PNum "1")
                             , Typed
-                                ([] :=> TCon (TC "Integer" Star) "prelude")
+                                ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                 ] :=>
+                                   TCon (TC "Integer" Star) "prelude")
                                 (Area (Loc 31 2 7) (Loc 32 2 8))
                                 (PNum "2")
                             , Typed

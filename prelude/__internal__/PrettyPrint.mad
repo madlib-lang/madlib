@@ -30,6 +30,14 @@ empty :: Doc
 export empty = EmptyDoc
 
 
+line :: Doc
+export line = LineDoc(false)
+
+
+linebreak :: Doc
+export linebreak = LineDoc(true)
+
+
 char :: Char -> Doc
 export char = (c) => where(c) {
   '\n' =>
@@ -130,14 +138,6 @@ export flatten = (doc) => where(doc) {
   or =>
     or
 }
-
-
-line :: Doc
-export line = LineDoc(false)
-
-
-linebreak :: Doc
-export linebreak = LineDoc(true)
 
 
 softline :: Doc

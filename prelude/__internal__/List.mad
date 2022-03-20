@@ -34,16 +34,34 @@ instance Functor List {
 
 repeat :: a -> Integer -> List a
 export repeat = (a, count) =>
-  count == 0
+  count <= 0
     ? []
     : [a, ...repeat(a, count - 1)]
 
-repeatWith :: (Integer -> a) -> Integer -> List a
-export repeatWith = (f, count) =>
-  count == 0
-    ? []
-    : [f(count), ...repeatWith(f, count - 1)]
 
+repeatWith :: (Integer -> a) -> Integer -> List a
+export repeatWith = (f, count) => {
+  helper = (index) =>
+    index >= count
+      ? []
+      : [f(index), ...helper(index + 1)]
+
+  return helper(0)
+}
+
+
+/**
+ * Return a list of integers within the given range. The start
+ * parameter is inclusive and the end parameter is exclusive.
+ *
+ * @since 0.12.0
+ * @example
+ * range(3, 3) // []
+ * range(3, 5) // [3, 4]
+ */
+range :: Integer -> Integer -> List Integer
+export range = (start, end) =>
+  repeatWith((i) => i + start, end - start)
 
 
 instance Applicative List {
@@ -112,8 +130,21 @@ singleton :: a -> List a
 export singleton = pure
 
 
-// TODO: implement
-// intercalate :: List a -> List a -> List a
+intercalate :: List a -> List a -> List a
+export intercalate = (sep, list) => {
+  helper = (acc, l) => where(l) {
+    [a] =>
+      append(a, acc)
+
+    [] =>
+      acc
+
+    [a, ...xs] =>
+      helper(concat(acc, [a, ...sep]), xs)
+  }
+
+  return helper([], list)
+}
 
 
 /**

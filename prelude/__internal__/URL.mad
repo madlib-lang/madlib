@@ -1,14 +1,35 @@
+import type { Maybe } from "Maybe"
+
+import { Just, Nothing } from "Maybe"
+
 #iftarget js
 
-encode :: String -> String
-export encode = #- encodeURI -#
+encode :: String -> Maybe String
+export encode = (url) => #- {
+  try {
+    return Just(encodeURIComponent(url))
+  } catch(e) {
+    return Nothing
+  }
+} -#
 
 
-decode :: String -> String
-export decode = #- decodeURI -#
+decode :: String -> Maybe String
+export decode = (url) => #- {
+    try {
+      return Just(decodeURIComponent(url))
+    } catch(e) {
+      return Nothing
+    }
+  } -#
 
 #elseif llvm
 
-// TODO: use libcurl for the llvm version ( https://stackoverflow.com/a/154627 )
+encode :: String -> Maybe String
+export encode = extern "madlib__url__encode"
+
+
+decode :: String -> Maybe String
+export decode = extern "madlib__url__decode"
 
 #endif

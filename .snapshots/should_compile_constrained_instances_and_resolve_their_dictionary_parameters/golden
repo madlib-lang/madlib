@@ -2,8 +2,8 @@
 let Right = (a => ({ __constructor: "Right", __args: [ a ] }));
 let Left = (a => ({ __constructor: "Left", __args: [ a ] }));
 global.Show = {};
-Inspect['Either'] = {};
-Inspect['Either']['inspect'] = () => (Inspect_h7) => (Inspect_e4) => (__$a__ => ((__x__) => {
+Inspect['Either_d6fe1d0be6347b8ef2427fa629c04485'] = {};
+Inspect['Either_d6fe1d0be6347b8ef2427fa629c04485']['inspect'] = () => (Inspect_h7) => (Inspect_e4) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a0 = __x__.__args[0];
     return `Right(` + Inspect_e4.inspect()(a0) + `)`;
@@ -21,10 +21,10 @@ Inspect['Either']['inspect'] = () => (Inspect_h7) => (Inspect_e4) => (__$a__ => 
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Show['Boolean'] = {};
-Show['Boolean']['show'] = () => (b => (b ? `True` : `False`));
-Show['Integer'] = {};
-Show['Integer']['show'] = () => (n =>  new Integer(n).toString() );
+Show['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Show['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (b => (b ? `True` : `False`));
+Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Show['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d']['show'] = () => (n =>  new Integer(n).toString() );
 Show['Tuple_2'] = {};
 Show['Tuple_2']['show'] = () => (Show_j61) => (Show_i60) => (__x__ => ((__x__) => {
   if (__x__.length === 2 && true && true) {
@@ -49,8 +49,8 @@ Show['Tuple_3']['show'] = () => (Show_d81) => (Show_c80) => (Show_b79) => (__x__
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Show['Either'] = {};
-Show['Either']['show'] = () => (Show_c106) => (Show_f109) => (__x__ => ((__x__) => {
+Show['Either_d6fe1d0be6347b8ef2427fa629c04485'] = {};
+Show['Either_d6fe1d0be6347b8ef2427fa629c04485']['show'] = () => (Show_c106) => (Show_f109) => (__x__ => ((__x__) => {
   if (__x__.__constructor === "Right" && true) {
     let a = __x__.__args[0];
     return `Right ` + Show_c106.show()(a);
@@ -65,9 +65,9 @@ Show['Either']['show'] = () => (Show_c106) => (Show_f109) => (__x__ => ((__x__) 
     throw 'non exhaustive patterns!';
   }
 })(__x__));
-Show.Tuple_2.show()(Show.Boolean)(Show.Integer)(([1, false]));
-Show.Either.show()(Show.Integer)(Show.Integer)(Right(3));
+Show.Tuple_2.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, false]));
+Show.Either_d6fe1d0be6347b8ef2427fa629c04485.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Right(3));
 let fnWithConstraint = (Show_o170) => Show_o170.show();
-Show.Tuple_2.show()(Show.Integer)(Show.Integer)(([1, 1]));
-Show.Tuple_3.show()(Show.Boolean)(Show.Integer)(Show.Boolean)(([false, 42, true]));
+Show.Tuple_2.show()(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([1, 1]));
+Show.Tuple_3.show()(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d)(Show.Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d)(([false, 42, true]));
 export default {};

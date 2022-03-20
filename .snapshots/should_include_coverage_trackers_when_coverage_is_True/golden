@@ -15,8 +15,14 @@ if (l === null && r === null) {
   return true;
 }
   if (typeof l === `object`) {
-    if (Array.isArray(l)) {
-      return l.length === r.length && l.reduce((res, _, i) => res && __eq__(l[i], r[i]), true);
+    if (l.n && l.v) {
+      let result = true;
+      while (l !== null && result) {
+        result = __eq__(l.v, r.v);
+        l = l.n;
+        r = r.n;
+      }
+      return result && r === null;
     }
     const keysL = Object.keys(l);
     const keysR = Object.keys(r);
@@ -52,32 +58,57 @@ global.__once__ = (fn, context) => {
 
 global.Inspect = {};
 
-Inspect['Integer'] = {};
-Inspect['Integer']['inspect'] = () => x => '' + x;
+Inspect['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Integer_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => '' + x;
 
-Inspect['Byte'] = {};
-Inspect['Byte']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };
+Inspect['Byte_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Byte_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => { x = x % 256; return ('0' + (x < 0 ? 256 + x : x).toString(16)).slice(-2).toUpperCase(); };
 
-Inspect['Float'] = {};
-Inspect['Float']['inspect'] = () => x => x;
+Inspect['Float_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Float_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => x;
 
-Inspect['String'] = {};
-Inspect['String']['inspect'] = () => x => `"${x}"`;
+Inspect['String_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['String_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => {
+  const escapeChar = (c) => {
+    if (c === '\n') {
+      return `\\n`;
+    } else if (c === '\t') {
+      return `\\t`;
+    } else if (c === '\r') {
+      return `\\t`;
+    } else {
+      return c;
+    }
+  }
+  return `"${x.split('').map(escapeChar).join('')}"`
+}
 
-Inspect['Char'] = {};
-Inspect['Char']['inspect'] = () => x => `'${x}'`;
+Inspect['Char_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Char_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => {
+  if (x === '\n') {
+    return `'\\n'`;
+  } else if (x === '\t') {
+    return `'\\t'`;
+  } else if (x === '\r') {
+    return `'\\t'`;
+  } else if (x === '\c') {
+    return `'\\c'`;
+  } else {
+    return `'${x}'`;
+  }
+};
 
-Inspect['Unit'] = {};
-Inspect['Unit']['inspect'] = () => () => `{}`;
+Inspect['Unit_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Unit_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => () => `{}`;
 
-Inspect['Boolean'] = {};
-Inspect['Boolean']['inspect'] = () => x => x ? `true` : `false`;
+Inspect['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Boolean_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => x => x ? `true` : `false`;
 
 Inspect['a_arr_b'] = {};
 Inspect['a_arr_b']['inspect'] = () => x => `[Function]`;
 
-Inspect['ByteArray'] = {};
-Inspect['ByteArray']['inspect'] = () => bytearray => {
+Inspect['ByteArray_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['ByteArray_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => bytearray => {
   let s = '', h = '0123456789ABCDEF'
   bytearray.forEach((v, index) => {
     if ((index + 1) % 8 === 0) { s += ' ' }
@@ -86,8 +117,8 @@ Inspect['ByteArray']['inspect'] = () => bytearray => {
   return `ByteArray(${s})`;
 };
 
-Inspect['List'] = {};
-Inspect['List']['inspect'] = () => Inspect_a => list => {
+Inspect['List_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['List_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => Inspect_a => list => {
 
   let items = [];
 
@@ -98,11 +129,11 @@ Inspect['List']['inspect'] = () => Inspect_a => list => {
   return "[" + items.join(", ") + "]"
 };
 
-Inspect['Array'] = {};
-Inspect['Array']['inspect'] = () => Inspect_a => array => `Array([${array.map(Inspect_a.inspect()).join(", ")}])`;
+Inspect['Array_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Array_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => Inspect_a => array => `Array([${array.map(Inspect_a.inspect()).join(", ")}])`;
 
-Inspect['Dictionary'] = {};
-Inspect['Dictionary']['inspect'] = () => Inspect_value => Inspect_key => dict => {
+Inspect['Dictionary_5b7ebeeaa5acfe1eeea5a9e9845b152d'] = {};
+Inspect['Dictionary_5b7ebeeaa5acfe1eeea5a9e9845b152d']['inspect'] = () => Inspect_value => Inspect_key => dict => {
   let list = dict.__args[0]
   let items = [];
 

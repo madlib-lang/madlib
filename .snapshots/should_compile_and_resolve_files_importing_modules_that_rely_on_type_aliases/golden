@@ -3,8 +3,8 @@ export let Wish = (a => ({ __constructor: "Wish", __args: [ a ] }));
 global.Functor = {};
 global.Applicative = {};
 global.Monad = {};
-Inspect['Wish'] = {};
-Inspect['Wish']['inspect'] = () => (Inspect_w22) => (Inspect_y24) => (__$a__ => ((__x__) => {
+Inspect['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
+Inspect['Wish_e92c71d0381357b7292e437c88b4ab9b']['inspect'] = () => (Inspect_w22) => (Inspect_y24) => (__$a__ => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let a0 = __x__.__args[0];
     return `Wish(` + Inspect.a_arr_b.inspect()(a0) + `)`;
@@ -18,8 +18,8 @@ Inspect['Wish']['inspect'] = () => (Inspect_w22) => (Inspect_y24) => (__$a__ => 
     throw 'non exhaustive patterns!';
   }
 })(__$a__));
-Functor['Wish'] = {};
-Functor['Wish']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
+Functor['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
+Functor['Wish_e92c71d0381357b7292e437c88b4ab9b']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run(bad)((x => good(f(x))));
@@ -30,8 +30,8 @@ Functor['Wish']['map'] = () => (f => m => Wish((bad => good => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m))));
-Applicative['Wish'] = {};
-Applicative['Wish']['ap'] = () => (mf => m => Wish((bad => good => ((__x__) => {
+Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
+Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['ap'] = () => (mf => m => Wish((bad => good => ((__x__) => {
   if (__x__.length === 2 && __x__[0].__constructor === "Wish" && true && __x__[1].__constructor === "Wish" && true) {
     let [{ __args: [runMF]},{ __args: [runM]}] = __x__;
     return runM(bad)((x => runMF(bad)((f => good(f(x))))));
@@ -42,9 +42,9 @@ Applicative['Wish']['ap'] = () => (mf => m => Wish((bad => good => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(([mf, m])))));
-Applicative['Wish']['pure'] = () => (a => Wish((bad => good => good(a))));
-Monad['Wish'] = {};
-Monad['Wish']['chain'] = () => (f => m => Wish((bad => good => ((__x__) => {
+Applicative['Wish_e92c71d0381357b7292e437c88b4ab9b']['pure'] = () => (a => Wish((bad => good => good(a))));
+Monad['Wish_e92c71d0381357b7292e437c88b4ab9b'] = {};
+Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['chain'] = () => (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
     return run(bad)((x => ((__x__) => {
@@ -65,7 +65,7 @@ Monad['Wish']['chain'] = () => (f => m => Wish((bad => good => ((__x__) => {
     throw 'non exhaustive patterns!';
   }
 })(m))));
-Monad['Wish']['of'] = () => Applicative.Wish.pure();
+Monad['Wish_e92c71d0381357b7292e437c88b4ab9b']['of'] = () => Applicative.Wish_e92c71d0381357b7292e437c88b4ab9b.pure();
 export let mapRej = (f => m => Wish((bad => good => ((__x__) => {
   if (__x__.__constructor === "Wish" && true) {
     let run = __x__.__args[0];
@@ -142,5 +142,5 @@ export default { mapRej, chainRej, good, bad, parallel, fulfill, Wish };
 import {} from "./__internals__.mjs"
 import W from "./.prelude/Wish.mjs";
 
-W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish.map()((x => x + `!`))(Monad.Wish.chain()((x => Monad.Wish.of()(`finally a string`)))(Monad.Wish.chain()((x => Monad.Wish.of()(x * 3)))(Functor.Wish.map()((x => x % 2))(Monad.Wish.of()(3))))));
+W.fulfill((a => ({ __constructor: "Unit", __args: [] })))((a => ({ __constructor: "Unit", __args: [] })))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x + `!`))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(`finally a string`)))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.chain()((x => Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(x * 3)))(Functor.Wish_e92c71d0381357b7292e437c88b4ab9b.map()((x => x % 2))(Monad.Wish_e92c71d0381357b7292e437c88b4ab9b.of()(3))))));
 export default {};
