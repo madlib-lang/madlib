@@ -107,15 +107,38 @@ char **madlib__char__internal__show(int32_t *unicode) {
 char **madlib__char__internal__inspect(int32_t *unicode) {
   char **boxed = (char **)GC_malloc(sizeof(char *));
 
-  char *encoded = utf8Encode(*unicode);
-  size_t encodedLength = strlen(encoded);
-  char *full = (char*)GC_malloc(sizeof(char) * (encodedLength + 3));
-  full[0] = '\'';
-  memcpy(full + 1, encoded, encodedLength);
-  full[1 + encodedLength] = '\'';
-  full[2 + encodedLength] = '\0';
+  if (*unicode == '\n' || *unicode == '\t' || *unicode == '\r') {
+    char *result = (char*)GC_malloc(sizeof(char) * 5);
+    result[0] = '\'';
+    result[1] = '\\';
+    result[3] = '\'';
+    result[4] = '\0';
 
-  *boxed = full;
+    switch (*unicode) {
+      case '\n':
+        result[2] = 'n';
+        break;
+      case '\t':
+        result[2] = 't';
+        break;
+      case '\r':
+        result[2] = 'r';
+        break;
+    }
+
+    *boxed = result;
+  } else {
+    char *encoded = utf8Encode(*unicode);
+    size_t encodedLength = strlen(encoded);
+    char *full = (char*)GC_malloc(sizeof(char) * (encodedLength + 3));
+    full[0] = '\'';
+    memcpy(full + 1, encoded, encodedLength);
+    full[1 + encodedLength] = '\'';
+    full[2 + encodedLength] = '\0';
+
+    *boxed = full;
+  }
+
 
   return boxed;
 }
