@@ -91,6 +91,66 @@ int64_t madlib__string__length(unsigned char *s) {
 }
 
 
+int makeNextSize(int oldSize) {
+  int newSize = oldSize * 0.1;
+  if (newSize - oldSize < 10) {
+    return oldSize + 10;
+  }
+
+  return newSize;
+}
+
+
+char **madlib__string__internal__inspect(char **boxedInput) {
+  char **boxed = (char **)GC_malloc(sizeof(char *));
+  char *s = *boxedInput;
+  int initialLength = strlen(s);
+  int currentLength = initialLength + (initialLength + 3) * 0.1;
+  char *result = (char*)GC_malloc(sizeof(char) * (currentLength + 1));
+  int currentIndex = 1;
+
+  result[0] = '"';
+
+  while (*s != '\0') {
+    // if the size of the string isn't enough we resize it
+    if (currentLength - currentIndex < 4) {
+      char *resized = (char*)GC_malloc(sizeof(char) * makeNextSize(currentLength));
+      memcpy(resized, result, sizeof(char) * (currentIndex + 1));
+      GC_free(result);
+      result = resized;
+    }
+
+    if (*s == '\n') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = 'n';
+
+      currentIndex += 2;
+    } else if (*s == '\t') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = 't';
+
+      currentIndex += 2;
+    } else if (*s == '\r') {
+      result[currentIndex] = '\\';
+      result[currentIndex + 1] = 'r';
+
+      currentIndex += 2;
+    } else {
+      result[currentIndex] = *s;
+      currentIndex++;
+    }
+
+    s++;
+  }
+
+  result[currentIndex] = '"';
+  result[currentIndex + 1] = '\0';
+
+  *boxed = result;
+  return boxed;
+}
+
+
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   int skipCount = 0;
 
