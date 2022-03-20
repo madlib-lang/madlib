@@ -34,6 +34,7 @@ import qualified Data.Set as Set
 import Infer.Pred
 import Infer.Scheme
 import Infer.Substitute
+import AST.Canonical (getImportAbsolutePath)
 
 {-|
 Module      : AST
@@ -236,15 +237,24 @@ inferAST solvedTable env Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atype
       , Slv.apath       = apath
       , Slv.atypedecls  = updatedADTs
       , Slv.aimports    =
-        (\case
-          i@(Slv.Untyped area (Slv.NamedImport names fp afp)) -> Slv.Untyped area $ Slv.NamedImport
-            (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
-            fp
-            afp
-          others -> others
-        )
-        .   updateImport solvedTable
-        <$> filter (not . Can.isTypeImport) aimports
+        mapMaybe
+          (
+            (
+              (\case
+                i@(Slv.Untyped area (Slv.NamedImport names fp afp)) ->
+                  Slv.Untyped area $ Slv.NamedImport
+                    (mapMaybe (\(Slv.Untyped area n) -> M.lookup n (envVars env) >> Just (Slv.Untyped area n)) names)
+                    fp
+                    afp
+
+                others ->
+                  others
+              )
+              <$>
+            )
+            . updateImport aimports solvedTable
+          )
+          aimports
       , Slv.ainterfaces = updatedInterfaces
       , Slv.ainstances  = inferredInstances
       }
@@ -271,18 +281,37 @@ updateADT (Can.Canonical area alias@Can.Alias{}) = return $ Slv.Untyped
             , Slv.aliasexported = Can.aliasexported alias
             }
 
+
 updateADTConstructor :: Can.Constructor -> Infer Slv.Constructor
 updateADTConstructor (Can.Canonical area (Can.Constructor cname cparams scheme _)) = do
   (ps :=> t) <- instantiate scheme
   return $ Slv.Untyped area $ Slv.Constructor cname (updateTyping <$> cparams) t
 
-updateImport :: M.Map FilePath (Slv.AST, Env) -> Can.Import -> Slv.Import
-updateImport solvedTable i = case i of
-  Can.Canonical area (Can.NamedImport   ns p fp) -> Slv.Untyped area $ Slv.NamedImport (updateImportName <$> ns) p fp
 
-  Can.Canonical area (Can.DefaultImport n  p fp) -> Slv.Untyped area $ Slv.DefaultImport (updateImportName n) p fp
+hasModuleNormalImport :: [Can.Import] -> FilePath -> Bool
+hasModuleNormalImport allImports fp =
+  any ((== fp) . Can.getImportAbsolutePath) (filter (not . Can.isTypeImport) allImports)
 
-  Can.Canonical area (Can.ImportAll p fp) -> updateImportAll solvedTable i
+
+updateImport ::[Can.Import] -> M.Map FilePath (Slv.AST, Env) -> Can.Import -> Maybe Slv.Import
+updateImport allImports solvedTable i = case i of
+  Can.Canonical area (Can.NamedImport ns p fp) ->
+    Just $ Slv.Untyped area $ Slv.NamedImport (updateImportName <$> ns) p fp
+
+  -- If a TypeImport does not have a corresponding normal import we need to carry it in order
+  -- to generate the constructor types for the LLVM backend.
+  Can.Canonical area (Can.TypeImport ns p fp) ->
+    if hasModuleNormalImport allImports fp then
+      Nothing
+    else
+      Just $ Slv.Untyped area $ Slv.NamedImport [] p fp
+
+  Can.Canonical area (Can.DefaultImport n p fp) ->
+    Just $ Slv.Untyped area $ Slv.DefaultImport (updateImportName n) p fp
+
+  Can.Canonical area (Can.ImportAll p fp) ->
+    Just $ updateImportAll solvedTable i
+
 
 updateImportAll :: M.Map FilePath (Slv.AST, Env) -> Can.Import -> Slv.Import
 updateImportAll solvedTable (Can.Canonical area (Can.ImportAll path absPath)) = case M.lookup absPath solvedTable of
@@ -296,8 +325,10 @@ updateImportAll solvedTable (Can.Canonical area (Can.ImportAll path absPath)) = 
         exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
     in  Slv.Untyped area (Slv.NamedImport (Slv.Untyped area <$> exportedNames <> exportedCtorNames) path absPath)
 
+
 updateImportName :: Can.Canonical Can.Name -> Slv.Solved Slv.Name
 updateImportName (Can.Canonical area name) = Slv.Untyped area name
+
 
 -- |The 'solveTable' function is the main function of this module.
 -- It runs type checking for a given canonical ast table and an entrypoint ast
@@ -311,6 +342,7 @@ solveTable :: Can.Table -> Can.AST -> Infer Slv.Table
 solveTable table ast = do
   solved <- solveTable' mempty table ast
   return $ M.map fst solved
+
 
 solveTable' :: M.Map FilePath (Slv.AST, Env) -> Can.Table -> Can.AST -> Infer (M.Map FilePath (Slv.AST, Env))
 solveTable' solved table ast@Can.AST { Can.aimports } = do

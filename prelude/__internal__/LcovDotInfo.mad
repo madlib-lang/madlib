@@ -2,7 +2,7 @@
 
 import L from "List"
 import S from "String"
-import N from "Number"
+import {} from "Number"
 import Maybe from "Maybe"
 
 /**
@@ -61,7 +61,7 @@ emptySection = {
 
 parseNumberString :: (Integer -> String -> LcovLine) -> String -> LcovLine
 parseNumberString = (ctor, args) => where(S.split(",", args)) {
-  [line, name] => ctor(Maybe.fromMaybe(0, N.fromString(line)), name)
+  [line, name] => ctor(Maybe.fromMaybe(0, scan(line)), name)
 }
 
 
@@ -69,8 +69,8 @@ parseNumberNumber :: (Integer -> Integer -> LcovLine) -> String -> LcovLine
 parseNumberNumber = (ctor, args) => where(S.split(",", args)) {
   [line, count] =>
     ctor(
-      Maybe.fromMaybe(0, N.fromString(line)),
-      Maybe.fromMaybe(0, N.fromString(count))
+      Maybe.fromMaybe(0, scan(line)),
+      Maybe.fromMaybe(0, scan(count))
     )
 }
 
@@ -96,19 +96,19 @@ parseLcovSection = (content) =>
                 { ...section, fndas: L.append(parseNumberString(FNDA, args), section.fndas) }
 
               ["FNF", arg] =>
-                { ...section, fnf: FNF(Maybe.fromMaybe(0, N.fromString(arg))) }
+                { ...section, fnf: FNF(Maybe.fromMaybe(0, scan(arg))) }
 
               ["FNH", arg] =>
-                { ...section, fnh: FNH(Maybe.fromMaybe(0, N.fromString(arg))) }
+                { ...section, fnh: FNH(Maybe.fromMaybe(0, scan(arg))) }
 
               ["DA", args] =>
                 { ...section, das: L.append(parseNumberNumber(DA, args), section.das) }
 
               ["LF", arg] =>
-                { ...section, lf: LF(Maybe.fromMaybe(0, N.fromString(arg))) }
+                { ...section, lf: LF(Maybe.fromMaybe(0, scan(arg))) }
 
               ["LH", arg] =>
-                { ...section, lh: LH(Maybe.fromMaybe(0, N.fromString(arg))) }
+                { ...section, lh: LH(Maybe.fromMaybe(0, scan(arg))) }
             }
       , emptySection
       )

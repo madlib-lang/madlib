@@ -16,7 +16,7 @@ import { maybeLoop } from "Control"
 
 export type Location = Loc(Integer, Integer, Integer)
 
-type Parser a = Parser(String -> Location -> #[List #[a, String], Location])
+export type Parser a = Parser(String -> Location -> #[List #[a, String], Location])
 export type Parser
 
 export type Error = Error(Location)

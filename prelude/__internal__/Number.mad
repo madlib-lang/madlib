@@ -1,7 +1,7 @@
 import type { Maybe } from "Maybe"
 import { EQUAL, LESS, MORE } from "Compare"
 import {} from "Scan"
-import { Just, Nothing } from "Maybe"
+import {} from "Show"
 
 
 instance Comparable Integer {
@@ -31,6 +31,7 @@ instance Show Float {
 
 
 #iftarget js
+import { Just, Nothing } from "Maybe"
 
 scanInteger :: Number a => String -> Maybe a
 scanInteger = (str) => (#- {
@@ -68,9 +69,12 @@ instance Scan Float {
 }
 
 
-// integerToFloat :: Integer -> Float
-// export integerToFloat = (a) => a
+#iftarget js
 
+integerToFloat :: Integer -> Float
+export integerToFloat = (a) => #- a -#
+
+#endif
 
 #iftarget js
 

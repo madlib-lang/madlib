@@ -47,7 +47,7 @@ initialEnv :: Env
 initialEnv = Env { varsInScope = S.empty, recursionData = Nothing, varsRewritten = M.empty }
 
 allowedJSNames :: [String]
-allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default"]
+allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break"]
 
 generateSafeName :: String -> String
 generateSafeName n =
@@ -275,12 +275,18 @@ instance Compilable Exp where
                 Just RightListRecursionData { rdParams } ->
                   rdParams
 
+                Just ConstructorRecursionData { rdParams } ->
+                  rdParams
+
                 _ ->
                   []
 
               compiledArgs = compile env config <$> args
               updateParams  = (\(param, arg) -> param <> " = " <> arg <> "") <$> zip params compiledArgs
-          in  "(" <> intercalate ", " updateParams <> ", $_continue_ = true)"
+          in  if null updateParams then
+                "($_continue_ = true)"
+              else
+                "(" <> intercalate ", " updateParams <> ", $_continue_ = true)"
 
         Call fn args ->
           let compiledArgs = (<> ")") . ("(" <>) . compile env config <$> args
@@ -375,14 +381,7 @@ instance Compilable Exp where
               "{\n"
               <> compileBody' env exps
               <> "}"
-              -- if isPlainRecursiveDefinition metadata then
-              --   "{\n"
-              --   <> compileBody' env exps
-              --   <> "}"
-              -- else
-              --   "{\n"
-              --   <> compileBody' env exps
-              --   <> "}"
+
 
           compileBody' :: Env -> [Exp] -> String
           compileBody' env [exp] = case exp of
@@ -443,14 +442,6 @@ instance Compilable Exp where
                     <> "]"
               in  applyDictsFnName optimized <> "(" <> dict <> ", " <> dicts <> ")"
             else dict
-
-          getTypeName :: Type -> String
-          getTypeName t = case t of
-            TCon (TC n _) _ -> n
-            TApp (TCon (TC n _) _) _ -> n
-            TApp (TApp (TCon (TC n _) _) _) _ -> if n == "(,)" then "Tuple_2" else n
-            TApp (TApp (TApp (TCon (TC n _) _) _) _) _ -> if n == "(,,)" then "Tuple_3" else n
-            _ -> ppShow t
 
 
         Placeholder (MethodRef cls method var, ts) (Core.Typed _ _ _ (Var name _)) ->
