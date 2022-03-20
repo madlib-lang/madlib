@@ -1,6 +1,8 @@
 #include <gc.h>
 #include <iostream>
 #include <string.h>
+#include "string.hpp"
+#include "char.hpp"
 
 // String
 
@@ -79,6 +81,38 @@ char *stripTrailingZeros(char *number) {
   char *result = (char *)GC_malloc(length - charsToRemove + 1);
   memcpy(result, number, length - charsToRemove);
   result[length - charsToRemove] = '\0';
+
+  return result;
+}
+
+char *madlib__string__mapChars(PAP_t *pap, char *str) {
+  int32_t *chars = utf8Decode(str);
+
+  int i = 0;
+  while(chars[i] != 0) {
+    chars[i] = *((int32_t*)__applyPAP__(pap, 1, &chars[i]));
+    i++;
+  }
+
+  char **encodedChars = (char**)GC_malloc(sizeof(char*) * i);
+  int j = 0;
+  size_t fullLength = 0;
+  for (int j = 0; j <= i; j++) {
+    char *encoded = utf8Encode(chars[j]);
+    fullLength += strlen(encoded);
+    encodedChars[j] = encoded;
+  }
+
+  char *result = (char *)GC_malloc(sizeof(char) * (fullLength + 1));
+  j = 0;
+  size_t offset = 0;
+  for (int j = 0; j <= i; j++) {
+    size_t sizeOfChar = strlen(encodedChars[j]);
+    memcpy(result + offset, encodedChars[j], sizeOfChar);
+    offset += sizeOfChar;
+  }
+
+  result[offset] = '\0';
 
   return result;
 }

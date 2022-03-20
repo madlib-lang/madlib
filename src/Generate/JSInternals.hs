@@ -5,7 +5,9 @@ import           Generate.Utils
 
 generateInternalsModuleContent :: Target -> Bool -> Bool -> String
 generateInternalsModuleContent target optimized coverage =
-  eqFn target optimized
+  aliasStringGlobal target
+    <> "\n"
+    <> eqFn target optimized
     <> "\n"
     <> applyDictsFn target optimized
     <> "\n"
@@ -15,9 +17,14 @@ generateInternalsModuleContent target optimized coverage =
     <> "\n"
     <> if coverage then "\n" <> hpFnWrap <> "\n" <> hpLineWrap else ""
 
+aliasStringGlobal :: Target -> String
+aliasStringGlobal target =
+  let global = getGlobalForTarget target
+  in global <> ".__String = "<> global <> ".String;\n\n"
+
 inspectStaticInstances :: Target -> Bool -> String
 inspectStaticInstances target optimized = unlines
-  [ "global.Inspect = {};"
+  [ getGlobalForTarget target <> ".Inspect = {};"
   , ""
   , "Inspect['Integer'] = {};"
   , "Inspect['Integer']['inspect'] = () => x => '' + x;"
@@ -32,7 +39,7 @@ inspectStaticInstances target optimized = unlines
   , "Inspect['String']['inspect'] = () => x => `\"${x}\"`;"
   , ""
   , "Inspect['Char'] = {};"
-  , "Inspect['Char']['inspect'] = () => x => x;"
+  , "Inspect['Char']['inspect'] = () => x => `'${x}'`;"
   , ""
   , "Inspect['Unit'] = {};"
   , "Inspect['Unit']['inspect'] = () => () => `{}`;"
