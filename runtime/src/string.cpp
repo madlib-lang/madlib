@@ -3,12 +3,26 @@
 #include <string.h>
 #include "string.hpp"
 #include "char.hpp"
+#include <regex>
 
 // String
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+char *madlib__string__replace(char *regex, char *replace, char *str) {
+  std::string result = std::regex_replace(std::string(str), std::regex(regex), std::string(replace), std::regex_constants::format_first_only);
+  const char *cStr = result.c_str();
+  size_t length = result.length();
+
+  char *copy = (char*)GC_malloc(sizeof(char) * (length + 1));
+  memcpy(copy, cStr, length);
+  copy[length] = '\0';
+
+  return copy;
+}
 
 bool *madlib__string__internal__eq(char **s1, char **s2) {
   bool *boxed = (bool*) GC_malloc(sizeof(bool));
@@ -87,14 +101,14 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
       start = start + length;
     }
     if (end == 0) {
-      end = length - 1;
+      end = length;
     }
     if (end < 0) {
       end = end + length;
     }
   }
 
-  int charsToTake = end - start + 1;
+  int charsToTake = end - start;
 
   while ((*s != '\0' || skipCount != 0) && start > 0) {
     if (skipCount > 0) {
