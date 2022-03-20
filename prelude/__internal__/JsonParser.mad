@@ -175,10 +175,8 @@ parse :: Parser b -> String -> Either String b
 export parse = (parser, input) => pipe(
   runParser(jsonValue),
   where {
-    Left(e) => do {
-      IO.log(e)
-      return Left("Invalid json")
-    }
+    Left(_) =>
+      Left("Invalid json")
 
     Right(parsed) =>
       where(parser) {
