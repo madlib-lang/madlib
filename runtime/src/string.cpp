@@ -52,9 +52,28 @@ bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2) {
 }
 
 
-// currently unused, types need adjustment. The param probably needs to be a char**
-int64_t madlib__string__length(char *s) {
-  return strlen(s);
+int64_t madlib__string__length(unsigned char *s) {
+  int64_t length = 0;
+  int skipCount = 0;
+
+  while (*s != '\0' || skipCount != 0) {
+    if (skipCount > 0) {
+      skipCount--;
+    } else {
+      length++;
+
+      if (*s >= 0xf0) {
+        skipCount = 3;
+      } else if (*s >= 0xe0) {
+        skipCount = 2;
+      } else if (*s >= 0xc0) {
+        skipCount = 1;
+      }
+    }
+    s++;
+  }
+
+  return length;
 }
 
 char *madlib__string__internal__concat(char *s1, char *s2) {

@@ -34,7 +34,7 @@ performSplitPath = (buffer, foundSlash, path) => where(String.firstChar(path)) {
 
   Just(char) =>
     foundSlash
-      ? mappend([buffer], performSplitPath(char, false, String.drop(1, path)))
+      ? mconcat([buffer], performSplitPath(char, false, String.drop(1, path)))
       : performSplitPath(buffer ++ char, false, String.drop(1, path))
 }
 
@@ -62,7 +62,7 @@ export joinPath = pipe(
   filter(complement(String.isEmpty)),
   ifElse(
     pipe(first, equals(Just("/"))),
-    pipe(drop(1), map(dropTrailingPathSeparator), String.join("/"), mappend("/")),
+    pipe(drop(1), map(dropTrailingPathSeparator), String.join("/"), mconcat("/")),
     pipe(map(dropTrailingPathSeparator), String.join("/"))
   )
 )
@@ -181,7 +181,7 @@ export takeExtension = pipe(
   takeFileName,
   String.split("."),
   last,
-  map(ifElse(String.isEmpty, identity, mappend("."))),
+  map(ifElse(String.isEmpty, identity, mconcat("."))),
   fromMaybe("")
 )
 

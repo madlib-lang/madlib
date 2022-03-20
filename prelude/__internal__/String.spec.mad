@@ -10,8 +10,6 @@ test("compare String - EQUAL", (_) => assertEquals(compare("John", "John"), EQUA
 
 #iftarget js
 
-
-
 test(
   "replace should replace parts of a string given some regex and replacement string",
   (_) => assertEquals(String.replace("a", "b", "abc"), "bbc")
